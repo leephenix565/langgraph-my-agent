@@ -12,9 +12,14 @@ from react_agent.agents import AgentOutput
 
 
 def merge_analyst_results(a: Dict[str, AgentOutput], b: Dict[str, AgentOutput]) -> Dict[str, AgentOutput]:
-    """Merge analyst_results from parallel branches; later branch wins on conflicts."""
+    """Merge analyst_results from parallel branches; allow explicit reset."""
+    # If a branch requests reset, drop previous results for a fresh turn.
+    if "__reset__" in b:
+        return {}
+
     merged = dict(a)
     merged.update(b)
+    merged.pop("__reset__", None)
     return merged
 
 
@@ -30,3 +35,5 @@ class State(InputState, total=False):
     plan: List[str]
     analyst_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
     is_last_step: bool
+    current_question: str
+    fanout_targets: List[str]

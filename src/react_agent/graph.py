@@ -27,12 +27,12 @@ AGENT_NODE_NAMES: Dict[str, str] = {aid: f"agent_{aid}_node" for aid in AGENT_ID
 DEFAULT_PLAN: List[str] = [aid for aid in ["news", "data", "ecc", "filing"] if aid in AGENT_IDS] or AGENT_IDS[:3]
 
 
-def _get_user_question(messages: List[AnyMessage]) -> str:
-    """Return the original human question."""
-    for msg in messages:
+def _get_latest_user_question(messages: List[AnyMessage]) -> str:
+    """Return the most recent human question."""
+    for msg in reversed(messages):
         if isinstance(msg, HumanMessage):
             return get_message_text(msg)
-    return get_message_text(messages[0]) if messages else ""
+    return get_message_text(messages[-1]) if messages else ""
 
 
 def _parse_router_plan(raw: str) -> List[str]:
@@ -67,6 +67,7 @@ async def router_node(
 ) -> Dict[str, object]:
     """Router: produce plan only."""
     model = load_chat_model(runtime.context.model)
+    question = _get_latest_user_question(list(state["messages"]))
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
         analyst_ids=", ".join(AGENT_IDS),
         system_time=datetime.now(tz=UTC).isoformat(),
@@ -76,7 +77,13 @@ async def router_node(
     raw_text = get_message_text(response)
     print("[ROUTER RAW OUTPUT]", raw_text)
     plan = _parse_router_plan(raw_text) or DEFAULT_PLAN
-    return {"messages": [response], "plan": plan}
+    return {
+        "messages": [response],
+        "plan": plan,
+        "current_question": question,
+        # Signal a fresh turn so downstream merges clear old analyst_results.
+        "analyst_results": {"__reset__": True},
+    }
 
 
 async def manager_broadcast(
@@ -84,12 +91,16 @@ async def manager_broadcast(
 ) -> Command:
     """Manager: fan-out tasks to all agents in plan."""
     plan = state.get("plan", [])
+    question = state.get("current_question") or _get_latest_user_question(list(state["messages"]))
     if not plan:
-        return Command(goto="manager_summary")
-
-    question = _get_user_question(list(state["messages"]))
+        debug_msg = AIMessage(content="[manager_broadcast] no agents selected, skipping fan-out")
+        return Command(
+            goto="manager_summary",
+            update={"messages": [debug_msg], "fanout_targets": plan},
+        )
 
     sends: List[Send] = []
+    debug_msg = AIMessage(content=f"[manager_broadcast] fan-out -> {', '.join(plan)}")
     for agent_id in plan:
         node_name = AGENT_NODE_NAMES.get(agent_id)
         if not node_name:
@@ -110,7 +121,10 @@ async def manager_broadcast(
         ]
         sends.append(Send(node_name, branch_state))
 
-    return Command(goto=sends or "manager_summary")
+    return Command(
+        goto=sends or "manager_summary",
+        update={"messages": [debug_msg], "fanout_targets": plan},
+    )
 
 
 def _build_agent_node(agent_id: str):
@@ -118,7 +132,7 @@ def _build_agent_node(agent_id: str):
         tool = AGENT_TOOLS.get(agent_id)
         if not tool:
             return {}
-        question = _get_user_question(list(state.get("messages", [])))
+        question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
         subtask = get_message_text(state["messages"][-1]) if state.get("messages") else ""
         agent_input = {
             "question": question,
@@ -155,7 +169,7 @@ async def manager_summary(
     system_prompt = runtime.context.system_prompt.format(
         system_time=datetime.now(tz=UTC).isoformat()
     )
-    question = _get_user_question(list(state.get("messages", [])))
+    question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
     user_msg = prompts.MANAGER_SUMMARY_USER.format(
         question=question,
         plan=", ".join(plan),
@@ -198,7 +212,6 @@ builder.add_edge("__start__", "router")
 builder.add_edge("router", "manager_broadcast")
 
 for node_name in AGENT_NODE_NAMES.values():
-    builder.add_edge("manager_broadcast", node_name)
     builder.add_edge(node_name, "manager_summary")
 
 builder.add_conditional_edges(
