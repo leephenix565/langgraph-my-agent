@@ -1,0 +1,18 @@
+{
+  "id": "a05_product_pricing",
+  "name": "Product & Pricing Analyst",
+  "description": "Covers commodities: supply-demand, inventory, basis and term structure; designs hedge/arbitrage (intertemporal/inter-product/cross-market), outputs hedge ratios and commodity risk factors.",
+  "capabilities": [
+    "product",
+    "pricing",
+    "inventory"
+  ],
+  "input_type": "industry",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

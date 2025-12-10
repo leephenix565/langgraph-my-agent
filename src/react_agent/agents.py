@@ -1,4 +1,4 @@
-"""Agent接口协议、元数据与注册表。"""
+"""Agent protocol, metadata, and registration helpers."""
 
 from __future__ import annotations
 
@@ -11,17 +11,17 @@ from langchain_core.tools import BaseTool
 
 
 class AgentInput(Dict[str, Any]):
-    """约束逻辑字段的简单 TypedDict 替代（避免额外依赖）。"""
+    """Lightweight dict-compatible AgentInput schema."""
 
-    question: str  # 原始用户问题
-    subtask: str  # Manager 分配的子任务描述
-    shared_context: Dict[str, Any]  # 其它 Agent 的中间结论
-    history: List[Dict[str, Any]]  # 与该 Agent 相关的历史对话
-    tools_config: Dict[str, Any]  # 工具配置
+    question: str
+    subtask: str
+    shared_context: Dict[str, Any]
+    history: List[Dict[str, Any]]
+    tools_config: Dict[str, Any]
 
 
 class AgentOutput(Dict[str, Any]):
-    """Agent 标准输出字段。"""
+    """Agent standard output fields."""
 
     analysis: str
     key_points: List[str]
@@ -31,7 +31,7 @@ class AgentOutput(Dict[str, Any]):
 
 @dataclass
 class AgentMetadata:
-    """元数据用于 Router / 管理员。"""
+    """Metadata used by Router / Manager."""
 
     id: str
     name: str
@@ -41,24 +41,25 @@ class AgentMetadata:
     latency_level: str
     cost_level: str
     version: str
+    layer: Optional[str] = None
+    team: Optional[str] = None
+    role_type: Optional[str] = None
+    default_enabled: bool = True
 
 
-# 运行时注册表（默认包含内置 Agent）
+# Runtime registries (includes built-ins + loaded metadata).
 AGENT_METADATA: Dict[str, AgentMetadata] = {}
 AGENT_TOOLS: Dict[str, BaseTool] = {}
 
 
 def register_agent(metadata: AgentMetadata, tool: BaseTool) -> None:
-    """注册单个 Agent 的元数据和工具。"""
+    """Register a single agent's metadata and tool."""
     AGENT_METADATA[metadata.id] = metadata
     AGENT_TOOLS[metadata.id] = tool
 
 
 def load_metadata_from_dir(path: Path) -> None:
-    """可选：从目录扫描 agent_{id}.json/yaml，填充元数据。
-
-    简化处理：只解析 JSON，YAML 可后续扩展。
-    """
+    """Load agent_{id}.json from a directory into AGENT_METADATA."""
     for file in path.glob("agent_*.json"):
         try:
             data = json.loads(file.read_text(encoding="utf-8"))
@@ -67,3 +68,13 @@ def load_metadata_from_dir(path: Path) -> None:
                 AGENT_METADATA[meta.id] = meta
         except Exception:
             continue
+
+
+def agents_by_layer(layer: str) -> List[str]:
+    """Return agent ids assigned to a given layer and enabled."""
+    layer_upper = layer.upper()
+    return [
+        aid
+        for aid, meta in AGENT_METADATA.items()
+        if (meta.layer or "").upper() == layer_upper and meta.default_enabled
+    ]

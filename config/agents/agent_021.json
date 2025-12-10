@@ -1,0 +1,18 @@
+{
+  "id": "a21_reg_compliance",
+  "name": "Regulatory Compliance",
+  "description": "Checks investment advice/products against regulatory rules via rule graphs and reasoning; detects violations and suggests compliance remediation.",
+  "capabilities": [
+    "compliance",
+    "regulatory",
+    "policy"
+  ],
+  "input_type": "compliance",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L4",
+  "team": "compliance",
+  "role_type": "system",
+  "default_enabled": true
+}

@@ -1,0 +1,18 @@
+{
+  "id": "a19_market_risk",
+  "name": "Market Risk Analyst",
+  "description": "Computes market price risk metrics (VaR/ES/volatility/Beta/drawdowns), liquidity and market-impact risk; performs scenario and stress testing.",
+  "capabilities": [
+    "risk",
+    "var",
+    "liquidity"
+  ],
+  "input_type": "risk",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L4",
+  "team": "risk",
+  "role_type": "system",
+  "default_enabled": true
+}

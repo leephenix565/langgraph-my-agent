@@ -1,0 +1,18 @@
+{
+  "id": "a14_single_stock_tech",
+  "name": "Single-Stock Technicals",
+  "description": "Performs stock-level technical analysis of K-line patterns, indicators, and price-volume relations; generates buy/sell signals (technical-only), backtests reliability, and shares actionable signals.",
+  "capabilities": [
+    "technical",
+    "equity",
+    "momentum"
+  ],
+  "input_type": "equity",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "quant",
+  "role_type": "system",
+  "default_enabled": true
+}

@@ -1,11 +1,13 @@
-"""LangGraph: Router -> Manager (broadcast) -> Parallel Agents -> Manager summary."""
+"""LangGraph: 4-layer Router -> Manager -> Agents -> Final summary."""
 
 from __future__ import annotations
 
 import json
+import os
 import re
 from datetime import UTC, datetime
-from typing import Dict, List, Optional
+from pathlib import Path
+from typing import Dict, List, Optional, Tuple
 
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langgraph.graph import StateGraph
@@ -13,18 +15,44 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
 from react_agent import prompts
-from react_agent.agents import AGENT_METADATA, AGENT_TOOLS, AgentOutput
+from react_agent.agents import (
+    AGENT_METADATA,
+    AGENT_TOOLS,
+    AgentOutput,
+    agents_by_layer,
+    load_metadata_from_dir,
+    register_agent,
+)
 from react_agent.context import Context
-from react_agent.default_agents import register_builtin_agents
+from react_agent.default_agents import _build_agent_tool, register_builtin_agents
+from react_agent.generic_agent import build_generic_agent_tool
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
 
-# Register builtin agents (news/filing/data/ecc). Extendable via scanning.
-register_builtin_agents()
+LAYER_ORDER: List[str] = ["L1", "L2", "L4", "L5"]
+DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L4": "Star", "L5": "Chain"}
+
+# Register agents: config/agents as primary source; built-ins optional via env.
+CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
+enable_builtin = os.environ.get("ENABLE_BUILTIN_AGENTS", "0") == "1"
+config_exists = CONFIG_AGENT_DIR.exists()
+if enable_builtin or not config_exists:
+    register_builtin_agents()
+if config_exists:
+    load_metadata_from_dir(CONFIG_AGENT_DIR)
+for aid, meta in list(AGENT_METADATA.items()):
+    if aid in AGENT_TOOLS:
+        continue
+    # Prefer LLM tool using description as profile; fallback to stub if missing description.
+    desc = (meta.description or "").strip()
+    if desc:
+        tool = _build_agent_tool(aid, desc, default_allow_search=True)
+    else:
+        tool = build_generic_agent_tool(aid, meta.description)
+    register_agent(meta, tool)
 
 AGENT_IDS: List[str] = list(AGENT_METADATA.keys())
 AGENT_NODE_NAMES: Dict[str, str] = {aid: f"agent_{aid}_node" for aid in AGENT_IDS}
-DEFAULT_PLAN: List[str] = [aid for aid in ["news", "data", "ecc", "filing"] if aid in AGENT_IDS] or AGENT_IDS[:3]
 
 
 def _get_latest_user_question(messages: List[AnyMessage]) -> str:
@@ -35,52 +63,161 @@ def _get_latest_user_question(messages: List[AnyMessage]) -> str:
     return get_message_text(messages[-1]) if messages else ""
 
 
-def _parse_router_plan(raw: str) -> List[str]:
-    """Parse router JSON, tolerate extra text/code blocks, ensure non-empty plan."""
+def _extract_json_str(text: str) -> Optional[str]:
+    """Best-effort extract a JSON object string; return None if not parseable."""
+    # First, try direct parse.
+    try:
+        json.loads(text)
+        return text
+    except Exception:
+        pass
 
-    def _extract_json_str(text: str) -> Optional[str]:
-        try:
-            json.loads(text)
-            return text
-        except Exception:
-            match = re.search(r"\{.*?\}", text, flags=re.S)
-            return match.group(0) if match else None
+    # Heuristic: use the substring between first '{' and last '}'.
+    first = text.find("{")
+    last = text.rfind("}")
+    if first == -1 or last == -1 or last <= first:
+        return None
+    candidate = text[first : last + 1]
+    try:
+        json.loads(candidate)
+        return candidate
+    except Exception:
+        return None
 
+
+def _normalize_mode(mode: str) -> str:
+    """Return a single valid mode (Star/Chain/Debate/Tree) with light tolerance."""
+    allowed = {"star", "chain", "debate", "tree"}
+    if not mode:
+        return "Star"
+    raw = str(mode).strip()
+    # Split by common separators if user/LLM returns joined string.
+    for sep in [",", ";", "|", "/"]:
+        if sep in raw:
+            raw = raw.split(sep)[0]
+            break
+    # Also handle accidental space-joined tokens.
+    raw = raw.strip().split()[0]
+    token = raw.lower()
+    if token in allowed:
+        return token.title()
+    return "Star"
+
+
+def _default_layer_plan() -> Tuple[Dict[str, List[str]], Dict[str, str]]:
+    plan: Dict[str, List[str]] = {}
+    modes: Dict[str, str] = {}
+    for layer in LAYER_ORDER:
+        ids = agents_by_layer(layer)
+        modes[layer] = DEFAULT_MODES.get(layer, "Star")
+        if not ids:
+            plan[layer] = []
+            continue
+        if layer == "L1":
+            plan[layer] = ids[:1]
+        elif layer == "L2":
+            plan[layer] = ids[: min(5, len(ids))]
+        elif layer == "L4":
+            plan[layer] = ids[: min(3, len(ids))]
+        else:  # L5
+            plan[layer] = ids[:1]
+    return plan, modes
+
+
+def _parse_router_layers(raw: str) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
+    """Parse router JSON into layer_plan/layer_mode with compatibility fallback."""
     json_str = _extract_json_str(raw)
     if not json_str:
-        return DEFAULT_PLAN
+        return _default_layer_plan()
     try:
         parsed = json.loads(json_str)
-        selected = parsed.get("selected", [])
     except Exception:
-        return DEFAULT_PLAN
+        return _default_layer_plan()
 
-    cleaned: List[str] = []
-    for agent_id in selected:
-        if agent_id in AGENT_IDS and agent_id not in cleaned:
-            cleaned.append(agent_id)
-    return cleaned or DEFAULT_PLAN
+    if not isinstance(parsed, dict):
+        return _default_layer_plan()
+
+    # Compatibility: old format {"selected":[...]}
+    if "layers" not in parsed and "selected" in parsed:
+        plan, modes = _default_layer_plan()
+        selected = [aid for aid in parsed.get("selected", []) if aid in agents_by_layer("L2")]
+        plan["L2"] = selected or plan["L2"]
+        modes["L2"] = "Star"
+        return plan, modes
+
+    layers_raw = parsed.get("layers")
+    if not isinstance(layers_raw, list):
+        return _default_layer_plan()
+
+    default_plan, default_modes = _default_layer_plan()
+
+    layer_plan: Dict[str, List[str]] = {}
+    layer_mode: Dict[str, str] = {}
+    for layer_entry in layers_raw:
+        if not isinstance(layer_entry, dict):
+            continue
+        layer = layer_entry.get("layer")
+        if not layer or layer not in LAYER_ORDER:
+            continue
+        mode = _normalize_mode(layer_entry.get("mode"))
+        selected_raw = layer_entry.get("selected", []) or []
+        selected: List[str] = []
+        for aid in selected_raw:
+            if aid in AGENT_METADATA and (AGENT_METADATA[aid].layer or "").upper() == layer and AGENT_METADATA[aid].default_enabled:
+                selected.append(aid)
+        # If router tried to pick names but all invalid, fall back to defaults for this layer.
+        if selected_raw and not selected:
+            selected = default_plan.get(layer, [])
+        if layer == "L2" and len(selected) > 5:
+            selected = selected[:5]
+        layer_plan[layer] = selected
+        layer_mode[layer] = mode
+
+    for layer in LAYER_ORDER:
+        layer_plan.setdefault(layer, default_plan.get(layer, []))
+        layer_mode.setdefault(layer, default_modes.get(layer, "Star"))
+
+    return layer_plan, layer_mode
+
+
+def _next_layer(current_layer: str) -> Optional[str]:
+    if current_layer not in LAYER_ORDER:
+        return None
+    idx = LAYER_ORDER.index(current_layer)
+    return LAYER_ORDER[idx + 1] if idx + 1 < len(LAYER_ORDER) else None
 
 
 async def router_node(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
-    """Router: produce plan only."""
+    """Router: produce per-layer plan and modes."""
     model = load_chat_model(runtime.context.model)
     question = _get_latest_user_question(list(state["messages"]))
+    agent_catalog = {layer: agents_by_layer(layer) for layer in LAYER_ORDER}
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
-        analyst_ids=", ".join(AGENT_IDS),
         system_time=datetime.now(tz=UTC).isoformat(),
+        agent_catalog=json.dumps(agent_catalog, ensure_ascii=False),
     )
     msgs = [{"role": "system", "content": system_prompt}, *state["messages"]]
-    response: AIMessage = await model.ainvoke(msgs)
-    raw_text = get_message_text(response)
+    try:
+        response: AIMessage = await model.ainvoke(msgs)
+        raw_text = get_message_text(response)
+    except Exception as exc:
+        response = AIMessage(content=f"[router fallback] {exc}")
+        raw_text = "{}"
     print("[ROUTER RAW OUTPUT]", raw_text)
-    plan = _parse_router_plan(raw_text) or DEFAULT_PLAN
+    layer_plan, layer_mode = _parse_router_layers(raw_text)
+    current_layer = LAYER_ORDER[0]
     return {
         "messages": [response],
-        "plan": plan,
+        "plan": layer_plan.get(current_layer, []),
+        "layer_plan": layer_plan,
+        "layer_mode": layer_mode,
+        "current_layer": current_layer,
+        "chain_cursor": 0,
+        "fanout_targets": [],
         "current_question": question,
+        "layer_done": {},
         # Signal a fresh turn so downstream merges clear old analyst_results.
         "analyst_results": {"__reset__": True},
     }
@@ -89,30 +226,100 @@ async def router_node(
 async def manager_broadcast(
     state: State, runtime: Runtime[Context]
 ) -> Command:
-    """Manager: fan-out tasks to all agents in plan."""
-    plan = state.get("plan", [])
-    question = state.get("current_question") or _get_latest_user_question(list(state["messages"]))
-    if not plan:
-        debug_msg = AIMessage(content="[manager_broadcast] no agents selected, skipping fan-out")
+    """Manager: dispatch within current layer according to mode."""
+    layer_plan = state.get("layer_plan", {})
+    layer_mode = state.get("layer_mode", {})
+    current_layer = state.get("current_layer") or LAYER_ORDER[0]
+    selected = layer_plan.get(current_layer, [])
+    mode = _normalize_mode(layer_mode.get(current_layer, DEFAULT_MODES.get(current_layer, "Star")))
+    results = state.get("analyst_results", {})
+    question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
+
+    remaining = [aid for aid in selected if aid not in results]
+    debug_msgs: List[AIMessage] = []
+
+    if not selected:
+        debug_msgs.append(
+            AIMessage(content=f"[manager_broadcast] layer {current_layer} empty -> skip")
+        )
         return Command(
             goto="manager_summary",
-            update={"messages": [debug_msg], "fanout_targets": plan},
+            update={
+                "messages": debug_msgs,
+                "plan": selected,
+                "fanout_targets": [],
+            },
         )
 
+    # Debate/Tree fallback to Star dispatch, but keep mode for visibility.
+    effective_mode = "Star" if mode in {"Debate", "Tree"} else mode
+    if effective_mode != mode:
+        debug_msgs.append(
+            AIMessage(content=f"[manager_broadcast] mode {mode} temporarily treated as Star for dispatch")
+        )
+
+    if effective_mode == "Chain":
+        if not remaining:
+            debug_msgs.append(
+                AIMessage(content=f"[manager_broadcast] layer {current_layer} chain complete")
+            )
+            return Command(
+                goto="manager_summary",
+                update={"messages": debug_msgs, "plan": selected, "fanout_targets": []},
+            )
+        next_id = remaining[0]
+        node_name = AGENT_NODE_NAMES.get(next_id)
+        if not node_name:
+            debug_msgs.append(
+                AIMessage(content=f"[manager_broadcast] missing node for {next_id}, skipping")
+            )
+            return Command(
+                goto="manager_summary",
+                update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
+            )
+        assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
+            question=question,
+            plan=", ".join(selected),
+            finished=", ".join(results.keys()) or "none",
+            next_id=next_id,
+            profile_label=AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id,
+            layer=current_layer,
+            mode=mode,
+        )
+        branch_state = dict(state)
+        branch_state["messages"] = [
+            *state["messages"],
+            HumanMessage(content=assignment_text),
+        ]
+        debug_msgs.append(
+            AIMessage(content=f"[manager_broadcast] chain dispatch -> {next_id} (layer {current_layer})")
+        )
+        return Command(
+            goto=[Send(node_name, branch_state)],
+            update={
+                "messages": debug_msgs,
+                "plan": selected,
+                "fanout_targets": [next_id],
+                "chain_cursor": selected.index(next_id),
+            },
+        )
+
+    # Star/Debate/Tree (treated as parallel) dispatch remaining agents.
     sends: List[Send] = []
-    debug_msg = AIMessage(content=f"[manager_broadcast] fan-out -> {', '.join(plan)}")
-    for agent_id in plan:
+    for agent_id in remaining:
         node_name = AGENT_NODE_NAMES.get(agent_id)
         if not node_name:
             continue
         assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
             question=question,
-            plan=", ".join(plan),
-            finished=", ".join(state.get("analyst_results", {}).keys()) or "none",
+            plan=", ".join(selected),
+            finished=", ".join(results.keys()) or "none",
             next_id=agent_id,
             profile_label=AGENT_METADATA.get(agent_id, None).description
             if agent_id in AGENT_METADATA
             else agent_id,
+            layer=current_layer,
+            mode=mode,
         )
         branch_state = dict(state)
         branch_state["messages"] = [
@@ -121,9 +328,15 @@ async def manager_broadcast(
         ]
         sends.append(Send(node_name, branch_state))
 
+    debug_msgs.append(
+        AIMessage(
+            content=f"[manager_broadcast] {mode} dispatch -> {', '.join(remaining) or 'none'} "
+            f"(layer {current_layer})"
+        )
+    )
     return Command(
         goto=sends or "manager_summary",
-        update={"messages": [debug_msg], "fanout_targets": plan},
+        update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
     )
 
 
@@ -134,12 +347,16 @@ def _build_agent_node(agent_id: str):
             return {}
         question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
         subtask = get_message_text(state["messages"][-1]) if state.get("messages") else ""
+        current_layer = state.get("current_layer") or ""
+        mode = _normalize_mode(
+            (state.get("layer_mode") or {}).get(current_layer, DEFAULT_MODES.get(current_layer, "Star"))
+        )
         agent_input = {
             "question": question,
             "subtask": subtask,
             "shared_context": state.get("analyst_results", {}),
             "history": [],
-            "tools_config": {"allow_search": True},
+            "tools_config": {"allow_search": True, "mode": mode},
         }
         output: AgentOutput = await tool.ainvoke(agent_input)
         analyst_results = dict(state.get("analyst_results", {}))
@@ -159,12 +376,39 @@ def _build_agent_node(agent_id: str):
 async def manager_summary(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
-    """Manager: integrate AgentOutputs; only answer when all done."""
-    plan = state.get("plan", [])
+    """Manager: integrate AgentOutputs; advance layers; only answer at L5."""
+    layer_plan = state.get("layer_plan", {})
+    layer_mode = state.get("layer_mode", {})
+    current_layer = state.get("current_layer") or LAYER_ORDER[0]
+    selected = layer_plan.get(current_layer, state.get("plan", []))
     analyst_results = state.get("analyst_results", {})
-    if len(analyst_results) < len(plan):
-        return {}
+    pending = [aid for aid in selected if aid not in analyst_results]
 
+    base_update: Dict[str, object] = {"plan": selected}
+
+    if selected and pending:
+        # Chain: dispatch next; Star: wait.
+        chain_cursor = len(selected) - len(pending)
+        return {**base_update, "chain_cursor": chain_cursor}
+
+    # Mark current layer done and advance if not final.
+    layer_done = dict(state.get("layer_done", {}))
+    layer_done[current_layer] = True
+    next_layer = _next_layer(current_layer)
+    if next_layer:
+        debug_msg = AIMessage(
+            content=f"[manager_summary] layer {current_layer} done -> advance to {next_layer}"
+        )
+        return {
+            "messages": [debug_msg],
+            "layer_done": layer_done,
+            "current_layer": next_layer,
+            "plan": layer_plan.get(next_layer, []),
+            "chain_cursor": 0,
+            "fanout_targets": [],
+        }
+
+    # Final layer (L5) completed: produce user-facing summary.
     model = load_chat_model(runtime.context.model)
     system_prompt = runtime.context.system_prompt.format(
         system_time=datetime.now(tz=UTC).isoformat()
@@ -172,7 +416,8 @@ async def manager_summary(
     question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
     user_msg = prompts.MANAGER_SUMMARY_USER.format(
         question=question,
-        plan=", ".join(plan),
+        layer_plan=layer_plan,
+        layer_mode=layer_mode,
         analyst_results=analyst_results,
     )
     base_msgs = [
@@ -180,21 +425,52 @@ async def manager_summary(
         *state.get("messages", []),
         {"role": "user", "content": user_msg},
     ]
-    response: AIMessage = await model.ainvoke(base_msgs)
-    return {"messages": [response], "is_last_step": True}
+    try:
+        response: AIMessage = await model.ainvoke(base_msgs)
+    except Exception as exc:
+        summary_text = json.dumps(
+            {
+                "question": question,
+                "layer_plan": layer_plan,
+                "layer_mode": layer_mode,
+                "analyst_results": analyst_results,
+                "warning": f"LLM summary failed: {exc}",
+            },
+            ensure_ascii=False,
+            indent=2,
+        )
+        response = AIMessage(content=summary_text)
+    return {"messages": [response], "is_last_step": True, "layer_done": layer_done}
 
 
 def route_from_manager_summary(state: State) -> str:
-    """Route to noop until all planned agents have reported back."""
-    plan_len = len(state.get("plan", []))
-    result_len = len(state.get("analyst_results", {}))
-    if plan_len == 0:
+    """Route based on layer completion, chain mode, and finality."""
+    if state.get("is_last_step"):
         return "__end__"
-    return "__end__" if result_len >= plan_len else "noop"
+
+    current_layer = state.get("current_layer") or LAYER_ORDER[0]
+    layer_plan = state.get("layer_plan", {})
+    layer_mode = state.get("layer_mode", {})
+    analyst_results = state.get("analyst_results", {})
+    selected = state.get("plan", layer_plan.get(current_layer, []))
+    pending = [aid for aid in selected if aid not in analyst_results]
+    mode = _normalize_mode(layer_mode.get(current_layer, DEFAULT_MODES.get(current_layer, "Star")))
+
+    if pending:
+        if mode == "Chain":
+            return "manager_broadcast"
+        # For Star/Debate/Tree: broadcast once, then wait (noop) for parallel results.
+        already_fanned_out = bool(state.get("fanout_targets"))
+        return "noop" if already_fanned_out else "manager_broadcast"
+
+    # No pending in current layer: if not final layer, proceed to next dispatch.
+    if current_layer != "L5":
+        return "manager_broadcast"
+    return "__end__"
 
 
 async def noop(state: State, runtime: Runtime[Context]) -> Dict[str, object]:
-    """No-op placeholder when summary is invoked too early."""
+    """No-op placeholder when waiting for parallel results."""
     return {}
 
 
@@ -217,7 +493,7 @@ for node_name in AGENT_NODE_NAMES.values():
 builder.add_conditional_edges(
     "manager_summary",
     route_from_manager_summary,
-    {"__end__": "__end__", "noop": "noop"},
+    {"__end__": "__end__", "noop": "noop", "manager_broadcast": "manager_broadcast"},
 )
 
-graph = builder.compile(name="Router-Manager-Agent Demo (Parallel)")
+graph = builder.compile(name="Layered Router-Manager-Agent Demo (L1-L2-L4-L5)")

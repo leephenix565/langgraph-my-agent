@@ -1,0 +1,18 @@
+{
+  "id": "a11_equity_sentiment",
+  "name": "Equity Sentiment Analyst",
+  "description": "Tracks company-level news, filings interpretation, and social/media discourse; outputs stock sentiment thermometer and turning points for trading and risk use.",
+  "capabilities": [
+    "equity",
+    "sentiment",
+    "momentum"
+  ],
+  "input_type": "equity",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

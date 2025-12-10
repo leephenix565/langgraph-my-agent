@@ -1,0 +1,18 @@
+{
+  "id": "a17_client_profile",
+  "name": "Client Profiling Analyst",
+  "description": "Builds client risk profiles using KYC info, financial status, investment experience, and risk tolerance; links with portfolio and compliance layers for suitability checks.",
+  "capabilities": [
+    "kyc",
+    "suitability",
+    "profiling"
+  ],
+  "input_type": "client",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "client",
+  "role_type": "system",
+  "default_enabled": true
+}

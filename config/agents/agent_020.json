@@ -1,0 +1,18 @@
+{
+  "id": "a20_fundamental_risk",
+  "name": "Fundamental Risk Analyst",
+  "description": "Assesses fundamental risk: earnings quality, cash-flow health, leverage; applies Z-score, O-score, ESG/green risk frameworks to produce fundamental risk scores.",
+  "capabilities": [
+    "risk",
+    "fundamental",
+    "esg"
+  ],
+  "input_type": "risk",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L4",
+  "team": "risk",
+  "role_type": "system",
+  "default_enabled": true
+}

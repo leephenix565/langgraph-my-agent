@@ -1,0 +1,18 @@
+{
+  "id": "a01_cio_orchestrator",
+  "name": "CIO Orchestrator",
+  "description": "Acts as Chief Cognition Officer; ensures logical completeness and directional alignment of conclusions, convenes reviews, exercises veto for major risks, and adjusts agent weights and collaboration rules across layers.",
+  "capabilities": [
+    "orchestrate",
+    "prioritize",
+    "escalate"
+  ],
+  "input_type": "management",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L1",
+  "team": "management",
+  "role_type": "system",
+  "default_enabled": true
+}

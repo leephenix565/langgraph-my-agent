@@ -1,0 +1,18 @@
+{
+  "id": "a10_industry_sentiment",
+  "name": "Industry Sentiment Analyst",
+  "description": "Tracks industry-level policy and event flow; builds industry sentiment indices via topic modeling and sentiment aggregation; assesses impacts on industry fundamentals and valuation anchors.",
+  "capabilities": [
+    "industry",
+    "sentiment",
+    "news"
+  ],
+  "input_type": "industry",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

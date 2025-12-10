@@ -1,0 +1,18 @@
+{
+  "id": "a16_fund_economics",
+  "name": "Fundamental Economics Analyst",
+  "description": "Profiles funds and managers on performance, factor exposures, drawdowns, and style stability; supports product recommendations, asset allocation, and portfolio construction.",
+  "capabilities": [
+    "fundamental",
+    "economics",
+    "cashflow"
+  ],
+  "input_type": "finance",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "fundamental",
+  "role_type": "system",
+  "default_enabled": true
+}

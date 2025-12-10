@@ -1,0 +1,18 @@
+{
+  "id": "a03_macro_policy",
+  "name": "Macro Policy Analyst",
+  "description": "Analyzes macro cycles (recovery/overheating/stagflation/recession) and monetary/fiscal/regulatory shifts; builds macro factors (rates, inflation, growth, liquidity, risk premium) to supply scenarios to industry, company, and risk layers.",
+  "capabilities": [
+    "macro",
+    "policy",
+    "liquidity"
+  ],
+  "input_type": "macro",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

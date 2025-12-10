@@ -1,0 +1,18 @@
+{
+  "id": "a07_financial_modeling",
+  "name": "Financial Modeling Analyst",
+  "description": "Performs ratio analysis (profitability, solvency, efficiency) and applies DCF/PE/PB/EV-EBITDA frameworks; outputs valuation ranges/percentiles and financial risk warnings (Z-score, Ohlson O-score).",
+  "capabilities": [
+    "modeling",
+    "valuation",
+    "ratios"
+  ],
+  "input_type": "finance",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "fundamental",
+  "role_type": "system",
+  "default_enabled": true
+}

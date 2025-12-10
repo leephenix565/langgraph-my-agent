@@ -1,0 +1,18 @@
+{
+  "id": "a23_portfolio_opt",
+  "name": "Portfolio Optimization",
+  "description": "Integrates valuation, risk, sentiment, technical, and flow factors to optimize allocations; uses mean-variance/risk-parity/robust optimization with VaR/ES constraints; runs backtests and outputs standard portfolios by risk level.",
+  "capabilities": [
+    "allocation",
+    "hedging",
+    "backtest"
+  ],
+  "input_type": "portfolio",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L4",
+  "team": "portfolio",
+  "role_type": "system",
+  "default_enabled": true
+}

@@ -1,4 +1,4 @@
-"""内置 Analyst Agent 工具实现，符合统一 AgentInput/Output 协议。"""
+"""Built-in analyst agent tools and registrations."""
 
 from __future__ import annotations
 
@@ -19,7 +19,7 @@ from react_agent.utils import get_message_text, load_chat_model
 
 
 async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, Any]]) -> AIMessage:
-    """执行 LLM + 工具循环，直到返回不含 tool_calls 的 AIMessage。"""
+    """Run the tool-calling loop until no tool_calls remain."""
     runtime = get_runtime(Context)
     model = load_chat_model(runtime.context.model).bind_tools(tool_list)
     msgs: List[Any] = list(messages)
@@ -41,7 +41,7 @@ async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, A
 
 
 def _parse_agent_output(raw: str) -> AgentOutput:
-    """解析 Agent 输出 JSON，兜底返回完整字段。"""
+    """Parse Agent output JSON with a tolerant fallback."""
 
     def _extract_json(text: str) -> str | None:
         try:
@@ -53,10 +53,11 @@ def _parse_agent_output(raw: str) -> AgentOutput:
 
     json_str = _extract_json(raw) or ""
     default: AgentOutput = {
-        "analysis": raw.strip(),
+        "analysis": f"[PARSE_FALLBACK] {raw.strip()}",
         "key_points": [],
         "evidence": [],
         "confidence": 0.5,
+        "parse_ok": False,
     }
     if not json_str:
         return default
@@ -67,13 +68,14 @@ def _parse_agent_output(raw: str) -> AgentOutput:
             "key_points": parsed.get("key_points", default["key_points"]),
             "evidence": parsed.get("evidence", default["evidence"]),
             "confidence": float(parsed.get("confidence", default["confidence"])),
+            "parse_ok": True,
         }
     except Exception:
         return default
 
 
-def _build_agent_tool(agent_id: str, profile: str) -> BaseTool:
-    """生成符合协议的 Agent 工具。"""
+def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool = False) -> BaseTool:
+    """Build a tool that conforms to AgentInput/Output."""
 
     @tool(f"agent_{agent_id}")
     async def _agent_tool(
@@ -83,14 +85,14 @@ def _build_agent_tool(agent_id: str, profile: str) -> BaseTool:
         history: List[Dict[str, Any]] | None = None,
         tools_config: Dict[str, Any] | None = None,
     ) -> AgentOutput:
-        """接受标准 AgentInput，返回标准 AgentOutput。"""
+        """Handle AgentInput and emit AgentOutput."""
 
         shared_context = shared_context or {}
         history = history or []
         tools_config = tools_config or {}
 
         system_prompt = prompts.ANALYST_SYSTEM_PROMPT.format(profile=profile)
-        system_prompt += "\n请严格输出 JSON，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)。"
+        system_prompt += "\n请使用 JSON 输出，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)"
 
         user_content = json.dumps(
             {
@@ -107,7 +109,7 @@ def _build_agent_tool(agent_id: str, profile: str) -> BaseTool:
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
-        allow_search = tools_config.get("allow_search", True)
+        allow_search = tools_config.get("allow_search", default_allow_search)
         tool_list = [tavily_search] if allow_search else []
         response = await _call_with_tools(tool_list or [], base_msgs)
         return _parse_agent_output(get_message_text(response))
@@ -116,7 +118,7 @@ def _build_agent_tool(agent_id: str, profile: str) -> BaseTool:
 
 
 def register_builtin_agents() -> None:
-    """注册四个内置分析 Agent。"""
+    """Register the four built-in analyst Agents (legacy default set)."""
     for agent_id, profile in prompts.ANALYST_PROFILES.items():
         tool = _build_agent_tool(agent_id, profile)
         meta = AgentMetadata(
@@ -128,5 +130,9 @@ def register_builtin_agents() -> None:
             latency_level="medium",
             cost_level="normal",
             version="v0.1",
+            layer="L2",
+            team="builtin",
+            role_type="system",
+            default_enabled=True,
         )
         register_agent(meta, tool)

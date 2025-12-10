@@ -1,0 +1,18 @@
+{
+  "id": "a12_liquidity_flow",
+  "name": "Liquidity & Flow Analyst",
+  "description": "Analyzes capital-flow sentiment using northbound/southbound/institutional vs retail flows and microstructure metrics (turnover, order book imbalance, Amihud); builds greed/fear indices and capital sentiment factors.",
+  "capabilities": [
+    "liquidity",
+    "flow",
+    "market"
+  ],
+  "input_type": "market",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "market",
+  "role_type": "system",
+  "default_enabled": true
+}

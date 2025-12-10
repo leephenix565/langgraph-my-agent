@@ -1,0 +1,18 @@
+{
+  "id": "a09_macro_sentiment",
+  "name": "Macro Sentiment Monitor",
+  "description": "Monitors macro sentiment from policy commentary, economic outlook, and geopolitics; extracts polarity/uncertainty indices and builds macro sentiment heat indicators for macro and risk agents.",
+  "capabilities": [
+    "sentiment",
+    "macro",
+    "monitor"
+  ],
+  "input_type": "macro",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

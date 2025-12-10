@@ -1,0 +1,18 @@
+{
+  "id": "a02_task_router",
+  "name": "Task Decomposer",
+  "description": "Parses user asks into tasks with intent recognition; chooses collaboration modes (Star/Chain/Debate/CoT), generates routing traces, and invokes RL/router policy with rule-based fallbacks.",
+  "capabilities": [
+    "decompose",
+    "route",
+    "plan"
+  ],
+  "input_type": "management",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L1",
+  "team": "management",
+  "role_type": "system",
+  "default_enabled": true
+}

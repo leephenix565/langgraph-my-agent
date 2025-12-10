@@ -37,3 +37,8 @@ class State(InputState, total=False):
     is_last_step: bool
     current_question: str
     fanout_targets: List[str]
+    layer_plan: Dict[str, List[str]]
+    layer_mode: Dict[str, str]
+    current_layer: str
+    layer_done: Dict[str, bool]
+    chain_cursor: int

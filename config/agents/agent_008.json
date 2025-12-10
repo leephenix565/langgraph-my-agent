@@ -1,0 +1,18 @@
+{
+  "id": "a08_tech_due_diligence",
+  "name": "Tech & Innovation Analyst",
+  "description": "Values hard-tech/innovation firms using technology roadmap, patent barriers, R&D intensity, and TRL; builds scenario-tree valuation with sensitivity to key assumptions.",
+  "capabilities": [
+    "tech",
+    "innovation",
+    "moat"
+  ],
+  "input_type": "technology",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "technology",
+  "role_type": "system",
+  "default_enabled": true
+}
