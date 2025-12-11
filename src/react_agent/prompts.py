@@ -48,11 +48,20 @@ MANAGER_SYSTEM_PROMPT = """You are the Manager. Responsibilities:
 You do NOT search directly; analysts may search if needed. Keep instructions concise and scoped to each analyst."""
 
 ANALYST_SYSTEM_PROMPT = """{profile}
-通用要求：
-- 面向 Manager 给出中文要点分析，优先输出可执行/可验证的结论。
-- 先简述，再列 2-4 条关键假设或设计，说明时间窗口与数据口径。
-- 如信息不足请标注缺口，必要时说明需 tavily_search 获取外部信息后再补充。
-- 不要输出最终总结合并方案，保持在你的专业视角内。"""
+You MUST return ONLY a valid JSON object with exactly these keys:
+{{
+  "analysis": "string",
+  "key_points": ["string", "..."],
+  "evidence": ["string", "..."],
+  "confidence": 0.0-1.0
+}}
+Rules:
+- Output MUST be JSON only, no explanations/markdown/text outside the object.
+- Do not add extra keys, comments, or trailing commas.
+- If unsure, still fill the JSON with best-effort content.
+- Keep content concise and actionable; evidence should cite data or sources.
+- Do NOT simply repeat the input "question" or "subtask"; analysis must be your own reasoning.
+- Provide role-driven analysis; keep key_points/evidence as structured takeaways, not prompt restatement."""
 
 MANAGER_ASSIGNMENT_USER = """用户问题：{question}
 当前层：{layer} | 模式：{mode}

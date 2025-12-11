@@ -94,7 +94,12 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
         system_prompt = prompts.ANALYST_SYSTEM_PROMPT.format(profile=profile)
         system_prompt += "\n请使用 JSON 输出，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)"
 
-        user_content = json.dumps(
+        prefix = (
+            "Following is your task context in JSON. Read the question and subtask, use shared_context if helpful.\n"
+            "- Do NOT repeat the subtask verbatim; provide your own analysis.\n"
+            "- Output exactly one JSON object with analysis/key_points/evidence/confidence.\n\n"
+        )
+        user_content = prefix + json.dumps(
             {
                 "question": question,
                 "subtask": subtask,
@@ -112,7 +117,22 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
         allow_search = tools_config.get("allow_search", default_allow_search)
         tool_list = [tavily_search] if allow_search else []
         response = await _call_with_tools(tool_list or [], base_msgs)
-        return _parse_agent_output(get_message_text(response))
+        first_parsed = _parse_agent_output(get_message_text(response))
+        if first_parsed.get("parse_ok", True):
+            return first_parsed
+
+        # Retry once with a strict JSON-only prompt.
+        retry_prompt = (
+            "只返回合法 JSON 对象，禁止解释或多余文字，键必须是 "
+            '{"analysis","key_points","evidence","confidence"}，值保持原语种内容。'
+        )
+        retry_msgs = [
+            {"role": "system", "content": retry_prompt},
+            {"role": "user", "content": user_content},
+        ]
+        retry_resp = await _call_with_tools(tool_list or [], retry_msgs)
+        retry_parsed = _parse_agent_output(get_message_text(retry_resp))
+        return retry_parsed
 
     return _agent_tool
 

@@ -382,6 +382,10 @@ async def manager_summary(
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     selected = layer_plan.get(current_layer, state.get("plan", []))
     analyst_results = state.get("analyst_results", {})
+    filtered_results = {
+        aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
+    }
+    filtered_out = len(analyst_results) - len(filtered_results)
     pending = [aid for aid in selected if aid not in analyst_results]
 
     base_update: Dict[str, object] = {"plan": selected}
@@ -414,12 +418,16 @@ async def manager_summary(
         system_time=datetime.now(tz=UTC).isoformat()
     )
     question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
+    meta_note = ""
+    if filtered_out > 0:
+        meta_note = f"\n[meta] 本轮有 {filtered_out} 条输出因解析失败未参与汇总。\n"
     user_msg = prompts.MANAGER_SUMMARY_USER.format(
         question=question,
         layer_plan=layer_plan,
         layer_mode=layer_mode,
-        analyst_results=analyst_results,
+        analyst_results=filtered_results,
     )
+    user_msg = meta_note + user_msg
     base_msgs = [
         {"role": "system", "content": system_prompt},
         *state.get("messages", []),
