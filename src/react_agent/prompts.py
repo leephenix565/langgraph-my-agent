@@ -63,16 +63,12 @@ Rules:
 - Do NOT simply repeat the input "question" or "subtask"; analysis must be your own reasoning.
 - Provide role-driven analysis; keep key_points/evidence as structured takeaways, not prompt restatement."""
 
-MANAGER_ASSIGNMENT_USER = """用户问题：{question}
+MANAGER_ASSIGNMENT_USER = """你现在是分析员 {next_id}（{profile_label}）。
+用户问题：{question}
 当前层：{layer} | 模式：{mode}
 本层候选：{plan}
 已完成：{finished}
-下一位分析员：{next_id}（{profile_label}）
-请用 2-4 句话给该分析员下达任务，强调：
-- 需关注的角度/颗粒度
-- 必答要点或指标
-- 推荐使用的数据/工具（如需检索可用 tavily_search）
-只输出指令，不要输出最终答案。"""
+请直接完成你的分析，输出核心结论、关键要点和指标；不要复述上面的描述，也不要只写派工指令。如果需要外部信息，可使用 tavily_search 获取并消化后纳入分析。"""
 
 MANAGER_SUMMARY_USER = """用户问题：{question}
 四层计划：{layer_plan}
