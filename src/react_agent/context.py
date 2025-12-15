@@ -17,6 +17,10 @@ class Context:
         default="deepseek/deepseek-chat",
         metadata={"description": "Underlying chat model (provider/model)."},
     )
+    run_id: str = field(
+        default="",
+        metadata={"description": "Optional run identifier for tracing/logging."},
+    )
     system_prompt: str = field(
         default=prompts.MANAGER_SYSTEM_PROMPT,
         metadata={

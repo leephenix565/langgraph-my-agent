@@ -19,6 +19,7 @@ def build_generic_agent_tool(agent_id: str, description: str) -> Any:
         shared_context: Dict[str, Any] | None = None,
         history: List[Dict[str, Any]] | None = None,
         tools_config: Dict[str, Any] | None = None,
+        router_plan_summary: str | None = None,
     ) -> AgentOutput:
         """Auto-generated stub system agent."""
         shared_context = shared_context or {}

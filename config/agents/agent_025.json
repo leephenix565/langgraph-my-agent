@@ -1,7 +1,7 @@
 {
   "id": "a25_report_center",
   "name": "Report & Decision Center",
-  "description": "Aggregates L1-L3 outputs for integrated reasoning; produces structured reports (question → trace → intermediate analysis → conclusion → risk/compliance → suitability) with visuals such as valuation charts and risk radars for different audiences.",
+  "description": "Aggregates  outputs for integrated reasoning; produces structured reports (question → trace → intermediate analysis → conclusion → risk/compliance → suitability) with visuals such as valuation charts and risk radars for different audiences, based on previously gathered information.",
   "capabilities": [
     "report",
     "synthesis",

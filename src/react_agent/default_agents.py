@@ -21,10 +21,13 @@ from react_agent.utils import get_message_text, load_chat_model
 async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, Any]]) -> AIMessage:
     """Run the tool-calling loop until no tool_calls remain."""
     runtime = get_runtime(Context)
+    run_id = getattr(runtime.context, "run_id", "") or ""
+    base_metadata = {"run_id": run_id, "node_name": "agent_tool"}
+    base_tags = ["react_agent"] + ([f"run_id:{run_id}"] if run_id else [])
     model = load_chat_model(runtime.context.model).bind_tools(tool_list)
     msgs: List[Any] = list(messages)
     while True:
-        ai_msg: AIMessage = await model.ainvoke(msgs)
+        ai_msg: AIMessage = await model.ainvoke(msgs, config={"metadata": base_metadata, "tags": base_tags})
         if not ai_msg.tool_calls:
             return ai_msg
         tool_messages: List[ToolMessage] = []
@@ -32,7 +35,7 @@ async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, A
             tool_obj = next((t for t in tool_list if getattr(t, "name", "") == tc["name"]), None)
             if not tool_obj:
                 return ai_msg
-            result = await tool_obj.ainvoke(tc["args"])
+            result = await tool_obj.ainvoke(tc["args"], config={"metadata": base_metadata, "tags": base_tags})
             tool_messages.append(
                 ToolMessage(content=str(result), name=tc["name"], tool_call_id=tc["id"])
             )
@@ -84,6 +87,7 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
         shared_context: Dict[str, Any] | None = None,
         history: List[Dict[str, Any]] | None = None,
         tools_config: Dict[str, Any] | None = None,
+        router_plan_summary: str | None = None,
     ) -> AgentOutput:
         """Handle AgentInput and emit AgentOutput."""
 
@@ -91,8 +95,11 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
         history = history or []
         tools_config = tools_config or {}
 
-        system_prompt = prompts.ANALYST_SYSTEM_PROMPT.format(profile=profile)
-        system_prompt += "\n请使用 JSON 输出，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)"
+        if agent_id == "a01_cio_orchestrator":
+            system_prompt = prompts.ORCHESTRATOR_SYSTEM_PROMPT
+        else:
+            system_prompt = prompts.ANALYST_SYSTEM_PROMPT.format(profile=profile)
+            system_prompt += "\n请使用 JSON 输出，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)"
 
         prefix = (
             "Following is your task context in JSON. Read the question and subtask, use shared_context if helpful.\n"
@@ -106,6 +113,7 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
                 "shared_context": shared_context,
                 "history": history,
                 "tools_config": tools_config,
+                "router_plan_summary": router_plan_summary,
             },
             ensure_ascii=False,
         )

@@ -5,6 +5,9 @@ from __future__ import annotations
 import json
 import os
 import re
+import uuid
+import hashlib
+import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Dict, List, Optional, Tuple
@@ -26,11 +29,52 @@ from react_agent.agents import (
 from react_agent.context import Context
 from react_agent.default_agents import _build_agent_tool, register_builtin_agents
 from react_agent.generic_agent import build_generic_agent_tool
+from react_agent.run_logger import get_run_logger
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
 
 LAYER_ORDER: List[str] = ["L1", "L2", "L4", "L5"]
 DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L4": "Star", "L5": "Chain"}
+
+
+def _truncate(text: str, limit: int = 4000) -> str:
+    if not isinstance(text, str):
+        text = str(text)
+    return text if len(text) <= limit else text[: limit - 8] + "...[trunc]"
+
+
+def _summarize_router_plan(layer_plan: Dict[str, List[str]], layer_mode: Dict[str, str], limit: int = 800) -> str:
+    """Compact, readable summary like 'L2(Star): a03, a09' per line."""
+    lines: List[str] = []
+    for layer in LAYER_ORDER:
+        mode = _normalize_mode(layer_mode.get(layer, DEFAULT_MODES.get(layer, "Star")))
+        agents = layer_plan.get(layer, [])
+        agent_str = ", ".join(agents) if agents else "none"
+        lines.append(f"{layer}({mode}): {agent_str}")
+    text = "\n".join(lines)
+    # Truncate by lines to avoid breaking readability mid-line.
+    if len(text) <= limit:
+        return text
+    truncated = []
+    total = 0
+    for line in lines:
+        if total + len(line) + 1 > limit:
+            break
+        truncated.append(line)
+        total += len(line) + 1
+    return "\n".join(truncated) + "\n...[trunc]"
+
+
+def _agent_error_output(agent_id: str, exc: Exception) -> AgentOutput:
+    """Construct a structured fail-soft AgentOutput for non-cancel errors."""
+    summary = f"{type(exc).__name__}: {_truncate(str(exc), 500)}"
+    return {
+        "analysis": f"[AGENT_ERROR] {summary}",
+        "key_points": [],
+        "evidence": [],
+        "confidence": 0.0,
+        "parse_ok": False,
+    }
 
 # Register agents: config/agents as primary source; built-ins optional via env.
 CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
@@ -46,6 +90,11 @@ for aid, meta in list(AGENT_METADATA.items()):
     # Prefer LLM tool using description as profile; fallback to stub if missing description.
     desc = (meta.description or "").strip()
     if desc:
+        if aid == "a01_cio_orchestrator":
+            desc = (
+                f"{desc}\n[Router alignment] 严格根据 router_plan_summary 执行任务拆解，"
+                "不得新增/删除 agent，只能解释既定分工、补充验收点与风险门禁。"
+            )
         tool = _build_agent_tool(aid, desc, default_allow_search=True)
     else:
         tool = build_generic_agent_tool(aid, meta.description)
@@ -193,6 +242,9 @@ async def router_node(
     """Router: produce per-layer plan and modes."""
     model = load_chat_model(runtime.context.model)
     question = _get_latest_user_question(list(state["messages"]))
+    run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
+    runtime.context.run_id = run_id
+    logger = get_run_logger(run_id)
     agent_catalog = {layer: agents_by_layer(layer) for layer in LAYER_ORDER}
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
         system_time=datetime.now(tz=UTC).isoformat(),
@@ -200,14 +252,35 @@ async def router_node(
     )
     msgs = [{"role": "system", "content": system_prompt}, *state["messages"]]
     try:
-        response: AIMessage = await model.ainvoke(msgs)
+        metadata = {
+            "run_id": run_id,
+            "layer": "L1",
+            "mode": DEFAULT_MODES.get("L1", "Chain"),
+            "node_name": "router",
+            "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
+        }
+        tags = ["react_agent", f"run_id:{run_id}", "layer:L1"]
+        response: AIMessage = await model.ainvoke(msgs, config={"metadata": metadata, "tags": tags})
         raw_text = get_message_text(response)
     except Exception as exc:
         response = AIMessage(content=f"[router fallback] {exc}")
         raw_text = "{}"
     print("[ROUTER RAW OUTPUT]", raw_text)
+    logger.log_event(
+        "router_decision",
+        question=_truncate(question),
+        raw=_truncate(raw_text),
+    )
     layer_plan, layer_mode = _parse_router_layers(raw_text)
     current_layer = LAYER_ORDER[0]
+    logger.log_event(
+        "run_start",
+        question=_truncate(question),
+        current_layer=current_layer,
+        run_id=run_id,
+        layer_plan=_truncate(layer_plan),
+        layer_mode=layer_mode,
+    )
     return {
         "messages": [response],
         "plan": layer_plan.get(current_layer, []),
@@ -218,6 +291,7 @@ async def router_node(
         "fanout_targets": [],
         "current_question": question,
         "layer_done": {},
+        "run_id": run_id,
         # Signal a fresh turn so downstream merges clear old analyst_results.
         "analyst_results": {"__reset__": True},
     }
@@ -234,6 +308,8 @@ async def manager_broadcast(
     mode = _normalize_mode(layer_mode.get(current_layer, DEFAULT_MODES.get(current_layer, "Star")))
     results = state.get("analyst_results", {})
     question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
 
     remaining = [aid for aid in selected if aid not in results]
     debug_msgs: List[AIMessage] = []
@@ -250,6 +326,14 @@ async def manager_broadcast(
                 "fanout_targets": [],
             },
         )
+    logger.log_event(
+        "manager_broadcast",
+        current_layer=current_layer,
+        mode=mode,
+        selected=selected,
+        remaining=remaining,
+        pending=[aid for aid in selected if aid not in results],
+    )
 
     # Debate/Tree fallback to Star dispatch, but keep mode for visibility.
     effective_mode = "Star" if mode in {"Debate", "Tree"} else mode
@@ -277,15 +361,21 @@ async def manager_broadcast(
                 goto="manager_summary",
                 update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
             )
-        assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
-            question=question,
-            plan=", ".join(selected),
-            finished=", ".join(results.keys()) or "none",
-            next_id=next_id,
-            profile_label=AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id,
-            layer=current_layer,
-            mode=mode,
-        )
+        if next_id == "a01_cio_orchestrator":
+            assignment_text = prompts.MANAGER_ASSIGNMENT_ORCHESTRATOR.format(
+                question=question,
+                router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
+            )
+        else:
+            assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
+                question=question,
+                plan=", ".join(selected),
+                finished=", ".join(results.keys()) or "none",
+                next_id=next_id,
+                profile_label=AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id,
+                layer=current_layer,
+                mode=mode,
+            )
         branch_state = dict(state)
         branch_state["messages"] = [
             *state["messages"],
@@ -310,17 +400,23 @@ async def manager_broadcast(
         node_name = AGENT_NODE_NAMES.get(agent_id)
         if not node_name:
             continue
-        assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
-            question=question,
-            plan=", ".join(selected),
-            finished=", ".join(results.keys()) or "none",
-            next_id=agent_id,
-            profile_label=AGENT_METADATA.get(agent_id, None).description
-            if agent_id in AGENT_METADATA
-            else agent_id,
-            layer=current_layer,
-            mode=mode,
-        )
+        if agent_id == "a01_cio_orchestrator":
+            assignment_text = prompts.MANAGER_ASSIGNMENT_ORCHESTRATOR.format(
+                question=question,
+                router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
+            )
+        else:
+            assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
+                question=question,
+                plan=", ".join(selected),
+                finished=", ".join(results.keys()) or "none",
+                next_id=agent_id,
+                profile_label=AGENT_METADATA.get(agent_id, None).description
+                if agent_id in AGENT_METADATA
+                else agent_id,
+                layer=current_layer,
+                mode=mode,
+            )
         branch_state = dict(state)
         branch_state["messages"] = [
             *state["messages"],
@@ -351,16 +447,62 @@ def _build_agent_node(agent_id: str):
         mode = _normalize_mode(
             (state.get("layer_mode") or {}).get(current_layer, DEFAULT_MODES.get(current_layer, "Star"))
         )
+        run_id = state.get("run_id") or runtime.context.run_id or ""
+        logger = get_run_logger(run_id)
+        logger.log_event(
+            "agent_start",
+            agent_id=agent_id,
+            layer=current_layer,
+            mode=mode,
+            subtask=_truncate(subtask),
+        )
         agent_input = {
             "question": question,
             "subtask": subtask,
             "shared_context": state.get("analyst_results", {}),
             "history": [],
-            "tools_config": {"allow_search": True, "mode": mode},
+            "tools_config": {
+                "allow_search": False if agent_id == "a01_cio_orchestrator" else True,
+                "mode": mode,
+            },
+            "router_plan_summary": _summarize_router_plan(
+                state.get("layer_plan", {}), state.get("layer_mode", {})
+            ),
         }
-        output: AgentOutput = await tool.ainvoke(agent_input)
+        metadata = {
+            "run_id": run_id,
+            "layer": current_layer,
+            "mode": mode,
+            "node_name": f"agent_{agent_id}_node",
+            "agent_id": agent_id,
+            "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
+        }
+        tags = ["react_agent", f"run_id:{run_id}", f"layer:{current_layer}"]
+        try:
+            output: AgentOutput = await tool.ainvoke(agent_input, config={"metadata": metadata, "tags": tags})
+        except asyncio.CancelledError as exc:
+            logger.log_event("agent_cancelled", agent_id=agent_id, layer=current_layer, mode=mode)
+            raise exc
+        except Exception as exc:
+            logger.log_event(
+                "agent_error",
+                agent_id=agent_id,
+                layer=current_layer,
+                mode=mode,
+                error_type=type(exc).__name__,
+                error=str(exc),
+            )
+            output = _agent_error_output(agent_id, exc)
         analyst_results = dict(state.get("analyst_results", {}))
         analyst_results[agent_id] = output
+        logger.log_event(
+            "agent_end",
+            agent_id=agent_id,
+            layer=current_layer,
+            mode=mode,
+            parse_ok=output.get("parse_ok"),
+            confidence=output.get("confidence"),
+        )
         ai_msg = AIMessage(
             content=json.dumps({"agent_id": agent_id, "output": output}, ensure_ascii=False, indent=2)
         )
@@ -387,6 +529,15 @@ async def manager_summary(
     }
     filtered_out = len(analyst_results) - len(filtered_results)
     pending = [aid for aid in selected if aid not in analyst_results]
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    logger.log_event(
+        "summary_start",
+        current_layer=current_layer,
+        pending=pending,
+        results=list(filtered_results.keys()),
+        filtered_out=filtered_out,
+    )
 
     base_update: Dict[str, object] = {"plan": selected}
 
@@ -402,6 +553,13 @@ async def manager_summary(
     if next_layer:
         debug_msg = AIMessage(
             content=f"[manager_summary] layer {current_layer} done -> advance to {next_layer}"
+        )
+        logger.log_event(
+            "summary_end",
+            current_layer=current_layer,
+            filtered_out=filtered_out,
+            results=list(filtered_results.keys()),
+            next_layer=next_layer,
         )
         return {
             "messages": [debug_msg],
@@ -434,7 +592,15 @@ async def manager_summary(
         {"role": "user", "content": user_msg},
     ]
     try:
-        response: AIMessage = await model.ainvoke(base_msgs)
+        metadata = {
+            "run_id": run_id,
+            "layer": current_layer,
+            "mode": layer_mode.get(current_layer, ""),
+            "node_name": "manager_summary",
+            "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
+        }
+        tags = ["react_agent", f"run_id:{run_id}", f"layer:{current_layer}"]
+        response: AIMessage = await model.ainvoke(base_msgs, config={"metadata": metadata, "tags": tags})
     except Exception as exc:
         summary_text = json.dumps(
             {
@@ -448,6 +614,13 @@ async def manager_summary(
             indent=2,
         )
         response = AIMessage(content=summary_text)
+    logger.log_event(
+        "summary_end",
+        current_layer=current_layer,
+        filtered_out=filtered_out,
+        results=list(filtered_results.keys()),
+        summary=_truncate(get_message_text(response)),
+    )
     return {"messages": [response], "is_last_step": True, "layer_done": layer_done}
 
 

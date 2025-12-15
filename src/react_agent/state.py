@@ -34,6 +34,7 @@ class State(InputState, total=False):
 
     plan: List[str]
     analyst_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
+    run_id: str
     is_last_step: bool
     current_question: str
     fanout_targets: List[str]

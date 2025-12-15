@@ -89,4 +89,33 @@ You can find the latest (under construction) docs on [LangGraph](https://github.
 
 LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates.
 
+### Enable LangSmith tracing
+
+Set the following environment variables (e.g., in `.env`) to capture traces:
+
+```
+LANGSMITH_TRACING=true
+LANGSMITH_API_KEY=your_api_key
+# Optional
+LANGSMITH_PROJECT=your_project   # older releases may use LANGCHAIN_PROJECT
+LANGSMITH_HIDE_INPUTS=true
+LANGSMITH_HIDE_OUTPUTS=true
+```
+
+### xAI Grok configuration
+
+Set the model via a single source (Context.model / `MODEL` env):
+
+```
+MODEL=xai/grok-4-1-fast-non-reasoning-latest
+XAI_API_KEY=your_xai_api_key
+```
+
+To fall back to DeepSeek (default), use:
+
+```
+MODEL=deepseek/deepseek-chat
+```
+
+
 [^1]: https://python.langchain.com/docs/concepts/#tools
