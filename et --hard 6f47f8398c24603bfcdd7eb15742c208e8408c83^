@@ -1,0 +1,41 @@
+[33mcommit 6f47f8398c24603bfcdd7eb15742c208e8408c83[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32m25agent[m[33m)[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Tue Dec 16 13:06:20 2025 +0800
+
+    2025-1216-对齐router
+
+[33mcommit 7e22b933b7a86e3f66b6991504b2aa522ef49642[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Mon Dec 15 15:51:33 2025 +0800
+
+    12-15-开始调整部分agent角色
+
+[33mcommit 3d5ab5368b47816992cf43cf76deb9da7f3f3f9b[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Sat Dec 13 18:19:19 2025 +0800
+
+    初步-12-13
+
+[33mcommit 6668b14a260b7f6a784cf6adeb1d8ac21b0d2ba0[m[33m ([m[1;31morigin/25agent[m[33m)[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Thu Dec 11 17:37:55 2025 +0800
+
+    feat: 初步运行
+
+[33mcommit 8f4884edd6f1c9d476e137262dbedec4f9c8283c[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Wed Dec 10 21:37:32 2025 +0800
+
+    feat: 完成 25agent 初版核心功能和配置
+
+[33mcommit 3e52697dde154d558ebd6982439236a44685d087[m[33m ([m[1;33mtag: [m[1;33mv0.1-multiturn-stable[m[33m, [m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m
+Author: Li Sai <20611129580lisai@gmail.com>
+Date:   Sun Dec 7 18:31:14 2025 +0800
+
+    baseline: before fixing multi-turn routing bug
+
+[33mcommit 0fdd181320bd48735ef21c408240d46b160d0c99[m
+Author: leephenix565 <133622797+leephenix565@users.noreply.github.com>
+Date:   Thu Dec 4 13:51:54 2025 +0800
+
+    init: setup project structure

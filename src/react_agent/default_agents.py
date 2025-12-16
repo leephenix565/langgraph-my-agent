@@ -97,6 +97,8 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
 
         if agent_id == "a01_cio_orchestrator":
             system_prompt = prompts.ORCHESTRATOR_SYSTEM_PROMPT
+        elif agent_id == "a25_report_center":
+            system_prompt = prompts.REPORT_CENTER_SYSTEM_PROMPT
         else:
             system_prompt = prompts.ANALYST_SYSTEM_PROMPT.format(profile=profile)
             system_prompt += "\n请使用 JSON 输出，包含 analysis(str), key_points(list[str]), evidence(list[str]), confidence(float,0~1)"

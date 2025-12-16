@@ -369,6 +369,11 @@ async def manager_broadcast(
                 question=question,
                 router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
             )
+        elif next_id == "a25_report_center":
+            assignment_text = prompts.MANAGER_ASSIGNMENT_REPORT_CENTER.format(
+                question=question,
+                router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
+            )
         else:
             assignment_text = prompts.MANAGER_ASSIGNMENT_USER.format(
                 question=question,
@@ -405,6 +410,11 @@ async def manager_broadcast(
             continue
         if agent_id == "a01_cio_orchestrator":
             assignment_text = prompts.MANAGER_ASSIGNMENT_ORCHESTRATOR.format(
+                question=question,
+                router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
+            )
+        elif agent_id == "a25_report_center":
+            assignment_text = prompts.MANAGER_ASSIGNMENT_REPORT_CENTER.format(
                 question=question,
                 router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
             )
@@ -465,7 +475,7 @@ def _build_agent_node(agent_id: str):
             "shared_context": state.get("analyst_results", {}),
             "history": [],
             "tools_config": {
-                "allow_search": False if agent_id == "a01_cio_orchestrator" else True,
+                "allow_search": False if agent_id in {"a01_cio_orchestrator", "a25_report_center"} else True,
                 "mode": mode,
             },
             "router_plan_summary": _summarize_router_plan(
@@ -582,11 +592,20 @@ async def manager_summary(
     meta_note = ""
     if filtered_out > 0:
         meta_note = f"\n[meta] 本轮有 {filtered_out} 条输出因解析失败未参与汇总。\n"
+    a25_output = filtered_results.get("a25_report_center")
+    if a25_output is not None:
+        try:
+            a25_output = json.dumps(a25_output, ensure_ascii=False)
+        except Exception:
+            a25_output = str(a25_output)
+    else:
+        a25_output = ""
     user_msg = prompts.MANAGER_SUMMARY_USER.format(
         question=question,
         layer_plan=layer_plan,
         layer_mode=layer_mode,
         analyst_results=filtered_results,
+        a25_output=a25_output,
     )
     user_msg = meta_note + user_msg
     base_msgs = [
