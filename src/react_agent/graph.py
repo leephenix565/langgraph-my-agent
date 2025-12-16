@@ -100,8 +100,11 @@ for aid, meta in list(AGENT_METADATA.items()):
         tool = build_generic_agent_tool(aid, meta.description)
     register_agent(meta, tool)
 
-AGENT_IDS: List[str] = list(AGENT_METADATA.keys())
-AGENT_NODE_NAMES: Dict[str, str] = {aid: f"agent_{aid}_node" for aid in AGENT_IDS}
+include_disabled = os.environ.get("INCLUDE_DISABLED_AGENTS", "0") == "1"
+AGENT_IDS_FOR_NODES: List[str] = [
+    aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
+]
+AGENT_NODE_NAMES: Dict[str, str] = {aid: f"agent_{aid}_node" for aid in AGENT_IDS_FOR_NODES}
 
 
 def _get_latest_user_question(messages: List[AnyMessage]) -> str:

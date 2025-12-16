@@ -23,7 +23,7 @@
 - Context（`src/react_agent/context.py`）：`model`、`system_prompt`、`analyst_profiles`、`max_search_results`、`run_id`，支持环境变量覆盖（字段名大写）。
 
 ## 4. Agent 资产与注册
-- config/agents：25 个系统级角色，默认启用并绑定 LLM 工具（启用搜索）；描述缺失回退 stub。层分布：L1×2，L2×15，L4×7，L5×1。
+- config/agents：25 个系统级角色，默认启用并绑定 LLM 工具（启用搜索）；描述缺失回退 stub。层分布：L1×1（a02_task_router 默认关闭以避免双路由口，保留做对照/实验）、L2×15，L4×7，L5×1。
 - 内置 4 Analyst（可选）：news/filing/data/ecc（L2），需开关；缺少 config 目录时自动注册。
 - 注册顺序：先内置（按需）→ 加载 config 元数据 → 未绑定工具的角色：有描述用 `_build_agent_tool`，无描述用 `build_generic_agent_tool`。
 

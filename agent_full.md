@@ -37,7 +37,7 @@ Scope: current workspace (all recent fixes included)
 
 ## 3) Agent Assets
 - **Config agents** (`config/agents/agent_*.json`): 25 roles, enabled by default, bound to LLM tool unless `description` empty (then stub). Distribution:  
-  - L1×2: a01_cio_orchestrator, a02_task_router  
+  - L1×1: a01_cio_orchestrator  （a02_task_router 默认关闭，避免双路由角色；保留作对照/实验）  
   - L2×15: a03_macro_policy … a17_client_profile  
   - L4×7: a18_primary_secondary_valuation … a24_shared_services  
   - L5×1: a25_report_center
