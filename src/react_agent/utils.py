@@ -23,6 +23,11 @@ def load_chat_model(fully_specified_name: str) -> BaseChatModel:
     Args:
         fully_specified_name (str): String in the format 'provider/model'.
     """
+    if "/" not in fully_specified_name:
+        raise ValueError(
+            f"model must be in 'provider/model' format (e.g., 'xai/grok-4-1-fast-non-reasoning-latest'), "
+            f"got '{fully_specified_name}'"
+        )
     provider, model = fully_specified_name.split("/", maxsplit=1)
     try:
         return init_chat_model(model, model_provider=provider)
