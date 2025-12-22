@@ -11,7 +11,7 @@
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "v0.2",
-  "layer": "L4",
+  "layer": "L3",
   "team": "risk",
   "role_type": "system",
   "default_enabled": true

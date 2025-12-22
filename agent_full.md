@@ -4,13 +4,13 @@ Updated: 2025-12-11 14:52:58 +08:00
 Scope: current workspace (all recent fixes included)
 
 ## 1) Overview
-- Purpose: 4-layer (L1/L2/L4/L5) Router → Manager → Agents → Summary graph, ReAct-style iteration, ready for LangGraph Studio.
+- Purpose: 4-layer (L1/L2/L3/L4) Router → Manager → Agents → Summary graph, ReAct-style iteration, ready for LangGraph Studio.
 - Core file: `src/react_agent/graph.py` defines the graph; `config/agents` holds 25 system-level roles; optional built-in 4 analysts (news/filing/data/ecc) via `ENABLE_BUILTIN_AGENTS=1`.
 - Defaults: model `deepseek/deepseek-chat`; shared tool `tavily_search` (basic, max_results=5). Config agents now use LLM tools by default (not stubs), with search enabled; stub only if description is empty.
 
 ## 2) Flow & State
 1. **Input**: external `messages` only (latest Human as current question).
-2. **Router** (`router_node`): prompt enforces pure JSON `layers:[{layer,mode,selected}]`; compatible with legacy `{"selected":[...]}` (fills L2/Star). On parse failure, fallback to default plan (L1/L5=Chain, L2/L4=Star; selects L1:1, L2:5, L4:3, L5:1). Initializes `current_layer="L1"`, `chain_cursor=0`, `analyst_results={"__reset__": True}`.
+2. **Router** (`router_node`): prompt enforces pure JSON `layers:[{layer,mode,selected}]`; compatible with legacy `{"selected":[...]}` (fills L2/Star). On parse failure, fallback to default plan (L1/L4=Chain, L2/L3=Star; selects L1:1, L2:5, L3:3, L4:1). Initializes `current_layer="L1"`, `chain_cursor=0`, `analyst_results={"__reset__": True}`.
 3. **Manager dispatch** (`manager_broadcast`):  
    - Chain: send next agent in order.  
    - Star/Debate/Tree: parallel fan-out (Debate/Tree treated as Star for dispatch).  
@@ -22,11 +22,11 @@ Scope: current workspace (all recent fixes included)
 5. **Manager summary** (`manager_summary`):  
    - If pending and mode=Chain, update `chain_cursor` and wait.  
    - Else mark `layer_done`, advance `current_layer`, reset `fanout_targets`.  
-   - Final (L5) uses `Context.system_prompt` + `MANAGER_SUMMARY_USER`; filters out `parse_ok=False` entries and prepends meta note: `[meta] 本轮有 N 条输出因解析失败未参与汇总。`
+   - Final (L4) uses `Context.system_prompt` + `MANAGER_SUMMARY_USER`; filters out `parse_ok=False` entries and prepends meta note: `[meta] 本轮有 N 条输出因解析失败未参与汇总。`
 6. **Conditional routing** (`route_from_manager_summary`):  
    - Pending + Chain → `manager_broadcast`.  
    - Pending + Star/Debate/Tree → first time (fanout_targets empty) `manager_broadcast`, else `noop`.  
-   - No pending & not L5 → `manager_broadcast`; L5 → `__end__`.
+   - No pending & not L4 → `manager_broadcast`; L4 → `__end__`.
 7. **Graph edges**: `__start__` → router → manager_broadcast → agent_* → manager_summary → conditional (manager_broadcast/noop/__end__).
 
 ### State (src/react_agent/state.py)
@@ -39,8 +39,8 @@ Scope: current workspace (all recent fixes included)
 - **Config agents** (`config/agents/agent_*.json`): 25 roles, enabled by default, bound to LLM tool unless `description` empty (then stub). Distribution:  
   - L1×1: a01_cio_orchestrator  （a02_task_router 默认关闭，避免双路由角色；保留作对照/实验）  
   - L2×15: a03_macro_policy … a17_client_profile  
-  - L4×7: a18_primary_secondary_valuation … a24_shared_services  
-  - L5×1: a25_report_center
+  - L3×7: a18_primary_secondary_valuation … a24_shared_services  
+  - L4×1: a25_report_center
 - **Built-in analysts (optional)**: news/filing/data/ecc (L2), enabled via `ENABLE_BUILTIN_AGENTS=1` or missing config directory; support search.
 - **Registration order**: register built-ins (if enabled) → load config metadata → for each without tool: use `_build_agent_tool(desc, default_allow_search=True)` if description present; else fallback stub `build_generic_agent_tool` (marked `is_stub=True`).
 
@@ -60,7 +60,7 @@ Scope: current workspace (all recent fixes included)
 - Makefile: `make test`, `make integration_tests`.
 
 ## 6) Behavioral Notes
-- Debate/Tree are dispatch labels; execution equals Star (parallel); final answer only at L5.  
+- Debate/Tree are dispatch labels; execution equals Star (parallel); final answer only at L4.  
 - Router parse failures or bad formats fall back to default 4-layer plan; legacy `{"selected":[...]}` populates L2/Star.  
 - `analyst_results` merge clears on `{"__reset__": True}`.  
 - manager_summary filters out `parse_ok=False` outputs; meta note reports filtered count.  

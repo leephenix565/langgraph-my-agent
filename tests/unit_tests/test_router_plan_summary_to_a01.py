@@ -32,7 +32,7 @@ def test_router_plan_summary_passed_to_a01(monkeypatch) -> None:
         "analyst_results": {},
         "current_layer": "L1",
         "layer_mode": {"L1": "Chain"},
-        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03"], "L4": [], "L5": []},
+        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03"], "L3": [], "L4": []},
         "current_question": "q?",
     }
     runtime = types.SimpleNamespace(context=Context())

@@ -33,8 +33,10 @@ from react_agent.run_logger import get_run_logger
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
 
-LAYER_ORDER: List[str] = ["L1", "L2", "L4", "L5"]
-DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L4": "Star", "L5": "Chain"}
+LAYER_ORDER: List[str] = ["L1", "L2", "L3", "L4"]
+DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"}
+FINAL_LAYER: str = LAYER_ORDER[-1]
+LEGACY_LAYER_MAP: Dict[str, str] = {"L4": "L3", "L5": "L4"}
 
 
 def _truncate(text: str, limit: int = 4000) -> str:
@@ -169,9 +171,9 @@ def _default_layer_plan() -> Tuple[Dict[str, List[str]], Dict[str, str]]:
             plan[layer] = ids[:1]
         elif layer == "L2":
             plan[layer] = ids[: min(5, len(ids))]
-        elif layer == "L4":
+        elif layer == "L3":
             plan[layer] = ids[: min(3, len(ids))]
-        else:  # L5
+        else:  # Final layer
             plan[layer] = ids[:1]
     return plan, modes
 
@@ -202,6 +204,10 @@ def _parse_router_layers(raw: str) -> Tuple[Dict[str, List[str]], Dict[str, str]
         return _default_layer_plan()
 
     default_plan, default_modes = _default_layer_plan()
+    legacy_mode = any(
+        isinstance(entry, dict) and isinstance(entry.get("layer"), str) and entry.get("layer").strip() == "L5"
+        for entry in layers_raw
+    )
 
     layer_plan: Dict[str, List[str]] = {}
     layer_mode: Dict[str, str] = {}
@@ -209,6 +215,10 @@ def _parse_router_layers(raw: str) -> Tuple[Dict[str, List[str]], Dict[str, str]
         if not isinstance(layer_entry, dict):
             continue
         layer = layer_entry.get("layer")
+        if isinstance(layer, str):
+            layer = layer.strip()
+            if legacy_mode:
+                layer = LEGACY_LAYER_MAP.get(layer, layer)
         if not layer or layer not in LAYER_ORDER:
             continue
         mode = _normalize_mode(layer_entry.get("mode"))
@@ -531,7 +541,7 @@ def _build_agent_node(agent_id: str):
 async def manager_summary(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
-    """Manager: integrate AgentOutputs; advance layers; only answer at L5."""
+    """Manager: integrate AgentOutputs; advance layers; only answer at final layer."""
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
@@ -583,7 +593,7 @@ async def manager_summary(
             "fanout_targets": [],
         }
 
-    # Final layer (L5) completed: produce user-facing summary.
+    # Final layer completed: produce user-facing summary.
     model = load_chat_model(runtime.context.model)
     system_prompt = runtime.context.system_prompt.format(
         system_time=datetime.now(tz=UTC).isoformat()
@@ -667,7 +677,7 @@ def route_from_manager_summary(state: State) -> str:
         return "noop" if already_fanned_out else "manager_broadcast"
 
     # No pending in current layer: if not final layer, proceed to next dispatch.
-    if current_layer != "L5":
+    if current_layer != FINAL_LAYER:
         return "manager_broadcast"
     return "__end__"
 
@@ -699,4 +709,4 @@ builder.add_conditional_edges(
     {"__end__": "__end__", "noop": "noop", "manager_broadcast": "manager_broadcast"},
 )
 
-graph = builder.compile(name="Layered Router-Manager-Agent Demo (L1-L2-L4-L5)")
+graph = builder.compile(name="Layered Router-Manager-Agent Demo (L1-L2-L3-L4)")

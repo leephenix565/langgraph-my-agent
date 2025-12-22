@@ -11,7 +11,7 @@
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "v0.2",
-  "layer": "L5",
+  "layer": "L4",
   "team": "reporting",
   "role_type": "system",
   "default_enabled": true

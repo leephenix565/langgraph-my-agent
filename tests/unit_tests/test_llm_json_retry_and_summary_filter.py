@@ -52,9 +52,9 @@ def test_summary_filters_parse_fail(monkeypatch) -> None:
     monkeypatch.setattr("react_agent.utils.load_chat_model", lambda name: fm)
 
     state = {
-        "layer_plan": {"L5": []},
-        "layer_mode": {"L5": "Chain"},
-        "current_layer": "L5",
+        "layer_plan": {"L4": []},
+        "layer_mode": {"L4": "Chain"},
+        "current_layer": "L4",
         "plan": [],
         "analyst_results": {
             "ok": {"analysis": "keep", "key_points": [], "evidence": [], "confidence": 0.9, "parse_ok": True},

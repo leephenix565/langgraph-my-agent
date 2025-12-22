@@ -1,10 +1,10 @@
 - **L2 Research & Analysis Layer**
   - *Positioning*: Core productivity layer, containing experts in macroeconomics, industry, company fundamentals, commodities, funds, and sentiment.
-- **L4 Risk & Compliance Layer**
+- **L3 Risk & Compliance Layer**
   - *Positioning*: Gatekeeper, responsible for risk channel review, regulatory compliance, and suitability checks.
 - **L1 Management & Cognitive Layer**
   - *Positioning*: The brain of the system, responsible for task orchestration (Orchestrator) and final decision-making (CIO).
-- **L5 Execution & Generation Layer**
+- **L4 Execution & Generation Layer**
   - *Positioning*: The hands of the system, responsible for structured chain-of-thought recording and final report generation. :contentReference[oaicite:3]{index=3}  
 
 ### 2.2 MasRouter: Action Space of the Reinforcement Learning Router

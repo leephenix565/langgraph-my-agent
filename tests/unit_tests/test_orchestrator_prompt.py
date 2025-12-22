@@ -49,8 +49,8 @@ def test_orchestrator_uses_special_system_prompt(monkeypatch) -> None:
 def test_manager_assignment_for_a01_is_decomposition(monkeypatch) -> None:
     # Ensure manager_broadcast uses the orchestrator assignment template.
     state = {
-        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_policy"], "L4": [], "L5": []},
-        "layer_mode": {"L1": "Chain", "L2": "Star", "L4": "Star", "L5": "Chain"},
+        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_policy"], "L3": [], "L4": []},
+        "layer_mode": {"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"},
         "current_layer": "L1",
         "plan": ["a01_cio_orchestrator"],
         "analyst_results": {},

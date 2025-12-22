@@ -29,9 +29,9 @@ def test_a25_assignment_and_allow_search(monkeypatch) -> None:
 
     # Star branch path
     state = {
-        "layer_plan": {"L5": ["a25_report_center"]},
-        "layer_mode": {"L5": "Star"},
-        "current_layer": "L5",
+        "layer_plan": {"L4": ["a25_report_center"]},
+        "layer_mode": {"L4": "Star"},
+        "current_layer": "L4",
         "plan": ["a25_report_center"],
         "analyst_results": {},
         "messages": [],

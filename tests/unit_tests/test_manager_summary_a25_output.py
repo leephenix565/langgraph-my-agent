@@ -19,9 +19,9 @@ class FakeModel:
 
 def _mk_state(parse_ok: bool = True) -> dict:
     return {
-        "layer_plan": {"L5": ["a25_report_center"]},
-        "layer_mode": {"L5": "Chain"},
-        "current_layer": "L5",
+        "layer_plan": {"L4": ["a25_report_center"]},
+        "layer_mode": {"L4": "Chain"},
+        "current_layer": "L4",
         "plan": ["a25_report_center"],
         "analyst_results": {
             "a25_report_center": {
@@ -50,7 +50,7 @@ def test_manager_summary_always_uses_manager_llm_even_when_a25_ok(monkeypatch) -
     assert fm.last_msgs is not None
     user_msg = fm.last_msgs[-1].content  # HumanMessage.content
     assert "a25_report_center" in user_msg
-    assert "L5 Draft" in user_msg or "L5" in user_msg
+    assert "L4 Draft" in user_msg or "L4" in user_msg
 
 
 def test_manager_summary_fallback_when_a25_invalid(monkeypatch) -> None:
