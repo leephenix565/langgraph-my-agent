@@ -1,3 +1,6 @@
+import types
+
+from react_agent.context import Context
 from react_agent.graph import _default_layer_plan, _parse_router_layers
 from react_agent.graph import route_from_manager_summary
 
@@ -90,7 +93,8 @@ def test_manager_summary_advance_clears_fanout_targets() -> None:
     import anyio
     from react_agent.graph import manager_summary
 
-    res = anyio.run(manager_summary, state, None)  # type: ignore[arg-type]
+    runtime = types.SimpleNamespace(context=Context())
+    res = anyio.run(manager_summary, state, runtime)  # type: ignore[arg-type]
     assert res["current_layer"] == "L2"
     assert res.get("fanout_targets") == []
 

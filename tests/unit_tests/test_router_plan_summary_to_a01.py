@@ -3,7 +3,7 @@ import types
 import anyio
 from langchain_core.messages import HumanMessage
 
-from react_agent import graph
+import react_agent.graph as graph_module
 from react_agent.context import Context
 
 
@@ -25,7 +25,7 @@ class CaptureTool:
 def test_router_plan_summary_passed_to_a01(monkeypatch) -> None:
     agent_id = "a01_cio_orchestrator"
     tool = CaptureTool()
-    monkeypatch.setitem(graph.AGENT_TOOLS, agent_id, tool)
+    monkeypatch.setitem(graph_module.AGENT_TOOLS, agent_id, tool)
 
     state = {
         "messages": [HumanMessage(content="subtask text")],
@@ -37,7 +37,7 @@ def test_router_plan_summary_passed_to_a01(monkeypatch) -> None:
     }
     runtime = types.SimpleNamespace(context=Context())
 
-    node = graph._build_agent_node(agent_id)
+    node = graph_module._build_agent_node(agent_id)
     _ = anyio.run(node, state, runtime)  # type: ignore[arg-type]
 
     assert tool.last_input is not None

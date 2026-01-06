@@ -3,6 +3,7 @@ import types
 import anyio
 from langchain_core.messages import AIMessage
 
+import react_agent.graph as graph_module
 from react_agent.default_agents import _build_agent_tool
 from react_agent.graph import manager_summary
 from react_agent.context import Context
@@ -15,7 +16,7 @@ class FakeModelRetry:
     def bind_tools(self, tool_list):
         return self
 
-    async def ainvoke(self, msgs):
+    async def ainvoke(self, msgs, config=None):  # type: ignore[override]
         self.call_count += 1
         if self.call_count == 1:
             return AIMessage(content="not json", tool_calls=[])
@@ -26,21 +27,24 @@ class FakeModelSummary:
     def __init__(self):
         self.last_msgs = None
 
-    async def ainvoke(self, msgs):
+    async def ainvoke(self, msgs, config=None):  # type: ignore[override]
         self.last_msgs = msgs
         return AIMessage(content="summary")
 
 
 def test_llm_json_retry_success(monkeypatch) -> None:
-    monkeypatch.setattr("react_agent.default_agents.load_chat_model", lambda name: FakeModelRetry())
+    fm = FakeModelRetry()
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", lambda name: fm)
     tool = _build_agent_tool("retry_agent", "profile text", default_allow_search=False)
     res = anyio.run(
         lambda: tool.ainvoke(
-            question="q",
-            subtask="s",
-            shared_context={},
-            history=[],
-            tools_config={},
+            {
+                "question": "q",
+                "subtask": "s",
+                "shared_context": {},
+                "history": [],
+                "tools_config": {},
+            }
         )
     )
     assert res.get("parse_ok") is True
@@ -49,7 +53,7 @@ def test_llm_json_retry_success(monkeypatch) -> None:
 
 def test_summary_filters_parse_fail(monkeypatch) -> None:
     fm = FakeModelSummary()
-    monkeypatch.setattr("react_agent.utils.load_chat_model", lambda name: fm)
+    monkeypatch.setattr(graph_module, "load_chat_model", lambda name: fm)
 
     state = {
         "layer_plan": {"L4": []},

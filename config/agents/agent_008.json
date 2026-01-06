@@ -1,7 +1,7 @@
 {
   "id": "a08_tech_due_diligence",
-  "name": "Tech & Innovation Analyst",
-  "description": "Values hard-tech/innovation firms using technology roadmap, patent barriers, R&D intensity, and TRL; builds scenario-tree valuation with sensitivity to key assumptions.",
+  "name": "上市材料分析智能体",
+  "description": "特色： 专注于IPO阶段材料的智能审查与风险量化评估。\n方法： 智能分析上市材料文本，量化评估信息披露质量与潜在风险水平。\n服务输出： 提供上市材料的量化评估报告、风险点识别结果及信息披露质量评分。",
   "capabilities": [
     "tech",
     "innovation",

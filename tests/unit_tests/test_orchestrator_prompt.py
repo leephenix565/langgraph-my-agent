@@ -3,7 +3,7 @@ import types
 import anyio
 from langchain_core.messages import HumanMessage
 
-from react_agent import graph
+import react_agent.graph as graph_module
 from react_agent.context import Context
 from react_agent.default_agents import _build_agent_tool
 from react_agent import prompts
@@ -29,12 +29,14 @@ def test_orchestrator_uses_special_system_prompt(monkeypatch) -> None:
 
     res = anyio.run(
         lambda: tool.ainvoke(
-            question="q",
-            subtask="s",
-            shared_context={},
-            history=[],
-            tools_config={},
-            router_plan_summary="L1(Chain): a01_cio_orchestrator\nL2(Star): a03",
+            {
+                "question": "q",
+                "subtask": "s",
+                "shared_context": {},
+                "history": [],
+                "tools_config": {},
+                "router_plan_summary": "L1(Chain): a01_cio_orchestrator\nL2(Star): a03",
+            }
         )
     )
 
@@ -57,7 +59,7 @@ def test_manager_assignment_for_a01_is_decomposition(monkeypatch) -> None:
         "messages": [],
     }
     runtime = types.SimpleNamespace(context=Context())
-    cmd = anyio.run(graph.manager_broadcast, state, runtime)  # type: ignore[arg-type]
+    cmd = anyio.run(graph_module.manager_broadcast, state, runtime)  # type: ignore[arg-type]
     send = cmd.goto[0]
     assign_text = send.arg["messages"][-1].content  # type: ignore[index]
     assert "任务拆解" in assign_text or "验收设计" in assign_text

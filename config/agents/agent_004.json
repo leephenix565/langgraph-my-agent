@@ -1,7 +1,7 @@
 {
   "id": "a04_industry_layout",
-  "name": "Industry Structure Analyst",
-  "description": "Studies industries via value chain/industry chain/ecosystem; identifies lifecycle stage, measures concentration (e.g., HHI), traces cost/policy transmission, and evaluates competitive structure.",
+  "name": "产业链与行业格局研究智能体",
+  "description": "该系统通过动态图神经网络等模型，实现行业竞争格局动态推演、多周期风险预警及产业链结构演化路径量化，输出行业韧性评估报告、竞争策略模拟方案、跨界风险热力图，为用户提供产业结构优化与竞争策略制定的深度洞察",
   "capabilities": [
     "industry",
     "structure",

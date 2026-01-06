@@ -1,67 +1,70 @@
 # Multi-layer ReAct Router Agent Design (Current State)
 
-Updated: 2025-12-11 14:52:58 +08:00  
-Scope: current workspace (all recent fixes included)
+Updated: 2026-01-06
+Scope: current workspace state.
 
 ## 1) Overview
-- Purpose: 4-layer (L1/L2/L3/L4) Router → Manager → Agents → Summary graph, ReAct-style iteration, ready for LangGraph Studio.
-- Core file: `src/react_agent/graph.py` defines the graph; `config/agents` holds 25 system-level roles; optional built-in 4 analysts (news/filing/data/ecc) via `ENABLE_BUILTIN_AGENTS=1`.
-- Defaults: model `deepseek/deepseek-chat`; shared tool `tavily_search` (basic, max_results=5). Config agents now use LLM tools by default (not stubs), with search enabled; stub only if description is empty.
+- Graph: 4-layer Router → Manager → Agents → Summary pipeline defined in `src/react_agent/graph.py` and compiled as `graph`.
+- Entry points: `langgraph.json` → `src/react_agent/graph.py:graph`; `react_agent.graph_app` exports the compiled graph; `demo_layered_run.py` demonstrates a minimal run.
+- Agent config: `config/agents` holds 26 system-level roles (L1=2, L2=15, L3=8, L4=1). `a02_task_router` is default disabled.
+- Built-in analysts: optional `news/filing/data/ecc` (L2) only when `ENABLE_BUILTIN_AGENTS=1` or config directory is missing.
 
-## 2) Flow & State
-1. **Input**: external `messages` only (latest Human as current question).
-2. **Router** (`router_node`): prompt enforces pure JSON `layers:[{layer,mode,selected}]`; compatible with legacy `{"selected":[...]}` (fills L2/Star). On parse failure, fallback to default plan (L1/L4=Chain, L2/L3=Star; selects L1:1, L2:5, L3:3, L4:1). Initializes `current_layer="L1"`, `chain_cursor=0`, `analyst_results={"__reset__": True}`.
-3. **Manager dispatch** (`manager_broadcast`):  
-   - Chain: send next agent in order.  
-   - Star/Debate/Tree: parallel fan-out (Debate/Tree treated as Star for dispatch).  
-   - Empty layer skips to summary. Assignment text from `MANAGER_ASSIGNMENT_USER`.
-4. **Agent nodes** (`_build_agent_node`): build `AgentInput` and call `AGENT_TOOLS[agent_id]`.  
-   - Config agents (25 roles) → LLM tool `_build_agent_tool` with default_allow_search=True.  
-   - Built-in analysts (optional) → LLM tool with prompts + tool loop; stub used only if metadata description is missing.  
-   - Outputs merged into `analyst_results[agent_id]` (with `parse_ok` flag), AIMessage appended.
-5. **Manager summary** (`manager_summary`):  
-   - If pending and mode=Chain, update `chain_cursor` and wait.  
-   - Else mark `layer_done`, advance `current_layer`, reset `fanout_targets`.  
-   - Final (L4) uses `Context.system_prompt` + `MANAGER_SUMMARY_USER`; filters out `parse_ok=False` entries and prepends meta note: `[meta] 本轮有 N 条输出因解析失败未参与汇总。`
-6. **Conditional routing** (`route_from_manager_summary`):  
-   - Pending + Chain → `manager_broadcast`.  
-   - Pending + Star/Debate/Tree → first time (fanout_targets empty) `manager_broadcast`, else `noop`.  
-   - No pending & not L4 → `manager_broadcast`; L4 → `__end__`.
-7. **Graph edges**: `__start__` → router → manager_broadcast → agent_* → manager_summary → conditional (manager_broadcast/noop/__end__).
+## 2) Agent Inventory (IDs)
+**L1**
+- a01_cio_orchestrator — CIO Orchestrator
+- a02_task_router — Task Decomposer (default_enabled=false)
 
-### State (src/react_agent/state.py)
-- `messages` (add_messages merge), `plan`, `analyst_results` (supports `{"__reset__": True}`), `current_question`, `fanout_targets`, `layer_plan`, `layer_mode`, `current_layer`, `layer_done`, `chain_cursor`, `is_last_step`.
+**L2**
+- a03_macro_policy — 宏观与货币政策研究智能体
+- a04_industry_layout — 产业链与行业格局研究智能体
+- a05_product_pricing — 大宗商品价格预测智能体
+- a06_financial_reports — 公司年报分析智能体4
+- a07_financial_modeling — 公司财报分析智能体
+- a08_tech_due_diligence — 上市材料分析智能体
+- a09_macro_sentiment — 宏观舆情感知智能体6
+- a10_industry_sentiment — 中观行业舆情感知智能体7
+- a11_equity_sentiment — 微观个股舆情感知智能体8
+- a12_ipo_investor_behavior — IPO投资者构成与行为分析智能体
+- a13_index_technical_analysis — 指数技术分析智能体5
+- a14_single_stock_tech — 个股技术分析智能体
+- a15_research_synthesis — 分析师研报与观点集成智能体2
+- a16_fund_manager_behavior — 基金经理投资行为分析智能体
+- a17_client_profile — 客户画像（风险偏好）智能体
 
-### Context (src/react_agent/context.py)
-- `model`, `system_prompt`, `analyst_profiles`, `max_search_results`; env overrides by upper-case field name. Default `system_prompt` is Manager prompt.
+**L3**
+- a18_primary_secondary_valuation — 企业通用估值智能体1
+- a19_market_risk — 股价相关风险智能体
+- a20_fundamental_risk — 财务困境风险智能体
+- a21_reg_compliance — 监管合规与投资者保护规则审查智能体
+- a22_suitability_review — 投资者适当性与风险承受匹配审查智能体
+- a23_portfolio_opt — 投资组合优化智能体
+- a26_sci_tech_valuation — 科创企业估值智能体3
+- a27_portfolio_backtest — 投资组合历史回测智能体
 
-## 3) Agent Assets
-- **Config agents** (`config/agents/agent_*.json`): 25 roles, enabled by default, bound to LLM tool unless `description` empty (then stub). Distribution:  
-  - L1×1: a01_cio_orchestrator  （a02_task_router 默认关闭，避免双路由角色；保留作对照/实验）  
-  - L2×15: a03_macro_policy … a17_client_profile  
-  - L3×7: a18_primary_secondary_valuation … a24_shared_services  
-  - L4×1: a25_report_center
-- **Built-in analysts (optional)**: news/filing/data/ecc (L2), enabled via `ENABLE_BUILTIN_AGENTS=1` or missing config directory; support search.
-- **Registration order**: register built-ins (if enabled) → load config metadata → for each without tool: use `_build_agent_tool(desc, default_allow_search=True)` if description present; else fallback stub `build_generic_agent_tool` (marked `is_stub=True`).
+**L4**
+- a25_report_center — Report & Decision Center
 
-## 4) Prompts, Tools, Parse/Retry
-- Prompts in `src/react_agent/prompts.py`:  
-  - Router: strict JSON, escaped braces, agent_catalog injected.  
-  - Manager: dispatch + final summary.  
-  - Analyst: strict JSON-only schema (analysis/key_points/evidence/confidence), braces escaped to avoid `.format` KeyError.
-- Tools: `tavily_search` (tools.py), enabled by default for config LLM agents (via default_allow_search=True) unless tools_config overrides.
-- Parse & retry (`default_agents.py`):  
-  - `_parse_agent_output` sets `[PARSE_FALLBACK]` and `parse_ok=False` on failure.  
-  - `_build_agent_tool` retries once with strict JSON-only prompt if first parse fails; `parse_ok=True` on success.
+## 3) Graph Flow & State
+1. **Input**: `messages` is the only external input; latest Human message is used as the question.
+2. **Router (`router_node`)**: builds `agent_catalog`, asks `ROUTER_SYSTEM_PROMPT` for JSON; parses via `_parse_router_layers`. Fallback plan uses `_default_layer_plan` (L1:1, L2:≤5, L3:≤3, L4:1) and `DEFAULT_MODES` (L1/L4=Chain, L2/L3=Star). Initializes `current_layer="L1"`, `chain_cursor=0`, `analyst_results={"__reset__": True}`.
+3. **Manager dispatch (`manager_broadcast`)**:
+   - Chain: dispatch next `agent_id` and set `fanout_targets=[next_id]` + `chain_cursor`.
+   - Star/Debate/Tree: dispatch remaining agents in parallel (Debate/Tree are treated as Star for dispatch).
+   - Empty layer → `manager_summary` directly.
+4. **Agent nodes (`_build_agent_node`)**: build `agent_input` with `tools_config` (`allow_search` false only for a01/a25; otherwise true) and invoke `AGENT_TOOLS[agent_id]`.
+5. **Summary (`manager_summary`)**: if Chain has pending agents, return `chain_cursor` to continue; else mark layer done and advance. Final layer uses `Context.system_prompt` + `MANAGER_SUMMARY_USER`, filters `parse_ok=false`, and prepends a meta note when filtered.
+6. **Conditional routing (`route_from_manager_summary`)**: pending+Chain → `manager_broadcast`; pending+Star/Debate/Tree → `manager_broadcast` then `noop`; final layer → `__end__`.
+7. **Noop**: `noop()` returns empty update while waiting for parallel results.
 
-## 5) Testing & Demo
-- Demo: `python demo_layered_run.py` (requires LLM/Tavily keys) shows layer_plan/layer_mode/analyst_results/final message.
-- Unit tests: mode normalize, router parse compatibility, prompt format safety, parse fallback flag, JSON retry, summary filter, config agents tools. Integration: `tests/integration_tests/test_graph.py` validates graph basics.
-- Makefile: `make test`, `make integration_tests`.
+**State fields** (`src/react_agent/state.py`): `messages`, `plan`, `analyst_results`, `run_id`, `current_question`, `fanout_targets`, `layer_plan`, `layer_mode`, `current_layer`, `layer_done`, `chain_cursor`, `is_last_step`.
 
-## 6) Behavioral Notes
-- Debate/Tree are dispatch labels; execution equals Star (parallel); final answer only at L4.  
-- Router parse failures or bad formats fall back to default 4-layer plan; legacy `{"selected":[...]}` populates L2/Star.  
-- `analyst_results` merge clears on `{"__reset__": True}`.  
-- manager_summary filters out `parse_ok=False` outputs; meta note reports filtered count.  
-- Stubs remain only for missing-description agents; otherwise all config roles use LLM tools with search enabled by default.
+**Context fields** (`src/react_agent/context.py`): `model` (env `MODEL`), `system_prompt` (env `SYSTEM_PROMPT`), `run_id` (env `RUN_ID`), `analyst_profiles`, `max_search_results` (default 10; not wired to `tavily_search`).
+
+## 4) Tools & Prompts
+- Tool: `tavily_search` in `src/react_agent/tools.py` (`max_results=5`, `search_depth="basic"`, uses `TAVILY_API_KEY`).
+- `tools_config.allow_search` default true for config agents; forced false for a01/a25.
+- `_build_agent_tool` retries once if JSON parse fails; `_parse_agent_output` marks `parse_ok=false` on fallback.
+
+## 5) Logging & Tests
+- Local trace: `LOCAL_TRACE=1` writes JSONL to `log/<YYYYMMDD>/<run_id>.jsonl`; `TRACE_MAX_CHARS` and `LOG_DIR` are supported.
+- Tests: `tests/unit_tests` + `tests/integration_tests/test_graph.py` cover router parsing, prompt formatting, fail-soft behavior, and graph wiring.

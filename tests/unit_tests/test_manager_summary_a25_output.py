@@ -3,9 +3,9 @@ import types
 import anyio
 from langchain_core.messages import AIMessage
 
+import react_agent.graph as graph_module
 from react_agent.graph import manager_summary
 from react_agent.context import Context
-from react_agent import graph
 
 
 class FakeModel:
@@ -40,7 +40,7 @@ def _mk_state(parse_ok: bool = True) -> dict:
 
 def test_manager_summary_always_uses_manager_llm_even_when_a25_ok(monkeypatch) -> None:
     fm = FakeModel()
-    monkeypatch.setattr("react_agent.graph.load_chat_model", lambda name: fm)
+    monkeypatch.setattr(graph_module, "load_chat_model", lambda name: fm)
     state = _mk_state(parse_ok=True)
     runtime = types.SimpleNamespace(context=Context())
 
@@ -48,14 +48,14 @@ def test_manager_summary_always_uses_manager_llm_even_when_a25_ok(monkeypatch) -
     assert res["is_last_step"] is True
     assert res["messages"][0].content == "manager final"
     assert fm.last_msgs is not None
-    user_msg = fm.last_msgs[-1].content  # HumanMessage.content
+    user_msg = fm.last_msgs[-1]["content"]
     assert "a25_report_center" in user_msg
     assert "L4 Draft" in user_msg or "L4" in user_msg
 
 
 def test_manager_summary_fallback_when_a25_invalid(monkeypatch) -> None:
     fm = FakeModel()
-    monkeypatch.setattr("react_agent.graph.load_chat_model", lambda name: fm)
+    monkeypatch.setattr(graph_module, "load_chat_model", lambda name: fm)
     state = _mk_state(parse_ok=False)
     runtime = types.SimpleNamespace(context=Context())
 

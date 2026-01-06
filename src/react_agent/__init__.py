@@ -1,5 +1,8 @@
-"""Router → Manager → Analysts LangGraph demo."""
+"""Router -> Manager -> Analysts LangGraph demo."""
 
-from react_agent.graph import graph
+from importlib import import_module
 
-__all__ = ["graph"]
+graph = import_module("react_agent.graph")
+graph_app = graph.graph
+
+__all__ = ["graph", "graph_app"]

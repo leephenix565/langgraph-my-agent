@@ -1,7 +1,7 @@
 {
   "id": "a06_financial_reports",
-  "name": "Financial Reports Analyst",
-  "description": "Parses annual/quarterly reports and announcements; extracts business model, revenue/cost structure, governance/shareholding, and risk disclosures to build a company profile for valuation and risk agents.",
+  "name": "公司年报分析智能体4",
+  "description": "该系统致力于超越传统财务指标的局限，深度解析年报中的非财务信息与长期潜在风险，通过对年报文本及图表的系统分析，精准提取核心数据与关键非财务要素并生成浓缩摘要，最终提供涵盖年报核心数据摘要、长期风险提示、关键词提取以及交互式问答在内的全方位服务输出。",
   "capabilities": [
     "filing",
     "kpi",

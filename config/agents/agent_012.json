@@ -1,7 +1,7 @@
 {
-  "id": "a12_liquidity_flow",
-  "name": "Liquidity & Flow Analyst",
-  "description": "Analyzes capital-flow sentiment using northbound/southbound/institutional vs retail flows and microstructure metrics (turnover, order book imbalance, Amihud); builds greed/fear indices and capital sentiment factors.",
+  "id": "a12_ipo_investor_behavior",
+  "name": "IPO投资者构成与行为分析智能体",
+  "description": "该系统通过深度挖掘IPO历史投资数据中的行为模式、统计分析投资人构成、历史投资行为等数据，为用户提供专业的IPO投资行为分析、精准的市场机会捕捉建议以及有效的风险预警信号。",
   "capabilities": [
     "liquidity",
     "flow",

@@ -1,7 +1,7 @@
 {
   "id": "a15_research_synthesis",
-  "name": "Research Synthesis Analyst",
-  "description": "Ingests analyst/sell-side reports; extracts ratings, target prices, key assumptions, and scenarios; builds consensus vs divergence maps and quantifies expectation gaps.",
+  "name": "分析师研报与观点集成智能体2",
+  "description": "该系统借助BayesORN算法对比分析师观点对优劣，经EP算法合成群体共识排名，从嘈杂观点中降噪提纯聚合群体共识，输出Top-K可信研报列表、集成预测结果及群体共识排名，有效提升预测精度。",
   "capabilities": [
     "synthesis",
     "scenario",

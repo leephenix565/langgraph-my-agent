@@ -1,7 +1,7 @@
 {
-  "id": "a16_fund_economics",
-  "name": "Fundamental Economics Analyst",
-  "description": "Profiles funds and managers on performance, factor exposures, drawdowns, and style stability; supports product recommendations, asset allocation, and portfolio construction.",
+  "id": "a16_fund_manager_behavior",
+  "name": "基金经理投资行为分析智能体",
+  "description": "该系统将基金经理持仓观点建模为“噪声偏序图”，通过图结构排序学习输出全局一致排序，实现持仓观点可排序、可解释、可落地，最终提供经排序的持仓观点及可解释的合成投资组合方案。",
   "capabilities": [
     "fundamental",
     "economics",

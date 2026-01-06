@@ -21,10 +21,14 @@ from react_agent.utils import get_message_text, load_chat_model
 async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, Any]]) -> AIMessage:
     """Run the tool-calling loop until no tool_calls remain."""
     runtime = get_runtime(Context)
-    run_id = getattr(runtime.context, "run_id", "") or ""
+    run_id = ""
+    model_name = ""
+    if runtime and getattr(runtime, "context", None):
+        run_id = getattr(runtime.context, "run_id", "") or ""
+        model_name = runtime.context.model
     base_metadata = {"run_id": run_id, "node_name": "agent_tool"}
     base_tags = ["react_agent"] + ([f"run_id:{run_id}"] if run_id else [])
-    model = load_chat_model(runtime.context.model).bind_tools(tool_list)
+    model = load_chat_model(model_name).bind_tools(tool_list)
     msgs: List[Any] = list(messages)
     while True:
         ai_msg: AIMessage = await model.ainvoke(msgs, config={"metadata": base_metadata, "tags": base_tags})

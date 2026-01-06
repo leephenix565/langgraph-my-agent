@@ -1,7 +1,7 @@
 {
   "id": "a20_fundamental_risk",
-  "name": "Fundamental Risk Analyst",
-  "description": "Assesses fundamental risk: earnings quality, cash-flow health, leverage; applies Z-score, O-score, ESG/green risk frameworks to produce fundamental risk scores.",
+  "name": "财务困境风险智能体",
+  "description": "从文本语义层面挖掘财务困境预测的增量信息，结合企业财务指标，通过门控融合机制实现结构化与非结构化信息的高效融合，从而对企业财务困境风险进行前瞻性预测，并输出风险预警报告。",
   "capabilities": [
     "risk",
     "fundamental",

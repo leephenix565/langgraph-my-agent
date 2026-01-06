@@ -1,7 +1,7 @@
 {
   "id": "a14_single_stock_tech",
-  "name": "Single-Stock Technicals",
-  "description": "Performs stock-level technical analysis of K-line patterns, indicators, and price-volume relations; generates buy/sell signals (technical-only), backtests reliability, and shares actionable signals.",
+  "name": "个股技术分析智能体",
+  "description": "该系统基于深度学习模型，融合历史价格数据、财报信息与舆情文本，实时解析个股K线及多种技术指标，自动生成可视化交易信号，并提供清晰的趋势判断与具体的买卖操作建议。",
   "capabilities": [
     "technical",
     "equity",

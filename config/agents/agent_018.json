@@ -1,7 +1,7 @@
 {
   "id": "a18_primary_secondary_valuation",
-  "name": "Primary & Secondary Valuation",
-  "description": "Finalizes primary and secondary market valuations via comparables, case benchmarks, and scenario DCF; outputs valuation scores and over/neutral/under-valued labels for decisions.",
+  "name": "企业通用估值智能体1",
+  "description": "该智能体采用一级与二级市场双架构，针对企业全生命周期的四维度特征，精准匹配差异化建模方案，旨在为七类典型企业提供高效、定制化的估值报告，实现跨模块的响应优化与决策赋能。",
   "capabilities": [
     "valuation",
     "benchmark",

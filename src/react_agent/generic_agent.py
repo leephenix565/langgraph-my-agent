@@ -44,5 +44,5 @@ def build_generic_agent_tool(agent_id: str, description: str) -> Any:
             "confidence": 0.5,
         }
 
-    _generic_agent.is_stub = True  # type: ignore[attr-defined]
+    object.__setattr__(_generic_agent, "is_stub", True)
     return _generic_agent

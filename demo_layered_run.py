@@ -7,12 +7,12 @@ Usage:
 
 import asyncio
 
-from react_agent import graph
+from react_agent import graph_app
 from react_agent.context import Context
 
 
 async def main() -> None:
-    res = await graph.ainvoke(
+    res = await graph_app.ainvoke(
         {"messages": [("user", "示例：给出新能源车行业的投资观点和风险点")]},
         context=Context(model="deepseek/deepseek-chat"),
     )

@@ -1,7 +1,7 @@
 {
   "id": "a10_industry_sentiment",
-  "name": "Industry Sentiment Analyst",
-  "description": "Tracks industry-level policy and event flow; builds industry sentiment indices via topic modeling and sentiment aggregation; assesses impacts on industry fundamentals and valuation anchors.",
+  "name": "中观行业舆情感知智能体7",
+  "description": "该系统动态地监测并提炼行业维度的核心议题，同时关联性地召回相关文本证据并判定其情感倾向，从而为市场提供持续的主题追踪、情感判断及详实的文本证据支持服务",
   "capabilities": [
     "industry",
     "sentiment",

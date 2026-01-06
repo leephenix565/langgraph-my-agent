@@ -1,7 +1,7 @@
 {
   "id": "a05_product_pricing",
-  "name": "Product & Pricing Analyst",
-  "description": "Covers commodities: supply-demand, inventory, basis and term structure; designs hedge/arbitrage (intertemporal/inter-product/cross-market), outputs hedge ratios and commodity risk factors.",
+  "name": "大宗商品价格预测智能体",
+  "description": "该系统聚焦大宗商品现货-期货市场联动分析与多元化策略设计，通过融合政策舆情分析与多因子模型，开展商品价格预测、基差分析及策略回测，最终为用户提供商品价格预测结果、基差套利机会评估报告，以及定制化的期货投机与对冲策略方案",
   "capabilities": [
     "product",
     "pricing",

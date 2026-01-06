@@ -1,7 +1,7 @@
 {
   "id": "a03_macro_policy",
-  "name": "Macro Policy Analyst",
-  "description": "Analyzes macro cycles (recovery/overheating/stagflation/recession) and monetary/fiscal/regulatory shifts; builds macro factors (rates, inflation, growth, liquidity, risk premium) to supply scenarios to industry, company, and risk layers.",
+  "name": "宏观与货币政策研究智能体",
+  "description": "该系统基于宏观经济多源数据，捕捉指标间非线性关联，实现经济周期拐点预测、货币政策传导效能分析及多维趋势交叉验证，支撑顶层决策报告生成，为用户提供宏观政策与经济运行的前瞻性决策支持",
   "capabilities": [
     "macro",
     "policy",

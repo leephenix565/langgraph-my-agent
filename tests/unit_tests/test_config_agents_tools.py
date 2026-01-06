@@ -2,7 +2,7 @@ import types
 
 import pytest
 
-from react_agent import graph
+import react_agent.graph as graph_module
 from react_agent.generic_agent import build_generic_agent_tool
 
 
@@ -23,8 +23,8 @@ def test_config_agents_default_to_llm_tools(monkeypatch) -> None:
     monkeypatch.setattr("react_agent.utils.load_chat_model", lambda name: FakeModel())
 
     # Rebuild graph to trigger registration with LLM tools.
-    _ = graph  # access module to ensure registration run
-    tool = graph.AGENT_TOOLS.get("a03_macro_policy")
+    _ = graph_module  # access module to ensure registration run
+    tool = graph_module.AGENT_TOOLS.get("a03_macro_policy")
     assert tool is not None
     assert not getattr(tool, "is_stub", False)
 

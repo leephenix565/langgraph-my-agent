@@ -3,7 +3,7 @@ import types
 import anyio
 from langchain_core.messages import HumanMessage
 
-from react_agent import graph
+import react_agent.graph as graph_module
 from react_agent.context import Context
 
 
@@ -14,9 +14,9 @@ class ErrorTool:
 
 def test_agent_fail_soft_on_exception(monkeypatch) -> None:
     agent_id = "a03_macro_policy"
-    monkeypatch.setitem(graph.AGENT_TOOLS, agent_id, ErrorTool())
+    monkeypatch.setitem(graph_module.AGENT_TOOLS, agent_id, ErrorTool())
 
-    node = graph._build_agent_node(agent_id)
+    node = graph_module._build_agent_node(agent_id)
     state = {
         "messages": [HumanMessage(content="subtask text")],
         "analyst_results": {},

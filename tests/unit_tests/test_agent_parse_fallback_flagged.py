@@ -11,7 +11,7 @@ class FakeModel:
     def __init__(self, content: str):
         self._content = content
 
-    async def ainvoke(self, msgs):
+    async def ainvoke(self, msgs, config=None):  # type: ignore[override]
         return types.SimpleNamespace(content=self._content, tool_calls=[])
 
     def bind_tools(self, tool_list):
@@ -25,11 +25,13 @@ def test_agent_parse_fallback_flagged(monkeypatch) -> None:
     tool = _build_agent_tool("test_agent", "profile text", default_allow_search=False)
     res = anyio.run(
         lambda: tool.ainvoke(
-            question="q",
-            subtask="s",
-            shared_context={},
-            history=[],
-            tools_config={},
+            {
+                "question": "q",
+                "subtask": "s",
+                "shared_context": {},
+                "history": [],
+                "tools_config": {},
+            }
         )
     )
     assert res["analysis"].startswith("[PARSE_FALLBACK]")
