@@ -14,7 +14,7 @@ from langgraph.runtime import get_runtime
 from react_agent import prompts
 from react_agent.agents import AgentMetadata, AgentOutput, register_agent
 from react_agent.context import Context
-from react_agent.tools import tavily_search
+from react_agent.tools import build_tavily_search, tavily_search
 from react_agent.utils import get_message_text, load_chat_model
 
 
@@ -129,7 +129,21 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
             {"role": "user", "content": user_content},
         ]
         allow_search = tools_config.get("allow_search", default_allow_search)
-        tool_list = [tavily_search] if allow_search else []
+        tool_list: List[BaseTool] = []
+        if allow_search:
+            max_results = tools_config.get("max_search_results")
+            if max_results is None:
+                runtime = get_runtime(Context)
+                if runtime and getattr(runtime, "context", None):
+                    max_results = getattr(runtime.context, "max_search_results", None)
+            try:
+                max_results_int = int(max_results) if max_results is not None else None
+            except (TypeError, ValueError):
+                max_results_int = None
+            if max_results_int and max_results_int > 0:
+                tool_list = [build_tavily_search(max_results_int)]
+            else:
+                tool_list = [tavily_search]
         response = await _call_with_tools(tool_list or [], base_msgs)
         first_parsed = _parse_agent_output(get_message_text(response))
         if first_parsed.get("parse_ok", True):

@@ -18,6 +18,7 @@ from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
 from react_agent import prompts
+from react_agent import router_parse
 from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
@@ -33,10 +34,9 @@ from react_agent.run_logger import get_run_logger
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
 
-LAYER_ORDER: List[str] = ["L1", "L2", "L3", "L4"]
-DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"}
+LAYER_ORDER: List[str] = router_parse.LAYER_ORDER
+DEFAULT_MODES: Dict[str, str] = router_parse.DEFAULT_MODES
 FINAL_LAYER: str = LAYER_ORDER[-1]
-LEGACY_LAYER_MAP: Dict[str, str] = {"L4": "L3", "L5": "L4"}
 
 
 def _truncate(text: str, limit: int = 4000) -> str:
@@ -117,129 +117,25 @@ def _get_latest_user_question(messages: List[AnyMessage]) -> str:
     return get_message_text(messages[-1]) if messages else ""
 
 
-def _extract_json_str(text: str) -> Optional[str]:
-    """Best-effort extract a JSON object string; return None if not parseable."""
-    # First, try direct parse.
-    try:
-        json.loads(text)
-        return text
-    except Exception:
-        pass
-
-    # Heuristic: use the substring between first '{' and last '}'.
-    first = text.find("{")
-    last = text.rfind("}")
-    if first == -1 or last == -1 or last <= first:
-        return None
-    candidate = text[first : last + 1]
-    try:
-        json.loads(candidate)
-        return candidate
-    except Exception:
-        return None
-
-
 def _normalize_mode(mode: str) -> str:
     """Return a single valid mode (Star/Chain/Debate/Tree) with light tolerance."""
-    allowed = {"star", "chain", "debate", "tree"}
-    if not mode:
-        return "Star"
-    raw = str(mode).strip()
-    # Split by common separators if user/LLM returns joined string.
-    for sep in [",", ";", "|", "/"]:
-        if sep in raw:
-            raw = raw.split(sep)[0]
-            break
-    # Also handle accidental space-joined tokens.
-    raw = raw.strip().split()[0]
-    token = raw.lower()
-    if token in allowed:
-        return token.title()
-    return "Star"
+    return router_parse.normalize_mode(mode)
+
+
+def _build_agent_catalog() -> Dict[str, List[str]]:
+    return {layer: agents_by_layer(layer) for layer in LAYER_ORDER}
 
 
 def _default_layer_plan() -> Tuple[Dict[str, List[str]], Dict[str, str]]:
-    plan: Dict[str, List[str]] = {}
-    modes: Dict[str, str] = {}
-    for layer in LAYER_ORDER:
-        ids = agents_by_layer(layer)
-        modes[layer] = DEFAULT_MODES.get(layer, "Star")
-        if not ids:
-            plan[layer] = []
-            continue
-        if layer == "L1":
-            plan[layer] = ids[:1]
-        elif layer == "L2":
-            plan[layer] = ids[: min(5, len(ids))]
-        elif layer == "L3":
-            plan[layer] = ids[: min(3, len(ids))]
-        else:  # Final layer
-            plan[layer] = ids[:1]
-    return plan, modes
+    return router_parse.default_layer_plan(_build_agent_catalog())
 
 
 def _parse_router_layers(raw: str) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     """Parse router JSON into layer_plan/layer_mode with compatibility fallback."""
-    json_str = _extract_json_str(raw)
-    if not json_str:
-        return _default_layer_plan()
-    try:
-        parsed = json.loads(json_str)
-    except Exception:
-        return _default_layer_plan()
-
-    if not isinstance(parsed, dict):
-        return _default_layer_plan()
-
-    # Compatibility: old format {"selected":[...]}
-    if "layers" not in parsed and "selected" in parsed:
-        plan, modes = _default_layer_plan()
-        selected = [aid for aid in parsed.get("selected", []) if aid in agents_by_layer("L2")]
-        plan["L2"] = selected or plan["L2"]
-        modes["L2"] = "Star"
-        return plan, modes
-
-    layers_raw = parsed.get("layers")
-    if not isinstance(layers_raw, list):
-        return _default_layer_plan()
-
-    default_plan, default_modes = _default_layer_plan()
-    legacy_mode = any(
-        isinstance(entry, dict) and isinstance(entry.get("layer"), str) and entry.get("layer").strip() == "L5"
-        for entry in layers_raw
+    plan, modes, _stats = router_parse.parse_router_layers_with_stats(
+        raw, agent_catalog=_build_agent_catalog()
     )
-
-    layer_plan: Dict[str, List[str]] = {}
-    layer_mode: Dict[str, str] = {}
-    for layer_entry in layers_raw:
-        if not isinstance(layer_entry, dict):
-            continue
-        layer = layer_entry.get("layer")
-        if isinstance(layer, str):
-            layer = layer.strip()
-            if legacy_mode:
-                layer = LEGACY_LAYER_MAP.get(layer, layer)
-        if not layer or layer not in LAYER_ORDER:
-            continue
-        mode = _normalize_mode(layer_entry.get("mode"))
-        selected_raw = layer_entry.get("selected", []) or []
-        selected: List[str] = []
-        for aid in selected_raw:
-            if aid in AGENT_METADATA and (AGENT_METADATA[aid].layer or "").upper() == layer and AGENT_METADATA[aid].default_enabled:
-                selected.append(aid)
-        # If router tried to pick names but all invalid, fall back to defaults for this layer.
-        if selected_raw and not selected:
-            selected = default_plan.get(layer, [])
-        if layer == "L2" and len(selected) > 5:
-            selected = selected[:5]
-        layer_plan[layer] = selected
-        layer_mode[layer] = mode
-
-    for layer in LAYER_ORDER:
-        layer_plan.setdefault(layer, default_plan.get(layer, []))
-        layer_mode.setdefault(layer, default_modes.get(layer, "Star"))
-
-    return layer_plan, layer_mode
+    return plan, modes
 
 
 def _next_layer(current_layer: str) -> Optional[str]:
@@ -258,7 +154,7 @@ async def router_node(
     run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
     runtime.context.run_id = run_id
     logger = get_run_logger(run_id)
-    agent_catalog = {layer: agents_by_layer(layer) for layer in LAYER_ORDER}
+    agent_catalog = _build_agent_catalog()
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
         system_time=datetime.now(tz=UTC).isoformat(),
         agent_catalog=json.dumps(agent_catalog, ensure_ascii=False),
@@ -284,7 +180,9 @@ async def router_node(
         question=_truncate(question),
         raw=_truncate(raw_text),
     )
-    layer_plan, layer_mode = _parse_router_layers(raw_text)
+    layer_plan, layer_mode, parse_stats = router_parse.parse_router_layers_with_stats(
+        raw_text, agent_catalog=agent_catalog
+    )
     current_layer = LAYER_ORDER[0]
     logger.log_event(
         "run_start",
@@ -293,6 +191,7 @@ async def router_node(
         run_id=run_id,
         layer_plan=_truncate(layer_plan),
         layer_mode=layer_mode,
+        router_parse_stats=parse_stats,
     )
     return {
         "messages": [response],

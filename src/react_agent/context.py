@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import warnings
 from dataclasses import dataclass, field, fields
 from typing import Annotated, Dict
 
@@ -47,3 +48,26 @@ class Context:
 
             if getattr(self, f.name) == f.default:
                 setattr(self, f.name, os.environ.get(f.name.upper(), f.default))
+
+        max_env = os.environ.get("MAX_SEARCH_RESULTS")
+        if max_env is None:
+            return
+        max_field = next((f for f in fields(self) if f.name == "max_search_results"), None)
+        default_max = max_field.default if max_field and isinstance(max_field.default, int) else 10
+        if self.max_search_results != default_max:
+            return
+        try:
+            parsed = int(str(max_env).strip())
+        except (TypeError, ValueError):
+            warnings.warn(
+                f"Invalid MAX_SEARCH_RESULTS='{max_env}', using default {default_max}.",
+                RuntimeWarning,
+            )
+            return
+        if parsed <= 0:
+            warnings.warn(
+                f"Invalid MAX_SEARCH_RESULTS='{max_env}', using default {default_max}.",
+                RuntimeWarning,
+            )
+            return
+        self.max_search_results = parsed

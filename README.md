@@ -11,62 +11,17 @@ The core logic, defined in `src/react_agent/graph.py`, demonstrates a flexible R
 
 ## What it does
 
-The ReAct agent:
+This repository implements a four-layer Router -> Manager -> Agents -> Summary workflow using LangGraph and a ReAct-style loop to plan, dispatch, and synthesize responses.
 
-1. Takes a user **query** as input
-2. Reasons about the query and decides on an action
-3. Executes the chosen action using available tools
-4. Observes the result of the action
-5. Repeats steps 2-4 until it can provide a final answer
+## Quickstart (30s)
 
-By default, it's set up with a basic set of tools, but can be easily extended with custom tools to suit various use cases.
+1) Create env file:
+   - Bash: `cp .env.example .env`
+   - PowerShell: `Copy-Item .env.example .env`
+2) Run minimal demo: `python demo_layered_run.py`
+3) (Optional) Run unit tests: `python -m pytest tests/unit_tests/`
 
-## Getting Started
-
-Assuming you have already [installed LangGraph Studio](https://github.com/langchain-ai/langgraph-studio?tab=readme-ov-file#download), to set up:
-
-1. Create a `.env` file.
-
-```bash
-cp .env.example .env
-```
-
-2. Define required API keys in your `.env` file.
-
-The primary [search tool](./src/react_agent/tools.py) [^1] used is [Tavily](https://tavily.com/). Create an API key [here](https://app.tavily.com/sign-in).
-
-### Setup Model
-
-The defaults values for `model` are shown below:
-
-```yaml
-model: claude-sonnet-4-5-20250929
-```
-
-Follow the instructions below to get set up, or pick one of the additional options.
-
-#### Anthropic
-
-To use Anthropic's chat models:
-
-1. Sign up for an [Anthropic API key](https://console.anthropic.com/) if you haven't already.
-2. Once you have your API key, add it to your `.env` file:
-
-```
-ANTHROPIC_API_KEY=your-api-key
-```
-#### OpenAI
-
-To use OpenAI's chat models:
-
-1. Sign up for an [OpenAI API key](https://platform.openai.com/signup).
-2. Once you have your API key, add it to your `.env` file:
-```
-OPENAI_API_KEY=your-api-key
-```
-
-3. Customize whatever you'd like in the code.
-4. Open the folder LangGraph Studio!
+For full runtime/training/eval commands, see `docs/SYSTEM_MAP.md`.
 
 ## How to customize
 
@@ -86,36 +41,5 @@ While iterating on your graph, you can edit past state and rerun your app from p
 Follow up requests will be appended to the same thread. You can create an entirely new thread, clearing previous history, using the `+` button in the top right.
 
 You can find the latest (under construction) docs on [LangGraph](https://github.com/langchain-ai/langgraph) here, including examples and other references. Using those guides can help you pick the right patterns to adapt here for your use case.
-
-LangGraph Studio also integrates with [LangSmith](https://smith.langchain.com/) for more in-depth tracing and collaboration with teammates.
-
-### Enable LangSmith tracing
-
-Set the following environment variables (e.g., in `.env`) to capture traces:
-
-```
-LANGSMITH_TRACING=true
-LANGSMITH_API_KEY=your_api_key
-# Optional
-LANGSMITH_PROJECT=your_project   # older releases may use LANGCHAIN_PROJECT
-LANGSMITH_HIDE_INPUTS=true
-LANGSMITH_HIDE_OUTPUTS=true
-```
-
-### xAI Grok configuration
-
-Set the model via a single source (Context.model / `MODEL` env):
-
-```
-MODEL=xai/grok-4-1-fast-non-reasoning-latest
-XAI_API_KEY=your_xai_api_key
-```
-
-To fall back to DeepSeek (default), use:
-
-```
-MODEL=deepseek/deepseek-chat
-```
-
 
 [^1]: https://python.langchain.com/docs/concepts/#tools

@@ -1,9 +1,15 @@
-"""Router -> Manager -> Analysts LangGraph demo."""
+"""Local shim package to allow src/ layout imports without installation."""
 
 from __future__ import annotations
 
 from importlib import import_module
+from pathlib import Path
 from typing import Any
+
+_HERE = Path(__file__).resolve().parent
+_SRC_PKG = _HERE.parent / "src" / "react_agent"
+if _SRC_PKG.exists():
+    __path__.append(str(_SRC_PKG))  # type: ignore[name-defined]
 
 __all__ = ["graph", "graph_app"]
 

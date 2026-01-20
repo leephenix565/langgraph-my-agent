@@ -1,0 +1,3 @@
+{"catalog_id": "self_check", "question_id": "sha256:0d7e7457b8d5a7680a8dd2965bcdab01ae241f7afd1bdac194a525dd438125fe", "question": "测试问题 B", "lang": "zh", "source": "real", "bucket": "unknown", "meta": {"run_id": "r2", "ts": "t2", "source_file": "f2.jsonl"}}
+{"catalog_id": "self_check", "question_id": "sha256:a0772e6ed55a22823eeef718034f3f7fa4bc435327e594a08512ad6cc3668ed8", "question": "测试问题 A", "lang": "zh", "source": "real", "bucket": "unknown", "meta": {"run_id": "r1", "ts": "t1", "source_file": "f1.jsonl"}}
+{"catalog_id": "self_check", "question_id": "sha256:76a5a09c035e7ab4743adbd63ded8a0223e560f4a69586e794e2417d874e4657", "question": "测试问题 C", "lang": "zh", "source": "teacher", "bucket": "b2"}
