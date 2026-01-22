@@ -57,6 +57,49 @@ python export_router_sft_dataset.py \
 `id, messages[system+user], response, meta`
 MANIFEST（在 `data/router_sft/`）会记录：`seed, val_ratio, in_ok_sha256, out_train_sha256, out_val_sha256`。
 
+### 3.3 数据准备（自动打标 + 过滤）
+脚本：`tools/prepare_router_sft.py`
+```bash
+python tools/prepare_router_sft.py \
+  --in-train data/sft/router_sft_messages_<catalog_id>.train.jsonl \
+  --in-val data/sft/router_sft_messages_<catalog_id>.val.jsonl \
+  --out-dir data/sft/prepared \
+  --filter-mode strict
+```
+输出：`prepared_train.jsonl / prepared_val.jsonl`（messages 追加 assistant 回合，meta 写入 parse_ok/parse_error 等）。
+
+### 3.4 QLoRA SFT 训练（Qwen3-4B）
+依赖（可选）：`pip install -r requirements-train.txt`
+脚本：`tools/train_router_sft_qlora.py`
+```bash
+python tools/train_router_sft_qlora.py \
+  --base-model-path /root/autodl-tmp/models/Qwen3-4B-Instruct-2507 \
+  --train-jsonl data/sft/prepared/prepared_train.jsonl \
+  --val-jsonl data/sft/prepared/prepared_val.jsonl \
+  --output-dir /root/autodl-tmp/out/router_sft_qlora \
+  --max-seq-len 8192 \
+  --seed 42 \
+  --per-device-train-batch-size 1 \
+  --gradient-accumulation-steps 16 \
+  --lr 2e-4 \
+  --num-epochs 1
+```
+
+### 3.5 Post-train eval / gate（HF）
+使用 merge 后模型路径或 adapter 合并后的模型路径：
+```bash
+python tools/run_regression_eval.py \
+  --val-messages data/sft/prepared/prepared_val.jsonl \
+  --mode hf \
+  --hf-model-path /root/autodl-tmp/out/router_sft_qlora/merged \
+  --device cuda \
+  --temperature 0 \
+  --seed 42 \
+  --max-items 2 \
+  --gate-mode repro \
+  --out-dir /root/autodl-tmp/out/regression_eval
+```
+
 ## 4) 评测 / 批跑（run_graph_batch 缺失的替代流程）
 
 仓库中**不存在** `run_graph_batch` 脚本。实际替代流程如下：

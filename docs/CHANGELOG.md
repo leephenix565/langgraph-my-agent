@@ -37,3 +37,8 @@
 - Files: `tools/eval_router_outputs.py`, `tools/run_regression_eval.py`, `docs/SYSTEM_MAP.md`
 - Added `preds_content_sha256` (id+raw_text) and use it for repro gating to ignore meta run_ts
 - Verify: run HF repro gate twice and confirm `diff_keys` empty
+
+## 2026-01-09 - Phase 3.1 Router-SFT minimal chain
+- Files: `tools/prepare_router_sft.py`, `tools/train_router_sft_qlora.py`, `requirements-train.txt`, `docs/SYSTEM_MAP.md`
+- Added parse-based data prep (strict by parse_ok) and QLoRA SFT trainer; documented prepare/train/eval commands
+- Verify: run prepare -> train (small subset) -> run_regression_eval on merged model
