@@ -118,6 +118,16 @@ def _extract_raw_text(record: Dict[str, Any]) -> str:
     return ""
 
 
+def _preds_content_sha256(records: Iterable[Dict[str, Any]]) -> str:
+    h = hashlib.sha256()
+    for record in records:
+        rec_id = record.get("id") or record.get("question_id") or ""
+        raw_text = _extract_raw_text(record)
+        chunk = f"{rec_id}\n{raw_text}\n".encode("utf-8")
+        h.update(chunk)
+    return h.hexdigest()
+
+
 def compute_metrics(records: Iterable[Dict[str, Any]], agent_catalog: Dict[str, List[str]]) -> Dict[str, Any]:
     total = 0
     valid_json = 0
@@ -206,6 +216,7 @@ def main() -> int:
     records, invalid_lines = _read_jsonl(in_path)
 
     metrics = compute_metrics(records, agent_catalog)
+    preds_content_sha256 = _preds_content_sha256(records)
     catalog_latest_path = Path("data/catalogs/LATEST")
     catalog_latest_sha256 = _sha256_file(catalog_latest_path) if catalog_latest_path.exists() else "unknown"
     catalog_resolved_path = catalog_prompt if catalog_prompt.exists() else None
@@ -229,6 +240,7 @@ def main() -> int:
         "git_commit": _git_commit(),
         "preds_path": str(in_path),
         "preds_sha256": _sha256_file(in_path),
+        "preds_content_sha256": preds_content_sha256,
         "catalog_latest_path": str(catalog_latest_path),
         "catalog_latest_sha256": catalog_latest_sha256,
         "catalog_resolved_path": str(catalog_resolved_path) if catalog_resolved_path else "unknown",

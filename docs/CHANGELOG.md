@@ -32,3 +32,8 @@
 - Files: `tools/generate_router_preds_hf.py`
 - Added truncation for overlong prompts with max context detection; caps total length by reserving tokens for generation
 - Verify: `python tools/generate_router_preds_hf.py --model-path sshleifer/tiny-gpt2 --max-items 2 --max-new-tokens 512 ...`
+
+## 2026-01-09 - Repro gate uses content hash
+- Files: `tools/eval_router_outputs.py`, `tools/run_regression_eval.py`, `docs/SYSTEM_MAP.md`
+- Added `preds_content_sha256` (id+raw_text) and use it for repro gating to ignore meta run_ts
+- Verify: run HF repro gate twice and confirm `diff_keys` empty

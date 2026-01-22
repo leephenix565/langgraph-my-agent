@@ -29,7 +29,7 @@ def _load_meta(path: Path) -> Dict[str, str]:
 
 
 def _compare_meta(meta1: Dict[str, str], meta2: Dict[str, str], gate_mode: str) -> Dict[str, object]:
-    keys = ["git_commit", "preds_sha256", "val_messages_sha256", "catalog_sha256"]
+    keys = ["git_commit", "preds_content_sha256", "val_messages_sha256", "catalog_sha256"]
     if gate_mode == "condition":
         hard_keys = ["git_commit", "val_messages_sha256", "catalog_sha256"]
     else:

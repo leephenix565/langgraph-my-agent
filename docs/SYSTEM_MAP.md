@@ -122,7 +122,7 @@ python tools/run_regression_eval.py \
 ```
 
 判定规则：
-- `--gate-mode repro`（默认）：用于本地 HF、temperature=0，要求完全复现；看 `meta_match` 与 `diff_keys`。
+- `--gate-mode repro`（默认）：用于本地 HF、temperature=0，要求完全复现；比较 `preds_content_sha256`（稳定内容哈希）并看 `meta_match` 与 `diff_keys`。
 - `--gate-mode condition`：用于 provider 或允许随机场景，忽略 `preds_sha256`；看 `hard_match` 与 `soft_mismatch_keys`。
 
 HF 可复现推荐命令（CPU）：
