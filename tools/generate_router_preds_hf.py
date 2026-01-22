@@ -56,6 +56,17 @@ def _sha256_file(path: Path) -> str:
     return h.hexdigest()
 
 
+def _resolve_max_input_tokens(model, tokenizer, fallback: int = 2048) -> int:
+    for attr in ("max_position_embeddings", "n_positions", "max_seq_len", "max_sequence_length"):
+        val = getattr(getattr(model, "config", None), attr, None)
+        if isinstance(val, int) and val > 0:
+            return val
+    tmax = getattr(tokenizer, "model_max_length", None)
+    if isinstance(tmax, int) and 0 < tmax < 100000:
+        return tmax
+    return fallback
+
+
 def _seed_everything(seed: int, torch, hf_set_seed) -> None:
     random.seed(seed)
     try:
@@ -118,6 +129,7 @@ def main() -> int:
     model = AutoModelForCausalLM.from_pretrained(args.model_path)
     model.to(args.device)
     model.eval()
+    max_input_tokens = _resolve_max_input_tokens(model, tokenizer)
 
     in_path = Path(args.in_path)
     out_path = Path(args.out)
@@ -140,11 +152,21 @@ def main() -> int:
         if not isinstance(messages, list) or not messages:
             raise ValueError("Record missing messages list")
         prompt = _messages_to_prompt(messages)
-        inputs = tokenizer(prompt, return_tensors="pt")
+        orig_ids = tokenizer.encode(prompt, add_special_tokens=False)
+        orig_len = len(orig_ids)
+        inputs = tokenizer(
+            prompt,
+            return_tensors="pt",
+            truncation=True,
+            max_length=max_input_tokens,
+        )
         input_ids = inputs["input_ids"].to(args.device)
         attention_mask = inputs.get("attention_mask")
         if attention_mask is not None:
             attention_mask = attention_mask.to(args.device)
+        input_truncated = orig_len > max_input_tokens
+        if input_truncated:
+            print(f"truncate input: {rec_id} {orig_len}->{max_input_tokens}")
 
         with torch.no_grad():
             output_ids = model.generate(
@@ -169,6 +191,9 @@ def main() -> int:
                     "seed": args.seed,
                     "do_sample": do_sample,
                     "temperature": args.temperature,
+                    "input_tokens": orig_len,
+                    "max_input_tokens": max_input_tokens,
+                    "input_truncated": input_truncated,
                     "max_new_tokens": args.max_new_tokens,
                     "device": args.device,
                 },

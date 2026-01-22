@@ -27,3 +27,8 @@
 - Files: `tools/run_regression_eval.py`, `docs/SYSTEM_MAP.md`
 - Added `--seed` to regression runner and passed through to HF preds generation
 - Verify: `python tools/run_regression_eval.py --mode hf --seed 42 --gate-mode repro ...`
+
+## 2026-01-09 - HF preds 输入截断
+- Files: `tools/generate_router_preds_hf.py`
+- Added truncation for overlong prompts with max context detection; emits meta flags for truncation
+- Verify: `python tools/generate_router_preds_hf.py --model-path sshleifer/tiny-gpt2 --max-items 2 ...`
