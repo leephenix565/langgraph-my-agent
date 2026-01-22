@@ -76,6 +76,7 @@ def main() -> int:
     ap.add_argument("--catalog-id", default=None)
     ap.add_argument("--catalog-prompt", default=None)
     ap.add_argument("--gate-mode", choices=["repro", "condition"], default="repro")
+    ap.add_argument("--seed", type=int, default=42)
     args = ap.parse_args()
 
     out_dir = Path(args.out_dir)
@@ -116,6 +117,8 @@ def main() -> int:
                 str(args.max_new_tokens),
                 "--temperature",
                 str(args.temperature),
+                "--seed",
+                str(args.seed),
             ]
             if args.max_items is not None:
                 cmd += ["--max-items", str(args.max_items)]

@@ -22,3 +22,8 @@
 - Files: `tools/generate_router_preds_hf.py`, `requirements-hf.txt`, `docs/SYSTEM_MAP.md`
 - Added seed control and meta fields for reproducible HF preds; documented optional HF deps
 - Verify: HF preds -> eval -> regression gate with `--gate-mode repro`
+
+## 2026-01-09 - Runner 透传 seed
+- Files: `tools/run_regression_eval.py`, `docs/SYSTEM_MAP.md`
+- Added `--seed` to regression runner and passed through to HF preds generation
+- Verify: `python tools/run_regression_eval.py --mode hf --seed 42 --gate-mode repro ...`
