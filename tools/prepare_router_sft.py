@@ -87,6 +87,19 @@ def _append_assistant(messages: List[Dict[str, Any]], response: str) -> List[Dic
     return out
 
 
+def _strip_assistant(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    out: List[Dict[str, Any]] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        role = msg.get("role")
+        content = msg.get("content")
+        if role == "assistant":
+            continue
+        out.append({"role": role, "content": content})
+    return out
+
+
 def _label_record(
     record: Dict[str, Any],
     agent_catalog: Dict[str, List[str]],
@@ -98,14 +111,15 @@ def _label_record(
     response_text = response if isinstance(response, str) else ""
     plan, modes, stats = router_parse.parse_router_layers_with_stats(response_text, agent_catalog)
     parse_ok = bool(stats.get("parse_ok"))
-    parse_error = None if parse_ok else ("used_default_plan" if stats.get("used_default_plan") else "parse_failed")
+    used_default = bool(stats.get("used_default_plan"))
+    parse_error = None if parse_ok else ("used_default_plan" if used_default else "parse_failed")
 
     meta = dict(record.get("meta") or {})
     meta.update(
         {
             "parse_ok": parse_ok,
             "parse_error": parse_error,
-            "used_default_plan": bool(stats.get("used_default_plan")),
+            "used_default_plan": used_default,
             "l2_truncated": int(stats.get("l2_truncated", 0)),
             "filtered_agents": int(stats.get("filtered_agents", 0)),
         }
@@ -115,7 +129,7 @@ def _label_record(
     out["messages"] = _append_assistant(messages, response_text)
     out["response"] = response_text
     out["meta"] = meta
-    return out, parse_ok
+    return out, (parse_ok and not used_default)
 
 
 def _process_file(
@@ -124,23 +138,38 @@ def _process_file(
     agent_catalog: Dict[str, List[str]],
     filter_mode: str,
     max_items: int | None,
+    val_messages_out: Path | None,
 ) -> Tuple[int, int, int]:
     total = 0
     parse_ok = 0
+    used_default = 0
     kept = 0
     records_out: List[Dict[str, Any]] = []
+    val_msgs_out: List[Dict[str, Any]] = []
     for record in _read_jsonl(in_path):
         if max_items is not None and total >= max_items:
             break
         total += 1
-        labeled, ok = _label_record(record, agent_catalog)
-        if ok:
+        labeled, strict_ok = _label_record(record, agent_catalog)
+        meta = labeled.get("meta") or {}
+        if meta.get("parse_ok"):
             parse_ok += 1
-        if filter_mode == "strict" and not ok:
+        if meta.get("used_default_plan"):
+            used_default += 1
+        if filter_mode == "strict" and not strict_ok:
             continue
         records_out.append(labeled)
+        if val_messages_out is not None and strict_ok:
+            base_msgs = record.get("messages") or []
+            val_msgs_out.append({"id": record.get("id"), "messages": _strip_assistant(base_msgs)})
         kept += 1
     _write_jsonl(out_path, records_out)
+    if val_messages_out is not None:
+        _write_jsonl(val_messages_out, val_msgs_out)
+    print(
+        f"  {in_path.name}: total={total} parse_ok={parse_ok} "
+        f"used_default_plan={used_default} strict_kept={kept}"
+    )
     return total, parse_ok, kept
 
 
@@ -153,6 +182,7 @@ def main() -> int:
     ap.add_argument("--catalog-id", default=None)
     ap.add_argument("--catalog-prompt", default=None)
     ap.add_argument("--max-items", type=int, default=None, help="Optional cap for smoke tests")
+    ap.add_argument("--emit-val-messages-strict", action="store_true")
     args = ap.parse_args()
 
     catalog_id = _load_catalog_id(args.catalog_id)
@@ -167,18 +197,31 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     out_train = out_dir / "prepared_train.jsonl"
     out_val = out_dir / "prepared_val.jsonl"
+    val_msgs_strict = out_dir / "val_messages_strict.jsonl" if args.emit_val_messages_strict else None
 
     t_total, t_ok, t_kept = _process_file(
-        Path(args.in_train), out_train, agent_catalog, args.filter_mode, args.max_items
+        Path(args.in_train),
+        out_train,
+        agent_catalog,
+        args.filter_mode,
+        args.max_items,
+        None,
     )
     v_total, v_ok, v_kept = _process_file(
-        Path(args.in_val), out_val, agent_catalog, args.filter_mode, args.max_items
+        Path(args.in_val),
+        out_val,
+        agent_catalog,
+        args.filter_mode,
+        args.max_items,
+        val_msgs_strict,
     )
 
     print("prepare_summary:")
     print(f"  filter_mode: {args.filter_mode}")
     print(f"  train_total: {t_total} parse_ok: {t_ok} kept: {t_kept} -> {out_train}")
     print(f"  val_total: {v_total} parse_ok: {v_ok} kept: {v_kept} -> {out_val}")
+    if val_msgs_strict is not None:
+        print(f"  val_messages_strict: {val_msgs_strict}")
     return 0
 
 

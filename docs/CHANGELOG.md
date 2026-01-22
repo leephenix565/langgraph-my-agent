@@ -42,3 +42,8 @@
 - Files: `tools/prepare_router_sft.py`, `tools/train_router_sft_qlora.py`, `requirements-train.txt`, `docs/SYSTEM_MAP.md`
 - Added parse-based data prep (strict by parse_ok) and QLoRA SFT trainer; documented prepare/train/eval commands
 - Verify: run prepare -> train (small subset) -> run_regression_eval on merged model
+
+## 2026-01-09 - Phase 3.1 strict+merge alignment
+- Files: `tools/prepare_router_sft.py`, `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
+- Strict filter now means parse_ok==True AND used_default_plan==False; training command requires merge output for post-train eval
+- Verify: prepare summary includes used_default_plan count; merged dir exists after training
