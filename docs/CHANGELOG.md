@@ -30,5 +30,5 @@
 
 ## 2026-01-09 - HF preds 输入截断
 - Files: `tools/generate_router_preds_hf.py`
-- Added truncation for overlong prompts with max context detection; emits meta flags for truncation
-- Verify: `python tools/generate_router_preds_hf.py --model-path sshleifer/tiny-gpt2 --max-items 2 ...`
+- Added truncation for overlong prompts with max context detection; caps total length by reserving tokens for generation
+- Verify: `python tools/generate_router_preds_hf.py --model-path sshleifer/tiny-gpt2 --max-items 2 --max-new-tokens 512 ...`

@@ -129,7 +129,7 @@ def main() -> int:
     model = AutoModelForCausalLM.from_pretrained(args.model_path)
     model.to(args.device)
     model.eval()
-    max_input_tokens = _resolve_max_input_tokens(model, tokenizer)
+    max_ctx = _resolve_max_input_tokens(model, tokenizer)
 
     in_path = Path(args.in_path)
     out_path = Path(args.out)
@@ -152,32 +152,49 @@ def main() -> int:
         if not isinstance(messages, list) or not messages:
             raise ValueError("Record missing messages list")
         prompt = _messages_to_prompt(messages)
+        want_new = args.max_new_tokens
+        if want_new <= 0:
+            reserve = 0
+        else:
+            reserve = min(max(want_new, 1), max(max_ctx - 1, 0))
+        prompt_max = max(1, max_ctx - reserve) if max_ctx > 0 else 1
         orig_ids = tokenizer.encode(prompt, add_special_tokens=False)
         orig_len = len(orig_ids)
         inputs = tokenizer(
             prompt,
             return_tensors="pt",
             truncation=True,
-            max_length=max_input_tokens,
+            max_length=prompt_max,
         )
         input_ids = inputs["input_ids"].to(args.device)
+        prompt_len = int(input_ids.shape[-1])
         attention_mask = inputs.get("attention_mask")
         if attention_mask is not None:
             attention_mask = attention_mask.to(args.device)
-        input_truncated = orig_len > max_input_tokens
-        if input_truncated:
-            print(f"truncate input: {rec_id} {orig_len}->{max_input_tokens}")
+        input_truncated = orig_len > prompt_max
+        if want_new <= 0:
+            effective_new = 0
+        else:
+            effective_new = min(want_new, max_ctx - prompt_len)
+        generation_truncated = want_new > 0 and effective_new < want_new
+        if input_truncated or generation_truncated:
+            print(
+                f"truncate input: {rec_id} {orig_len}->{prompt_max} "
+                f"new:{want_new}->{effective_new}"
+            )
 
-        with torch.no_grad():
-            output_ids = model.generate(
-                input_ids=input_ids,
-                attention_mask=attention_mask,
-                max_new_tokens=args.max_new_tokens,
-                do_sample=do_sample,
-                temperature=args.temperature if do_sample else None,
-            )[0]
-
-        raw_text = _decode_new_text(tokenizer, output_ids, input_ids.shape[-1])
+        if effective_new <= 0:
+            raw_text = ""
+        else:
+            with torch.no_grad():
+                output_ids = model.generate(
+                    input_ids=input_ids,
+                    attention_mask=attention_mask,
+                    max_new_tokens=effective_new,
+                    do_sample=do_sample,
+                    temperature=args.temperature if do_sample else None,
+                )[0]
+            raw_text = _decode_new_text(tokenizer, output_ids, prompt_len)
         records_out.append(
             {
                 "id": rec_id,
@@ -192,8 +209,14 @@ def main() -> int:
                     "do_sample": do_sample,
                     "temperature": args.temperature,
                     "input_tokens": orig_len,
-                    "max_input_tokens": max_input_tokens,
+                    "max_input_tokens": prompt_max,
                     "input_truncated": input_truncated,
+                    "max_ctx": max_ctx,
+                    "prompt_max": prompt_max,
+                    "prompt_len": prompt_len,
+                    "want_new": want_new,
+                    "effective_new": effective_new,
+                    "generation_truncated": generation_truncated,
                     "max_new_tokens": args.max_new_tokens,
                     "device": args.device,
                 },
