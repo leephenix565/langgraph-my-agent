@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import inspect
 import json
 import os
 from typing import Any, Dict, List
@@ -29,6 +30,12 @@ def _format_messages(tokenizer, messages: List[Dict[str, Any]]) -> str:
         if isinstance(role, str) and isinstance(content, str):
             parts.append(f"{role}: {content}")
     return "\n\n".join(parts)
+
+
+def _filter_kwargs(fn, kwargs: Dict[str, Any]) -> Dict[str, Any]:
+    sig = inspect.signature(fn)
+    params = set(sig.parameters)
+    return {k: v for k, v in kwargs.items() if k in params}
 
 
 def main() -> int:
@@ -62,6 +69,7 @@ def main() -> int:
     tokenizer = AutoTokenizer.from_pretrained(args.base_model_path, use_fast=True, trust_remote_code=True)
     if tokenizer.pad_token is None:
         tokenizer.pad_token = tokenizer.eos_token
+    tokenizer.model_max_length = args.max_seq_len
 
     model = AutoModelForCausalLM.from_pretrained(
         args.base_model_path,
@@ -97,38 +105,49 @@ def main() -> int:
         dataset["validation"] = dataset["validation"].select(range(min(args.max_eval_samples, len(dataset["validation"]))))
 
     def formatting_func(example: Dict[str, Any]) -> str:
+        text = example.get("text")
+        if isinstance(text, str) and text:
+            return text
         messages = example.get("messages") or []
         return _format_messages(tokenizer, messages)
 
     bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
-    training_args = TrainingArguments(
-        output_dir=args.output_dir,
-        num_train_epochs=args.num_epochs,
-        max_steps=args.max_steps if args.max_steps and args.max_steps > 0 else -1,
-        per_device_train_batch_size=args.per_device_train_batch_size,
-        gradient_accumulation_steps=args.gradient_accumulation_steps,
-        learning_rate=args.lr,
-        logging_steps=args.logging_steps,
-        save_steps=args.save_steps,
-        eval_steps=args.eval_steps,
-        evaluation_strategy="steps",
-        save_total_limit=2,
-        bf16=bf16,
-        fp16=False,
-        report_to=[],
-        seed=args.seed,
-    )
+    ta_kwargs: Dict[str, Any] = {
+        "output_dir": args.output_dir,
+        "num_train_epochs": args.num_epochs,
+        "max_steps": args.max_steps if args.max_steps and args.max_steps > 0 else -1,
+        "per_device_train_batch_size": args.per_device_train_batch_size,
+        "gradient_accumulation_steps": args.gradient_accumulation_steps,
+        "learning_rate": args.lr,
+        "logging_steps": args.logging_steps,
+        "save_steps": args.save_steps,
+        "eval_steps": args.eval_steps,
+        "save_total_limit": 2,
+        "bf16": bf16,
+        "fp16": False,
+        "report_to": [],
+        "seed": args.seed,
+    }
+    if "eval_strategy" in inspect.signature(TrainingArguments.__init__).parameters:
+        ta_kwargs["eval_strategy"] = "steps"
+    else:
+        ta_kwargs["evaluation_strategy"] = "steps"
+    training_args = TrainingArguments(**_filter_kwargs(TrainingArguments.__init__, ta_kwargs))
 
-    trainer = SFTTrainer(
-        model=model,
-        tokenizer=tokenizer,
-        train_dataset=dataset["train"],
-        eval_dataset=dataset["validation"],
-        peft_config=peft_config,
-        max_seq_length=args.max_seq_len,
-        formatting_func=formatting_func,
-        args=training_args,
-    )
+    trainer_kwargs: Dict[str, Any] = {
+        "model": model,
+        "train_dataset": dataset["train"],
+        "eval_dataset": dataset["validation"],
+        "peft_config": peft_config,
+        "formatting_func": formatting_func,
+        "args": training_args,
+    }
+    sig = inspect.signature(SFTTrainer.__init__).parameters
+    if "processing_class" in sig:
+        trainer_kwargs["processing_class"] = tokenizer
+    elif "tokenizer" in sig:
+        trainer_kwargs["tokenizer"] = tokenizer
+    trainer = SFTTrainer(**_filter_kwargs(SFTTrainer.__init__, trainer_kwargs))
 
     trainer.train()
     trainer.save_model(args.output_dir)

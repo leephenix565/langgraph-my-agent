@@ -47,3 +47,8 @@
 - Files: `tools/prepare_router_sft.py`, `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
 - Strict filter now means parse_ok==True AND used_default_plan==False; training command requires merge output for post-train eval
 - Verify: prepare summary includes used_default_plan count; merged dir exists after training
+
+## 2026-01-09 - Phase 3.1 training script compatibility
+- Files: `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
+- Added signature-based kwargs filtering for TrainingArguments/SFTTrainer; use processing_class and tokenizer.model_max_length
+- Verify: smoke train no longer errors on max_seq_length/tokenizer kwargs under trl 0.27
