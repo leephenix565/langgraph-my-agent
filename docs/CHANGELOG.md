@@ -50,5 +50,5 @@
 
 ## 2026-01-09 - Phase 3.1 training script compatibility
 - Files: `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
-- Added signature-based kwargs filtering for TrainingArguments/SFTTrainer; use processing_class and tokenizer.model_max_length
+- Added signature-based kwargs filtering for TrainingArguments/SFTTrainer; use processing_class and tokenizer.model_max_length/SFTConfig.max_length
 - Verify: smoke train no longer errors on max_seq_length/tokenizer kwargs under trl 0.27

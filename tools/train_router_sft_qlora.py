@@ -14,6 +14,10 @@ from datasets import load_dataset
 from peft import LoraConfig, prepare_model_for_kbit_training
 from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
 from trl import SFTTrainer
+try:
+    from trl import SFTConfig
+except Exception:  # pragma: no cover - optional based on trl version
+    SFTConfig = None
 
 
 def _format_messages(tokenizer, messages: List[Dict[str, Any]]) -> str:
@@ -36,6 +40,13 @@ def _filter_kwargs(fn, kwargs: Dict[str, Any]) -> Dict[str, Any]:
     sig = inspect.signature(fn)
     params = set(sig.parameters)
     return {k: v for k, v in kwargs.items() if k in params}
+
+
+def _build_sft_config(max_length: int) -> Any | None:
+    if SFTConfig is None:
+        return None
+    cfg_kwargs = {"max_length": max_length}
+    return SFTConfig(**_filter_kwargs(SFTConfig.__init__, cfg_kwargs))
 
 
 def main() -> int:
@@ -147,6 +158,9 @@ def main() -> int:
         trainer_kwargs["processing_class"] = tokenizer
     elif "tokenizer" in sig:
         trainer_kwargs["tokenizer"] = tokenizer
+    sft_config = _build_sft_config(args.max_seq_len)
+    if sft_config is not None and "sft_config" in sig:
+        trainer_kwargs["sft_config"] = sft_config
     trainer = SFTTrainer(**_filter_kwargs(SFTTrainer.__init__, trainer_kwargs))
 
     trainer.train()
