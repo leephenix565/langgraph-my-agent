@@ -11,7 +11,7 @@ from typing import Any, Dict, List
 
 import torch
 from datasets import load_dataset
-from peft import LoraConfig, prepare_model_for_kbit_training
+from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
 from transformers import (
     AutoModelForCausalLM,
     AutoTokenizer,
@@ -45,6 +45,16 @@ def _filter_kwargs(fn, kwargs: Dict[str, Any]) -> Dict[str, Any]:
     sig = inspect.signature(fn)
     params = set(sig.parameters)
     return {k: v for k, v in kwargs.items() if k in params}
+
+
+def _find_lora_targets(model) -> List[str]:
+    candidates = {"q_proj", "k_proj", "v_proj", "o_proj", "gate_proj", "up_proj", "down_proj"}
+    found: set[str] = set()
+    for name, _module in model.named_modules():
+        leaf = name.split(".")[-1]
+        if leaf in candidates:
+            found.add(leaf)
+    return sorted(found) if found else sorted(candidates)
 
 
 def _build_sft_config(max_length: int) -> Any | None:
@@ -165,16 +175,11 @@ def main() -> int:
         lora_dropout=0.05,
         bias="none",
         task_type="CAUSAL_LM",
-        target_modules=[
-            "q_proj",
-            "k_proj",
-            "v_proj",
-            "o_proj",
-            "gate_proj",
-            "up_proj",
-            "down_proj",
-        ],
+        target_modules=_find_lora_targets(model),
     )
+    model = get_peft_model(model, peft_config)
+    if hasattr(model, "print_trainable_parameters"):
+        model.print_trainable_parameters()
 
     data_files = {"train": args.train_jsonl, "validation": args.val_jsonl}
     dataset = load_dataset("json", data_files=data_files)

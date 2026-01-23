@@ -52,3 +52,8 @@
 - Files: `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
 - Added completion-only masking via Trainer and prompt truncation control to avoid invalid JSON outputs
 - Verify: smoke train then post-train eval valid_json_rate > 0
+
+## 2026-01-09 - QLoRA attach LoRA adapters
+- Files: `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
+- Attach LoRA adapters to 4-bit base (QLoRA) so Trainer can fine-tune; print trainable params
+- Verify: smoke train no longer errors on quantized model
