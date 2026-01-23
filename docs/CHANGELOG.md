@@ -57,3 +57,7 @@
 - Files: `tools/train_router_sft_qlora.py`, `docs/SYSTEM_MAP.md`
 - Attach LoRA adapters to 4-bit base (QLoRA) so Trainer can fine-tune; print trainable params
 - Verify: smoke train no longer errors on quantized model
+
+## 2026-01-09 - HF preds canonical JSON
+- Files: `tools/generate_router_preds_hf.py`, `docs/SYSTEM_MAP.md`
+- Normalize raw_text to first JSON object (compact dump) to improve valid_json_rate

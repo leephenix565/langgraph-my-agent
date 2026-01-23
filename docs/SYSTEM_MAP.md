@@ -130,6 +130,7 @@ python tools/generate_router_preds_hf.py \
   --max-items 2 --device cpu
 ```
 每条记录会附带 `meta`：`hf_model_id, prompt_format, source_val_path/source_val_sha256, run_ts, seed, do_sample, temperature`。
+HF preds 会将 `raw_text` 规范化为首个 JSON 对象的 compact 形式（若无 JSON 则保留原文本）。
 
 ### 4.3 评测
 脚本：`tools/eval_router_outputs.py`

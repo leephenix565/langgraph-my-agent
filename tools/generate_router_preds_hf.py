@@ -83,6 +83,49 @@ def _seed_everything(seed: int, torch, hf_set_seed) -> None:
         hf_set_seed(seed)
 
 
+def _extract_first_json(text: str) -> str | None:
+    start = None
+    depth = 0
+    in_str = False
+    escape = False
+    for i, ch in enumerate(text):
+        if start is None:
+            if ch == "{":
+                start = i
+                depth = 1
+            continue
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == "\"":
+                in_str = False
+            continue
+        if ch == "\"":
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = text[start : i + 1]
+                try:
+                    json.loads(candidate)
+                    return candidate
+                except Exception:
+                    return None
+    return None
+
+
+def _compact_json(text: str) -> str | None:
+    try:
+        obj = json.loads(text)
+    except Exception:
+        return None
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":"))
+
+
 def _messages_to_prompt(messages: List[Dict[str, Any]]) -> str:
     parts: List[str] = []
     for msg in messages:
@@ -184,7 +227,7 @@ def main() -> int:
             )
 
         if effective_new <= 0:
-            raw_text = ""
+            raw_full = ""
         else:
             with torch.no_grad():
                 output_ids = model.generate(
@@ -194,11 +237,15 @@ def main() -> int:
                     do_sample=do_sample,
                     temperature=args.temperature if do_sample else None,
                 )[0]
-            raw_text = _decode_new_text(tokenizer, output_ids, prompt_len)
+            raw_full = _decode_new_text(tokenizer, output_ids, prompt_len)
+        candidate = _extract_first_json(raw_full or "")
+        compact = _compact_json(candidate) if candidate else None
+        raw_text = compact if compact is not None else (raw_full or "").strip()
         records_out.append(
             {
                 "id": rec_id,
                 "raw_text": raw_text,
+                "raw_text_full": raw_full,
                 "meta": {
                     "hf_model_id": args.model_path,
                     "prompt_format": "flattened_text",
