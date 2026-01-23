@@ -19,6 +19,52 @@ if str(SRC_DIR) not in sys.path:
 from react_agent import router_parse
 
 
+def _extract_first_json(text: str) -> str | None:
+    start = None
+    depth = 0
+    in_str = False
+    escape = False
+    for i, ch in enumerate(text):
+        if start is None:
+            if ch == "{":
+                start = i
+                depth = 1
+            continue
+        if in_str:
+            if escape:
+                escape = False
+            elif ch == "\\":
+                escape = True
+            elif ch == "\"":
+                in_str = False
+            continue
+        if ch == "\"":
+            in_str = True
+        elif ch == "{":
+            depth += 1
+        elif ch == "}":
+            depth -= 1
+            if depth == 0:
+                candidate = text[start : i + 1]
+                try:
+                    json.loads(candidate)
+                    return candidate
+                except Exception:
+                    return None
+    return None
+
+
+def _canonicalize_response(text: str) -> tuple[str, bool]:
+    candidate = _extract_first_json(text)
+    if not candidate:
+        return text, False
+    try:
+        obj = json.loads(candidate)
+    except Exception:
+        return text, False
+    return json.dumps(obj, ensure_ascii=False, separators=(",", ":")), True
+
+
 def _read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
     with path.open("r", encoding="utf-8") as fh:
         for line_no, line in enumerate(fh, start=1):
@@ -109,6 +155,7 @@ def _label_record(
     if not isinstance(messages, list) or not messages:
         raise ValueError("Record missing messages list")
     response_text = response if isinstance(response, str) else ""
+    canonical_text, canon_ok = _canonicalize_response(response_text)
     plan, modes, stats = router_parse.parse_router_layers_with_stats(response_text, agent_catalog)
     parse_ok = bool(stats.get("parse_ok"))
     used_default = bool(stats.get("used_default_plan"))
@@ -122,12 +169,13 @@ def _label_record(
             "used_default_plan": used_default,
             "l2_truncated": int(stats.get("l2_truncated", 0)),
             "filtered_agents": int(stats.get("filtered_agents", 0)),
+            "canon_success": canon_ok,
         }
     )
 
     out = dict(record)
-    out["messages"] = _append_assistant(messages, response_text)
-    out["response"] = response_text
+    out["messages"] = _append_assistant(messages, canonical_text)
+    out["response"] = canonical_text
     out["meta"] = meta
     return out, (parse_ok and not used_default)
 
@@ -144,6 +192,7 @@ def _process_file(
     parse_ok = 0
     used_default = 0
     kept = 0
+    canon_ok = 0
     records_out: List[Dict[str, Any]] = []
     val_msgs_out: List[Dict[str, Any]] = []
     for record in _read_jsonl(in_path):
@@ -156,6 +205,8 @@ def _process_file(
             parse_ok += 1
         if meta.get("used_default_plan"):
             used_default += 1
+        if meta.get("canon_success"):
+            canon_ok += 1
         if filter_mode == "strict" and not strict_ok:
             continue
         records_out.append(labeled)
@@ -168,7 +219,7 @@ def _process_file(
         _write_jsonl(val_messages_out, val_msgs_out)
     print(
         f"  {in_path.name}: total={total} parse_ok={parse_ok} "
-        f"used_default_plan={used_default} strict_kept={kept}"
+        f"used_default_plan={used_default} strict_kept={kept} canon_success={canon_ok}"
     )
     return total, parse_ok, kept
 

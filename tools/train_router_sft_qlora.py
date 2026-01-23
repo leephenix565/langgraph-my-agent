@@ -12,8 +12,13 @@ from typing import Any, Dict, List
 import torch
 from datasets import load_dataset
 from peft import LoraConfig, prepare_model_for_kbit_training
-from transformers import AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, TrainingArguments
-from trl import SFTTrainer
+from transformers import (
+    AutoModelForCausalLM,
+    AutoTokenizer,
+    BitsAndBytesConfig,
+    Trainer,
+    TrainingArguments,
+)
 try:
     from trl import SFTConfig
 except Exception:  # pragma: no cover - optional based on trl version
@@ -47,6 +52,69 @@ def _build_sft_config(max_length: int) -> Any | None:
         return None
     cfg_kwargs = {"max_length": max_length}
     return SFTConfig(**_filter_kwargs(SFTConfig.__init__, cfg_kwargs))
+
+
+def _split_prompt_completion(tokenizer, messages: List[Dict[str, Any]], response_text: str) -> tuple[str, str]:
+    prompt_msgs: List[Dict[str, Any]] = []
+    for msg in messages:
+        if not isinstance(msg, dict):
+            continue
+        if msg.get("role") == "assistant":
+            continue
+        prompt_msgs.append(msg)
+    if hasattr(tokenizer, "apply_chat_template"):
+        prompt_text = tokenizer.apply_chat_template(
+            prompt_msgs, tokenize=False, add_generation_prompt=True
+        )
+    else:
+        prompt_text = _format_messages(tokenizer, prompt_msgs)
+    completion_text = response_text
+    return prompt_text, completion_text
+
+
+def _tokenize_completion_only(
+    tokenizer,
+    prompt_text: str,
+    completion_text: str,
+    max_len: int,
+) -> Dict[str, Any]:
+    prompt_ids = tokenizer.encode(prompt_text, add_special_tokens=False)
+    completion_ids = tokenizer.encode(completion_text, add_special_tokens=False)
+    eos_id = tokenizer.eos_token_id or tokenizer.sep_token_id or tokenizer.pad_token_id or 0
+    if len(prompt_ids) + len(completion_ids) + 1 > max_len:
+        avail = max_len - len(completion_ids) - 1
+        if avail < 0:
+            completion_ids = completion_ids[: max(0, max_len - 1)]
+            prompt_ids = []
+        else:
+            prompt_ids = prompt_ids[-avail:]
+    input_ids = prompt_ids + completion_ids + ([eos_id] if eos_id is not None else [])
+    labels = [-100] * len(prompt_ids) + completion_ids + ([eos_id] if eos_id is not None else [])
+    return {"input_ids": input_ids, "labels": labels}
+
+
+class CompletionOnlyCollator:
+    def __init__(self, tokenizer):
+        self.tokenizer = tokenizer
+
+    def __call__(self, features: List[Dict[str, Any]]) -> Dict[str, Any]:
+        max_len = max(len(f["input_ids"]) for f in features)
+        pad_id = self.tokenizer.pad_token_id or 0
+        input_ids = []
+        attention_mask = []
+        labels = []
+        for f in features:
+            ids = f["input_ids"]
+            labs = f["labels"]
+            pad_len = max_len - len(ids)
+            input_ids.append(ids + [pad_id] * pad_len)
+            attention_mask.append([1] * len(ids) + [0] * pad_len)
+            labels.append(labs + [-100] * pad_len)
+        return {
+            "input_ids": torch.tensor(input_ids),
+            "attention_mask": torch.tensor(attention_mask),
+            "labels": torch.tensor(labels),
+        }
 
 
 def main() -> int:
@@ -145,23 +213,34 @@ def main() -> int:
         ta_kwargs["evaluation_strategy"] = "steps"
     training_args = TrainingArguments(**_filter_kwargs(TrainingArguments.__init__, ta_kwargs))
 
+    sft_config = _build_sft_config(args.max_seq_len)
+    tokenizer.model_max_length = args.max_seq_len
+    max_len = args.max_seq_len
+    eos_id = tokenizer.eos_token_id or tokenizer.pad_token_id
+    if tokenizer.pad_token is None:
+        tokenizer.pad_token = tokenizer.eos_token
+
+    def tokenize_fn(example: Dict[str, Any]) -> Dict[str, Any]:
+        messages = example.get("messages") or []
+        response = example.get("response") or ""
+        prompt_text, completion_text = _split_prompt_completion(tokenizer, messages, response)
+        return _tokenize_completion_only(tokenizer, prompt_text, completion_text, max_len)
+
+    column_names = dataset["train"].column_names
+    tokenized_train = dataset["train"].map(tokenize_fn, remove_columns=column_names)
+    tokenized_eval = dataset["validation"].map(tokenize_fn, remove_columns=column_names)
+
+    data_collator = CompletionOnlyCollator(tokenizer)
+
     trainer_kwargs: Dict[str, Any] = {
         "model": model,
-        "train_dataset": dataset["train"],
-        "eval_dataset": dataset["validation"],
-        "peft_config": peft_config,
-        "formatting_func": formatting_func,
         "args": training_args,
+        "train_dataset": tokenized_train,
+        "eval_dataset": tokenized_eval,
+        "data_collator": data_collator,
+        "tokenizer": tokenizer,
     }
-    sig = inspect.signature(SFTTrainer.__init__).parameters
-    if "processing_class" in sig:
-        trainer_kwargs["processing_class"] = tokenizer
-    elif "tokenizer" in sig:
-        trainer_kwargs["tokenizer"] = tokenizer
-    sft_config = _build_sft_config(args.max_seq_len)
-    if sft_config is not None and "sft_config" in sig:
-        trainer_kwargs["sft_config"] = sft_config
-    trainer = SFTTrainer(**_filter_kwargs(SFTTrainer.__init__, trainer_kwargs))
+    trainer = Trainer(**_filter_kwargs(Trainer.__init__, trainer_kwargs))
 
     trainer.train()
     trainer.save_model(args.output_dir)
