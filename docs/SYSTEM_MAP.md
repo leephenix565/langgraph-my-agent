@@ -74,7 +74,7 @@ strict 口径：`parse_ok == True && used_default_plan == False`。
 依赖（可选）：`pip install -r requirements-train.txt`
 脚本：`tools/train_router_sft_qlora.py`
 Phase 3.1 默认启用合并产物：`--merge-and-save-full-model`。
-兼容说明：transformers 4.57 使用 `eval_strategy`；completion-only 训练（prompt 屏蔽）由 Trainer 处理；QLoRA=4bit base + LoRA adapters（可训练）；长度由 `tokenizer.model_max_length` / `max_seq_len` 控制。
+兼容说明：transformers 4.57 使用 `eval_strategy`；completion-only 训练（prompt 屏蔽）由 Trainer 处理；QLoRA=4bit base + LoRA adapters（可训练）；长度由 `tokenizer.model_max_length` / `max_seq_len` 控制。eval 默认使用与 train 相同的 batch size 并设置 eval_accumulation_steps=1，以避免长序列 OOM。
 ```bash
 python tools/train_router_sft_qlora.py \
   --base-model-path /root/autodl-tmp/models/Qwen3-4B-Instruct-2507 \

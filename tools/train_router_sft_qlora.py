@@ -136,6 +136,7 @@ def main() -> int:
     ap.add_argument("--max-seq-len", type=int, default=8192)
     ap.add_argument("--seed", type=int, default=42)
     ap.add_argument("--per-device-train-batch-size", type=int, default=1)
+    ap.add_argument("--per-device-eval-batch-size", type=int, default=None)
     ap.add_argument("--gradient-accumulation-steps", type=int, default=16)
     ap.add_argument("--lr", type=float, default=2e-4)
     ap.add_argument("--num-epochs", type=int, default=1)
@@ -196,16 +197,23 @@ def main() -> int:
         return _format_messages(tokenizer, messages)
 
     bf16 = torch.cuda.is_available() and torch.cuda.is_bf16_supported()
+    per_eval = (
+        args.per_device_eval_batch_size
+        if args.per_device_eval_batch_size is not None
+        else args.per_device_train_batch_size
+    )
     ta_kwargs: Dict[str, Any] = {
         "output_dir": args.output_dir,
         "num_train_epochs": args.num_epochs,
         "max_steps": args.max_steps if args.max_steps and args.max_steps > 0 else -1,
         "per_device_train_batch_size": args.per_device_train_batch_size,
+        "per_device_eval_batch_size": per_eval,
         "gradient_accumulation_steps": args.gradient_accumulation_steps,
         "learning_rate": args.lr,
         "logging_steps": args.logging_steps,
         "save_steps": args.save_steps,
         "eval_steps": args.eval_steps,
+        "eval_accumulation_steps": 1,
         "save_total_limit": 2,
         "bf16": bf16,
         "fp16": False,
