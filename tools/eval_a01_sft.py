@@ -111,7 +111,7 @@ def main() -> int:
     ap.add_argument("--val-jsonl", required=True, help="FINAL val jsonl")
     ap.add_argument("--out-dir", required=True, help="output directory for eval_report.json")
     ap.add_argument("--max-items", type=int, default=None)
-    ap.add_argument("--max-new-tokens", type=int, default=2048)
+    ap.add_argument("--max-new-tokens", type=int, default=4096)
     ap.add_argument("--temperature", type=float, default=0.0)
     ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
     args = ap.parse_args()
