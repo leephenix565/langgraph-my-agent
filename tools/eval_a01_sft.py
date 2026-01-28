@@ -12,16 +12,6 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
-try:
-    import torch
-    from transformers import AutoModelForCausalLM, AutoTokenizer
-except Exception as exc:  # pragma: no cover
-    raise SystemExit(f"Missing eval deps. Install requirements-hf.txt. ({exc})")
-
-from react_agent import contract_utils
-from react_agent.json_utils import extract_first_json
-
-
 WEIGHT_CANDIDATES = [
     "model.safetensors",
     "model.safetensors.index.json",
@@ -105,16 +95,34 @@ def _collect_model_hashes(model_path: Path) -> Dict[str, str]:
             hashes[name] = _sha256(candidate)
     return hashes
 
-def main() -> int:
-    ap = argparse.ArgumentParser(description="Evaluate a01 SFT outputs on val jsonl.")
+def _build_parser(default_device: str) -> argparse.ArgumentParser:
+    ap = argparse.ArgumentParser(
+        description="Evaluate a01 SFT outputs on val jsonl.",
+        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
+    )
     ap.add_argument("--model-path", required=True, help="HF model path (adapter or merged)")
     ap.add_argument("--val-jsonl", required=True, help="FINAL val jsonl")
     ap.add_argument("--out-dir", required=True, help="output directory for eval_report.json")
     ap.add_argument("--max-items", type=int, default=None)
-    ap.add_argument("--max-new-tokens", type=int, default=2048)
+    ap.add_argument("--max-new-tokens", type=int, default=4096, help="max new tokens for generation")
     ap.add_argument("--temperature", type=float, default=0.0)
-    ap.add_argument("--device", default="cuda" if torch.cuda.is_available() else "cpu")
-    args = ap.parse_args()
+    ap.add_argument("--device", default=default_device)
+    return ap
+
+
+def main() -> int:
+    if "-h" in sys.argv or "--help" in sys.argv:
+        _build_parser("cpu").parse_args()
+        return 0
+
+    try:
+        import torch
+        from transformers import AutoModelForCausalLM, AutoTokenizer
+    except Exception as exc:  # pragma: no cover
+        raise SystemExit(f"Missing eval deps. Install requirements-hf.txt. ({exc})")
+
+    default_device = "cuda" if torch.cuda.is_available() else "cpu"
+    args = _build_parser(default_device).parse_args()
 
     out_dir = Path(args.out_dir)
     out_dir.mkdir(parents=True, exist_ok=True)
@@ -130,6 +138,9 @@ def main() -> int:
     valid_json = 0
     contract_ok = 0
     schema_keys_match = 0
+    from react_agent import contract_utils
+    from react_agent.json_utils import extract_first_json
+
     required_keys = contract_utils.CONTRACT_REQUIRED_KEYS
 
     for rec in _read_jsonl(Path(args.val_jsonl)):

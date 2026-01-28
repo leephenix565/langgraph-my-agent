@@ -1,5 +1,13 @@
 # CHANGELOG
 
+## 2026-01-28 - Phase 4.1 eval truncation hardening (Phase 4.1.6)
+- Files: `tools/eval_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
+- Raised eval default `--max-new-tokens` to 4096 and recorded `max_new_tokens` in eval_report meta.
+- Deferred heavy imports in eval so `--help` works without torch.
+- SYSTEM_MAP runbook notes the 4096 default and the 2048 smoke tradeoff.
+- Acceptance: `python tools/eval_a01_sft.py --help | rg "max-new-tokens"`
+Phase positioning: Phase 4.1.6 improves eval/gate robustness without changing training logic or schema. It targets JSON truncation false failures by setting a safer default and recording the evidence field. Next, keep 4096 for gate runs and only lower for smoke when explicitly accepted.
+
 ## 2026-01-28 - Phase 4.1 branch self-consistency (Phase 4.1.4)
 - Files: `tools/server_preflight.py`, `tools/eval_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
 - Ensured data/router-sft-v1 contains Phase 4.1 scripts and evidence fields referenced by SYSTEM_MAP.
