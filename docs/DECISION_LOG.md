@@ -71,3 +71,11 @@
 - Evidence:
   - `docs/SYSTEM_MAP.md` Phase 4.1 runbook
   - `docs/CHANGELOG.md` Phase 4.1.5 记录
+
+## D10 — Phase 4.1 eval 截断防护
+- Decision: eval 默认 `--max-new-tokens=4096`，并在 eval_report 记录 `max_new_tokens` 以避免截断导致的 gate 假失败。
+- Rationale: 2048 可能截断 JSON 输出，影响 valid_json_rate/contract_ok_rate。
+- Evidence:
+  - `tools/eval_a01_sft.py`
+  - `docs/SYSTEM_MAP.md` Phase 4.1 runbook
+  - `docs/CHANGELOG.md` Phase 4.1.6 记录

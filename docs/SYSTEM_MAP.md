@@ -265,6 +265,7 @@ python tools/eval_a01_sft.py \
 python tools/gate_a01_sft.py \
   --eval-report "$OUT_DIR/eval_report.json"
 ```
+默认 `--max-new-tokens=4096`（避免截断导致 gate 假失败）；smoke 如需更快可手动降到 2048，但需注意可能截断 JSON。
 归档约定：`runs/a01_sft/<run_id>_smoke/` 保留 `preflight.txt` + `run_manifest.json` + `eval_report.json`；不覆盖 `data/a01_sft/final/*`。
 最小排障命令：
 ```bash
