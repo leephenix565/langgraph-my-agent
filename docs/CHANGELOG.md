@@ -8,6 +8,26 @@
 - Acceptance: `python tools/train_a01_sft_qlora.py --base-model-path <model> --train-jsonl data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl --output-dir runs/a01_sft/<run_id> --max-steps 10` then `python tools/eval_a01_sft.py --model-path runs/a01_sft/<run_id> --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl --out-dir runs/a01_sft/<run_id>` and `python tools/gate_a01_sft.py --eval-report runs/a01_sft/<run_id>/eval_report.json`.
 Phase positioning: This is Phase 4.1 to establish a minimal a01 SFT training loop (train → eval → gate) without changing schema or runtime logic. It keeps FINAL data read-only and stores evidence in run manifests. The goal is to make smoke training repeatable on servers and to provide measurable gates for JSON validity and contract compliance. Next, scale training steps and set thresholds based on eval distribution while keeping FINAL frozen.
 
+## 2026-01-28 - Phase 4.1 server preflight evidence (Phase 4.1.1)
+- Files: `tools/server_preflight.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added server preflight script to capture git commit/dirty status, FINAL sha256+line counts, python/pip/torch/cuda versions, and nvidia-smi summary into `runs/.../preflight.txt`.
+- SYSTEM_MAP now references preflight command and run_manifest evidence fields.
+- Acceptance: `python tools/server_preflight.py --out-dir runs/a01_sft/<run_id>`
+Phase positioning: This is a Phase 4.1.1 evidence add-on that does not change training logic. It only adds reproducibility metadata for server runs, making SSH+tmux workflows auditable. Next, run preflight before each smoke train and archive `preflight.txt` with run_manifest and eval_report.
+
+## 2026-01-28 - Phase 4.1 eval evidence hardening (Phase 4.1.2)
+- Files: `tools/eval_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
+- eval_report now includes model weight hashes (if present) and model directory size for reproducibility.
+- SYSTEM_MAP documents the new eval_report evidence fields.
+- Acceptance: `python tools/eval_a01_sft.py --model-path runs/a01_sft/<run_id> --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl --out-dir runs/a01_sft/<run_id>`
+Phase positioning: This Phase 4.1.2 update strengthens eval evidence without changing training or schema. It makes model artifacts auditable by attaching hashes and size to eval reports. Next, use these fields in server runbooks and archive them alongside run_manifest and preflight logs.
+
+## 2026-01-28 - Phase 4.1 preflight hardening (Phase 4.1.3)
+- Files: `tools/server_preflight.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
+- preflight now captures `df -h` summary; SYSTEM_MAP notes AutoDL cache paths and runs/ symlink guidance.
+- Acceptance: `python tools/server_preflight.py --out-dir runs/a01_sft/<run_id>`
+Phase positioning: This Phase 4.1.3 update hardens server evidence capture without changing training logic. It ensures storage context is recorded alongside git/data/model evidence. Next, run preflight before each smoke train and keep preflight.txt with run_manifest and eval_report.
+
 ## 2026-01-28 - data evidence chain + trace flag clarification (Phase 3.3.1)
 - Files: `docs/INDEX.md`, `data/a01_sft/DATA_MANIFEST.md`, `project_analysis.md`, `docs/SYSTEM_MAP.md`, `docs/DECISION_LOG.md`, `docs/CHANGELOG.md`
 - Added DATA_MANIFEST to S0 authority list and conflict rules for FINAL data paths.

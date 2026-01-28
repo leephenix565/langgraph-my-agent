@@ -22,6 +22,16 @@ from react_agent import contract_utils
 from react_agent.json_utils import extract_first_json
 
 
+WEIGHT_CANDIDATES = [
+    "model.safetensors",
+    "model.safetensors.index.json",
+    "pytorch_model.bin",
+    "pytorch_model.bin.index.json",
+    "adapter_model.safetensors",
+    "adapter_model.bin",
+]
+
+
 def _read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
     with path.open("r", encoding="utf-8") as f:
         for line in f:
@@ -63,6 +73,37 @@ def _git_commit() -> str:
     except Exception:
         return "unknown"
 
+
+def _dir_size(path: Path) -> int:
+    if path.is_file():
+        return path.stat().st_size
+    total = 0
+    for item in path.rglob("*"):
+        if item.is_file():
+            total += item.stat().st_size
+    return total
+
+
+def _format_size(num_bytes: int) -> str:
+    units = ["B", "KB", "MB", "GB", "TB"]
+    size = float(num_bytes)
+    for unit in units:
+        if size < 1024.0 or unit == units[-1]:
+            return f"{size:.2f}{unit}"
+        size /= 1024.0
+    return f"{size:.2f}TB"
+
+
+def _collect_model_hashes(model_path: Path) -> Dict[str, str]:
+    hashes: Dict[str, str] = {}
+    if model_path.is_file():
+        hashes[model_path.name] = _sha256(model_path)
+        return hashes
+    for name in WEIGHT_CANDIDATES:
+        candidate = model_path / name
+        if candidate.exists():
+            hashes[name] = _sha256(candidate)
+    return hashes
 
 def main() -> int:
     ap = argparse.ArgumentParser(description="Evaluate a01 SFT outputs on val jsonl.")
@@ -131,11 +172,15 @@ def main() -> int:
         "contract_ok_rate": (contract_ok / total) if total else 0.0,
         "schema_keys_match_rate": (schema_keys_match / total) if total else 0.0,
     }
+    model_dir_bytes = _dir_size(Path(args.model_path))
     report = {
         "meta": {
             "git_commit": _git_commit(),
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "model_path": args.model_path,
+            "model_sha256": _collect_model_hashes(Path(args.model_path)),
+            "model_dir_bytes": model_dir_bytes,
+            "model_dir_human": _format_size(model_dir_bytes),
             "val_jsonl": args.val_jsonl,
             "val_sha256": _sha256(Path(args.val_jsonl)),
             "device": args.device,

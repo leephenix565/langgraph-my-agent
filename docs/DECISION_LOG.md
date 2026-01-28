@@ -42,3 +42,17 @@
   - `tools/eval_a01_sft.py`（valid_json/contract_ok/schema_keys 评测）
   - `tools/gate_a01_sft.py`（阈值门禁 + manifest 断言）
   - `docs/SYSTEM_MAP.md` Phase 4.1 入口命令
+
+## D6 — Phase 4.1 eval 可复核证据
+- Decision: eval_report 记录模型权重 sha256 与模型目录大小，作为评测可复核证据。
+- Rationale: 使服务器评测结果可被追溯到具体模型权重与产物规模。
+- Evidence:
+  - `tools/eval_a01_sft.py`（model_sha256 / model_dir_bytes / model_dir_human）
+  - `docs/SYSTEM_MAP.md` Phase 4.1 eval_report 字段说明
+
+## D7 — Phase 4.1 服务器 preflight 证据必备项
+- Decision: preflight.txt 需包含 git 状态、FINAL 校验、torch/cuda、nvidia-smi 与 `df -h` 存储摘要。
+- Rationale: 保证服务器执行环境与存储上下文可审计。
+- Evidence:
+  - `tools/server_preflight.py`
+  - `docs/SYSTEM_MAP.md` Phase 4.1 preflight 命令与说明

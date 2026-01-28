@@ -194,6 +194,7 @@ pip install -e .
 pip install -r requirements-train.txt
 pip install -r requirements-hf.txt
 ```
+base-model-path 建议指向固定目录或 HF cache（便于复现与日志追踪）。AutoDL 场景可设置 `HF_HOME`/`TRANSFORMERS_CACHE`，并将 `runs/` 指向持久化盘（软链）。
 训练（completion-only QLoRA；只读 FINAL，不覆盖 data/a01_sft/final）：
 ```bash
 python tools/train_a01_sft_qlora.py \
@@ -211,10 +212,16 @@ python tools/eval_a01_sft.py \
   --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl \
   --out-dir runs/a01_sft/20260128_smoke
 ```
+eval_report 证据字段：valid_json_rate / contract_ok_rate / schema_keys_match_rate + model_sha256 / model_dir_size / git_commit。
 门禁（断言 metrics + run_manifest）：
 ```bash
 python tools/gate_a01_sft.py \
   --eval-report runs/a01_sft/20260128_smoke/eval_report.json
+```
+run_manifest 证据字段：git_commit / data_sha256 / seed / package_versions / train_args。
+服务器联动证据（preflight）：
+```bash
+python tools/server_preflight.py --out-dir runs/a01_sft/20260128_smoke
 ```
 
 ### 3.7 AutoDL 事实证据（日志摘记）
