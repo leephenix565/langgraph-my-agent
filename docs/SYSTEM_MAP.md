@@ -347,3 +347,6 @@ rsync -av --delete \
   --exclude ".git" --exclude ".venv" --exclude "data" \
   /tmp/repo_sync/ /root/autodl-tmp/work/my-agent/
 ```
+
+> NOTE (Phase 4.1.6): eval 默认 `--max-new-tokens=4096`，避免 JSON 被截断导致 gate 假失败。
+> smoke 若想更快可手动设为 2048，但需注意可能截断 JSON，从而出现 valid_json_rate 假失败。

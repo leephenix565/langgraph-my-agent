@@ -200,3 +200,6 @@ Phase positioning: This change belongs to Phase 2 documentation landing, focusin
 ## 2026-01-09 - HF preds canonical JSON
 - Files: `tools/generate_router_preds_hf.py`, `docs/SYSTEM_MAP.md`
 - Normalize raw_text to first JSON object (compact dump) to improve valid_json_rate
+
+## 2026-01-28 - Phase 4.1.6 eval truncation hardening
+- Raise eval default `--max-new-tokens` to 4096 to avoid truncation-caused gate false-fail.

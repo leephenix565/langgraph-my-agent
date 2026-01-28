@@ -64,3 +64,6 @@
   - `docs/CHANGELOG.md` Phase 4.1.4 记录
   - `tools/server_preflight.py`
   - `tools/eval_a01_sft.py`
+
+## D10 — Phase 4.1 eval 截断防护
+- Decision: eval 默认 `--max-new-tokens=4096`，避免截断导致 gate 假失败；并在 eval_report.meta 记录 `max_new_tokens` 供复核。
