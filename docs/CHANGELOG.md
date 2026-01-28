@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 2026-01-28 - Phase 4.1 branch self-consistency (Phase 4.1.4)
+- Files: `tools/server_preflight.py`, `tools/eval_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
+- Ensured data/router-sft-v1 contains Phase 4.1 scripts and evidence fields referenced by SYSTEM_MAP.
+- Acceptance: `rg -n "Phase 4.1" docs/SYSTEM_MAP.md` and `python tools/server_preflight.py --help`
+Phase positioning: This Phase 4.1.4 update aligns branch contents with the documented runbook. It does not change schema or training logic, only ensures missing scripts and evidence fields are present on the branch. Next, push the branch and re-run server preflight on AutoDL.
+
 ## 2026-01-28 - a01 SFT Phase 4.1 minimal train/eval/gate (Phase 4.1)
 - Files: `tools/train_a01_sft_qlora.py`, `tools/eval_a01_sft.py`, `tools/gate_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/DECISION_LOG.md`, `docs/CHANGELOG.md`
 - Added a01 SFT completion-only QLoRA training entry (smoke capable) that reads FINAL train/val and writes run_manifest.json.

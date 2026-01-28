@@ -56,3 +56,11 @@
 - Evidence:
   - `tools/server_preflight.py`
   - `docs/SYSTEM_MAP.md` Phase 4.1 preflight 命令与说明
+
+## D8 — Phase 4.1 分支自洽化
+- Decision: data/router-sft-v1 必须包含 Phase 4.1 runbook 依赖的脚本与证据字段。
+- Rationale: 避免 AutoDL 上按文档执行时出现缺脚本的问题。
+- Evidence:
+  - `docs/CHANGELOG.md` Phase 4.1.4 记录
+  - `tools/server_preflight.py`
+  - `tools/eval_a01_sft.py`
