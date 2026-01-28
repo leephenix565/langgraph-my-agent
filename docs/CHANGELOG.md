@@ -6,6 +6,12 @@
 - Acceptance: `rg -n "Phase 4.1" docs/SYSTEM_MAP.md` and `python tools/server_preflight.py --help`
 Phase positioning: This Phase 4.1.4 update aligns branch contents with the documented runbook. It does not change schema or training logic, only ensures missing scripts and evidence fields are present on the branch. Next, push the branch and re-run server preflight on AutoDL.
 
+## 2026-01-28 - Phase 4.1 AutoDL 4090 runbook (Phase 4.1.5)
+- Files: `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
+- Added AutoDL 4090 (24GB) smoke runbook with preflight/train/eval/gate commands and evidence file checklist.
+- Acceptance: copy the runbook block in SYSTEM_MAP and verify `preflight.txt`, `run_manifest.json`, `eval_report.json` exist under `runs/a01_sft/<run_id>_smoke/`.
+Phase positioning: This Phase 4.1.5 update strengthens operational reproducibility for server runs. It does not alter training logic or schemas, only adds a concrete, auditable runbook. Next, execute smoke runs and archive evidence files alongside manifests.
+
 ## 2026-01-28 - a01 SFT Phase 4.1 minimal train/eval/gate (Phase 4.1)
 - Files: `tools/train_a01_sft_qlora.py`, `tools/eval_a01_sft.py`, `tools/gate_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/DECISION_LOG.md`, `docs/CHANGELOG.md`
 - Added a01 SFT completion-only QLoRA training entry (smoke capable) that reads FINAL train/val and writes run_manifest.json.

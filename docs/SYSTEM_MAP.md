@@ -224,6 +224,57 @@ run_manifest 证据字段：git_commit / data_sha256 / seed / package_versions /
 python tools/server_preflight.py --out-dir runs/a01_sft/20260128_smoke
 ```
 
+#### AutoDL 4090 (24GB) smoke runbook（可复制）
+证据文件：`preflight.txt` / `run_manifest.json` / `eval_report.json`（均在同一 `runs/...` 目录）。
+```bash
+# 0) 目录与缓存
+export HF_HOME=/root/autodl-tmp/hf
+export TRANSFORMERS_CACHE=/root/autodl-tmp/hf
+mkdir -p /root/autodl-tmp/models
+mkdir -p /root/autodl-tmp/runs
+ln -sfn /root/autodl-tmp/runs runs
+
+# 1) 依赖
+pip install -e .
+pip install -r requirements-train.txt
+pip install -r requirements-hf.txt
+
+# 2) 拉取 base model（示例）
+python -c "from transformers import AutoTokenizer, AutoModelForCausalLM; AutoTokenizer.from_pretrained('<hf_model_id>', cache_dir='/root/autodl-tmp/models'); AutoModelForCausalLM.from_pretrained('<hf_model_id>', cache_dir='/root/autodl-tmp/models')"
+
+# 3) preflight
+RUN_ID=$(date -u +%Y%m%d_%H%M%S)
+OUT_DIR=/root/autodl-tmp/runs/a01_sft/${RUN_ID}_smoke
+python tools/server_preflight.py --out-dir "$OUT_DIR"
+
+# 4) smoke train
+python tools/train_a01_sft_qlora.py \
+  --base-model-path /root/autodl-tmp/models/<hf_model_id_or_path> \
+  --train-jsonl data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl \
+  --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl \
+  --output-dir "$OUT_DIR" \
+  --max-steps 50 \
+  --max-train-samples 200 \
+  --max-eval-samples 50
+
+# 5) eval + gate
+python tools/eval_a01_sft.py \
+  --model-path "$OUT_DIR" \
+  --val-jsonl data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl \
+  --out-dir "$OUT_DIR"
+python tools/gate_a01_sft.py \
+  --eval-report "$OUT_DIR/eval_report.json"
+```
+归档约定：`runs/a01_sft/<run_id>_smoke/` 保留 `preflight.txt` + `run_manifest.json` + `eval_report.json`；不覆盖 `data/a01_sft/final/*`。
+最小排障命令：
+```bash
+nvidia-smi
+df -h | head -n 5
+python -c "import torch; print(torch.__version__, torch.cuda.is_available(), torch.version.cuda)"
+git rev-parse HEAD
+ls -la "$OUT_DIR"
+```
+
 ### 3.7 AutoDL 事实证据（日志摘记）
 - strict 过滤：train 735/735 kept；val 15/15 kept；canon_success=100%（来自 prepare 日志）
 - completion-only：prompt labels = -100（避免拟合 prompt）

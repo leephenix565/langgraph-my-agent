@@ -64,3 +64,10 @@
   - `docs/CHANGELOG.md` Phase 4.1.4 记录
   - `tools/server_preflight.py`
   - `tools/eval_a01_sft.py`
+
+## D9 — Phase 4.1 AutoDL 4090 runbook
+- Decision: 提供 AutoDL 4090 (24GB) 的可复制 smoke runbook，并固定证据文件位置与排障命令。
+- Rationale: 降低服务器执行偏差，确保证据链完整可审计。
+- Evidence:
+  - `docs/SYSTEM_MAP.md` Phase 4.1 runbook
+  - `docs/CHANGELOG.md` Phase 4.1.5 记录
