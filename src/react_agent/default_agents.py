@@ -70,13 +70,23 @@ def _parse_agent_output(raw: str) -> AgentOutput:
         return default
     try:
         parsed = json.loads(json_str)
-        return {
+        try:
+            confidence = float(parsed.get("confidence", default["confidence"]))
+        except Exception:
+            confidence = default["confidence"]
+        parse_ok_val = parsed.get("parse_ok", True)
+        parse_ok = parse_ok_val if isinstance(parse_ok_val, bool) else True
+        output: AgentOutput = {
             "analysis": parsed.get("analysis", default["analysis"]),
             "key_points": parsed.get("key_points", default["key_points"]),
             "evidence": parsed.get("evidence", default["evidence"]),
-            "confidence": float(parsed.get("confidence", default["confidence"])),
-            "parse_ok": True,
+            "confidence": confidence,
+            "parse_ok": parse_ok,
         }
+        for key, value in parsed.items():
+            if key not in output:
+                output[key] = value
+        return output
     except Exception:
         return default
 

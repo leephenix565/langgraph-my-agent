@@ -390,7 +390,7 @@
 
 ## 9. 项目内关键约定（从代码提取的“事实”）
 - Router 输出必须是 4 层 JSON（L1-L4），mode 仅允许 Star/Chain/Debate/Tree（`prompts.py` + `graph.py` + `generate_router_plans.py`）。
-- L2/L3 的选数量在 Router 计划中受限（提示默认 L2=4、L3=3；允许区间见提示与校验器；解析失败兜底时 L2 上限为 5）。
+- 运行期解析仅对 L2 做 `>5` 截断（计入 `l2_truncated`）；L3 正常解析不截断，但当 Router JSON 不可解析而回退 default_plan 时，L3 会按默认计划取前 3（`default_layer_plan`）。
 - a01（Orchestrator）与 a25（Report Center）拥有硬编码的 system prompt 与派发模板；并默认禁止搜索工具。
 - `INCLUDE_DISABLED_AGENTS=1` 时会将 `default_enabled=false` 的 agent（如 a02）纳入图节点。
 - `ENABLE_BUILTIN_AGENTS=1` 或缺失 config 时，会注册内置 analyst（news/filing/data/ecc）。

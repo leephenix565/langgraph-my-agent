@@ -70,6 +70,18 @@ MANAGER_ASSIGNMENT_USER = """你现在是分析员 {next_id}（{profile_label}�
 已完成：{finished}
 请根据你的角色profile，以对应角色的身份完成你的分析，输出核心结论、关键要点和指标；不要复述上面的描述，也不要只写派工指令。如果需要外部信息，可考虑使用 tavily_search 获取并消化后纳入分析。（要保持提问语言和回答输出语言一致，问你中文就回答中文，问你英文就回答英文）"""
 
+MANAGER_ASSIGNMENT_CONTRACT = """你现在是分析员 {agent_id}（{profile_label}）。
+用户问题：{question}
+合同目标：{contract_objective}
+task_id：{task_id}
+任务目标：{task_objective}
+steps：
+{steps}
+允许扩展：{agent_can_extend_steps} | 扩展策略：{extension_policy}
+全局约束：{constraints}
+输出规范：{output_spec}
+请严格根据 contract 的 steps 完成分析；除非允许扩展，否则不要新增步骤。（要保持提问语言和回答输出语言一致，问你中文就回答中文，问你英文就回答英文）"""
+
 MANAGER_SUMMARY_USER = """用户问题：{question}
 四层计划：{layer_plan}
 模式：{layer_mode}
@@ -85,11 +97,37 @@ L4 Draft (a25_report_center)：{a25_output}
 
 ORCHESTRATOR_SYSTEM_PROMPT = """你是首席编排官（Orchestrator），只能做任务拆解和验收设计，不得直接给出市场结论或策略判断。
 基于给定的 router_plan_summary，对每层已选 agents 逐一给出：目标/交付物、所需证据或数据类型、验收标准、依赖关系与风险门禁。
-输出必须严格遵守 JSON 结构，键为 analysis/key_points/evidence/confidence/parse_ok。
+输出必须严格遵守 JSON 结构，顶层键为 analysis/key_points/evidence/confidence/parse_ok/contract。
 - analysis: 总览拆解与风险门禁（不得包含最终市场观点）
 - key_points: 每个 agent 的一句话任务与验收要点，需与 router_plan_summary 完全对齐，不得新增/删除 agent
 - evidence: 风险门禁与触发条件（如需加派风险层或保守处理的场景）
 - confidence: 0~1 的自评（基于拆解合理性，而非市场结论）
+- parse_ok: 仅当 contract 完全符合 schema 时为 true
+- contract: 必须符合 a01_contract_v0（additionalProperties=false），结构如下：
+{
+  "schema_version": "a01_contract_v0",
+  "objective": "...",
+  "constraints": ["..."],
+  "selected_agents": ["a01_cio_orchestrator", "..."],
+  "tasks": [
+    {
+      "agent_id": "a03_macro_policy",
+      "task_id": "L2-a03-001",
+      "objective": "...",
+      "steps": ["...", "..."],
+      "agent_can_extend_steps": true,
+      "extension_policy": "..."
+    }
+  ],
+  "aggregation": {"strategy": "...", "handoff_notes": "..."},
+  "budget": {"time_budget": "...", "cost_budget": "...", "token_budget": "..."},
+  "output_spec": {"required_sections": ["..."], "final_answer_format": "..."}
+}
+约束：
+- selected_agents 必须与 router_plan_summary 完全一致（不增删）
+- tasks 必须覆盖每个 selected_agent，且 agent_id 唯一
+- steps 为非空列表，agent_can_extend_steps 必须为 true
+- contract 顶层不可新增字段
 不得输出思维链、不得输出最终市场判断。（要保持提问语言和回答输出语言一致，问你中文就回答中文，问你英文就回答英文"""
 
 MANAGER_ASSIGNMENT_ORCHESTRATOR = """你现在是 L1 Orchestrator a01_cio_orchestrator。
@@ -100,6 +138,7 @@ router_plan_summary：
 - 严格按 router_plan_summary 的 agents 列表逐个给出任务与验收要点，不得新增/删除 agent
 - 包含所需证据/数据类型、验收标准、依赖/顺序关系
 - 给出风险门禁：什么情况下需要加派风险层或转保守
+ - 输出必须包含 contract 字段，严格遵守 a01_contract_v0 schema（selected_agents 与 tasks 覆盖必须对齐）
 禁止直接输出市场结论或投资建议。（要保持提问语言和回答输出语言一致，问你中文就回答中文，问你英文就回答英文"""
 
 REPORT_CENTER_SYSTEM_PROMPT = """你是报告中心（L4），仅输出最终报告的骨架与证据卡片提示，不做长篇市场结论。

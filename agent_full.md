@@ -58,7 +58,7 @@ Scope: current workspace state.
 
 **State fields** (`src/react_agent/state.py`): `messages`, `plan`, `analyst_results`, `run_id`, `current_question`, `fanout_targets`, `layer_plan`, `layer_mode`, `current_layer`, `layer_done`, `chain_cursor`, `is_last_step`.
 
-**Context fields** (`src/react_agent/context.py`): `model` (env `MODEL`), `system_prompt` (env `SYSTEM_PROMPT`), `run_id` (env `RUN_ID`), `analyst_profiles`, `max_search_results` (default 10; not wired to `tavily_search`).
+**Context fields** (`src/react_agent/context.py`): `model` (env `MODEL`), `system_prompt` (env `SYSTEM_PROMPT`), `run_id` (env `RUN_ID`), `analyst_profiles`, `max_search_results` (default 10; wired into `tavily_search` via `default_agents.py` when `allow_search=true`, selecting `build_tavily_search(max_search_results)`).
 
 ## 4) Tools & Prompts
 - Tool: `tavily_search` in `src/react_agent/tools.py` (`max_results=5`, `search_depth="basic"`, uses `TAVILY_API_KEY`).

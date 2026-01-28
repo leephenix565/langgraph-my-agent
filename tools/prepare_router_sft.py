@@ -16,53 +16,9 @@ if str(REPO_ROOT) not in sys.path:
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))
 
-from react_agent import router_parse
+from react_agent import json_utils, router_parse
 
 
-def _extract_first_json(text: str) -> str | None:
-    start = None
-    depth = 0
-    in_str = False
-    escape = False
-    for i, ch in enumerate(text):
-        if start is None:
-            if ch == "{":
-                start = i
-                depth = 1
-            continue
-        if in_str:
-            if escape:
-                escape = False
-            elif ch == "\\":
-                escape = True
-            elif ch == "\"":
-                in_str = False
-            continue
-        if ch == "\"":
-            in_str = True
-        elif ch == "{":
-            depth += 1
-        elif ch == "}":
-            depth -= 1
-            if depth == 0:
-                candidate = text[start : i + 1]
-                try:
-                    json.loads(candidate)
-                    return candidate
-                except Exception:
-                    return None
-    return None
-
-
-def _canonicalize_response(text: str) -> tuple[str, bool]:
-    candidate = _extract_first_json(text)
-    if not candidate:
-        return text, False
-    try:
-        obj = json.loads(candidate)
-    except Exception:
-        return text, False
-    return json.dumps(obj, ensure_ascii=False, separators=(",", ":")), True
 
 
 def _read_jsonl(path: Path) -> Iterable[Dict[str, Any]]:
@@ -155,7 +111,7 @@ def _label_record(
     if not isinstance(messages, list) or not messages:
         raise ValueError("Record missing messages list")
     response_text = response if isinstance(response, str) else ""
-    canonical_text, canon_ok = _canonicalize_response(response_text)
+    canonical_text, canon_ok = json_utils.canonicalize_response(response_text)
     plan, modes, stats = router_parse.parse_router_layers_with_stats(response_text, agent_catalog)
     parse_ok = bool(stats.get("parse_ok"))
     used_default = bool(stats.get("used_default_plan"))

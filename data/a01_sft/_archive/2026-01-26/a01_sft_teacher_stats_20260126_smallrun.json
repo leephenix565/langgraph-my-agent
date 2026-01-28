@@ -1,0 +1,18 @@
+{
+  "total": 50,
+  "json_extracted_ok": 50,
+  "contract_ok": 50,
+  "teacher_error": 0,
+  "train_written": 49,
+  "val_written": 1,
+  "coverage_rate": 1.0,
+  "overreach_rate": 0.0,
+  "dropped_reason_topk": [],
+  "steps_len_stats": {
+    "count": 464,
+    "min": 3,
+    "p50": 4,
+    "p90": 5,
+    "max": 6
+  }
+}

@@ -10,14 +10,14 @@ import hashlib
 import asyncio
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
-from react_agent import prompts
+from react_agent import contract_utils, prompts
 from react_agent import router_parse
 from react_agent.agents import (
     AGENT_METADATA,
@@ -37,6 +37,9 @@ from react_agent.utils import get_message_text, load_chat_model
 LAYER_ORDER: List[str] = router_parse.LAYER_ORDER
 DEFAULT_MODES: Dict[str, str] = router_parse.DEFAULT_MODES
 FINAL_LAYER: str = LAYER_ORDER[-1]
+CONTRACT_SCHEMA_VERSION = contract_utils.CONTRACT_SCHEMA_VERSION
+CONTRACT_REQUIRED_KEYS = contract_utils.CONTRACT_REQUIRED_KEYS
+TASK_REQUIRED_KEYS = contract_utils.TASK_REQUIRED_KEYS
 
 
 def _truncate(text: str, limit: int = 4000) -> str:
@@ -65,6 +68,68 @@ def _summarize_router_plan(layer_plan: Dict[str, List[str]], layer_mode: Dict[st
         truncated.append(line)
         total += len(line) + 1
     return "\n".join(truncated) + "\n...[trunc]"
+
+
+def _collect_selected_agents(layer_plan: Dict[str, List[str]]) -> List[str]:
+    """Return ordered unique agent ids across all layers."""
+    seen = set()
+    ordered: List[str] = []
+    for layer in LAYER_ORDER:
+        for aid in layer_plan.get(layer, []):
+            if aid not in seen:
+                ordered.append(aid)
+                seen.add(aid)
+    return ordered
+
+
+def _hash_contract(contract: Dict[str, Any]) -> str:
+    return contract_utils.hash_contract(contract)
+
+
+def _extract_contract(results: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    return contract_utils.extract_contract(results)
+
+
+def _validate_contract(
+    contract: Optional[Dict[str, Any]],
+    selected_agents: List[str],
+) -> Tuple[bool, str, Dict[str, Dict[str, Any]]]:
+    return contract_utils.validate_contract(contract, selected_agents)
+
+
+def _format_steps(steps: List[str]) -> str:
+    return "\n".join(f"{idx + 1}. {step}" for idx, step in enumerate(steps))
+
+
+def _build_assignment_from_contract(
+    agent_id: str,
+    task: Dict[str, Any],
+    contract: Dict[str, Any],
+    question: str,
+    profile_label: str,
+) -> Tuple[str, int, str]:
+    steps = task.get("steps", [])
+    constraints = "; ".join([c for c in contract.get("constraints", []) if isinstance(c, str)])
+    output_spec = contract.get("output_spec", {})
+    required_sections = output_spec.get("required_sections", [])
+    output_spec_text = (
+        f"required_sections: {', '.join(required_sections) if required_sections else 'none'}; "
+        f"final_answer_format: {output_spec.get('final_answer_format', '')}"
+    )
+    assignment_text = prompts.MANAGER_ASSIGNMENT_CONTRACT.format(
+        agent_id=agent_id,
+        profile_label=profile_label,
+        question=question,
+        contract_objective=contract.get("objective", ""),
+        task_id=task.get("task_id", ""),
+        task_objective=task.get("objective", ""),
+        steps=_format_steps(steps),
+        agent_can_extend_steps=task.get("agent_can_extend_steps"),
+        extension_policy=task.get("extension_policy", ""),
+        constraints=constraints or "none",
+        output_spec=output_spec_text,
+    )
+    return assignment_text, len(steps), str(task.get("task_id", ""))
 
 
 def _agent_error_output(agent_id: str, exc: Exception) -> AgentOutput:
@@ -225,6 +290,14 @@ async def manager_broadcast(
 
     remaining = [aid for aid in selected if aid not in results]
     debug_msgs: List[AIMessage] = []
+    selected_all = _collect_selected_agents(layer_plan)
+    contract = _extract_contract(results)
+    contract_ok, contract_reason, contract_tasks = _validate_contract(contract, selected_all)
+    contract_hash = _hash_contract(contract) if contract else ""
+    if contract and not contract_ok:
+        debug_msgs.append(
+            AIMessage(content=f"[manager_broadcast] contract invalid -> {contract_reason}")
+        )
 
     if not selected:
         debug_msgs.append(
@@ -273,7 +346,16 @@ async def manager_broadcast(
                 goto="manager_summary",
                 update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
             )
-        if next_id == "a01_cio_orchestrator":
+        used_contract = False
+        step_count = 0
+        task_id = ""
+        profile_label = AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id
+        if contract_ok and next_id in contract_tasks and contract:
+            assignment_text, step_count, task_id = _build_assignment_from_contract(
+                next_id, contract_tasks[next_id], contract, question, profile_label
+            )
+            used_contract = True
+        elif next_id == "a01_cio_orchestrator":
             assignment_text = prompts.MANAGER_ASSIGNMENT_ORCHESTRATOR.format(
                 question=question,
                 router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
@@ -289,10 +371,20 @@ async def manager_broadcast(
                 plan=", ".join(selected),
                 finished=", ".join(results.keys()) or "none",
                 next_id=next_id,
-                profile_label=AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id,
+                profile_label=profile_label,
                 layer=current_layer,
                 mode=mode,
             )
+        logger.log_event(
+            "manager_assignment",
+            agent_id=next_id,
+            current_layer=current_layer,
+            mode=mode,
+            used_contract=used_contract,
+            contract_hash=contract_hash,
+            task_id=task_id,
+            step_count=step_count,
+        )
         branch_state = dict(state)
         branch_state["messages"] = [
             *state["messages"],
@@ -317,7 +409,16 @@ async def manager_broadcast(
         node_name = AGENT_NODE_NAMES.get(agent_id)
         if not node_name:
             continue
-        if agent_id == "a01_cio_orchestrator":
+        used_contract = False
+        step_count = 0
+        task_id = ""
+        profile_label = AGENT_METADATA.get(agent_id, None).description if agent_id in AGENT_METADATA else agent_id
+        if contract_ok and agent_id in contract_tasks and contract:
+            assignment_text, step_count, task_id = _build_assignment_from_contract(
+                agent_id, contract_tasks[agent_id], contract, question, profile_label
+            )
+            used_contract = True
+        elif agent_id == "a01_cio_orchestrator":
             assignment_text = prompts.MANAGER_ASSIGNMENT_ORCHESTRATOR.format(
                 question=question,
                 router_plan_summary=_summarize_router_plan(layer_plan, layer_mode),
@@ -333,12 +434,20 @@ async def manager_broadcast(
                 plan=", ".join(selected),
                 finished=", ".join(results.keys()) or "none",
                 next_id=agent_id,
-                profile_label=AGENT_METADATA.get(agent_id, None).description
-                if agent_id in AGENT_METADATA
-                else agent_id,
+                profile_label=profile_label,
                 layer=current_layer,
                 mode=mode,
             )
+        logger.log_event(
+            "manager_assignment",
+            agent_id=agent_id,
+            current_layer=current_layer,
+            mode=mode,
+            used_contract=used_contract,
+            contract_hash=contract_hash,
+            task_id=task_id,
+            step_count=step_count,
+        )
         branch_state = dict(state)
         branch_state["messages"] = [
             *state["messages"],

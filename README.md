@@ -21,12 +21,15 @@ This repository implements a four-layer Router -> Manager -> Agents -> Summary w
 2) Run minimal demo: `python demo_layered_run.py`
 3) (Optional) Run unit tests: `python -m pytest tests/unit_tests/`
 
+Docs:
+- [Docs Index](docs/INDEX.md)
+- [Project Overview](docs/PROJECT_OVERVIEW.md)
 For full runtime/training/eval commands, see `docs/SYSTEM_MAP.md`.
 
 ## How to customize
 
 1. **Add new tools**: Extend the agent's capabilities by adding new tools in [tools.py](./src/react_agent/tools.py). These can be any Python functions that perform specific tasks.
-2. **Select a different model**: We default to Anthropic's Claude 3 Sonnet. You can select a compatible chat model using `provider/model-name` via runtime context. Example: `openai/gpt-4-turbo-preview`.
+2. **Select a different model**: We default to `deepseek/deepseek-chat`. You can select a compatible chat model using `provider/model-name` via runtime context. Example: `openai/gpt-4-turbo-preview`.
 3. **Customize the prompt**: We provide a default system prompt in [prompts.py](./src/react_agent/prompts.py). You can easily update this via context in the studio.
 
 You can also quickly extend this template by:

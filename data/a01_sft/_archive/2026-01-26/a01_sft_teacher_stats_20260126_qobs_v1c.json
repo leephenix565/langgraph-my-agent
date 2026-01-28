@@ -1,0 +1,27 @@
+{
+  "total": 1,
+  "json_extracted_ok": 0,
+  "contract_ok": 0,
+  "teacher_error": 1,
+  "train_written": 0,
+  "val_written": 0,
+  "coverage_rate": 0.0,
+  "overreach_rate": 0.0,
+  "dropped_reason_topk": [
+    [
+      "teacher_error",
+      1
+    ]
+  ],
+  "steps_len_stats": {
+    "count": 0,
+    "min": 0,
+    "p50": 0,
+    "p90": 0,
+    "max": 0
+  },
+  "generic_steps_ratio_v1": 0.0,
+  "very_generic_steps_ratio_v1": 0.0,
+  "duplicate_steps_contract_count": 0,
+  "avg_steps_per_task": 0.0
+}
