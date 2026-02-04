@@ -18,6 +18,27 @@ class Context:
         default="deepseek/deepseek-chat",
         metadata={"description": "Underlying chat model (provider/model)."},
     )
+    router_model: str = field(
+        default="",
+        metadata={
+            "description": "Optional override for the Router model (provider/model). "
+            "If empty, the Router uses `model`."
+        },
+    )
+    router_openai_base_url: str = field(
+        default="",
+        metadata={
+            "description": "Optional OpenAI-compatible base URL for Router-only calls. "
+            "If empty, Router uses global OPENAI_BASE_URL."
+        },
+    )
+    router_openai_api_key: str = field(
+        default="",
+        metadata={
+            "description": "Optional OpenAI API key for Router-only calls. "
+            "If empty, Router uses global OPENAI_API_KEY."
+        },
+    )
     run_id: str = field(
         default="",
         metadata={"description": "Optional run identifier for tracing/logging."},
@@ -48,6 +69,9 @@ class Context:
 
             if getattr(self, f.name) == f.default:
                 setattr(self, f.name, os.environ.get(f.name.upper(), f.default))
+
+        if not self.router_model:
+            self.router_model = self.model
 
         max_env = os.environ.get("MAX_SEARCH_RESULTS")
         if max_env is None:

@@ -117,6 +117,10 @@ python tools/generate_a01_teacher_contracts.py \
 - `assistant_chars_p50` / `assistant_chars_p90` / `assistant_chars_p95`
 - `usage_total_tokens_p50` / `usage_total_tokens_p90` / `usage_total_tokens_p95`（若 usage 不可得则为 0）
 
+## 8) Eval report（Phase 4.1）
+- `tools/eval_a01_sft.py` 输出 `eval_report.json`，其中 `meta.max_new_tokens` 记录实际解码上限。
+- 默认 `--max-new-tokens=4096`（见 `docs/SYSTEM_MAP.md` Phase 4.1 runbook）；smoke 如需更快可手动降到 2048，但需注意可能截断 JSON。
+
 记录级 meta 增量（可选，不影响旧消费者）：
 - `meta.quality.generic_ratio`
 - `meta.quality.very_generic_ratio`

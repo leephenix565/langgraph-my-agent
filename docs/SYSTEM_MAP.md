@@ -332,6 +332,19 @@ metrics.json 字段（节选）：
 
 ## 5) 关键环境变量（读取位置）
 - `Context`（`src/react_agent/context.py`）：`MODEL`, `SYSTEM_PROMPT`, `RUN_ID` 等通过字段名大写读取 env。
+- Router 模型可独立配置：`ROUTER_MODEL`（provider/model，未设置则回落到 `MODEL`）。
+- Router 可选专用 OpenAI endpoint：`ROUTER_OPENAI_BASE_URL` / `ROUTER_OPENAI_API_KEY`（未设置则使用全局 OpenAI_BASE_URL/OPENAI_API_KEY；若 Router 专用 endpoint 调用失败，会自动回落到全局再试一次）。
+- OpenAI 兼容 provider（如 Cerebras）：`OPENAI_BASE_URL=https://api.cerebras.ai/v1`，并设置 `MODEL=gpt-oss-120b`（或具体模型名）。API key 优先使用 `OPENAI_API_KEY`；也可使用 `CEREBRAS_API_KEY` 作为凭据来源（与 .env 对齐）。
+
+示例（Router 单独走本地 vLLM，其余 agents 走全局 provider）：
+```bash
+OPENAI_BASE_URL=https://api.cerebras.ai/v1
+OPENAI_API_KEY=token-abc123
+ROUTER_OPENAI_BASE_URL=http://127.0.0.1:18000/v1
+ROUTER_OPENAI_API_KEY=token-abc123
+ROUTER_MODEL=openai/router
+MODEL=deepseek/deepseek-chat
+```
 - `run_logger`（`src/react_agent/run_logger.py`）：`LOCAL_TRACE`, `LOG_DIR`, `TRACE_MAX_CHARS`。`LOCAL_TRACE=1` 才会写 JSONL；默认输出到 `log/YYYYMMDD/`，可用 `LOG_DIR` 覆盖路径；`TRACE_MAX_CHARS` 控制字段截断长度（默认 4000），并会自动剔除敏感键（token/secret/password）。
 - `graph`（`src/react_agent/graph.py`）：`ENABLE_BUILTIN_AGENTS`, `INCLUDE_DISABLED_AGENTS`。
 - `tools`（`src/react_agent/tools.py`）：`TAVILY_API_KEY`（TavilySearchResults）。

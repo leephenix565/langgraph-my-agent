@@ -1,5 +1,20 @@
 # CHANGELOG
 
+## 2026-02-04 - Router endpoint override + fallback (system integration / inference config)
+- Files: `src/react_agent/context.py`, `src/react_agent/graph.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added Router-only OpenAI endpoint env (`ROUTER_OPENAI_BASE_URL` / `ROUTER_OPENAI_API_KEY`) with automatic fallback to global provider on failure.
+- Kept `ROUTER_MODEL` override (defaults to `MODEL` when unset) for Router-only model routing.
+- SYSTEM_MAP documents Router endpoint/model overrides and example env.
+- Acceptance: set `ROUTER_OPENAI_BASE_URL=http://127.0.0.1:18000/v1` + `ROUTER_MODEL=openai/router`; Router should use vLLM when reachable and fall back to global provider when not.
+Phase positioning: This is a config-only integration step for Phase 4.1 inference wiring. It keeps schemas and runtime logic unchanged, only adds an optional Router-specific endpoint with safe fallback. Next, validate on a live run that Router requests go to the intended provider.
+
+## 2026-02-04 - S0 docs alignment (Cerebras config + eval default note)
+- Files: `docs/SYSTEM_MAP.md`, `docs/A01_SFT_DATA_V0.md`, `docs/CHANGELOG.md`
+- Added Cerebras OpenAI-compatible config guidance (OPENAI_BASE_URL / CEREBRAS_API_KEY / MODEL) to SYSTEM_MAP.
+- Documented `eval_report.meta.max_new_tokens` default 4096 in A01_SFT_DATA_V0 (align with Phase 4.1 runbook).
+- Acceptance: `rg -n "Cerebras|api.cerebras.ai" docs/SYSTEM_MAP.md` and `rg -n "max_new_tokens" docs/A01_SFT_DATA_V0.md`
+Phase positioning: Docs-only alignment for S0 entrypoints, keeping runtime logic unchanged. This makes provider configuration and eval defaults self-consistent across S0 docs. Next, keep doc updates tied to script defaults.
+
 ## 2026-01-28 - Phase 4.1 eval truncation hardening (Phase 4.1.6)
 - Files: `tools/eval_a01_sft.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/DECISION_LOG.md`
 - Raised eval default `--max-new-tokens` to 4096 and recorded `max_new_tokens` in eval_report meta.

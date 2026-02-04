@@ -37,6 +37,33 @@ from react_agent.utils import get_message_text, load_chat_model
 LAYER_ORDER: List[str] = router_parse.LAYER_ORDER
 DEFAULT_MODES: Dict[str, str] = router_parse.DEFAULT_MODES
 FINAL_LAYER: str = LAYER_ORDER[-1]
+
+
+async def _with_temp_openai_env(
+    base_url: str, api_key: str, fn
+) -> AIMessage:
+    """Temporarily override OpenAI env vars for a single call."""
+    had_base = "OPENAI_BASE_URL" in os.environ
+    old_base = os.environ.get("OPENAI_BASE_URL")
+    had_key = "OPENAI_API_KEY" in os.environ
+    old_key = os.environ.get("OPENAI_API_KEY")
+    if base_url:
+        os.environ["OPENAI_BASE_URL"] = base_url
+    if api_key:
+        os.environ["OPENAI_API_KEY"] = api_key
+    try:
+        return await fn()
+    finally:
+        if base_url:
+            if had_base:
+                os.environ["OPENAI_BASE_URL"] = old_base
+            else:
+                os.environ.pop("OPENAI_BASE_URL", None)
+        if api_key:
+            if had_key:
+                os.environ["OPENAI_API_KEY"] = old_key
+            else:
+                os.environ.pop("OPENAI_API_KEY", None)
 CONTRACT_SCHEMA_VERSION = contract_utils.CONTRACT_SCHEMA_VERSION
 CONTRACT_REQUIRED_KEYS = contract_utils.CONTRACT_REQUIRED_KEYS
 TASK_REQUIRED_KEYS = contract_utils.TASK_REQUIRED_KEYS
@@ -214,7 +241,6 @@ async def router_node(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
     """Router: produce per-layer plan and modes."""
-    model = load_chat_model(runtime.context.model)
     question = _get_latest_user_question(list(state["messages"]))
     run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
     runtime.context.run_id = run_id
@@ -225,6 +251,8 @@ async def router_node(
         agent_catalog=json.dumps(agent_catalog, ensure_ascii=False),
     )
     msgs = [{"role": "system", "content": system_prompt}, *state["messages"]]
+    router_model_name = runtime.context.router_model or runtime.context.model
+    fallback_model_name = runtime.context.model
     try:
         metadata = {
             "run_id": run_id,
@@ -234,7 +262,29 @@ async def router_node(
             "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
         }
         tags = ["react_agent", f"run_id:{run_id}", "layer:L1"]
-        response: AIMessage = await model.ainvoke(msgs, config={"metadata": metadata, "tags": tags})
+
+        async def _invoke_router(model_name: str) -> AIMessage:
+            model = load_chat_model(model_name)
+            return await model.ainvoke(msgs, config={"metadata": metadata, "tags": tags})
+
+        if runtime.context.router_openai_base_url:
+            try:
+                response = await _with_temp_openai_env(
+                    runtime.context.router_openai_base_url,
+                    runtime.context.router_openai_api_key,
+                    lambda: _invoke_router(router_model_name),
+                )
+            except Exception as exc:
+                logger.log_event(
+                    "router_provider_fallback",
+                    router_model=router_model_name,
+                    router_base_url=runtime.context.router_openai_base_url,
+                    fallback_model=fallback_model_name,
+                    error=str(exc),
+                )
+                response = await _invoke_router(fallback_model_name)
+        else:
+            response = await _invoke_router(router_model_name)
         raw_text = get_message_text(response)
     except Exception as exc:
         response = AIMessage(content=f"[router fallback] {exc}")
