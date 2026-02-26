@@ -8,6 +8,7 @@ import re
 import uuid
 import hashlib
 import asyncio
+import warnings
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
@@ -195,6 +196,60 @@ for aid, meta in list(AGENT_METADATA.items()):
     register_agent(meta, tool)
 
 include_disabled = os.environ.get("INCLUDE_DISABLED_AGENTS", "0") == "1"
+
+
+def _is_search_disabled_globally() -> bool:
+    """Read DISABLE_SEARCH at call time so long-lived processes can reflect env updates."""
+    return os.environ.get("DISABLE_SEARCH", "0") == "1"
+
+
+def _maybe_make_checkpointer():
+    """Optionally create a checkpointer from env without changing default behavior."""
+    mode = (os.environ.get("REACT_AGENT_CHECKPOINTER", "none") or "none").strip().lower()
+    if mode in {"", "none", "off", "0"}:
+        return None
+
+    if mode == "memory":
+        try:
+            from langgraph.checkpoint.memory import MemorySaver
+        except Exception as exc:
+            warnings.warn(
+                f"REACT_AGENT_CHECKPOINTER=memory requested but MemorySaver is unavailable: {exc}",
+                RuntimeWarning,
+            )
+            return None
+        return MemorySaver()
+
+    if mode == "sqlite":
+        db_path = (os.environ.get("REACT_AGENT_CHECKPOINT_DB", "checkpoints.db") or "checkpoints.db").strip()
+        try:
+            from langgraph.checkpoint.sqlite import SqliteSaver
+        except Exception as exc:
+            warnings.warn(
+                "REACT_AGENT_CHECKPOINTER=sqlite requested but sqlite saver dependency is unavailable "
+                f"(REACT_AGENT_CHECKPOINT_DB={db_path}): {exc}",
+                RuntimeWarning,
+            )
+            return None
+        try:
+            if hasattr(SqliteSaver, "from_conn_string"):
+                return SqliteSaver.from_conn_string(db_path)
+            return SqliteSaver(db_path)  # type: ignore[call-arg]
+        except Exception as exc:
+            warnings.warn(
+                f"Failed to initialize sqlite checkpointer (REACT_AGENT_CHECKPOINT_DB={db_path}): {exc}",
+                RuntimeWarning,
+            )
+            return None
+
+    warnings.warn(
+        f"Unknown REACT_AGENT_CHECKPOINTER='{mode}', expected one of: none, memory, sqlite. "
+        "Falling back to no checkpointer.",
+        RuntimeWarning,
+    )
+    return None
+
+
 AGENT_IDS_FOR_NODES: List[str] = [
     aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
 ]
@@ -319,6 +374,7 @@ async def router_node(
         "current_question": question,
         "layer_done": {},
         "run_id": run_id,
+        "is_last_step": False,
         # Signal a fresh turn so downstream merges clear old analyst_results.
         "analyst_results": {"__reset__": True},
     }
@@ -543,7 +599,12 @@ def _build_agent_node(agent_id: str):
             "shared_context": state.get("analyst_results", {}),
             "history": [],
             "tools_config": {
-                "allow_search": False if agent_id in {"a01_cio_orchestrator", "a25_report_center"} else True,
+                "allow_search": (
+                    False
+                    if _is_search_disabled_globally()
+                    or agent_id in {"a01_cio_orchestrator", "a25_report_center"}
+                    else True
+                ),
                 "mode": mode,
             },
             "router_plan_summary": _summarize_router_plan(
@@ -767,4 +828,18 @@ builder.add_conditional_edges(
     {"__end__": "__end__", "noop": "noop", "manager_broadcast": "manager_broadcast"},
 )
 
-graph = builder.compile(name="Layered Router-Manager-Agent Demo (L1-L2-L3-L4)")
+_GRAPH_NAME = "Layered Router-Manager-Agent Demo (L1-L2-L3-L4)"
+
+# Default export for Studio/CLI and existing callers: no business-layer checkpointer.
+graph = builder.compile(name=_GRAPH_NAME)
+
+# Optional Python/self-hosted variant with checkpointer (explicit opt-in via env + thread_id).
+_checkpointer = _maybe_make_checkpointer()
+graph_persistent = builder.compile(name=_GRAPH_NAME, checkpointer=_checkpointer) if _checkpointer is not None else None
+
+
+def get_graph_for_invoke(thread_id: Optional[str] = None):
+    """Return persistent graph only when both a thread_id and an enabled checkpointer exist."""
+    if thread_id and graph_persistent is not None:
+        return graph_persistent
+    return graph

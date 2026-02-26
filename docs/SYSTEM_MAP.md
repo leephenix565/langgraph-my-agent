@@ -27,6 +27,33 @@ python demo_layered_run.py
 python -c "from react_agent import graph_app; from react_agent.context import Context; import asyncio; print(asyncio.run(graph_app.ainvoke({'messages':[('user','hi')]} , context=Context())))"
 ```
 
+### Thread persistence（Python / 自建 API，可选）
+- 默认关闭：未设置 `REACT_AGENT_CHECKPOINTER`（或设为 `none`）时，Python/自建 API 与当前行为一致；`graph`（Studio/CLI 默认入口）始终保持无业务层 checkpointer。
+- 可选开关（需在 import `react_agent.graph` / `graph_app` 之前设置）：
+  - `REACT_AGENT_CHECKPOINTER=memory`：启用进程内短期持久化（同一进程内多次 invoke + 相同 `thread_id` 可复用 state）
+  - `REACT_AGENT_CHECKPOINTER=sqlite`：可选；若未安装对应依赖会自动降级为不启用（并给出 warning）
+  - `REACT_AGENT_CHECKPOINT_DB=checkpoints.db`：sqlite 模式下的数据库路径（可选）
+- Python / 自建 API 建议通过 `react_agent.graph.get_graph_for_invoke(thread_id)` 选择图对象；只有“开关已启用 + 提供 thread_id”时才会走持久化图。
+- invoke 时需要显式传入 `thread_id`（否则仍按新会话处理）：
+```python
+import react_agent.graph as graph_module
+
+thread_id = "demo-thread-1"
+app = graph_module.get_graph_for_invoke(thread_id)
+await app.ainvoke(
+    {"messages": [("user", "我叫小明")]},
+    context=Context(),
+    config={"configurable": {"thread_id": thread_id}},
+)
+```
+- demo 验证（同一 thread_id 两轮 + 不传 thread_id 对照）：
+```bash
+# PowerShell
+$env:REACT_AGENT_CHECKPOINTER="memory"
+python demo_layered_run.py
+```
+- 回滚方式：删除该环境变量或设置 `REACT_AGENT_CHECKPOINTER=none`，并重启进程（使 graph 重新 compile）。
+
 ### Testing/Dev setup（单测环境）
 推荐本地最小安装链路（与 CI 对齐）：
 ```bash

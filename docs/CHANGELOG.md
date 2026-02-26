@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## 2026-02-26 - Phase 2.1 optional Python thread persistence (checkpointer + thread_id)
+- Files: `src/react_agent/graph.py`, `demo_layered_run.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added an optional business-graph checkpointer switch via `REACT_AGENT_CHECKPOINTER` (default `none`), with `memory` mode enabled in-process and optional `sqlite` mode that degrades to no-op if dependencies are unavailable.
+- `graph.py` now keeps the default `graph` (Studio/CLI entry) non-persistent and exposes an optional persistent graph variant compiled with `checkpointer=` only when the env switch is enabled.
+- `demo_layered_run.py` now includes a minimal two-round same-thread demo (`thread_id`) and a no-thread control group, printing `messages_len` and final answer snippets for verification.
+- SYSTEM_MAP documents how to enable thread persistence for Python/self-hosted API calls and how to roll back (`REACT_AGENT_CHECKPOINTER=none` or unset, then restart).
+Phase positioning: This is Phase 2.1 infrastructure wiring for optional short-term state persistence in the business graph layer. It deliberately avoids changing Router/Manager/Agent semantics, RouterPlan parser behavior, or Studio defaults. The goal is to make Python/self-hosted calls capable of thread reuse with an explicit opt-in. Next, validate same-thread memory behavior with a real model and decide whether to add summary/window controls on top of persisted messages.
+
+## 2026-02-22 - Runtime search toggle fix (DISABLE_SEARCH read per-call)
+- Files: `src/react_agent/graph.py`, `tests/unit_tests/test_search_toggle_runtime.py`, `docs/CHANGELOG.md`
+- Fixed `DISABLE_SEARCH` caching behavior by reading the env at agent dispatch time instead of module import time, so long-lived processes can reflect env changes.
+- Added unit tests to verify (1) `DISABLE_SEARCH` toggles `allow_search` from `True` to `False` at runtime and (2) `tool_calls` can trigger Tavily tool invocation in the agent tool loop.
+Phase positioning: This is a runtime wiring correctness fix for search enable/disable behavior and tool-call activation evidence. It does not change graph topology or schemas. Next, validate in the actual Studio/API process by toggling `DISABLE_SEARCH` and confirming tool calls/logs in a live run.
+
+## 2026-02-22 - Doubao Seed2.0 speed benchmark harness (benchmarking / inference observability)
+- Files: `tools/bench_doubao_seed2_speed.py`, `src/react_agent/graph.py`, `docs/BENCHMARK_DOUBAO_SEED2_SPEED.md`, `docs/CHANGELOG.md`
+- Added a Doubao Seed2.0 benchmark harness that measures both raw OpenAI-compatible chat speed and end-to-end LangGraph latency, and writes CSV + Markdown tables.
+- Raw benchmark uses `stream=true` + `stream_options.include_usage=true` and sends `thinking={"type":"disabled"}` explicitly in the request body.
+- E2E benchmark runs the existing graph once per sample and forces `DISABLE_SEARCH=1` to reduce search-tool noise; the default runtime behavior remains unchanged when the env is unset.
+- Added benchmark documentation with env requirements, reproducible commands, output paths, and evidence probes (`raw_payload_probe`, `e2e_thinking_probe`, search-call counter).
+Phase positioning: This is a benchmarking harness milestone for provider/model speed comparison and observability. It does not change RouterPlan/a01 schemas or the LangGraph topology. Next, run the harness against the three Ark Doubao Seed2.0 variants and archive the generated benchmark tables as evidence.
+
+## 2026-02-04 - Multi-turn state reset for Studio threads (runtime bugfix)
+- Files: `src/react_agent/graph.py`, `docs/CHANGELOG.md`
+- Reset `is_last_step` in router_node to avoid short-circuiting the next question in the same thread.
+- Acceptance: ask two different questions in the same Studio thread; Router should re-run and not end early.
+Phase positioning: This is a minimal runtime fix for multi-turn thread safety. It preserves message accumulation and existing schema while preventing stale end-state from short-circuiting new turns. Next, validate with a two-turn Studio repro.
+
 ## 2026-02-04 - Router endpoint override + fallback (system integration / inference config)
 - Files: `src/react_agent/context.py`, `src/react_agent/graph.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added Router-only OpenAI endpoint env (`ROUTER_OPENAI_BASE_URL` / `ROUTER_OPENAI_API_KEY`) with automatic fallback to global provider on failure.

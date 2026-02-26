@@ -1,26 +1,73 @@
-"""Minimal demo to run the 4-layer pipeline.
+"""Minimal demo to run the 4-layer pipeline and optional thread persistence.
 
 Usage:
-    # set your API key envs first, e.g. OPENAI_API_KEY/ANTHROPIC_API_KEY
+    # set your API key envs first, e.g. OPENAI_API_KEY / TAVILY_API_KEY
+    # optional: enable in-process thread persistence for Python calls
+    #   PowerShell: $env:REACT_AGENT_CHECKPOINTER = "memory"
+    #   Bash: export REACT_AGENT_CHECKPOINTER=memory
     python demo_layered_run.py
 """
 
 import asyncio
+import os
+from typing import Any, Dict, Optional
 
-from react_agent import graph_app
+import react_agent.graph as graph_module
 from react_agent.context import Context
 
 
+def _msg_len(state: Dict[str, Any]) -> int:
+    msgs = state.get("messages") or []
+    return len(msgs)
+
+
+def _snippet(state: Dict[str, Any], n: int = 160) -> str:
+    msgs = state.get("messages") or []
+    if not msgs:
+        return ""
+    content = getattr(msgs[-1], "content", "")
+    text = content if isinstance(content, str) else str(content)
+    return text[:n]
+
+
+async def _run_once(question: str, *, context: Context, thread_id: Optional[str] = None) -> Dict[str, Any]:
+    kwargs: Dict[str, Any] = {"context": context}
+    graph_app = graph_module.get_graph_for_invoke(thread_id)
+    if thread_id:
+        kwargs["config"] = {"configurable": {"thread_id": thread_id}}
+    return await graph_app.ainvoke({"messages": [("user", question)]}, **kwargs)
+
+
 async def main() -> None:
-    res = await graph_app.ainvoke(
-        {"messages": [("user", "示例：给出新能源车行业的投资观点和风险点")]},
-        context=Context(model="deepseek/deepseek-chat"),
+    print("REACT_AGENT_CHECKPOINTER =", os.environ.get("REACT_AGENT_CHECKPOINTER", "(unset)"))
+    print("DISABLE_SEARCH =", os.environ.get("DISABLE_SEARCH", "(unset)"))
+    print("MODEL =", os.environ.get("MODEL", "deepseek/deepseek-chat"))
+    print("Persistent graph available =", bool(getattr(graph_module, "graph_persistent", None)))
+    print(
+        "Tip: set REACT_AGENT_CHECKPOINTER=memory before starting this script to enable same-thread "
+        "state reuse in Python/demo invocations."
     )
-    print("Final state keys:", res.keys())
-    print("Layer plan:", res.get("layer_plan"))
-    print("Layer mode:", res.get("layer_mode"))
-    print("Analyst results keys:", list((res.get("analyst_results") or {}).keys()))
-    print("Final message:", res["messages"][-1].content if res.get("messages") else "")
+
+    context = Context(model=os.environ.get("MODEL", "deepseek/deepseek-chat"))
+
+    print("\n=== Run A (same thread_id) ===")
+    thread_id = "demo-thread-1"
+    a1 = await _run_once("我叫小明。请记住这个名字。", context=context, thread_id=thread_id)
+    print("A1 messages_len:", _msg_len(a1))
+    print("A1 final snippet:", _snippet(a1))
+
+    a2 = await _run_once("我刚才叫什么？只回答名字。", context=context, thread_id=thread_id)
+    print("A2 messages_len:", _msg_len(a2))
+    print("A2 final snippet:", _snippet(a2))
+
+    print("\n=== Run B (no thread_id, control) ===")
+    b1 = await _run_once("我叫小明。请记住这个名字。", context=context)
+    print("B1 messages_len:", _msg_len(b1))
+    print("B1 final snippet:", _snippet(b1))
+
+    b2 = await _run_once("我刚才叫什么？只回答名字。", context=context)
+    print("B2 messages_len:", _msg_len(b2))
+    print("B2 final snippet:", _snippet(b2))
 
 
 if __name__ == "__main__":
