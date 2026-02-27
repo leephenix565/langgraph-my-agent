@@ -30,6 +30,15 @@ def _snippet(state: Dict[str, Any], n: int = 160) -> str:
     return text[:n]
 
 
+def _thread_summary_len(state: Dict[str, Any]) -> int:
+    return len((state.get("thread_summary") or ""))
+
+
+def _thread_summary_snippet(state: Dict[str, Any], n: int = 120) -> str:
+    text = str(state.get("thread_summary") or "")
+    return text[:n]
+
+
 async def _run_once(question: str, *, context: Context, thread_id: Optional[str] = None) -> Dict[str, Any]:
     kwargs: Dict[str, Any] = {"context": context}
     graph_app = graph_module.get_graph_for_invoke(thread_id)
@@ -43,9 +52,14 @@ async def main() -> None:
     print("DISABLE_SEARCH =", os.environ.get("DISABLE_SEARCH", "(unset)"))
     print("MODEL =", os.environ.get("MODEL", "deepseek/deepseek-chat"))
     print("Persistent graph available =", bool(getattr(graph_module, "graph_persistent", None)))
+    print("REACT_AGENT_THREAD_SUMMARY =", os.environ.get("REACT_AGENT_THREAD_SUMMARY", "(unset)"))
     print(
         "Tip: set REACT_AGENT_CHECKPOINTER=memory before starting this script to enable same-thread "
         "state reuse in Python/demo invocations."
+    )
+    print(
+        "Tip: set REACT_AGENT_THREAD_SUMMARY=1 to enable extractive thread_summary updates/injection "
+        "(Router + Manager Summary only)."
     )
 
     context = Context(model=os.environ.get("MODEL", "deepseek/deepseek-chat"))
@@ -54,19 +68,27 @@ async def main() -> None:
     thread_id = "demo-thread-1"
     a1 = await _run_once("我叫小明。请记住这个名字。", context=context, thread_id=thread_id)
     print("A1 messages_len:", _msg_len(a1))
+    print("A1 thread_summary_len:", _thread_summary_len(a1))
+    print("A1 thread_summary:", _thread_summary_snippet(a1))
     print("A1 final snippet:", _snippet(a1))
 
     a2 = await _run_once("我刚才叫什么？只回答名字。", context=context, thread_id=thread_id)
     print("A2 messages_len:", _msg_len(a2))
+    print("A2 thread_summary_len:", _thread_summary_len(a2))
+    print("A2 thread_summary:", _thread_summary_snippet(a2))
     print("A2 final snippet:", _snippet(a2))
 
     print("\n=== Run B (no thread_id, control) ===")
     b1 = await _run_once("我叫小明。请记住这个名字。", context=context)
     print("B1 messages_len:", _msg_len(b1))
+    print("B1 thread_summary_len:", _thread_summary_len(b1))
+    print("B1 thread_summary:", _thread_summary_snippet(b1))
     print("B1 final snippet:", _snippet(b1))
 
     b2 = await _run_once("我刚才叫什么？只回答名字。", context=context)
     print("B2 messages_len:", _msg_len(b2))
+    print("B2 thread_summary_len:", _thread_summary_len(b2))
+    print("B2 thread_summary:", _thread_summary_snippet(b2))
     print("B2 final snippet:", _snippet(b2))
 
 

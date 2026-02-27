@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-02-26 - Phase 2.2 optional thread_summary (extractive thread archive, Router + Manager Summary injection)
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `demo_layered_run.py`, `tests/unit_tests/test_thread_summary_phase22.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added optional `State.thread_summary` and a new `memory_update` node that runs only on the final-turn path (`is_last_step=True`) to build an extractive thread summary from explicit text (no extra LLM call).
+- Added env-gated injection of `thread_summary` into Router and Manager Summary LLM inputs only (`REACT_AGENT_THREAD_SUMMARY`, `REACT_AGENT_THREAD_SUMMARY_MAX_CHARS`); AgentInput and manager assignment text remain unchanged.
+- Default behavior/cost stays unchanged when the feature is disabled (default off): no extra node work on normal end path beyond existing routing, no extra prompt messages, no extra model calls.
+- `demo_layered_run.py` now prints `thread_summary_len` and a short snippet so same-thread persistence + summary behavior can be observed with `REACT_AGENT_CHECKPOINTER=memory` and `REACT_AGENT_THREAD_SUMMARY=1`.
+- Rollback: unset `REACT_AGENT_THREAD_SUMMARY` (or set `0`) and restart long-lived processes; optionally disable `REACT_AGENT_CHECKPOINTER` to return to single-invoke state behavior.
+Phase positioning: This is Phase 2.2 on top of Phase 2.1 thread persistence, adding a bounded, opt-in thread archive without changing RouterPlan parsing or agent dispatch semantics. The summary is deterministic/extractive to avoid extra cost and hallucination risk. Router and Manager Summary can now see prior-turn context in persisted threads, while agents remain isolated from the archive. Next, Phase 2.3 can add messages windowing/trim rules to control context growth using `thread_summary` as the stable carry-over channel.
+
 ## 2026-02-26 - Phase 2.1 optional Python thread persistence (checkpointer + thread_id)
 - Files: `src/react_agent/graph.py`, `demo_layered_run.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added an optional business-graph checkpointer switch via `REACT_AGENT_CHECKPOINTER` (default `none`), with `memory` mode enabled in-process and optional `sqlite` mode that degrades to no-op if dependencies are unavailable.

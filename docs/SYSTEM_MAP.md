@@ -1,6 +1,6 @@
 # SYSTEM_MAP (Single Source of Truth)
 
-更新时间：2026-01-23
+更新时间：2026-02-26
 
 高层叙事入口：`docs/PROJECT_OVERVIEW.md`（路线图 + 指标体系 + 为何 SLM 更强；不包含命令与操作细节）
 a01 合同协议入口：`docs/A01_CONTRACT_SCHEMA_V0.md`（schema v0 + 运行态消费规则）
@@ -53,6 +53,33 @@ $env:REACT_AGENT_CHECKPOINTER="memory"
 python demo_layered_run.py
 ```
 - 回滚方式：删除该环境变量或设置 `REACT_AGENT_CHECKPOINTER=none`，并重启进程（使 graph 重新 compile）。
+
+### Thread summary（Phase 2.2，可选）
+- 默认关闭：未设置 `REACT_AGENT_THREAD_SUMMARY`（或设为 `0`/`false`）时，不会新增 `thread_summary` 更新，也不会给 Router / Manager Summary 注入额外消息。
+- 开关（建议在长进程启动前设置）：
+  - `REACT_AGENT_THREAD_SUMMARY=1`：启用结案后一次性更新的 extractive 会话档案
+  - `REACT_AGENT_THREAD_SUMMARY_MAX_CHARS=2000`：控制 `thread_summary` 最大长度（默认 2000）
+- 生效前提（跨多次 invoke 复用）：
+  - 仅开启 `REACT_AGENT_THREAD_SUMMARY=1` 时会尝试更新/注入
+  - 若希望下一轮可读到上一轮摘要，需要配合 Phase 2.1 持久化：`REACT_AGENT_CHECKPOINTER=memory|sqlite` + 相同 `thread_id`
+- 更新时机：仅在最终层 `manager_summary()` 结案路径（`is_last_step=True`）后，经 `memory_update` 节点更新一次；非最终层不更新。
+- 注入范围（开启且 `thread_summary` 非空时）：
+  - Router：`router_node()` 在 Router system prompt 后追加一条 system message（thread summary）
+  - Manager Summary：`manager_summary()` 最终汇总 LLM 的 system prompt 后追加一条 system message（thread summary）
+- 非注入范围（本轮硬约束）：
+  - 不改 `manager_broadcast()` 的派工 `assignment_text`
+  - 不改 AgentInput（Agent 不直接或间接看到 `thread_summary`）
+- 摘要构造策略（无额外 LLM 调用）：
+  - 仅使用显式文本（`state.current_question` / 最近 HumanMessage + 最近 AIMessage 文本），固定模板拼接并截断；不做生成式改写。
+- demo 验收（建议与 Phase 2.1 一起开）：
+```bash
+# PowerShell
+$env:REACT_AGENT_CHECKPOINTER="memory"
+$env:REACT_AGENT_THREAD_SUMMARY="1"
+python demo_layered_run.py
+```
+- 预期：同一 `thread_id` 第二轮输出会打印非空 `thread_summary_len`（并可看到上一轮问题/回答的 extractive 片段）；不传 `thread_id` 的对照组不应稳定复用上一轮摘要。
+- 回滚方式：`unset REACT_AGENT_THREAD_SUMMARY`（或设为 `0`）并重启进程；如同时不需要持久化，亦可取消 `REACT_AGENT_CHECKPOINTER`。
 
 ### Testing/Dev setup（单测环境）
 推荐本地最小安装链路（与 CI 对齐）：

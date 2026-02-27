@@ -250,6 +250,70 @@ def _maybe_make_checkpointer():
     return None
 
 
+def _thread_summary_enabled() -> bool:
+    """Read thread summary toggle at call time to support long-lived processes."""
+    raw = (os.environ.get("REACT_AGENT_THREAD_SUMMARY", "0") or "0").strip().lower()
+    return raw in {"1", "true", "on", "yes"}
+
+
+def _thread_summary_max_chars() -> int:
+    raw = (os.environ.get("REACT_AGENT_THREAD_SUMMARY_MAX_CHARS", "2000") or "2000").strip()
+    try:
+        val = int(raw)
+    except Exception:
+        warnings.warn(
+            f"Invalid REACT_AGENT_THREAD_SUMMARY_MAX_CHARS='{raw}', using default 2000.",
+            RuntimeWarning,
+        )
+        return 2000
+    if val <= 0:
+        warnings.warn(
+            f"Invalid REACT_AGENT_THREAD_SUMMARY_MAX_CHARS='{raw}', using default 2000.",
+            RuntimeWarning,
+        )
+        return 2000
+    return val
+
+
+def _latest_ai_message_text(messages: List[AnyMessage]) -> str:
+    for msg in reversed(messages):
+        if isinstance(msg, AIMessage):
+            return get_message_text(msg)
+    return ""
+
+
+def _build_thread_summary(state: State) -> str:
+    """Build an extractive per-thread summary from explicit text only (no extra LLM call)."""
+    msgs = list(state.get("messages", []))
+    latest_question = state.get("current_question") or _get_latest_user_question(msgs)
+    latest_final_answer = _latest_ai_message_text(msgs)
+    if not latest_question and not latest_final_answer:
+        return ""
+
+    max_chars = _thread_summary_max_chars()
+    # Reserve more space for final answer while guaranteeing bounded output.
+    q_cap = max(120, min(600, max_chars // 3))
+    a_cap = max(240, max_chars - q_cap - 80)
+    parts: List[str] = []
+    if latest_question:
+        parts.append(f"Recent user question:\n{_truncate(latest_question, q_cap)}")
+    if latest_final_answer:
+        parts.append(f"Recent final answer:\n{_truncate(latest_final_answer, a_cap)}")
+    summary = _truncate("\n\n".join(parts), max_chars)
+    # _truncate() is shared legacy behavior; enforce a strict hard cap here for thread_summary.
+    return summary[:max_chars]
+
+
+def _thread_summary_system_msg(thread_summary: str) -> Dict[str, str]:
+    return {
+        "role": "system",
+        "content": (
+            "THREAD SUMMARY (extractive, prior-turn context; use only as supporting context):\n"
+            f"{thread_summary}"
+        ),
+    }
+
+
 AGENT_IDS_FOR_NODES: List[str] = [
     aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
 ]
@@ -305,7 +369,11 @@ async def router_node(
         system_time=datetime.now(tz=UTC).isoformat(),
         agent_catalog=json.dumps(agent_catalog, ensure_ascii=False),
     )
-    msgs = [{"role": "system", "content": system_prompt}, *state["messages"]]
+    msgs: List[Any] = [{"role": "system", "content": system_prompt}]
+    thread_summary = state.get("thread_summary", "")
+    if _thread_summary_enabled() and thread_summary:
+        msgs.append(_thread_summary_system_msg(thread_summary))
+    msgs.extend(state["messages"])
     router_model_name = runtime.context.router_model or runtime.context.model
     fallback_model_name = runtime.context.model
     try:
@@ -737,11 +805,12 @@ async def manager_summary(
         a25_output=a25_output,
     )
     user_msg = meta_note + user_msg
-    base_msgs = [
-        {"role": "system", "content": system_prompt},
-        *state.get("messages", []),
-        {"role": "user", "content": user_msg},
-    ]
+    base_msgs: List[Any] = [{"role": "system", "content": system_prompt}]
+    thread_summary = state.get("thread_summary", "")
+    if _thread_summary_enabled() and thread_summary:
+        base_msgs.append(_thread_summary_system_msg(thread_summary))
+    base_msgs.extend(state.get("messages", []))
+    base_msgs.append({"role": "user", "content": user_msg})
     try:
         metadata = {
             "run_id": run_id,
@@ -775,8 +844,30 @@ async def manager_summary(
     return {"messages": [response], "is_last_step": True, "layer_done": layer_done}
 
 
+async def memory_update(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Update optional per-thread extractive summary after a completed turn."""
+    if not _thread_summary_enabled():
+        return {}
+    if not state.get("is_last_step"):
+        return {}
+    new_summary = _build_thread_summary(state)
+    if not new_summary:
+        return {}
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    logger.log_event(
+        "thread_summary_update",
+        thread_summary_len=len(new_summary),
+    )
+    return {"thread_summary": new_summary}
+
+
 def route_from_manager_summary(state: State) -> str:
     """Route based on layer completion, chain mode, and finality."""
+    if state.get("is_last_step") and _thread_summary_enabled():
+        return "memory_update"
     if state.get("is_last_step"):
         return "__end__"
 
@@ -811,6 +902,7 @@ builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 builder.add_node("router", router_node)
 builder.add_node("manager_broadcast", manager_broadcast)
 builder.add_node("manager_summary", manager_summary)
+builder.add_node("memory_update", memory_update)
 builder.add_node("noop", noop)
 
 for agent_id, node_name in AGENT_NODE_NAMES.items():
@@ -822,10 +914,17 @@ builder.add_edge("router", "manager_broadcast")
 for node_name in AGENT_NODE_NAMES.values():
     builder.add_edge(node_name, "manager_summary")
 
+builder.add_edge("memory_update", "__end__")
+
 builder.add_conditional_edges(
     "manager_summary",
     route_from_manager_summary,
-    {"__end__": "__end__", "noop": "noop", "manager_broadcast": "manager_broadcast"},
+    {
+        "__end__": "__end__",
+        "memory_update": "memory_update",
+        "noop": "noop",
+        "manager_broadcast": "manager_broadcast",
+    },
 )
 
 _GRAPH_NAME = "Layered Router-Manager-Agent Demo (L1-L2-L3-L4)"

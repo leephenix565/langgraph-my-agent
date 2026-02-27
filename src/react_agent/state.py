@@ -43,3 +43,4 @@ class State(InputState, total=False):
     current_layer: str
     layer_done: Dict[str, bool]
     chain_cursor: int
+    thread_summary: str
