@@ -53,6 +53,9 @@ async def main() -> None:
     print("MODEL =", os.environ.get("MODEL", "deepseek/deepseek-chat"))
     print("Persistent graph available =", bool(getattr(graph_module, "graph_persistent", None)))
     print("REACT_AGENT_THREAD_SUMMARY =", os.environ.get("REACT_AGENT_THREAD_SUMMARY", "(unset)"))
+    print("REACT_AGENT_MESSAGES_WINDOW =", os.environ.get("REACT_AGENT_MESSAGES_WINDOW", "(unset)"))
+    print("REACT_AGENT_MESSAGES_WINDOW_SIZE =", os.environ.get("REACT_AGENT_MESSAGES_WINDOW_SIZE", "(unset)"))
+    print("LOCAL_TRACE =", os.environ.get("LOCAL_TRACE", "(unset)"))
     print(
         "Tip: set REACT_AGENT_CHECKPOINTER=memory before starting this script to enable same-thread "
         "state reuse in Python/demo invocations."
@@ -60,6 +63,10 @@ async def main() -> None:
     print(
         "Tip: set REACT_AGENT_THREAD_SUMMARY=1 to enable extractive thread_summary updates/injection "
         "(Router + Manager Summary only)."
+    )
+    print(
+        "Tip: set REACT_AGENT_MESSAGES_WINDOW=1 (and optional REACT_AGENT_MESSAGES_WINDOW_SIZE=20) "
+        "to trim only Router/Manager Summary LLM inputs; set LOCAL_TRACE=1 to inspect router_ctx/manager_ctx events."
     )
 
     context = Context(model=os.environ.get("MODEL", "deepseek/deepseek-chat"))

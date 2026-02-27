@@ -314,6 +314,41 @@ def _thread_summary_system_msg(thread_summary: str) -> Dict[str, str]:
     }
 
 
+def _messages_window_enabled() -> bool:
+    """Read messages-window toggle at call time to support long-lived processes."""
+    raw = (os.environ.get("REACT_AGENT_MESSAGES_WINDOW", "0") or "0").strip().lower()
+    return raw in {"1", "true", "on", "yes"}
+
+
+def _messages_window_size() -> int:
+    raw = (os.environ.get("REACT_AGENT_MESSAGES_WINDOW_SIZE", "20") or "20").strip()
+    try:
+        val = int(raw)
+    except Exception:
+        warnings.warn(
+            f"Invalid REACT_AGENT_MESSAGES_WINDOW_SIZE='{raw}', using default 20.",
+            RuntimeWarning,
+        )
+        return 20
+    if val <= 0:
+        warnings.warn(
+            f"Invalid REACT_AGENT_MESSAGES_WINDOW_SIZE='{raw}', clamping to 1.",
+            RuntimeWarning,
+        )
+        return 1
+    return val
+
+
+def _window_messages(full_messages: List[AnyMessage]) -> List[AnyMessage]:
+    """Return a tail window of messages when enabled; otherwise return full messages."""
+    if not _messages_window_enabled():
+        return full_messages
+    size = _messages_window_size()
+    if len(full_messages) <= size:
+        return full_messages
+    return full_messages[-size:]
+
+
 AGENT_IDS_FOR_NODES: List[str] = [
     aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
 ]
@@ -373,7 +408,18 @@ async def router_node(
     thread_summary = state.get("thread_summary", "")
     if _thread_summary_enabled() and thread_summary:
         msgs.append(_thread_summary_system_msg(thread_summary))
-    msgs.extend(state["messages"])
+    full_messages = list(state["messages"])
+    window_enabled = _messages_window_enabled()
+    window_size = _messages_window_size() if window_enabled else 0
+    ctx_messages = _window_messages(full_messages) if window_enabled else full_messages
+    logger.log_event(
+        "router_ctx",
+        window_enabled=1 if window_enabled else 0,
+        window_size=window_size,
+        ctx_messages_len=len(ctx_messages),
+        full_messages_len=len(full_messages),
+    )
+    msgs.extend(ctx_messages)
     router_model_name = runtime.context.router_model or runtime.context.model
     fallback_model_name = runtime.context.model
     try:
@@ -809,7 +855,18 @@ async def manager_summary(
     thread_summary = state.get("thread_summary", "")
     if _thread_summary_enabled() and thread_summary:
         base_msgs.append(_thread_summary_system_msg(thread_summary))
-    base_msgs.extend(state.get("messages", []))
+    full_messages = list(state.get("messages", []))
+    window_enabled = _messages_window_enabled()
+    window_size = _messages_window_size() if window_enabled else 0
+    ctx_messages = _window_messages(full_messages) if window_enabled else full_messages
+    logger.log_event(
+        "manager_ctx",
+        window_enabled=1 if window_enabled else 0,
+        window_size=window_size,
+        ctx_messages_len=len(ctx_messages),
+        full_messages_len=len(full_messages),
+    )
+    base_msgs.extend(ctx_messages)
     base_msgs.append({"role": "user", "content": user_msg})
     try:
         metadata = {

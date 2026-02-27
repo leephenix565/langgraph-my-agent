@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-02-26 - Phase 2.3 optional messages window/trim (Router + Manager Summary input only)
+- Files: `src/react_agent/graph.py`, `demo_layered_run.py`, `tests/unit_tests/test_messages_window_phase23.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added env-gated messages windowing for Router and Manager Summary LLM inputs only via `REACT_AGENT_MESSAGES_WINDOW` and `REACT_AGENT_MESSAGES_WINDOW_SIZE` (default off).
+- Kept all full-message readers unchanged (`_get_latest_user_question`, `thread_summary` construction, manager dispatch, Agent subtask extraction), so the feature only trims the LLM context payloads for Router/Manager Summary.
+- Preserved Phase 2.2 ordering when enabled: `system_prompt + (optional thread_summary msg) + window_messages` (and `+ user_msg` for Manager Summary).
+- Added optional trace observability (`router_ctx` / `manager_ctx`) with numeric fields `ctx_messages_len`, `full_messages_len`, and `window_size` for LOCAL_TRACE-based validation.
+- `demo_layered_run.py` now prints messages-window envs and hints to inspect `router_ctx/manager_ctx` when `LOCAL_TRACE=1`.
+- Rollback: unset `REACT_AGENT_MESSAGES_WINDOW` (or set `0`) and restart long-lived processes; inputs revert to full `state["messages"]`.
+Phase positioning: This is Phase 2.3 context-budget hardening on top of Phase 2.1 persistence and Phase 2.2 thread_summary. It limits only Router and Manager Summary LLM inputs while preserving reducer semantics and agent dispatch behavior. The goal is to control long-thread token growth and prompt drift without changing routing/agent logic. Next, validate window sizes on long conversations and decide whether to introduce role-aware trimming or message window defaults.
+
 ## 2026-02-26 - Phase 2.2 optional thread_summary (extractive thread archive, Router + Manager Summary injection)
 - Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `demo_layered_run.py`, `tests/unit_tests/test_thread_summary_phase22.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added optional `State.thread_summary` and a new `memory_update` node that runs only on the final-turn path (`is_last_step=True`) to build an extractive thread summary from explicit text (no extra LLM call).

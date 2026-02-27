@@ -81,6 +81,33 @@ python demo_layered_run.py
 - 预期：同一 `thread_id` 第二轮输出会打印非空 `thread_summary_len`（并可看到上一轮问题/回答的 extractive 片段）；不传 `thread_id` 的对照组不应稳定复用上一轮摘要。
 - 回滚方式：`unset REACT_AGENT_THREAD_SUMMARY`（或设为 `0`）并重启进程；如同时不需要持久化，亦可取消 `REACT_AGENT_CHECKPOINTER`。
 
+### Messages window / trim（Phase 2.3，可选，Router + Manager Summary 输入限定）
+- 默认关闭：未设置 `REACT_AGENT_MESSAGES_WINDOW`（或设为 `0`/`false`）时，Router 与 Manager Summary 仍使用全量 `state["messages"]` 作为 LLM 输入上下文。
+- 开关与参数（建议在长进程启动前设置）：
+  - `REACT_AGENT_MESSAGES_WINDOW=1`：启用消息窗口（仅影响 Router 与 Manager Summary 的 LLM 输入）
+  - `REACT_AGENT_MESSAGES_WINDOW_SIZE=20`：窗口大小（取最后 N 条 messages；默认 20，最小会 clamp 到 1）
+- 输入结构（开启窗口时，保持顺序不变）：
+  - Router：`system_prompt + (optional thread_summary system msg) + window_messages`
+  - Manager Summary：`system_prompt + (optional thread_summary system msg) + window_messages + user_msg`
+- 兼容性（与 Phase 2.2）：
+  - `thread_summary` 注入顺序保持在 system prompt 之后、window messages 之前
+  - `_get_latest_user_question` 与 `thread_summary` 构造仍读取全量 messages（不受窗口影响）
+  - Agent 路径 / 派工文本不变（不改 `manager_broadcast` / AgentInput / `default_agents.py`）
+- 可观测（推荐）：
+  - `LOCAL_TRACE=1` 时，查看 `router_ctx` / `manager_ctx` 事件中的 `ctx_messages_len`、`full_messages_len`、`window_size`，确认窗口生效
+- demo 验收（可与 Phase 2.1/2.2 组合）：
+```bash
+# PowerShell
+$env:REACT_AGENT_CHECKPOINTER="memory"
+$env:REACT_AGENT_THREAD_SUMMARY="1"
+$env:REACT_AGENT_MESSAGES_WINDOW="1"
+$env:REACT_AGENT_MESSAGES_WINDOW_SIZE="20"
+$env:LOCAL_TRACE="1"
+python demo_layered_run.py
+```
+- 预期：同 thread 场景下仍能看到 `thread_summary`；`LOCAL_TRACE` 日志里 `router_ctx/manager_ctx` 的 `ctx_messages_len` 不超过窗口上限（受消息总数限制）。
+- 回滚方式：`unset REACT_AGENT_MESSAGES_WINDOW`（或设为 `0`）并重启进程；如不需要 trace，关闭 `LOCAL_TRACE`。
+
 ### Testing/Dev setup（单测环境）
 推荐本地最小安装链路（与 CI 对齐）：
 ```bash
