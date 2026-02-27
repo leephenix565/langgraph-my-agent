@@ -314,6 +314,78 @@ def _thread_summary_system_msg(thread_summary: str) -> Dict[str, str]:
     }
 
 
+def _stable_consume_enabled() -> bool:
+    """Read stable-findings consume toggle at call time; default disabled."""
+    raw = (os.environ.get("REACT_AGENT_STABLE_CONSUME", "0") or "0").strip().lower()
+    return raw in {"1", "true", "on", "yes"}
+
+
+def _stable_summary_max_chars() -> int:
+    return _read_positive_int_env("REACT_AGENT_STABLE_SUMMARY_MAX_CHARS", 1200)
+
+
+def _stable_summary_max_items() -> int:
+    return _read_positive_int_env("REACT_AGENT_STABLE_SUMMARY_MAX_ITEMS", 5)
+
+
+def _stable_summary_system_msg(stable_summary: str) -> Dict[str, str]:
+    return {
+        "role": "system",
+        "content": (
+            "STABLE FINDINGS (extractive index; prior finalized turns, supporting context only):\n"
+            f"{stable_summary}"
+        ),
+    }
+
+
+def _build_stable_summary(state: State) -> str:
+    """Build a deterministic extractive stable summary from stable_findings."""
+    raw = state.get("stable_findings", [])
+    if not isinstance(raw, list) or not raw:
+        return ""
+
+    max_items = _stable_summary_max_items()
+    max_chars = _stable_summary_max_chars()
+    question_cap = max(80, min(260, max_chars // 6))
+    answer_cap = max(120, min(360, max_chars // 4))
+    evidence_cap = max(80, min(200, max_chars // 8))
+
+    entries = raw[-max_items:]
+    lines: List[str] = ["STABLE FINDINGS (extractive index):"]
+    for entry in entries:
+        if not isinstance(entry, dict):
+            continue
+        question = _truncate(str(entry.get("question", "")).strip(), question_cap)
+        final_answer = _truncate(str(entry.get("final_answer", "")).strip(), answer_cap)
+        if not question and not final_answer:
+            continue
+        lines.append(f"- Q: {question or '(none)'}")
+        lines.append(f"  A: {final_answer or '(none)'}")
+
+        evidence_items: List[str] = []
+        evidence = entry.get("evidence", [])
+        if isinstance(evidence, list):
+            for item in evidence:
+                if len(evidence_items) >= 2:
+                    break
+                if isinstance(item, dict):
+                    text = str(item.get("text", "")).strip()
+                    agent_id = str(item.get("agent_id", "")).strip()
+                    if not text:
+                        continue
+                    truncated = _truncate(text, evidence_cap)
+                    evidence_items.append(f"[{agent_id}] {truncated}" if agent_id else truncated)
+                elif isinstance(item, str):
+                    text = item.strip()
+                    if text:
+                        evidence_items.append(_truncate(text, evidence_cap))
+        if evidence_items:
+            lines.append(f"  Evidence: {'; '.join(evidence_items)}")
+
+    summary = "\n".join(lines)
+    return _truncate(summary, max_chars)[:max_chars]
+
+
 def _messages_window_enabled() -> bool:
     """Read messages-window toggle at call time to support long-lived processes."""
     raw = (os.environ.get("REACT_AGENT_MESSAGES_WINDOW", "0") or "0").strip().lower()
@@ -506,6 +578,21 @@ async def router_node(
         agent_catalog=json.dumps(agent_catalog, ensure_ascii=False),
     )
     msgs: List[Any] = [{"role": "system", "content": system_prompt}]
+    stable_raw = state.get("stable_findings", [])
+    stable_len = len(stable_raw) if isinstance(stable_raw, list) else 0
+    stable_summary = ""
+    stable_enabled = _stable_consume_enabled()
+    if stable_enabled:
+        stable_summary = _build_stable_summary(state)
+        if stable_summary:
+            msgs.append(_stable_summary_system_msg(stable_summary))
+    logger.log_event(
+        "stable_consume",
+        node="router",
+        enabled=1 if stable_enabled else 0,
+        stable_len=stable_len,
+        stable_summary_len=len(stable_summary),
+    )
     thread_summary = state.get("thread_summary", "")
     if _thread_summary_enabled() and thread_summary:
         msgs.append(_thread_summary_system_msg(thread_summary))
@@ -964,6 +1051,21 @@ async def manager_summary(
     )
     user_msg = meta_note + user_msg
     base_msgs: List[Any] = [{"role": "system", "content": system_prompt}]
+    stable_raw = state.get("stable_findings", [])
+    stable_len = len(stable_raw) if isinstance(stable_raw, list) else 0
+    stable_summary = ""
+    stable_enabled = _stable_consume_enabled()
+    if stable_enabled:
+        stable_summary = _build_stable_summary(state)
+        if stable_summary:
+            base_msgs.append(_stable_summary_system_msg(stable_summary))
+    logger.log_event(
+        "stable_consume",
+        node="manager_summary",
+        enabled=1 if stable_enabled else 0,
+        stable_len=stable_len,
+        stable_summary_len=len(stable_summary),
+    )
     thread_summary = state.get("thread_summary", "")
     if _thread_summary_enabled() and thread_summary:
         base_msgs.append(_thread_summary_system_msg(thread_summary))

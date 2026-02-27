@@ -130,6 +130,26 @@ pytest -q tests/unit_tests/test_results_pools_phase24b.py
 ```
 - 回滚方式：`unset REACT_AGENT_RESULTS_POOLS`（或设为 `0`）并重启长进程。
 
+### Stable findings consume（Phase 2.5，可选，仅 Router + Manager Summary）
+- 默认关闭：`REACT_AGENT_STABLE_CONSUME` 未设置或设为 `0` 时，不会注入 stable summary，默认成本与行为不变。
+- 开关与参数：
+  - `REACT_AGENT_STABLE_CONSUME=1`
+  - `REACT_AGENT_STABLE_SUMMARY_MAX_CHARS=1200`（默认 1200）
+  - `REACT_AGENT_STABLE_SUMMARY_MAX_ITEMS=5`（默认 5，取最近 N 条 stable findings）
+- 注入顺序（开启时）：
+  - Router：`system_prompt + stable_summary + thread_summary + window_messages`
+  - Manager Summary：`system_prompt + stable_summary + thread_summary + window_messages + user_msg`
+- 约束边界：
+  - 仅 Router 与 Manager Summary 消费 stable findings
+  - 不改 `manager_broadcast` 派工文本，不改 AgentInput/shared_context，不改 `default_agents.py`
+- 可观测（推荐）：
+  - `LOCAL_TRACE=1` 时查看 `stable_consume` 事件（`node/enabled/stable_len/stable_summary_len`）
+- 验收命令：
+```bash
+pytest -q tests/unit_tests/test_stable_consume_phase25.py
+```
+- 回滚方式：`unset REACT_AGENT_STABLE_CONSUME`（或设为 `0`）并重启长进程。
+
 ### Testing/Dev setup（单测环境）
 推荐本地最小安装链路（与 CI 对齐）：
 ```bash

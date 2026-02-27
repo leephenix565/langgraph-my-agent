@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-02-26 - Phase 2.5 optional stable_findings consumption (Router + Manager Summary only)
+- Files: `src/react_agent/graph.py`, `tests/unit_tests/test_stable_consume_phase25.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added env-gated stable-findings consumption via `REACT_AGENT_STABLE_CONSUME` (default off), with bounded summary controls `REACT_AGENT_STABLE_SUMMARY_MAX_CHARS` and `REACT_AGENT_STABLE_SUMMARY_MAX_ITEMS`.
+- Implemented deterministic/extractive `stable_summary` builder from `state["stable_findings"]` with non-list/empty tolerance and per-field truncation.
+- Injected `stable_summary` only into Router and Manager Summary system-context assembly before `thread_summary`, preserving the configured order with messages windowing.
+- Added lightweight `stable_consume` trace event (`node/enabled/stable_len/stable_summary_len`) for LOCAL_TRACE observability; default off keeps zero extra logging output.
+- Kept boundaries unchanged: no Agent/shared_context stable injection, no manager assignment text changes, no RouterPlan/parser changes.
+- Rollback: unset `REACT_AGENT_STABLE_CONSUME` (or set `0`) and restart long-lived processes.
+Phase positioning: This phase activates controlled use of retained stable findings after pools (2.4-B) and context controls (2.2/2.3). It improves cross-turn continuity for Router/Manager decisions without widening agent context. The implementation remains opt-in to preserve default runtime cost and behavior. Next, Phase 2.5 follow-up should audit stable summary quality/ordering effects and define stricter observability gates.
+
 ## 2026-02-26 - Phase 2.4-B.1 robustness hardening (stable_findings type coercion)
 - Files: `src/react_agent/graph.py`, `tests/unit_tests/test_results_pools_phase24b.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Hardened `manager_summary` final-path stable write logic: when `REACT_AGENT_RESULTS_POOLS=1` and `state["stable_findings"]` is not a list, runtime now coerces to `[]` instead of raising.
