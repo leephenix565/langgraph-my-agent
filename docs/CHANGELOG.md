@@ -1,5 +1,14 @@
 # CHANGELOG
 
+## 2026-02-27 - Phase 3.1 FINAL_LAYER must finalize (empty plan fallback)
+- Files: `src/react_agent/graph.py`, `tests/unit_tests/test_final_layer_finalize_phase31.py`, `docs/CHANGELOG.md`
+- Added shared final-summary helper `_run_final_summary(...)` and new graph node `finalize_summary` to force final answer generation when `current_layer==FINAL_LAYER` and pending agents are empty.
+- Updated `route_from_manager_summary` so FINAL_LAYER with no pending no longer returns direct `__end__`; it now routes to `finalize_summary`, which sets `is_last_step=True` and preserves existing stable/thread-summary write behavior.
+- Added `route_after_finalize` conditional routing to keep existing end semantics: `memory_update` when thread summary is enabled, otherwise `__end__`.
+- Added unit coverage for the new invariant (`route_from_manager_summary -> finalize_summary`, `finalize_summary` output includes `is_last_step=True` and message, and `route_after_finalize` behavior).
+- Rollback: revert this commit to restore prior direct-`__end__` behavior on FINAL_LAYER empty-plan states.
+Phase positioning: This Phase 3.1 fix hardens end-of-turn semantics so FINAL_LAYER always produces a closing summary path instead of silently ending with `is_last_step=False`. It does not alter RouterPlan schema, parser behavior, or agent dispatch contracts. The change is scoped to finalization routing and summary-node wiring. Next step is to rerun Phase 2.5 acceptance runs and verify `manager_ctx` / `stable_findings_update` / `thread_summary_update` appear consistently under long-turn persistence.
+
 ## 2026-02-26 - Phase 2.5 optional stable_findings consumption (Router + Manager Summary only)
 - Files: `src/react_agent/graph.py`, `tests/unit_tests/test_stable_consume_phase25.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added env-gated stable-findings consumption via `REACT_AGENT_STABLE_CONSUME` (default off), with bounded summary controls `REACT_AGENT_STABLE_SUMMARY_MAX_CHARS` and `REACT_AGENT_STABLE_SUMMARY_MAX_ITEMS`.

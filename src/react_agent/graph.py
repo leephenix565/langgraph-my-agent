@@ -970,62 +970,21 @@ def _build_agent_node(agent_id: str):
     return _node
 
 
-async def manager_summary(
-    state: State, runtime: Runtime[Context]
+async def _run_final_summary(
+    state: State,
+    runtime: Runtime[Context],
+    layer_done: Dict[str, bool],
+    analyst_results: Dict[str, Any],
+    filtered_results: Dict[str, Any],
+    filtered_out: int,
 ) -> Dict[str, object]:
-    """Manager: integrate AgentOutputs; advance layers; only answer at final layer."""
+    """Run the final user-facing summary step and mark turn completion."""
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
-    selected = layer_plan.get(current_layer, state.get("plan", []))
-    analyst_results = _get_runtime_results_pool(state)
-    filtered_results = {
-        aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
-    }
-    filtered_out = len(analyst_results) - len(filtered_results)
-    pending = [aid for aid in selected if aid not in analyst_results]
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
-    logger.log_event(
-        "summary_start",
-        current_layer=current_layer,
-        pending=pending,
-        results=list(filtered_results.keys()),
-        filtered_out=filtered_out,
-    )
 
-    base_update: Dict[str, object] = {"plan": selected}
-
-    if selected and pending:
-        # Chain: dispatch next; Star: wait.
-        chain_cursor = len(selected) - len(pending)
-        return {**base_update, "chain_cursor": chain_cursor}
-
-    # Mark current layer done and advance if not final.
-    layer_done = dict(state.get("layer_done", {}))
-    layer_done[current_layer] = True
-    next_layer = _next_layer(current_layer)
-    if next_layer:
-        debug_msg = AIMessage(
-            content=f"[manager_summary] layer {current_layer} done -> advance to {next_layer}"
-        )
-        logger.log_event(
-            "summary_end",
-            current_layer=current_layer,
-            filtered_out=filtered_out,
-            results=list(filtered_results.keys()),
-            next_layer=next_layer,
-        )
-        return {
-            "messages": [debug_msg],
-            "layer_done": layer_done,
-            "current_layer": next_layer,
-            "plan": layer_plan.get(next_layer, []),
-            "chain_cursor": 0,
-            "fanout_targets": [],
-        }
-
-    # Final layer completed: produce user-facing summary.
     model = load_chat_model(runtime.context.model)
     system_prompt = runtime.context.system_prompt.format(
         system_time=datetime.now(tz=UTC).isoformat()
@@ -1146,6 +1105,94 @@ async def manager_summary(
     return update
 
 
+async def manager_summary(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Manager: integrate AgentOutputs; advance layers; only answer at final layer."""
+    layer_plan = state.get("layer_plan", {})
+    layer_mode = state.get("layer_mode", {})
+    current_layer = state.get("current_layer") or LAYER_ORDER[0]
+    selected = layer_plan.get(current_layer, state.get("plan", []))
+    analyst_results = _get_runtime_results_pool(state)
+    filtered_results = {
+        aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
+    }
+    filtered_out = len(analyst_results) - len(filtered_results)
+    pending = [aid for aid in selected if aid not in analyst_results]
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    logger.log_event(
+        "summary_start",
+        current_layer=current_layer,
+        pending=pending,
+        results=list(filtered_results.keys()),
+        filtered_out=filtered_out,
+    )
+
+    base_update: Dict[str, object] = {"plan": selected}
+
+    if selected and pending:
+        # Chain: dispatch next; Star: wait.
+        chain_cursor = len(selected) - len(pending)
+        return {**base_update, "chain_cursor": chain_cursor}
+
+    # Mark current layer done and advance if not final.
+    layer_done = dict(state.get("layer_done", {}))
+    layer_done[current_layer] = True
+    next_layer = _next_layer(current_layer)
+    if next_layer:
+        debug_msg = AIMessage(
+            content=f"[manager_summary] layer {current_layer} done -> advance to {next_layer}"
+        )
+        logger.log_event(
+            "summary_end",
+            current_layer=current_layer,
+            filtered_out=filtered_out,
+            results=list(filtered_results.keys()),
+            next_layer=next_layer,
+        )
+        return {
+            "messages": [debug_msg],
+            "layer_done": layer_done,
+            "current_layer": next_layer,
+            "plan": layer_plan.get(next_layer, []),
+            "chain_cursor": 0,
+            "fanout_targets": [],
+        }
+
+    # Final layer completed: produce user-facing summary.
+    return await _run_final_summary(
+        state=state,
+        runtime=runtime,
+        layer_done=layer_done,
+        analyst_results=analyst_results,
+        filtered_results=filtered_results,
+        filtered_out=filtered_out,
+    )
+
+
+async def finalize_summary(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Fallback finalizer: force a final summary when FINAL_LAYER has no pending agents."""
+    current_layer = state.get("current_layer") or LAYER_ORDER[0]
+    layer_done = dict(state.get("layer_done", {}))
+    layer_done[current_layer] = True
+    analyst_results = _get_runtime_results_pool(state)
+    filtered_results = {
+        aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
+    }
+    filtered_out = len(analyst_results) - len(filtered_results)
+    return await _run_final_summary(
+        state=state,
+        runtime=runtime,
+        layer_done=layer_done,
+        analyst_results=analyst_results,
+        filtered_results=filtered_results,
+        filtered_out=filtered_out,
+    )
+
+
 async def memory_update(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
@@ -1191,6 +1238,13 @@ def route_from_manager_summary(state: State) -> str:
     # No pending in current layer: if not final layer, proceed to next dispatch.
     if current_layer != FINAL_LAYER:
         return "manager_broadcast"
+    return "finalize_summary"
+
+
+def route_after_finalize(state: State) -> str:
+    """After forced finalization, keep existing memory_update/end behavior."""
+    if state.get("is_last_step") and _thread_summary_enabled():
+        return "memory_update"
     return "__end__"
 
 
@@ -1204,6 +1258,7 @@ builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 builder.add_node("router", router_node)
 builder.add_node("manager_broadcast", manager_broadcast)
 builder.add_node("manager_summary", manager_summary)
+builder.add_node("finalize_summary", finalize_summary)
 builder.add_node("memory_update", memory_update)
 builder.add_node("noop", noop)
 
@@ -1224,8 +1279,18 @@ builder.add_conditional_edges(
     {
         "__end__": "__end__",
         "memory_update": "memory_update",
+        "finalize_summary": "finalize_summary",
         "noop": "noop",
         "manager_broadcast": "manager_broadcast",
+    },
+)
+
+builder.add_conditional_edges(
+    "finalize_summary",
+    route_after_finalize,
+    {
+        "__end__": "__end__",
+        "memory_update": "memory_update",
     },
 )
 
