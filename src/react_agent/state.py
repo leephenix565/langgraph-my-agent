@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Sequence
+from typing import Any, Dict, List, Sequence
 
 from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
@@ -34,6 +34,8 @@ class State(InputState, total=False):
 
     plan: List[str]
     analyst_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
+    ephemeral_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
+    stable_findings: List[Dict[str, Any]]
     run_id: str
     is_last_step: bool
     current_question: str

@@ -349,6 +349,107 @@ def _window_messages(full_messages: List[AnyMessage]) -> List[AnyMessage]:
     return full_messages[-size:]
 
 
+def _results_pools_enabled() -> bool:
+    """Enable ephemeral/stable result pools via env; default off for backward compatibility."""
+    raw = (os.environ.get("REACT_AGENT_RESULTS_POOLS", "0") or "0").strip().lower()
+    return raw in {"1", "true", "on", "yes"}
+
+
+def _read_positive_int_env(name: str, default: int, minimum: int = 1) -> int:
+    raw = (os.environ.get(name, str(default)) or str(default)).strip()
+    try:
+        value = int(raw)
+    except Exception:
+        warnings.warn(
+            f"Invalid {name}='{raw}', using default {default}.",
+            RuntimeWarning,
+        )
+        return default
+    if value < minimum:
+        warnings.warn(
+            f"Invalid {name}='{raw}', clamping to {minimum}.",
+            RuntimeWarning,
+        )
+        return minimum
+    return value
+
+
+def _stable_findings_max_items() -> int:
+    return _read_positive_int_env("REACT_AGENT_STABLE_FINDINGS_MAX_ITEMS", 50)
+
+
+def _evidence_max_items() -> int:
+    return _read_positive_int_env("REACT_AGENT_EVIDENCE_MAX_ITEMS", 20)
+
+
+def _evidence_max_chars() -> int:
+    return _read_positive_int_env("REACT_AGENT_EVIDENCE_MAX_CHARS", 500)
+
+
+def _stable_text_max_chars() -> int:
+    return _read_positive_int_env("REACT_AGENT_STABLE_TEXT_MAX_CHARS", 2000)
+
+
+def _get_runtime_results_pool(state: State) -> Dict[str, AgentOutput]:
+    """Return current-turn result pool; phase-guarded to keep default behavior unchanged."""
+    if _results_pools_enabled():
+        ep = state.get("ephemeral_results")
+        if isinstance(ep, dict):
+            return ep
+    legacy = state.get("analyst_results", {})
+    return legacy if isinstance(legacy, dict) else {}
+
+
+def _build_stable_evidence_index(filtered_results: Dict[str, Any]) -> List[Dict[str, str]]:
+    """Extract bounded evidence/index cards from filtered agent outputs."""
+    max_items = _evidence_max_items()
+    max_chars = _evidence_max_chars()
+    cards: List[Dict[str, str]] = []
+    for agent_id, result in filtered_results.items():
+        if not isinstance(result, dict):
+            continue
+        evidence = result.get("evidence")
+        if isinstance(evidence, list):
+            for item in evidence:
+                if not isinstance(item, str):
+                    continue
+                text = _truncate(item, max_chars).strip()
+                if not text:
+                    continue
+                cards.append({"agent_id": str(agent_id), "kind": "evidence", "text": text})
+                if len(cards) >= max_items:
+                    return cards
+        key_points = result.get("key_points")
+        if isinstance(key_points, list):
+            for item in key_points:
+                if not isinstance(item, str):
+                    continue
+                text = _truncate(item, max_chars).strip()
+                if not text:
+                    continue
+                cards.append({"agent_id": str(agent_id), "kind": "key_point", "text": text})
+                if len(cards) >= max_items:
+                    return cards
+    return cards
+
+
+def _build_stable_finding_entry(
+    question: str,
+    final_answer_text: str,
+    filtered_results: Dict[str, Any],
+    state: State,
+) -> Dict[str, Any]:
+    """Build a bounded stable finding entry from explicit final-turn artifacts."""
+    text_cap = _stable_text_max_chars()
+    return {
+        "kind": "final_answer",
+        "question": _truncate(question, text_cap),
+        "final_answer": _truncate(final_answer_text, text_cap),
+        "evidence": _build_stable_evidence_index(filtered_results),
+        "run_id": str(state.get("run_id") or ""),
+    }
+
+
 AGENT_IDS_FOR_NODES: List[str] = [
     aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
 ]
@@ -477,7 +578,7 @@ async def router_node(
         layer_mode=layer_mode,
         router_parse_stats=parse_stats,
     )
-    return {
+    update: Dict[str, object] = {
         "messages": [response],
         "plan": layer_plan.get(current_layer, []),
         "layer_plan": layer_plan,
@@ -489,9 +590,13 @@ async def router_node(
         "layer_done": {},
         "run_id": run_id,
         "is_last_step": False,
-        # Signal a fresh turn so downstream merges clear old analyst_results.
-        "analyst_results": {"__reset__": True},
     }
+    # Signal a fresh turn so downstream merges clear old analyst_results.
+    update["analyst_results"] = {"__reset__": True}
+    if _results_pools_enabled():
+        update["ephemeral_results"] = {"__reset__": True}
+        logger.log_event("ephemeral_reset", enabled=1)
+    return update
 
 
 async def manager_broadcast(
@@ -503,7 +608,7 @@ async def manager_broadcast(
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     selected = layer_plan.get(current_layer, [])
     mode = _normalize_mode(layer_mode.get(current_layer, DEFAULT_MODES.get(current_layer, "Star")))
-    results = state.get("analyst_results", {})
+    results = _get_runtime_results_pool(state)
     question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
@@ -710,7 +815,7 @@ def _build_agent_node(agent_id: str):
         agent_input = {
             "question": question,
             "subtask": subtask,
-            "shared_context": state.get("analyst_results", {}),
+            "shared_context": _get_runtime_results_pool(state),
             "history": [],
             "tools_config": {
                 "allow_search": (
@@ -749,8 +854,8 @@ def _build_agent_node(agent_id: str):
                 error=str(exc),
             )
             output = _agent_error_output(agent_id, exc)
-        analyst_results = dict(state.get("analyst_results", {}))
-        analyst_results[agent_id] = output
+        runtime_results = dict(_get_runtime_results_pool(state))
+        runtime_results[agent_id] = output
         logger.log_event(
             "agent_end",
             agent_id=agent_id,
@@ -762,9 +867,16 @@ def _build_agent_node(agent_id: str):
         ai_msg = AIMessage(
             content=json.dumps({"agent_id": agent_id, "output": output}, ensure_ascii=False, indent=2)
         )
+        if _results_pools_enabled():
+            return {
+                "messages": [ai_msg],
+                "ephemeral_results": runtime_results,
+                # Backward-compatible mirror for existing readers/tests during transition.
+                "analyst_results": dict(runtime_results),
+            }
         return {
             "messages": [ai_msg],
-            "analyst_results": analyst_results,
+            "analyst_results": runtime_results,
         }
 
     _node.__name__ = f"{agent_id}_agent_node"
@@ -779,7 +891,7 @@ async def manager_summary(
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     selected = layer_plan.get(current_layer, state.get("plan", []))
-    analyst_results = state.get("analyst_results", {})
+    analyst_results = _get_runtime_results_pool(state)
     filtered_results = {
         aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
     }
@@ -898,7 +1010,38 @@ async def manager_summary(
         results=list(filtered_results.keys()),
         summary=_truncate(get_message_text(response)),
     )
-    return {"messages": [response], "is_last_step": True, "layer_done": layer_done}
+    update: Dict[str, object] = {"messages": [response], "is_last_step": True, "layer_done": layer_done}
+    if _results_pools_enabled():
+        raw_stable = state.get("stable_findings", [])
+        coerced_prev_type = ""
+        if isinstance(raw_stable, list):
+            stable = list(raw_stable)
+        else:
+            stable = []
+            coerced_prev_type = type(raw_stable).__name__
+        entry = _build_stable_finding_entry(
+            question=question,
+            final_answer_text=get_message_text(response),
+            filtered_results=filtered_results,
+            state=state,
+        )
+        stable.append(entry)
+        max_items = _stable_findings_max_items()
+        if len(stable) > max_items:
+            stable = stable[-max_items:]
+        update["stable_findings"] = stable
+        if coerced_prev_type:
+            logger.log_event(
+                "stable_findings_coerce",
+                prev_type=coerced_prev_type,
+                stable_len_after=len(stable),
+            )
+        logger.log_event(
+            "stable_findings_update",
+            stable_len=len(stable),
+            evidence_count=len(entry.get("evidence", [])),
+        )
+    return update
 
 
 async def memory_update(
@@ -931,7 +1074,7 @@ def route_from_manager_summary(state: State) -> str:
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
-    analyst_results = state.get("analyst_results", {})
+    analyst_results = _get_runtime_results_pool(state)
     selected = state.get("plan", layer_plan.get(current_layer, []))
     pending = [aid for aid in selected if aid not in analyst_results]
     mode = _normalize_mode(layer_mode.get(current_layer, DEFAULT_MODES.get(current_layer, "Star")))

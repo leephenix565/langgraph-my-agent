@@ -108,6 +108,28 @@ python demo_layered_run.py
 - 预期：同 thread 场景下仍能看到 `thread_summary`；`LOCAL_TRACE` 日志里 `router_ctx/manager_ctx` 的 `ctx_messages_len` 不超过窗口上限（受消息总数限制）。
 - 回滚方式：`unset REACT_AGENT_MESSAGES_WINDOW`（或设为 `0`）并重启进程；如不需要 trace，关闭 `LOCAL_TRACE`。
 
+### Results pools（Phase 2.4-B，可选，stable/ephemeral 双池）
+- 默认关闭：`REACT_AGENT_RESULTS_POOLS` 未设置或设为 `0` 时，系统沿用现有 `analyst_results` 单池逻辑（包括每轮 Router reset）。
+- 开启方式：
+  - `REACT_AGENT_RESULTS_POOLS=1`
+  - 可选限额：`REACT_AGENT_STABLE_FINDINGS_MAX_ITEMS=50`、`REACT_AGENT_EVIDENCE_MAX_ITEMS=20`、`REACT_AGENT_EVIDENCE_MAX_CHARS=500`、`REACT_AGENT_STABLE_TEXT_MAX_CHARS=2000`
+- 启用后语义：
+  - `ephemeral_results`：运行期结果池（并行可合并），每轮由 Router 发 `__reset__` 清空；Agent 仅写该池
+  - `stable_findings`：跨轮保留，仅在 `manager_summary()` 最终结案分支追加写入（不依赖 `memory_update`）
+  - `analyst_results`：兼容镜像字段（过渡期保留），避免破坏旧读点/旧测试
+  - 口径：启用 `REACT_AGENT_RESULTS_POOLS=1` 后，`ephemeral_results` 是运行期真源；`analyst_results` 仅为兼容镜像，外部直接写 `analyst_results` 不保证被系统读取
+- 读取与注入边界：
+  - Manager 派工/汇总与路由推进优先读运行期池（启用时为 `ephemeral_results`）
+  - AgentInput `shared_context` 仍只注入运行期池，不注入 `stable_findings`
+  - `stable_findings` 单条最小结构：`kind/question/final_answer/evidence/run_id`；`evidence` 来自 agent 输出 `evidence/key_points` 的截断索引
+- 可观测（推荐）：
+  - `LOCAL_TRACE=1` 时可查看 `ephemeral_reset` 与 `stable_findings_update` 事件（含 `stable_len`、`evidence_count`）
+- 验收命令：
+```bash
+pytest -q tests/unit_tests/test_results_pools_phase24b.py
+```
+- 回滚方式：`unset REACT_AGENT_RESULTS_POOLS`（或设为 `0`）并重启长进程。
+
 ### Testing/Dev setup（单测环境）
 推荐本地最小安装链路（与 CI 对齐）：
 ```bash

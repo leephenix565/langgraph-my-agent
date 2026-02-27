@@ -1,5 +1,24 @@
 # CHANGELOG
 
+## 2026-02-26 - Phase 2.4-B.1 robustness hardening (stable_findings type coercion)
+- Files: `src/react_agent/graph.py`, `tests/unit_tests/test_results_pools_phase24b.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Hardened `manager_summary` final-path stable write logic: when `REACT_AGENT_RESULTS_POOLS=1` and `state["stable_findings"]` is not a list, runtime now coerces to `[]` instead of raising.
+- Added LOCAL_TRACE-only observability event `stable_findings_coerce` with `prev_type` and `stable_len_after`, plus existing `stable_findings_update` remains unchanged.
+- Added unit coverage for non-list `stable_findings` state shape to verify append still succeeds and outputs a list entry.
+- Updated SYSTEM_MAP wording to clarify source-of-truth semantics under pools mode: runtime reads `ephemeral_results`; `analyst_results` is compatibility mirror only.
+- Rollback: keep `REACT_AGENT_RESULTS_POOLS=0` (default) or revert this commit; no schema/runtime contract changes introduced.
+Phase positioning: This is a narrow Phase 2.4-B.1 robustness pass, not a new feature slice. It reduces failure risk from polluted historical state while preserving all 2.4-B gates and semantics. No Router/Agent contract behavior changes were introduced. The next natural step is Phase 2.5 audit focusing on long-run state hygiene and observability completeness.
+
+## 2026-02-26 - Phase 2.4-B optional stable/ephemeral results pools + evidence index
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_results_pools_phase24b.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added env-gated results pools via `REACT_AGENT_RESULTS_POOLS` (default off): `ephemeral_results` for per-turn runtime aggregation (with reset) and `stable_findings` for cross-turn retained final findings.
+- Kept backward compatibility by retaining `analyst_results` as a mirror field while switching runtime readers (`manager_broadcast`, `manager_summary`, `route_from_manager_summary`, AgentInput `shared_context`) to a pool-selection helper.
+- Router reset now conditionally clears both `analyst_results` and `ephemeral_results` when pools are enabled; disabled mode preserves the original reset/update path and cost profile.
+- `manager_summary` final branch now appends bounded stable findings (`kind/question/final_answer/evidence/run_id`) with evidence extracted from filtered agent outputs (`evidence`/`key_points`) under configurable caps.
+- Added unit tests for env gating, router reset behavior, runtime pool selection, agent write mirroring, and stable-finding append behavior without external model/network dependency.
+- Rollback: unset `REACT_AGENT_RESULTS_POOLS` (or set `0`) and restart long-lived processes; runtime immediately returns to legacy `analyst_results` semantics.
+Phase positioning: This is Phase 2.4-B state-layer hardening after Phase 2.1 persistence, Phase 2.2 thread summary, and Phase 2.3 message windowing. It separates per-turn execution artifacts from cross-turn retained findings while preserving existing call sites through a compatibility mirror. The implementation keeps default behavior unchanged unless explicitly opted in. Next, the natural continuation is introducing stable-finding read policy (who can consume it and when) and adding regression metrics for pool-size drift and evidence quality.
+
 ## 2026-02-26 - Phase 2.3 optional messages window/trim (Router + Manager Summary input only)
 - Files: `src/react_agent/graph.py`, `demo_layered_run.py`, `tests/unit_tests/test_messages_window_phase23.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added env-gated messages windowing for Router and Manager Summary LLM inputs only via `REACT_AGENT_MESSAGES_WINDOW` and `REACT_AGENT_MESSAGES_WINDOW_SIZE` (default off).
