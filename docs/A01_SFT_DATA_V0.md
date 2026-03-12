@@ -67,7 +67,7 @@ selected_agents = ["a01_cio_orchestrator", "a03_macro_policy", "...", "a25_repor
 
 ## 6) 生成命令
 ```bash
-python tools/generate_a01_teacher_contracts.py \
+python ops/train_eval/a01/generate_a01_teacher_contracts.py \
   --router-sft data/router_sft/router_sft_<date>_<catalog_id>.jsonl \
   --questions data/questions/questions_pool_<date>_<catalog_id>.jsonl \
   --out-train data/a01_sft/a01_sft_messages_<date>_<catalog_id>.train.jsonl \
@@ -78,7 +78,7 @@ python tools/generate_a01_teacher_contracts.py \
 
 可选：使用 Router-SFT messages 作为输入
 ```bash
-python tools/generate_a01_teacher_contracts.py \
+python ops/train_eval/a01/generate_a01_teacher_contracts.py \
   --router-messages data/sft/router_sft_messages_<catalog_id>.train.jsonl \
   --questions data/questions/questions_pool_<catalog_id>.jsonl \
   --out-train data/a01_sft/a01_sft_messages_<date>_<catalog_id>.train.jsonl \
@@ -93,7 +93,7 @@ python tools/generate_a01_teacher_contracts.py \
 - `data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl`
 - `data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl`
 - `data/a01_sft/final/a01_sft_teacher_stats_FINAL.json`
-交接包：`docs/HANDOFF_A01_SFT_FINAL.md`。
+交接包：`docs/archive/handoff/HANDOFF_A01_SFT_FINAL.md`。
 
 ## 7) 统计输出（验收口径）
 `--out-stats` 将写入 JSON（与 stdout 同步），最少包含：
@@ -118,7 +118,7 @@ python tools/generate_a01_teacher_contracts.py \
 - `usage_total_tokens_p50` / `usage_total_tokens_p90` / `usage_total_tokens_p95`（若 usage 不可得则为 0）
 
 ## 8) Eval report（Phase 4.1）
-- `tools/eval_a01_sft.py` 输出 `eval_report.json`，其中 `meta.max_new_tokens` 记录实际解码上限。
+- `ops/train_eval/a01/eval_a01_sft.py` 输出 `eval_report.json`，其中 `meta.max_new_tokens` 记录实际解码上限。
 - 默认 `--max-new-tokens=4096`（见 `docs/SYSTEM_MAP.md` Phase 4.1 runbook）；smoke 如需更快可手动降到 2048，但需注意可能截断 JSON。
 
 记录级 meta 增量（可选，不影响旧消费者）：

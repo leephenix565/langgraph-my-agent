@@ -25,8 +25,16 @@ from collections import Counter
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Tuple
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+def _find_repo_root(start: Path) -> Path:
+    for candidate in (start, *start.parents):
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError(f"Could not locate repo root from {start}")
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 SRC_DIR = REPO_ROOT / "src"
+CATALOGS_DIR = REPO_ROOT / "data" / "catalogs"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
 if str(SRC_DIR) not in sys.path:
@@ -38,7 +46,7 @@ from react_agent import router_parse
 def _load_catalog_id(explicit: str | None) -> str:
     if explicit:
         return explicit
-    latest_path = Path("data/catalogs/LATEST")
+    latest_path = CATALOGS_DIR / "LATEST"
     if not latest_path.exists():
         raise ValueError("Missing data/catalogs/LATEST; pass --catalog-id explicitly")
     text = latest_path.read_text(encoding="utf-8-sig").strip()
@@ -208,7 +216,7 @@ def main() -> int:
     catalog_prompt = (
         Path(args.catalog_prompt)
         if args.catalog_prompt
-        else Path("data/catalogs") / f"catalog_{catalog_id}_prompt.json"
+        else CATALOGS_DIR / f"catalog_{catalog_id}_prompt.json"
     )
     agent_catalog = _load_catalog_prompt(catalog_prompt)
 
@@ -217,7 +225,7 @@ def main() -> int:
 
     metrics = compute_metrics(records, agent_catalog)
     preds_content_sha256 = _preds_content_sha256(records)
-    catalog_latest_path = Path("data/catalogs/LATEST")
+    catalog_latest_path = CATALOGS_DIR / "LATEST"
     catalog_latest_sha256 = _sha256_file(catalog_latest_path) if catalog_latest_path.exists() else "unknown"
     catalog_resolved_path = catalog_prompt if catalog_prompt.exists() else None
     catalog_sha256 = _sha256_file(catalog_resolved_path) if catalog_resolved_path else "unknown"

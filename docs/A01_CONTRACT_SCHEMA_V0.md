@@ -22,7 +22,7 @@
 - `agent_id` (string)
 - `task_id` (string)
 - `objective` (string)
-- `steps` (list[string], non-empty)
+- `steps` (list[string], 2..6 items)
 - `agent_can_extend_steps` (bool, must be true)
 - `extension_policy` (string)
 

@@ -11,7 +11,11 @@ import os
 import random
 import re
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
+
+
+_DEFAULT_SYSTEM_TEMPLATE_FROM = str(Path(__file__).with_name("generate_router_plans.py"))
 
 
 def _read_jsonl(path: str) -> Iterable[Dict[str, Any]]:
@@ -102,8 +106,8 @@ def _render_router_system_prompt(template: str, agent_catalog: str, system_time:
 
 def _default_router_system_prompt(agent_catalog: str, system_time: str) -> str:
     """
-    Fallback minimal system prompt if you don't want to extract from generate_router_plans.py.
-    (Recommended: use --system-template-from generate_router_plans.py)
+    Fallback minimal system prompt if you don't want to extract from the router plan generator script.
+    (Recommended: use --system-template-from, default points to sibling generate_router_plans.py)
     """
     return (
         "You are the Router Agent.\n"
@@ -146,8 +150,11 @@ def main() -> int:
     ap.add_argument("--catalog-prompt", required=True, help="catalog_*_prompt.json (v1 recommended)")
     ap.add_argument("--out-messages", required=True, help="output jsonl in messages+response format")
     ap.add_argument("--out-prompt", default="", help="optional output jsonl in prompt/completion format")
-    ap.add_argument("--system-template-from", default="generate_router_plans.py",
-                    help="extract ROUTER_SYSTEM_PROMPT from this .py; empty disables extraction")
+    ap.add_argument(
+        "--system-template-from",
+        default=_DEFAULT_SYSTEM_TEMPLATE_FROM,
+        help="extract ROUTER_SYSTEM_PROMPT from this .py; empty disables extraction",
+    )
     ap.add_argument("--system-var", default="ROUTER_SYSTEM_PROMPT", help="variable name to extract from system-template-from")
     ap.add_argument("--system-time", default="2026-01-08", help="rendered system_time string")
     ap.add_argument("--user-prefix", default="Question: ", help="prefix before question in user content")

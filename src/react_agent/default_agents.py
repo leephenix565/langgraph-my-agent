@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import re
+import time
 from typing import Any, Dict, List
 
 from langchain_core.messages import AIMessage, ToolMessage
@@ -14,8 +15,22 @@ from langgraph.runtime import get_runtime
 from react_agent import prompts
 from react_agent.agents import AgentMetadata, AgentOutput, register_agent
 from react_agent.context import Context
+from react_agent.run_logger import get_run_logger
 from react_agent.tools import build_tavily_search, tavily_search
 from react_agent.utils import get_message_text, load_chat_model
+
+
+def _model_trace_fields(model_spec: str) -> Dict[str, str]:
+    spec = str(model_spec or "")
+    provider = ""
+    name = spec
+    if "/" in spec:
+        provider, name = spec.split("/", maxsplit=1)
+    return {
+        "model_spec": spec,
+        "model_provider": provider,
+        "model_name": name,
+    }
 
 
 async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, Any]]) -> AIMessage:
@@ -26,12 +41,30 @@ async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, A
     if runtime and getattr(runtime, "context", None):
         run_id = getattr(runtime.context, "run_id", "") or ""
         model_name = runtime.context.model
+    logger = get_run_logger(run_id) if run_id else None
     base_metadata = {"run_id": run_id, "node_name": "agent_tool"}
     base_tags = ["react_agent"] + ([f"run_id:{run_id}"] if run_id else [])
     model = load_chat_model(model_name).bind_tools(tool_list)
     msgs: List[Any] = list(messages)
     while True:
-        ai_msg: AIMessage = await model.ainvoke(msgs, config={"metadata": base_metadata, "tags": base_tags})
+        invoke_started_at = time.perf_counter()
+        try:
+            ai_msg: AIMessage = await model.ainvoke(msgs, config={"metadata": base_metadata, "tags": base_tags})
+        except Exception as exc:
+            if logger:
+                logger.log_event(
+                    "agent_model_error",
+                    node="agent_tool",
+                    phase="model_ainvoke",
+                    elapsed_ms=round((time.perf_counter() - invoke_started_at) * 1000.0, 3),
+                    message_count=len(msgs),
+                    tool_count=len(tool_list),
+                    exception_type=type(exc).__name__,
+                    exception_repr=repr(exc),
+                    error=str(exc),
+                    **_model_trace_fields(model_name),
+                )
+            raise
         if not ai_msg.tool_calls:
             return ai_msg
         tool_messages: List[ToolMessage] = []
@@ -39,7 +72,25 @@ async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, A
             tool_obj = next((t for t in tool_list if getattr(t, "name", "") == tc["name"]), None)
             if not tool_obj:
                 return ai_msg
-            result = await tool_obj.ainvoke(tc["args"], config={"metadata": base_metadata, "tags": base_tags})
+            tool_started_at = time.perf_counter()
+            try:
+                result = await tool_obj.ainvoke(tc["args"], config={"metadata": base_metadata, "tags": base_tags})
+            except Exception as exc:
+                if logger:
+                    logger.log_event(
+                        "agent_tool_error",
+                        node="agent_tool",
+                        phase="tool_ainvoke",
+                        tool_name=str(tc.get("name") or ""),
+                        elapsed_ms=round((time.perf_counter() - tool_started_at) * 1000.0, 3),
+                        message_count=len(msgs),
+                        tool_count=len(tool_list),
+                        exception_type=type(exc).__name__,
+                        exception_repr=repr(exc),
+                        error=str(exc),
+                        **_model_trace_fields(model_name),
+                    )
+                raise
             tool_messages.append(
                 ToolMessage(content=str(result), name=tc["name"], tool_call_id=tc["id"])
             )

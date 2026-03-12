@@ -14,20 +14,54 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List
 
-try:
-    import torch
-    from datasets import load_dataset
-    from peft import LoraConfig, get_peft_model, prepare_model_for_kbit_training
-    from transformers import (
-        AutoModelForCausalLM,
-        AutoTokenizer,
-        BitsAndBytesConfig,
-        Trainer,
-        TrainingArguments,
-        set_seed,
-    )
-except Exception as exc:  # pragma: no cover - import guard for training envs
-    raise SystemExit(f"Missing training deps. Install requirements-train.txt + requirements-hf.txt. ({exc})")
+torch = None
+load_dataset = None
+LoraConfig = None
+get_peft_model = None
+prepare_model_for_kbit_training = None
+AutoModelForCausalLM = None
+AutoTokenizer = None
+BitsAndBytesConfig = None
+Trainer = None
+TrainingArguments = None
+set_seed = None
+
+
+def _load_training_deps() -> None:
+    global torch
+    global load_dataset
+    global LoraConfig, get_peft_model, prepare_model_for_kbit_training
+    global AutoModelForCausalLM, AutoTokenizer, BitsAndBytesConfig, Trainer, TrainingArguments, set_seed
+    if torch is not None:
+        return
+    try:
+        import torch as _torch
+        from datasets import load_dataset as _load_dataset
+        from peft import LoraConfig as _LoraConfig
+        from peft import get_peft_model as _get_peft_model
+        from peft import prepare_model_for_kbit_training as _prepare_model_for_kbit_training
+        from transformers import (
+            AutoModelForCausalLM as _AutoModelForCausalLM,
+            AutoTokenizer as _AutoTokenizer,
+            BitsAndBytesConfig as _BitsAndBytesConfig,
+            Trainer as _Trainer,
+            TrainingArguments as _TrainingArguments,
+            set_seed as _set_seed,
+        )
+    except Exception as exc:  # pragma: no cover - import guard for training envs
+        raise SystemExit(f"Missing training deps. Install requirements-train.txt + requirements-hf.txt. ({exc})")
+
+    torch = _torch
+    load_dataset = _load_dataset
+    LoraConfig = _LoraConfig
+    get_peft_model = _get_peft_model
+    prepare_model_for_kbit_training = _prepare_model_for_kbit_training
+    AutoModelForCausalLM = _AutoModelForCausalLM
+    AutoTokenizer = _AutoTokenizer
+    BitsAndBytesConfig = _BitsAndBytesConfig
+    Trainer = _Trainer
+    TrainingArguments = _TrainingArguments
+    set_seed = _set_seed
 
 
 def _format_messages(tokenizer, messages: List[Dict[str, Any]]) -> str:
@@ -208,6 +242,8 @@ def main() -> int:
     ap.add_argument("--max-eval-samples", type=int, default=None)
     ap.add_argument("--merge-and-save-full-model", action="store_true")
     args = ap.parse_args()
+
+    _load_training_deps()
 
     out_dir = Path(args.output_dir)
     out_dir.mkdir(parents=True, exist_ok=True)

@@ -10,6 +10,8 @@ import sys
 from pathlib import Path
 from typing import Dict, List
 
+SCRIPT_DIR = Path(__file__).resolve().parent
+
 
 def _run(cmd: List[str]) -> None:
     print("+", " ".join(cmd))
@@ -89,7 +91,8 @@ def main() -> int:
     compare_path = out_dir / "compare.json"
 
     if args.mode == "provider":
-        script = Path("tools/generate_router_preds.py")
+        script = SCRIPT_DIR / "generate_router_preds.py"
+
         def _preds_cmd(out_path: Path) -> List[str]:
             cmd = [sys.executable, str(script), "--in", args.val_messages, "--out", str(out_path)]
             if args.model:
@@ -100,7 +103,8 @@ def main() -> int:
     else:
         if not args.hf_model_path:
             raise ValueError("--hf-model-path is required when --mode hf")
-        script = Path("tools/generate_router_preds_hf.py")
+        script = SCRIPT_DIR / "generate_router_preds_hf.py"
+
         def _preds_cmd(out_path: Path) -> List[str]:
             cmd = [
                 sys.executable,
@@ -125,9 +129,10 @@ def main() -> int:
             return cmd
 
     def _eval_cmd(preds_path: Path, out_path: Path) -> List[str]:
+        eval_script = SCRIPT_DIR / "eval_router_outputs.py"
         cmd = [
             sys.executable,
-            "tools/eval_router_outputs.py",
+            str(eval_script),
             "--in",
             str(preds_path),
             "--out",

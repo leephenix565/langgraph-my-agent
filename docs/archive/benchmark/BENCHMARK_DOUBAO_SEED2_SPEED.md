@@ -56,6 +56,76 @@ python tools/bench_doubao_seed2_speed.py \
   --runs 3
 ```
 
+## 2026-03-11 Qwen server benchmark run (OpenAI-compatible)
+
+Target server model:
+
+- `base_url=http://10.7.46.122:8000/v1`
+- `model_id=Qwen3-30B-A3B-Instruct-2507-int8`
+- `runs=3`
+
+Routing guard used for this run:
+
+- `ROUTER_MODEL` unset
+- `ROUTER_OPENAI_BASE_URL` unset
+- `ROUTER_OPENAI_API_KEY` unset
+- E2E keeps benchmark default `DISABLE_SEARCH=1`
+
+Dry-run command:
+
+```bash
+D:\AnacondaEnvs\cline_env\python.exe tools/bench_doubao_seed2_speed.py --models "qwen=Qwen3-30B-A3B-Instruct-2507-int8" --base-url "http://10.7.46.122:8000/v1" --runs 1 --dry-run
+```
+
+Real-run command used to finish 3 E2E runs:
+
+```bash
+D:\AnacondaEnvs\cline_env\python.exe tools/bench_doubao_seed2_speed.py --models "qwen=Qwen3-30B-A3B-Instruct-2507-int8" --base-url "http://10.7.46.122:8000/v1" --runs 3 --e2e-timeout 1200 --out-csv outputs/benchmarks/qwen30b_e2e_20260311.csv --out-md outputs/benchmarks/qwen30b_e2e_20260311.md
+```
+
+Notes:
+
+- The default `--e2e-timeout 300` timed out on this model/server path; `--e2e-timeout 1200` was used for completion.
+- This is execution/benchmark tuning only, not runtime business-logic change.
+
+Outputs:
+
+- `outputs/benchmarks/qwen30b_e2e_20260311.csv`
+- `outputs/benchmarks/qwen30b_e2e_20260311.md`
+
+Key result row (`qwen30b_e2e_20260311.csv`):
+
+- `raw_success_runs=3`, `e2e_success_runs=3`
+- `raw_tokens_per_sec(p50)=130.48`
+- `raw_latency_ms_p50/p90/p95 = 275.91 / 276.73 / 276.83`
+- `e2e_latency_ms_p50/p90/p95 = 538749.71 / 553109.67 / 554904.66`
+- `e2e_search_tool_calls_total=0`
+
+## Node-level latency profiling (sidecar)
+
+To profile where E2E time is spent by node, enable LOCAL_TRACE profiling in the harness:
+
+```bash
+D:\AnacondaEnvs\cline_env\python.exe tools/bench_doubao_seed2_speed.py --models "qwen=Qwen3-30B-A3B-Instruct-2507-int8" --base-url "http://10.7.46.122:8000/v1" --runs 3 --e2e-timeout 1200 --out-csv outputs/benchmarks/qwen30b_e2e_20260311.csv --out-md outputs/benchmarks/qwen30b_e2e_20260311.md --enable-profiling
+```
+
+Profiling behavior:
+
+- Keeps benchmark main table unchanged (CSV/MD still store raw+E2E totals).
+- Writes trace JSONL under `<out-csv-dir>/<out-csv-stem>_trace/` by default.
+- Writes sidecar summary JSON under `<out-csv-dir>/<out-csv-stem>_profile.json` by default.
+- Sidecar includes `latency_profile` aggregated from `node_latency` events (`router`, `manager_broadcast`, `agent`, `manager_summary`, `summary`, `finalize_summary`) and per-agent latency stats.
+- Sidecar trace summary now also includes:
+  - `malformed_jsonl` (bad-line counts/samples for trace integrity checks)
+  - `error_summary` (grouped by node/agent/event/status code/error signature for 5xx triage)
+
+Optional explicit paths:
+
+```bash
+--profile-log-dir outputs/benchmarks/qwen30b_e2e_20260311_trace
+--profile-sidecar outputs/benchmarks/qwen30b_e2e_20260311_profile.json
+```
+
 ## Outputs
 
 By default the harness writes:

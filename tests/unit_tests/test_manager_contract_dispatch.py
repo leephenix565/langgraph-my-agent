@@ -14,7 +14,7 @@ def _build_contract(selected_agents):
                 "agent_id": agent_id,
                 "task_id": f"task-{agent_id}",
                 "objective": f"objective for {agent_id}",
-                "steps": [f"step for {agent_id}"],
+                "steps": [f"step for {agent_id}", f"step followup for {agent_id}"],
                 "agent_can_extend_steps": True,
                 "extension_policy": "extend only if needed",
             }

@@ -18,11 +18,13 @@ import argparse
 import asyncio
 import csv
 import http.client
+import importlib.util
 import json
 import os
 import socket
 import sys
 import time
+import uuid
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
@@ -295,6 +297,8 @@ class E2ERunResult:
     search_tool_calls: int
     final_message_chars: int
     thinking_probe: Dict[str, Any]
+    run_id: str
+    trace_log_file: str
 
 
 class _DummySearchTool:
@@ -317,6 +321,9 @@ async def _run_e2e_once(
     temperature: float,
     thinking_type: str,
     disable_search: bool,
+    run_id: str,
+    enable_profiling: bool,
+    profile_log_dir: Optional[Path],
 ) -> E2ERunResult:
     # Env is process-global; set before importing graph so graph-level env flags are captured.
     os.environ["OPENAI_BASE_URL"] = base_url
@@ -324,6 +331,10 @@ async def _run_e2e_once(
     if disable_search:
         os.environ["DISABLE_SEARCH"] = "1"
         os.environ.setdefault("TAVILY_API_KEY", "disabled-for-benchmark")
+    if enable_profiling:
+        os.environ["LOCAL_TRACE"] = "1"
+        if profile_log_dir is not None:
+            os.environ["LOG_DIR"] = str(profile_log_dir)
 
     try:
         from langchain.chat_models import init_chat_model
@@ -376,7 +387,7 @@ async def _run_e2e_once(
         t0 = time.perf_counter()
         res = await graph_module.graph.ainvoke(
             {"messages": [("user", question)]},  # type: ignore[arg-type]
-            context=Context(model=f"openai/{model_id}"),
+            context=Context(model=f"openai/{model_id}", run_id=run_id),
         )
         elapsed_ms = (time.perf_counter() - t0) * 1000.0
     finally:
@@ -398,6 +409,8 @@ async def _run_e2e_once(
         search_tool_calls=search_counter.get("search_tool_calls", 0),
         final_message_chars=final_chars,
         thinking_probe=thinking_probe,
+        run_id=run_id,
+        trace_log_file=str((profile_log_dir / f"{run_id}.jsonl").resolve()) if enable_profiling and profile_log_dir else "",
     )
 
 
@@ -529,6 +542,26 @@ def _print_thinking_probe(thinking_probe: Mapping[str, Any]) -> None:
     print("[e2e_thinking_probe]", json.dumps(thinking_probe, ensure_ascii=False))
 
 
+def _clear_trace_jsonl(log_dir: Path) -> None:
+    if not log_dir.exists():
+        return
+    for path in log_dir.glob("*.jsonl"):
+        try:
+            path.unlink()
+        except OSError:
+            continue
+
+
+def _load_trace_analyzer() -> Any:
+    script_path = Path(__file__).resolve().parents[1] / "ops" / "regression" / "analyze_trace.py"
+    spec = importlib.util.spec_from_file_location("bench_trace_analyzer", script_path)
+    if spec is None or spec.loader is None:
+        raise RuntimeError(f"Failed to load trace analyzer from {script_path}")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+    return module
+
+
 def _parse_args() -> argparse.Namespace:
     ap = argparse.ArgumentParser(description="Benchmark Doubao Seed2.0 raw + LangGraph E2E speed.")
     ap.add_argument(
@@ -576,6 +609,31 @@ def _parse_args() -> argparse.Namespace:
         action="store_true",
         help="Print resolved config + payload probes without sending requests or running graph.",
     )
+    ap.add_argument(
+        "--enable-profiling",
+        action="store_true",
+        help="Enable LOCAL_TRACE profiling and emit node-latency sidecar output.",
+    )
+    ap.add_argument(
+        "--profile-log-dir",
+        type=str,
+        default="",
+        help="Trace log directory used when --enable-profiling is set. "
+        "Default: <out-csv-dir>/<out-csv-stem>_trace",
+    )
+    ap.add_argument(
+        "--profile-sidecar",
+        type=str,
+        default="",
+        help="Node-latency profile sidecar JSON path. "
+        "Default: <out-csv-dir>/<out-csv-stem>_profile.json",
+    )
+    ap.add_argument(
+        "--profile-window-size",
+        type=int,
+        default=20,
+        help="Window size passed to trace analyzer when building sidecar summary.",
+    )
     return ap.parse_args()
 
 
@@ -584,10 +642,29 @@ def main() -> None:
     models = _resolve_models(args.models)
     api_key = _resolve_api_key()
     base_url = _resolve_base_url(args.base_url)
+    out_csv = Path(args.out_csv)
+    out_md = Path(args.out_md)
+    profile_log_dir: Optional[Path] = None
+    profile_sidecar: Optional[Path] = None
+    if args.enable_profiling:
+        profile_log_dir = (
+            Path(args.profile_log_dir)
+            if args.profile_log_dir.strip()
+            else out_csv.parent / f"{out_csv.stem}_trace"
+        )
+        profile_sidecar = (
+            Path(args.profile_sidecar)
+            if args.profile_sidecar.strip()
+            else out_csv.parent / f"{out_csv.stem}_profile.json"
+        )
 
     print(f"[config] models={','.join(a for a, _ in models)} runs={args.runs} disable_search={int(args.disable_search)}")
     print(f"[config] base_url={base_url}")
     print(f"[config] api_key_present=1 api_key_len={len(api_key)}")
+    print(f"[config] enable_profiling={int(args.enable_profiling)}")
+    if args.enable_profiling and profile_log_dir and profile_sidecar:
+        print(f"[config] profile_log_dir={profile_log_dir}")
+        print(f"[config] profile_sidecar={profile_sidecar}")
 
     probe_payload = _build_raw_payload(
         model=models[0][1],
@@ -601,7 +678,12 @@ def main() -> None:
     if args.dry_run:
         return
 
+    if args.enable_profiling and profile_log_dir:
+        profile_log_dir.mkdir(parents=True, exist_ok=True)
+        _clear_trace_jsonl(profile_log_dir)
+
     rows: List[Dict[str, Any]] = []
+    profile_runs: List[Dict[str, Any]] = []
     for alias, model_id in models:
         print(f"\n[model] {alias} -> {model_id}")
         raw_runs: List[RawRunResult] = []
@@ -628,6 +710,7 @@ def main() -> None:
 
         first_thinking_probe: Dict[str, Any] = {}
         for i in range(args.runs):
+            run_id = f"bench_{alias}_{i+1:02d}_{uuid.uuid4().hex[:8]}"
             coro = _run_e2e_once(
                 base_url=base_url,
                 api_key=api_key,
@@ -636,9 +719,22 @@ def main() -> None:
                 temperature=args.temperature,
                 thinking_type=args.thinking_type,
                 disable_search=args.disable_search,
+                run_id=run_id,
+                enable_profiling=args.enable_profiling,
+                profile_log_dir=profile_log_dir,
             )
             er = asyncio.run(asyncio.wait_for(coro, timeout=args.e2e_timeout))
             e2e_runs.append(er)
+            if args.enable_profiling:
+                profile_runs.append(
+                    {
+                        "model_alias": alias,
+                        "provider_model": model_id,
+                        "run_index": i + 1,
+                        "run_id": er.run_id,
+                        "trace_log_file": er.trace_log_file,
+                    }
+                )
             if not first_thinking_probe and er.thinking_probe:
                 first_thinking_probe = er.thinking_probe
             print(
@@ -666,11 +762,33 @@ def main() -> None:
             )
         )
 
-    out_csv = Path(args.out_csv)
-    out_md = Path(args.out_md)
     _write_csv(out_csv, rows)
     _write_markdown(out_md, rows)
     print(f"\n[done] csv={out_csv} md={out_md}")
+
+    if args.enable_profiling and profile_log_dir and profile_sidecar:
+        analyzer = _load_trace_analyzer()
+        trace_summary = analyzer.summarize_log_dir(
+            log_dir=profile_log_dir,
+            window_size=max(1, int(args.profile_window_size)),
+        )
+        sidecar = {
+            "profiling_enabled": True,
+            "profile_log_dir": str(profile_log_dir.resolve()),
+            "profile_window_size": int(args.profile_window_size),
+            "runs_per_model": int(args.runs),
+            "disable_search": int(bool(args.disable_search)),
+            "models": [
+                {"model_id": row.get("model_id"), "provider_model": row.get("provider_model")}
+                for row in rows
+            ],
+            "trace_runs": profile_runs,
+            "latency_profile": trace_summary.get("latency_profile", {}),
+            "trace_summary": trace_summary,
+        }
+        profile_sidecar.parent.mkdir(parents=True, exist_ok=True)
+        profile_sidecar.write_text(json.dumps(sidecar, ensure_ascii=False, indent=2), encoding="utf-8")
+        print(f"[done] profile_sidecar={profile_sidecar}")
 
     # Console preview (first few columns) for quick copy-paste.
     for row in rows:

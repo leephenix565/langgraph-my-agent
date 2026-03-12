@@ -1,4 +1,4 @@
-from tools.generate_a01_teacher_contracts import (
+from ops.train_eval.a01.generate_a01_teacher_contracts import (
     compute_quality_distribution_stats,
     compute_teacher_observability,
 )

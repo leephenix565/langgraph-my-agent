@@ -1,5 +1,122 @@
 # CHANGELOG
 
+## 2026-03-11 - 502 observability slice (trace + analyzer)
+- Files: `src/react_agent/graph.py`, `src/react_agent/default_agents.py`, `src/react_agent/run_logger.py`, `ops/regression/analyze_trace.py`, `tests/unit_tests/test_trace_analyze_smoke.py`, `scripts/README.md`, `docs/CHANGELOG.md`
+- Added richer error-trace context without changing business semantics:
+  - `router_error` / `router_provider_fallback` now include `node`, `elapsed_ms`, `exception_type`, `exception_repr`, and router/fallback model fields.
+  - `agent_error` now includes `node`, `elapsed_ms`, `exception_type`, `exception_repr`, and model fields.
+  - Added `summary_error` event in final summary LLM failure path with the same context schema.
+  - Added `agent_model_error` / `agent_tool_error` events around `default_agents._call_with_tools(...)` invocation failures; exceptions are still re-raised unchanged.
+- Improved trace reliability and aggregation for failure analysis:
+  - `run_logger` now serializes same-process JSONL writes via a global lock to reduce interleaved malformed lines under concurrent async logging.
+  - `analyze_trace` now reports `malformed_jsonl` counts/samples and provides `error_summary` grouped by node/agent/event/status/error signature.
+- Scope boundary: observability-only enhancement for 502 debugging; no Router/Manager/Agent/Summary logic changes, no retry, no benchmark KPI formula change.
+
+## 2026-03-11 - Speed-Profile minimal slice (node-level latency sidecar)
+- Files: `src/react_agent/graph.py`, `tools/bench_doubao_seed2_speed.py`, `ops/regression/analyze_trace.py`, `tests/unit_tests/test_trace_analyze_smoke.py`, `docs/archive/benchmark/BENCHMARK_DOUBAO_SEED2_SPEED.md`, `docs/SYSTEM_MAP.md`, `scripts/README.md`, `docs/CHANGELOG.md`
+- Added observability-only `node_latency` trace events in graph nodes without changing Router/Manager/Agent/Summary business semantics:
+  - `router`, `manager_broadcast`, `agent`, `manager_summary`, `summary`, `finalize_summary`.
+- Extended benchmark harness with optional profiling mode (`--enable-profiling`) that aligns E2E runs to trace artifacts via explicit `run_id` and `LOG_DIR`, while keeping benchmark main CSV/Markdown schema unchanged.
+- Added profiling sidecar JSON output (default `<out-csv-stem>_profile.json`) that aggregates node-level latency from trace logs.
+- Extended trace analyzer to summarize `latency_profile` (`by_node` + `agent_elapsed_ms`) while preserving existing context/stable-consume summaries.
+- Added minimal unit smoke coverage for latency-profile aggregation (`test_trace_analyze_smoke`).
+- Scope boundary: observability/profiling only; no route/contract/tool-calling/summary behavior change.
+
+## 2026-03-11 - Qwen server benchmark run (raw + E2E, docs/evidence update)
+- Files: `docs/archive/benchmark/BENCHMARK_DOUBAO_SEED2_SPEED.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `outputs/benchmarks/qwen30b_e2e_20260311.csv`, `outputs/benchmarks/qwen30b_e2e_20260311.md`
+- Reused existing harness `tools/bench_doubao_seed2_speed.py` to benchmark OpenAI-compatible server model `Qwen3-30B-A3B-Instruct-2507-int8` on `http://10.7.46.122:8000/v1`.
+- Confirmed Router override envs were unset (`ROUTER_MODEL`, `ROUTER_OPENAI_BASE_URL`, `ROUTER_OPENAI_API_KEY`) so full-system benchmark routing stayed on one global model path.
+- Dry-run succeeded with payload probe evidence; real run completed `runs=3` after increasing E2E timeout to `--e2e-timeout 1200` for this server/model path.
+- Recorded benchmark outputs and key metrics: `raw_latency_ms_p50=275.91`, `e2e_latency_ms_p50=538749.71`, and `e2e_search_tool_calls_total=0` (`DISABLE_SEARCH=1` noise control).
+- Scope boundary: benchmark execution + docs/evidence update only; no mainline business logic change.
+
+## 2026-03-10 - Env-1 Windows pytest execution encoding workaround
+- Files: `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Updated Windows pytest recommended command to:
+  - `conda run --no-capture-output -n cline_env python -m pytest ...`
+- Clarified root cause as execution-layer conda output capture/re-print encoding behavior (`UnicodeEncodeError(gbk)`), not pytest logic and not project business logic.
+- Kept direct interpreter invocation as verification-only fallback:
+  - `D:\AnacondaEnvs\cline_env\python.exe -m pytest ...`
+- Out of scope: business-code changes, test-logic changes, and conda internals patching.
+
+## 2026-03-10 - Baseline-C manager contract dispatch test fixture alignment
+- Files: `tests/unit_tests/test_manager_contract_dispatch.py`, `docs/A01_CONTRACT_SCHEMA_V0.md`, `docs/CHANGELOG.md`
+- Fixed blocker in `test_manager_contract_dispatch` by aligning the "valid contract" fixture with current runtime validation (`validate_contract` requires `steps` length in `2..6`).
+- Kept runtime behavior unchanged: no modifications to manager dispatch logic, no fallback-path changes, and no relaxation of `contract_utils.validate_contract(..., steps_min=2)`.
+- Synced schema doc wording from `steps non-empty` to `steps 2..6 items` to match runtime contract semantics.
+- Out of scope: Windows `conda run` encoding issue, any business-code changes, and unrelated test debt/refactor work.
+
+## 2026-03-10 - Phase 2 stable snapshot (structure-stable)
+- Type: `structure-stable` snapshot (not `quality-stable`).
+- Completed structure stages: Phase 2A low-risk cleanup, Env-0 environment entrypoint unification, Phase 2B U5/U1/U2 high-coupling unit relocation, and Baseline-A/B baseline debt fixes.
+- Deferred backlog: U4 (`tests/` structure + `conftest` + CI + Makefile linkage refactor) is intentionally postponed.
+- Known blockers (not resolved in this snapshot):
+  - `tests/unit_tests/test_manager_contract_dispatch.py` currently failing in local validation.
+  - On Windows terminals, `conda run -n cline_env python -m pytest ...` may fail with `UnicodeEncodeError(gbk)` in conda output handling.
+- Scope boundary for this snapshot: no additional directory migration, no U4 execution, no blocker fixes, and no business-code changes.
+- Current focus shift: primary risk has moved from structure organization to test baseline and environment execution stability.
+
+## 2026-03-10 - Baseline-B train CLI/help friendliness fix
+- Files: `ops/train_eval/a01/train_a01_sft_qlora.py`, `docs/CHANGELOG.md`
+- Refactored dependency loading in `train_a01_sft_qlora.py` from module-top imports to an explicit runtime check in `main()`, so `--help` can print without requiring training packages.
+- Preserved training failure behavior when dependencies are missing: entering the training path still exits with `Missing training deps...` if `torch`/`transformers`/`peft`/`datasets` are unavailable.
+- No training logic enhancement and no environment dependency installation included in this change.
+
+## 2026-03-10 - Test baseline fix for U2 teacher wiring assertion
+- Files: `tests/unit_tests/test_teacher_wiring_no_router_gen.py`, `docs/CHANGELOG.md`
+- Replaced a stale variable-name hardcoded assertion with semantic wiring assertions: local `_call_teacher` tuple unpacking is validated without binding to a specific second variable name, and that unpacked second value is consumed by `compute_teacher_observability(...)`.
+- Preserved the original risk boundary assertion that `router_gen._call_teacher` is not referenced.
+- No U2 business logic rollback: `ops/train_eval/a01/generate_a01_teacher_contracts.py` was not modified.
+- Out of scope: training dependency remediation (`torch` etc.) and train-script CLI/help friendliness.
+
+## 2026-03-10 - Phase 2B U2 a01 teacher/train/eval chain relocation
+- Files: `ops/train_eval/a01/generate_a01_teacher_contracts.py`, `ops/train_eval/a01/train_a01_sft_qlora.py`, `ops/train_eval/a01/eval_a01_sft.py`, `ops/train_eval/a01/gate_a01_sft.py`, `ops/train_eval/a01/server_preflight.py`, `ops/train_eval/a01/__init__.py`, `tests/unit_tests/test_a01_quality_distribution_stats.py`, `tests/unit_tests/test_a01_quality_metrics.py`, `tests/unit_tests/test_a01_teacher_observability.py`, `tests/unit_tests/test_teacher_endpoint_resolution.py`, `tests/unit_tests/test_teacher_wiring_no_router_gen.py`, `docs/SYSTEM_MAP.md`, `docs/A01_SFT_DATA_V0.md`, `data/a01_sft/DATA_MANIFEST.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Moved the U2 a01 tooling chain from `tools/` to `ops/train_eval/a01/` as the next Phase 2B high-coupling migration slice.
+- Updated `generate_a01_teacher_contracts.py` repo-root resolution from fixed parent indexing to upward `pyproject.toml` discovery and anchored `config/agents` lookup to repo root.
+- Kept runtime contracts unchanged: `server_preflight.py` FINAL triple verification semantics are unchanged; `gate_a01_sft.py` still defaults to `eval_report` sibling `run_manifest.json`.
+- Updated only U2-direct tests/imports and script path constant references to the new location.
+- Updated U2 command/script references in SYSTEM_MAP, A01_SFT_DATA_V0, and DATA_MANIFEST (command template path only; FINAL freeze semantics unchanged).
+- Explicitly out of scope: `tools/` non-U2 scripts, U1/U4 migration units, CI, Makefile, runtime mainline directories, `data/a01_sft/final/*` content changes, and training dependency remediation.
+- Known baseline issues (pre-existing, not introduced by this relocation): `tests/unit_tests/test_teacher_wiring_no_router_gen.py` still fails on assertion text expectation; `train_a01_sft_qlora.py --help` may fail in `cline_env` when `torch` is missing.
+Phase positioning: This is a Phase 2B U2 path-and-contract migration only. It validates move + minimal linkage updates without changing a01 schema rules, FINAL evidence chain semantics, or training/eval business logic. The next step should continue with the same unit-scoped approach for remaining high-coupling units.
+
+## 2026-03-10 - Phase 2B U1 router regression chain relocation
+- Files: `ops/regression/router/run_regression_eval.py`, `ops/regression/router/generate_router_preds.py`, `ops/regression/router/generate_router_preds_hf.py`, `ops/regression/router/eval_router_outputs.py`, `ops/regression/router/__init__.py`, `tests/unit_tests/test_eval_router_outputs.py`, `docs/SYSTEM_MAP.md`, `docs/RUNBOOK_ROUTER_SFT.md`, `tools/README.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Moved the U1 router regression chain from `tools/` to `ops/regression/router/` as the second Phase 2B high-coupling migration slice.
+- Updated `run_regression_eval.py` to resolve sibling scripts via `SCRIPT_DIR`, removing hardcoded `tools/...` subprocess paths.
+- Updated repo-root/path resolution in `generate_router_preds.py` and `eval_router_outputs.py` to search upward for `pyproject.toml`, so `src/` imports and `data/catalogs/*` anchors remain valid after relocation.
+- Updated U1-linked unit test import to `from ops.regression.router import eval_router_outputs`.
+- Updated U1 path references in `docs/SYSTEM_MAP.md`, `docs/RUNBOOK_ROUTER_SFT.md`, and kept `tools/README.md` as a transition navigation page pointing to the new location.
+- Explicitly out of scope: `tools/` non-U1 scripts, U2/U4 migration units, `data/a01_sft/final/*`, `data/a01_sft/DATA_MANIFEST.md`, CI, Makefile, and runtime mainline directories.
+Phase positioning: This is a Phase 2B targeted migration of one high-coupling unit with minimal linkage changes (script pathing, one unit test import, and command docs). It is not a full `tools/` migration and does not change business runtime graph behavior. Next steps should continue by unit boundary (U2/U4) with the same move + path + test + docs pattern.
+
+## 2026-03-10 - Phase 2B MVP U5 analyze_trace relocation
+- Files: `ops/regression/analyze_trace.py`, `tests/unit_tests/test_trace_analyze_smoke.py`, `scripts/README.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Moved U5 trace analyzer script from `scripts/analyze_trace.py` to `ops/regression/analyze_trace.py` as the first high-coupling migration MVP slice.
+- Updated the U5 smoke unit test loader path to the new script location; test behavior remains unchanged.
+- Updated `scripts/README.md` analyze section commands/path and rollback note to the new script location.
+- Added docs navigation note for `ops/regression/` under non-mainline archive locations.
+- Explicitly out of scope in this MVP: `tools/`, U1/U2/U4 migration units, `data/a01_sft/final/*`, `data/a01_sft/DATA_MANIFEST.md`, CI, and Makefile.
+Phase positioning: This is a Phase 2B MVP pilot to validate migration mechanics (file move + test linkage + doc sync) on a single non-splittable unit (U5). It does not represent completion of high-coupling migration and does not alter runtime mainline closure. The next natural step is to apply the same pattern to the next approved high-coupling unit.
+
+## 2026-03-10 - Environment baseline unification (conda `cline_env`)
+- Files: `README.md`, `docs/SYSTEM_MAP.md`, `docs/RUNBOOK_ROUTER_SFT.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Unified local/Codex validation entrypoints to `conda run -n cline_env python ...` for README quickstart, SYSTEM_MAP local demo/import/pytest, and RUNBOOK command examples (including here-doc invocation).
+- Added explicit baseline statement: Python `>=3.11,<4.0`, official conda env `cline_env`, and warning that bare `python` may resolve to system Python 3.7 and cause false failures.
+- Added minimal placeholder smoke guidance for local import checks with `TAVILY_API_KEY=test-key` (no real key in repo).
+- Kept training/runtime semantics unchanged; this is a docs/command-entry normalization pass only.
+Phase positioning: This is an environment-entrypoint normalization slice after Phase 1 storage cleanup. It reduces false negatives from interpreter drift without touching runtime graph logic, schemas, or data contracts. The next natural step is optional high-coupling command-path cleanup across CI/Makefile/tests when explicitly scheduled.
+
+## 2026-03-10 - Phase 1 low-risk storage cleanup (non-mainline archive)
+- Files: `README.md`, `docs/INDEX.md`, `docs/SYSTEM_MAP.md`, `docs/A01_SFT_DATA_V0.md`, `docs/CHANGELOG.md`, `ops/data_pipeline/*`, `docs/archive/*`, `assets/reference/*`
+- Moved non-mainline research notes from repo root to `docs/archive/research_notes/`: `project_analysis.md`, `agent_full.md`, `agent_profile.md`.
+- Moved historical handoff/benchmark docs to archive folders: `docs/archive/handoff/HANDOFF_A01_SFT_FINAL.md`, `docs/archive/benchmark/BENCHMARK_DOUBAO_SEED2_SPEED.md`.
+- Moved reference assets to `assets/reference/`: `智能体分配.xlsx`, `langchain_community-0.2.14-py3-none-any.whl`, and additional historical reference artifacts.
+- Moved root offline data-build scripts to `ops/data_pipeline/`: `export_agent_catalog.py`, `extract_real_questions.py`, `synthesize_questions.py`, `merge_questions_pool.py`, `generate_router_plans.py`, `export_router_sft_dataset.py`.
+- Updated `ops/data_pipeline/export_router_sft_dataset.py` default `--system-template-from` to resolve sibling `generate_router_plans.py` after relocation.
+- Mainline runtime closure remains unchanged (`src/react_agent/`, `config/agents/`, `langgraph.json`, `pyproject.toml`, `react_agent/`, `sitecustomize.py`); no runtime topology/schema changes.
+Phase positioning: This is a Phase 1 storage cleanup to reduce root-level noise while preserving runtime behavior and entrypoints. It intentionally avoids high-coupling directories (`tools/`, `scripts/`, `tests/`, `data/`, `outputs/`, `tmp/`, `log/`) and avoids any business-logic refactor. The next natural step is a dedicated high-coupling migration phase with coordinated updates across tooling/docs/tests/CI.
+
 ## 2026-02-27 - Phase 3.1 FINAL_LAYER must finalize (empty plan fallback)
 - Files: `src/react_agent/graph.py`, `tests/unit_tests/test_final_layer_finalize_phase31.py`, `docs/CHANGELOG.md`
 - Added shared final-summary helper `_run_final_summary(...)` and new graph node `finalize_summary` to force final answer generation when `current_layer==FINAL_LAYER` and pending agents are empty.
@@ -72,7 +189,7 @@ Phase positioning: This is Phase 2.1 infrastructure wiring for optional short-te
 Phase positioning: This is a runtime wiring correctness fix for search enable/disable behavior and tool-call activation evidence. It does not change graph topology or schemas. Next, validate in the actual Studio/API process by toggling `DISABLE_SEARCH` and confirming tool calls/logs in a live run.
 
 ## 2026-02-22 - Doubao Seed2.0 speed benchmark harness (benchmarking / inference observability)
-- Files: `tools/bench_doubao_seed2_speed.py`, `src/react_agent/graph.py`, `docs/BENCHMARK_DOUBAO_SEED2_SPEED.md`, `docs/CHANGELOG.md`
+- Files: `tools/bench_doubao_seed2_speed.py`, `src/react_agent/graph.py`, `docs/archive/benchmark/BENCHMARK_DOUBAO_SEED2_SPEED.md`, `docs/CHANGELOG.md`
 - Added a Doubao Seed2.0 benchmark harness that measures both raw OpenAI-compatible chat speed and end-to-end LangGraph latency, and writes CSV + Markdown tables.
 - Raw benchmark uses `stream=true` + `stream_options.include_usage=true` and sends `thinking={"type":"disabled"}` explicitly in the request body.
 - E2E benchmark runs the existing graph once per sample and forces `DISABLE_SEARCH=1` to reduce search-tool noise; the default runtime behavior remains unchanged when the env is unset.
@@ -149,7 +266,7 @@ Phase positioning: This Phase 4.1.2 update strengthens eval evidence without cha
 Phase positioning: This Phase 4.1.3 update hardens server evidence capture without changing training logic. It ensures storage context is recorded alongside git/data/model evidence. Next, run preflight before each smoke train and keep preflight.txt with run_manifest and eval_report.
 
 ## 2026-01-28 - data evidence chain + trace flag clarification (Phase 3.3.1)
-- Files: `docs/INDEX.md`, `data/a01_sft/DATA_MANIFEST.md`, `project_analysis.md`, `docs/SYSTEM_MAP.md`, `docs/DECISION_LOG.md`, `docs/CHANGELOG.md`
+- Files: `docs/INDEX.md`, `data/a01_sft/DATA_MANIFEST.md`, `docs/archive/research_notes/project_analysis.md`, `docs/SYSTEM_MAP.md`, `docs/DECISION_LOG.md`, `docs/CHANGELOG.md`
 - Added DATA_MANIFEST to S0 authority list and conflict rules for FINAL data paths.
 - Documented a01 SFT archive/immutability policy + sha256 integrity checks.
 - Clarified runtime fallback: L3 is not truncated in normal parse; default_plan fallback caps L3 at 3.
@@ -162,7 +279,7 @@ Phase positioning: This is Phase 3.3.1 documentation hardening to make the data 
 - Frozen FINAL dataset to `data/a01_sft/final` and archived all prior probe/smallrun/obs outputs under dated folders.
 - Added DATA_MANIFEST with origin mapping, stats summary, inputs, and self-check snippet.
 - Added handoff doc and decision log references for continuation in a new session.
-- Acceptance: verify `data/a01_sft/final/*` exists, read `docs/HANDOFF_A01_SFT_FINAL.md`, and run the self-check snippet from DATA_MANIFEST.
+- Acceptance: verify `data/a01_sft/final/*` exists, read `docs/archive/handoff/HANDOFF_A01_SFT_FINAL.md`, and run the self-check snippet from DATA_MANIFEST.
 Phase positioning: This is Phase 3.3 to freeze a single source of truth for a01 SFT outputs and reduce data sprawl. It does not change any training logic or schema; only organizes artifacts and documentation. Next, use the FINAL dataset for training/eval gates and keep future runs under `_archive` with date stamps.
 
 ## 2026-01-26 - a01 teacher observability + parallel workers (Phase 3.2.5)
@@ -250,7 +367,7 @@ Phase positioning: This change belongs to Phase 2 documentation landing, focusin
 - Verify: run training with `--max-eval-samples 0` (no eval during training) and confirm merged output exists, then run post-train eval
 
 ## 2026-01-09 - 评测可回归 meta v1
-- Files: `tools/eval_router_outputs.py`, `tools/generate_router_preds.py`, `tools/generate_router_preds_hf.py`, `export_router_sft_dataset.py`, `docs/SYSTEM_MAP.md`
+- Files: `tools/eval_router_outputs.py`, `tools/generate_router_preds.py`, `tools/generate_router_preds_hf.py`, `ops/data_pipeline/export_router_sft_dataset.py`, `docs/SYSTEM_MAP.md`
 - Added meta fields for reproducible evaluation: git commit, preds/catalog/val sha256, model/prompt_format, and run timestamps
 - Manifest extended with seed/val_ratio and I/O file hashes for val/train export
 - Why: enable baseline vs. finetune comparisons with traceable inputs

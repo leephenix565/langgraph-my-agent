@@ -18,13 +18,38 @@ This repository implements a four-layer Router -> Manager -> Agents -> Summary w
 1) Create env file:
    - Bash: `cp .env.example .env`
    - PowerShell: `Copy-Item .env.example .env`
-2) Run minimal demo: `python demo_layered_run.py`
-3) (Optional) Run unit tests: `python -m pytest tests/unit_tests/`
+2) Run minimal demo: `conda run -n cline_env python demo_layered_run.py`
+3) (Optional, Windows recommended) Run unit tests: `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/`
 
 Docs:
 - [Docs Index](docs/INDEX.md)
 - [Project Overview](docs/PROJECT_OVERVIEW.md)
 For full runtime/training/eval commands, see `docs/SYSTEM_MAP.md`.
+
+## Environment Baseline (Local/Codex)
+
+- Python requirement: `>=3.11,<4.0` (from `pyproject.toml`).
+- Official local environment: conda env `cline_env`.
+- Do not use bare `python` as a validation entrypoint. On this machine it can fall back to system Python 3.7 and cause false failures.
+
+Interpreter self-check:
+- `conda run -n cline_env python --version`
+- `conda run -n cline_env python -c "import sys; print(sys.executable)"`
+
+Minimal import smoke (placeholder key only, do not commit real keys):
+- PowerShell: `$env:TAVILY_API_KEY="test-key"; conda run -n cline_env python -c "from react_agent import graph_app; print(graph_app is not None)"`
+
+Windows pytest execution note:
+- Recommended command uses `--no-capture-output` to avoid conda output re-encoding (`UnicodeEncodeError(gbk)` in `conda run` capture path).
+- This is an execution-layer workaround, not a project logic fix.
+- Verification-only fallback (do not treat as new baseline): `D:\AnacondaEnvs\cline_env\python.exe -m pytest tests/unit_tests/`
+
+## Repository Focus (Phase 1 Cleanup)
+
+- Mainline runtime scope: `src/react_agent/`, `config/agents/`, `langgraph.json`, `pyproject.toml`, `react_agent/`, `sitecustomize.py`.
+- Offline data-pipeline scripts are grouped under `ops/data_pipeline/`.
+- Archived non-mainline docs/materials are grouped under `docs/archive/` and `assets/reference/`.
+- When collaborating on runtime changes, prioritize the mainline scope + S0 docs from `docs/INDEX.md`.
 
 ## How to customize
 

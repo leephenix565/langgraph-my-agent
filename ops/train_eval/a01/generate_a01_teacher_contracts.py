@@ -16,7 +16,14 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional, Tuple
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+def _find_repo_root(start: Path) -> Path:
+    for candidate in (start, *start.parents):
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError(f"Could not locate repo root from {start}")
+
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 SRC_DIR = REPO_ROOT / "src"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
@@ -587,7 +594,7 @@ def main() -> int:
     if not args.router_sft and not args.router_messages:
         raise ValueError("Must provide --router-sft or --router-messages")
 
-    profiles = _load_profiles(Path("config/agents"))
+    profiles = _load_profiles(REPO_ROOT / "config" / "agents")
     questions_pool = _load_questions_pool(Path(args.questions)) if args.questions else {}
     base_url, api_key, model, temperature = _resolve_teacher(args)
 

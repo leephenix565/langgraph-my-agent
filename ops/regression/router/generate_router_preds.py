@@ -12,8 +12,14 @@ import sys
 from pathlib import Path
 from typing import Any, Dict, Iterable, List
 
+def _find_repo_root(start: Path) -> Path:
+    for candidate in (start, *start.parents):
+        if (candidate / "pyproject.toml").exists():
+            return candidate
+    raise RuntimeError(f"Could not locate repo root from {start}")
 
-REPO_ROOT = Path(__file__).resolve().parents[1]
+
+REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 SRC_DIR = REPO_ROOT / "src"
 if str(SRC_DIR) not in sys.path:
     sys.path.insert(0, str(SRC_DIR))

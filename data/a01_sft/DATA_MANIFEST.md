@@ -1,4 +1,4 @@
-﻿# A01 SFT DATA MANIFEST (FINAL)
+# A01 SFT DATA MANIFEST (FINAL)
 
 ## FINAL artifacts (frozen)
 - `data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl`
@@ -68,7 +68,7 @@ python -c "import hashlib, pathlib; p=pathlib.Path('data/a01_sft/final/a01_sft_m
 
 ## Generation command template
 ```bash
-python tools/generate_a01_teacher_contracts.py \
+python ops/train_eval/a01/generate_a01_teacher_contracts.py \
   --router-messages data/sft/router_sft_messages_20260108_b434e7a9a883_v1.train.jsonl \
   --questions data/questions/questions_pool_20260108_20260108_b434e7a9a883_v1.jsonl \
   --out-train data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl \

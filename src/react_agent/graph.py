@@ -8,6 +8,7 @@ import re
 import uuid
 import hashlib
 import asyncio
+import time
 import warnings
 from datetime import UTC, datetime
 from pathlib import Path
@@ -74,6 +75,28 @@ def _truncate(text: str, limit: int = 4000) -> str:
     if not isinstance(text, str):
         text = str(text)
     return text if len(text) <= limit else text[: limit - 8] + "...[trunc]"
+
+
+def _elapsed_ms(started_at: float) -> float:
+    return round((time.perf_counter() - started_at) * 1000.0, 3)
+
+
+def _model_trace_fields(model_spec: str, prefix: str = "model") -> Dict[str, str]:
+    spec = str(model_spec or "")
+    provider = ""
+    name = spec
+    if "/" in spec:
+        provider, name = spec.split("/", maxsplit=1)
+    return {
+        f"{prefix}_spec": spec,
+        f"{prefix}_provider": provider,
+        f"{prefix}_name": name,
+    }
+
+
+def _log_node_latency(logger: Any, node: str, started_at: float, **fields: Any) -> None:
+    """Emit lightweight node latency trace without affecting runtime semantics."""
+    logger.log_event("node_latency", node=node, elapsed_ms=_elapsed_ms(started_at), **fields)
 
 
 def _summarize_router_plan(layer_plan: Dict[str, List[str]], layer_mode: Dict[str, str], limit: int = 800) -> str:
@@ -568,6 +591,7 @@ async def router_node(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
     """Router: produce per-layer plan and modes."""
+    node_started_at = time.perf_counter()
     question = _get_latest_user_question(list(state["messages"]))
     run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
     runtime.context.run_id = run_id
@@ -634,16 +658,33 @@ async def router_node(
             except Exception as exc:
                 logger.log_event(
                     "router_provider_fallback",
+                    node="router",
                     router_model=router_model_name,
                     router_base_url=runtime.context.router_openai_base_url,
                     fallback_model=fallback_model_name,
+                    elapsed_ms=_elapsed_ms(node_started_at),
+                    exception_type=type(exc).__name__,
+                    exception_repr=repr(exc),
                     error=str(exc),
+                    **_model_trace_fields(router_model_name, "router_model"),
+                    **_model_trace_fields(fallback_model_name, "fallback_model"),
                 )
                 response = await _invoke_router(fallback_model_name)
         else:
             response = await _invoke_router(router_model_name)
         raw_text = get_message_text(response)
     except Exception as exc:
+        logger.log_event(
+            "router_error",
+            node="router",
+            current_layer="L1",
+            elapsed_ms=_elapsed_ms(node_started_at),
+            exception_type=type(exc).__name__,
+            exception_repr=repr(exc),
+            error=str(exc),
+            **_model_trace_fields(router_model_name, "router_model"),
+            **_model_trace_fields(fallback_model_name, "fallback_model"),
+        )
         response = AIMessage(content=f"[router fallback] {exc}")
         raw_text = "{}"
     print("[ROUTER RAW OUTPUT]", raw_text)
@@ -683,6 +724,14 @@ async def router_node(
     if _results_pools_enabled():
         update["ephemeral_results"] = {"__reset__": True}
         logger.log_event("ephemeral_reset", enabled=1)
+    _log_node_latency(
+        logger,
+        "router",
+        node_started_at,
+        current_layer=current_layer,
+        parse_ok=bool(parse_stats.get("parse_ok")),
+        used_default_plan=bool(parse_stats.get("used_default_plan")),
+    )
     return update
 
 
@@ -690,6 +739,7 @@ async def manager_broadcast(
     state: State, runtime: Runtime[Context]
 ) -> Command:
     """Manager: dispatch within current layer according to mode."""
+    node_started_at = time.perf_counter()
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
@@ -699,6 +749,17 @@ async def manager_broadcast(
     question = state.get("current_question") or _get_latest_user_question(list(state.get("messages", [])))
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
+
+    def _emit_latency(branch: str, dispatch_count: int) -> None:
+        _log_node_latency(
+            logger,
+            "manager_broadcast",
+            node_started_at,
+            current_layer=current_layer,
+            mode=mode,
+            branch=branch,
+            dispatch_count=dispatch_count,
+        )
 
     remaining = [aid for aid in selected if aid not in results]
     debug_msgs: List[AIMessage] = []
@@ -715,6 +776,7 @@ async def manager_broadcast(
         debug_msgs.append(
             AIMessage(content=f"[manager_broadcast] layer {current_layer} empty -> skip")
         )
+        _emit_latency("empty_skip", 0)
         return Command(
             goto="manager_summary",
             update={
@@ -744,6 +806,7 @@ async def manager_broadcast(
             debug_msgs.append(
                 AIMessage(content=f"[manager_broadcast] layer {current_layer} chain complete")
             )
+            _emit_latency("chain_complete", 0)
             return Command(
                 goto="manager_summary",
                 update={"messages": debug_msgs, "plan": selected, "fanout_targets": []},
@@ -754,6 +817,7 @@ async def manager_broadcast(
             debug_msgs.append(
                 AIMessage(content=f"[manager_broadcast] missing node for {next_id}, skipping")
             )
+            _emit_latency("chain_missing_node", len(remaining))
             return Command(
                 goto="manager_summary",
                 update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
@@ -805,6 +869,7 @@ async def manager_broadcast(
         debug_msgs.append(
             AIMessage(content=f"[manager_broadcast] chain dispatch -> {next_id} (layer {current_layer})")
         )
+        _emit_latency("chain_dispatch", 1)
         return Command(
             goto=[Send(node_name, branch_state)],
             update={
@@ -873,6 +938,7 @@ async def manager_broadcast(
             f"(layer {current_layer})"
         )
     )
+    _emit_latency("parallel_dispatch", len(sends))
     return Command(
         goto=sends or "manager_summary",
         update={"messages": debug_msgs, "plan": selected, "fanout_targets": remaining},
@@ -892,6 +958,7 @@ def _build_agent_node(agent_id: str):
         )
         run_id = state.get("run_id") or runtime.context.run_id or ""
         logger = get_run_logger(run_id)
+        node_started_at = time.perf_counter()
         logger.log_event(
             "agent_start",
             agent_id=agent_id,
@@ -934,17 +1001,32 @@ def _build_agent_node(agent_id: str):
         except Exception as exc:
             logger.log_event(
                 "agent_error",
+                node="agent",
                 agent_id=agent_id,
                 layer=current_layer,
                 mode=mode,
+                elapsed_ms=_elapsed_ms(node_started_at),
+                exception_type=type(exc).__name__,
+                exception_repr=repr(exc),
                 error_type=type(exc).__name__,
                 error=str(exc),
+                **_model_trace_fields(runtime.context.model),
             )
             output = _agent_error_output(agent_id, exc)
         runtime_results = dict(_get_runtime_results_pool(state))
         runtime_results[agent_id] = output
         logger.log_event(
             "agent_end",
+            agent_id=agent_id,
+            layer=current_layer,
+            mode=mode,
+            parse_ok=output.get("parse_ok"),
+            confidence=output.get("confidence"),
+        )
+        _log_node_latency(
+            logger,
+            "agent",
+            node_started_at,
             agent_id=agent_id,
             layer=current_layer,
             mode=mode,
@@ -977,8 +1059,10 @@ async def _run_final_summary(
     analyst_results: Dict[str, Any],
     filtered_results: Dict[str, Any],
     filtered_out: int,
+    summary_source: str = "manager_summary",
 ) -> Dict[str, object]:
     """Run the final user-facing summary step and mark turn completion."""
+    node_started_at = time.perf_counter()
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
@@ -1052,6 +1136,17 @@ async def _run_final_summary(
         tags = ["react_agent", f"run_id:{run_id}", f"layer:{current_layer}"]
         response: AIMessage = await model.ainvoke(base_msgs, config={"metadata": metadata, "tags": tags})
     except Exception as exc:
+        logger.log_event(
+            "summary_error",
+            node="summary",
+            current_layer=current_layer,
+            elapsed_ms=_elapsed_ms(node_started_at),
+            filtered_out=filtered_out,
+            exception_type=type(exc).__name__,
+            exception_repr=repr(exc),
+            error=str(exc),
+            **_model_trace_fields(runtime.context.model),
+        )
         summary_text = json.dumps(
             {
                 "question": question,
@@ -1102,6 +1197,15 @@ async def _run_final_summary(
             stable_len=len(stable),
             evidence_count=len(entry.get("evidence", [])),
         )
+    _log_node_latency(
+        logger,
+        "summary",
+        node_started_at,
+        current_layer=current_layer,
+        source=summary_source,
+        filtered_out=filtered_out,
+        result_count=len(filtered_results),
+    )
     return update
 
 
@@ -1109,6 +1213,7 @@ async def manager_summary(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
     """Manager: integrate AgentOutputs; advance layers; only answer at final layer."""
+    node_started_at = time.perf_counter()
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
@@ -1121,6 +1226,19 @@ async def manager_summary(
     pending = [aid for aid in selected if aid not in analyst_results]
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
+
+    def _emit_latency(path: str) -> None:
+        _log_node_latency(
+            logger,
+            "manager_summary",
+            node_started_at,
+            current_layer=current_layer,
+            path=path,
+            pending_count=len(pending),
+            result_count=len(filtered_results),
+            filtered_out=filtered_out,
+        )
+
     logger.log_event(
         "summary_start",
         current_layer=current_layer,
@@ -1134,6 +1252,7 @@ async def manager_summary(
     if selected and pending:
         # Chain: dispatch next; Star: wait.
         chain_cursor = len(selected) - len(pending)
+        _emit_latency("pending_wait")
         return {**base_update, "chain_cursor": chain_cursor}
 
     # Mark current layer done and advance if not final.
@@ -1151,6 +1270,7 @@ async def manager_summary(
             results=list(filtered_results.keys()),
             next_layer=next_layer,
         )
+        _emit_latency("advance_layer")
         return {
             "messages": [debug_msg],
             "layer_done": layer_done,
@@ -1161,20 +1281,24 @@ async def manager_summary(
         }
 
     # Final layer completed: produce user-facing summary.
-    return await _run_final_summary(
+    result = await _run_final_summary(
         state=state,
         runtime=runtime,
         layer_done=layer_done,
         analyst_results=analyst_results,
         filtered_results=filtered_results,
         filtered_out=filtered_out,
+        summary_source="manager_summary",
     )
+    _emit_latency("final_summary")
+    return result
 
 
 async def finalize_summary(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
     """Fallback finalizer: force a final summary when FINAL_LAYER has no pending agents."""
+    node_started_at = time.perf_counter()
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     layer_done = dict(state.get("layer_done", {}))
     layer_done[current_layer] = True
@@ -1183,14 +1307,26 @@ async def finalize_summary(
         aid: res for aid, res in analyst_results.items() if not isinstance(res, dict) or res.get("parse_ok", True)
     }
     filtered_out = len(analyst_results) - len(filtered_results)
-    return await _run_final_summary(
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    result = await _run_final_summary(
         state=state,
         runtime=runtime,
         layer_done=layer_done,
         analyst_results=analyst_results,
         filtered_results=filtered_results,
         filtered_out=filtered_out,
+        summary_source="finalize_summary",
     )
+    _log_node_latency(
+        logger,
+        "finalize_summary",
+        node_started_at,
+        current_layer=current_layer,
+        filtered_out=filtered_out,
+        result_count=len(filtered_results),
+    )
+    return result
 
 
 async def memory_update(

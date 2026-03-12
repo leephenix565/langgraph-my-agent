@@ -5,10 +5,13 @@ from __future__ import annotations
 import asyncio
 import json
 import os
+import threading
 import uuid
 from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Optional
+
+_WRITE_LOCK = threading.Lock()
 
 
 def _should_enable() -> bool:
@@ -91,8 +94,9 @@ class RunLogger:
         try:
             if self.log_dir:
                 self.log_dir.mkdir(parents=True, exist_ok=True)
-            with self.log_path.open("a", encoding="utf-8") as f:  # type: ignore[arg-type]
-                f.write(json.dumps(record, ensure_ascii=False) + "\n")
+            with _WRITE_LOCK:
+                with self.log_path.open("a", encoding="utf-8") as f:  # type: ignore[arg-type]
+                    f.write(json.dumps(record, ensure_ascii=False) + "\n")
         except Exception:
             return
 
@@ -107,8 +111,9 @@ class RunLogger:
             return
 
     def _write_record(self, record: Dict[str, Any]) -> None:
-        with self.log_path.open("a", encoding="utf-8") as f:  # type: ignore[arg-type]
-            f.write(json.dumps(record, ensure_ascii=False) + "\n")
+        with _WRITE_LOCK:
+            with self.log_path.open("a", encoding="utf-8") as f:  # type: ignore[arg-type]
+                f.write(json.dumps(record, ensure_ascii=False) + "\n")
 
 
 def get_run_logger(run_id: str | None) -> RunLogger:

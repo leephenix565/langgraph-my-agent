@@ -1,4 +1,4 @@
-from tools.generate_a01_teacher_contracts import compute_quality_metrics
+from ops.train_eval.a01.generate_a01_teacher_contracts import compute_quality_metrics
 
 
 def test_compute_quality_metrics_basic() -> None:

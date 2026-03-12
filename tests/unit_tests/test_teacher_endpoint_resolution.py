@@ -1,4 +1,4 @@
-from tools.generate_a01_teacher_contracts import _resolve_endpoint
+from ops.train_eval.a01.generate_a01_teacher_contracts import _resolve_endpoint
 
 
 def test_resolve_endpoint_base_url_root() -> None:

@@ -1,4 +1,4 @@
-from tools.generate_a01_teacher_contracts import compute_quality_distribution_stats
+from ops.train_eval.a01.generate_a01_teacher_contracts import compute_quality_distribution_stats
 
 
 def test_quality_distribution_stats_basic() -> None:

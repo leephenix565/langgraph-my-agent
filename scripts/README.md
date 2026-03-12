@@ -53,18 +53,29 @@ Output:
 
 ## 2) Analyze LOCAL_TRACE logs
 
-Script: `scripts/analyze_trace.py`
+Script: `ops/regression/analyze_trace.py`
 
 Reads all `*.jsonl` under `LOG_DIR` (multi-file) and prints JSON + short table:
 - event counts
 - `router_ctx`/`manager_ctx` context stats (`ctx_messages_len`, `full_messages_len`, min/median/max)
 - window violation count (`ctx_messages_len > window_size` when `full_messages_len > window_size`)
 - `stable_consume` summary (`by_node` stats + sample events)
+- `latency_profile` summary from `node_latency` events:
+  - by-node elapsed stats (`router`, `manager_broadcast`, `agent`, `manager_summary`, `summary`, `finalize_summary`)
+  - per-agent elapsed stats under `agent_elapsed_ms`
+- `malformed_jsonl` summary:
+  - total malformed line count
+  - per-file malformed counts
+  - up to 5 malformed line samples (`file/line/exception/snippet`)
+- `error_summary` summary:
+  - grouped counts by `event` and `node`
+  - grouped `status_code_counts` (for example `502`)
+  - grouped signatures by `node/agent_id/exception_type/error`
 
 Windows (PowerShell):
 
 ```powershell
-python scripts/analyze_trace.py `
+conda run -n cline_env python ops/regression/analyze_trace.py `
   --log_dir "$env:TEMP\\phase25_regress_10turn\\logs" `
   --window_size 20 `
   --out_json "$env:TEMP\\phase25_regress_10turn\\summary.json"
@@ -73,7 +84,7 @@ python scripts/analyze_trace.py `
 Unix:
 
 ```bash
-python scripts/analyze_trace.py \
+conda run -n cline_env python ops/regression/analyze_trace.py \
   --log_dir "${TMPDIR:-/tmp}/phase25_regress_10turn/logs" \
   --window_size 20 \
   --out_json "${TMPDIR:-/tmp}/phase25_regress_10turn/summary.json"
@@ -88,4 +99,4 @@ python scripts/analyze_trace.py \
 ## Rollback / impact
 
 - These scripts are additive tooling only.
-- Removing `scripts/phase25_regress_10turn.py` and `scripts/analyze_trace.py` fully reverts this phase.
+- Removing `scripts/phase25_regress_10turn.py` and `ops/regression/analyze_trace.py` fully reverts this phase.
