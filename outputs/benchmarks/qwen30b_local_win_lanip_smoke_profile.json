@@ -1,0 +1,376 @@
+{
+  "profiling_enabled": true,
+  "profile_log_dir": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen30b_local_win_lanip_smoke_trace",
+  "profile_window_size": 20,
+  "runs_per_model": 1,
+  "disable_search": 1,
+  "models": [
+    {
+      "model_id": "qwen",
+      "provider_model": "Qwen3-30B-A3B-Instruct-2507-int8"
+    }
+  ],
+  "trace_runs": [
+    {
+      "model_alias": "qwen",
+      "provider_model": "Qwen3-30B-A3B-Instruct-2507-int8",
+      "run_index": 1,
+      "run_id": "bench_qwen_01_185496e8",
+      "trace_log_file": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen30b_local_win_lanip_smoke_trace\\bench_qwen_01_185496e8.jsonl"
+    }
+  ],
+  "latency_profile": {
+    "count": 19,
+    "by_node": {
+      "agent": {
+        "count": 11,
+        "min": 6424.499,
+        "median": 8073.424,
+        "max": 19999.578
+      },
+      "manager_broadcast": {
+        "count": 4,
+        "min": 0.135,
+        "median": 0.29300000000000004,
+        "max": 0.617
+      },
+      "manager_summary": {
+        "count": 3,
+        "min": 0.084,
+        "median": 0.092,
+        "max": 0.098
+      },
+      "router": {
+        "count": 1,
+        "min": 10737.73,
+        "median": 10737.73,
+        "max": 10737.73
+      }
+    },
+    "agent_elapsed_ms": {
+      "a01_cio_orchestrator": {
+        "count": 1,
+        "min": 19999.578,
+        "median": 19999.578,
+        "max": 19999.578
+      },
+      "a09_macro_sentiment": {
+        "count": 1,
+        "min": 8135.458,
+        "median": 8135.458,
+        "max": 8135.458
+      },
+      "a10_industry_sentiment": {
+        "count": 1,
+        "min": 8325.969,
+        "median": 8325.969,
+        "max": 8325.969
+      },
+      "a11_equity_sentiment": {
+        "count": 1,
+        "min": 8405.063,
+        "median": 8405.063,
+        "max": 8405.063
+      },
+      "a13_index_technical_analysis": {
+        "count": 1,
+        "min": 7848.28,
+        "median": 7848.28,
+        "max": 7848.28
+      },
+      "a14_single_stock_tech": {
+        "count": 1,
+        "min": 8034.043,
+        "median": 8034.043,
+        "max": 8034.043
+      },
+      "a19_market_risk": {
+        "count": 1,
+        "min": 7736.923,
+        "median": 7736.923,
+        "max": 7736.923
+      },
+      "a20_fundamental_risk": {
+        "count": 1,
+        "min": 8073.424,
+        "median": 8073.424,
+        "max": 8073.424
+      },
+      "a21_reg_compliance": {
+        "count": 1,
+        "min": 8170.063,
+        "median": 8170.063,
+        "max": 8170.063
+      },
+      "a23_portfolio_opt": {
+        "count": 1,
+        "min": 8060.44,
+        "median": 8060.44,
+        "max": 8060.44
+      },
+      "a25_report_center": {
+        "count": 1,
+        "min": 6424.499,
+        "median": 6424.499,
+        "max": 6424.499
+      }
+    },
+    "samples": [
+      {
+        "ts": "2026-03-12T08:29:01.597258+00:00",
+        "run_id": "bench_qwen_01_185496e8",
+        "node": "router",
+        "agent_id": null,
+        "elapsed_ms": 10737.73
+      },
+      {
+        "ts": "2026-03-12T08:29:01.598258+00:00",
+        "run_id": "bench_qwen_01_185496e8",
+        "node": "manager_broadcast",
+        "agent_id": null,
+        "elapsed_ms": 0.135
+      },
+      {
+        "ts": "2026-03-12T08:29:21.600191+00:00",
+        "run_id": "bench_qwen_01_185496e8",
+        "node": "manager_summary",
+        "agent_id": null,
+        "elapsed_ms": 0.084
+      }
+    ]
+  },
+  "trace_summary": {
+    "log_dir": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen30b_local_win_lanip_smoke_trace",
+    "log_files": [
+      "bench_qwen_01_185496e8.jsonl"
+    ],
+    "total_records": 70,
+    "event_counts": {
+      "agent_end": 11,
+      "agent_start": 11,
+      "manager_assignment": 11,
+      "manager_broadcast": 4,
+      "manager_ctx": 1,
+      "node_latency": 19,
+      "router_ctx": 1,
+      "router_decision": 1,
+      "run_start": 1,
+      "stable_consume": 2,
+      "summary_end": 4,
+      "summary_start": 4
+    },
+    "malformed_jsonl": {
+      "total": 0,
+      "by_file": {},
+      "samples": [],
+      "file_read_errors": []
+    },
+    "ctx_stats": {
+      "router_ctx": {
+        "count": 1,
+        "ctx_messages_len": {
+          "count": 1,
+          "min": 1,
+          "median": 1,
+          "max": 1
+        },
+        "full_messages_len": {
+          "count": 1,
+          "min": 1,
+          "median": 1,
+          "max": 1
+        },
+        "window_size": 20,
+        "window_violations": 0
+      },
+      "manager_ctx": {
+        "count": 1,
+        "ctx_messages_len": {
+          "count": 1,
+          "min": 23,
+          "median": 23,
+          "max": 23
+        },
+        "full_messages_len": {
+          "count": 1,
+          "min": 23,
+          "median": 23,
+          "max": 23
+        },
+        "window_size": 20,
+        "window_violations": 1
+      }
+    },
+    "stable_consume": {
+      "count": 2,
+      "by_node": {
+        "manager_summary": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "max": 0
+        },
+        "router": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "max": 0
+        }
+      },
+      "samples": [
+        {
+          "ts": "2026-03-12T08:28:50.859658+00:00",
+          "node": "router",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_185496e8"
+        },
+        {
+          "ts": "2026-03-12T08:29:44.615276+00:00",
+          "node": "manager_summary",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_185496e8"
+        },
+        {
+          "ts": "2026-03-12T08:29:44.615276+00:00",
+          "node": "manager_summary",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_185496e8"
+        }
+      ]
+    },
+    "latency_profile": {
+      "count": 19,
+      "by_node": {
+        "agent": {
+          "count": 11,
+          "min": 6424.499,
+          "median": 8073.424,
+          "max": 19999.578
+        },
+        "manager_broadcast": {
+          "count": 4,
+          "min": 0.135,
+          "median": 0.29300000000000004,
+          "max": 0.617
+        },
+        "manager_summary": {
+          "count": 3,
+          "min": 0.084,
+          "median": 0.092,
+          "max": 0.098
+        },
+        "router": {
+          "count": 1,
+          "min": 10737.73,
+          "median": 10737.73,
+          "max": 10737.73
+        }
+      },
+      "agent_elapsed_ms": {
+        "a01_cio_orchestrator": {
+          "count": 1,
+          "min": 19999.578,
+          "median": 19999.578,
+          "max": 19999.578
+        },
+        "a09_macro_sentiment": {
+          "count": 1,
+          "min": 8135.458,
+          "median": 8135.458,
+          "max": 8135.458
+        },
+        "a10_industry_sentiment": {
+          "count": 1,
+          "min": 8325.969,
+          "median": 8325.969,
+          "max": 8325.969
+        },
+        "a11_equity_sentiment": {
+          "count": 1,
+          "min": 8405.063,
+          "median": 8405.063,
+          "max": 8405.063
+        },
+        "a13_index_technical_analysis": {
+          "count": 1,
+          "min": 7848.28,
+          "median": 7848.28,
+          "max": 7848.28
+        },
+        "a14_single_stock_tech": {
+          "count": 1,
+          "min": 8034.043,
+          "median": 8034.043,
+          "max": 8034.043
+        },
+        "a19_market_risk": {
+          "count": 1,
+          "min": 7736.923,
+          "median": 7736.923,
+          "max": 7736.923
+        },
+        "a20_fundamental_risk": {
+          "count": 1,
+          "min": 8073.424,
+          "median": 8073.424,
+          "max": 8073.424
+        },
+        "a21_reg_compliance": {
+          "count": 1,
+          "min": 8170.063,
+          "median": 8170.063,
+          "max": 8170.063
+        },
+        "a23_portfolio_opt": {
+          "count": 1,
+          "min": 8060.44,
+          "median": 8060.44,
+          "max": 8060.44
+        },
+        "a25_report_center": {
+          "count": 1,
+          "min": 6424.499,
+          "median": 6424.499,
+          "max": 6424.499
+        }
+      },
+      "samples": [
+        {
+          "ts": "2026-03-12T08:29:01.597258+00:00",
+          "run_id": "bench_qwen_01_185496e8",
+          "node": "router",
+          "agent_id": null,
+          "elapsed_ms": 10737.73
+        },
+        {
+          "ts": "2026-03-12T08:29:01.598258+00:00",
+          "run_id": "bench_qwen_01_185496e8",
+          "node": "manager_broadcast",
+          "agent_id": null,
+          "elapsed_ms": 0.135
+        },
+        {
+          "ts": "2026-03-12T08:29:21.600191+00:00",
+          "run_id": "bench_qwen_01_185496e8",
+          "node": "manager_summary",
+          "agent_id": null,
+          "elapsed_ms": 0.084
+        }
+      ]
+    },
+    "error_summary": {
+      "count": 0,
+      "by_event": {},
+      "by_node": {},
+      "status_code_counts": {},
+      "signatures": [],
+      "samples": []
+    }
+  }
+}

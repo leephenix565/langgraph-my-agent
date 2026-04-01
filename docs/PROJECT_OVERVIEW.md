@@ -1,56 +1,82 @@
-# Project Overview: SLM Router + SLM a01 for Layered Multi-Agent Orchestration
+# Project Overview: Current Engineering Snapshot
 
-> 本文为第三人称叙事入口，不包含运行/训练/评测命令；操作细节以 `docs/SYSTEM_MAP.md` 与 `docs/RUNBOOK_ROUTER_SFT.md` 为准。
+> Scope note: this document is the narrative and current-snapshot entry for the repo. It does not define command truth. For runtime, benchmark, train, and eval commands, prefer `docs/SYSTEM_MAP.md` and `docs/RUNBOOK_ROUTER_SFT.md`. If this document conflicts with runtime code or S0 operation docs, prefer `src/react_agent/*`, focused tests, and the S0 docs listed in `docs/INDEX.md`.
 
-## 1. 项目定位与长期目标（第三人称）
-- 该项目将 Router 与 a01 视为系统骨架模块，并优先训练为 SLM；具体分析类 agents 由不同开发者维护，可接入商业 API 或本地模型。
-- 长期目标是构建“可训练、可评测、可回归、可复现”的编排能力，而不是单次回答“看起来更聪明”。
-- 骨架能力与执行能力解耦评估：Router/a01 负责协议合规与任务分解，agents 负责领域输出质量。
+## 1. What This Project Is
 
-## 2. 当前进展（截至 2026-01-23）
-- Router-SFT 已完成闭环：数据治理（strict + canonical JSON）、completion-only、QLoRA + LoRA、HF preds JSON 规范化、repro gate。
-- 结论：合规性与可执行性稳定，但 L2/L3 选人一致性与质量指标仍需迭代。
-- 下一步主线：a01 合同 schema v0（宪法级协议 + 校验器）与 a01-SFT；Judge 作为端到端评测基础设施。
+This repository is a layered multi-agent orchestration system built on LangGraph `StateGraph`, not a loose collection of standalone prompts or scripts. The current mainline runtime centers on `src/react_agent/`, `config/agents/`, `langgraph.json`, and the surrounding regression / training / observability tooling. Its runtime focus is a Router-led layered plan, Manager-led dispatch, per-agent structured outputs, and a unified final-answer path.
 
-## 3. 为什么 SLM 微调优于直接商业 API（因果链）
-- 商业 API 直推的问题：输出稳定性不足、协议合规难控、成本与供应方更新带来回归风险。
-- SLM 的优势来自训练对象选对：训练“路由与合同等骨架能力”，而非训练金融百科或通用知识。
-- 明确的训练与工程措施使其更稳：
-  - strict + canonical JSON 标签
-  - completion-only masking（只学习 JSON completion）
-  - QLoRA 量化训练必须挂 LoRA
-  - 推理输出规范化以匹配 parser/eval（抽取首个 JSON + compact）
-  - 回归门禁（repro + regression eval）
+## 2. Current Engineering Snapshot
 
-## 4. 推进计划（里程碑 + DoD）
-- M1：a01 合同 JSON schema v0（宪法级协议 + 校验器）
-- M2：a01-SFT 数据集 v0（strict/canonical/分桶元数据）
-- M3：a01 QLoRA + completion-only 训练闭环（merged 可推理 + 评测）
-- M4：LLM Judge + 人工校准（gold set、多 trial、rubric graders）
-- M5：双线回归门禁固化（路由指标 + 推理指标 + 成本/延迟）
-- 注：多候选/重评分属于可选增强路线，目前待定，不作为硬依赖
+- Runtime skeleton: `langgraph.json -> src/react_agent/graph.py:graph`
+- Main runtime chain: `router_node -> manager_broadcast -> agent nodes -> manager_summary -> (_run_final_summary / finalize_summary) -> optional memory_update -> __end__`
+- a01 contract role: `a01_cio_orchestrator` can emit a structured contract, but Manager only consumes it after `extract_contract + validate_contract`; invalid contracts fall back to template assignment.
+- Agent catalog snapshot: `config/agents/` currently contains 26 agent configs, and 25 agent nodes enter the runtime node set; `a02_task_router` is excluded because `default_enabled=false`.
+- Optional capabilities boundary: `thread_summary`, `messages window`, `results pools`, `stable consume`, and `checkpointer` are env-gated features, not default-always-on behavior.
+- Stage snapshot: the repo is closer to `structure-stable` than `quality-stable`; graph topology, state flow, protocol checks, and focused tests have a closed loop, while environment dependencies, training stack readiness, path drift in docs, and partial mojibake indicate that quality and documentation closure are not complete.
 
-## 5. 指标体系：路由指标 vs 端到端推理指标
-### 5.1 Router / 路由指标（L0 硬栅栏 + L1 质量 + 稳定性/成本）
-- L0：valid_json_rate、parse_ok_rate、used_default_plan_rate、constraint_violation_rate、l2_truncated、filtered_agents
-- L1：mode_acc、selected_jaccard（按层，重点 L2/L3）、coverage_score、redundancy_penalty
-- 稳定性：repro gate、paraphrase stability、drift monitor
-- 成本：activated_agents、token_proxy、latency_proxy
+## 3. Runtime Mainline
 
-### 5.2 End-to-End / 推理质量指标（LLM judge + 人工校准）
-- Rubric（建议 6 维 0–2 分）：覆盖度、证据链、内部一致性、不确定性与风险披露、可执行性、合规边界
-- 校准：gold set、judge 多 trial 方差、与人工一致性、失败标签体系
-- tracked metrics：turns、toolcalls、tokens、latency
+The runtime entrypoint is defined in `langgraph.json` and compiled in `src/react_agent/graph.py`. The mainline behavior is:
 
-## 6. Anthropic 方法论参考（官方链接，原样放入）
-```
-Building effective agents: https://www.anthropic.com/research/building-effective-agents
-How we built our multi-agent research system: https://www.anthropic.com/engineering/multi-agent-research-system
-Effective harnesses for long-running agents: https://www.anthropic.com/engineering/effective-harnesses-for-long-running-agents
-Demystifying evals for AI agents: https://www.anthropic.com/engineering/demystifying-evals-for-ai-agents
-```
+1. `router_node` reads the current user turn and produces a layered plan plus layer modes.
+2. `manager_broadcast` reads the current layer, mode, and result pool, then assigns work to one or more agents.
+3. Agent nodes execute their subtasks and write structured outputs back to the current result pool.
+4. `manager_summary` checks pending agents, advances layers when a layer is complete, and triggers final summarization on the terminal path.
+5. `_run_final_summary` or `finalize_summary` produces the outward-facing answer.
+6. `memory_update` writes `thread_summary` only when thread-summary support is enabled and the turn is already in the final step.
 
-## 7. 风险与对策（面向汇报）
-- judge 偏差与 prompt hack：gold set 校准 + 多 trial + 必要时多 judge。
-- agents 后端不统一：骨架质量（Router/a01）与执行质量解耦评估。
-- 多解问题：exact_match → 集合/类别指标 + 成本维度。
+This means `manager_summary` is a layer-control node, not the sole final-answer node. Final answer generation is centralized in the final-summary path.
+
+## 4. a01 Contract in Runtime
+
+The a01 contract is already on the runtime hot path, but it is not treated as an unconditional source of truth.
+
+- Generation: `a01_cio_orchestrator` is prompted to emit a structured `contract` alongside its normal structured output.
+- Preservation: the agent output parser keeps extra keys, so `contract` survives parsing instead of being discarded.
+- Validation: runtime uses `extract_contract(...)` and `validate_contract(...)` to check schema version, key set, selected agent coverage, and `tasks[].steps` constraints before dispatch consumption.
+- Consumption: `manager_broadcast()` prefers contract-based assignment only when validation succeeds for the currently selected agent set.
+- Fallback: if validation fails, or if an agent has no valid contract task, Manager falls back to the normal assignment templates.
+
+The contract is therefore a validated dispatch protocol, not a blind override.
+
+## 5. Optional Env-Gated Capabilities
+
+The current repo has several context and persistence features, but they are opt-in.
+
+- `REACT_AGENT_CHECKPOINTER`: enables persistent graph invocation via `graph_persistent` / `get_graph_for_invoke(thread_id)`.
+- `REACT_AGENT_THREAD_SUMMARY`: enables post-turn `thread_summary` writeback and injects that summary into Router and final-summary prompt assembly.
+- `REACT_AGENT_MESSAGES_WINDOW`: trims `state["messages"]` for Router and final-summary prompt assembly only.
+- `REACT_AGENT_RESULTS_POOLS`: switches runtime reads to `ephemeral_results` and enables `stable_findings` accumulation on the final path.
+- `REACT_AGENT_STABLE_CONSUME`: injects a bounded `stable_findings` summary into Router and final-summary prompt assembly only.
+- `DISABLE_SEARCH`: disables ordinary analyst search at runtime; `a01_cio_orchestrator` and `a25_report_center` are already no-search agents regardless of this flag.
+- `ROUTER_MODEL`, `ROUTER_OPENAI_BASE_URL`, `ROUTER_OPENAI_API_KEY`: only affect Router model selection and Router-side OpenAI-compatible endpoint override.
+
+These controls should be described as optional runtime switches, not as default behavior.
+
+## 6. Stage Positioning
+
+The current repo snapshot supports a `structure-stable` reading, not a `quality-stable` one.
+
+- What is already closed at the structure layer: entrypoint wiring, graph topology, Router parsing, contract validation and dispatch fallback, finalization routing, results-pool handling, and focused unit/integration coverage.
+- What is not yet sufficient for a `quality-stable` claim: training dependencies are not universally available in the local baseline env, some runbook and changelog entries still carry historical path drift, and parts of the long-form docs still contain encoding damage.
+
+This is a stronger statement than "still designing from scratch", but a weaker statement than "all engineering quality is stabilized".
+
+## 7. Confirmed Current Engineering Focus
+
+The repo directly supports the following current focus areas:
+
+- protocol alignment between prompts, runtime validation, and tests
+- regression and evaluation chains for Router-SFT and a01-SFT
+- observability and trace analysis for runtime latency and failures
+- environment baseline clarification and command-path consolidation
+- documentation and runbook closure around the existing mainline
+
+The repo does not provide direct evidence that the primary focus has already shifted to frontend experience or broad productization. That claim should be treated as unconfirmed unless additional repo evidence is added.
+
+## 8. Short External Description
+
+The following paragraph is intentionally short enough to reuse in proposals, reports, or engineering summaries:
+
+> This project is a layered multi-agent orchestration system built on LangGraph `StateGraph`. Its main runtime entrypoint is `langgraph.json -> src/react_agent/graph.py:graph`, and its runtime path is `router_node -> manager_broadcast -> agent nodes -> manager_summary -> (_run_final_summary / finalize_summary) -> optional memory_update -> __end__`. The `a01` contract already sits on the runtime hot path, but it is consumed only after runtime validation and otherwise falls back to normal Manager assignment. Capabilities such as `thread_summary`, `messages window`, `results pools`, `stable consume`, and `checkpointer` are env-gated options rather than default-always-on behavior. The current repo is closer to `structure-stable` than `quality-stable`: runtime structure and protocol closure are in place, while environment, training, and documentation closure remain in progress.

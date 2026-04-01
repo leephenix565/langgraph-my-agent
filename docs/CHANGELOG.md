@@ -1,5 +1,15 @@
 # CHANGELOG
 
+## 2026-03-31 - Docs narrative alignment for current engineering snapshot
+- Files: `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/INDEX.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Aligned narrative-facing docs with the current runtime and test-backed repo reality:
+  - README now describes the repo as a LangGraph layered multi-agent system, not a generic template overview.
+  - PROJECT_OVERVIEW now serves as the primary narrative snapshot for the current repo, including runtime entry, main chain, a01 contract role, env-gated capability boundaries, and stage positioning.
+  - INDEX now separates document roles more explicitly: `PROJECT_OVERVIEW` for narrative snapshot, `SYSTEM_MAP` / `RUNBOOK_ROUTER_SFT` for operational truth, runtime code plus focused tests for behavior truth.
+  - SYSTEM_MAP received a minimal scope-boundary note so high-level narrative does not get confused with command/runtime truth.
+- Clarified current stage wording as `structure-stable`, not `quality-stable`, and avoided upgrading optional env-gated features into default behavior.
+- Scope boundary: documentation alignment only. No runtime business-logic changes, no schema changes, no prompt/runtime contract changes, and no test semantic changes.
+
 ## 2026-03-11 - 502 observability slice (trace + analyzer)
 - Files: `src/react_agent/graph.py`, `src/react_agent/default_agents.py`, `src/react_agent/run_logger.py`, `ops/regression/analyze_trace.py`, `tests/unit_tests/test_trace_analyze_smoke.py`, `scripts/README.md`, `docs/CHANGELOG.md`
 - Added richer error-trace context without changing business semantics:

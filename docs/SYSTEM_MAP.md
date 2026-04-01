@@ -1,5 +1,11 @@
 ﻿# SYSTEM_MAP (Single Source of Truth)
 
+## Scope Boundary
+- This document is the S0 operational map for runtime, benchmark, train, and eval entrypoints.
+- For the current narrative snapshot and reusable project description, see `docs/PROJECT_OVERVIEW.md`.
+- If `PROJECT_OVERVIEW` conflicts with runtime code or this document, prefer runtime code plus this document and `docs/RUNBOOK_ROUTER_SFT.md`.
+- Optional capabilities such as `REACT_AGENT_CHECKPOINTER`, `REACT_AGENT_THREAD_SUMMARY`, `REACT_AGENT_MESSAGES_WINDOW`, `REACT_AGENT_RESULTS_POOLS`, and `REACT_AGENT_STABLE_CONSUME` are env-gated and must not be assumed on by default.
+
 ## Environment Baseline (Local/Codex)
 - Python requirement: `>=3.11,<4.0` (from `pyproject.toml`).
 - Official local execution env: conda `cline_env`.
@@ -24,6 +30,7 @@ conda run -n cline_env python -c "import sys; print(sys.executable)"
 
 ## Phase 2 Snapshot Status (Structure-Stable)
 - Current milestone is `structure-stable`, not `quality-stable`.
+- This status refers to runtime structure, protocol closure, and focused test coverage; it does not imply that all environment, training, or documentation issues are closed.
 - Deferred backlog: U4 (`tests/` structure + `conftest` + CI + Makefile linkage refactor).
 - Known blockers (not resolved in this document update):
   - Windows terminal runs of `conda run -n cline_env python -m pytest ...` may hit `UnicodeEncodeError(gbk)` in conda output handling.
