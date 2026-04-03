@@ -1,5 +1,160 @@
 # CHANGELOG
 
+## 2026-04-03 - FF-5B Fusion Regression / Eval / Gate
+- Files: `ops/regression/fusion/__init__.py`, `ops/regression/fusion/scenario_catalog.py`, `ops/regression/fusion/run_fusion_regression.py`, `ops/regression/fusion/eval_fusion_outputs.py`, `ops/regression/fusion/gate_fusion_outputs.py`, `tests/unit_tests/test_fusion_regression_eval_gate_ff5b.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added a deterministic, network-free fusion regression/eval/gate toolchain without changing graph business semantics:
+  - introduced a fixed FF-5B scenario catalog covering the flag/source/baseline-terminal/shadow-consistency/emitted-provenance/results-pool-isolation matrices
+  - `run_fusion_regression.py` now materializes deterministic fusion run records into `ops/regression/fusion/out/fusion_runs.jsonl`
+  - `eval_fusion_outputs.py` aggregates those runs into `fusion_metrics.json`
+  - `gate_fusion_outputs.py` converts metrics into `fusion_gate.json` with explicit thresholds and separate warning vs failing checks
+  - tracing noise classification is now first-class in the deterministic gate schema and is tracked separately from business failures
+- Scope boundary:
+  - no Router / a01 / a25 / baseline sidecar / judge / writer / source-switch business-logic changes
+  - no live provider call is required for the default gate
+  - `memory_update`, `final_emit`, and baseline isolation semantics remain unchanged
+
+## 2026-04-03 - FF-4B Final source switch
+- Files: `src/react_agent/context.py`, `src/react_agent/state.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_final_source_switch_ff4b.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Enabled guarded final source switching on top of the existing source-neutral `final_emit` seam:
+  - added `Context.enable_fair_fusion_source_switch` (default off) and `State.emitted_bundle`
+  - `final_emit_payload` now materializes real `mainline` / `baseline` / `fused` payloads when the source-switch flag is enabled
+  - `_emit_final_answer(...)` now records the actual `final_answer_source` and `emitted_bundle`, and `stable_findings` now uses the emitted bundle's question/answer instead of assuming mainline text
+  - the staged mainline bundle remains canonical in `multi_agent_bundle`; non-mainline emits no longer overwrite it
+- Scope boundary:
+  - default behavior remains unchanged when `ENABLE_FAIR_FUSION_SOURCE_SWITCH=false`
+  - no Router / a01 / a25 prompt changes
+  - no baseline writes into `layer_plan`, a01 contract, `analyst_results`, or `ephemeral_results`
+  - no direct writer-side writes into `messages`
+  - `memory_update` still follows only final emitted `messages`
+
+## 2026-04-03 - FF-4A Fusion Writer shadow mode + source-neutral final emit seam
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `src/react_agent/prompts.py`, `tests/unit_tests/test_fusion_writer_shadow_ff4a.py`, `tests/unit_tests/test_fusion_judge_shadow_ff3b.py`, `tests/unit_tests/test_fan_in_seam_ff3a.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added a shadow-only fusion writer and a source-neutral final emit seam without changing the current visible answer source:
+  - introduced isolated writer/emit state: `writer_status`, `writer_output`, and `final_emit_payload`
+  - expanded `fusion_verdict` into a writer-ready protocol with `decision` (`mainline|baseline|fused`), `rewrite_plan`, and `accepted_cards`
+  - inserted `fusion_writer_shadow` between `fusion_judge_shadow` and final emit; the writer reads only `fusion_verdict`, `multi_agent_bundle`, `baseline_status`, and `baseline_bundle`
+  - generalized the staged closeout path into `final_emit`, while keeping the current emitted answer mapped to the mainline bundle and preserving `messages` / `is_last_step` / `stable_findings` / `memory_update`
+- Scope boundary:
+  - no Router / a01 / a25 prompt changes
+  - no writes into `analyst_results` / `ephemeral_results`
+  - no writer-side writes into `messages` or `final_answer_source`
+  - no final answer source switch; `final_answer_source` still ends as `"mainline"`
+
+## 2026-04-02 - FF-3B Fusion Judge shadow mode
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `src/react_agent/prompts.py`, `tests/unit_tests/test_fusion_judge_shadow_ff3b.py`, `tests/unit_tests/test_fan_in_seam_ff3a.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added a shadow-only fusion judge behind the existing FF-3A fan-in seam:
+  - introduced isolated judge state: `judge_status` and `fusion_verdict`
+  - `router_node(...)` now resets judge sidecars each new turn
+  - `fusion_gate` now routes compare-ready A/B inputs to `fusion_judge_shadow`, and only routes to `mainline_emit` after the judge reaches a terminal state
+  - `fusion_judge_shadow` compares `multi_agent_bundle` against `baseline_bundle` and records a structured JSON verdict without writing `messages` or changing `final_answer_source`
+- Scope boundary:
+  - no Router / a01 / a25 prompt changes
+  - no writes into `analyst_results` / `ephemeral_results`
+  - no fusion writer yet
+  - no final answer source switch; `final_answer_source` still ends as `"mainline"`
+
+## 2026-04-02 - FF-3A Judge-ready fan-in seam
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_fan_in_seam_ff3a.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added a Judge-ready fan-in seam without changing the current final answer source:
+  - introduced isolated state for staged mainline readiness and emit recovery: `mainline_status`, `mainline_emit_payload`, and `final_answer_source`
+  - when `enable_fair_fusion=True`, final-layer mainline summary now stages `multi_agent_bundle` and a deferred emit payload before writing the final answer
+  - replaced `baseline_sidecar -> __end__` with `baseline_sidecar -> fusion_gate`, and added a branch-safe `fusion_gate` plus `mainline_emit`
+  - `mainline_emit` now owns the staged final write path and still closes out through the existing `messages` / `is_last_step` / `stable_findings` / `memory_update` semantics
+- Scope boundary:
+  - no Router / a01 / a25 prompt changes
+  - no a01 contract dispatch changes
+  - no writes into `analyst_results` / `ephemeral_results`
+  - no Judge prompt, no Writer node, and no final answer source switch yet
+
+## 2026-04-02 - FF-2B.1 Gemini grounding JSON compatibility fix
+- Files: `src/react_agent/baseline_sidecar.py`, `tests/unit_tests/test_baseline_sidecar_gemini_ff2b.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Fixed Gemini Developer API grounding request construction for the isolated baseline sidecar:
+  - when Gemini grounding/search tool use is enabled, the baseline sidecar no longer sends `response_mime_type="application/json"`
+  - Gemini output remains JSON-constrained by prompt and is parsed locally from `response.text`
+  - grounding receipts and best-effort citation extraction remain unchanged
+- Scope boundary:
+  - no Router / Manager / Agent / Summary mainline control-flow changes
+  - no a01 contract dispatch changes
+  - no FINAL_LAYER finalize changes
+  - no writes into `analyst_results` / `ephemeral_results`
+  - no generic-provider baseline behavior change
+
+## 2026-04-02 - FF-2B Gemini baseline hardening
+- Files: `src/react_agent/baseline_sidecar.py`, `tests/unit_tests/test_baseline_sidecar_gemini_ff2b.py`, `.env.example`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `pyproject.toml`
+- Hardened the isolated Fair Fusion baseline sidecar for Gemini Developer API usage without changing mainline graph behavior:
+  - when `baseline_model` resolves to `google_genai/...`, the baseline sidecar now bypasses the generic LangChain `model.ainvoke(...)` path and calls Gemini Developer API directly via `google-genai`
+  - Gemini runs request Google Search grounding through the provider-native tool path instead of only recording prompt/meta intent
+  - `baseline_bundle.search_meta` now distinguishes request intent from execution receipts via provider/search grounding fields such as `search_executed`, `grounding_metadata_present`, `web_search_queries`, and grounding counts
+  - `baseline_bundle.evidence_cards` now best-effort merges Gemini grounding citation data when available
+- Scope boundary:
+  - no Router / Manager / Agent / Summary mainline control-flow changes
+  - no a01 contract dispatch changes
+  - no FINAL_LAYER finalize changes
+  - no writes into `analyst_results` / `ephemeral_results`
+  - no final answer source switching and no fusion judge / fusion writer yet
+
+## 2026-04-02 - FF-2A baseline sidecar shadow scaffold
+- Files: `src/react_agent/context.py`, `src/react_agent/state.py`, `src/react_agent/prompts.py`, `src/react_agent/baseline_sidecar.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_baseline_sidecar_shadow_ff2a.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added isolated Fair Fusion baseline scaffold state:
+  - `State.baseline_status`
+  - `State.baseline_bundle`
+- Added baseline-specific context knobs:
+  - `baseline_model`
+  - `baseline_openai_base_url`
+  - `baseline_openai_api_key`
+  - `enable_fair_fusion`
+  - `baseline_force_search`
+- Added a new `baseline_sidecar` shadow branch after `router`:
+  - feature-flagged by `enable_fair_fusion` (default off)
+  - writes only `baseline_status` / `baseline_bundle`
+  - does not join `layer_plan`, a01 contract, `analyst_results`, or `ephemeral_results`
+- Router now explicitly resets FF sidecar fields each new turn:
+  - `multi_agent_bundle`
+  - `baseline_status`
+  - `baseline_bundle`
+- Scope boundary:
+  - no Router / Manager / Agent / Summary control-flow change on the mainline path
+  - no a01 contract dispatch change
+  - no FINAL_LAYER finalize change
+  - no fusion judge / fusion writer yet
+  - no final answer source switching yet
+
+## 2026-04-02 - FF-1 mainline bundle seam for final summary
+- Files: `src/react_agent/state.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_mainline_bundle_seam_ff1.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added optional `State.multi_agent_bundle` as a final-summary sidecar for future Fair Fusion work while keeping current user-visible output unchanged.
+- Split `_run_final_summary(...)` into two internal responsibilities without changing graph topology or closeout routing:
+  - `_build_mainline_bundle(...)` builds the current mainline summary payload and returns the existing final `AIMessage`.
+  - `_emit_final_answer(...)` preserves the current closeout write path (`messages`, `is_last_step`, `layer_done`, and opt-in `stable_findings` append).
+- Kept current boundaries unchanged:
+  - No Router / Manager / Agent control-flow changes.
+  - No a01 contract dispatch changes.
+  - No FINAL_LAYER finalize routing changes.
+  - No new writes into `analyst_results` / `ephemeral_results`.
+- Added focused seam coverage for `multi_agent_bundle` generation and final-summary/finalize compatibility.
+
+## 2026-04-02 - Studio schema compatibility for AgentOutput
+- Files: `src/react_agent/agents.py`, `tests/unit_tests/test_agent_output_schema_surface.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Replaced the old `class AgentOutput(Dict[str, Any])` surface with a schema-generatable dict-shaped `TypedDict` so LangGraph Studio / API schema export can describe `AgentOutput` without hitting `Unable to generate pydantic-core schema for <class 'react_agent.agents.AgentOutput'>`.
+- Preserved current runtime compatibility:
+  - Agent results remain plain dict objects at runtime.
+  - `parse_ok` and `contract` are explicitly represented on the type surface.
+  - Extra parser keys are still preserved by runtime code because graph/default-agent logic continues to read and write plain dicts rather than validated model instances.
+- Added a focused schema regression test covering both `TypeAdapter(AgentOutput).json_schema()` and `TypeAdapter(State).json_schema()`.
+- Scope boundary: Studio schema / type compatibility only. No Router / Manager / Agent / Summary control-flow changes, no a01 contract dispatch changes, no FINAL_LAYER finalize changes, and no reducer semantic changes.
+
+## 2026-04-02 - Warning hardening for local dev baseline
+- Files: `src/react_agent/tools.py`, `.env.example`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Removed the local dev Tavily deprecation warning by switching the search tool implementation from deprecated `langchain_community.tools.tavily_search.TavilySearchResults` to the already-installed `langchain_tavily.TavilySearch`.
+- Kept Tavily import-time behavior and public surface unchanged for current runtime callers:
+  - `tavily_search` remains the module-level tool instance.
+  - `build_tavily_search(max_results)` still returns a named Tavily tool configured with `search_depth="basic"`.
+  - No Router / Manager / Agent / Summary control-flow changes, no a01 contract dispatch changes, and no FINAL_LAYER finalize behavior changes.
+- Clarified the local dev tracing baseline:
+  - `.env.example` now documents LangSmith tracing as explicit opt-in instead of an implied baseline.
+  - README and SYSTEM_MAP now distinguish repo-local `LOCAL_TRACE` JSONL logging from remote LangSmith tracing.
+  - Existing untracked local `.env` files may still carry `LANGSMITH_TRACING=true`; aligning that local file is outside version-controlled repo changes.
+- Scope boundary: warning / baseline / docs only. This change does not touch `AgentOutput` / `State` schema surface and does not address `/assistants/{assistant_id}/schemas` warnings.
+
 ## 2026-03-31 - Docs narrative alignment for current engineering snapshot
 - Files: `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/INDEX.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Aligned narrative-facing docs with the current runtime and test-backed repo reality:

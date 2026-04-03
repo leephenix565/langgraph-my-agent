@@ -10,6 +10,63 @@
 - Python requirement: `>=3.11,<4.0` (from `pyproject.toml`).
 - Official local execution env: conda `cline_env`.
 - Do not use bare `python` for validation. It can resolve to system Python 3.7 and cause false failures.
+- `TAVILY_API_KEY` is an import-time prerequisite because `src/react_agent/tools.py` instantiates the Tavily search tool at module import.
+- Default local dev baseline keeps remote LangSmith tracing off. Treat `LANGSMITH_TRACING=true` as explicit opt-in, not as a baseline requirement.
+- `LOCAL_TRACE=1` enables the repo-local JSONL logger in `src/react_agent/run_logger.py`; it is separate from remote LangSmith tracing.
+- Studio / API schema export now relies on a schema-generatable `AgentOutput` type surface in `src/react_agent/agents.py`; runtime results remain plain dicts and keep current `parse_ok` / `contract` / extra-key compatibility.
+- FF-1 adds a final-summary seam field `State.multi_agent_bundle` for mainline bundle capture. It is written only on the final summary path and remains isolated from `analyst_results` / `ephemeral_results` / agent `shared_context`.
+- FF-2A adds an isolated `baseline_sidecar` shadow scaffold behind `Context.enable_fair_fusion` (default off). It writes only `State.baseline_status` and `State.baseline_bundle`, is not part of L1-L4, does not enter a01 contract, and does not write to results pools.
+- FF-2A also adds baseline-specific context knobs:
+  - `baseline_model`
+  - `baseline_openai_base_url`
+  - `baseline_openai_api_key`
+  - `enable_fair_fusion`
+  - `baseline_force_search`
+- `baseline_force_search` in FF-2A is metadata/prompt intent only. Provider-native hard binding remains a later phase and must not be assumed complete in this scaffold.
+- FF-2B hardens the `baseline_sidecar` only when the baseline provider is `google_genai/...`:
+  - baseline calls the Gemini Developer API directly via `google-genai`, not the generic LangChain `model.ainvoke(...)` path
+  - Gemini Developer API path uses `GOOGLE_API_KEY` with `vertexai=False`; it does not use `baseline_openai_base_url` / `baseline_openai_api_key`
+  - grounding/search is requested through Gemini's Google Search tool binding, and `baseline_bundle.search_meta` now includes provider/search receipts such as `search_executed`, `grounding_metadata_present`, `web_search_queries`, and grounding counts
+  - `baseline_force_search` remains only a request-intent flag for non-Gemini providers
+- FF-2B.1 compatibility note for Gemini grounding:
+  - Gemini grounding/search tool use is incompatible with `response_mime_type="application/json"`
+  - the Gemini baseline path therefore uses prompt-constrained JSON plus local parsing of `response.text`
+  - this is a request-construction compatibility fix only; it does not change mainline graph control flow or baseline state isolation
+- FF-3A adds a Judge-ready fan-in seam without switching the final answer source:
+  - `State.mainline_status`, `State.mainline_emit_payload`, and `State.final_answer_source` are isolated readiness/emit fields outside results pools
+  - when `enable_fair_fusion=True`, final-layer mainline summary now stages `multi_agent_bundle` plus `mainline_status="ready"` before any final emit
+  - `baseline_sidecar` no longer ends directly at `__end__`; it reaches a branch-safe `fusion_gate`
+  - `fusion_gate` is not a judge and not a writer; it only checks readiness before handing off to the later compare/write/emit seam
+  - the runtime now closes out through a source-neutral `final_emit` seam; `mainline_emit` remains only as a compatibility wrapper while `final_answer_source` still stays `"mainline"` in the current phase
+  - `mainline_status="ready"` is intentionally distinct from `is_last_step=True`
+- FF-3B adds a shadow-only fusion judge without switching the final answer source:
+  - `State.judge_status` and `State.fusion_verdict` are isolated judge sidecars outside results pools
+  - `fusion_gate` now routes compare-ready A/B inputs to `fusion_judge_shadow`, and no longer treats judge completion as a direct emit step
+  - `fusion_judge_shadow` reads only `multi_agent_bundle`, `baseline_status`, and `baseline_bundle`; it does not read raw `analyst_results`, `ephemeral_results`, `layer_plan`, or raw `a25_output`
+  - `fusion_verdict` is a shadow JSON verdict only; it does not change `messages` or `final_answer_source`
+- FF-4A adds a shadow-only fusion writer plus a source-neutral emit seam without switching the final answer source:
+  - `State.writer_status`, `State.writer_output`, and `State.final_emit_payload` are isolated writer/emit sidecars outside results pools
+  - `fusion_verdict` is now writer-ready and includes `decision` (`mainline|baseline|fused`), `rewrite_plan`, and `accepted_cards`
+  - `fusion_judge_shadow` now hands off to `fusion_writer_shadow`, which reads only `fusion_verdict`, `multi_agent_bundle`, `baseline_status`, and `baseline_bundle`
+  - `fusion_writer_shadow` writes only shadow artifacts plus `final_emit_payload`; it does not write `messages` or change `final_answer_source`
+  - `final_emit` is now the source-neutral closeout seam, but FF-4A still maps it to the staged mainline answer and keeps `final_answer_source="mainline"`
+  - `memory_update` remains tied only to the final emitted `messages` and `is_last_step=True`
+- FF-4B enables a guarded final source switch on top of the FF-4A seam:
+  - `Context.enable_fair_fusion_source_switch` defaults to `False`; with the flag off, current visible behavior remains unchanged and still emits the mainline answer
+  - `State.emitted_bundle` now records the actual bundle used by the final visible emit, separate from `State.multi_agent_bundle` which remains the canonical A-line mainline bundle
+  - when the flag is enabled, `final_emit_payload` can materialize `mainline`, `baseline`, or `fused` payloads and `final_emit` / `_emit_final_answer` preserve closeout semantics while writing the selected `final_answer_source`
+  - `stable_findings` continues to use mainline `filtered_results`, but its `question` and `final_answer` now come from the actual `emitted_bundle`
+- FF-5B adds deterministic fusion regression / eval / gate tooling without changing graph business semantics:
+  - new tooling lives under `ops/regression/fusion/`
+  - the default harness is deterministic, network-free, and reuses existing FF-1 .. FF-4B state surfaces instead of calling live providers
+  - fixed artifacts are `ops/regression/fusion/out/fusion_runs.jsonl`, `fusion_metrics.json`, and `fusion_gate.json`
+  - `trace_noise` is tracked separately from `business_status`; LangSmith 403 and local trace issues do not count as default business failures
+- Gemini baseline env baseline:
+  - `GOOGLE_API_KEY=...`
+  - `GOOGLE_GENAI_USE_VERTEXAI=false`
+  - `BASELINE_MODEL=google_genai/gemini-3-pro-preview`
+  - `ENABLE_FAIR_FUSION=true`
+  - `BASELINE_FORCE_SEARCH=true`
 - Windows pytest recommended command (execution-layer workaround):
 ```bash
 conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/
@@ -22,6 +79,12 @@ conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/
 $env:TAVILY_API_KEY="test-key"
 conda run -n cline_env python -c "from react_agent import graph_app; print(graph_app is not None)"
 ```
+- Local tracing distinction:
+  - `LOCAL_TRACE=1`: writes JSONL under `log/<YYYYMMDD>/` via `run_logger.py`; no remote upload.
+  - `LANGSMITH_TRACING=true`: remote LangSmith upload path; if explicitly enabled, 403 multipart ingest warnings are tracing-channel noise rather than graph control-flow failure.
+- FF-5B gate classification note:
+  - `langsmith_403`, `langsmith_ingest_warning`, `local_trace_malformed_jsonl`, and `local_trace_io_warning` belong to trace-noise classification, not default business-failure classification.
+- Existing untracked local `.env` files may still carry `LANGSMITH_TRACING=true` from older baselines. That local file must be aligned manually if you want `langgraph dev` to stop emitting remote ingest warnings immediately.
 - Interpreter checks:
 ```bash
 conda run -n cline_env python --version
@@ -43,6 +106,30 @@ conda run -n cline_env python -c "import sys; print(sys.executable)"
 D:\AnacondaEnvs\cline_env\python.exe -m pytest tests/unit_tests/
 ```
 - This fallback is for local verification only and does not replace the official environment baseline.
+
+## Fusion Regression / Eval / Gate (FF-5B)
+- Directory: `ops/regression/fusion/`
+- Entrypoints:
+```bash
+conda run --no-capture-output -n cline_env python -m ops.regression.fusion.run_fusion_regression
+conda run --no-capture-output -n cline_env python -m ops.regression.fusion.eval_fusion_outputs
+conda run --no-capture-output -n cline_env python -m ops.regression.fusion.gate_fusion_outputs
+```
+- Scenario catalog is deterministic and currently covers:
+  - flag matrix
+  - source matrix
+  - baseline terminal matrix
+  - shadow consistency matrix
+  - emitted provenance matrix
+  - results-pool isolation matrix
+- Fixed artifacts under `ops/regression/fusion/out/`:
+  - `fusion_runs.jsonl`: per-case run records with flags, terminal statuses, source-selection fields, emitted-bundle/message summaries, stable-findings/thread-summary summaries, `business_status`, `trace_noise`, and notes
+  - `fusion_metrics.json`: aggregated deterministic metrics
+  - `fusion_gate.json`: gate verdict with thresholds, failing checks, warning checks, and metrics snapshot
+- Default gate policy:
+  - deterministic and network-free
+  - live/provider smoke is optional and not part of the default gate
+  - trace noise is reported separately and does not fail the gate by itself
 
 ## Benchmark Entry (Qwen Server, Raw + E2E)
 - Harness entry: `tools/bench_doubao_seed2_speed.py`.

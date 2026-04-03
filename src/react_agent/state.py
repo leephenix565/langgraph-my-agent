@@ -35,6 +35,18 @@ class State(InputState, total=False):
     plan: List[str]
     analyst_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
     ephemeral_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
+    multi_agent_bundle: Dict[str, Any]
+    mainline_status: str
+    mainline_emit_payload: Dict[str, Any]
+    final_answer_source: str
+    judge_status: str
+    fusion_verdict: Dict[str, Any]
+    writer_status: str
+    writer_output: Dict[str, Any]
+    final_emit_payload: Dict[str, Any]
+    emitted_bundle: Dict[str, Any]
+    baseline_status: str
+    baseline_bundle: Dict[str, Any]
     stable_findings: List[Dict[str, Any]]
     run_id: str
     is_last_step: bool

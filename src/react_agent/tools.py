@@ -2,24 +2,23 @@
 
 from typing import Any, Callable, List
 
-from langchain_community.tools.tavily_search import TavilySearchResults
+from langchain_tavily import TavilySearch
 
-# TavilySearchResults reads TAVILY_API_KEY from environment.
-tavily_search = TavilySearchResults(
+# TavilySearch reads TAVILY_API_KEY from environment.
+tavily_search = TavilySearch(
     max_results=5,
     search_depth="basic",
+    name="tavily_search",
 )
-# 统一名称，便于在 prompts 与代码中引用。
-tavily_search.name = "tavily_search"
 
-def build_tavily_search(max_results: int) -> TavilySearchResults:
+def build_tavily_search(max_results: int) -> TavilySearch:
     if not isinstance(max_results, int) or max_results <= 0:
         max_results = tavily_search.max_results
-    tool = TavilySearchResults(
+    tool = TavilySearch(
         max_results=max_results,
         search_depth="basic",
+        name="tavily_search",
     )
-    tool.name = "tavily_search"
     return tool
 
 

@@ -19,6 +19,7 @@ dependencies = [
     "python-dotenv>=1.0.1",
     "langchain-tavily>=0.1",
     "cerebras-cloud-sdk>=1.9.0",
+    "google-genai>=1.70.0",
 ]
 
 

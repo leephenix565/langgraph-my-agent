@@ -9,9 +9,7 @@ import uuid
 import hashlib
 import asyncio
 import time
-import warnings
 from datetime import UTC, datetime
-from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
@@ -19,19 +17,49 @@ from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
+from react_agent.baseline_sidecar import run_baseline_sidecar
 from react_agent import contract_utils, prompts
 from react_agent import router_parse
 from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
     AgentOutput,
-    agents_by_layer,
-    load_metadata_from_dir,
     register_agent,
 )
 from react_agent.context import Context
-from react_agent.default_agents import _build_agent_tool, register_builtin_agents
-from react_agent.generic_agent import build_generic_agent_tool
+from react_agent.graph_bootstrap import (
+    bootstrap_agent_runtime,
+    build_agent_catalog as _bootstrap_build_agent_catalog,
+    build_node_registry,
+)
+from react_agent.graph_entry import (
+    compile_graph_variants,
+    maybe_make_checkpointer,
+    select_graph_for_invoke,
+)
+from react_agent.graph_observability import (
+    _elapsed_ms,
+    _log_node_latency,
+    _model_trace_fields,
+    _truncate,
+)
+from react_agent.graph_runtime_features import (
+    _build_stable_evidence_index,
+    _build_stable_finding_entry,
+    _build_stable_summary,
+    _build_thread_summary,
+    _get_runtime_results_pool,
+    _is_search_disabled_globally,
+    _messages_window_enabled,
+    _messages_window_size,
+    _results_pools_enabled,
+    _stable_consume_enabled,
+    _stable_findings_max_items,
+    _stable_summary_system_msg,
+    _thread_summary_enabled,
+    _thread_summary_system_msg,
+    _window_messages,
+)
 from react_agent.run_logger import get_run_logger
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
@@ -69,34 +97,6 @@ async def _with_temp_openai_env(
 CONTRACT_SCHEMA_VERSION = contract_utils.CONTRACT_SCHEMA_VERSION
 CONTRACT_REQUIRED_KEYS = contract_utils.CONTRACT_REQUIRED_KEYS
 TASK_REQUIRED_KEYS = contract_utils.TASK_REQUIRED_KEYS
-
-
-def _truncate(text: str, limit: int = 4000) -> str:
-    if not isinstance(text, str):
-        text = str(text)
-    return text if len(text) <= limit else text[: limit - 8] + "...[trunc]"
-
-
-def _elapsed_ms(started_at: float) -> float:
-    return round((time.perf_counter() - started_at) * 1000.0, 3)
-
-
-def _model_trace_fields(model_spec: str, prefix: str = "model") -> Dict[str, str]:
-    spec = str(model_spec or "")
-    provider = ""
-    name = spec
-    if "/" in spec:
-        provider, name = spec.split("/", maxsplit=1)
-    return {
-        f"{prefix}_spec": spec,
-        f"{prefix}_provider": provider,
-        f"{prefix}_name": name,
-    }
-
-
-def _log_node_latency(logger: Any, node: str, started_at: float, **fields: Any) -> None:
-    """Emit lightweight node latency trace without affecting runtime semantics."""
-    logger.log_event("node_latency", node=node, elapsed_ms=_elapsed_ms(started_at), **fields)
 
 
 def _summarize_router_plan(layer_plan: Dict[str, List[str]], layer_mode: Dict[str, str], limit: int = 800) -> str:
@@ -194,361 +194,10 @@ def _agent_error_output(agent_id: str, exc: Exception) -> AgentOutput:
         "parse_ok": False,
     }
 
-# Register agents: config/agents as primary source; built-ins optional via env.
-CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
-enable_builtin = os.environ.get("ENABLE_BUILTIN_AGENTS", "0") == "1"
-config_exists = CONFIG_AGENT_DIR.exists()
-if enable_builtin or not config_exists:
-    register_builtin_agents()
-if config_exists:
-    load_metadata_from_dir(CONFIG_AGENT_DIR)
-for aid, meta in list(AGENT_METADATA.items()):
-    if aid in AGENT_TOOLS:
-        continue
-    # Prefer LLM tool using description as profile; fallback to stub if missing description.
-    desc = (meta.description or "").strip()
-    if desc:
-        if aid == "a01_cio_orchestrator":
-            desc = (
-                f"{desc}\n[Router alignment] 严格根据 router_plan_summary 执行任务拆解，"
-                "不得新增/删除 agent，只能解释既定分工、补充验收点与风险门禁。"
-            )
-        tool = _build_agent_tool(aid, desc, default_allow_search=True)
-    else:
-        tool = build_generic_agent_tool(aid, meta.description)
-    register_agent(meta, tool)
-
+bootstrap_agent_runtime()
 include_disabled = os.environ.get("INCLUDE_DISABLED_AGENTS", "0") == "1"
-
-
-def _is_search_disabled_globally() -> bool:
-    """Read DISABLE_SEARCH at call time so long-lived processes can reflect env updates."""
-    return os.environ.get("DISABLE_SEARCH", "0") == "1"
-
-
-def _maybe_make_checkpointer():
-    """Optionally create a checkpointer from env without changing default behavior."""
-    mode = (os.environ.get("REACT_AGENT_CHECKPOINTER", "none") or "none").strip().lower()
-    if mode in {"", "none", "off", "0"}:
-        return None
-
-    if mode == "memory":
-        try:
-            from langgraph.checkpoint.memory import MemorySaver
-        except Exception as exc:
-            warnings.warn(
-                f"REACT_AGENT_CHECKPOINTER=memory requested but MemorySaver is unavailable: {exc}",
-                RuntimeWarning,
-            )
-            return None
-        return MemorySaver()
-
-    if mode == "sqlite":
-        db_path = (os.environ.get("REACT_AGENT_CHECKPOINT_DB", "checkpoints.db") or "checkpoints.db").strip()
-        try:
-            from langgraph.checkpoint.sqlite import SqliteSaver
-        except Exception as exc:
-            warnings.warn(
-                "REACT_AGENT_CHECKPOINTER=sqlite requested but sqlite saver dependency is unavailable "
-                f"(REACT_AGENT_CHECKPOINT_DB={db_path}): {exc}",
-                RuntimeWarning,
-            )
-            return None
-        try:
-            if hasattr(SqliteSaver, "from_conn_string"):
-                return SqliteSaver.from_conn_string(db_path)
-            return SqliteSaver(db_path)  # type: ignore[call-arg]
-        except Exception as exc:
-            warnings.warn(
-                f"Failed to initialize sqlite checkpointer (REACT_AGENT_CHECKPOINT_DB={db_path}): {exc}",
-                RuntimeWarning,
-            )
-            return None
-
-    warnings.warn(
-        f"Unknown REACT_AGENT_CHECKPOINTER='{mode}', expected one of: none, memory, sqlite. "
-        "Falling back to no checkpointer.",
-        RuntimeWarning,
-    )
-    return None
-
-
-def _thread_summary_enabled() -> bool:
-    """Read thread summary toggle at call time to support long-lived processes."""
-    raw = (os.environ.get("REACT_AGENT_THREAD_SUMMARY", "0") or "0").strip().lower()
-    return raw in {"1", "true", "on", "yes"}
-
-
-def _thread_summary_max_chars() -> int:
-    raw = (os.environ.get("REACT_AGENT_THREAD_SUMMARY_MAX_CHARS", "2000") or "2000").strip()
-    try:
-        val = int(raw)
-    except Exception:
-        warnings.warn(
-            f"Invalid REACT_AGENT_THREAD_SUMMARY_MAX_CHARS='{raw}', using default 2000.",
-            RuntimeWarning,
-        )
-        return 2000
-    if val <= 0:
-        warnings.warn(
-            f"Invalid REACT_AGENT_THREAD_SUMMARY_MAX_CHARS='{raw}', using default 2000.",
-            RuntimeWarning,
-        )
-        return 2000
-    return val
-
-
-def _latest_ai_message_text(messages: List[AnyMessage]) -> str:
-    for msg in reversed(messages):
-        if isinstance(msg, AIMessage):
-            return get_message_text(msg)
-    return ""
-
-
-def _build_thread_summary(state: State) -> str:
-    """Build an extractive per-thread summary from explicit text only (no extra LLM call)."""
-    msgs = list(state.get("messages", []))
-    latest_question = state.get("current_question") or _get_latest_user_question(msgs)
-    latest_final_answer = _latest_ai_message_text(msgs)
-    if not latest_question and not latest_final_answer:
-        return ""
-
-    max_chars = _thread_summary_max_chars()
-    # Reserve more space for final answer while guaranteeing bounded output.
-    q_cap = max(120, min(600, max_chars // 3))
-    a_cap = max(240, max_chars - q_cap - 80)
-    parts: List[str] = []
-    if latest_question:
-        parts.append(f"Recent user question:\n{_truncate(latest_question, q_cap)}")
-    if latest_final_answer:
-        parts.append(f"Recent final answer:\n{_truncate(latest_final_answer, a_cap)}")
-    summary = _truncate("\n\n".join(parts), max_chars)
-    # _truncate() is shared legacy behavior; enforce a strict hard cap here for thread_summary.
-    return summary[:max_chars]
-
-
-def _thread_summary_system_msg(thread_summary: str) -> Dict[str, str]:
-    return {
-        "role": "system",
-        "content": (
-            "THREAD SUMMARY (extractive, prior-turn context; use only as supporting context):\n"
-            f"{thread_summary}"
-        ),
-    }
-
-
-def _stable_consume_enabled() -> bool:
-    """Read stable-findings consume toggle at call time; default disabled."""
-    raw = (os.environ.get("REACT_AGENT_STABLE_CONSUME", "0") or "0").strip().lower()
-    return raw in {"1", "true", "on", "yes"}
-
-
-def _stable_summary_max_chars() -> int:
-    return _read_positive_int_env("REACT_AGENT_STABLE_SUMMARY_MAX_CHARS", 1200)
-
-
-def _stable_summary_max_items() -> int:
-    return _read_positive_int_env("REACT_AGENT_STABLE_SUMMARY_MAX_ITEMS", 5)
-
-
-def _stable_summary_system_msg(stable_summary: str) -> Dict[str, str]:
-    return {
-        "role": "system",
-        "content": (
-            "STABLE FINDINGS (extractive index; prior finalized turns, supporting context only):\n"
-            f"{stable_summary}"
-        ),
-    }
-
-
-def _build_stable_summary(state: State) -> str:
-    """Build a deterministic extractive stable summary from stable_findings."""
-    raw = state.get("stable_findings", [])
-    if not isinstance(raw, list) or not raw:
-        return ""
-
-    max_items = _stable_summary_max_items()
-    max_chars = _stable_summary_max_chars()
-    question_cap = max(80, min(260, max_chars // 6))
-    answer_cap = max(120, min(360, max_chars // 4))
-    evidence_cap = max(80, min(200, max_chars // 8))
-
-    entries = raw[-max_items:]
-    lines: List[str] = ["STABLE FINDINGS (extractive index):"]
-    for entry in entries:
-        if not isinstance(entry, dict):
-            continue
-        question = _truncate(str(entry.get("question", "")).strip(), question_cap)
-        final_answer = _truncate(str(entry.get("final_answer", "")).strip(), answer_cap)
-        if not question and not final_answer:
-            continue
-        lines.append(f"- Q: {question or '(none)'}")
-        lines.append(f"  A: {final_answer or '(none)'}")
-
-        evidence_items: List[str] = []
-        evidence = entry.get("evidence", [])
-        if isinstance(evidence, list):
-            for item in evidence:
-                if len(evidence_items) >= 2:
-                    break
-                if isinstance(item, dict):
-                    text = str(item.get("text", "")).strip()
-                    agent_id = str(item.get("agent_id", "")).strip()
-                    if not text:
-                        continue
-                    truncated = _truncate(text, evidence_cap)
-                    evidence_items.append(f"[{agent_id}] {truncated}" if agent_id else truncated)
-                elif isinstance(item, str):
-                    text = item.strip()
-                    if text:
-                        evidence_items.append(_truncate(text, evidence_cap))
-        if evidence_items:
-            lines.append(f"  Evidence: {'; '.join(evidence_items)}")
-
-    summary = "\n".join(lines)
-    return _truncate(summary, max_chars)[:max_chars]
-
-
-def _messages_window_enabled() -> bool:
-    """Read messages-window toggle at call time to support long-lived processes."""
-    raw = (os.environ.get("REACT_AGENT_MESSAGES_WINDOW", "0") or "0").strip().lower()
-    return raw in {"1", "true", "on", "yes"}
-
-
-def _messages_window_size() -> int:
-    raw = (os.environ.get("REACT_AGENT_MESSAGES_WINDOW_SIZE", "20") or "20").strip()
-    try:
-        val = int(raw)
-    except Exception:
-        warnings.warn(
-            f"Invalid REACT_AGENT_MESSAGES_WINDOW_SIZE='{raw}', using default 20.",
-            RuntimeWarning,
-        )
-        return 20
-    if val <= 0:
-        warnings.warn(
-            f"Invalid REACT_AGENT_MESSAGES_WINDOW_SIZE='{raw}', clamping to 1.",
-            RuntimeWarning,
-        )
-        return 1
-    return val
-
-
-def _window_messages(full_messages: List[AnyMessage]) -> List[AnyMessage]:
-    """Return a tail window of messages when enabled; otherwise return full messages."""
-    if not _messages_window_enabled():
-        return full_messages
-    size = _messages_window_size()
-    if len(full_messages) <= size:
-        return full_messages
-    return full_messages[-size:]
-
-
-def _results_pools_enabled() -> bool:
-    """Enable ephemeral/stable result pools via env; default off for backward compatibility."""
-    raw = (os.environ.get("REACT_AGENT_RESULTS_POOLS", "0") or "0").strip().lower()
-    return raw in {"1", "true", "on", "yes"}
-
-
-def _read_positive_int_env(name: str, default: int, minimum: int = 1) -> int:
-    raw = (os.environ.get(name, str(default)) or str(default)).strip()
-    try:
-        value = int(raw)
-    except Exception:
-        warnings.warn(
-            f"Invalid {name}='{raw}', using default {default}.",
-            RuntimeWarning,
-        )
-        return default
-    if value < minimum:
-        warnings.warn(
-            f"Invalid {name}='{raw}', clamping to {minimum}.",
-            RuntimeWarning,
-        )
-        return minimum
-    return value
-
-
-def _stable_findings_max_items() -> int:
-    return _read_positive_int_env("REACT_AGENT_STABLE_FINDINGS_MAX_ITEMS", 50)
-
-
-def _evidence_max_items() -> int:
-    return _read_positive_int_env("REACT_AGENT_EVIDENCE_MAX_ITEMS", 20)
-
-
-def _evidence_max_chars() -> int:
-    return _read_positive_int_env("REACT_AGENT_EVIDENCE_MAX_CHARS", 500)
-
-
-def _stable_text_max_chars() -> int:
-    return _read_positive_int_env("REACT_AGENT_STABLE_TEXT_MAX_CHARS", 2000)
-
-
-def _get_runtime_results_pool(state: State) -> Dict[str, AgentOutput]:
-    """Return current-turn result pool; phase-guarded to keep default behavior unchanged."""
-    if _results_pools_enabled():
-        ep = state.get("ephemeral_results")
-        if isinstance(ep, dict):
-            return ep
-    legacy = state.get("analyst_results", {})
-    return legacy if isinstance(legacy, dict) else {}
-
-
-def _build_stable_evidence_index(filtered_results: Dict[str, Any]) -> List[Dict[str, str]]:
-    """Extract bounded evidence/index cards from filtered agent outputs."""
-    max_items = _evidence_max_items()
-    max_chars = _evidence_max_chars()
-    cards: List[Dict[str, str]] = []
-    for agent_id, result in filtered_results.items():
-        if not isinstance(result, dict):
-            continue
-        evidence = result.get("evidence")
-        if isinstance(evidence, list):
-            for item in evidence:
-                if not isinstance(item, str):
-                    continue
-                text = _truncate(item, max_chars).strip()
-                if not text:
-                    continue
-                cards.append({"agent_id": str(agent_id), "kind": "evidence", "text": text})
-                if len(cards) >= max_items:
-                    return cards
-        key_points = result.get("key_points")
-        if isinstance(key_points, list):
-            for item in key_points:
-                if not isinstance(item, str):
-                    continue
-                text = _truncate(item, max_chars).strip()
-                if not text:
-                    continue
-                cards.append({"agent_id": str(agent_id), "kind": "key_point", "text": text})
-                if len(cards) >= max_items:
-                    return cards
-    return cards
-
-
-def _build_stable_finding_entry(
-    question: str,
-    final_answer_text: str,
-    filtered_results: Dict[str, Any],
-    state: State,
-) -> Dict[str, Any]:
-    """Build a bounded stable finding entry from explicit final-turn artifacts."""
-    text_cap = _stable_text_max_chars()
-    return {
-        "kind": "final_answer",
-        "question": _truncate(question, text_cap),
-        "final_answer": _truncate(final_answer_text, text_cap),
-        "evidence": _build_stable_evidence_index(filtered_results),
-        "run_id": str(state.get("run_id") or ""),
-    }
-
-
-AGENT_IDS_FOR_NODES: List[str] = [
-    aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
-]
-AGENT_NODE_NAMES: Dict[str, str] = {aid: f"agent_{aid}_node" for aid in AGENT_IDS_FOR_NODES}
+AGENT_IDS_FOR_NODES, AGENT_NODE_NAMES = build_node_registry(include_disabled)
+_maybe_make_checkpointer = maybe_make_checkpointer
 
 
 def _get_latest_user_question(messages: List[AnyMessage]) -> str:
@@ -565,7 +214,7 @@ def _normalize_mode(mode: str) -> str:
 
 
 def _build_agent_catalog() -> Dict[str, List[str]]:
-    return {layer: agents_by_layer(layer) for layer in LAYER_ORDER}
+    return _bootstrap_build_agent_catalog(LAYER_ORDER)
 
 
 def _default_layer_plan() -> Tuple[Dict[str, List[str]], Dict[str, str]]:
@@ -718,6 +367,18 @@ async def router_node(
         "layer_done": {},
         "run_id": run_id,
         "is_last_step": False,
+        "multi_agent_bundle": {},
+        "mainline_status": "",
+        "mainline_emit_payload": {},
+        "final_answer_source": "",
+        "judge_status": "",
+        "fusion_verdict": {},
+        "writer_status": "",
+        "writer_output": {},
+        "final_emit_payload": {},
+        "emitted_bundle": {},
+        "baseline_status": "",
+        "baseline_bundle": {},
     }
     # Signal a fresh turn so downstream merges clear old analyst_results.
     update["analyst_results"] = {"__reset__": True}
@@ -1063,11 +724,56 @@ async def _run_final_summary(
 ) -> Dict[str, object]:
     """Run the final user-facing summary step and mark turn completion."""
     node_started_at = time.perf_counter()
-    layer_plan = state.get("layer_plan", {})
-    layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
+
+    bundle, response = await _build_mainline_bundle(
+        state=state,
+        runtime=runtime,
+        analyst_results=analyst_results,
+        filtered_results=filtered_results,
+        filtered_out=filtered_out,
+        summary_source=summary_source,
+        logger=logger,
+        current_layer=current_layer,
+        node_started_at=node_started_at,
+    )
+    update = _emit_final_answer(
+        state=state,
+        layer_done=layer_done,
+        filtered_results=filtered_results,
+        response=response,
+        bundle=bundle,
+        logger=logger,
+    )
+    _log_node_latency(
+        logger,
+        "summary",
+        node_started_at,
+        current_layer=current_layer,
+        source=summary_source,
+        filtered_out=filtered_out,
+        result_count=len(filtered_results),
+    )
+    return update
+
+
+async def _build_mainline_bundle(
+    state: State,
+    runtime: Runtime[Context],
+    analyst_results: Dict[str, Any],
+    filtered_results: Dict[str, Any],
+    filtered_out: int,
+    summary_source: str,
+    logger,
+    current_layer: str,
+    node_started_at: float,
+) -> Tuple[Dict[str, Any], AIMessage]:
+    """Build the current mainline bundle and return the final response message."""
+    layer_plan = state.get("layer_plan", {})
+    layer_mode = state.get("layer_mode", {})
+    run_id = state.get("run_id") or runtime.context.run_id or ""
 
     model = load_chat_model(runtime.context.model)
     system_prompt = runtime.context.system_prompt.format(
@@ -1159,14 +865,410 @@ async def _run_final_summary(
             indent=2,
         )
         response = AIMessage(content=summary_text)
+    answer_text = get_message_text(response)
+    evidence_cards = _build_stable_evidence_index(filtered_results)
+    bundle: Dict[str, Any] = {
+        "question": question,
+        "answer": answer_text,
+        "layer_plan": layer_plan,
+        "layer_mode": layer_mode,
+        "a25_output": a25_output,
+        "evidence_cards": evidence_cards,
+        "filtered_out": filtered_out,
+        "summary_source": summary_source,
+        "process_health": {
+            "filtered_out": filtered_out,
+            "result_count": len(filtered_results),
+            "a25_present": bool(a25_output),
+            "summary_source": summary_source,
+        },
+    }
     logger.log_event(
         "summary_end",
         current_layer=current_layer,
         filtered_out=filtered_out,
         results=list(filtered_results.keys()),
-        summary=_truncate(get_message_text(response)),
+        summary=_truncate(answer_text),
     )
-    update: Dict[str, object] = {"messages": [response], "is_last_step": True, "layer_done": layer_done}
+    return bundle, response
+
+
+def _stage_mainline_ready(
+    *,
+    bundle: Dict[str, Any],
+    response: AIMessage,
+    layer_done: Dict[str, bool],
+    filtered_results: Dict[str, Any],
+    summary_source: str,
+) -> Dict[str, object]:
+    """Stage the mainline answer for a later emit without changing closeout state."""
+    return {
+        "multi_agent_bundle": bundle,
+        "mainline_status": "ready",
+        "mainline_emit_payload": {
+            "response_text": get_message_text(response),
+            "layer_done": dict(layer_done),
+            "filtered_results": dict(filtered_results),
+            "summary_source": summary_source,
+        },
+    }
+
+
+def _extract_json_object(text: str) -> str | None:
+    try:
+        json.loads(text)
+        return text
+    except Exception:
+        match = re.search(r"\{.*\}", text, flags=re.S)
+        return match.group(0) if match else None
+
+
+def _coerce_string_list(raw: Any) -> List[str]:
+    if not isinstance(raw, list):
+        return []
+    values: List[str] = []
+    for item in raw:
+        text = str(item).strip()
+        if text:
+            values.append(text)
+    return values
+
+
+def _coerce_card_list(raw: Any) -> List[Any]:
+    if not isinstance(raw, list):
+        return []
+    values: List[Any] = []
+    for item in raw:
+        if isinstance(item, str):
+            text = item.strip()
+            if text:
+                values.append(text)
+            continue
+        if isinstance(item, dict):
+            cleaned: Dict[str, Any] = {}
+            for key, value in item.items():
+                norm_key = str(key).strip()
+                if not norm_key:
+                    continue
+                if isinstance(value, str):
+                    norm_value = value.strip()
+                    if norm_value:
+                        cleaned[norm_key] = norm_value
+                elif isinstance(value, (int, float, bool)) or value is None:
+                    cleaned[norm_key] = value
+                else:
+                    norm_value = str(value).strip()
+                    if norm_value:
+                        cleaned[norm_key] = norm_value
+            if cleaned:
+                values.append(cleaned)
+            continue
+        text = str(item).strip()
+        if text:
+            values.append(text)
+    return values
+
+
+def _coerce_string_map(raw: Any) -> Dict[str, str]:
+    if not isinstance(raw, dict):
+        return {}
+    values: Dict[str, str] = {}
+    for key, value in raw.items():
+        norm_key = str(key).strip()
+        norm_value = str(value).strip()
+        if norm_key and norm_value:
+            values[norm_key] = norm_value
+    return values
+
+
+def _normalize_fusion_verdict(
+    parsed: Any,
+    *,
+    fallback_decision: str,
+    fallback_reason: str,
+) -> Dict[str, Any]:
+    parsed = parsed if isinstance(parsed, dict) else {}
+    decision = str(parsed.get("decision", fallback_decision) or fallback_decision).strip().lower()
+    if decision not in {"mainline", "baseline", "fused"}:
+        decision = fallback_decision
+    decision_reason = str(parsed.get("decision_reason", fallback_reason) or fallback_reason).strip()
+    if not decision_reason:
+        decision_reason = fallback_reason
+    confidence_raw = parsed.get("confidence", 0.0)
+    try:
+        confidence = float(confidence_raw)
+    except (TypeError, ValueError):
+        confidence = 0.0
+    confidence = max(0.0, min(1.0, confidence))
+    return {
+        "decision": decision,
+        "decision_reason": decision_reason,
+        "winner_by_dimension": _coerce_string_map(parsed.get("winner_by_dimension", {})),
+        "rewrite_plan": _coerce_string_list(parsed.get("rewrite_plan", [])),
+        "accepted_cards": _coerce_card_list(parsed.get("accepted_cards", [])),
+        "must_keep_facts": _coerce_string_list(parsed.get("must_keep_facts", [])),
+        "must_drop_facts": _coerce_string_list(parsed.get("must_drop_facts", [])),
+        "confidence": confidence,
+    }
+
+
+def _build_degraded_fusion_verdict(
+    *,
+    baseline_status: str,
+    reason: str,
+) -> Dict[str, Any]:
+    return _normalize_fusion_verdict(
+        {
+            "decision": "mainline",
+            "decision_reason": reason,
+            "winner_by_dimension": {"overall": "mainline"},
+            "rewrite_plan": [],
+            "accepted_cards": [],
+            "must_keep_facts": [],
+            "must_drop_facts": [],
+            "confidence": 0.5 if baseline_status == "disabled" else 0.4,
+        },
+        fallback_decision="mainline",
+        fallback_reason=reason,
+    )
+
+
+def _normalize_writer_output(
+    parsed: Any,
+    *,
+    fallback_answer: str,
+    fallback_selected_source: str,
+    fallback_note: str,
+    fallback_accepted_cards: List[Any],
+) -> Dict[str, Any]:
+    parsed = parsed if isinstance(parsed, dict) else {}
+    selected_source = str(parsed.get("selected_source", fallback_selected_source) or fallback_selected_source).strip().lower()
+    if selected_source not in {"mainline", "baseline", "fused"}:
+        selected_source = fallback_selected_source
+    proposed_answer = str(parsed.get("proposed_answer", fallback_answer) or fallback_answer).strip()
+    if not proposed_answer:
+        proposed_answer = fallback_answer
+    note = str(parsed.get("note", fallback_note) or fallback_note).strip()
+    if not note:
+        note = fallback_note
+    accepted_cards = _coerce_card_list(parsed.get("accepted_cards", fallback_accepted_cards))
+    if not accepted_cards:
+        accepted_cards = list(fallback_accepted_cards)
+    return {
+        "proposed_answer": proposed_answer,
+        "selected_source": selected_source,
+        "accepted_cards": accepted_cards,
+        "dropped_cards": _coerce_card_list(parsed.get("dropped_cards", [])),
+        "note": note,
+    }
+
+
+def _build_degraded_writer_output(
+    *,
+    mainline_bundle: Dict[str, Any],
+    fusion_verdict: Dict[str, Any],
+    baseline_status: str,
+    reason: str,
+) -> Dict[str, Any]:
+    fallback_answer = str(mainline_bundle.get("answer", "") or "").strip()
+    return _normalize_writer_output(
+        {
+            "proposed_answer": fallback_answer,
+            "selected_source": "mainline",
+            "accepted_cards": fusion_verdict.get("accepted_cards", []),
+            "dropped_cards": [],
+            "note": reason if baseline_status in {"error", "disabled"} else "writer degraded to mainline",
+        },
+        fallback_answer=fallback_answer,
+        fallback_selected_source="mainline",
+        fallback_note=reason,
+        fallback_accepted_cards=_coerce_card_list(fusion_verdict.get("accepted_cards", [])),
+    )
+
+
+def _normalize_selected_source(raw: Any, default: str = "mainline") -> str:
+    value = str(raw or default).strip().lower()
+    if value not in {"mainline", "baseline", "fused"}:
+        return default
+    return value
+
+
+def _select_final_source(
+    *,
+    state: State,
+    source_switch_enabled: bool,
+    writer_output: Optional[Dict[str, Any]] = None,
+    writer_status: Optional[str] = None,
+    fusion_verdict: Optional[Dict[str, Any]] = None,
+    judge_status: Optional[str] = None,
+) -> str:
+    if not source_switch_enabled:
+        return "mainline"
+
+    writer_output = writer_output if isinstance(writer_output, dict) else state.get("writer_output", {})
+    writer_output = writer_output if isinstance(writer_output, dict) else {}
+    fusion_verdict = fusion_verdict if isinstance(fusion_verdict, dict) else state.get("fusion_verdict", {})
+    fusion_verdict = fusion_verdict if isinstance(fusion_verdict, dict) else {}
+    writer_status = str(writer_status if writer_status is not None else state.get("writer_status", "") or "")
+    judge_status = str(judge_status if judge_status is not None else state.get("judge_status", "") or "")
+
+    selected_source = "mainline"
+    if writer_status == "ready":
+        selected_source = _normalize_selected_source(writer_output.get("selected_source", "mainline"))
+    elif judge_status == "ready":
+        selected_source = _normalize_selected_source(fusion_verdict.get("decision", "mainline"))
+
+    mainline_bundle = state.get("multi_agent_bundle", {})
+    mainline_bundle = mainline_bundle if isinstance(mainline_bundle, dict) else {}
+    mainline_payload = state.get("mainline_emit_payload", {})
+    mainline_payload = mainline_payload if isinstance(mainline_payload, dict) else {}
+    baseline_status = str(state.get("baseline_status", "") or "")
+    baseline_bundle = state.get("baseline_bundle", {})
+    baseline_bundle = baseline_bundle if isinstance(baseline_bundle, dict) else {}
+
+    if selected_source == "baseline":
+        if baseline_status != "ready" or not str(baseline_bundle.get("answer", "") or "").strip():
+            return "mainline"
+        return "baseline"
+
+    if selected_source == "fused":
+        if writer_status != "ready" or not str(writer_output.get("proposed_answer", "") or "").strip():
+            return "mainline"
+        return "fused"
+
+    if str(mainline_bundle.get("answer", "") or "").strip() or str(mainline_payload.get("response_text", "") or "").strip():
+        return "mainline"
+    return "mainline"
+
+
+def _build_final_emit_payload(
+    *,
+    state: State,
+    mainline_bundle: Dict[str, Any],
+    selected_source: str = "mainline",
+    source_switch_enabled: bool = False,
+    writer_output: Optional[Dict[str, Any]] = None,
+    writer_status: Optional[str] = None,
+    fusion_verdict: Optional[Dict[str, Any]] = None,
+    judge_status: Optional[str] = None,
+) -> Dict[str, Any]:
+    mainline_payload = state.get("mainline_emit_payload", {})
+    mainline_payload = mainline_payload if isinstance(mainline_payload, dict) else {}
+    layer_done_raw = mainline_payload.get("layer_done", {})
+    filtered_results_raw = mainline_payload.get("filtered_results", {})
+    if not source_switch_enabled:
+        return {
+            "selected_source": selected_source if selected_source in {"mainline", "baseline", "fused"} else "mainline",
+            "response_text": str(
+                mainline_bundle.get("answer", "")
+                or mainline_payload.get("response_text", "")
+                or ""
+            ),
+            "bundle": dict(mainline_bundle),
+            "summary_source": str(
+                mainline_payload.get("summary_source", "")
+                or mainline_bundle.get("summary_source", "")
+                or ""
+            ),
+            "layer_done": dict(layer_done_raw) if isinstance(layer_done_raw, dict) else {},
+            "filtered_results": dict(filtered_results_raw) if isinstance(filtered_results_raw, dict) else {},
+        }
+
+    selected_source = _select_final_source(
+        state=state,
+        source_switch_enabled=source_switch_enabled,
+        writer_output=writer_output,
+        writer_status=writer_status,
+        fusion_verdict=fusion_verdict,
+        judge_status=judge_status,
+    )
+    baseline_bundle = state.get("baseline_bundle", {})
+    baseline_bundle = baseline_bundle if isinstance(baseline_bundle, dict) else {}
+    writer_output = writer_output if isinstance(writer_output, dict) else state.get("writer_output", {})
+    writer_output = writer_output if isinstance(writer_output, dict) else {}
+    fusion_verdict = fusion_verdict if isinstance(fusion_verdict, dict) else state.get("fusion_verdict", {})
+    fusion_verdict = fusion_verdict if isinstance(fusion_verdict, dict) else {}
+    question = str(
+        mainline_bundle.get("question", "")
+        or baseline_bundle.get("question", "")
+        or state.get("current_question", "")
+        or ""
+    ).strip()
+
+    response_text = str(
+        mainline_bundle.get("answer", "")
+        or mainline_payload.get("response_text", "")
+        or ""
+    ).strip()
+    bundle: Dict[str, Any] = dict(mainline_bundle)
+    summary_source = str(
+        mainline_payload.get("summary_source", "")
+        or mainline_bundle.get("summary_source", "")
+        or ""
+    )
+
+    if selected_source == "baseline":
+        response_text = str(baseline_bundle.get("answer", "") or "").strip()
+        bundle = dict(baseline_bundle)
+        if question and not str(bundle.get("question", "") or "").strip():
+            bundle["question"] = question
+        bundle["answer"] = response_text
+        summary_source = str(bundle.get("summary_source", "") or "baseline_sidecar")
+        bundle["summary_source"] = summary_source
+    elif selected_source == "fused":
+        response_text = str(writer_output.get("proposed_answer", "") or "").strip()
+        accepted_cards = _coerce_card_list(
+            writer_output.get("accepted_cards", fusion_verdict.get("accepted_cards", []))
+        )
+        confidence_raw = fusion_verdict.get("confidence", 0.0)
+        try:
+            confidence = float(confidence_raw)
+        except (TypeError, ValueError):
+            confidence = 0.0
+        confidence = max(0.0, min(1.0, confidence))
+        summary_source = "fusion_writer_shadow"
+        bundle = {
+            "question": question,
+            "answer": response_text,
+            "accepted_cards": accepted_cards,
+            "note": str(writer_output.get("note", "") or "").strip(),
+            "confidence": confidence,
+            "summary_source": summary_source,
+            "evidence_cards": list(accepted_cards),
+        }
+
+    return {
+        "selected_source": selected_source,
+        "response_text": response_text,
+        "bundle": dict(bundle),
+        "summary_source": summary_source,
+        "layer_done": dict(layer_done_raw) if isinstance(layer_done_raw, dict) else {},
+        "filtered_results": dict(filtered_results_raw) if isinstance(filtered_results_raw, dict) else {},
+    }
+
+
+def _emit_final_answer(
+    state: State,
+    layer_done: Dict[str, bool],
+    filtered_results: Dict[str, Any],
+    response: AIMessage,
+    bundle: Dict[str, Any],
+    logger,
+    *,
+    selected_source: str = "mainline",
+) -> Dict[str, object]:
+    """Write the final answer into graph state without changing closeout semantics."""
+    selected_source = selected_source if selected_source in {"mainline", "baseline", "fused"} else "mainline"
+    update: Dict[str, object] = {
+        "messages": [response],
+        "is_last_step": True,
+        "layer_done": layer_done,
+        "final_answer_source": selected_source,
+        "emitted_bundle": dict(bundle),
+    }
+    if selected_source == "mainline":
+        update["multi_agent_bundle"] = bundle
+        update["mainline_status"] = "emitted"
     if _results_pools_enabled():
         raw_stable = state.get("stable_findings", [])
         coerced_prev_type = ""
@@ -1176,8 +1278,8 @@ async def _run_final_summary(
             stable = []
             coerced_prev_type = type(raw_stable).__name__
         entry = _build_stable_finding_entry(
-            question=question,
-            final_answer_text=get_message_text(response),
+            question=str(bundle.get("question", "")),
+            final_answer_text=str(bundle.get("answer", "")),
             filtered_results=filtered_results,
             state=state,
         )
@@ -1197,16 +1299,50 @@ async def _run_final_summary(
             stable_len=len(stable),
             evidence_count=len(entry.get("evidence", [])),
         )
-    _log_node_latency(
-        logger,
-        "summary",
-        node_started_at,
-        current_layer=current_layer,
-        source=summary_source,
-        filtered_out=filtered_out,
-        result_count=len(filtered_results),
-    )
     return update
+
+
+def _resolve_final_emit_payload(state: State) -> Optional[Dict[str, Any]]:
+    payload = state.get("final_emit_payload", {})
+    payload = payload if isinstance(payload, dict) else {}
+    mainline_payload = state.get("mainline_emit_payload", {})
+    mainline_payload = mainline_payload if isinstance(mainline_payload, dict) else {}
+
+    selected_source = str(payload.get("selected_source", "") or "mainline").strip().lower()
+    if selected_source not in {"mainline", "baseline", "fused"}:
+        selected_source = "mainline"
+
+    response_text = str(
+        payload.get("response_text", "")
+        or mainline_payload.get("response_text", "")
+        or ""
+    ).strip()
+    bundle = payload.get("bundle", {})
+    if not isinstance(bundle, dict) or not bundle:
+        bundle = state.get("multi_agent_bundle", {})
+    if not isinstance(bundle, dict) or not bundle or not response_text:
+        return None
+
+    layer_done_raw = payload.get("layer_done", {})
+    if not isinstance(layer_done_raw, dict) or not layer_done_raw:
+        layer_done_raw = mainline_payload.get("layer_done", {})
+    filtered_results_raw = payload.get("filtered_results", {})
+    if not isinstance(filtered_results_raw, dict) or not filtered_results_raw:
+        filtered_results_raw = mainline_payload.get("filtered_results", {})
+
+    return {
+        "selected_source": selected_source,
+        "response_text": response_text,
+        "bundle": dict(bundle),
+        "summary_source": str(
+            payload.get("summary_source", "")
+            or mainline_payload.get("summary_source", "")
+            or bundle.get("summary_source", "")
+            or ""
+        ),
+        "layer_done": dict(layer_done_raw) if isinstance(layer_done_raw, dict) else {},
+        "filtered_results": dict(filtered_results_raw) if isinstance(filtered_results_raw, dict) else {},
+    }
 
 
 async def manager_summary(
@@ -1281,6 +1417,37 @@ async def manager_summary(
         }
 
     # Final layer completed: produce user-facing summary.
+    if runtime.context.enable_fair_fusion:
+        summary_started_at = time.perf_counter()
+        bundle, response = await _build_mainline_bundle(
+            state=state,
+            runtime=runtime,
+            analyst_results=analyst_results,
+            filtered_results=filtered_results,
+            filtered_out=filtered_out,
+            summary_source="manager_summary",
+            logger=logger,
+            current_layer=current_layer,
+            node_started_at=summary_started_at,
+        )
+        _log_node_latency(
+            logger,
+            "summary",
+            summary_started_at,
+            current_layer=current_layer,
+            source="manager_summary",
+            filtered_out=filtered_out,
+            result_count=len(filtered_results),
+        )
+        _emit_latency("stage_mainline_ready")
+        return _stage_mainline_ready(
+            bundle=bundle,
+            response=response,
+            layer_done=layer_done,
+            filtered_results=filtered_results,
+            summary_source="manager_summary",
+        )
+
     result = await _run_final_summary(
         state=state,
         runtime=runtime,
@@ -1309,6 +1476,45 @@ async def finalize_summary(
     filtered_out = len(analyst_results) - len(filtered_results)
     run_id = state.get("run_id") or runtime.context.run_id or ""
     logger = get_run_logger(run_id)
+    if runtime.context.enable_fair_fusion:
+        summary_started_at = time.perf_counter()
+        bundle, response = await _build_mainline_bundle(
+            state=state,
+            runtime=runtime,
+            analyst_results=analyst_results,
+            filtered_results=filtered_results,
+            filtered_out=filtered_out,
+            summary_source="finalize_summary",
+            logger=logger,
+            current_layer=current_layer,
+            node_started_at=summary_started_at,
+        )
+        _log_node_latency(
+            logger,
+            "summary",
+            summary_started_at,
+            current_layer=current_layer,
+            source="finalize_summary",
+            filtered_out=filtered_out,
+            result_count=len(filtered_results),
+        )
+        result = _stage_mainline_ready(
+            bundle=bundle,
+            response=response,
+            layer_done=layer_done,
+            filtered_results=filtered_results,
+            summary_source="finalize_summary",
+        )
+        _log_node_latency(
+            logger,
+            "finalize_summary",
+            node_started_at,
+            current_layer=current_layer,
+            filtered_out=filtered_out,
+            result_count=len(filtered_results),
+        )
+        return result
+
     result = await _run_final_summary(
         state=state,
         runtime=runtime,
@@ -1327,6 +1533,314 @@ async def finalize_summary(
         result_count=len(filtered_results),
     )
     return result
+
+
+async def fusion_gate(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Judge-ready seam: side-effect-free gate that waits for both branches to settle."""
+    return {}
+
+
+async def fusion_judge_shadow(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Run a shadow-only fusion judge without changing the final answer source."""
+    if state.get("judge_status") in {"ready", "error"}:
+        return {}
+
+    mainline_bundle = state.get("multi_agent_bundle", {})
+    if not isinstance(mainline_bundle, dict) or not mainline_bundle:
+        return {}
+
+    baseline_status = str(state.get("baseline_status", "") or "")
+    baseline_bundle = state.get("baseline_bundle", {})
+    if baseline_status not in {"ready", "error", "disabled"}:
+        return {}
+    if baseline_status == "ready" and (not isinstance(baseline_bundle, dict) or not baseline_bundle):
+        return {}
+
+    question = str(
+        mainline_bundle.get("question", "")
+        or state.get("current_question", "")
+    ).strip()
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    node_started_at = time.perf_counter()
+
+    if baseline_status in {"error", "disabled"}:
+        verdict = _build_degraded_fusion_verdict(
+            baseline_status=baseline_status,
+            reason=f"Baseline {baseline_status}; shadow verdict falls back to mainline.",
+        )
+        _log_node_latency(
+            logger,
+            "fusion_judge_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            decision=verdict["decision"],
+            path="degraded",
+        )
+        return {"judge_status": "ready", "fusion_verdict": verdict}
+
+    msgs: List[Dict[str, str]] = [
+        {"role": "system", "content": prompts.FUSION_JUDGE_SHADOW_SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "question": question,
+                    "multi_agent_bundle": mainline_bundle,
+                    "baseline_status": baseline_status,
+                    "baseline_bundle": baseline_bundle if isinstance(baseline_bundle, dict) else {},
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+    metadata = {
+        "run_id": run_id,
+        "node_name": "fusion_judge_shadow",
+        "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
+    }
+    tags = ["react_agent", "fusion_judge_shadow"] + ([f"run_id:{run_id}"] if run_id else [])
+    try:
+        model = load_chat_model(runtime.context.model)
+        response: AIMessage = await model.ainvoke(msgs, config={"metadata": metadata, "tags": tags})
+        raw_text = get_message_text(response)
+        json_text = _extract_json_object(raw_text)
+        if not json_text:
+            raise ValueError("fusion judge did not return a JSON object")
+        parsed = json.loads(json_text)
+        verdict = _normalize_fusion_verdict(
+            parsed,
+            fallback_decision="mainline",
+            fallback_reason="Shadow judge returned an incomplete verdict; falling back to mainline.",
+        )
+        _log_node_latency(
+            logger,
+            "fusion_judge_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            decision=verdict["decision"],
+            path="ready",
+        )
+        return {"judge_status": "ready", "fusion_verdict": verdict}
+    except Exception as exc:
+        verdict = _build_degraded_fusion_verdict(
+            baseline_status="error",
+            reason=f"Judge shadow failed: {type(exc).__name__}: {exc}",
+        )
+        _log_node_latency(
+            logger,
+            "fusion_judge_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            decision=verdict["decision"],
+            path="error",
+        )
+        return {"judge_status": "error", "fusion_verdict": verdict}
+
+
+async def fusion_writer_shadow(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Run a shadow-only fusion writer and stage a source-neutral final emit payload."""
+    if state.get("writer_status") in {"ready", "error"}:
+        return {}
+
+    fusion_verdict = state.get("fusion_verdict", {})
+    if not isinstance(fusion_verdict, dict) or not fusion_verdict:
+        return {}
+
+    mainline_bundle = state.get("multi_agent_bundle", {})
+    if not isinstance(mainline_bundle, dict) or not mainline_bundle:
+        return {}
+
+    baseline_status = str(state.get("baseline_status", "") or "")
+    baseline_bundle = state.get("baseline_bundle", {})
+    if baseline_status not in {"ready", "error", "disabled"}:
+        return {}
+    if baseline_status == "ready" and (not isinstance(baseline_bundle, dict) or not baseline_bundle):
+        return {}
+
+    question = str(
+        mainline_bundle.get("question", "")
+        or state.get("current_question", "")
+    ).strip()
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    node_started_at = time.perf_counter()
+
+    if baseline_status in {"error", "disabled"}:
+        writer_output = _build_degraded_writer_output(
+            mainline_bundle=mainline_bundle,
+            fusion_verdict=fusion_verdict,
+            baseline_status=baseline_status,
+            reason=f"Baseline {baseline_status}; writer shadow keeps mainline output.",
+        )
+        _log_node_latency(
+            logger,
+            "fusion_writer_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            selected_source=writer_output["selected_source"],
+            path="degraded",
+        )
+        return {
+            "writer_status": "ready",
+            "writer_output": writer_output,
+            "final_emit_payload": _build_final_emit_payload(
+                state=state,
+                mainline_bundle=mainline_bundle,
+                selected_source="mainline",
+                source_switch_enabled=runtime.context.enable_fair_fusion_source_switch,
+                writer_output=writer_output,
+                writer_status="ready",
+                fusion_verdict=fusion_verdict,
+                judge_status=state.get("judge_status", ""),
+            ),
+        }
+
+    msgs: List[Dict[str, str]] = [
+        {"role": "system", "content": prompts.FUSION_WRITER_SHADOW_SYSTEM_PROMPT},
+        {
+            "role": "user",
+            "content": json.dumps(
+                {
+                    "question": question,
+                    "fusion_verdict": fusion_verdict,
+                    "multi_agent_bundle": mainline_bundle,
+                    "baseline_status": baseline_status,
+                    "baseline_bundle": baseline_bundle if isinstance(baseline_bundle, dict) else {},
+                },
+                ensure_ascii=False,
+            ),
+        },
+    ]
+    metadata = {
+        "run_id": run_id,
+        "node_name": "fusion_writer_shadow",
+        "question_hash": hashlib.sha256(question.encode("utf-8")).hexdigest()[:12] if question else "",
+    }
+    tags = ["react_agent", "fusion_writer_shadow"] + ([f"run_id:{run_id}"] if run_id else [])
+    fallback_accepted_cards = _coerce_card_list(fusion_verdict.get("accepted_cards", []))
+    fallback_answer = str(mainline_bundle.get("answer", "") or "").strip()
+    try:
+        model = load_chat_model(runtime.context.model)
+        response: AIMessage = await model.ainvoke(msgs, config={"metadata": metadata, "tags": tags})
+        raw_text = get_message_text(response)
+        json_text = _extract_json_object(raw_text)
+        if not json_text:
+            raise ValueError("fusion writer did not return a JSON object")
+        parsed = json.loads(json_text)
+        writer_output = _normalize_writer_output(
+            parsed,
+            fallback_answer=fallback_answer,
+            fallback_selected_source="mainline",
+            fallback_note="Shadow writer returned an incomplete output; falling back to mainline.",
+            fallback_accepted_cards=fallback_accepted_cards,
+        )
+        _log_node_latency(
+            logger,
+            "fusion_writer_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            selected_source=writer_output["selected_source"],
+            path="ready",
+        )
+        return {
+            "writer_status": "ready",
+            "writer_output": writer_output,
+            "final_emit_payload": _build_final_emit_payload(
+                state=state,
+                mainline_bundle=mainline_bundle,
+                selected_source="mainline",
+                source_switch_enabled=runtime.context.enable_fair_fusion_source_switch,
+                writer_output=writer_output,
+                writer_status="ready",
+                fusion_verdict=fusion_verdict,
+                judge_status=state.get("judge_status", ""),
+            ),
+        }
+    except Exception as exc:
+        writer_output = _build_degraded_writer_output(
+            mainline_bundle=mainline_bundle,
+            fusion_verdict=fusion_verdict,
+            baseline_status="error",
+            reason=f"Writer shadow failed: {type(exc).__name__}: {exc}",
+        )
+        _log_node_latency(
+            logger,
+            "fusion_writer_shadow",
+            node_started_at,
+            baseline_status=baseline_status,
+            selected_source=writer_output["selected_source"],
+            path="error",
+        )
+        return {
+            "writer_status": "error",
+            "writer_output": writer_output,
+            "final_emit_payload": _build_final_emit_payload(
+                state=state,
+                mainline_bundle=mainline_bundle,
+                selected_source="mainline",
+                source_switch_enabled=runtime.context.enable_fair_fusion_source_switch,
+                writer_output=writer_output,
+                writer_status="error",
+                fusion_verdict=fusion_verdict,
+                judge_status=state.get("judge_status", ""),
+            ),
+        }
+
+
+async def final_emit(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Emit the staged final answer from a source-neutral payload without changing closeout semantics."""
+    if state.get("final_answer_source") or state.get("is_last_step"):
+        return {}
+    payload = _resolve_final_emit_payload(state)
+    if payload is None:
+        return {}
+    response_text = str(payload.get("response_text", "") or "")
+    bundle = payload.get("bundle", {})
+    layer_done = dict(payload.get("layer_done", {})) if isinstance(payload.get("layer_done", {}), dict) else {}
+    filtered_results = (
+        dict(payload.get("filtered_results", {}))
+        if isinstance(payload.get("filtered_results", {}), dict)
+        else {}
+    )
+    run_id = state.get("run_id") or runtime.context.run_id or ""
+    logger = get_run_logger(run_id)
+    node_started_at = time.perf_counter()
+    response = AIMessage(content=response_text)
+    update = _emit_final_answer(
+        state=state,
+        layer_done=layer_done,
+        filtered_results=filtered_results,
+        response=response,
+        bundle=bundle,
+        logger=logger,
+        selected_source=str(payload.get("selected_source", "mainline") or "mainline"),
+    )
+    _log_node_latency(
+        logger,
+        "final_emit",
+        node_started_at,
+        current_layer=state.get("current_layer") or LAYER_ORDER[0],
+        summary_source=str(payload.get("summary_source", "")),
+        selected_source=str(payload.get("selected_source", "mainline") or "mainline"),
+        result_count=len(filtered_results),
+    )
+    return update
+
+
+async def mainline_emit(
+    state: State, runtime: Runtime[Context]
+) -> Dict[str, object]:
+    """Compatibility wrapper that delegates to the source-neutral final emit seam."""
+    return await final_emit(state, runtime)
 
 
 async def memory_update(
@@ -1355,6 +1869,8 @@ def route_from_manager_summary(state: State) -> str:
         return "memory_update"
     if state.get("is_last_step"):
         return "__end__"
+    if state.get("mainline_status") == "ready":
+        return "fusion_gate"
 
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     layer_plan = state.get("layer_plan", {})
@@ -1381,7 +1897,73 @@ def route_after_finalize(state: State) -> str:
     """After forced finalization, keep existing memory_update/end behavior."""
     if state.get("is_last_step") and _thread_summary_enabled():
         return "memory_update"
+    if state.get("is_last_step"):
+        return "__end__"
+    if state.get("mainline_status") == "ready":
+        return "fusion_gate"
     return "__end__"
+
+
+def route_after_fusion_gate(state: State) -> str:
+    """Route from the branch-safe fan-in seam without assuming barrier semantics."""
+    if state.get("final_answer_source") or state.get("is_last_step"):
+        return "__end__"
+    if state.get("mainline_status") != "ready":
+        return "__end__"
+    payload = state.get("mainline_emit_payload", {})
+    bundle = state.get("multi_agent_bundle", {})
+    if not isinstance(payload, dict) or not payload:
+        return "__end__"
+    if not isinstance(bundle, dict) or not bundle:
+        return "__end__"
+    baseline_status = state.get("baseline_status", "")
+    baseline_bundle = state.get("baseline_bundle", {})
+    if baseline_status == "ready" and (not isinstance(baseline_bundle, dict) or not baseline_bundle):
+        return "__end__"
+    if baseline_status not in {"ready", "error", "disabled"}:
+        return "__end__"
+    judge_status = state.get("judge_status", "")
+    if judge_status == "":
+        return "fusion_judge_shadow"
+    writer_status = state.get("writer_status", "")
+    if judge_status in {"ready", "error"} and writer_status == "":
+        return "fusion_writer_shadow"
+    if writer_status in {"ready", "error"}:
+        return "final_emit"
+    return "__end__"
+
+
+def route_after_fusion_judge(state: State) -> str:
+    """After the shadow judge, continue into the shadow writer before final emit."""
+    if state.get("final_answer_source") or state.get("is_last_step"):
+        return "__end__"
+    writer_status = state.get("writer_status", "")
+    if state.get("judge_status") in {"ready", "error"} and writer_status == "":
+        return "fusion_writer_shadow"
+    if writer_status in {"ready", "error"}:
+        return "final_emit"
+    return "__end__"
+
+
+def route_after_fusion_writer(state: State) -> str:
+    """After the shadow writer, continue to final emit once writer state is terminal."""
+    if state.get("final_answer_source") or state.get("is_last_step"):
+        return "__end__"
+    if state.get("writer_status") in {"ready", "error"}:
+        return "final_emit"
+    return "__end__"
+
+
+def route_after_final_emit(state: State) -> str:
+    """After staged final emit, preserve the existing memory_update/end behavior."""
+    if state.get("is_last_step") and _thread_summary_enabled():
+        return "memory_update"
+    return "__end__"
+
+
+def route_after_mainline_emit(state: State) -> str:
+    """Compatibility wrapper for the legacy route name."""
+    return route_after_final_emit(state)
 
 
 async def noop(state: State, runtime: Runtime[Context]) -> Dict[str, object]:
@@ -1392,9 +1974,15 @@ async def noop(state: State, runtime: Runtime[Context]) -> Dict[str, object]:
 builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 
 builder.add_node("router", router_node)
+builder.add_node("baseline_sidecar", run_baseline_sidecar)
+builder.add_node("fusion_gate", fusion_gate)
+builder.add_node("fusion_judge_shadow", fusion_judge_shadow)
+builder.add_node("fusion_writer_shadow", fusion_writer_shadow)
 builder.add_node("manager_broadcast", manager_broadcast)
 builder.add_node("manager_summary", manager_summary)
 builder.add_node("finalize_summary", finalize_summary)
+builder.add_node("final_emit", final_emit)
+builder.add_node("mainline_emit", mainline_emit)
 builder.add_node("memory_update", memory_update)
 builder.add_node("noop", noop)
 
@@ -1403,6 +1991,8 @@ for agent_id, node_name in AGENT_NODE_NAMES.items():
 
 builder.add_edge("__start__", "router")
 builder.add_edge("router", "manager_broadcast")
+builder.add_edge("router", "baseline_sidecar")
+builder.add_edge("baseline_sidecar", "fusion_gate")
 
 for node_name in AGENT_NODE_NAMES.values():
     builder.add_edge(node_name, "manager_summary")
@@ -1415,6 +2005,7 @@ builder.add_conditional_edges(
     {
         "__end__": "__end__",
         "memory_update": "memory_update",
+        "fusion_gate": "fusion_gate",
         "finalize_summary": "finalize_summary",
         "noop": "noop",
         "manager_broadcast": "manager_broadcast",
@@ -1426,6 +2017,55 @@ builder.add_conditional_edges(
     route_after_finalize,
     {
         "__end__": "__end__",
+        "fusion_gate": "fusion_gate",
+        "memory_update": "memory_update",
+    },
+)
+
+builder.add_conditional_edges(
+    "fusion_gate",
+    route_after_fusion_gate,
+    {
+        "__end__": "__end__",
+        "fusion_judge_shadow": "fusion_judge_shadow",
+        "fusion_writer_shadow": "fusion_writer_shadow",
+        "final_emit": "final_emit",
+    },
+)
+
+builder.add_conditional_edges(
+    "fusion_judge_shadow",
+    route_after_fusion_judge,
+    {
+        "__end__": "__end__",
+        "fusion_writer_shadow": "fusion_writer_shadow",
+        "final_emit": "final_emit",
+    },
+)
+
+builder.add_conditional_edges(
+    "fusion_writer_shadow",
+    route_after_fusion_writer,
+    {
+        "__end__": "__end__",
+        "final_emit": "final_emit",
+    },
+)
+
+builder.add_conditional_edges(
+    "final_emit",
+    route_after_final_emit,
+    {
+        "__end__": "__end__",
+        "memory_update": "memory_update",
+    },
+)
+
+builder.add_conditional_edges(
+    "mainline_emit",
+    route_after_mainline_emit,
+    {
+        "__end__": "__end__",
         "memory_update": "memory_update",
     },
 )
@@ -1433,15 +2073,9 @@ builder.add_conditional_edges(
 _GRAPH_NAME = "Layered Router-Manager-Agent Demo (L1-L2-L3-L4)"
 
 # Default export for Studio/CLI and existing callers: no business-layer checkpointer.
-graph = builder.compile(name=_GRAPH_NAME)
-
-# Optional Python/self-hosted variant with checkpointer (explicit opt-in via env + thread_id).
-_checkpointer = _maybe_make_checkpointer()
-graph_persistent = builder.compile(name=_GRAPH_NAME, checkpointer=_checkpointer) if _checkpointer is not None else None
+graph, graph_persistent = compile_graph_variants(builder, _GRAPH_NAME)
 
 
 def get_graph_for_invoke(thread_id: Optional[str] = None):
     """Return persistent graph only when both a thread_id and an enabled checkpointer exist."""
-    if thread_id and graph_persistent is not None:
-        return graph_persistent
-    return graph
+    return select_graph_for_invoke(thread_id, graph, graph_persistent)
