@@ -1,0 +1,18 @@
+{
+  "id": "a19_market_risk",
+  "name": "股价相关风险智能体",
+  "description": "该系统基于多源数据，实现对股价相关风险的实时监测、预测与预警，通过波动率预测、多模态特征融合等模型，对风险进行识别与量化，从而实现股价波动率预测、实时风险预警信号及定期风险监测报告，为用户提供全方位的风险动态跟踪与决策支持。",
+  "capabilities": [
+    "risk",
+    "var",
+    "liquidity"
+  ],
+  "input_type": "risk",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L3",
+  "team": "risk",
+  "role_type": "system",
+  "default_enabled": true
+}

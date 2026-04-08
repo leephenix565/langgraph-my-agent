@@ -1,0 +1,18 @@
+{
+  "id": "a11_equity_sentiment",
+  "name": "微观个股舆情感知智能体8",
+  "description": "实现将具体舆情信息与对应上市公司进行高精度关联匹配，在此基础上完成面向特定投资场景的情感分析与事件校验，最终输出精细化的个股情感画像、关键事件列表及定制化的风险监控信号",
+  "capabilities": [
+    "equity",
+    "sentiment",
+    "momentum"
+  ],
+  "input_type": "equity",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

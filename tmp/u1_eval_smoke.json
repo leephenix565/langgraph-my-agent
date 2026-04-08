@@ -1,0 +1,41 @@
+{
+  "total": 3,
+  "valid_json_rate": 0.6666666666666666,
+  "used_default_plan_rate": 0.3333333333333333,
+  "l2_trunc_rate": 0.3333333333333333,
+  "avg_filtered_agents": 0.0,
+  "mode_dist": {
+    "L1": {
+      "Chain": 3
+    },
+    "L2": {
+      "Star": 3
+    },
+    "L3": {
+      "Star": 3
+    },
+    "L4": {
+      "Chain": 3
+    }
+  },
+  "l2_len_dist": {
+    "4": 1,
+    "5": 2
+  },
+  "l3_len_dist": {
+    "2": 1,
+    "3": 2
+  },
+  "meta": {
+    "git_commit": "fcfdc7187693fcfe7b70f52e237193f13ddabfce",
+    "preds_path": "tools\\sample_router_preds.jsonl",
+    "preds_sha256": "461cf86be0cf47a783b97575ad5d0110a70dc542f2979cd45dc654c1b1d9ab3f",
+    "preds_content_sha256": "37dba0a8069d356695613c1e554f2ce9ee47573d07b9b79db8a3038b7716fa6d",
+    "catalog_latest_path": "E:\\DUT\\langgraph--try\\my-agent\\data\\catalogs\\LATEST",
+    "catalog_latest_sha256": "debf60ac50015dc3fd9848a0894128872084a39b0dc88dc08daa82b20f9990e8",
+    "catalog_resolved_path": "E:\\DUT\\langgraph--try\\my-agent\\data\\catalogs\\catalog_20260108_b434e7a9a883_prompt.json",
+    "catalog_sha256": "66441c62f46531c7da9f7aedfaa88c31f112722e4af63612318f9bea62e0e6c2",
+    "val_messages_path": "unknown",
+    "val_messages_sha256": "unknown"
+  }
+}

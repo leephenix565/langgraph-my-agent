@@ -1,0 +1,18 @@
+{
+  "id": "a07_financial_modeling",
+  "name": "公司财报分析智能体",
+  "description": "该系统专注于财务健康状况的量化分析与利润真实性的精准诊断，通过精准提取核心财务指标，开展全面的健康度评估、风险点识别及影响分析，最终提供包含财务健康度报告、利润真实性评估、财务风险点诊断及数据查询在内的全方位服务输出。",
+  "capabilities": [
+    "modeling",
+    "valuation",
+    "ratios"
+  ],
+  "input_type": "finance",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "fundamental",
+  "role_type": "system",
+  "default_enabled": true
+}

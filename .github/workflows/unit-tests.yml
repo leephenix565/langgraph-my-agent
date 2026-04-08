@@ -1,0 +1,135 @@
+name: Quality Gate
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+  workflow_dispatch: # Allows triggering the workflow manually in GitHub UI
+
+# If another push to the same PR or branch happens while this workflow is still running,
+# cancel the earlier run in favor of the next run.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python-static:
+    name: Python Static
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v4
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv pip install .[dev]
+      - name: Run blocking static checks
+        run: uv run python scripts/quality/run_quality.py --mode static
+
+  python-unit:
+    name: Python Unit
+    strategy:
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.11", "3.12"]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v4
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv pip install .
+          uv pip install pytest
+      - name: Run Python unit tests
+        run: uv run python scripts/quality/run_quality.py --mode unit
+
+  public-adapter-integration:
+    name: Public Adapter Integration
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv pip install .
+          uv pip install pytest
+      - name: Run public adapter integration tests
+        run: uv run python scripts/quality/run_quality.py --mode public-api
+
+  graph-smoke:
+    name: Runtime Graph Smoke
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv pip install .
+          uv pip install pytest
+      - name: Run runtime graph smoke test
+        run: uv run python scripts/quality/run_quality.py --mode graph-smoke
+
+  frontend:
+    name: Frontend
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Set up Node 20
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: "npm"
+          cache-dependency-path: apps/web/package-lock.json
+      - name: Install frontend dependencies
+        run: npm --prefix apps/web ci
+      - name: Run frontend build/test
+        run: python scripts/quality/run_quality.py --mode frontend
+
+  fusion-gate:
+    name: Fusion Gate
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - name: Install dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          uv venv
+          uv pip install .
+      - name: Run deterministic fusion gate
+        run: uv run python scripts/quality/run_quality.py --mode fusion-gate
+      - name: Upload fusion gate artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fusion-gate-artifacts
+          path: |
+            ops/regression/fusion/out/fusion_runs.jsonl
+            ops/regression/fusion/out/fusion_metrics.json
+            ops/regression/fusion/out/fusion_gate.json

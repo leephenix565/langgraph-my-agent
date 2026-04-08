@@ -1,0 +1,18 @@
+{
+  "id": "a10_industry_sentiment",
+  "name": "中观行业舆情感知智能体7",
+  "description": "该系统动态地监测并提炼行业维度的核心议题，同时关联性地召回相关文本证据并判定其情感倾向，从而为市场提供持续的主题追踪、情感判断及详实的文本证据支持服务",
+  "capabilities": [
+    "industry",
+    "sentiment",
+    "news"
+  ],
+  "input_type": "industry",
+  "latency_level": "fast",
+  "cost_level": "low",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "research",
+  "role_type": "system",
+  "default_enabled": true
+}

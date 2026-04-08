@@ -1,0 +1,18 @@
+{
+  "id": "a06_financial_reports",
+  "name": "公司年报分析智能体4",
+  "description": "该系统致力于超越传统财务指标的局限，深度解析年报中的非财务信息与长期潜在风险，通过对年报文本及图表的系统分析，精准提取核心数据与关键非财务要素并生成浓缩摘要，最终提供涵盖年报核心数据摘要、长期风险提示、关键词提取以及交互式问答在内的全方位服务输出。",
+  "capabilities": [
+    "filing",
+    "kpi",
+    "guidance"
+  ],
+  "input_type": "finance",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "fundamental",
+  "role_type": "system",
+  "default_enabled": true
+}

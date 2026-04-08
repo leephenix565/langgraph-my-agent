@@ -1,0 +1,340 @@
+{
+  "profiling_enabled": true,
+  "profile_log_dir": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen35_9b_smoke_trace",
+  "profile_window_size": 20,
+  "runs_per_model": 1,
+  "disable_search": 1,
+  "models": [
+    {
+      "model_id": "qwen",
+      "provider_model": "Qwen3.5-9B"
+    }
+  ],
+  "trace_runs": [
+    {
+      "model_alias": "qwen",
+      "provider_model": "Qwen3.5-9B",
+      "run_index": 1,
+      "run_id": "bench_qwen_01_651dc85d",
+      "trace_log_file": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen35_9b_smoke_trace\\bench_qwen_01_651dc85d.jsonl"
+    }
+  ],
+  "latency_profile": {
+    "count": 17,
+    "by_node": {
+      "agent": {
+        "count": 7,
+        "min": 6066.657,
+        "median": 10508.234,
+        "max": 25145.918
+      },
+      "manager_broadcast": {
+        "count": 4,
+        "min": 0.112,
+        "median": 0.15,
+        "max": 0.159
+      },
+      "manager_summary": {
+        "count": 4,
+        "min": 0.08,
+        "median": 0.10200000000000001,
+        "max": 10044.165
+      },
+      "router": {
+        "count": 1,
+        "min": 39354.868,
+        "median": 39354.868,
+        "max": 39354.868
+      },
+      "summary": {
+        "count": 1,
+        "min": 10044.088,
+        "median": 10044.088,
+        "max": 10044.088
+      }
+    },
+    "agent_elapsed_ms": {
+      "a01_cio_orchestrator": {
+        "count": 1,
+        "min": 25145.918,
+        "median": 25145.918,
+        "max": 25145.918
+      },
+      "a08_tech_due_diligence": {
+        "count": 1,
+        "min": 6066.657,
+        "median": 6066.657,
+        "max": 6066.657
+      },
+      "a14_single_stock_tech": {
+        "count": 1,
+        "min": 8192.692,
+        "median": 8192.692,
+        "max": 8192.692
+      },
+      "a15_research_synthesis": {
+        "count": 1,
+        "min": 10508.234,
+        "median": 10508.234,
+        "max": 10508.234
+      },
+      "a19_market_risk": {
+        "count": 1,
+        "min": 6524.23,
+        "median": 6524.23,
+        "max": 6524.23
+      },
+      "a25_report_center": {
+        "count": 1,
+        "min": 13692.949,
+        "median": 13692.949,
+        "max": 13692.949
+      },
+      "a26_sci_tech_valuation": {
+        "count": 1,
+        "min": 12640.593,
+        "median": 12640.593,
+        "max": 12640.593
+      }
+    },
+    "samples": [
+      {
+        "ts": "2026-03-14T06:14:26.397351+00:00",
+        "run_id": "bench_qwen_01_651dc85d",
+        "node": "manager_broadcast",
+        "agent_id": null,
+        "elapsed_ms": 0.157
+      },
+      {
+        "ts": "2026-03-14T06:14:26.396351+00:00",
+        "run_id": "bench_qwen_01_651dc85d",
+        "node": "router",
+        "agent_id": null,
+        "elapsed_ms": 39354.868
+      },
+      {
+        "ts": "2026-03-14T06:14:51.545642+00:00",
+        "run_id": "bench_qwen_01_651dc85d",
+        "node": "agent",
+        "agent_id": "a01_cio_orchestrator",
+        "elapsed_ms": 25145.918
+      }
+    ]
+  },
+  "trace_summary": {
+    "log_dir": "E:\\DUT\\langgraph--try\\my-agent\\outputs\\benchmarks\\qwen35_9b_smoke_trace",
+    "log_files": [
+      "bench_qwen_01_651dc85d.jsonl"
+    ],
+    "total_records": 56,
+    "event_counts": {
+      "agent_end": 7,
+      "agent_start": 7,
+      "manager_assignment": 7,
+      "manager_broadcast": 4,
+      "manager_ctx": 1,
+      "node_latency": 17,
+      "router_ctx": 1,
+      "router_decision": 1,
+      "run_start": 1,
+      "stable_consume": 2,
+      "summary_end": 4,
+      "summary_start": 4
+    },
+    "malformed_jsonl": {
+      "total": 0,
+      "by_file": {},
+      "samples": [],
+      "file_read_errors": []
+    },
+    "ctx_stats": {
+      "router_ctx": {
+        "count": 1,
+        "ctx_messages_len": {
+          "count": 1,
+          "min": 1,
+          "median": 1,
+          "max": 1
+        },
+        "full_messages_len": {
+          "count": 1,
+          "min": 1,
+          "median": 1,
+          "max": 1
+        },
+        "window_size": 20,
+        "window_violations": 0
+      },
+      "manager_ctx": {
+        "count": 1,
+        "ctx_messages_len": {
+          "count": 1,
+          "min": 16,
+          "median": 16,
+          "max": 16
+        },
+        "full_messages_len": {
+          "count": 1,
+          "min": 16,
+          "median": 16,
+          "max": 16
+        },
+        "window_size": 20,
+        "window_violations": 0
+      }
+    },
+    "stable_consume": {
+      "count": 2,
+      "by_node": {
+        "manager_summary": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "max": 0
+        },
+        "router": {
+          "count": 1,
+          "min": 0,
+          "median": 0,
+          "max": 0
+        }
+      },
+      "samples": [
+        {
+          "ts": "2026-03-14T06:13:47.041467+00:00",
+          "node": "router",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_651dc85d"
+        },
+        {
+          "ts": "2026-03-14T06:15:28.399187+00:00",
+          "node": "manager_summary",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_651dc85d"
+        },
+        {
+          "ts": "2026-03-14T06:15:28.399187+00:00",
+          "node": "manager_summary",
+          "enabled": 0,
+          "stable_len": 0,
+          "stable_summary_len": 0,
+          "run_id": "bench_qwen_01_651dc85d"
+        }
+      ]
+    },
+    "latency_profile": {
+      "count": 17,
+      "by_node": {
+        "agent": {
+          "count": 7,
+          "min": 6066.657,
+          "median": 10508.234,
+          "max": 25145.918
+        },
+        "manager_broadcast": {
+          "count": 4,
+          "min": 0.112,
+          "median": 0.15,
+          "max": 0.159
+        },
+        "manager_summary": {
+          "count": 4,
+          "min": 0.08,
+          "median": 0.10200000000000001,
+          "max": 10044.165
+        },
+        "router": {
+          "count": 1,
+          "min": 39354.868,
+          "median": 39354.868,
+          "max": 39354.868
+        },
+        "summary": {
+          "count": 1,
+          "min": 10044.088,
+          "median": 10044.088,
+          "max": 10044.088
+        }
+      },
+      "agent_elapsed_ms": {
+        "a01_cio_orchestrator": {
+          "count": 1,
+          "min": 25145.918,
+          "median": 25145.918,
+          "max": 25145.918
+        },
+        "a08_tech_due_diligence": {
+          "count": 1,
+          "min": 6066.657,
+          "median": 6066.657,
+          "max": 6066.657
+        },
+        "a14_single_stock_tech": {
+          "count": 1,
+          "min": 8192.692,
+          "median": 8192.692,
+          "max": 8192.692
+        },
+        "a15_research_synthesis": {
+          "count": 1,
+          "min": 10508.234,
+          "median": 10508.234,
+          "max": 10508.234
+        },
+        "a19_market_risk": {
+          "count": 1,
+          "min": 6524.23,
+          "median": 6524.23,
+          "max": 6524.23
+        },
+        "a25_report_center": {
+          "count": 1,
+          "min": 13692.949,
+          "median": 13692.949,
+          "max": 13692.949
+        },
+        "a26_sci_tech_valuation": {
+          "count": 1,
+          "min": 12640.593,
+          "median": 12640.593,
+          "max": 12640.593
+        }
+      },
+      "samples": [
+        {
+          "ts": "2026-03-14T06:14:26.397351+00:00",
+          "run_id": "bench_qwen_01_651dc85d",
+          "node": "manager_broadcast",
+          "agent_id": null,
+          "elapsed_ms": 0.157
+        },
+        {
+          "ts": "2026-03-14T06:14:26.396351+00:00",
+          "run_id": "bench_qwen_01_651dc85d",
+          "node": "router",
+          "agent_id": null,
+          "elapsed_ms": 39354.868
+        },
+        {
+          "ts": "2026-03-14T06:14:51.545642+00:00",
+          "run_id": "bench_qwen_01_651dc85d",
+          "node": "agent",
+          "agent_id": "a01_cio_orchestrator",
+          "elapsed_ms": 25145.918
+        }
+      ]
+    },
+    "error_summary": {
+      "count": 0,
+      "by_event": {},
+      "by_node": {},
+      "status_code_counts": {},
+      "signatures": [],
+      "samples": []
+    }
+  }
+}

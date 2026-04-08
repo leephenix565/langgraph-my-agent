@@ -1,0 +1,18 @@
+{
+  "id": "a17_client_profile",
+  "name": "客户画像（风险偏好）智能体",
+  "description": "通过综合客户的基本信息、投资历史、问卷及交易行为等多维度数据，动态构建并更新其风险画像，旨在精准识别客户风险偏好类型、提供动态的风险承受能力评分，从而为产品与服务提供精准的适当性匹配支撑。",
+  "capabilities": [
+    "kyc",
+    "suitability",
+    "profiling"
+  ],
+  "input_type": "client",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "client",
+  "role_type": "system",
+  "default_enabled": true
+}

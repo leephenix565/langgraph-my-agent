@@ -1,0 +1,21 @@
+{
+  "created_at": "2026-01-08T23:12:16.414524",
+  "catalog_id": "20260108_b434e7a9a883",
+  "files": [
+    {
+      "path": "data\\\\questions\\\\questions_pool_20260108_20260108_b434e7a9a883_v1.jsonl",
+      "sha256": "db5df17cfee5e46cd064aa8b588d793f7dcf4e762b846a28e522956794262bcf",
+      "bytes": 358449
+    },
+    {
+      "path": "data\\\\router_sft\\\\router_sft_20260108_20260108_b434e7a9a883_v1.jsonl",
+      "sha256": "28f4d96bc088329006ad35d4d1b71b840c513ae864dd01bedf98f86e88a79984",
+      "bytes": 2733848
+    },
+    {
+      "path": "data\\\\catalogs\\\\catalog_20260108_b434e7a9a883_prompt_v1.json",
+      "sha256": "66441c62f46531c7da9f7aedfaa88c31f112722e4af63612318f9bea62e0e6c2",
+      "bytes": 10539
+    }
+  ]
+}

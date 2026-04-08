@@ -1,0 +1,18 @@
+{
+  "id": "a13_index_technical_analysis",
+  "name": "指数技术分析智能体5",
+  "description": "融合大语言模型的广泛知识，显著提升对时间序列数据的深层语义理解与解读能力。在方法层面，综合处理行情数据、量价指标、宏观经济数据等多维信息，并将大模型中丰富的金融先验知识注入预测过程。最终该智能体能够输出未来短期指数累积收益率的预测结果，并同时提供清晰、可理解的增强语义解释，从而为用户提供兼具数据洞察与决策参考的智能化服务。",
+  "capabilities": [
+    "forecast",
+    "timeseries",
+    "volatility"
+  ],
+  "input_type": "market",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L2",
+  "team": "quant",
+  "role_type": "system",
+  "default_enabled": true
+}

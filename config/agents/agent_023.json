@@ -1,0 +1,18 @@
+{
+  "id": "a23_portfolio_opt",
+  "name": "投资组合优化智能体",
+  "description": "特色： 在客户风险偏好与投资约束下，实现风险-收益的动态平衡与优化。\n方法： 利用经典及改进的投资组合优化算法，构建并动态调整资产配置方案。\n服务输出： 提供最优资产配置方案、动态调仓建议及情景分析和压力测试报告。",
+  "capabilities": [
+    "allocation",
+    "hedging",
+    "backtest"
+  ],
+  "input_type": "portfolio",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "v0.2",
+  "layer": "L3",
+  "team": "portfolio",
+  "role_type": "system",
+  "default_enabled": true
+}
