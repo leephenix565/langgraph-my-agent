@@ -1,0 +1,134 @@
+{
+  "version": 1,
+  "threads": {
+    "thread-847427f03e": {
+      "thread": {
+        "id": "thread-847427f03e",
+        "title": "【任务】\nPlease summarize...",
+        "updatedAt": "2026-04-03 13:00",
+        "preview": "Public answer from emitted bundle.",
+        "finalSource": "fused",
+        "phase": "Phase F3 / health-debug polish",
+        "active": null,
+        "continuityMode": "replay"
+      },
+      "turns": [
+        {
+          "id": "user-3b336c679a",
+          "role": "user",
+          "text": "【任务】\nPlease summarize the investment committee request.\n\n【已知背景/材料】\nBackground covers public policy commentary only.\n\n【链接参考 / URL 引用】\n[链接 1]\nhttps://example.com/policy-brief\n\n[链接 2]\nhttps://example.com/company-update",
+          "createdAt": "2026-04-14 15:13",
+          "structuredInput": {
+            "task": "Please summarize the investment committee request.",
+            "context": "Background covers public policy commentary only.",
+            "materials": [],
+            "urlReferences": [
+              "https://example.com/policy-brief",
+              "https://example.com/company-update"
+            ],
+            "constraints": null,
+            "outputPreference": null
+          },
+          "answerCard": null,
+          "workflow": null,
+          "runId": null,
+          "continuityMode": null
+        },
+        {
+          "id": "assistant-test-1",
+          "role": "assistant",
+          "text": "Public answer from emitted bundle.",
+          "createdAt": "2026-04-03 13:00",
+          "structuredInput": null,
+          "answerCard": {
+            "answer": "Public answer from emitted bundle.",
+            "finalSource": "fused",
+            "confidence": "high",
+            "citations": [],
+            "evidenceCards": [],
+            "evidenceCount": 0
+          },
+          "workflow": {
+            "layerPlan": [
+              {
+                "layer": "L1",
+                "mode": "Chain",
+                "selected": [
+                  "a01_cio_orchestrator"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L2",
+                "mode": "Star",
+                "selected": [
+                  "a03_macro_policy"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L3",
+                "mode": "Star",
+                "selected": [
+                  "a18_primary_secondary_valuation"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L4",
+                "mode": "Chain",
+                "selected": [
+                  "a25_report_center"
+                ],
+                "note": null
+              }
+            ],
+            "layerMode": {
+              "L1": "Chain",
+              "L2": "Star",
+              "L3": "Star",
+              "L4": "Chain"
+            },
+            "currentLayer": "L4",
+            "layerDone": [
+              "L1",
+              "L2",
+              "L3",
+              "L4"
+            ],
+            "agentSteps": [
+              {
+                "id": "step-1",
+                "layer": "L1",
+                "agentId": "a01_cio_orchestrator",
+                "title": "CIO Orchestrator",
+                "summary": "Framed the request.",
+                "status": "complete",
+                "signal": null
+              }
+            ],
+            "fusionSteps": [
+              {
+                "id": "fusion-baseline",
+                "kind": "baseline",
+                "label": "Baseline sidecar",
+                "status": "shadow",
+                "summary": "Baseline completed in shadow mode."
+              }
+            ],
+            "finalSource": "fused",
+            "provenanceNote": "Continuity uses transcript replay, which is weaker than persistent graph state.",
+            "provenance": {
+              "emitPath": "fusion_writer",
+              "finalSource": "fused",
+              "continuityMode": "replay",
+              "summary": "The final answer was emitted from the fusion writer path. Continuity uses transcript replay, which is weaker than persistent graph state."
+            }
+          },
+          "runId": "run-f3-1234",
+          "continuityMode": "replay"
+        }
+      ]
+    }
+  }
+}

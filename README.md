@@ -6,7 +6,9 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 
 ## Current Snapshot
 
-- Runtime mainline: `router_node -> manager_broadcast -> agent nodes -> manager_summary -> (_run_final_summary / finalize_summary) -> optional memory_update -> __end__`
+- Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`
+- Runtime mainline topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout runs through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
+- Default answer path: Fair Fusion baseline/judge/writer sidecars exist in the runtime, but `Context.enable_fair_fusion=False` and `Context.enable_fair_fusion_source_switch=False` by default, so the visible answer still comes from the mainline bundle unless those flags are explicitly enabled
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -25,8 +27,11 @@ This repository is a layered multi-agent orchestration system built on LangGraph
   - sync `POST /api/threads/{thread_id}/messages` remains supported and unchanged
   - additive `POST /api/threads/{thread_id}/messages/stream` now returns safe NDJSON workflow events
   - workflow progress is client-visible but not persisted; only the final assistant turn remains transcript / store / replay truth
-- Current phase: `Phase WS-1：workflow-first streaming`
-- Current positioning: the repo is adding a safe workflow-first streaming seam on top of the quality-closure baseline without changing transcript truth or runtime business semantics
+- Current phase position:
+  - frontend/runtime integration: `Phase F3`
+  - repo-level closure: `Phase QS-2`
+  - `Phase WS-1` workflow-first streaming is a landed seam, not the current repo phase label
+- Current positioning: the repo is hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority-doc truth without changing transcript truth or LangGraph runtime business semantics
 
 ## Quickstart
 
@@ -203,10 +208,11 @@ Artifacts:
 
 ## Product Boundary
 
-What this repo does in the current phase:
+What this repo does on the current mainline:
 
 - keeps a single assistant persona in the public transcript
 - keeps workflow as an answer-level inspector
+- keeps the final visible answer on the mainline path by default; Fair Fusion remains a sidecar/shadow path unless explicitly gated on
 - renders assistant answer Markdown on the client while keeping the answer payload as plain text from the backend
 - keeps the chat view inside a readable width and contains wide Markdown blocks inside the assistant card instead of letting them push the page wider
 - adds a workflow-first NDJSON streaming seam that emits only safe public events and keeps the old sync seam available
@@ -214,7 +220,7 @@ What this repo does in the current phase:
 - keeps `materials` and `urlReferences` compiled into canonical transcript text
 - keeps `/settings` and `/agents` read-only
 
-What WS-1 still does not do:
+What the current mainline still does not do:
 
 - no new product feature expansion
 - no runtime business-semantic change
@@ -227,6 +233,7 @@ What WS-1 still does not do:
 ## Docs
 
 - [Project Overview](docs/PROJECT_OVERVIEW.md)
+- [Mainline Runtime Audit](docs/MAINLINE_RUNTIME_AUDIT.md)
 - [System Map](docs/SYSTEM_MAP.md)
 - [Frontend Architecture](docs/FRONTEND_ARCHITECTURE.md)
 - [Docs Index](docs/INDEX.md)

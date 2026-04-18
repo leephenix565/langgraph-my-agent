@@ -40,7 +40,72 @@
 - `/agents` 页面、workflow 展示和下游结果消费的认知成本最低
 - 更符合“替换同功能 agent”，而不是“新增另一个平行 agent”
 
-## 3. 本文适用范围
+## 3. 接入形态选择：先决定“同仓包装”还是“外部协议”
+
+在这个仓库里，“替换功能性智能体”不是只有一种接法。更准确地说，当前有三种接入形态：
+
+### 3.1 同仓 Python 包装
+
+适用情况：
+
+- 同学愿意把实现作为 Python 模块直接被当前仓库 import
+- 依赖简单，没有单独部署诉求
+- 你希望接入链最短、排查成本最低
+
+推荐级别：
+
+- **默认首选**
+
+原因：
+
+- 最少网络面
+- 最少部署面
+- 最贴近当前 `tool.ainvoke(...)` 的执行形态
+
+### 3.2 FastAPI/HTTP 私有接口 + 本地 tool 适配
+
+适用情况：
+
+- 同学的 agent 独立维护
+- 同学的实现需要单独部署
+- 同学的实现不适合同仓直接 import
+- 同学的实现甚至不是 Python 写的，但可以通过 HTTP 服务暴露
+
+推荐级别：
+
+- **外部接入首选**
+
+原因：
+
+- 当前仓库已经依赖 `fastapi`
+- 当前仓库已经依赖 `httpx`
+- 当前 `graph.py` 对普通 agent 的调用就是一次 `await tool.ainvoke(...)` 的请求-响应模型
+- 所以外部协议里，HTTP 最接近当前系统的自然边界
+
+### 3.3 其他协议
+
+例如：
+
+- gRPC
+- WebSocket
+- 消息队列
+- 其他 RPC 框架
+
+推荐级别：
+
+- **不作为本文默认方案**
+
+原因：
+
+- 当前 repo 没有现成的 gRPC 基建
+- WebSocket / SSE 不适合单 agent 一次性返回 `AgentOutput`
+- 消息队列不符合当前 graph turn 内“同步等待 agent 返回结果”的执行模型
+
+本文的明确结论是：
+
+> 如果同学的功能 agent 需要通过外部协议接入，在当前项目现状下，默认优先写成 FastAPI/HTTP 私有接口，而不是泛泛地说“任意 RPC 都可以”。
+
+## 4. 本文适用范围
 
 本文讨论的“功能性智能体”，主要指普通分析/研究/风控/组合/估值/合规类 agent，例如：
 
@@ -56,7 +121,7 @@
 - graph 执行来自 `src/react_agent/graph.py` 中的 `_build_agent_node(...)`
 - 最终真正调用的是 `tool.ainvoke(...)`
 
-## 4. 不适用对象：不要按本文方式替换的特殊角色
+## 5. 不适用对象：不要按本文方式替换的特殊角色
 
 下面这些角色**不要**按“普通功能 agent 替换”来理解：
 
@@ -93,7 +158,7 @@
 
 如果你要替换的是这三类角色，属于更高风险的 runtime 角色改造，不是本文范围。
 
-## 5. 在本项目里，“功能性智能体”真实由什么组成
+## 6. 在本项目里，“功能性智能体”真实由什么组成
 
 很多人第一次看这个仓库时，会误以为：
 
@@ -158,7 +223,7 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 - `AGENT_TOOLS` 里这个 id 的实现，已经变成同学那套逻辑
 
-## 6. 只改 JSON 为什么不等于“替换成同学的智能体”
+## 7. 只改 JSON 为什么不等于“替换成同学的智能体”
 
 这是最容易踩的坑。
 
@@ -188,7 +253,7 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 而不是你同学真正写的 agent。
 
-## 7. 哪些 agent 适合按“功能替换”思路处理
+## 8. 哪些 agent 适合按“功能替换”思路处理
 
 默认建议优先替换这类普通 domain/function agents：
 
@@ -210,7 +275,57 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 这类 agent 最适合“保留原 id，只换实现”。
 
-## 8. 推荐接入方案：保留原 `agent_id`，只替换执行实现
+## 9. 为什么 FastAPI/HTTP 在当前项目里是合适边界
+
+如果你想把同学开发的功能 agent 以“独立服务”的方式接进来，FastAPI/HTTP 是当前项目里最自然的边界。
+
+原因要从当前 graph 的真实调用形态说起。
+
+`src/react_agent/graph.py` 的 `_build_agent_node(...)` 当前做的事情，本质上只有三步：
+
+1. 组装一个 `agent_input`
+2. 从 `AGENT_TOOLS[agent_id]` 取出当前 agent 的 tool
+3. 执行 `await tool.ainvoke(agent_input, config=...)`
+
+这说明 graph 对普通功能 agent 的期待，不是：
+
+- 长连接会话
+- token streaming
+- 多轮 agent 内部状态同步
+
+而是：
+
+- 一次异步请求
+- 一次标准结果返回
+
+这和 HTTP 的请求-响应模型天然一致。
+
+同时，当前仓库依赖里已经有：
+
+- `fastapi`
+- `httpx`
+
+所以最自然的外部接法是：
+
+1. 同学实现单独暴露一个 FastAPI 私有服务
+2. 本仓库在 `src/react_agent/external_agents.py` 里用 `httpx.AsyncClient` 包一层 tool
+3. 再通过 `register_agent(...)` 覆盖原 `agent_id`
+
+这里必须强调一句：
+
+- **graph 并不会直接“调用一个协议”来替换 agent**
+- **真正的替换点仍然是 `AGENT_TOOLS[agent_id]`**
+
+FastAPI/HTTP 只是“同学实现”的承载协议，而不是 graph 的直接替换对象。
+
+同样也不建议：
+
+- 把同学 agent 直接暴露成 public chat API
+- 复用 `src/react_agent/public_api.py` 这条面向 Web 前端的 public adapter 作为内部 agent 替换协议
+
+因为 `public_api.py` 是产品 public surface，不是内部普通功能 agent 的执行协议。
+
+## 10. 推荐接入方案：保留原 `agent_id`，只替换执行实现
 
 这是本文最推荐的方案。
 
@@ -243,7 +358,7 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 - graph 继续把它当成原来的功能位
 - 但 `AGENT_TOOLS[agent_id]` 指向的 tool，不再是默认实现，而是同学实现的包装器
 
-## 9. 替换接入的完整步骤
+## 11. 替换接入的完整步骤
 
 下面按“替换一个现有功能 agent”为主线说明。
 
@@ -319,6 +434,49 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 所以你的包装层最好显式接收它。
 
+#### 3.1.1 如果走 FastAPI，应使用什么接口形状
+
+如果你选择把同学的实现做成一个独立服务，建议它提供一个极简私有接口。
+
+推荐接口：
+
+- `POST /invoke`
+- 可选 `GET /healthz`
+
+`POST /invoke` 请求体建议固定为：
+
+- `question`
+- `subtask`
+- `shared_context`
+- `history`
+- `tools_config`
+- `router_plan_summary`
+
+可附加但不强依赖：
+
+- `agent_id`
+- `run_id`
+
+`POST /invoke` 返回体建议直接返回兼容 `AgentOutput` 的 JSON：
+
+- `analysis`
+- `key_points`
+- `evidence`
+- `confidence`
+- 可选 `parse_ok`
+
+协议边界要明确：
+
+- 不传 raw `state["messages"]`
+- 不传 raw router output
+- 不传 raw manager assignment 之外的内部 state 噪声
+- 不要求同学服务理解 LangGraph
+
+它只需要：
+
+- 吃下当前功能 agent 的任务输入
+- 返回标准 `AgentOutput`
+
 #### 3.2 当前 graph 希望拿回什么
 
 当前系统对 `AgentOutput` 的常用消费字段主要是：
@@ -377,7 +535,68 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 对“同学功能 agent 替换”这类长期维护场景，不推荐这种隐式覆盖方式。
 
-## 10. 最小 metadata 示例
+## 12. 协议选择建议
+
+为了避免实现时“什么都能做、反而不知道该怎么做”，这里给一个固定决策表。
+
+### 12.1 什么时候选同仓 Python 包装
+
+适用：
+
+- 同学实现就在 Python 仓库里
+- 依赖简单
+- 不想引入额外部署面
+
+建议：
+
+- 选 **同仓 Python 包装**
+
+### 12.2 什么时候选 FastAPI/HTTP
+
+适用：
+
+- 同学实现独立维护
+- 同学实现独立部署
+- 同学实现不是 Python
+- 你希望接入边界清楚、协议足够简单
+
+建议：
+
+- 选 **FastAPI/HTTP**
+
+### 12.3 什么时候才考虑 gRPC
+
+适用：
+
+- 你明确需要更高吞吐
+- 需要强类型 IDL
+- 已经有现成服务治理和基础设施
+
+建议：
+
+- 可以考虑 gRPC
+- 但这已经超出了当前仓库的默认接入复杂度
+
+### 12.4 为什么不推荐 WebSocket / SSE
+
+不推荐作为功能 agent 替换默认协议。
+
+原因：
+
+- 当前普通 agent 路径消费的是一次性的 `AgentOutput`
+- 不是 token 流
+- 不是长连接协作协议
+
+### 12.5 为什么不推荐消息队列
+
+不推荐作为默认替换路径。
+
+原因：
+
+- 当前 `manager_broadcast(...) -> _build_agent_node(...)` 是 turn 内等待结果的同步控制流
+- 消息队列更适合异步任务，不适合这里的最小替换方案
+
+## 13. 最小 metadata 示例
 
 如果你替换的是现有功能 agent，通常原文件可以继续用；下面给一个“保留原 `agent_id`”的示意写法。
 
@@ -412,7 +631,7 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 - `version`
 - `capabilities`
 
-## 11. 最小 Python 适配器示例
+## 14. 最小 Python 适配器示例
 
 下面的示例只展示“怎么把同学的实现包成当前系统兼容 tool”，不是要求你必须按这个文件名实现。
 
@@ -514,7 +733,156 @@ def register_external_function_agents() -> None:
 
 而不是另起一个“长得差不多的新 agent”。
 
-## 12. 在 bootstrap 中如何挂这段注册
+## 15. FastAPI/HTTP 方案的最小双端示例
+
+如果同学的功能 agent 是独立服务，更推荐按下面这种形状接入。
+
+### 15.1 同学侧 FastAPI 服务最小接口示例
+
+```py
+from __future__ import annotations
+
+from fastapi import FastAPI
+from pydantic import BaseModel
+
+
+class InvokeRequest(BaseModel):
+    question: str
+    subtask: str
+    shared_context: dict = {}
+    history: list = []
+    tools_config: dict = {}
+    router_plan_summary: str | None = None
+    agent_id: str | None = None
+    run_id: str | None = None
+
+
+class InvokeResponse(BaseModel):
+    analysis: str
+    key_points: list[str]
+    evidence: list[str]
+    confidence: float
+    parse_ok: bool = True
+
+
+app = FastAPI()
+
+
+@app.get("/healthz")
+async def healthz() -> dict:
+    return {"status": "ok"}
+
+
+@app.post("/invoke", response_model=InvokeResponse)
+async def invoke(payload: InvokeRequest) -> InvokeResponse:
+    # 这里替换成同学自己的真实逻辑
+    return InvokeResponse(
+        analysis=f"已完成子任务：{payload.subtask}",
+        key_points=["示例要点 1", "示例要点 2"],
+        evidence=["source=internal-demo"],
+        confidence=0.72,
+        parse_ok=True,
+    )
+```
+
+这个服务不需要理解 LangGraph，也不需要暴露内部 graph 事件。
+
+它只需要：
+
+- 接受当前功能 agent 的任务输入
+- 返回标准 `AgentOutput`
+
+### 15.2 本仓库侧 HTTP tool 适配器示例
+
+```py
+from __future__ import annotations
+
+from typing import Any, Dict, List
+
+import httpx
+from langchain_core.tools import tool
+
+from react_agent.agents import (
+    AGENT_METADATA,
+    AgentMetadata,
+    AgentOutput,
+    register_agent,
+)
+
+REMOTE_BASE_URL = "http://127.0.0.1:9001"
+
+
+def register_external_function_agents() -> None:
+    base_meta = AGENT_METADATA.get("a21_reg_compliance")
+    meta = base_meta or AgentMetadata(
+        id="a21_reg_compliance",
+        name="监管合规智能体",
+        description="通过外部 FastAPI 服务接入的合规功能位",
+        capabilities=["compliance", "regulatory", "policy"],
+        input_type="compliance",
+        latency_level="medium",
+        cost_level="normal",
+        version="v0.3-external-http",
+        layer="L3",
+        team="compliance",
+        role_type="system",
+        default_enabled=True,
+    )
+
+    @tool("agent_a21_reg_compliance")
+    async def external_a21_reg_compliance(
+        question: str,
+        subtask: str,
+        shared_context: Dict[str, Any] | None = None,
+        history: List[Dict[str, Any]] | None = None,
+        tools_config: Dict[str, Any] | None = None,
+        router_plan_summary: str | None = None,
+    ) -> AgentOutput:
+        shared_context = shared_context or {}
+        history = history or []
+        tools_config = tools_config or {}
+
+        payload = {
+            "agent_id": "a21_reg_compliance",
+            "question": question,
+            "subtask": subtask,
+            "shared_context": shared_context,
+            "history": history,
+            "tools_config": tools_config,
+            "router_plan_summary": router_plan_summary,
+        }
+
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(f"{REMOTE_BASE_URL}/invoke", json=payload)
+            response.raise_for_status()
+            data = response.json()
+
+        return {
+            "analysis": str(data.get("analysis", "")).strip(),
+            "key_points": [
+                str(item).strip()
+                for item in data.get("key_points", [])
+                if str(item).strip()
+            ],
+            "evidence": [
+                str(item).strip()
+                for item in data.get("evidence", [])
+                if str(item).strip()
+            ],
+            "confidence": float(data.get("confidence", 0.5)),
+            "parse_ok": bool(data.get("parse_ok", True)),
+        }
+
+    register_agent(meta, external_a21_reg_compliance)
+```
+
+这个例子的关键仍然是：
+
+- **保留原 `agent_id`**
+- **只把内部执行改成一次 HTTP 调用**
+- **graph / router / public transcript 不跟着变形**
+
+## 16. 在 bootstrap 中如何挂这段注册
 
 推荐把外部注册插到 `src/react_agent/graph_bootstrap.py` 的 bootstrap 流程中。
 
@@ -546,7 +914,36 @@ def bootstrap_agent_runtime() -> None:
 - 再覆盖/注册你自己的 tool
 - 最后才做默认 tool 回填
 
-## 13. 如何验证“真的替换成功”
+## 17. 错误处理和验证建议
+
+如果你走 FastAPI/HTTP 方案，建议错误语义保持最简单：
+
+本仓库 wrapper 如果遇到：
+
+- 超时
+- 非 2xx
+- 无法解析 JSON
+- 返回体不符合 `AgentOutput`
+
+推荐做法：
+
+- **直接抛异常**
+
+理由不是“偷懒”，而是当前 `src/react_agent/graph.py` 的 `_build_agent_node(...)` 已经有现成的：
+
+- `except Exception`
+- fail-soft 结构化兜底输出
+
+所以不需要为了外部协议接入，额外改 graph 主业务语义。
+
+同时建议增加一套最小验证 checklist：
+
+1. 外部服务 `GET /healthz` 正常
+2. 本仓库 wrapper 实际命中远端 `POST /invoke`
+3. `AGENT_TOOLS[agent_id]` 已经被 HTTP wrapper 覆盖
+4. graph 调到该 agent 时，日志或 trace 能看到远端调用
+
+## 18. 如何验证“真的替换成功”
 
 不要只看一个信号。
 
@@ -588,7 +985,7 @@ def bootstrap_agent_runtime() -> None:
 
 - graph 调用的是你同学那套实现
 
-## 14. 最容易踩的坑
+## 19. 最容易踩的坑
 
 ### 坑 1：只换 JSON，没换执行逻辑
 
@@ -654,7 +1051,7 @@ def bootstrap_agent_runtime() -> None:
 - `tools_config`
 - `router_plan_summary`
 
-## 15. 推荐的最小实施 checklist
+## 20. 推荐的最小实施 checklist
 
 如果你要真正落地替换一个功能 agent，可以按下面顺序执行。
 
@@ -683,7 +1080,7 @@ def bootstrap_agent_runtime() -> None:
 - catalog 层验证
 - graph 真实执行验证
 
-## 16. 什么时候才应该新建全新 `agent_id`
+## 21. 什么时候才应该新建全新 `agent_id`
 
 只有在下面这种情况下，才更适合新建而不是“替换”：
 
@@ -695,7 +1092,7 @@ def bootstrap_agent_runtime() -> None:
 
 **保留原 `agent_id`，只替换执行实现。**
 
-## 17. 最后总结
+## 22. 最后总结
 
 在这个仓库里，替换一个功能性智能体的本质不是：
 
@@ -712,3 +1109,11 @@ def bootstrap_agent_runtime() -> None:
 5. 验证 graph 真正调用到了它
 
 如果你做到的是这五步，才算真正把“系统里的功能性智能体”替换成了“同学开发的对应智能体”。
+
+如果同学的实现不适合同仓直接 import，那么在当前项目里最自然的外部协议默认方案就是：
+
+- **FastAPI/HTTP 私有接口**
+- **本仓库 `httpx.AsyncClient` wrapper**
+- **最终仍注册进 `AGENT_TOOLS[agent_id]`**
+
+也就是说，协议可以换，但 graph 的主业务语义和当前多智能体装配方式不用换。

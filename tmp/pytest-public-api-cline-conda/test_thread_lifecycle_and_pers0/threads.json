@@ -1,0 +1,124 @@
+{
+  "version": 1,
+  "threads": {
+    "thread-62761ad88e": {
+      "thread": {
+        "id": "thread-62761ad88e",
+        "title": "Keep continuity on th...",
+        "updatedAt": "2026-04-03 13:00",
+        "preview": "Public answer from emitted bundle.",
+        "finalSource": "fused",
+        "phase": "Phase F3 / health-debug polish",
+        "active": null,
+        "continuityMode": "persistent"
+      },
+      "turns": [
+        {
+          "id": "user-069005d8c8",
+          "role": "user",
+          "text": "Keep continuity on the persistent path.",
+          "createdAt": "2026-04-14 15:46",
+          "structuredInput": null,
+          "answerCard": null,
+          "workflow": null,
+          "runId": null,
+          "continuityMode": null
+        },
+        {
+          "id": "assistant-test-1",
+          "role": "assistant",
+          "text": "Public answer from emitted bundle.",
+          "createdAt": "2026-04-03 13:00",
+          "structuredInput": null,
+          "answerCard": {
+            "answer": "Public answer from emitted bundle.",
+            "finalSource": "fused",
+            "confidence": "high",
+            "citations": [],
+            "evidenceCards": [],
+            "evidenceCount": 0
+          },
+          "workflow": {
+            "layerPlan": [
+              {
+                "layer": "L1",
+                "mode": "Chain",
+                "selected": [
+                  "a01_cio_orchestrator"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L2",
+                "mode": "Star",
+                "selected": [
+                  "a03_macro_policy"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L3",
+                "mode": "Star",
+                "selected": [
+                  "a18_primary_secondary_valuation"
+                ],
+                "note": null
+              },
+              {
+                "layer": "L4",
+                "mode": "Chain",
+                "selected": [
+                  "a25_report_center"
+                ],
+                "note": null
+              }
+            ],
+            "layerMode": {
+              "L1": "Chain",
+              "L2": "Star",
+              "L3": "Star",
+              "L4": "Chain"
+            },
+            "currentLayer": "L4",
+            "layerDone": [
+              "L1",
+              "L2",
+              "L3",
+              "L4"
+            ],
+            "agentSteps": [
+              {
+                "id": "step-1",
+                "layer": "L1",
+                "agentId": "a01_cio_orchestrator",
+                "title": "CIO Orchestrator",
+                "summary": "Framed the request.",
+                "status": "complete",
+                "signal": null
+              }
+            ],
+            "fusionSteps": [
+              {
+                "id": "fusion-baseline",
+                "kind": "baseline",
+                "label": "Baseline sidecar",
+                "status": "shadow",
+                "summary": "Baseline completed in shadow mode."
+              }
+            ],
+            "finalSource": "fused",
+            "provenanceNote": "Continuity uses transcript replay, which is weaker than persistent graph state.",
+            "provenance": {
+              "emitPath": "fusion_writer",
+              "finalSource": "fused",
+              "continuityMode": "persistent",
+              "summary": "The final answer was emitted from the fusion writer path. Continuity uses transcript replay, which is weaker than persistent graph state."
+            }
+          },
+          "runId": "run-f3-1234",
+          "continuityMode": "persistent"
+        }
+      ]
+    }
+  }
+}

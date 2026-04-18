@@ -16,13 +16,13 @@ from react_agent.public_contracts import (
     RunStartedEventData,
     StreamErrorEventData,
     StructuredInputModel,
+    WorkflowModel,
+    WorkflowProvenanceModel,
     WorkflowSnapshotEvent,
     WorkflowSnapshotEventData,
     WorkflowStageEvent,
     WorkflowStageEventData,
     WorkflowStageProgressModel,
-    WorkflowModel,
-    WorkflowProvenanceModel,
 )
 from react_agent.public_mapping import compose_structured_input_text, replay_messages
 from react_agent.public_runtime import (

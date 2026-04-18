@@ -37,6 +37,19 @@
 - If a task touches frontend shell, public adapter, or workflow presentation, preserve the separation between public transcript and internal orchestration state.
 - If a task touches docs, update the matching authority docs in the same change.
 
+## Custom Agents
+
+- Project-scoped custom-agent definitions live under `.codex/agents/`.
+- Keep `.agents/skills/` for skills only; do not mix custom-agent TOML into the skills tree.
+- Default read-only agents and boundaries:
+  - `repo_explorer`: trace real execution paths, config entrypoints, and key state fields.
+  - `protocol_auditor`: audit prompts, schemas, parsers, reducers, and registration sources.
+  - `docs_impact_analyst`: map code changes to repo docs, changelog, runbooks, and decision logs.
+  - `test_impact_analyst`: map code changes to impacted tests, fixtures, mocks, snapshots, and likely coverage gaps.
+- For audit-style tasks, prefer reusing these agents before implementation.
+- For implementation tasks, only split work when it can be decomposed into 2-4 clear subtasks; default subagents to read-only analysis unless the parent task explicitly assigns a bounded write scope.
+- Final code, test, doc, and changelog updates must be closed out by a single writer.
+
 ## Required Doc Sync
 
 When Phase F3 frontend or public-adapter files change, sync at least:

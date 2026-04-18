@@ -4,8 +4,10 @@ This document is the S0 operational source for the current repo snapshot.
 
 ## 1. Current Phase
 
-- Phase: `Phase WS-1：workflow-first streaming`
-- Scope: additive workflow-first streaming on top of the existing product and quality baseline
+- Frontend/runtime integration: `Phase F3`
+- Repo-level closure: `Phase QS-2`
+- Landed seam still in scope: `Phase WS-1` workflow-first streaming
+- Scope: hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority-doc truth without changing LangGraph runtime business semantics
 - Non-goals:
   - no new product features
   - no file upload
@@ -215,11 +217,25 @@ Runtime entry:
 
 - `langgraph.json -> src/react_agent/graph.py:graph`
 
+Current runtime topology:
+
+- `__start__ -> router`
+- `router -> manager_broadcast` and `router -> baseline_sidecar`
+- `agent nodes -> manager_summary`
+- `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
+- `mainline_emit` remains a compatibility wrapper; current graph routing targets `final_emit`
+
 Current public path:
 
 - `apps/web -> /api/* -> react_agent.public_api -> react_agent.public_runtime -> react_agent.graph.get_graph_for_invoke(...)`
 
-Important boundaries that remain unchanged in WS-1:
+Default answer-source behavior:
+
+- Fair Fusion baseline/judge/writer sidecars exist in runtime
+- `enable_fair_fusion=false` and `enable_fair_fusion_source_switch=false` by default
+- the visible answer therefore stays on the mainline path unless source switching is explicitly enabled
+
+Important boundaries that remain unchanged on the current mainline:
 
 - do not treat `state["messages"]` as the public transcript
 - do not turn internal agents into separate public chat speakers
@@ -227,6 +243,7 @@ Important boundaries that remain unchanged in WS-1:
 - keep `text` as the canonical transcript / store / replay truth
 - keep replay continuity explicitly weaker than persistent graph continuity
 - keep `structuredInput`, `materials`, and `urlReferences` additive only
+- keep Fair Fusion as baseline/judge/writer sidecars rather than ordinary L1-L4 agents
 
 ## 9. Public Adapter Truthfulness
 
@@ -285,4 +302,4 @@ Router-SFT training/eval command truth lives in:
 
 - `docs/RUNBOOK_ROUTER_SFT.md`
 
-It is not part of the default WS-1 quality gate.
+It is not part of the default mainline quality gate.

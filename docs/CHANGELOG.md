@@ -1,5 +1,49 @@
 # CHANGELOG
 
+## 2026-04-14 - Custom-agent scaffolding landed into repo truth
+- Files: `.codex/agents/repo_explorer.toml`, `.codex/agents/protocol_auditor.toml`, `.codex/agents/docs_impact_analyst.toml`, `.codex/agents/test_impact_analyst.toml`, `AGENTS.md`, `docs/CHANGELOG.md`
+- Added repo-scoped custom-agent scaffolding without changing current runtime or product behavior:
+  - landed project-scoped custom-agent definitions under `.codex/agents/` for `repo_explorer`, `protocol_auditor`, `docs_impact_analyst`, and `test_impact_analyst`
+  - kept `.agents/skills/` scoped to skills and recorded the directory split in `AGENTS.md`
+  - documented the four agents' responsibility boundaries and the single-writer closeout rule in repo truth
+  - preserved the corrected `test_impact_analyst` definition as a read-only test impact analyst instead of a docs analyst
+- Scope boundary:
+  - no runtime code changes
+  - no public contract changes
+  - no frontend behavior changes
+  - no test logic changes
+
+## 2026-04-09 - Mainline doc truth alignment
+- Files: `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/FRONTEND_ARCHITECTURE.md`, `docs/INDEX.md`, `docs/MAINLINE_RUNTIME_AUDIT.md`, `docs/CHANGELOG.md`
+- Why this closure was needed:
+  - the current mainline runtime code had already converged on the active topology and public-boundary rules, but the authority docs in HEAD still contained older phase labels and an outdated mainline chain description
+  - the mainline runtime audit existed only as local working-tree output and had not yet been landed as a tracked repository document
+  - this round closes the documentation truth gap so future runtime reviews start from code-aligned docs instead of stale narrative entrypoints
+- What changed:
+  - updated the authority docs to reflect the current code-backed topology `router -> manager_broadcast + baseline_sidecar -> ... -> final_emit`
+  - repositioned the current engineering phase language to `Phase F3 + QS-2`, while keeping `WS-1` explicitly documented as a landed streaming seam rather than the current repo phase label
+  - added the mainline runtime audit as a first-class document and linked it from the docs entrypoints
+- Scope boundary:
+  - documentation only
+  - no runtime logic changes
+  - no protocol or default-value changes
+  - no frontend behavior changes
+  - no test behavior changes
+
+## 2026-04-08 - Agent replacement guide protocol expansion
+- Files: `docs/AGENT_REPLACEMENT_GUIDE.md`, `docs/CHANGELOG.md`
+- Expanded the functional-agent replacement guide to cover external protocol integration without changing current graph business semantics:
+  - kept the main recommendation unchanged: preserve the original `agent_id` and replace only the executable implementation
+  - added an explicit protocol-selection section that distinguishes same-repo Python wrapping, FastAPI/HTTP private service integration, and higher-cost alternatives such as gRPC
+  - documented why FastAPI/HTTP is the most natural default external boundary for this repo: ordinary agent execution is still one async request/response through `tool.ainvoke(...)`, and the repo already depends on `fastapi` and `httpx`
+  - added a minimal FastAPI `/invoke` service example plus a local `httpx.AsyncClient` wrapper example that still registers through `register_agent(...)`
+  - clarified that graph does not directly "switch to a protocol"; the real replacement point remains `AGENT_TOOLS[agent_id]`
+- Scope boundary:
+  - documentation only
+  - no runtime code changes
+  - no graph business-semantic changes
+  - no public transcript / store / replay truth change
+
 ## 2026-04-08 - Functional agent replacement integration guide
 - Files: `docs/AGENT_REPLACEMENT_GUIDE.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
 - Added a focused Chinese implementation guide for the specific engineering scenario of replacing an existing functional agent with a classmate-developed corresponding agent without changing current graph business semantics:

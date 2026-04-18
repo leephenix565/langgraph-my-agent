@@ -10,6 +10,7 @@ This page defines document roles, authority boundaries, and the recommended entr
 - `docs/A01_CONTRACT_SCHEMA_V0.md`: S0. a01 contract schema and runtime-consumption boundary.
 - `data/a01_sft/DATA_MANIFEST.md`: S0. Final a01-SFT data evidence chain and archive boundary.
 - `docs/PROJECT_OVERVIEW.md`: S1. Narrative entry and current engineering snapshot.
+- `docs/MAINLINE_RUNTIME_AUDIT.md`: S1. Evidence-backed mainline runtime understanding audit for topology, state semantics, public-adapter boundaries, and default-vs-optional behavior.
 - `docs/FRONTEND_ARCHITECTURE.md`: S1. Frontend/product boundary, public transcript rules, and workflow-inspector rationale.
 - `docs/AGENT_REPLACEMENT_GUIDE.md`: S1. Engineering guide for replacing an existing functional agent with a classmate-developed implementation while keeping current graph semantics.
 - `docs/archive/`: S2. Historical handoff notes and archived snapshots.
@@ -25,16 +26,18 @@ This page defines document roles, authority boundaries, and the recommended entr
 
 1. `README.md`
 2. `docs/PROJECT_OVERVIEW.md`
-3. `docs/FRONTEND_ARCHITECTURE.md`
-4. `docs/SYSTEM_MAP.md`
-5. `docs/AGENT_REPLACEMENT_GUIDE.md`
-6. `docs/RUNBOOK_ROUTER_SFT.md`
-7. `docs/CHANGELOG.md`
+3. `docs/MAINLINE_RUNTIME_AUDIT.md`
+4. `docs/FRONTEND_ARCHITECTURE.md`
+5. `docs/SYSTEM_MAP.md`
+6. `docs/AGENT_REPLACEMENT_GUIDE.md`
+7. `docs/RUNBOOK_ROUTER_SFT.md`
+8. `docs/CHANGELOG.md`
 
 ## Current Snapshot Notes
 
-- Current phase: `Phase QS-3：final residual polish`
-- The repo is in quality closure, not in a new feature-expansion phase.
+- Current phase position: `Phase F3 + QS-2`
+- The WS-1 workflow-first streaming seam is landed surface area, not the current repo phase label.
+- The repo is in hardening and quality closure, not in a new feature-expansion phase.
 - `scripts/quality/run_quality.py` is the repo-level quality command source of truth.
 - `scripts/quality/run_provider_live_smoke.py` is an optional provider/live smoke entry and is not part of the default blocking gate.
 - The current provider smoke evidence in this local environment is still `skipped` because provider/search/runtime prerequisites are not fully satisfied.
@@ -45,6 +48,7 @@ This page defines document roles, authority boundaries, and the recommended entr
 
 - [README](/E:/langgraph-my-agent/README.md)
 - [PROJECT_OVERVIEW](/E:/langgraph-my-agent/docs/PROJECT_OVERVIEW.md)
+- [MAINLINE_RUNTIME_AUDIT](/E:/langgraph-my-agent/docs/MAINLINE_RUNTIME_AUDIT.md)
 - [FRONTEND_ARCHITECTURE](/E:/langgraph-my-agent/docs/FRONTEND_ARCHITECTURE.md)
 - [AGENT_REPLACEMENT_GUIDE](/E:/langgraph-my-agent/docs/AGENT_REPLACEMENT_GUIDE.md)
 - [SYSTEM_MAP](/E:/langgraph-my-agent/docs/SYSTEM_MAP.md)

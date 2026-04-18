@@ -1,0 +1,18 @@
+{
+  "version": 1,
+  "threads": {
+    "thread-48a6037b2b": {
+      "thread": {
+        "id": "thread-48a6037b2b",
+        "title": "New thread",
+        "updatedAt": "2026-04-14 15:10",
+        "preview": "Awaiting first message.",
+        "finalSource": "mainline",
+        "phase": "Phase F3 / health-debug polish",
+        "active": null,
+        "continuityMode": "replay"
+      },
+      "turns": []
+    }
+  }
+}

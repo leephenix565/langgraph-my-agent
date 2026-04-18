@@ -6,9 +6,10 @@ This document defines the frontend and public-adapter architecture for the live 
 
 Current relevant phases:
 
-- `Phase WS-1`: workflow-first NDJSON streaming on top of the live adapter and quality baseline
+- `Phase F3`: health hardening and continuity/debug polish on top of the live adapter
+- `Phase WS-1`: workflow-first NDJSON streaming seam already landed on the live adapter
 - `Phase PF-2E-B`: additive typed input seam through structured input, pasted materials, and URL references
-- `Phase QS-2：residual quality closure`: quality-entry alignment, active-test-surface cleanup, and authority-doc cleanup
+- `Phase QS-2`: residual quality closure, quality-entry alignment, active-test-surface cleanup, and authority-doc cleanup
 
 The repo now contains:
 
@@ -74,7 +75,7 @@ The frontend boundary is split into two surfaces.
 
 The workflow layer exists to explain collaboration safely without exposing raw internals.
 
-WS-1 keeps that promise by streaming only safe product events rather than raw graph messages:
+The landed workflow-first seam keeps that promise by streaming only safe product events rather than raw graph messages:
 
 - `run.started`
 - `workflow.stage`

@@ -9,7 +9,8 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 ## 2. Current Snapshot
 
 - Runtime skeleton: `langgraph.json -> src/react_agent/graph.py:graph`
-- Main runtime chain: `router_node -> manager_broadcast -> agent nodes -> manager_summary -> (_run_final_summary / finalize_summary) -> optional memory_update -> __end__`
+- Main runtime topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout flows through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
+- Default answer path: Fair Fusion baseline/judge/writer sidecars exist in runtime, but defaults keep the visible answer on the mainline path unless fusion and source switching are explicitly enabled
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -25,7 +26,10 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Typed input boundary:
   - `structuredInput` is additive only
   - pasted `materials` and additive `urlReferences` must still compile into canonical transcript text
-- Current phase: `Phase WS-1：workflow-first streaming`
+- Current phase position:
+  - frontend/runtime integration: `Phase F3`
+  - repo-level closure: `Phase QS-2`
+  - `Phase WS-1` workflow-first streaming is landed surface area, not the current repo phase label
 
 ## 3. What Is Already Closed
 
@@ -39,20 +43,22 @@ The repo is already strong on product-baseline closure:
 - live web shell with a single assistant persona
 - typed input / notes / URL references kept honest through canonical transcript text
 
-That means the repo is no longer blocked on product-baseline closure or the first quality-stable loop. The current step is an additive workflow-first streaming seam that preserves the same transcript and runtime boundaries.
+That means the repo is no longer blocked on product-baseline closure. The current work is F3 hardening plus QS-2 residual closure on top of the already-landed workflow-first streaming seam.
 
-## 4. Why WS-1 Exists
+## 4. Landed Seam vs Current Phase
 
-QS-1B through QS-3 closed the main quality and credibility gaps, which makes it safe to add one narrow new interaction seam:
+The workflow-first NDJSON seam landed during WS-1 and remains part of the product surface:
 
 - additive workflow-first streaming for the chat surface
 - real-time safe workflow/progress updates without exposing raw graph internals or chain-of-thought
 
-WS-1 adds that seam without changing the LangGraph runtime business semantics, the public transcript truth rules, or the single-assistant product model.
+The current repo position is different. F3 and QS-2 focus on hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority docs without changing LangGraph runtime business semantics, transcript truth, or the single-assistant product model.
+
+This round is a docs-only F3/QS-2 truth-alignment checkpoint rather than a new runtime milestone. The runtime code facts needed for mainline review are already stable enough to audit, and the main discrepancy was that the authority docs in HEAD lagged those code-backed facts. Closing that gap now reduces future review noise and makes the next runtime-facing audit start from a trustworthy narrative baseline. After this closure, the next natural slice is a focused audit on one behavior seam rather than another broad repo-wide restatement.
 
 ## 5. Runtime and Public Boundary
 
-Important boundaries remain unchanged in WS-1:
+Important boundaries remain unchanged on the current mainline:
 
 - do not treat `state["messages"]` as the public transcript
 - do not turn internal agents into separate public chat speakers
@@ -62,6 +68,8 @@ Important boundaries remain unchanged in WS-1:
 - keep `structuredInput`, `materials`, and `urlReferences` as additive mirrors only
 - keep workflow/progress stream events client-visible but non-persisted
 - keep the existing sync send-message seam available alongside the new stream seam
+- keep Fair Fusion represented as baseline/judge/writer sidecars rather than ordinary L1-L4 agents
+- keep the default visible answer on the mainline path unless source switching is explicitly enabled
 
 ## 6. Quality Entry and CI Position
 
@@ -115,7 +123,7 @@ Current local evidence still shows a `skipped` artifact rather than a passed pro
 
 ## 9. Current Product Scope
 
-Current product scope in WS-1 now includes:
+Current product scope on the mainline now includes:
 
 - the existing sync seam `POST /api/threads/{thread_id}/messages`
 - an additive NDJSON stream seam `POST /api/threads/{thread_id}/messages/stream`
@@ -126,8 +134,10 @@ Current product scope in WS-1 now includes:
   - `answer.final`
   - `error`
 - assistant answer Markdown rendering on the client
+- a single assistant persona plus workflow inspector product model
+- Fair Fusion surfaced as workflow sidecars (`baseline`, `judge`, `writer`, `final source`) rather than ordinary agents
 
-WS-1 still does not add:
+The current mainline still does not add:
 
 - SSE
 - token streaming
@@ -139,4 +149,4 @@ WS-1 still does not add:
 
 ## 10. Short External Description
 
-> This project is a layered multi-agent orchestration system built on LangGraph `StateGraph`. Its runtime entrypoint is `langgraph.json -> src/react_agent/graph.py:graph`, and its public product shell is a live chat-first web app backed by a Python public adapter. The repo now has live Chat, Settings, and Agents surfaces, additive typed input mirrors for structured input, pasted materials, and URL references, plus a workflow-first NDJSON stream seam that preserves transcript text as the only canonical public truth. The current engineering phase is `Phase WS-1：workflow-first streaming`.
+> This project is a layered multi-agent orchestration system built on LangGraph `StateGraph`. Its runtime entrypoint is `langgraph.json -> src/react_agent/graph.py:graph`, and its public product shell is a live chat-first web app backed by a Python public adapter. The repo now exposes a single-assistant transcript, a workflow inspector, additive typed input mirrors for structured input, pasted materials, and URL references, plus a workflow-first NDJSON stream seam that preserves transcript text as the only canonical public truth. The current engineering position is `Phase F3 + QS-2`, with the WS-1 streaming seam already landed.
