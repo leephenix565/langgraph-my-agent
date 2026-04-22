@@ -266,3 +266,19 @@
   - `src/react_agent/contract_utils.py`
   - `src/react_agent/graph.py: manager_broadcast`
 - 如果改 Fair Fusion，必须先明确是 shadow 还是 source switch，并同步更新 public mapping、集成测试和前端 final-source 展示
+
+## 13. RP-1A embedding-first shadow seam
+
+- `router_node` now also hosts an internal RP-1A embedding-first semantic-retrieval shadow seam before the formal Router model invoke.
+- This seam is shadow-only:
+  - it does not alter `ROUTER_SYSTEM_PROMPT`
+  - it does not alter `router_parse.parse_router_layers_with_stats(...)`
+  - it does not write `route_semantics`, `route_scores`, `awake_agents`, or `routing_hint` into committed `State`
+  - it does not expand public workflow, transcript, or `/api/health`
+- The seam is fail-open:
+  - disabled or missing embedding config
+  - provider/backend errors
+  - malformed embedding responses
+  all fall back to the existing formal Router path without changing committed routing outputs.
+- The backend/config is private runtime state, not public readiness state. Embedding env/config does not appear on `/api/health`.
+- Observability stays trace-only through `LOCAL_TRACE` / `run_logger`; no raw embeddings or internal shadow artifacts are projected to public surfaces.

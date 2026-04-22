@@ -1,5 +1,21 @@
 # CHANGELOG
 
+## 2026-04-18 - RP-1A embedding-first route-prior shadow landed
+- Files: `src/react_agent/route_profile_registry.py`, `src/react_agent/route_prior_embeddings.py`, `src/react_agent/route_prior.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_route_profile_registry_rp1a.py`, `tests/unit_tests/test_route_prior_embeddings_rp1a.py`, `tests/unit_tests/test_route_prior_rp1a.py`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/MAINLINE_RUNTIME_AUDIT.md`, `docs/CHANGELOG.md`
+- Added RP-1A as an internal embedding-first semantic-retrieval shadow seam without changing runtime topology or public surfaces:
+  - introduced a text-first ordinary-agent route-profile registry built only from tracked metadata and explicit wildcard overrides
+  - added an explicit OpenAI-compatible embedding backend seam plus in-process profile embedding cache and deterministic cosine scoring
+  - wired the shadow retrieval into `router_node` before the formal Router invoke while keeping Router prompt shape, parse semantics, committed routing outputs, and public workflow unchanged
+  - kept the seam fail-open: disabled or broken embedding config now only disables shadow retrieval privately and falls back to the existing formal Router path
+  - kept observability trace-only through `LOCAL_TRACE` / `run_logger` and did not expand `/api/health`
+  - added deterministic unit coverage for registry derivation, embedding cache hit/miss, shortlist guardrails, low-confidence fallback, wildcard retention, and router committed-output invariance
+- Scope boundary:
+  - no graph topology change
+  - no new graph node
+  - no formal Router ownership change
+  - no public contract / workflow / transcript truth change
+  - no public readiness expansion
+
 ## 2026-04-14 - Custom-agent scaffolding landed into repo truth
 - Files: `.codex/agents/repo_explorer.toml`, `.codex/agents/protocol_auditor.toml`, `.codex/agents/docs_impact_analyst.toml`, `.codex/agents/test_impact_analyst.toml`, `AGENTS.md`, `docs/CHANGELOG.md`
 - Added repo-scoped custom-agent scaffolding without changing current runtime or product behavior:

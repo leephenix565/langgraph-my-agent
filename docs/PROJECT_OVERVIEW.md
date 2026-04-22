@@ -26,6 +26,10 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Typed input boundary:
   - `structuredInput` is additive only
   - pasted `materials` and additive `urlReferences` must still compile into canonical transcript text
+- RP-1A runtime seam:
+  - the repo now also carries an embedding-first route-prior shadow seam inside `router_node`
+  - phase 1 remains shadow-only: no formal Router ownership change, no committed-state expansion, no public-surface expansion
+  - missing embedding config or backend failures disable the seam privately and fail open to the existing mainline
 - Current phase position:
   - frontend/runtime integration: `Phase F3`
   - repo-level closure: `Phase QS-2`
@@ -53,6 +57,8 @@ The workflow-first NDJSON seam landed during WS-1 and remains part of the produc
 - real-time safe workflow/progress updates without exposing raw graph internals or chain-of-thought
 
 The current repo position is different. F3 and QS-2 focus on hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority docs without changing LangGraph runtime business semantics, transcript truth, or the single-assistant product model.
+
+RP-1A fits inside that same phase posture. It is an internal runtime shadow seam, not a product-surface expansion and not a new top-level repo phase label. The current slice switches route prior from a rule-led draft direction to embedding-first semantic retrieval, but keeps it shadow-only so the formal Router still owns `layer_plan / layer_mode`. The next natural step after this landing is RP-1B shadow validation and replay/eval evidence, not immediate advisory injection.
 
 This round is a docs-only F3/QS-2 truth-alignment checkpoint rather than a new runtime milestone. The runtime code facts needed for mainline review are already stable enough to audit, and the main discrepancy was that the authority docs in HEAD lagged those code-backed facts. Closing that gap now reduces future review noise and makes the next runtime-facing audit start from a trustworthy narrative baseline. After this closure, the next natural slice is a focused audit on one behavior seam rather than another broad repo-wide restatement.
 

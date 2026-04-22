@@ -9,6 +9,10 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`
 - Runtime mainline topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout runs through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
 - Default answer path: Fair Fusion baseline/judge/writer sidecars exist in the runtime, but `Context.enable_fair_fusion=False` and `Context.enable_fair_fusion_source_switch=False` by default, so the visible answer still comes from the mainline bundle unless those flags are explicitly enabled
+- RP-1A route-prior shadow:
+  - `router_node` now also hosts an internal embedding-first semantic-retrieval shadow seam before the formal Router invoke
+  - it is shadow-only, fail-open, and does not alter formal Router prompt shape, parse semantics, committed state, or public workflow projection
+  - missing or broken embedding config disables the seam privately and does not change `/api/health`
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -203,6 +207,12 @@ Artifacts:
 - Frontend baseline: `npm`, not `pnpm` or `yarn`
 - Dev quality tools should be installed alongside the project when you intend to run `--mode static`
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`
+- RP-1A private embedding envs:
+  - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`
+  - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
+  - `ROUTE_PRIOR_OPENAI_BASE_URL` falling back to `OPENAI_BASE_URL`
+  - `ROUTE_PRIOR_OPENAI_API_KEY` falling back to `OPENAI_API_KEY`
+- These RP-1A envs are runtime-internal only. They do not expand public readiness or the public adapter contract.
 - replay continuity remains weaker than persistent graph continuity and must stay labeled that way
 - `state["messages"]` is not the public transcript
 

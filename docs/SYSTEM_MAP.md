@@ -24,6 +24,12 @@ This document is the S0 operational source for the current repo snapshot.
 - Frontend baseline: `node` + `npm` under `apps/web/`
 - Do not treat `pnpm` or `yarn` as the documented frontend baseline.
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`.
+- RP-1A private embedding envs:
+  - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`
+  - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
+  - `ROUTE_PRIOR_OPENAI_BASE_URL` with fallback to `OPENAI_BASE_URL`
+  - `ROUTE_PRIOR_OPENAI_API_KEY` with fallback to `OPENAI_API_KEY`
+- These RP-1A envs are internal runtime config only. They do not extend `/api/health` readiness or any public-safe contract.
 - Static gate tooling lives in the repo's dev dependency surface and is required for `scripts/quality/run_quality.py --mode static`.
 
 Recommended environment self-check:
@@ -220,6 +226,7 @@ Runtime entry:
 Current runtime topology:
 
 - `__start__ -> router`
+- `router_node` also runs an internal RP-1A embedding-first semantic-retrieval shadow seam before the formal Router model invoke
 - `router -> manager_broadcast` and `router -> baseline_sidecar`
 - `agent nodes -> manager_summary`
 - `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
@@ -237,6 +244,9 @@ Default answer-source behavior:
 
 Important boundaries that remain unchanged on the current mainline:
 
+- keep RP-1A shadow-only, fail-open, and trace-only
+- do not let RP-1A alter formal Router prompt shape, parse semantics, or committed routing outputs
+- do not surface RP-1A embedding config/readiness on `/api/health`
 - do not treat `state["messages"]` as the public transcript
 - do not turn internal agents into separate public chat speakers
 - keep workflow as a summarized inspector

@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
+import asyncio
+import hashlib
 import json
 import os
 import re
-import uuid
-import hashlib
-import asyncio
 import time
+import uuid
 from datetime import UTC, datetime
 from typing import Any, Dict, List, Optional, Tuple
 
@@ -17,20 +17,20 @@ from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
-from react_agent.baseline_sidecar import run_baseline_sidecar
-from react_agent import contract_utils, prompts
-from react_agent import router_parse
+from react_agent import contract_utils, prompts, route_prior, router_parse
 from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
     AgentOutput,
-    register_agent,
 )
+from react_agent.baseline_sidecar import run_baseline_sidecar
 from react_agent.context import Context
 from react_agent.graph_bootstrap import (
     bootstrap_agent_runtime,
-    build_agent_catalog as _bootstrap_build_agent_catalog,
     build_node_registry,
+)
+from react_agent.graph_bootstrap import (
+    build_agent_catalog as _bootstrap_build_agent_catalog,
 )
 from react_agent.graph_entry import (
     compile_graph_variants,
@@ -245,6 +245,48 @@ async def router_node(
     run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
     runtime.context.run_id = run_id
     logger = get_run_logger(run_id)
+    try:
+        route_prior_shadow = await route_prior.compute_route_prior_shadow(
+            question,
+            AGENT_METADATA,
+        )
+        if route_prior_shadow.get("enabled"):
+            logger.log_event(
+                "route_prior_shadow",
+                shadow_only=1 if route_prior_shadow.get("shadow_only") else 0,
+                retrieval_reason=route_prior_shadow.get("retrieval_reason", ""),
+                confidence_band=route_prior_shadow.get("routing_hint", {}).get("confidence_band", ""),
+                low_confidence_fallback=1 if route_prior_shadow.get("low_confidence_fallback") else 0,
+                ordinary_pool_size=len(route_prior_shadow.get("ordinary_pool", [])),
+                shortlist_size=len(route_prior_shadow.get("awake_agents", [])),
+                awake_agents=route_prior_shadow.get("awake_agents", []),
+                top_ranked_ids=[
+                    item.get("agent_id", "")
+                    for item in route_prior_shadow.get("route_scores", [])[:5]
+                ],
+                reason_codes=route_prior_shadow.get("routing_hint", {}).get("reason_codes", []),
+                question_preview=_truncate(question),
+            )
+            logger.log_event(
+                "route_prior_cache",
+                hits=int(route_prior_shadow.get("cache_hits", 0) or 0),
+                misses=int(route_prior_shadow.get("cache_misses", 0) or 0),
+            )
+        else:
+            logger.log_event(
+                "route_prior_disabled",
+                reason=route_prior_shadow.get("retrieval_reason", ""),
+                ordinary_pool_size=len(route_prior_shadow.get("ordinary_pool", [])),
+                question_preview=_truncate(question),
+            )
+    except Exception as exc:
+        logger.log_event(
+            "route_prior_error",
+            exception_type=type(exc).__name__,
+            exception_repr=repr(exc),
+            error=str(exc),
+            question_preview=_truncate(question),
+        )
     agent_catalog = _build_agent_catalog()
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
         system_time=datetime.now(tz=UTC).isoformat(),
@@ -336,7 +378,6 @@ async def router_node(
         )
         response = AIMessage(content=f"[router fallback] {exc}")
         raw_text = "{}"
-    print("[ROUTER RAW OUTPUT]", raw_text)
     logger.log_event(
         "router_decision",
         question=_truncate(question),
@@ -399,7 +440,7 @@ async def router_node(
 async def manager_broadcast(
     state: State, runtime: Runtime[Context]
 ) -> Command:
-    """Manager: dispatch within current layer according to mode."""
+    """Dispatch within the current layer according to its mode."""
     node_started_at = time.perf_counter()
     layer_plan = state.get("layer_plan", {})
     layer_mode = state.get("layer_mode", {})
@@ -954,7 +995,7 @@ def _coerce_card_list(raw: Any) -> List[Any]:
                     norm_value = value.strip()
                     if norm_value:
                         cleaned[norm_key] = norm_value
-                elif isinstance(value, (int, float, bool)) or value is None:
+                elif isinstance(value, int | float | bool) or value is None:
                     cleaned[norm_key] = value
                 else:
                     norm_value = str(value).strip()
@@ -1348,10 +1389,9 @@ def _resolve_final_emit_payload(state: State) -> Optional[Dict[str, Any]]:
 async def manager_summary(
     state: State, runtime: Runtime[Context]
 ) -> Dict[str, object]:
-    """Manager: integrate AgentOutputs; advance layers; only answer at final layer."""
+    """Integrate AgentOutputs, advance layers, and answer on the final layer."""
     node_started_at = time.perf_counter()
     layer_plan = state.get("layer_plan", {})
-    layer_mode = state.get("layer_mode", {})
     current_layer = state.get("current_layer") or LAYER_ORDER[0]
     selected = layer_plan.get(current_layer, state.get("plan", []))
     analyst_results = _get_runtime_results_pool(state)
