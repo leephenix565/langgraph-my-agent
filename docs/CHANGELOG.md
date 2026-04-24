@@ -1,5 +1,25 @@
 # CHANGELOG
 
+## 2026-04-24 - Local clean-env quality validation docs
+- Files: `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Documented the local clean Python 3.11 validation path for Windows/Codex without changing runtime code:
+  - recorded a clean-env recipe using `pyproject.toml` as the mainline Python dependency truth
+  - clarified local mainline install as `.[dev]` plus separately installed `pytest`
+  - clarified that `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline inputs for HF/model-side and training/fine-tuning workflows
+  - documented `PYTHONNOUSERSITE=1` plus env-local `TEMP`, `TMP`, and `MYPY_CACHE_DIR` for avoiding user-site contamination, C-drive temp-space issues, and cache permission failures
+  - kept `scripts/quality/run_quality.py` as the repo-level quality command source of truth
+- Clean-env validation evidence:
+  - static gate passed
+  - RP-1A unit tests: `8 passed`
+  - graph smoke: `1 passed`
+  - public API integration: `12 passed`
+- Scope boundary:
+  - documentation only
+  - no runtime code changes
+  - no RP-1A semantic changes
+  - no public contract changes
+  - no quality runner changes
+
 ## 2026-04-18 - RP-1A embedding-first route-prior shadow landed
 - Files: `src/react_agent/route_profile_registry.py`, `src/react_agent/route_prior_embeddings.py`, `src/react_agent/route_prior.py`, `src/react_agent/graph.py`, `tests/unit_tests/test_route_profile_registry_rp1a.py`, `tests/unit_tests/test_route_prior_embeddings_rp1a.py`, `tests/unit_tests/test_route_prior_rp1a.py`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/MAINLINE_RUNTIME_AUDIT.md`, `docs/CHANGELOG.md`
 - Added RP-1A as an internal embedding-first semantic-retrieval shadow seam without changing runtime topology or public surfaces:

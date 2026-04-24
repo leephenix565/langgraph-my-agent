@@ -50,6 +50,43 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 conda run --no-capture-output -n cline_env python demo_layered_run.py
 ```
 
+## Local Clean Python Environment
+
+For stable local and Codex validation on Windows, prefer a clean Python 3.11 environment when the documented `cline_env` is polluted, unavailable through `conda run`, or not active in the current shell. The mainline Python dependency truth is `pyproject.toml`.
+
+Install the mainline runtime and static-tooling surface into the clean environment:
+
+```powershell
+python -m pip install -e ".[dev]"
+python -m pip install pytest
+```
+
+`.[dev]` installs the static quality tools used by `scripts/quality/run_quality.py --mode static`: `ruff`, `mypy`, and `codespell`. Install `pytest` separately for local test gates unless your dependency-group tooling explicitly installs the repo's dev dependency group.
+
+Do not install `requirements-hf.txt` or `requirements-train.txt` into the default mainline environment. They are optional non-mainline dependency sets for HF/model-side and training/fine-tuning workflows.
+
+Windows example path:
+
+```powershell
+$env:REACT_AGENT_ENV = "D:\AnacondaEnvs\langgraph_agent_py311"
+$env:PYTHONNOUSERSITE = "1"
+$env:TEMP = "$env:REACT_AGENT_ENV\pip-tmp"
+$env:TMP = "$env:REACT_AGENT_ENV\pip-tmp"
+$env:MYPY_CACHE_DIR = "$env:REACT_AGENT_ENV\mypy-cache"
+$env:Path = "$env:REACT_AGENT_ENV;$env:REACT_AGENT_ENV\Scripts;$env:REACT_AGENT_ENV\Library\bin;$env:Path"
+```
+
+The `PYTHONNOUSERSITE=1` setting prevents user-site packages from contaminating validation. The env-local `TEMP`, `TMP`, and `MYPY_CACHE_DIR` settings avoid unreliable C-drive temp space or repo-local cache permissions on Windows.
+
+Validated local commands:
+
+```powershell
+& "$env:REACT_AGENT_ENV\python.exe" scripts\quality\run_quality.py --mode static
+& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\unit_tests\test_route_profile_registry_rp1a.py tests\unit_tests\test_route_prior_embeddings_rp1a.py tests\unit_tests\test_route_prior_rp1a.py -q
+& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_graph.py -q
+& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_public_api.py -q
+```
+
 ## Unified Quality Entry
 
 The repo keeps one repo-level quality command source of truth:
@@ -204,8 +241,11 @@ Artifacts:
 
 - Python requirement: `>=3.11,<4.0`
 - Local baseline: conda env `cline_env`
+- Clean Windows/Codex validation example: `D:\AnacondaEnvs\langgraph_agent_py311`
 - Frontend baseline: `npm`, not `pnpm` or `yarn`
 - Dev quality tools should be installed alongside the project when you intend to run `--mode static`
+- Mainline Python dependencies come from `pyproject.toml`. Local development/static validation should install `.[dev]` plus `pytest`.
+- `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets and are not default quality-gate inputs.
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`
 - RP-1A private embedding envs:
   - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`

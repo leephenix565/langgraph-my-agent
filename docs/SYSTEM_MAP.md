@@ -21,8 +21,14 @@ This document is the S0 operational source for the current repo snapshot.
 
 - Python requirement: `>=3.11,<4.0`
 - Local baseline env: `cline_env`
+- Clean Windows/Codex validation example: `D:\AnacondaEnvs\langgraph_agent_py311`
 - Frontend baseline: `node` + `npm` under `apps/web/`
 - Do not treat `pnpm` or `yarn` as the documented frontend baseline.
+- Mainline Python dependency truth: `pyproject.toml`
+- Local development/static install path: `python -m pip install -e ".[dev]"`, then `python -m pip install pytest`
+- `.[dev]` supplies static tooling for `scripts/quality/run_quality.py --mode static`: `ruff`, `mypy`, and `codespell`.
+- `pytest` is installed separately in local and CI test gates unless dependency-group tooling is used explicitly.
+- `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets for HF/model-side and training/fine-tuning workflows. They are not default mainline quality inputs.
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`.
 - RP-1A private embedding envs:
   - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`
@@ -43,6 +49,9 @@ npm --version
 Windows pytest note:
 
 - Prefer `conda run --no-capture-output -n cline_env python ...`
+- If `cline_env` is polluted or `conda run` is unavailable, prefer a clean Python 3.11 env for Windows/Codex validation.
+- Use `PYTHONNOUSERSITE=1` so user-site packages do not contaminate validation.
+- Use env-local `TEMP`, `TMP`, and `MYPY_CACHE_DIR` when C-drive temp space or repo-local cache permissions are unreliable.
 - This is an execution-layer workaround for Windows terminal output issues, not a logic change
 
 ## 3. Repo-Level Quality Entry
