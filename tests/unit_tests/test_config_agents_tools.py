@@ -31,9 +31,7 @@ def test_config_agents_default_to_llm_tools(monkeypatch) -> None:
 
 def test_stub_fallback_when_description_missing(monkeypatch) -> None:
     """If description is empty, fallback to stub."""
-    from react_agent.agents import AgentMetadata
-    from react_agent.graph import register_agent, AGENT_TOOLS
-    from react_agent.generic_agent import build_generic_agent_tool
+    from react_agent.agents import AGENT_TOOLS, AgentMetadata, register_agent
 
     # Register a temp agent with empty description.
     meta = AgentMetadata(
