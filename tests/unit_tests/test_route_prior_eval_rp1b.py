@@ -225,6 +225,31 @@ def test_draft_labels_disable_quality_conclusion() -> None:
     assert metrics["meta"]["quality_conclusion_allowed"] is False
 
 
+def test_deepseek_teacher_labels_are_proxy_only() -> None:
+    metrics = aggregate_metrics(
+        [
+            {
+                "id": "case-1",
+                "expected_agents": ["a1"],
+                "awake_agents": ["a1"],
+                "top_ranked_ids": ["a1"],
+                "ordinary_pool_size": 2,
+                "enabled": True,
+                "retrieval_reason": "ok",
+                "confidence_band": "normal",
+                "low_confidence_fallback": False,
+                "label_source": "deepseek_teacher_v1",
+            }
+        ]
+    )
+
+    assert metrics["quality_conclusion_allowed"] is False
+    assert metrics["proxy_quality_conclusion_only"] is True
+    assert metrics["proxy_label_only"] is True
+    assert metrics["meta"]["deepseek_teacher_label_count"] == 1
+    assert "model-generated proxy labels" in metrics["meta"]["teacher_labels_warning"]
+
+
 def test_aggregate_can_exclude_draft_labels() -> None:
     records = [
         {

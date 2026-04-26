@@ -237,6 +237,14 @@ python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regressi
 python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
 ```
 
+Optional DeepSeek teacher-proxy labeling:
+
+```powershell
+python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input ops/regression/route_prior/out/rp1b_manual_draft_20.jsonl --out ops/regression/route_prior/out/rp1b_deepseek_teacher_v1_20.jsonl --max-items 20
+```
+
+DeepSeek records use `label_source="deepseek_teacher_v1"`. They are model-generated proxy labels for offline RP-1B experiments, not human/manual gold labels and not runtime truth.
+
 Artifacts:
 
 - `ops/regression/route_prior/out/route_prior_runs.jsonl`
@@ -250,6 +258,7 @@ Policy:
 - default unit coverage stays network-free and does not require a local embeddings endpoint
 - live runs require the private RP-1A embedding envs and a local OpenAI-compatible `/v1/embeddings` service
 - fixture records marked `draft_for_human_review` are labeling drafts, not final quality evidence
+- records marked `deepseek_teacher_v1` are teacher-proxy labels only; metrics should keep `quality_conclusion_allowed=false`
 - no runtime graph change, Router prompt/parser change, State schema change, public API change, public workflow change, or `/api/health` expansion
 
 ## 9. Runtime and Public Boundary

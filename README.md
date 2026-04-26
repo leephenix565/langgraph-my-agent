@@ -248,6 +248,14 @@ python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regressi
 python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
 ```
 
+Optional DeepSeek teacher-proxy labeling for offline experiments:
+
+```powershell
+python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input ops/regression/route_prior/out/rp1b_manual_draft_20.jsonl --out ops/regression/route_prior/out/rp1b_deepseek_teacher_v1_20.jsonl --max-items 20
+```
+
+DeepSeek-generated records use `label_source="deepseek_teacher_v1"`. They are model-generated teacher-proxy labels, not human/manual gold labels, and can only support proxy-quality observations such as Qwen route-prior alignment with that teacher.
+
 The checked-in fixture is a labeling template. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` labels. RP-1B is not part of the default blocking gate unless explicitly promoted later, and it does not alter runtime routing outputs, Router prompt/parser semantics, State, public workflow, or `/api/health`.
 
 ## Environment Baseline

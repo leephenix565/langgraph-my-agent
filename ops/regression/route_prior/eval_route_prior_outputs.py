@@ -23,6 +23,10 @@ METRICS_META = {
     "public_surface_changed": False,
     "labels_warning": "draft labels are not final quality evidence",
 }
+DEEPSEEK_TEACHER_LABEL_SOURCE = "deepseek_teacher_v1"
+DEEPSEEK_TEACHER_LABELS_WARNING = (
+    "DeepSeek teacher labels are model-generated proxy labels, not human/manual gold labels"
+)
 
 CONSERVATIVE_PRUNING_POLICIES = {
     "keep_top_12": 12,
@@ -323,7 +327,9 @@ def aggregate_metrics(
     case_count = len(evaluated)
     label_sources = Counter(str(record.get("label_source", "") or "") for record in evaluated)
     manual_count = label_sources.get("manual", 0)
+    deepseek_teacher_count = label_sources.get(DEEPSEEK_TEACHER_LABEL_SOURCE, 0)
     quality_conclusion_allowed = manual_count > 0
+    proxy_quality_conclusion_only = manual_count == 0 and deepseek_teacher_count > 0
 
     shortlist_sizes = [float(len(_as_str_list(record.get("awake_agents")))) for record in evaluated]
     shortlist_ratios: list[float] = []
@@ -377,10 +383,18 @@ def aggregate_metrics(
         "meta": {
             **METRICS_META,
             "quality_conclusion_allowed": quality_conclusion_allowed,
+            "proxy_quality_conclusion_only": proxy_quality_conclusion_only,
+            "proxy_label_only": proxy_quality_conclusion_only,
+            "deepseek_teacher_label_count": deepseek_teacher_count,
+            "teacher_labels_warning": (
+                DEEPSEEK_TEACHER_LABELS_WARNING if deepseek_teacher_count else ""
+            ),
             "evaluated_case_count": case_count,
             "manual_label_count": manual_count,
         },
         "quality_conclusion_allowed": quality_conclusion_allowed,
+        "proxy_quality_conclusion_only": proxy_quality_conclusion_only,
+        "proxy_label_only": proxy_quality_conclusion_only,
         "case_count": case_count,
         "label_source_counts": dict(sorted(label_sources.items())),
         "enabled_rate": _rate([bool(record.get("enabled", False)) for record in evaluated]),

@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-04-26 - RP-1B DeepSeek teacher-proxy labeling path
+- Files: `ops/regression/route_prior/generate_deepseek_teacher_labels.py`, `tests/unit_tests/test_deepseek_teacher_labels_rp1b.py`, `ops/regression/route_prior/eval_route_prior_outputs.py`, `tests/unit_tests/test_route_prior_eval_rp1b.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added an optional offline DeepSeek teacher-label generator for RP-1B route-prior experiments:
+  - reads question JSONL and the tracked ordinary-agent catalog
+  - calls the DeepSeek OpenAI-compatible chat-completions API when `DEEPSEEK_API_KEY` is present
+  - writes `label_source="deepseek_teacher_v1"` teacher-proxy labels into ignored `ops/regression/route_prior/out/` artifacts
+  - filters unknown or non-ordinary agent ids before evaluation
+  - keeps generated labels explicitly model-generated proxy labels, not human/manual gold labels
+- Updated RP-1B metrics metadata to keep DeepSeek teacher-label results as proxy-only with `quality_conclusion_allowed=false`.
+- Scope boundary:
+  - no runtime code changes
+  - no RP-2 advisory-only behavior
+  - no Router prompt/parser changes
+  - no State or committed routing output changes
+  - no public API or workflow changes
+  - no `/api/health` expansion
+
 ## 2026-04-26 - RP-1B route-prior offline validation harness
 - Files: `ops/regression/route_prior/__init__.py`, `ops/regression/route_prior/run_route_prior_eval.py`, `ops/regression/route_prior/eval_route_prior_outputs.py`, `ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl`, `tests/unit_tests/test_route_prior_eval_rp1b.py`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `.gitignore`
 - Added an optional offline RP-1B eval harness under `ops/regression/route_prior`:
