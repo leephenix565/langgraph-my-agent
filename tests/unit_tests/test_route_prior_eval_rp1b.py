@@ -7,7 +7,9 @@ import pytest
 from ops.regression.route_prior.eval_route_prior_outputs import (
     aggregate_metrics,
     collect_false_negatives,
+    conservative_pruned_agents,
     expected_recall,
+    full_ranked_agent_ids,
     jaccard,
     top_ranked_ids,
     topk_hit,
@@ -39,6 +41,15 @@ def test_top_ranked_ids_falls_back_to_route_scores_top10() -> None:
     }
 
     assert top_ranked_ids(record) == ["a1", "a2"]
+
+
+def test_full_ranked_agent_ids_prefers_all_scores() -> None:
+    record = {
+        "top_ranked_ids": ["a1", "a2"],
+        "route_scores_all_agent_ids": ["a1", "a2", "a3"],
+    }
+
+    assert full_ranked_agent_ids(record) == ["a1", "a2", "a3"]
 
 
 def test_shortlist_recall_calculation() -> None:
@@ -107,6 +118,8 @@ def test_aggregate_low_confidence_fallback_rate() -> None:
 
     assert metrics["low_confidence_fallback_rate"] == 0.5
     assert metrics["shortlist_recall"] == 0.5
+    assert metrics["false_negative_case_count"] == 1
+    assert metrics["false_negative_agent_count"] == 1
 
 
 def test_formal_router_overlap_observation_present_and_absent() -> None:
@@ -244,3 +257,108 @@ def test_aggregate_can_exclude_draft_labels() -> None:
 
     assert metrics["case_count"] == 1
     assert metrics["label_source_counts"] == {"manual": 1}
+
+
+def test_conservative_pruning_preserves_wildcard() -> None:
+    record = {
+        "expected_agents": ["a15"],
+        "awake_agents": ["a1", "a2", "a3", "a15"],
+        "route_scores_all_agent_ids": ["a1", "a2", "a3", "a15"],
+        "wildcard_agents": ["a15"],
+        "ordinary_pool_size": 4,
+        "low_confidence_fallback": False,
+    }
+
+    pruned_agents, pruning_applied = conservative_pruned_agents(record, keep_top_k=2)
+
+    assert pruning_applied is True
+    assert pruned_agents == ["a1", "a2", "a15"]
+
+
+def test_conservative_pruning_disabled_for_low_confidence_fallback() -> None:
+    record = {
+        "awake_agents": ["a1", "a2", "a3"],
+        "route_scores_all_agent_ids": ["a1", "a2"],
+        "wildcard_agents": ["a15"],
+        "low_confidence_fallback": True,
+    }
+
+    pruned_agents, pruning_applied = conservative_pruned_agents(record, keep_top_k=1)
+
+    assert pruning_applied is False
+    assert pruned_agents == ["a1", "a2", "a3"]
+
+
+def test_conservative_pruning_metrics_and_false_negatives() -> None:
+    ranked_ids = [f"a{i}" for i in range(1, 15)] + ["a15"]
+    metrics = aggregate_metrics(
+        [
+            {
+                "id": "case-1",
+                "question": "q1",
+                "expected_agents": ["a1", "a2"],
+                "awake_agents": ranked_ids,
+                "route_scores_all_agent_ids": ranked_ids,
+                "wildcard_agents": ["a15"],
+                "ordinary_pool_size": 15,
+                "enabled": True,
+                "retrieval_reason": "ok",
+                "confidence_band": "normal",
+                "low_confidence_fallback": False,
+                "label_source": "manual",
+            },
+            {
+                "id": "case-2",
+                "question": "q2",
+                "expected_agents": ["a4"],
+                "awake_agents": ["a1", "a2", "a3", "a4"],
+                "route_scores_all_agent_ids": ["a1", "a2", "a3", "a4"],
+                "wildcard_agents": [],
+                "ordinary_pool_size": 4,
+                "enabled": True,
+                "retrieval_reason": "ok",
+                "confidence_band": "low",
+                "low_confidence_fallback": True,
+                "label_source": "manual",
+            },
+        ]
+    )
+
+    policy = metrics["conservative_pruning"]["keep_top_12"]
+
+    assert policy["case_count"] == 2
+    assert policy["pruning_applied_count"] == 1
+    assert policy["shortlist_recall"] == 1.0
+    assert policy["false_negative_count"] == 0
+    assert policy["false_negative_case_count"] == 0
+    assert policy["false_negative_agent_count"] == 0
+    assert policy["dropped_agent_count_avg"] == pytest.approx(1.0)
+
+
+def test_conservative_pruning_policy_reports_false_negative() -> None:
+    ranked_ids = [f"a{i}" for i in range(1, 15)]
+    metrics = aggregate_metrics(
+        [
+            {
+                "id": "case-1",
+                "question": "q1",
+                "expected_agents": ["a13"],
+                "awake_agents": ranked_ids,
+                "route_scores_all_agent_ids": ranked_ids,
+                "wildcard_agents": [],
+                "ordinary_pool_size": 14,
+                "enabled": True,
+                "retrieval_reason": "ok",
+                "confidence_band": "normal",
+                "low_confidence_fallback": False,
+                "label_source": "manual",
+            }
+        ]
+    )
+
+    policy = metrics["conservative_pruning"]["keep_top_12"]
+
+    assert policy["false_negative_count"] == 1
+    assert policy["false_negative_case_count"] == 1
+    assert policy["false_negative_agent_count"] == 1
+    assert policy["false_negative_examples"][0]["missing_expected_agents"] == ["a13"]

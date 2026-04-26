@@ -24,6 +24,15 @@ METRICS_META = {
     "labels_warning": "draft labels are not final quality evidence",
 }
 
+CONSERVATIVE_PRUNING_POLICIES = {
+    "keep_top_12": 12,
+    "keep_top_14": 14,
+    "keep_top_16": 16,
+    "keep_top_18": 18,
+    "keep_top_14_plus_wildcard": 14,
+    "keep_top_16_plus_wildcard": 16,
+}
+
 
 def _find_repo_root(start: Path) -> Path:
     for candidate in (start, *start.parents):
@@ -87,6 +96,21 @@ def top_ranked_ids(record: JsonMapping) -> list[str]:
         if isinstance(agent_id, str) and agent_id:
             ranked.append(agent_id)
     return ranked
+
+
+def full_ranked_agent_ids(record: JsonMapping) -> list[str]:
+    """Return full ranked agent ids when the run record includes them."""
+    explicit = _as_str_list(record.get("route_scores_all_agent_ids"))
+    if explicit:
+        return explicit
+    ranked: list[str] = []
+    for item in _as_mapping_list(record.get("route_scores_all_light")):
+        agent_id = item.get("agent_id")
+        if isinstance(agent_id, str) and agent_id:
+            ranked.append(agent_id)
+    if ranked:
+        return ranked
+    return top_ranked_ids(record)
 
 
 def topk_hit(record: JsonMapping, k: int) -> bool:
@@ -157,6 +181,111 @@ def collect_false_negatives(records: Sequence[JsonMapping]) -> list[JsonDict]:
             }
         )
     return examples
+
+
+def false_negative_agent_count(examples: Sequence[JsonMapping]) -> int:
+    """Return the number of missing expected-agent labels across false-negative cases."""
+    return sum(len(_as_str_list(example.get("missing_expected_agents"))) for example in examples)
+
+
+def conservative_pruned_agents(record: JsonMapping, *, keep_top_k: int) -> tuple[list[str], bool]:
+    """Simulate conservative pruning for one record without changing runtime behavior."""
+    awake_agents = _as_str_list(record.get("awake_agents"))
+    if bool(record.get("low_confidence_fallback", False)):
+        return awake_agents, False
+
+    ranked_ids = full_ranked_agent_ids(record)
+    selected: list[str] = []
+    for agent_id in ranked_ids[:keep_top_k]:
+        if agent_id not in selected:
+            selected.append(agent_id)
+    for wildcard_id in _as_str_list(record.get("wildcard_agents")):
+        if wildcard_id in ranked_ids and wildcard_id not in selected:
+            selected.append(wildcard_id)
+    return selected, True
+
+
+def collect_conservative_false_negatives(
+    records: Sequence[JsonMapping],
+    *,
+    keep_top_k: int,
+) -> list[JsonDict]:
+    """Collect false negatives under one conservative pruning policy."""
+    examples: list[JsonDict] = []
+    for record in records:
+        pruned_agents, pruning_applied = conservative_pruned_agents(record, keep_top_k=keep_top_k)
+        expected = _as_str_list(record.get("expected_agents"))
+        missing = [agent_id for agent_id in expected if agent_id not in pruned_agents]
+        if not missing:
+            continue
+        examples.append(
+            {
+                "id": str(record.get("id", "") or ""),
+                "question": str(record.get("question", "") or ""),
+                "expected_agents": expected,
+                "missing_expected_agents": missing,
+                "pruned_agents": pruned_agents,
+                "top_ranked_ids": full_ranked_agent_ids(record),
+                "confidence_band": str(record.get("confidence_band", "") or ""),
+                "low_confidence_fallback": bool(record.get("low_confidence_fallback", False)),
+                "pruning_applied": pruning_applied,
+                "retrieval_reason": str(record.get("retrieval_reason", "") or ""),
+                "label_source": str(record.get("label_source", "") or ""),
+            }
+        )
+    return examples
+
+
+def aggregate_conservative_pruning(records: Sequence[JsonMapping]) -> JsonDict:
+    """Aggregate offline conservative-pruning simulation metrics."""
+    policy_metrics: JsonDict = {}
+    case_count = len(records)
+    for policy_name, keep_top_k in CONSERVATIVE_PRUNING_POLICIES.items():
+        pool_sizes: list[float] = []
+        pool_ratios: list[float] = []
+        recall_values: list[float] = []
+        full_covered_values: list[bool] = []
+        dropped_counts: list[float] = []
+        pruning_applied_count = 0
+
+        for record in records:
+            pruned_agents, pruning_applied = conservative_pruned_agents(
+                record,
+                keep_top_k=keep_top_k,
+            )
+            if pruning_applied:
+                pruning_applied_count += 1
+            ordinary_pool_size = int(record.get("ordinary_pool_size", 0) or 0)
+            if ordinary_pool_size <= 0:
+                ordinary_pool_size = len(full_ranked_agent_ids(record)) or len(pruned_agents)
+            pool_size = len(pruned_agents)
+            pool_sizes.append(float(pool_size))
+            if ordinary_pool_size > 0:
+                pool_ratios.append(pool_size / ordinary_pool_size)
+                dropped_counts.append(float(max(ordinary_pool_size - pool_size, 0)))
+            recall_value = expected_recall(
+                pruned_agents,
+                _as_str_list(record.get("expected_agents")),
+            )
+            recall_values.append(recall_value)
+            full_covered_values.append(recall_value == 1.0)
+
+        false_negatives = collect_conservative_false_negatives(records, keep_top_k=keep_top_k)
+        false_negative_case_count = len(false_negatives)
+        policy_metrics[policy_name] = {
+            "case_count": case_count,
+            "pruning_applied_count": pruning_applied_count,
+            "avg_pool_size": _avg(pool_sizes),
+            "avg_pool_ratio": _avg(pool_ratios),
+            "shortlist_recall": _avg(recall_values),
+            "full_expected_covered_rate": _rate(full_covered_values),
+            "false_negative_count": false_negative_case_count,
+            "false_negative_case_count": false_negative_case_count,
+            "false_negative_agent_count": false_negative_agent_count(false_negatives),
+            "false_negative_examples": false_negatives,
+            "dropped_agent_count_avg": _avg(dropped_counts),
+        }
+    return policy_metrics
 
 
 def _formal_router_overlap(records: Sequence[JsonMapping]) -> JsonDict | None:
@@ -235,6 +364,7 @@ def aggregate_metrics(
         wildcard_retained.append(bool(awake.intersection(wildcards)))
 
     false_negatives = collect_false_negatives(evaluated)
+    false_negative_case_count = len(false_negatives)
     invalid_expected_agents = [
         {
             "id": str(record.get("id", "") or ""),
@@ -273,10 +403,13 @@ def aggregate_metrics(
         "full_expected_covered_rate": _rate(full_expected_covered),
         "wildcard_retention_rate": _rate(wildcard_retained) if wildcard_retained else None,
         "formal_router_overlap_observation": _formal_router_overlap(evaluated),
-        "false_negative_count": len(false_negatives),
+        "false_negative_count": false_negative_case_count,
+        "false_negative_case_count": false_negative_case_count,
+        "false_negative_agent_count": false_negative_agent_count(false_negatives),
         "false_negative_examples": false_negatives,
         "invalid_expected_agent_count": len(invalid_expected_agents),
         "invalid_expected_agents": invalid_expected_agents,
+        "conservative_pruning": aggregate_conservative_pruning(evaluated),
     }
     return metrics
 
@@ -334,6 +467,8 @@ def main() -> int:
     false_negatives = {
         "meta": metrics["meta"],
         "false_negative_count": metrics["false_negative_count"],
+        "false_negative_case_count": metrics["false_negative_case_count"],
+        "false_negative_agent_count": metrics["false_negative_agent_count"],
         "false_negative_examples": metrics["false_negative_examples"],
     }
     out_path = Path(args.out)

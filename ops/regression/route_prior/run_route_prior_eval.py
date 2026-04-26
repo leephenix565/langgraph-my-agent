@@ -151,11 +151,12 @@ async def prewarm_embedding_endpoint(
     }
 
 
-def _score_top10(route_scores: object) -> list[JsonDict]:
+def _score_light(route_scores: object, *, limit: int | None = None) -> list[JsonDict]:
     if not isinstance(route_scores, list):
         return []
     items: list[JsonDict] = []
-    for raw_item in route_scores[:10]:
+    selected_scores = route_scores[:limit] if limit is not None else route_scores
+    for raw_item in selected_scores:
         if not isinstance(raw_item, Mapping):
             continue
         items.append(
@@ -165,6 +166,27 @@ def _score_top10(route_scores: object) -> list[JsonDict]:
                     raw_item.get("semantic_similarity_score", 0.0) or 0.0
                 ),
                 "cost_tiebreak_score": float(raw_item.get("cost_tiebreak_score", 0.0) or 0.0),
+                "wildcard_flag": bool(raw_item.get("wildcard_flag", False)),
+                "confidence_band": str(raw_item.get("confidence_band", "") or ""),
+            }
+        )
+    return items
+
+
+def _score_all_light(route_scores: object) -> list[JsonDict]:
+    if not isinstance(route_scores, list):
+        return []
+    items: list[JsonDict] = []
+    for raw_item in route_scores:
+        if not isinstance(raw_item, Mapping):
+            continue
+        items.append(
+            {
+                "agent_id": str(raw_item.get("agent_id", "") or ""),
+                "semantic_similarity_score": round(
+                    float(raw_item.get("semantic_similarity_score", 0.0) or 0.0),
+                    6,
+                ),
                 "wildcard_flag": bool(raw_item.get("wildcard_flag", False)),
                 "confidence_band": str(raw_item.get("confidence_band", "") or ""),
             }
@@ -205,7 +227,8 @@ async def run_case(
 
     try:
         shadow = await route_prior.compute_route_prior_shadow(case.question, metadata_by_id)
-        route_scores_top10 = _score_top10(shadow.get("route_scores"))
+        route_scores_top10 = _score_light(shadow.get("route_scores"), limit=10)
+        route_scores_all_light = _score_all_light(shadow.get("route_scores"))
         record: JsonDict = {
             "id": case.case_id,
             "question": case.question,
@@ -223,6 +246,12 @@ async def run_case(
                 str(item.get("agent_id", "") or "") for item in route_scores_top10 if item.get("agent_id")
             ],
             "route_scores_top10": route_scores_top10,
+            "route_scores_all_agent_ids": [
+                str(item.get("agent_id", "") or "")
+                for item in route_scores_all_light
+                if item.get("agent_id")
+            ],
+            "route_scores_all_light": route_scores_all_light,
             "wildcard_agents": _as_str_list(shadow.get("wildcard_agents")),
             "cache_hits": int(shadow.get("cache_hits", 0) or 0),
             "cache_misses": int(shadow.get("cache_misses", 0) or 0),
@@ -246,6 +275,8 @@ async def run_case(
             "awake_agents": [],
             "top_ranked_ids": [],
             "route_scores_top10": [],
+            "route_scores_all_agent_ids": [],
+            "route_scores_all_light": [],
             "wildcard_agents": [],
             "cache_hits": 0,
             "cache_misses": 0,
