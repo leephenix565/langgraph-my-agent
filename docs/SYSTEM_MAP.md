@@ -226,7 +226,33 @@ Default gate policy:
 - trace noise remains warning-only
 - provider/live smoke remains outside the default blocking gate
 
-## 8. Runtime and Public Boundary
+## 8. RP-1B Route-Prior Offline Eval
+
+RP-1B route-prior evaluation is an optional offline regression/eval harness under `ops/regression/route_prior/`. It validates RP-1A shadow outputs against labeled question JSONL by reporting top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, wildcard retention, and false-negative examples.
+
+Commands:
+
+```powershell
+python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
+python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
+```
+
+Artifacts:
+
+- `ops/regression/route_prior/out/route_prior_runs.jsonl`
+- `ops/regression/route_prior/out/route_prior_run_summary.json`
+- `ops/regression/route_prior/out/route_prior_metrics.json`
+- `ops/regression/route_prior/out/route_prior_false_negatives.json`
+
+Policy:
+
+- optional and non-blocking unless future work explicitly promotes it into the mainline gate
+- default unit coverage stays network-free and does not require a local embeddings endpoint
+- live runs require the private RP-1A embedding envs and a local OpenAI-compatible `/v1/embeddings` service
+- fixture records marked `draft_for_human_review` are labeling drafts, not final quality evidence
+- no runtime graph change, Router prompt/parser change, State schema change, public API change, public workflow change, or `/api/health` expansion
+
+## 9. Runtime and Public Boundary
 
 Runtime entry:
 
@@ -264,7 +290,7 @@ Important boundaries that remain unchanged on the current mainline:
 - keep `structuredInput`, `materials`, and `urlReferences` additive only
 - keep Fair Fusion as baseline/judge/writer sidecars rather than ordinary L1-L4 agents
 
-## 9. Public Adapter Truthfulness
+## 10. Public Adapter Truthfulness
 
 The current public adapter truth surface remains:
 
@@ -295,7 +321,7 @@ Truthfulness rules that still apply:
 - stream progress events are public-safe projections only and are never persisted as transcript turns
 - `answer.final` is the only streaming event that carries the final persisted assistant answer payload
 
-## 10. Frontend Baseline
+## 11. Frontend Baseline
 
 Frontend commands still live under `apps/web/`:
 
@@ -315,7 +341,7 @@ Important current test fact:
 - this frontend rendering change does not alter backend contracts, transcript truth, or replay semantics
 - legacy fixture files with a `.legacy.tsx` suffix are not part of the default gate
 
-## 11. Router-SFT Runbook Position
+## 12. Router-SFT Runbook Position
 
 Router-SFT training/eval command truth lives in:
 

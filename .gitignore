@@ -173,6 +173,7 @@ apps/web/.vite/
 apps/web/artifacts/
 ops/regression/fusion/out/
 ops/regression/provider/out/
+ops/regression/route_prior/out/
 tmp/pytest-*/
 tmp/rp1a_local_backups/
 tmp_rp1a_public_api_check/

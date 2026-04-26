@@ -1,5 +1,22 @@
 # CHANGELOG
 
+## 2026-04-26 - RP-1B route-prior offline validation harness
+- Files: `ops/regression/route_prior/__init__.py`, `ops/regression/route_prior/run_route_prior_eval.py`, `ops/regression/route_prior/eval_route_prior_outputs.py`, `ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl`, `tests/unit_tests/test_route_prior_eval_rp1b.py`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `.gitignore`
+- Added an optional offline RP-1B eval harness under `ops/regression/route_prior`:
+  - consumes labeled question JSONL and RP-1A `compute_route_prior_shadow(...)` outputs
+  - writes per-case run records plus run summaries without emitting raw embeddings
+  - aggregates top-k match, expected-agent recall at top 5, shortlist recall, low-confidence fallback rate, wildcard retention, formal-Router overlap observation, and false-negative examples
+  - keeps default unit coverage network-free and independent of any local embeddings endpoint
+  - supports optional live embedding runs through the private RP-1A OpenAI-compatible embedding envs
+- Added a labeling template fixture with `draft_for_human_review` records only; these drafts are not final quality evidence until reviewed as `manual` labels.
+- Scope boundary:
+  - no runtime code changes
+  - no RP-2 advisory-only behavior
+  - no Router prompt/parser changes
+  - no State or committed routing output changes
+  - no public API or workflow changes
+  - no `/api/health` expansion
+
 ## 2026-04-24 - Local clean-env quality validation docs
 - Files: `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Documented the local clean Python 3.11 validation path for Windows/Codex without changing runtime code:

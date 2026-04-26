@@ -237,6 +237,19 @@ Artifacts:
 - `ops/regression/fusion/out/fusion_metrics.json`
 - `ops/regression/fusion/out/fusion_gate.json`
 
+## RP-1B Route-Prior Offline Eval
+
+RP-1B adds an optional offline validation harness for the RP-1A route-prior shadow seam. It consumes labeled question JSONL, runs `compute_route_prior_shadow(...)`, and aggregates top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, and false-negative examples.
+
+Minimal live run, requiring a local OpenAI-compatible embeddings endpoint:
+
+```powershell
+python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
+python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
+```
+
+The checked-in fixture is a labeling template. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` labels. RP-1B is not part of the default blocking gate unless explicitly promoted later, and it does not alter runtime routing outputs, Router prompt/parser semantics, State, public workflow, or `/api/health`.
+
 ## Environment Baseline
 
 - Python requirement: `>=3.11,<4.0`
