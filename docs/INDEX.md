@@ -11,6 +11,7 @@ This page defines document roles, authority boundaries, and the recommended entr
 - `data/a01_sft/DATA_MANIFEST.md`: S0. Final a01-SFT data evidence chain and archive boundary.
 - `docs/PROJECT_OVERVIEW.md`: S1. Narrative entry and current engineering snapshot.
 - `docs/MAINLINE_RUNTIME_AUDIT.md`: S1. Evidence-backed mainline runtime understanding audit for topology, state semantics, public-adapter boundaries, and default-vs-optional behavior.
+- `docs/ROUTE_PRIOR_RARP_DESIGN.md`: S1. Design authority for the planned RARP/RP-2/RP-3 route-prior reliability layer, promotion criteria, and non-goal boundaries; code and focused tests still define implemented runtime behavior.
 - `docs/FRONTEND_ARCHITECTURE.md`: S1. Frontend/product boundary, public transcript rules, and workflow-inspector rationale.
 - `docs/AGENT_REPLACEMENT_GUIDE.md`: S1. Engineering guide for replacing an existing functional agent with a classmate-developed implementation while keeping current graph semantics.
 - `docs/archive/`: S2. Historical handoff notes and archived snapshots.
@@ -27,11 +28,12 @@ This page defines document roles, authority boundaries, and the recommended entr
 1. `README.md`
 2. `docs/PROJECT_OVERVIEW.md`
 3. `docs/MAINLINE_RUNTIME_AUDIT.md`
-4. `docs/FRONTEND_ARCHITECTURE.md`
-5. `docs/SYSTEM_MAP.md`
-6. `docs/AGENT_REPLACEMENT_GUIDE.md`
-7. `docs/RUNBOOK_ROUTER_SFT.md`
-8. `docs/CHANGELOG.md`
+4. `docs/ROUTE_PRIOR_RARP_DESIGN.md`
+5. `docs/FRONTEND_ARCHITECTURE.md`
+6. `docs/SYSTEM_MAP.md`
+7. `docs/AGENT_REPLACEMENT_GUIDE.md`
+8. `docs/RUNBOOK_ROUTER_SFT.md`
+9. `docs/CHANGELOG.md`
 
 ## Current Snapshot Notes
 
@@ -43,12 +45,14 @@ This page defines document roles, authority boundaries, and the recommended entr
 - The current provider smoke evidence in this local environment is still `skipped` because provider/search/runtime prerequisites are not fully satisfied.
 - The active frontend gate entry is `apps/web/src/test/smoke.tsx`.
 - Legacy frontend fixtures use a `.legacy.tsx` suffix and are not part of the default gate.
+- `docs/ROUTE_PRIOR_RARP_DESIGN.md` is a design document for planned route-prior reliability work; RP-2/RP-3 runtime behavior is not implemented unless current code and tests show it.
 
 ## Navigation
 
 - [README](/E:/langgraph-my-agent/README.md)
 - [PROJECT_OVERVIEW](/E:/langgraph-my-agent/docs/PROJECT_OVERVIEW.md)
 - [MAINLINE_RUNTIME_AUDIT](/E:/langgraph-my-agent/docs/MAINLINE_RUNTIME_AUDIT.md)
+- [ROUTE_PRIOR_RARP_DESIGN](/E:/langgraph-my-agent/docs/ROUTE_PRIOR_RARP_DESIGN.md)
 - [FRONTEND_ARCHITECTURE](/E:/langgraph-my-agent/docs/FRONTEND_ARCHITECTURE.md)
 - [AGENT_REPLACEMENT_GUIDE](/E:/langgraph-my-agent/docs/AGENT_REPLACEMENT_GUIDE.md)
 - [SYSTEM_MAP](/E:/langgraph-my-agent/docs/SYSTEM_MAP.md)

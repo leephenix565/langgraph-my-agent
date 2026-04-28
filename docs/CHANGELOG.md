@@ -1,5 +1,23 @@
 # CHANGELOG
 
+## 2026-04-28 - RARP route-prior design document
+- Files: `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Added a docs-only design authority for Reliability-Aware Route Prior:
+  - records the target RARP mental model as an internal reliability layer around the existing formal Router
+  - preserves RP-1A/RP-1B as the current implemented foundation and separates planned RP-2/RP-3/RP-4 behavior from current code facts
+  - documents agent-universe boundaries across the formal Router catalog, ordinary route-prior pool, and public `/api/agents` catalog
+  - records planned profile-card, reliability-table, scoring, confidence-band, label, metric, artifact, trace/privacy, and promotion-boundary schemas
+  - keeps RP-2 as shadow/eval-first and RP-3 as future non-binding advisory only after evidence gates
+- Updated the docs index to register the design doc as S1 design authority, with runtime behavior still governed by `src/react_agent/*` and focused tests.
+- Scope boundary:
+  - documentation only
+  - no runtime code changes
+  - no Router prompt/parser changes
+  - no State schema changes
+  - no public API/workflow/health changes
+  - no test or quality-gate changes
+  - no route-prior eval promotion into the mainline gate
+
 ## 2026-04-26 - RP-1B DeepSeek teacher-proxy labeling path
 - Files: `ops/regression/route_prior/generate_deepseek_teacher_labels.py`, `tests/unit_tests/test_deepseek_teacher_labels_rp1b.py`, `ops/regression/route_prior/eval_route_prior_outputs.py`, `tests/unit_tests/test_route_prior_eval_rp1b.py`, `README.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Added an optional offline DeepSeek teacher-label generator for RP-1B route-prior experiments:
