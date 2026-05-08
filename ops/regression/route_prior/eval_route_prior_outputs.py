@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Aggregate RP-1B offline route-prior run outputs into metrics."""
+"""Aggregate offline route-prior run outputs into metrics."""
 
 from __future__ import annotations
 
@@ -16,8 +16,10 @@ JsonMapping = Mapping[str, Any]
 
 
 METRICS_META = {
-    "phase": "RP-1B",
-    "scope": "offline_shadow_validation",
+    "phase": "RP-2A",
+    "scope": "offline_eval_tooling",
+    "schema_version": "route_prior_metrics_v2",
+    "legacy_rp1b_compatible": True,
     "runtime_semantics_changed": False,
     "formal_router_changed": False,
     "public_surface_changed": False,
@@ -27,6 +29,16 @@ DEEPSEEK_TEACHER_LABEL_SOURCE = "deepseek_teacher_v1"
 DEEPSEEK_TEACHER_LABELS_WARNING = (
     "DeepSeek teacher labels are model-generated proxy labels, not human/manual gold labels"
 )
+QUALITY_LABEL_SOURCES = {"manual", "manual_gold"}
+NON_QUALITY_LABEL_SOURCES = {"draft_for_human_review", DEEPSEEK_TEACHER_LABEL_SOURCE}
+COST_VALUES = {
+    "low": 1.0,
+    "normal": 2.0,
+    "medium": 2.0,
+    "high": 3.0,
+    "unknown": 2.0,
+    "": 2.0,
+}
 
 CONSERVATIVE_PRUNING_POLICIES = {
     "keep_top_12": 12,
@@ -46,8 +58,11 @@ def _find_repo_root(start: Path) -> Path:
 
 
 REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
+SRC_DIR = REPO_ROOT / "src"
 if str(REPO_ROOT) not in sys.path:
     sys.path.insert(0, str(REPO_ROOT))
+if str(SRC_DIR) not in sys.path:
+    sys.path.insert(0, str(SRC_DIR))
 
 
 def _as_str_list(value: object) -> list[str]:
@@ -74,8 +89,171 @@ def _avg(values: Sequence[float]) -> float:
     return sum(values) / len(values)
 
 
+def _nullable_avg(values: Sequence[float]) -> float | None:
+    if not values:
+        return None
+    return _avg(values)
+
+
+def _labels_mapping(record: JsonMapping) -> JsonMapping:
+    labels = record.get("labels")
+    if isinstance(labels, Mapping):
+        return labels
+    return {}
+
+
+def must_include_agents(record: JsonMapping) -> list[str]:
+    """Return RP-2A must-include labels, falling back to legacy expected_agents."""
+    labels = _labels_mapping(record)
+    explicit = _as_str_list(labels.get("must_include_agents"))
+    if explicit:
+        return explicit
+    explicit = _as_str_list(record.get("must_include_agents"))
+    if explicit:
+        return explicit
+    return _as_str_list(record.get("expected_agents"))
+
+
+def critical_agents(record: JsonMapping) -> list[str]:
+    """Return critical-agent labels when present."""
+    labels = _labels_mapping(record)
+    explicit = _as_str_list(labels.get("critical_agents"))
+    if explicit:
+        return explicit
+    return _as_str_list(record.get("critical_agents"))
+
+
+def nice_to_have_agents(record: JsonMapping) -> list[str]:
+    """Return nice-to-have labels when present."""
+    labels = _labels_mapping(record)
+    explicit = _as_str_list(labels.get("nice_to_have_agents"))
+    if explicit:
+        return explicit
+    return _as_str_list(record.get("nice_to_have_agents"))
+
+
+def should_not_include_agents(record: JsonMapping) -> list[str]:
+    """Return negative route labels when present."""
+    labels = _labels_mapping(record)
+    explicit = _as_str_list(labels.get("should_not_include_agents"))
+    if explicit:
+        return explicit
+    return _as_str_list(record.get("should_not_include_agents"))
+
+
+def _record_quality_conclusion_allowed(record: JsonMapping) -> bool:
+    source = str(record.get("label_source", "") or "")
+    if source in NON_QUALITY_LABEL_SOURCES:
+        return False
+    raw = record.get("quality_conclusion_allowed")
+    if isinstance(raw, bool):
+        return raw and source in QUALITY_LABEL_SOURCES
+    return source in QUALITY_LABEL_SOURCES
+
+
+def _score_value(raw: object) -> float:
+    try:
+        score = float(raw or 0.0)
+    except (TypeError, ValueError):
+        score = 0.0
+    return max(0.0, min(1.0, score))
+
+
+def _route_score_items(record: JsonMapping) -> list[JsonMapping]:
+    items = _as_mapping_list(record.get("route_scores_all_light"))
+    if items:
+        return items
+    return _as_mapping_list(record.get("route_scores_top10"))
+
+
+def _precision(selected: Sequence[str], expected: Sequence[str]) -> float:
+    selected_set = set(selected)
+    if not selected_set:
+        return 0.0
+    return len(selected_set.intersection(expected)) / len(selected_set)
+
+
+def _f1(precision: float, recall: float) -> float:
+    if precision + recall <= 0:
+        return 0.0
+    return 2 * precision * recall / (precision + recall)
+
+
+def _agent_cost_levels() -> dict[str, str]:
+    from react_agent.agents import (  # type: ignore[import-not-found]
+        AGENT_METADATA,
+        load_metadata_from_dir,
+    )
+
+    if not AGENT_METADATA:
+        load_metadata_from_dir(REPO_ROOT / "config" / "agents")
+    return {
+        agent_id: str(getattr(meta, "cost_level", "") or "").strip().lower()
+        for agent_id, meta in AGENT_METADATA.items()
+    }
+
+
+def _cost_value(agent_id: str, agent_costs: Mapping[str, str]) -> float:
+    cost_level = str(agent_costs.get(agent_id, "") or "").strip().lower()
+    return COST_VALUES.get(cost_level, COST_VALUES["unknown"])
+
+
+def _shortlist_cost(record: JsonMapping, agent_costs: Mapping[str, str]) -> float:
+    return sum(_cost_value(agent_id, agent_costs) for agent_id in _as_str_list(record.get("awake_agents")))
+
+
+def _calibration_metrics(records: Sequence[JsonMapping]) -> JsonDict:
+    pairs: list[tuple[float, int]] = []
+    for record in records:
+        positives = set(must_include_agents(record))
+        negatives = set(should_not_include_agents(record))
+        for item in _route_score_items(record):
+            agent_id = item.get("agent_id")
+            if not isinstance(agent_id, str) or not agent_id:
+                continue
+            if agent_id in positives:
+                label = 1
+            elif agent_id in negatives:
+                label = 0
+            else:
+                continue
+            pairs.append((_score_value(item.get("semantic_similarity_score")), label))
+
+    if not pairs:
+        return {
+            "ECE": None,
+            "Brier": None,
+            "calibration_pair_count": 0,
+            "calibration_bin_count": 0,
+        }
+
+    brier = _avg([(score - label) ** 2 for score, label in pairs])
+    bin_count = 10
+    ece = 0.0
+    total = len(pairs)
+    for bin_index in range(bin_count):
+        lower = bin_index / bin_count
+        upper = (bin_index + 1) / bin_count
+        bucket = [
+            (score, label)
+            for score, label in pairs
+            if (score >= lower and (score < upper or bin_index == bin_count - 1))
+        ]
+        if not bucket:
+            continue
+        avg_score = _avg([score for score, _label in bucket])
+        accuracy = _avg([float(label) for _score, label in bucket])
+        ece += (len(bucket) / total) * abs(avg_score - accuracy)
+    return {
+        "ECE": ece,
+        "Brier": brier,
+        "calibration_pair_count": total,
+        "calibration_bin_count": bin_count,
+    }
+
+
 def load_run_records(path: Path) -> list[JsonDict]:
-    """Load RP-1B route-prior run records from JSONL."""
+    """Load route-prior run records from JSONL."""
     records: list[JsonDict] = []
     with path.open("r", encoding="utf-8") as fh:
         for line_no, line in enumerate(fh, start=1):
@@ -119,7 +297,7 @@ def full_ranked_agent_ids(record: JsonMapping) -> list[str]:
 
 def topk_hit(record: JsonMapping, k: int) -> bool:
     """Return whether any expected agent appears in the top-k ranked ids."""
-    expected = set(_as_str_list(record.get("expected_agents")))
+    expected = set(must_include_agents(record))
     if not expected:
         return False
     return bool(expected.intersection(top_ranked_ids(record)[:k]))
@@ -152,7 +330,7 @@ def _filtered_records(
     filtered: list[JsonMapping] = []
     for record in records:
         source = str(record.get("label_source", "") or "")
-        if require_manual_labels and source != "manual":
+        if require_manual_labels and source not in QUALITY_LABEL_SOURCES:
             continue
         if not include_draft_labels and source == "draft_for_human_review":
             continue
@@ -164,7 +342,7 @@ def collect_false_negatives(records: Sequence[JsonMapping]) -> list[JsonDict]:
     """Collect cases whose expected agents are missing from awake_agents."""
     examples: list[JsonDict] = []
     for record in records:
-        expected = _as_str_list(record.get("expected_agents"))
+        expected = must_include_agents(record)
         awake = _as_str_list(record.get("awake_agents"))
         missing = [agent_id for agent_id in expected if agent_id not in awake]
         if not missing:
@@ -174,6 +352,7 @@ def collect_false_negatives(records: Sequence[JsonMapping]) -> list[JsonDict]:
                 "id": str(record.get("id", "") or ""),
                 "question": str(record.get("question", "") or ""),
                 "expected_agents": expected,
+                "must_include_agents": expected,
                 "missing_expected_agents": missing,
                 "awake_agents": awake,
                 "top_ranked_ids": top_ranked_ids(record),
@@ -218,7 +397,7 @@ def collect_conservative_false_negatives(
     examples: list[JsonDict] = []
     for record in records:
         pruned_agents, pruning_applied = conservative_pruned_agents(record, keep_top_k=keep_top_k)
-        expected = _as_str_list(record.get("expected_agents"))
+        expected = must_include_agents(record)
         missing = [agent_id for agent_id in expected if agent_id not in pruned_agents]
         if not missing:
             continue
@@ -227,6 +406,7 @@ def collect_conservative_false_negatives(
                 "id": str(record.get("id", "") or ""),
                 "question": str(record.get("question", "") or ""),
                 "expected_agents": expected,
+                "must_include_agents": expected,
                 "missing_expected_agents": missing,
                 "pruned_agents": pruned_agents,
                 "top_ranked_ids": full_ranked_agent_ids(record),
@@ -269,7 +449,7 @@ def aggregate_conservative_pruning(records: Sequence[JsonMapping]) -> JsonDict:
                 dropped_counts.append(float(max(ordinary_pool_size - pool_size, 0)))
             recall_value = expected_recall(
                 pruned_agents,
-                _as_str_list(record.get("expected_agents")),
+                must_include_agents(record),
             )
             recall_values.append(recall_value)
             full_covered_values.append(recall_value == 1.0)
@@ -317,8 +497,10 @@ def aggregate_metrics(
     *,
     include_draft_labels: bool = True,
     require_manual_labels: bool = False,
+    agent_costs: Mapping[str, str] | None = None,
+    _include_label_source_groups: bool = True,
 ) -> JsonDict:
-    """Aggregate RP-1B route-prior validation metrics."""
+    """Aggregate route-prior validation metrics with legacy RP-1B compatibility."""
     evaluated = _filtered_records(
         records,
         include_draft_labels=include_draft_labels,
@@ -326,10 +508,11 @@ def aggregate_metrics(
     )
     case_count = len(evaluated)
     label_sources = Counter(str(record.get("label_source", "") or "") for record in evaluated)
-    manual_count = label_sources.get("manual", 0)
+    manual_count = sum(label_sources.get(source, 0) for source in QUALITY_LABEL_SOURCES)
     deepseek_teacher_count = label_sources.get(DEEPSEEK_TEACHER_LABEL_SOURCE, 0)
-    quality_conclusion_allowed = manual_count > 0
-    proxy_quality_conclusion_only = manual_count == 0 and deepseek_teacher_count > 0
+    quality_label_count = sum(1 for record in evaluated if _record_quality_conclusion_allowed(record))
+    quality_conclusion_allowed = quality_label_count > 0
+    proxy_quality_conclusion_only = quality_label_count == 0 and deepseek_teacher_count > 0
 
     shortlist_sizes = [float(len(_as_str_list(record.get("awake_agents")))) for record in evaluated]
     shortlist_ratios: list[float] = []
@@ -339,28 +522,109 @@ def aggregate_metrics(
         if ordinary_pool_size > 0:
             shortlist_ratios.append(shortlist_size / ordinary_pool_size)
 
+    top1_recalls = [
+        expected_recall(top_ranked_ids(record)[:1], must_include_agents(record))
+        for record in evaluated
+    ]
+    top3_recalls = [
+        expected_recall(top_ranked_ids(record)[:3], must_include_agents(record))
+        for record in evaluated
+    ]
     top5_recalls = [
         expected_recall(
             top_ranked_ids(record)[:5],
-            _as_str_list(record.get("expected_agents")),
+            must_include_agents(record),
         )
         for record in evaluated
     ]
     shortlist_recalls = [
         expected_recall(
             _as_str_list(record.get("awake_agents")),
-            _as_str_list(record.get("expected_agents")),
+            must_include_agents(record),
         )
+        for record in evaluated
+    ]
+    effective_shortlist_recalls = [
+        0.0 if bool(record.get("low_confidence_fallback", False)) else recall_value
+        for record, recall_value in zip(evaluated, shortlist_recalls, strict=False)
+    ]
+    precision_values = [
+        _precision(_as_str_list(record.get("awake_agents")), must_include_agents(record))
+        for record in evaluated
+    ]
+    f1_values = [
+        _f1(precision, recall)
+        for precision, recall in zip(precision_values, shortlist_recalls, strict=False)
+    ]
+    jaccard_values = [
+        jaccard(_as_str_list(record.get("awake_agents")), must_include_agents(record))
         for record in evaluated
     ]
     full_expected_covered = [
         expected_recall(
             _as_str_list(record.get("awake_agents")),
-            _as_str_list(record.get("expected_agents")),
+            must_include_agents(record),
         )
         == 1.0
         for record in evaluated
     ]
+    critical_labeled = [record for record in evaluated if critical_agents(record)]
+    critical_misses = [
+        any(agent_id not in _as_str_list(record.get("awake_agents")) for agent_id in critical_agents(record))
+        for record in critical_labeled
+    ]
+    nice_labeled = [record for record in evaluated if nice_to_have_agents(record)]
+    nice_recalls = [
+        expected_recall(
+            _as_str_list(record.get("awake_agents")),
+            nice_to_have_agents(record),
+        )
+        for record in nice_labeled
+    ]
+    negative_labeled = [record for record in evaluated if should_not_include_agents(record)]
+    negative_rates = [
+        len(
+            set(_as_str_list(record.get("awake_agents"))).intersection(
+                should_not_include_agents(record)
+            )
+        )
+        / len(should_not_include_agents(record))
+        for record in negative_labeled
+    ]
+    high_confidence_records = [
+        record
+        for record in evaluated
+        if str(record.get("confidence_band", "") or "") == "high"
+    ]
+    high_confidence_wrong = [
+        (
+            any(
+                agent_id not in _as_str_list(record.get("awake_agents"))
+                for agent_id in critical_agents(record)
+            )
+            or expected_recall(
+                _as_str_list(record.get("awake_agents")),
+                must_include_agents(record),
+            )
+            < 1.0
+        )
+        for record in high_confidence_records
+    ]
+
+    if agent_costs is not None:
+        resolved_agent_costs = dict(agent_costs)
+    else:
+        try:
+            resolved_agent_costs = _agent_cost_levels()
+        except Exception:
+            resolved_agent_costs = {}
+    cost_values = [_shortlist_cost(record, resolved_agent_costs) for record in evaluated]
+    recall_per_cost_values = [
+        recall_value / cost if cost > 0 else 0.0
+        for recall_value, cost in zip(shortlist_recalls, cost_values, strict=False)
+    ]
+    calibration = _calibration_metrics(evaluated)
+
     wildcard_retained: list[bool] = []
     for record in evaluated:
         wildcards = _as_str_list(record.get("wildcard_agents"))
@@ -391,6 +655,8 @@ def aggregate_metrics(
             ),
             "evaluated_case_count": case_count,
             "manual_label_count": manual_count,
+            "quality_label_count": quality_label_count,
+            "cost_metadata_available": bool(resolved_agent_costs),
         },
         "quality_conclusion_allowed": quality_conclusion_allowed,
         "proxy_quality_conclusion_only": proxy_quality_conclusion_only,
@@ -412,8 +678,36 @@ def aggregate_metrics(
         "top1_match_rate": _rate([topk_hit(record, 1) for record in evaluated]),
         "top3_match_rate": _rate([topk_hit(record, 3) for record in evaluated]),
         "top5_match_rate": _rate([topk_hit(record, 5) for record in evaluated]),
+        "expected_agent_recall@1": _avg(top1_recalls),
+        "expected_agent_recall@3": _avg(top3_recalls),
+        "expected_agent_recall@5": _avg(top5_recalls),
+        "expected_agent_recall_at_top1": _avg(top1_recalls),
+        "expected_agent_recall_at_top3": _avg(top3_recalls),
         "expected_agent_recall_at_top5": _avg(top5_recalls),
         "shortlist_recall": _avg(shortlist_recalls),
+        "safe_shortlist_recall": _avg(shortlist_recalls),
+        "effective_shortlist_recall": _avg(effective_shortlist_recalls),
+        "critical_agent_labeled_case_count": len(critical_labeled),
+        "critical_agent_miss_rate": _nullable_avg(
+            [1.0 if item else 0.0 for item in critical_misses]
+        ),
+        "precision_at_shortlist": _avg(precision_values),
+        "f1_at_shortlist": _avg(f1_values),
+        "jaccard_at_shortlist": _avg(jaccard_values),
+        "nice_to_have_labeled_case_count": len(nice_labeled),
+        "nice_to_have_recall": _nullable_avg(nice_recalls),
+        "negative_labeled_case_count": len(negative_labeled),
+        "negative_selection_rate": _nullable_avg(negative_rates),
+        "avg_cost": _avg(cost_values),
+        "recall_per_cost": _avg(recall_per_cost_values),
+        "high_confidence_case_count": len(high_confidence_records),
+        "high_confidence_wrong_rate": _nullable_avg(
+            [1.0 if item else 0.0 for item in high_confidence_wrong]
+        ),
+        "ECE": calibration["ECE"],
+        "Brier": calibration["Brier"],
+        "calibration_pair_count": calibration["calibration_pair_count"],
+        "calibration_bin_count": calibration["calibration_bin_count"],
         "full_expected_covered_rate": _rate(full_expected_covered),
         "wildcard_retention_rate": _rate(wildcard_retained) if wildcard_retained else None,
         "formal_router_overlap_observation": _formal_router_overlap(evaluated),
@@ -425,6 +719,17 @@ def aggregate_metrics(
         "invalid_expected_agents": invalid_expected_agents,
         "conservative_pruning": aggregate_conservative_pruning(evaluated),
     }
+    if _include_label_source_groups:
+        metrics["label_source_grouped_metrics"] = {
+            source: aggregate_metrics(
+                [record for record in evaluated if str(record.get("label_source", "") or "") == source],
+                include_draft_labels=True,
+                require_manual_labels=False,
+                agent_costs=resolved_agent_costs,
+                _include_label_source_groups=False,
+            )
+            for source in sorted(label_sources)
+        }
     return metrics
 
 
@@ -458,7 +763,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--require-manual-labels",
         action="store_true",
-        help="Evaluate only label_source=manual records.",
+        help="Evaluate only manual or manual_gold records.",
     )
     parser.add_argument(
         "--include-draft-labels",
@@ -470,7 +775,7 @@ def parse_args() -> argparse.Namespace:
 
 
 def main() -> int:
-    """Run the RP-1B metrics aggregation CLI."""
+    """Run the route-prior metrics aggregation CLI."""
     args = parse_args()
     records = load_run_records(Path(args.runs))
     metrics = aggregate_metrics(

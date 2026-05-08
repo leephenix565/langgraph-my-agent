@@ -17,7 +17,13 @@ from langgraph.graph import StateGraph
 from langgraph.runtime import Runtime
 from langgraph.types import Command, Send
 
-from react_agent import contract_utils, prompts, route_prior, router_parse
+from react_agent import (
+    contract_utils,
+    prompts,
+    route_prior,
+    route_reliability,
+    router_parse,
+)
 from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
@@ -60,6 +66,7 @@ from react_agent.graph_runtime_features import (
     _thread_summary_system_msg,
     _window_messages,
 )
+from react_agent.route_profile_registry import load_route_profile_cards
 from react_agent.run_logger import get_run_logger
 from react_agent.state import InputState, State
 from react_agent.utils import get_message_text, load_chat_model
@@ -229,6 +236,70 @@ def _parse_router_layers(raw: str) -> Tuple[Dict[str, List[str]], Dict[str, str]
     return plan, modes
 
 
+def _route_prior_confidence_band(route_prior_shadow: Dict[str, Any]) -> str:
+    routing_hint = route_prior_shadow.get("routing_hint", {})
+    if isinstance(routing_hint, dict):
+        return str(routing_hint.get("confidence_band", "") or "")
+    return ""
+
+
+def _maybe_trace_route_reliability_shadow(
+    route_prior_shadow: Dict[str, Any],
+    logger: Any,
+) -> Optional[Dict[str, Any]]:
+    config = route_reliability.runtime_reliability_config_from_env()
+    if not config.enabled or not route_prior_shadow.get("enabled"):
+        return None
+    try:
+        profile_card_result: Any = None
+        profile_cards: Any = None
+        if config.profile_cards_dir:
+            profile_card_result = load_route_profile_cards(
+                config.profile_cards_dir,
+                AGENT_METADATA,
+            )
+            profile_cards = profile_card_result.cards
+        reliability_table = (
+            route_reliability.load_reliability_table(config.reliability_table_path)
+            if config.reliability_table_path
+            else {}
+        )
+        shadow = route_reliability.build_route_reliability_shadow(
+            route_scores=route_prior_shadow.get("route_scores", []),
+            metadata_by_id=AGENT_METADATA,
+            ordinary_pool=route_prior_shadow.get("ordinary_pool", []),
+            wildcard_agents=route_prior_shadow.get("wildcard_agents", []),
+            reliability_table=reliability_table,
+            profile_cards=profile_cards,
+            low_confidence_fallback=bool(route_prior_shadow.get("low_confidence_fallback", False)),
+            confidence_band=_route_prior_confidence_band(route_prior_shadow),
+        )
+        payload = route_reliability.compact_reliability_trace_payload(
+            shadow,
+            top_n=config.trace_top_cards,
+        )
+        profile_summary = profile_card_result.summary() if profile_card_result else {}
+        logger.log_event(
+            "route_reliability_shadow",
+            **payload,
+            profile_card_loaded_count=int(profile_summary.get("loaded_count", 0) or 0),
+            profile_card_invalid_count=int(profile_summary.get("invalid_count", 0) or 0),
+            profile_card_ignored_count=int(profile_summary.get("ignored_count", 0) or 0),
+            profile_cards_missing_dir=1 if profile_summary.get("missing_dir") else 0,
+            reliability_table_loaded=1 if reliability_table else 0,
+        )
+        return shadow
+    except Exception as exc:
+        logger.log_event(
+            "route_reliability_error",
+            exception_type=type(exc).__name__,
+            exception_repr=repr(exc),
+            error=str(exc),
+            fail_open=1,
+        )
+        return None
+
+
 def _next_layer(current_layer: str) -> Optional[str]:
     if current_layer not in LAYER_ORDER:
         return None
@@ -245,6 +316,8 @@ async def router_node(
     run_id = state.get("run_id") or runtime.context.run_id or uuid.uuid4().hex[:8]
     runtime.context.run_id = run_id
     logger = get_run_logger(run_id)
+    route_prior_shadow: Dict[str, Any] = {}
+    route_reliability_shadow: Optional[Dict[str, Any]] = None
     try:
         route_prior_shadow = await route_prior.compute_route_prior_shadow(
             question,
@@ -287,6 +360,10 @@ async def router_node(
             error=str(exc),
             question_preview=_truncate(question),
         )
+    route_reliability_shadow = _maybe_trace_route_reliability_shadow(
+        route_prior_shadow,
+        logger,
+    )
     agent_catalog = _build_agent_catalog()
     system_prompt = prompts.ROUTER_SYSTEM_PROMPT.format(
         system_time=datetime.now(tz=UTC).isoformat(),
@@ -386,6 +463,21 @@ async def router_node(
     layer_plan, layer_mode, parse_stats = router_parse.parse_router_layers_with_stats(
         raw_text, agent_catalog=agent_catalog
     )
+    if route_reliability_shadow:
+        try:
+            comparison = route_reliability.compare_route_prior_to_router(
+                route_reliability_shadow,
+                layer_plan,
+            )
+            logger.log_event("route_prior_router_comparison", **comparison)
+        except Exception as exc:
+            logger.log_event(
+                "route_prior_router_comparison_error",
+                exception_type=type(exc).__name__,
+                exception_repr=repr(exc),
+                error=str(exc),
+                fail_open=1,
+            )
     current_layer = LAYER_ORDER[0]
     logger.log_event(
         "run_start",

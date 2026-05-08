@@ -11,6 +11,7 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Runtime skeleton: `langgraph.json -> src/react_agent/graph.py:graph`
 - Main runtime topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout flows through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
 - Default answer path: Fair Fusion baseline/judge/writer sidecars exist in runtime, but defaults keep the visible answer on the mainline path unless fusion and source switching are explicitly enabled
+- Baseline sidecar default config: `.env.example` now uses DeepSeek V4 Pro through the OpenAI-compatible baseline override (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`); the existing Gemini grounding path is still code-backed when `baseline_model` is explicitly set to `google_genai/...`
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -26,10 +27,16 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Typed input boundary:
   - `structuredInput` is additive only
   - pasted `materials` and additive `urlReferences` must still compile into canonical transcript text
-- RP-1A runtime seam:
+- RP-1A / RP-2C runtime seams:
   - the repo now also carries an embedding-first route-prior shadow seam inside `router_node`
   - phase 1 remains shadow-only: no formal Router ownership change, no committed-state expansion, no public-surface expansion
   - missing embedding config or backend failures disable the seam privately and fail open to the existing mainline
+  - RP-2C adds optional `ROUTE_PRIOR_RELIABILITY_ENABLED` trace-only reliability shadow and post-router comparison, still default-off and with no Router prompt/parser, State, public API/workflow/health, advisory, or repair change
+- RP-3A offline advisory experiments:
+  - RP-3A-1 adds a network-free Router advisory A/B dry-run harness for parser-stability and selected-agent-delta evidence only
+  - RP-3A-3 adds an optional prediction artifact generator; RP-3A-5 adds `provided_artifact` / `rarp_shadow` advisory-source experiments from RP-2 route-prior/reliability artifacts
+  - RP-3A-5F records the latest real RARP provided-artifact smoke evidence: 20/20 Qwen-backed route-prior enabled cases, 20/20 non-empty reliability-card cases, three DeepSeek live reruns, 0/60 parse/default regressions, and 1/60 critical miss on `rp3-manual-gold-0017`
+  - these remain offline/ops experiment artifacts; they do not implement runtime Router advisory, `ROUTE_PRIOR_ADVISORY_MODE`, Router prompt mutation, parser changes, or public-surface expansion
 - Current phase position:
   - frontend/runtime integration: `Phase F3`
   - repo-level closure: `Phase QS-2`
@@ -58,9 +65,9 @@ The workflow-first NDJSON seam landed during WS-1 and remains part of the produc
 
 The current repo position is different. F3 and QS-2 focus on hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority docs without changing LangGraph runtime business semantics, transcript truth, or the single-assistant product model.
 
-RP-1A fits inside that same phase posture. It is an internal runtime shadow seam, not a product-surface expansion and not a new top-level repo phase label. The current slice switches route prior from a rule-led draft direction to embedding-first semantic retrieval, but keeps it shadow-only so the formal Router still owns `layer_plan / layer_mode`. RP-1B now adds optional offline shadow validation and replay/eval evidence for that seam; it is not immediate advisory injection.
+Route-prior work still fits inside that same hardening posture. RP-1A is an internal embedding-first runtime shadow seam, not a product-surface expansion and not a new top-level repo phase label. RP-1B adds optional offline shadow validation and replay/eval evidence for that seam. RP-2A extends the offline eval tooling with the versioned `route_eval_label_v0` schema and expanded metrics. RP-2B adds offline-first profile-card loading plus deterministic reliability scoring helpers. RP-2C adds an env-gated runtime reliability shadow trace and post-router comparison scaffold. RP-3A-1 adds a network-free offline Router advisory A/B dry-run harness for parser-stability and selected-agent-delta evidence. RP-3A-3 adds optional prediction artifact generation, RP-3A-5 adds real RARP `provided_artifact` / `rarp_shadow` experiments, and RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using Qwen-backed RARP reliability cards.
 
-This round is a docs-only F3/QS-2 truth-alignment checkpoint rather than a new runtime milestone. The runtime code facts needed for mainline review are already stable enough to audit, and the main discrepancy was that the authority docs in HEAD lagged those code-backed facts. Closing that gap now reduces future review noise and makes the next runtime-facing audit start from a trustworthy narrative baseline. After this closure, the next natural slice is a focused audit on one behavior seam rather than another broad repo-wide restatement.
+RP-3 runtime Router advisory is not implemented. RP-2C remains default-off, trace-only, and fail-open; RP-3A remains offline/ops experimentation. The latest RP-3A-5F smoke shows real RARP cards and parse/default stability, but it still has one stochastic critical miss across 60 live replays and is not production promotion evidence. None of this changes the Router prompt, parser, committed `layer_plan / layer_mode`, State schema, manager dispatch, public API, public workflow, `/api/health`, frontend behavior, or agent execution.
 
 ## 5. Runtime and Public Boundary
 

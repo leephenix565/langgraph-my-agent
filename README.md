@@ -9,10 +9,12 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`
 - Runtime mainline topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout runs through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
 - Default answer path: Fair Fusion baseline/judge/writer sidecars exist in the runtime, but `Context.enable_fair_fusion=False` and `Context.enable_fair_fusion_source_switch=False` by default, so the visible answer still comes from the mainline bundle unless those flags are explicitly enabled
-- RP-1A route-prior shadow:
+- Baseline sidecar default config: `.env.example` now points the isolated Fair Fusion baseline at DeepSeek V4 Pro through the OpenAI-compatible path (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`); the existing `google_genai/...` Gemini grounding code path remains available only when explicitly configured
+- RP-1A / RP-2C route-prior shadows:
   - `router_node` now also hosts an internal embedding-first semantic-retrieval shadow seam before the formal Router invoke
   - it is shadow-only, fail-open, and does not alter formal Router prompt shape, parse semantics, committed state, or public workflow projection
   - missing or broken embedding config disables the seam privately and does not change `/api/health`
+  - RP-2C can add private reliability shadow and post-router comparison trace when `ROUTE_PRIOR_RELIABILITY_ENABLED=1`; default env keeps current Router behavior unchanged
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -237,9 +239,9 @@ Artifacts:
 - `ops/regression/fusion/out/fusion_metrics.json`
 - `ops/regression/fusion/out/fusion_gate.json`
 
-## RP-1B Route-Prior Offline Eval
+## RP-1B / RP-2A / RP-2B / RP-2C Route-Prior Work
 
-RP-1B adds an optional offline validation harness for the RP-1A route-prior shadow seam. It consumes labeled question JSONL, runs `compute_route_prior_shadow(...)`, and aggregates top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, and false-negative examples.
+RP-1B adds an optional offline validation harness for the RP-1A route-prior shadow seam. RP-2A extends the same tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, must/critical/nice-to-have/negative labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B adds optional internal route profile cards plus deterministic reliability scoring helpers. RP-2C optionally wires those helpers into `router_node` as private runtime trace and post-router comparison only.
 
 Minimal live run, requiring a local OpenAI-compatible embeddings endpoint:
 
@@ -247,6 +249,40 @@ Minimal live run, requiring a local OpenAI-compatible embeddings endpoint:
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
 python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
 ```
+
+Local RP-1A embedding experiments can use the project-external Qwen service
+documented in `docs/SYSTEM_MAP.md`: `Qwen/Qwen3-Embedding-0.6B` served on
+`http://127.0.0.1:8001/v1/embeddings`. It is not repo runtime code; keep the
+matching `ROUTE_PRIOR_*` env values local and do not add them to `.env.example`.
+
+Optional RP-2B reliability-card artifact generation:
+
+```powershell
+python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl --out-dir ops/regression/route_prior/out --enable-rarp-scoring --profile-cards-dir config/route_profiles --reliability-table ops/regression/route_prior/out/route_reliability_table.json
+```
+
+Optional RP-2C runtime trace is private and default-off:
+
+```powershell
+$env:ROUTE_PRIOR_RELIABILITY_ENABLED="1"
+$env:LOCAL_TRACE="1"
+```
+
+Optional RP-3A-1 network-free Router advisory A/B parser dry-run:
+
+```powershell
+python -m ops.regression.route_prior.run_router_advisory_ab --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out-dir ops/regression/route_prior/out --max-items 20 --mode network-free
+```
+
+This harness does not call an LLM and does not change runtime Router behavior.
+
+Optional RP-3A-3 Router advisory prediction artifact generation:
+
+```powershell
+python -m ops.regression.route_prior.generate_router_advisory_predictions --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out ops/regression/route_prior/out/router_advisory_predictions_dry_run.jsonl --summary-out ops/regression/route_prior/out/router_advisory_predictions_dry_run_summary.json --max-items 20 --mode dry-run
+```
+
+Default `dry-run` mode is network-free and writes enriched prediction JSONL for the replay harness. Explicit `--mode live` is optional and writes skipped/error summaries when provider prerequisites are missing or fail.
 
 Optional DeepSeek teacher-proxy labeling for offline experiments:
 
@@ -256,7 +292,7 @@ python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input op
 
 DeepSeek-generated records use `label_source="deepseek_teacher_v1"`. They are model-generated teacher-proxy labels, not human/manual gold labels, and can only support proxy-quality observations such as Qwen route-prior alignment with that teacher.
 
-The checked-in fixture is a labeling template. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` labels. RP-1B is not part of the default blocking gate unless explicitly promoted later, and it does not alter runtime routing outputs, Router prompt/parser semantics, State, public workflow, or `/api/health`.
+Most checked-in fixtures are labeling templates. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` or `manual_gold` labels. RP-3G adds `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl` as a GPT Pro assisted, project-owner accepted 20-case smoke fixture only; it is not an initial or promotion-quality dataset. Route-prior offline eval is not part of the default blocking gate unless explicitly promoted later. RP-2C is env-gated, trace-only, fail-open, and does not alter Router prompt/parser semantics, committed routing outputs, State schema, public workflow, frontend behavior, `/api/agents`, or `/api/health`. RP-3A-1 adds an offline network-free parser dry-run harness only; RP-3A-2B hardens optional prediction JSONL metadata replay for that harness; RP-3A-3 adds an optional prediction artifact generator with default network-free dry-run and explicit optional live mode; RP-3A-4D hardens the label-stub advisory with per-layer agent groups after a wrong-layer smoke regression; RP-3A-5 adds offline `provided_artifact` / `rarp_shadow` advisory-source experiments for the optional prediction-generator path only; RP-3A-5B makes missing, disabled, low-confidence, or empty-card provided artifacts explicit noop/no-advisory cases; RP-3A-5E hardens wildcard-only provided-artifact rendering; RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using real Qwen-backed RARP cards. The latest smoke evidence has `enabled_count=20`, `cards_non_empty_count=20`, `parse/default` regressions `0/60`, and `critical_miss_regressions=1/60` on `rp3-manual-gold-0017`; per-case report artifacts live under ignored `ops/regression/route_prior/out/rp3_routing_case_report.md` and `ops/regression/route_prior/out/rp3_routing_case_table.json`. None of these implement runtime advisory or production promotion. RP-3 runtime prompt advisory and `ROUTE_PRIOR_ADVISORY_MODE` remain unimplemented.
 
 ## Environment Baseline
 
@@ -273,7 +309,12 @@ The checked-in fixture is a labeling template. `draft_for_human_review` labels a
   - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
   - `ROUTE_PRIOR_OPENAI_BASE_URL` falling back to `OPENAI_BASE_URL`
   - `ROUTE_PRIOR_OPENAI_API_KEY` falling back to `OPENAI_API_KEY`
-- These RP-1A envs are runtime-internal only. They do not expand public readiness or the public adapter contract.
+- RP-2C private reliability trace envs:
+  - `ROUTE_PRIOR_RELIABILITY_ENABLED`
+  - optional `ROUTE_PRIOR_PROFILE_CARDS_DIR`
+  - optional `ROUTE_PRIOR_RELIABILITY_TABLE`
+  - optional `ROUTE_PRIOR_TRACE_TOP_CARDS`
+- These route-prior envs are runtime-internal only. They do not expand public readiness or the public adapter contract.
 - replay continuity remains weaker than persistent graph continuity and must stay labeled that way
 - `state["messages"]` is not the public transcript
 

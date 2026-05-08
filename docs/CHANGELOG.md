@@ -1,5 +1,420 @@
 # CHANGELOG
 
+## 2026-05-08 - Default Fair Fusion baseline model set to DeepSeek V4 Pro
+- Files: `.env.example`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Changed the checked-in Fair Fusion baseline sidecar example configuration from the Gemini Developer API path to DeepSeek V4 Pro through the existing OpenAI-compatible baseline override:
+  - `BASELINE_MODEL=openai/deepseek-v4-pro`
+  - `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`
+  - `BASELINE_OPENAI_API_KEY=`
+- Scope boundary:
+  - no `baseline_sidecar.py` business-logic change
+  - no `fusion_gate`, `fusion_judge_shadow`, `fusion_writer_shadow`, or `final_emit` behavior change
+  - no final source-switching default change
+  - the existing `google_genai/...` Gemini grounding branch remains available when explicitly configured
+
+## 2026-05-07 - External agent integration standard
+- Files: `docs/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Added a standardized protocol document for third-party / classmate-developed external agents that may later be connected to `langgraph-my-agent`.
+- The document defines:
+  - required external HTTP service endpoints: `GET /health` and `POST /v1/agent/invoke`
+  - optional domain-specific endpoints such as `POST /v1/valuation/invoke`
+  - `external_agent_request_v0`, `external_agent_response_v0`, health schema, typed errors, data-source reporting, and LLM/tool-use boundaries
+  - repo-side wrapper expectations for mapping external responses into current `AgentOutput`
+  - the requirement that real runtime integration still goes through `AGENT_TOOLS[agent_id]`, not direct public API exposure
+  - validation checklists for external agent self-test and main-system wrapper integration
+- Scope boundary:
+  - documentation only
+  - no Router prompt change
+  - no parser change
+  - no graph runtime change
+  - no State/public API/frontend change
+  - no external HTTP wrapper implementation yet
+  - the three local valuation services are documented as reference implementations, not as already runtime-connected main-system agents
+
+## 2026-05-04 - RP-2/RP-3 work package consolidation
+- Files:
+  - runtime: `src/react_agent/graph.py`, `src/react_agent/route_profile_registry.py`, `src/react_agent/route_reliability.py`
+  - ops/tooling: `ops/regression/route_prior/eval_route_prior_outputs.py`, `ops/regression/route_prior/generate_deepseek_teacher_labels.py`, `ops/regression/route_prior/generate_router_advisory_predictions.py`, `ops/regression/route_prior/run_route_prior_eval.py`, `ops/regression/route_prior/run_router_advisory_ab.py`, `ops/regression/route_prior/fixtures/*.jsonl`
+  - tests: `tests/unit_tests/test_deepseek_teacher_labels_rp1b.py`, `tests/unit_tests/test_route_prior_eval_rp2.py`, `tests/unit_tests/test_route_prior_manual_gold_rp3.py`, `tests/unit_tests/test_route_prior_router_comparison_rp2.py`, `tests/unit_tests/test_route_prior_runtime_invariance_rp2.py`, `tests/unit_tests/test_route_profile_registry_rp2.py`, `tests/unit_tests/test_route_reliability_rp2.py`, `tests/unit_tests/test_router_advisory_ab_rp3.py`, `tests/unit_tests/test_router_advisory_predictions_rp3.py`
+  - docs: `README.md`, `docs/INDEX.md`, `docs/PROJECT_OVERVIEW.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Consolidated the existing dirty RP-2A/B/C plus RP-3A offline work package into a single formal engineering slice:
+  - RP-2A remains offline eval/tooling only, with `route_eval_label_v0`, expanded metrics, quality-label gating, and legacy RP-1B compatibility
+  - RP-2B remains offline-first profile-card/reliability helper work, with optional internal profile cards and deterministic reliability scoring
+  - RP-2C remains env-gated runtime trace/comparison only through `ROUTE_PRIOR_RELIABILITY_ENABLED`, default-off and fail-open
+  - RP-3A remains offline/ops A/B harness, prediction artifact generation, fixtures, tests, and evidence wording only
+- Scope boundary:
+  - no Router prompt constant change
+  - no Router parser semantic or output-schema change
+  - no State schema change
+  - no manager dispatch, a01 contract consumption, or `AGENT_TOOLS`/bootstrap registration-chain change
+  - no public API, public contract, frontend transcript, or workflow surface change
+  - no `ROUTE_PRIOR_ADVISORY_MODE` runtime prompt advisory implementation
+  - no runtime `layer_plan` / `layer_mode` / `current_layer` mutation from RP-2C trace/comparison
+  - no route-prior or RP-3A promotion into the mainline quality gate
+  - `manual_gold_20` and DeepSeek live reruns remain smoke/experiment evidence only, not production promotion evidence
+- Documentation closure:
+  - kept current phase wording as `Phase F3 + QS-2`
+  - clarified that historical QS-3 changelog wording is not current phase authority
+  - marked RP-3 Router advisory and RP-3A env-gated prompt text in the RARP design document as future-only, not implemented
+- Validation:
+  - focused RP-2/RP-3/RP-1B tests: `63 passed`
+  - `scripts/quality/run_quality.py --mode mainline`: passed
+  - mainline detail: `205 passed` unit tests, `12 passed` public API integration tests, `1 passed` graph smoke, frontend build/test passed, fusion gate passed with `gate_pass=True`
+
+## 2026-04-30 - RP-3A-5F live stability and routing case report evidence
+- Files: `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Recorded the latest real RARP provided-artifact experiment evidence from the RP-3A-5F full `manual_gold_20` DeepSeek live reruns:
+  - route-prior artifact: `case_count=20`, `enabled_count=20`, `disabled_count=0`, `retrieval_reason_counts={"ok":20}`, `cards_non_empty_count=20`
+  - confidence bands: `normal=14`, `low=6`; `low_confidence_fallback_count=6`
+  - advisory source mix was stable across all three runs: `provided_artifact=14`, `provided_artifact_low_confidence=6`, `advisory_applied_count=14`, `advisory_noop_count=6`
+  - live replay totals across three 20-case runs: `parse_ok_regressions=0/60`, `default_plan_regressions=0/60`, `critical_miss_regressions=1/60`
+  - the single critical miss was `rp3-manual-gold-0017` in run 1; baseline selected both gold critical agents, while advisory selected `a20_fundamental_risk` but missed `a19_market_risk`
+  - mean token delta across runs was about `381.78`; mean latency delta across runs was about `436.38 ms`
+  - latest local Qwen embedding service health check is currently `ok` on `http://127.0.0.1:8001/healthz`, but it remains a project-external local process and must be rechecked before live experiments
+  - optional report artifacts were written under ignored output paths: `ops/regression/route_prior/out/rp3_routing_case_report.md` and `ops/regression/route_prior/out/rp3_routing_case_table.json`
+- Scope boundary:
+  - documentation / evidence summary only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - `manual_gold_20` remains smoke evidence only, not production promotion evidence
+
+## 2026-04-30 - RP-3A-5E provided_artifact renderer hardening
+- Files: `ops/regression/route_prior/generate_router_advisory_predictions.py`, `tests/unit_tests/test_router_advisory_predictions_rp3.py`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Hardened the offline `provided_artifact` / `rarp_shadow` renderer after real Qwen-backed RARP-card live A/B smoke exposed wildcard-only over-narrowing:
+  - `strongly_recommended` / `candidate` remain the primary advisory groups
+  - if those groups are empty, the generator now uses top-ranked non-wildcard route-prior cards as weak, non-binding, layer-aware fallback candidates
+  - wildcard ids such as `a15_research_synthesis` are retained only as secondary context and are no longer the sole applied advisory signal
+  - if no non-wildcard card exists, the case becomes `advisory_applied=false` with `advisory_status="noop_wildcard_only"`
+  - prediction artifacts now record `advisory_selection_reason` and `advisory_secondary_agent_ids`
+  - focused tests cover wildcard-only noop, weak non-wildcard fallback, regression-like `a03`/`a04`/`a05` domain-card inclusion, label-stub compatibility, and no prompt-body persistence
+- Experiment evidence from the 20-case smoke rerun:
+  - dry-run replay: `parse_ok_regressions=0`, `default_plan_regressions=0`, `critical_miss_regressions=0`
+  - DeepSeek live replay: `parse_ok_regressions=0`, `default_plan_regressions=0`, `critical_miss_regressions=0`
+  - this remains smoke evidence only and is not routing-quality promotion evidence
+- Scope boundary:
+  - offline generator / A-B harness renderer hardening only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+
+## 2026-04-30 - RP-3A-5C-Embed-Audit local Qwen embedding service docs
+- Files: `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Recorded the local project-external embedding service inventory for RP-1A / RP-3A-5C experiments:
+  - model: `Qwen/Qwen3-Embedding-0.6B`
+  - endpoint: `http://127.0.0.1:8001/v1/embeddings`
+  - health: `http://127.0.0.1:8001/healthz`
+  - output dimension: 1024
+  - service implementation: FastAPI + SentenceTransformers wrapper outside the repo
+  - local env: `D:\AnacondaEnvs\qwen_embedding_py311`
+  - service dir: `D:\LocalEmbeddingServices\qwen3_embedding_server`
+  - model cache snapshot: `97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3`
+  - current service state at audit time: not running, no listener on port 8001
+  - RP-1A local shell env uses `ROUTE_PRIOR_EMBEDDINGS_ENABLED=1`, `ROUTE_PRIOR_EMBEDDINGS_MODEL=Qwen/Qwen3-Embedding-0.6B`, `ROUTE_PRIOR_OPENAI_BASE_URL=http://127.0.0.1:8001/v1`, and placeholder `ROUTE_PRIOR_OPENAI_API_KEY=local-test`
+- Scope boundary:
+  - documentation / operational note only
+  - no code changes
+  - no runtime Router advisory
+  - no Router prompt or parser change
+  - no graph runtime behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - do not add these local-only env values to `.env.example`
+
+## 2026-04-29 - RP-3A-5B provided_artifact noop fallback hardening
+- Files: `ops/regression/route_prior/generate_router_advisory_predictions.py`, `ops/regression/route_prior/run_router_advisory_ab.py`, `tests/unit_tests/test_router_advisory_ab_rp3.py`, `tests/unit_tests/test_router_advisory_predictions_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Hardened the offline `provided_artifact` / `rarp_shadow` missing and no-card paths:
+  - missing artifacts, missing cases, disabled retrieval, low-confidence fallback, and empty reliability-card records now set `advisory_applied=false`
+  - these cases are marked with `advisory_noop_reason="noop_no_advisory"` and a concrete `advisory_status`
+  - the optional prediction generator does not render a non-empty advisory block for noop cases
+  - live noop cases reuse baseline raw output and side metadata instead of making a second advisory model call
+  - prediction summaries now report `advisory_applied_count`, `advisory_noop_count`, and `advisory_missing_count`
+  - A/B replay treats noop cases as no-advisory comparisons and does not count copied/noop sides as advisory-induced critical regressions
+  - retained label-stub behavior and synthetic provided-artifact card behavior
+- Scope boundary:
+  - offline generator / A-B harness fallback hardening only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - noop/fallback smoke is not RARP-card quality or promotion evidence
+
+## 2026-04-29 - RP-3A-5 provided_artifact / rarp_shadow advisory-source experiment
+- Files: `ops/regression/route_prior/generate_router_advisory_predictions.py`, `tests/unit_tests/test_router_advisory_predictions_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added offline prediction-generator support for non-label advisory sources:
+  - added `--advisory-source provided_artifact|rarp_shadow` alongside existing `label_stub`
+  - added `--advisory-artifact` for local RP-2 route-prior / route-reliability JSONL artifacts
+  - keyed provided artifacts by case id and extracted `route_reliability_shadow_v0` cards/groups when present
+  - rendered compact non-binding provided-artifact advisory blocks with agent ids grouped by formal Router layer
+  - recorded `advisory_artifact_path`, `advisory_artifact_hash`, `advisory_case_found`, `advisory_confidence_band`, `advisory_low_confidence_fallback`, `advisory_agent_ids`, `advisory_reason_codes`, retrieval enabled/reason fields, and missing reasons in prediction JSONL
+  - marked missing, disabled, or empty-card cases as `provided_artifact_missing` / `rarp_shadow_missing` instead of silently falling back to label-derived advisory
+  - kept full prompt bodies out of artifacts
+  - added focused tests for synthetic reliability-shadow input, missing artifact/case handling, no manual-gold label leakage, L3 layer grouping, run-level provided-artifact output, and label-stub compatibility
+- Scope boundary:
+  - offline prediction-generator advisory-source experiment only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - `provided_artifact` / `rarp_shadow` artifacts remain non-promotion evidence
+
+## 2026-04-29 - RP-3A-4D label-stub advisory layer-constraint hardening
+- Files: `ops/regression/route_prior/run_router_advisory_ab.py`, `ops/regression/route_prior/generate_router_advisory_predictions.py`, `tests/unit_tests/test_router_advisory_ab_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Hardened the offline RP-3A label-stub advisory after the DeepSeek live smoke showed `rp3-manual-gold-0004` placing critical L3 agent `a19_market_risk` in L2:
+  - rendered `must_include_agents_by_layer`, `critical_agents_by_layer`, and `nice_to_have_agents_by_layer`
+  - derived layer grouping from label `expected_layers` first, then the formal Router catalog
+  - added explicit instruction that advisory agents must only be selected in their listed layer and L2/L3 agents must not be moved across layers
+  - kept the existing JSON-only Router output instruction in the offline advisory block
+  - passed expected-layer data through dry-run and optional-live prediction generation
+  - added focused tests for the wrong-layer regression case, layer grouping, layer-constraint language, and no prompt-body persistence
+- Scope boundary:
+  - offline A/B harness and prediction-generator label-stub hardening only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - 5-case label-stub smoke remains non-promotion evidence
+
+## 2026-04-29 - RP-3A-3 optional-live Router advisory prediction artifact generator
+- Files: `ops/regression/route_prior/generate_router_advisory_predictions.py`, `tests/unit_tests/test_router_advisory_predictions_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Added an offline/ops prediction artifact generator for the RP-3A A/B replay path:
+  - added `generate_router_advisory_predictions.py` with `--mode dry-run|live`
+  - defaulted to network-free `dry-run` mode with deterministic label-derived Router JSON
+  - wrote enriched `router_advisory_prediction_v0` JSONL with baseline/advisory raw outputs, model metadata, prompt char counts, prompt hashes, catalog hashes, latency, and token count when available
+  - tagged smoke advisory records with `advisory_source="label_stub"`
+  - added prediction summary artifacts with `status=ready|skipped|error`, generated/skipped counts, missing-env reason, latency percentiles, token metadata coverage, and advisory-source counts
+  - made explicit live mode optional; missing provider env writes a skipped summary and exits 0
+  - added focused tests for dry-run schema, skipped live preflight, stable prompt/catalog hashes, no prompt-body persistence, and A/B replay compatibility
+- Scope boundary:
+  - optional prediction artifact generation only
+  - no runtime Router advisory
+  - no Router prompt constant change
+  - no parser change
+  - no graph runtime routing behavior change
+  - no State schema change
+  - no public API/workflow/health/frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - dry-run and optional-live smoke artifacts are not production promotion evidence
+
+## 2026-04-29 - RP-3A-2B Router advisory prediction-artifact schema hardening
+- Files: `ops/regression/route_prior/run_router_advisory_ab.py`, `tests/unit_tests/test_router_advisory_ab_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Hardened the offline A/B harness prediction replay path:
+  - preserved legacy `--predictions` JSONL with `id` / `case_id`, `baseline_raw`, and `advisory_raw`
+  - added enriched `router_advisory_prediction_v0` side objects under `baseline` / `advisory`
+  - recorded model name/spec, prompt char count, token count, latency, prompt hash, catalog hash, and parse latency side metadata when supplied
+  - kept object/list raw Router outputs coercing to JSON strings before parser replay
+  - computed prompt char, token count, and latency deltas when prediction metadata is available
+  - added summary metadata completeness counts and average / p50 / p90 / p95 latency delta fields where applicable
+  - kept missing optional metadata as `null`
+  - added focused tests for legacy prediction compatibility, enriched metadata preservation, object raw coercion, missing metadata fallback, delta computation, summary aggregation, and no full prompt body persistence
+- Scope boundary:
+  - offline prediction-artifact schema hardening only
+  - no live model runner
+  - no runtime Router advisory
+  - no Router prompt changes
+  - no parser changes
+  - no graph runtime routing behavior changes
+  - no State schema changes
+  - no public API/workflow/health/frontend changes
+  - no manager dispatch or agent execution changes
+  - no quality-gate change
+  - prediction replay is not production promotion evidence
+
+## 2026-04-29 - RP-3A-1 network-free Router advisory A/B dry-run harness
+- Files: `ops/regression/route_prior/run_router_advisory_ab.py`, `tests/unit_tests/test_router_advisory_ab_rp3.py`, `ops/regression/route_prior/fixtures/rp3_manual_gold_seed_template.jsonl`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Closed RP-3G fixture hygiene and added the first RP-3A offline prompt A/B harness:
+  - tracked `rp3_manual_gold_seed_template.jsonl` so the documented seed template is no longer untracked
+  - added `run_router_advisory_ab.py` as a network-free parser dry-run harness
+  - supported deterministic label-derived stubs and optional prediction JSONL with `baseline_raw` / `advisory_raw`
+  - reused `parse_router_layers_with_stats(...)` without changing parser behavior
+  - wrote `router_advisory_ab_runs.jsonl` and `router_advisory_ab_summary.json` under ignored `ops/regression/route_prior/out/`
+  - reported parse/default-plan/filter/truncation deltas, selected-agent Jaccard, must-include recall delta, critical miss delta, negative selection delta, prompt char delta, and null token/latency deltas in network-free mode
+  - added focused tests for parser A/B metrics, selected Jaccard, critical miss delta, prompt constant immutability, and public-contract non-expansion
+- Scope boundary:
+  - offline harness / focused tests / docs only
+  - no runtime graph routing behavior change
+  - no Router prompt constant change
+  - no parser change
+  - no State schema change
+  - no public API/workflow/health change
+  - no frontend change
+  - no manager dispatch or agent execution change
+  - no quality-gate change
+  - no `ROUTE_PRIOR_ADVISORY_MODE` runtime behavior
+  - no Router advisory implementation
+  - `manual_gold_20` remains a smoke fixture, not a promotion dataset
+
+## 2026-04-29 - RP-3G manual-gold fixture import
+- Files: `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl`, `tests/unit_tests/test_route_prior_manual_gold_rp3.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Imported the project-owner accepted RP-3 manual-gold smoke dataset:
+  - added `rp3_manual_gold_20.jsonl` with exactly 20 reviewed `manual_gold` records
+  - preserved the accepted GPT Pro assisted labels without converting any draft or teacher-proxy records
+  - added focused fixture invariants for source, quality flag, review status, ordinary-pool membership, forbidden special-agent exclusion, critical/must/negative relationships, primary-agent membership, and expected-layer consistency
+  - documented that `manual_gold_20` is smoke data for prompt A/B dry-run preparation, not an initial or promotion-quality dataset
+- Scope boundary:
+  - fixture / focused tests / docs only
+  - no runtime graph changes
+  - no Router advisory implementation
+  - no Router prompt changes
+  - no parser changes
+  - no State schema changes
+  - no public API/workflow/health changes
+  - no frontend changes
+  - no manager dispatch or agent execution changes
+  - no quality-gate changes
+  - no prompt A/B harness implementation
+
+## 2026-04-28 - RP-3 manual-gold seed dataset preparation
+- Files: `ops/regression/route_prior/fixtures/rp3_manual_gold_seed_template.jsonl`, `ops/regression/route_prior/run_route_prior_eval.py`, `tests/unit_tests/test_route_prior_eval_rp2.py`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Prepared RP-3 manual-gold seed data workflow:
+  - added a seed-template JSONL fixture with the RP-2A `route_eval_label_v0` fields required for later human review
+  - kept seed records as `draft_for_human_review` with `quality_conclusion_allowed=false`
+  - did not convert any existing draft or teacher-proxy record into manual gold
+  - tightened eval-tooling validation so `manual_gold` records cannot set `quality_conclusion_allowed=false`
+  - added focused RP-2 label tests for the seed template and manual-gold quality boundary
+  - documented that seed candidates need human review before they can support RP-3 promotion evidence
+- Scope boundary:
+  - data fixture / eval validation / docs only
+  - no runtime graph changes
+  - no Router advisory implementation
+  - no Router prompt changes
+  - no parser changes
+  - no State schema changes
+  - no public API/workflow/health changes
+  - no frontend changes
+  - no manager dispatch or agent execution changes
+  - no quality-gate changes
+  - no prompt A/B harness implementation
+
+## 2026-04-28 - RP-3A-0D Router advisory experiment design docs
+- Files: `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `README.md`
+- Added docs-only RP-3A-0D design authority for Router advisory readiness:
+  - recorded current RP-3 readiness as partial
+  - recorded missing manual/manual_gold evidence, `quality_conclusion_allowed=true` evidence, high-confidence wrong / ECE / Brier effective samples, prompt A/B dry-run harness, token/latency artifact, and missing code-backed `ROUTE_PRIOR_ADVISORY_MODE`
+  - documented an offline prompt A/B dry-run harness design with baseline/advisory prompt fields, artifact schema, parser reuse, comparison metrics, network-free mode, and optional live mode
+  - documented manual-gold data requirements for smoke, initial, and promotion gates
+  - documented RP-3A threshold drafts for parse stability, critical miss, recall, selected-agent growth, negative selection, token delta, and live latency budgets
+  - documented future rollback env policy while keeping it clearly marked as not implemented
+- Scope boundary:
+  - documentation only
+  - no runtime code changes
+  - no Router prompt changes
+  - no parser changes
+  - no State schema changes
+  - no public API/workflow/health changes
+  - no frontend changes
+  - no manager dispatch or agent execution changes
+  - no tests
+  - no quality-gate changes
+  - no Router advisory implementation
+  - no prompt A/B harness implementation
+
+## 2026-04-28 - RP-2E working-tree and docs consistency closure
+- Files: `docs/PROJECT_OVERVIEW.md`, `docs/CHANGELOG.md`
+- Closed RP-2D audit follow-ups without runtime behavior changes:
+  - corrected stale `PROJECT_OVERVIEW` route-prior wording that still described the current slice as a docs-only truth-alignment checkpoint
+  - aligned the narrative snapshot with current RP-2A eval schema/metrics, RP-2B offline-first profile-card/reliability helpers, and RP-2C env-gated runtime trace/comparison scaffold
+  - recorded that RP-3 advisory is still not implemented
+- Scope boundary:
+  - docs consistency and working-tree hygiene only
+  - no Router prompt changes
+  - no parser changes
+  - no State schema changes
+  - no public API/workflow/health changes
+  - no frontend changes
+  - no manager dispatch or agent execution changes
+  - no quality-gate changes
+  - no new runtime behavior
+
+## 2026-04-28 - RP-2C runtime reliability shadow trace
+- Files: `src/react_agent/graph.py`, `src/react_agent/route_reliability.py`, `tests/unit_tests/test_route_prior_runtime_invariance_rp2.py`, `tests/unit_tests/test_route_prior_router_comparison_rp2.py`, `tests/unit_tests/test_route_reliability_rp2.py`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Implemented RP-2C as runtime trace/comparison only:
+  - added private `ROUTE_PRIOR_RELIABILITY_ENABLED` gating, default off
+  - added optional private runtime reads for `ROUTE_PRIOR_PROFILE_CARDS_DIR`, `ROUTE_PRIOR_RELIABILITY_TABLE`, and `ROUTE_PRIOR_TRACE_TOP_CARDS`
+  - reused the RP-2B reliability scorer inside `router_node` after RP-1A shadow calculation without passing reliability data into the Router prompt
+  - added compact `route_reliability_shadow` trace fields with grouped ids, top card ids, score bands, reason codes, and counts only
+  - added deterministic `compare_route_prior_to_router(...)` with overlap, prior-only/router-only ids, omitted strong recommendations, selected deprioritized ids, disagreement band, and reason codes
+  - recorded post-router comparison only after parser output and kept scorer/comparison errors fail-open
+  - added focused RP-2C runtime invariance, no-leak, public-boundary, and comparison tests
+- Scope boundary:
+  - no Router prompt changes
+  - no parser changes
+  - no Router output JSON schema changes
+  - no committed `layer_plan` / `layer_mode` / `current_layer` changes
+  - no State schema changes
+  - no manager dispatch or agent execution changes
+  - no public API/workflow/health changes
+  - no `/api/agents` reliability-card exposure
+  - no frontend changes
+  - no Router advisory
+  - no guarded repair
+  - no route-prior eval promotion into the mainline quality gate
+
+## 2026-04-28 - RP-2B profile cards and reliability scorer
+- Files: `src/react_agent/route_profile_registry.py`, `src/react_agent/route_reliability.py`, `ops/regression/route_prior/run_route_prior_eval.py`, `tests/unit_tests/test_route_profile_registry_rp2.py`, `tests/unit_tests/test_route_reliability_rp2.py`, `tests/unit_tests/test_route_prior_eval_rp2.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Implemented RP-2B as offline-first route-prior tooling:
+  - added optional internal `route_profile_card_v0` loading with deterministic invalid/ignored card diagnostics
+  - kept missing/invalid/unknown/non-ordinary/special-agent cards fail-open without changing default RP-1A registry behavior
+  - added deterministic `route_reliability` scoring helpers with cold-start defaults, optional reliability-table reads, cost penalty, score bands, priority groups, reason codes, and reliability shadow output
+  - added opt-in `run_route_prior_eval --enable-rarp-scoring` artifact generation for reliability cards
+  - kept reliability artifacts free of raw embeddings and full profile text by default
+  - added focused RP-2B unit coverage while keeping RP-1A/RP-1B/RP-2A focused tests passing
+- Scope boundary:
+  - offline-first profile-card/reliability tooling only
+  - no runtime graph changes
+  - no Router prompt/parser changes
+  - no State schema changes
+  - no manager dispatch or agent execution changes
+  - no public API/workflow/health changes
+  - no `/api/agents` route profile exposure
+  - no frontend changes
+  - no RP-2C runtime trace, RP-3 advisory, or RP-4 repair
+  - no route-prior eval promotion into the mainline quality gate
+
+## 2026-04-28 - RP-2A route-prior offline eval schema and metrics
+- Files: `ops/regression/route_prior/run_route_prior_eval.py`, `ops/regression/route_prior/eval_route_prior_outputs.py`, `ops/regression/route_prior/generate_deepseek_teacher_labels.py`, `ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl`, `tests/unit_tests/test_route_prior_eval_rp2.py`, `tests/unit_tests/test_deepseek_teacher_labels_rp1b.py`, `README.md`, `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/SYSTEM_MAP.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
+- Implemented RP-2A as offline eval/tooling only:
+  - added `route_eval_label_v0` normalization while preserving legacy RP-1B `expected_agents` labels
+  - added expanded label fields for must/critical/nice-to-have/negative agents plus optional task metadata
+  - kept teacher-proxy and draft labels out of manual/gold quality conclusions
+  - expanded run artifacts with label metadata, question hash/preview, and per-case metrics while continuing not to emit raw embeddings
+  - expanded aggregate metrics with recall@1/@3/@5, safe/effective shortlist recall, critical miss, precision/F1/Jaccard, nice-to-have recall, negative selection, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics
+  - added focused RP-2A unit coverage and kept RP-1B/DeepSeek compatibility tests passing
+- Scope boundary:
+  - eval/tooling only
+  - no runtime graph changes
+  - no Router prompt/parser changes
+  - no State schema changes
+  - no manager dispatch or agent execution changes
+  - no public API/workflow/health changes
+  - no frontend changes
+  - no route-prior eval promotion into the mainline quality gate
+
 ## 2026-04-28 - RARP route-prior design document
 - Files: `docs/ROUTE_PRIOR_RARP_DESIGN.md`, `docs/INDEX.md`, `docs/CHANGELOG.md`
 - Added a docs-only design authority for Reliability-Aware Route Prior:
@@ -238,7 +653,7 @@
   - no transcript / store / replay truth change
   - provider/live smoke remains optional and outside the default blocking gate
 
-> Historical note: entries below are preserved for continuity. Older pre-QS entries may retain original wording or encoding noise; for current repo-level truth, prefer the QS-3/QS-2 entries, `docs/SYSTEM_MAP.md`, and the code-backed validation paths.
+> Historical note: entries below are preserved for continuity. Older pre-QS entries may retain original wording or encoding noise. Current repo-level phase truth is `Phase F3 + QS-2` as stated in `docs/SYSTEM_MAP.md`, `docs/INDEX.md`, and the code-backed validation paths; the older QS-3 wording is historical, not the current phase authority.
 
 ## 2026-04-05 - Phase QS-1B quality-stable minimal closure
 - Files: `scripts/quality/run_quality.py`, `scripts/quality/run_provider_live_smoke.py`, `Makefile`, `.github/workflows/unit-tests.yml`, `.github/workflows/integration-tests.yml`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`, `docs/INDEX.md`, `docs/RUNBOOK_ROUTER_SFT.md`

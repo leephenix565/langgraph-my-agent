@@ -35,7 +35,12 @@ This document is the S0 operational source for the current repo snapshot.
   - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
   - `ROUTE_PRIOR_OPENAI_BASE_URL` with fallback to `OPENAI_BASE_URL`
   - `ROUTE_PRIOR_OPENAI_API_KEY` with fallback to `OPENAI_API_KEY`
-- These RP-1A envs are internal runtime config only. They do not extend `/api/health` readiness or any public-safe contract.
+- RP-2C private reliability trace envs:
+  - `ROUTE_PRIOR_RELIABILITY_ENABLED`
+  - optional `ROUTE_PRIOR_PROFILE_CARDS_DIR`
+  - optional `ROUTE_PRIOR_RELIABILITY_TABLE`
+  - optional `ROUTE_PRIOR_TRACE_TOP_CARDS`
+- These route-prior envs are internal runtime config only. They do not extend `/api/health` readiness or any public-safe contract.
 - Static gate tooling lives in the repo's dev dependency surface and is required for `scripts/quality/run_quality.py --mode static`.
 
 Recommended environment self-check:
@@ -226,9 +231,152 @@ Default gate policy:
 - trace noise remains warning-only
 - provider/live smoke remains outside the default blocking gate
 
-## 8. RP-1B Route-Prior Offline Eval
+## 8. RP-1B / RP-2A / RP-2B / RP-2C Route-Prior Work
 
-RP-1B route-prior evaluation is an optional offline regression/eval harness under `ops/regression/route_prior/`. It validates RP-1A shadow outputs against labeled question JSONL by reporting top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, wildcard retention, and false-negative examples.
+Route-prior evaluation is an optional offline regression/eval harness under `ops/regression/route_prior/`. RP-1B validates RP-1A shadow outputs against labeled question JSONL by reporting top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, wildcard retention, and false-negative examples. RP-2A extends the same offline tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, expanded per-case labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B adds optional internal route profile cards plus deterministic reliability cards. RP-2C wires the scorer into `router_node` only as env-gated private runtime trace plus post-router deterministic comparison.
+
+Local Qwen embedding service inventory for RP-1A/RP-3A-5C experiments:
+
+```text
+latest checked status:
+  service health is currently ok on http://127.0.0.1:8001/healthz
+  model reported by health: Qwen/Qwen3-Embedding-0.6B
+  this is a project-external local process, so re-check health before each live route-prior experiment
+
+purpose:
+  project-external local OpenAI-compatible embeddings endpoint for RP-1A
+  embedding-first route-prior shadow retrieval
+
+  model:
+  Qwen/Qwen3-Embedding-0.6B
+  output dimension: 1024
+  last known endpoint smoke: count=2, dims=[1024, 1024]
+  latest RP-3A-5F route-prior artifact: enabled_count=20, disabled_count=0, cards_non_empty_count=20
+
+serving:
+  project-external FastAPI + SentenceTransformers wrapper
+  not repo runtime code
+  health endpoint: http://127.0.0.1:8001/healthz
+  embeddings endpoint: http://127.0.0.1:8001/v1/embeddings
+  request model: Qwen/Qwen3-Embedding-0.6B
+  local placeholder authorization token: local-test
+
+local paths:
+  embedding env: D:\AnacondaEnvs\qwen_embedding_py311
+  service dir: D:\LocalEmbeddingServices\qwen3_embedding_server
+  service file: D:\LocalEmbeddingServices\qwen3_embedding_server\qwen_embedding_server.py
+  stdout log: D:\LocalEmbeddingServices\qwen3_embedding_server\server.out.log
+  stderr log: D:\LocalEmbeddingServices\qwen3_embedding_server\server.err.log
+  HF cache root: D:\Models\huggingface\sentence-transformers\models--Qwen--Qwen3-Embedding-0.6B
+  snapshot: D:\Models\huggingface\sentence-transformers\models--Qwen--Qwen3-Embedding-0.6B\snapshots\97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+  snapshot ref: 97b0c614be4d77ee51c0cef4e5f07c00f9eb65b3
+  cache size: 25 files, approximately 1.125 GB
+  main model file: model.safetensors, approximately 1.19 GB
+
+env versions:
+  Python: 3.11.15
+  torch: 2.11.0+cpu
+  transformers: 5.6.2
+  sentence_transformers: 5.4.1
+  fastapi: 0.136.1
+  uvicorn: 0.46.0
+  httpx: 0.28.1
+  pydantic: 2.13.3
+
+hardware note:
+  NVIDIA GeForce RTX 3060 Laptop GPU is present, 6144 MiB VRAM
+  qwen_embedding_py311 currently uses CPU torch, so serving runs on CPU
+  GPU serving requires a separate CUDA torch rebuild and must not pollute the repo clean env
+
+service behavior:
+  Authorization header is accepted but ignored locally
+  raw input is not written to disk
+  full embeddings are not printed
+  logs only record batch size, model, dimension, elapsed ms, and cache hit/miss counts
+  normalize_embeddings=True by default
+  default batch size: 8
+  default prefix: empty string
+  optional QWEN_EMBEDDING_PREFIX is supported
+  optional QWEN_EMBEDDING_DEVICE is supported
+  process-local memory cache is keyed by input text sha256 and is cleared on restart
+  empty string or empty input list returns 400
+```
+
+Start the project-external embedding service only when local route-prior live
+experiments need it:
+
+```powershell
+$env:QWEN_EMBED_ENV = "D:\AnacondaEnvs\qwen_embedding_py311"
+$env:HF_HOME = "D:\Models\huggingface"
+$env:HUGGINGFACE_HUB_CACHE = "D:\Models\huggingface\hub"
+$env:TRANSFORMERS_CACHE = "D:\Models\huggingface\transformers"
+$env:SENTENCE_TRANSFORMERS_HOME = "D:\Models\huggingface\sentence-transformers"
+$env:TORCH_HOME = "D:\Models\torch"
+$env:PYTHONNOUSERSITE = "1"
+$env:TEMP = "$env:QWEN_EMBED_ENV\pip-tmp"
+$env:TMP = "$env:QWEN_EMBED_ENV\pip-tmp"
+$env:Path = "$env:QWEN_EMBED_ENV;$env:QWEN_EMBED_ENV\Scripts;$env:QWEN_EMBED_ENV\Library\bin;$env:Path"
+
+$env:QWEN_EMBEDDING_MODEL = "Qwen/Qwen3-Embedding-0.6B"
+$env:QWEN_EMBEDDING_CACHE = "D:\Models\huggingface\sentence-transformers"
+$env:QWEN_EMBEDDING_BATCH_SIZE = "8"
+$env:QWEN_EMBEDDING_PREFIX = ""
+
+Start-Process -FilePath "$env:QWEN_EMBED_ENV\python.exe" `
+  -ArgumentList "-m uvicorn qwen_embedding_server:app --host 127.0.0.1 --port 8001" `
+  -WorkingDirectory "D:\LocalEmbeddingServices\qwen3_embedding_server" `
+  -RedirectStandardOutput "D:\LocalEmbeddingServices\qwen3_embedding_server\server.out.log" `
+  -RedirectStandardError "D:\LocalEmbeddingServices\qwen3_embedding_server\server.err.log" `
+  -PassThru
+```
+
+Foreground start alternative:
+
+```powershell
+cd D:\LocalEmbeddingServices\qwen3_embedding_server
+D:\AnacondaEnvs\qwen_embedding_py311\python.exe -m uvicorn qwen_embedding_server:app --host 127.0.0.1 --port 8001
+```
+
+RP-1A route-prior env for this local service. Keep these in the local shell or
+local `.env` only; do not add them to `.env.example`:
+
+```powershell
+$env:ROUTE_PRIOR_EMBEDDINGS_ENABLED = "1"
+$env:ROUTE_PRIOR_EMBEDDINGS_MODEL = "Qwen/Qwen3-Embedding-0.6B"
+$env:ROUTE_PRIOR_OPENAI_BASE_URL = "http://127.0.0.1:8001/v1"
+$env:ROUTE_PRIOR_OPENAI_API_KEY = "local-test"
+```
+
+Minimal local probes, without printing full embeddings:
+
+```powershell
+Invoke-RestMethod http://127.0.0.1:8001/healthz
+
+D:\AnacondaEnvs\qwen_embedding_py311\python.exe -c "import httpx; r=httpx.post('http://127.0.0.1:8001/v1/embeddings', json={'model':'Qwen/Qwen3-Embedding-0.6B','input':['macro rates valuation','portfolio risk compliance'],'encoding_format':'float'}, headers={'Authorization':'Bearer local-test'}, timeout=120); print('status', r.status_code); r.raise_for_status(); b=r.json(); items=b.get('data', []); print('model', b.get('model')); print('count', len(items)); print('dims', [len(i.get('embedding', [])) for i in items]); print('sample_heads', [[round(float(x), 6) for x in i.get('embedding', [])[:3]] for i in items])"
+```
+
+Last known RP-1B DeepSeek teacher-proxy + Qwen route-prior eval result, recorded
+as diagnostic evidence only and not manual-gold promotion evidence:
+
+```text
+case_count=20
+enabled_rate=1.0
+retrieval_reason_counts={"ok":20}
+confidence_band_counts={"low":12,"normal":6,"wide":2}
+low_confidence_fallback_rate=0.6
+avg_shortlist_size=17.2
+avg_shortlist_ratio=0.7478260869565216
+top1_match_rate=0.9
+top3_match_rate=1.0
+top5_match_rate=1.0
+shortlist_recall=0.95
+full_expected_covered_rate=0.85
+```
+
+Boundary: this local service is outside the repo. It does not change Router
+prompt/parser behavior, State schema, public API, `/api/health`, frontend,
+manager dispatch, or the mainline quality gate. When unavailable, RP-1A remains
+shadow-only and fail-open.
 
 Commands:
 
@@ -236,6 +384,116 @@ Commands:
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
 python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
 ```
+
+Optional RP-2B reliability-card artifact generation:
+
+```powershell
+python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl --out-dir ops/regression/route_prior/out --enable-rarp-scoring --profile-cards-dir config/route_profiles --reliability-table ops/regression/route_prior/out/route_reliability_table.json
+```
+
+Optional RP-2C runtime trace:
+
+```powershell
+$env:ROUTE_PRIOR_RELIABILITY_ENABLED="1"
+$env:LOCAL_TRACE="1"
+```
+
+RP-2A label-template fixture:
+
+```powershell
+ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl
+```
+
+RP-3 manual-gold seed-template fixture:
+
+```powershell
+ops/regression/route_prior/fixtures/rp3_manual_gold_seed_template.jsonl
+```
+
+This RP-3 seed template is a candidate labeling file only. Its records remain
+`draft_for_human_review` with `quality_conclusion_allowed=false` until a human
+reviewer explicitly confirms them as `manual_gold`.
+
+Accepted RP-3 manual-gold smoke fixture:
+
+```powershell
+ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl
+```
+
+This fixture contains 20 GPT Pro assisted records accepted by the project owner
+as reviewed `manual_gold`. It is smoke evidence for schema / fixture / prompt
+A/B dry-run preparation only; it is not an initial or promotion-quality dataset.
+
+Network-free RP-3A-1 Router advisory A/B parser dry-run:
+
+```powershell
+python -m ops.regression.route_prior.run_router_advisory_ab --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out-dir ops/regression/route_prior/out --max-items 20 --mode network-free
+```
+
+This harness makes no provider calls. It replays supplied or deterministic-stub
+Router outputs through `parse_router_layers_with_stats(...)` and writes ignored
+local artifacts under `ops/regression/route_prior/out/` for parser-stability and
+selected-agent-delta inspection. It is not a runtime Router advisory.
+
+RP-3A-2B hardens that same offline harness prediction-artifact schema. The
+optional `--predictions` JSONL still accepts legacy `baseline_raw` /
+`advisory_raw`, and now also accepts enriched `baseline` / `advisory` side
+objects with model name/spec, prompt char count, token count, latency,
+prompt/catalog hash, and parse latency metadata. The harness records this
+metadata in A/B artifacts and aggregates token/latency deltas when provided. It
+does not call a live model, does not store full prompt bodies, does not implement
+runtime advisory, and does not create promotion evidence by itself.
+
+Optional RP-3A-3 Router advisory prediction artifact generator:
+
+```powershell
+python -m ops.regression.route_prior.generate_router_advisory_predictions --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out ops/regression/route_prior/out/router_advisory_predictions_dry_run.jsonl --summary-out ops/regression/route_prior/out/router_advisory_predictions_dry_run_summary.json --max-items 20 --mode dry-run
+```
+
+This generator writes enriched `router_advisory_prediction_v0` JSONL artifacts
+for the A/B replay harness. Default `dry-run` mode is network-free and uses a
+deterministic label-derived `advisory_source="label_stub"` smoke path. Explicit
+`--mode live` may call a configured Router model; missing provider env writes a
+`status="skipped"` summary and exits without promoting any gate. The tool does
+not persist full prompt bodies and does not implement runtime Router advisory.
+RP-3A-5 extends this same optional generator with
+`--advisory-source provided_artifact|rarp_shadow` and `--advisory-artifact` for
+local RP-2 route-prior / route-reliability JSONL artifacts. Provided-artifact
+cases are keyed by case id, grouped by the formal Router layer catalog, and
+record artifact hash, confidence, fallback, agent ids, reason codes, retrieval
+status, and missing reasons in prediction JSONL. Missing, disabled, or empty
+reliability-card cases are marked as `provided_artifact_missing` /
+`rarp_shadow_missing` and never silently fall back to label-derived advisory.
+RP-3A-5B further treats missing, disabled, low-confidence, and empty-card cases
+as `advisory_applied=false` / `noop_no_advisory`: the generator does not render
+an advisory block and live mode reuses baseline output/metadata instead of
+making a second advisory-side call. A/B replay records noop comparisons without
+counting them as advisory-induced critical regressions.
+RP-3A-5E hardens the applied `provided_artifact` renderer after real Qwen-backed
+RARP-card live smoke showed wildcard-only advisory ids could over-narrow the
+Router. If strong/candidate groups are empty, the generator now prefers
+top-ranked non-wildcard route-prior cards as weak non-binding candidates and
+keeps wildcard ids as secondary context only. If no non-wildcard card exists,
+the case is marked `noop_wildcard_only`. This is still offline generator behavior
+only and is not runtime advisory or promotion evidence.
+RP-3A-5F records the latest real RARP provided-artifact live-stability evidence.
+The Qwen-backed route-prior artifact was enabled for all 20 `manual_gold_20`
+cases, with non-empty reliability cards for all 20. Three full DeepSeek live
+reruns produced no parse/default regressions across 60 case replays and one
+critical miss regression on `rp3-manual-gold-0017` in run 1 only. The ignored
+report artifacts are `ops/regression/route_prior/out/rp3_routing_case_report.md`
+and `ops/regression/route_prior/out/rp3_routing_case_table.json`. This remains
+20-case smoke evidence for the offline experiment path, not runtime advisory or
+promotion evidence.
+RP-3A-4D hardens this label-stub prompt path after a 5-case DeepSeek live smoke
+showed `rp3-manual-gold-0004` placing L3 critical agent `a19_market_risk` in
+L2. The stub now renders `must_include_agents_by_layer`,
+`critical_agents_by_layer`, and `nice_to_have_agents_by_layer` from label
+`expected_layers` plus the formal catalog, with explicit layer-constraint text.
+This remains offline harness/prediction-generator behavior only; it does not
+modify runtime Router prompt construction, parser behavior, State/public
+surfaces, frontend behavior, manager dispatch, agent execution, quality gates,
+or `/api/health`.
 
 Optional DeepSeek teacher-proxy labeling:
 
@@ -249,8 +507,10 @@ Artifacts:
 
 - `ops/regression/route_prior/out/route_prior_runs.jsonl`
 - `ops/regression/route_prior/out/route_prior_run_summary.json`
-- `ops/regression/route_prior/out/route_prior_metrics.json`
+- `ops/regression/route_prior/out/route_prior_metrics.json` (`route_prior_metrics_v2` after RP-2A, legacy RP-1B fields retained)
 - `ops/regression/route_prior/out/route_prior_false_negatives.json`
+- `ops/regression/route_prior/out/router_advisory_ab_runs.jsonl`
+- `ops/regression/route_prior/out/router_advisory_ab_summary.json`
 
 Policy:
 
@@ -259,7 +519,18 @@ Policy:
 - live runs require the private RP-1A embedding envs and a local OpenAI-compatible `/v1/embeddings` service
 - fixture records marked `draft_for_human_review` are labeling drafts, not final quality evidence
 - records marked `deepseek_teacher_v1` are teacher-proxy labels only; metrics should keep `quality_conclusion_allowed=false`
-- no runtime graph change, Router prompt/parser change, State schema change, public API change, public workflow change, or `/api/health` expansion
+- RP-2B is offline-first profile-card/reliability tooling: no runtime graph change, Router prompt/parser change, State schema change, manager dispatch change, public API change, public workflow change, frontend change, `/api/agents` route-profile exposure, `/api/health` expansion, or mainline quality-gate promotion
+- RP-2C is runtime trace/comparison only: default off, fail-open, no Router prompt/parser change, no committed `layer_plan`/`layer_mode`/`current_layer` mutation, no State schema field, no public API/workflow/frontend change, no `/api/agents` reliability-card exposure, no `/api/health` expansion, no advisory, no repair, and no mainline quality-gate promotion
+- RP-3A-0D is a docs-only Router advisory experiment design checkpoint. It records prompt A/B dry-run artifact shape, parse-stability metrics, manual-gold evidence requirements, token/latency budget evidence, and rollback policy expectations. It adds no command truth, no runtime code, no Router prompt/parser behavior, no State/public/API/workflow/health surface, no tests, no frontend changes, and no mainline quality-gate promotion. RP-3 advisory remains unimplemented.
+- RP-3A-1 adds a network-free offline A/B harness only. It does not modify `ROUTER_SYSTEM_PROMPT`, parser behavior, State schema, graph runtime routing, public contracts, workflow snapshots, `/api/agents`, `/api/health`, frontend behavior, manager dispatch, agent execution, or quality gates.
+- RP-3A-2B only hardens the offline A/B prediction-artifact schema and summary metadata aggregation. It is not an optional-live runner, not runtime advisory, not a Router prompt/parser change, and not promotion evidence.
+- RP-3A-3 adds an optional prediction artifact generator for the offline A/B harness. Its default dry-run path is network-free; live mode is explicit and optional. It does not change runtime Router prompt construction, parser behavior, State/public surfaces, frontend behavior, manager dispatch, agent execution, or quality gates.
+- RP-3A-4D only hardens the offline `label_stub` advisory with per-layer advisory groups and layer-constraint wording. It addresses a wrong-layer smoke regression in the experiment harness and is still not runtime advisory or promotion evidence.
+- RP-3A-5 adds offline `provided_artifact` / `rarp_shadow` advisory-source experiments for the optional `generate_router_advisory_predictions` path only. It does not implement runtime Router advisory, does not change `ROUTER_SYSTEM_PROMPT`, parser behavior, graph runtime routing, State schema, or any public API/workflow/health/frontend surface, and the resulting artifacts are evidence inputs only, not routing-quality promotion evidence.
+- RP-3A-5B hardens the offline no-advisory fallback for missing, disabled, low-confidence, or empty-card provided artifacts. These cases are explicit noop comparisons, not RARP-card quality evidence, and remain optional/non-blocking.
+- RP-3A-5E hardens the offline provided-artifact renderer so wildcard-only advisories are not treated as clean applied signals. Strong/candidate-empty cases use top-ranked non-wildcard cards as weak layer-aware candidates, with wildcard retained only as secondary context; no runtime Router advisory or public surface changes are introduced.
+- RP-3A-5F is evidence consolidation only: it records three full `manual_gold_20` DeepSeek live provided-artifact reruns and per-case routing report artifacts. It has real RARP cards (`enabled_count=20`, `cards_non_empty_count=20`) and parse/default stability across 60 replays, but still has one stochastic critical miss and remains smoke evidence, not promotion evidence.
+- Prompt A/B and route-prior promotion evidence remain optional/non-blocking until a future change explicitly lands the harness and promotes any gate.
 
 ## 9. Runtime and Public Boundary
 
@@ -285,6 +556,8 @@ Default answer-source behavior:
 - Fair Fusion baseline/judge/writer sidecars exist in runtime
 - `enable_fair_fusion=false` and `enable_fair_fusion_source_switch=false` by default
 - the visible answer therefore stays on the mainline path unless source switching is explicitly enabled
+- The checked-in `.env.example` baseline sidecar default is DeepSeek V4 Pro via the OpenAI-compatible path: `BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, and `BASELINE_OPENAI_API_KEY`
+- The `google_genai/...` Gemini grounding branch in `baseline_sidecar.py` remains an explicit opt-in implementation path, not the default baseline model in `.env.example`
 
 Important boundaries that remain unchanged on the current mainline:
 

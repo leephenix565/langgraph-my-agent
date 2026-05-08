@@ -240,6 +240,13 @@ tests / docs / trace-artifact / quality gate
 
 ### RP-2A: Eval Schema and Metrics Expansion
 
+Implementation status:
+
+- implemented as offline eval/tooling only
+- code-backed in `ops/regression/route_prior/run_route_prior_eval.py` and `ops/regression/route_prior/eval_route_prior_outputs.py`
+- focused coverage in `tests/unit_tests/test_route_prior_eval_rp2.py`
+- no runtime graph, Router prompt/parser, State, manager dispatch, public API, public workflow, `/api/health`, frontend, or mainline quality-gate change
+
 Scope:
 
 - offline only
@@ -252,6 +259,14 @@ Scope:
 
 ### RP-2B: Profile Cards and Reliability Scorer
 
+Implementation status:
+
+- implemented as offline-first tooling/helpers
+- code-backed in `src/react_agent/route_profile_registry.py`, `src/react_agent/route_reliability.py`, and optional `run_route_prior_eval --enable-rarp-scoring`
+- focused coverage in `tests/unit_tests/test_route_profile_registry_rp2.py` and `tests/unit_tests/test_route_reliability_rp2.py`
+- no runtime graph, Router prompt/parser, State, manager dispatch, public API, public workflow, `/api/agents`, `/api/health`, frontend, or mainline quality-gate change
+- no RP-3 advisory or RP-4 repair
+
 Scope:
 
 - offline first
@@ -262,6 +277,15 @@ Scope:
 - no Router prompt change
 
 ### RP-2C: Runtime Shadow Trace and Post-Router Comparison
+
+Implementation status:
+
+- implemented as env-gated runtime trace/comparison only
+- code-backed in `src/react_agent/graph.py` and `src/react_agent/route_reliability.py`
+- focused coverage in `tests/unit_tests/test_route_prior_runtime_invariance_rp2.py` and `tests/unit_tests/test_route_prior_router_comparison_rp2.py`
+- default off through `ROUTE_PRIOR_RELIABILITY_ENABLED`
+- fail-open on scorer/profile-card/reliability-table/comparison errors
+- no Router prompt/parser, committed routing output, State, manager dispatch, public API, public workflow, `/api/agents`, `/api/health`, frontend, advisory, repair, or mainline quality-gate change
 
 Scope:
 
@@ -812,6 +836,8 @@ special roles such as a01 and a25 are not ordinary route-prior eval labels
 
 ## 14. Metrics
 
+RP-2A writes `route_prior_metrics_v2` while keeping the legacy RP-1B metric fields compatible. The added metrics remain offline diagnostics and do not promote route-prior eval into the mainline quality gate.
+
 Coverage metrics:
 
 ```text
@@ -986,9 +1012,6 @@ Output schema:
   "router_only_agents": ["a21_reg_compliance"],
   "omitted_strong_recommended": [],
   "selected_deprioritized": ["a23_portfolio_opt"],
-  "router_miss_prior_hit": false,
-  "prior_miss_router_hit": false,
-  "both_miss": false,
   "disagreement_band": "medium",
   "reason_codes": [
     "overlap:medium",
@@ -1007,9 +1030,13 @@ no manager dispatch mutation
 no public workflow mutation
 ```
 
-## 17. RP-3 Router Advisory
+The runtime RP-2C comparison helper is label-free. Label-dependent miss metrics remain part of offline eval artifacts rather than runtime trace.
 
-RP-3 may give Router a compact, non-binding advisory block. It does not replace Router, alter the output schema, or narrow the parser allowed catalog.
+## 17. Future RP-3 Router Advisory
+
+This section describes future runtime Router advisory design only. Current RP-3A work in this repository is offline/ops experimentation and evidence; it does not implement runtime advisory, `ROUTE_PRIOR_ADVISORY_MODE`, Router prompt mutation, parser changes, State changes, public surface changes, or quality-gate promotion.
+
+RP-3 may later give Router a compact, non-binding advisory block. It does not replace Router, alter the output schema, or narrow the parser allowed catalog.
 
 Env:
 
@@ -1043,19 +1070,674 @@ do not make parser depend on route prior
 Router output schema remains current JSON schema
 ```
 
+### 17.1 RP-3A-0D Router Advisory Experiment Design
+
+Status: design checkpoint only. RP-3 Router advisory is not implemented.
+
+Current readiness facts from the RP-3R/RP-3A-0 audit at the time of RP-3A-0D:
+
+```text
+readiness = partial
+manual/manual_gold records = 0
+quality_conclusion_allowed=true records = 0
+high_confidence_wrong_rate / ECE / Brier = no effective sample evidence
+prompt A/B dry-run harness = not implemented
+token/latency artifact = not available
+ROUTE_PRIOR_ADVISORY_MODE = design fact only, not runtime code fact
+```
+
+RP-3G-Gold-Import later lands `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl`
+as a 20-case GPT Pro assisted, project-owner accepted `manual_gold` smoke fixture.
+That updates smoke-data availability only. It does not provide the 100-case initial
+gate, the 300-case promotion gate, prompt A/B parse-fallback evidence, token/latency
+evidence, or a code-backed `ROUTE_PRIOR_ADVISORY_MODE`.
+
+This means RP-3A prompt advisory must not be implemented directly from the
+current tree. RP-3A-1 lands the first offline, network-free prompt A/B dry-run
+harness for parser-stability and selected-agent-delta evidence, but it still
+does not implement runtime prompt injection.
+
+Offline prompt A/B harness design:
+
+```text
+implemented RP-3A-1 command:
+  python -m ops.regression.route_prior.run_router_advisory_ab \
+    --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl \
+    --out-dir ops/regression/route_prior/out \
+    --max-items 20 \
+    --mode network-free
+
+input:
+  route_eval_label_v0 JSONL, preferably manual_gold
+  legacy RP-1B expected_agents records may be normalized for compatibility
+  optional route_reliability_shadow_v0 records from RP-2B/RP-2C artifacts
+  optional Router prediction artifact JSONL:
+    preferred schema_version = router_advisory_prediction_v0
+    baseline/advisory side objects carry raw output plus side metadata
+    legacy baseline_raw / advisory_raw keys remain supported
+
+baseline:
+  current ROUTER_SYSTEM_PROMPT rendered with the current formal Router catalog
+  no advisory block
+
+advisory:
+  same Router prompt plus a compact non-binding advisory block
+  advisory content must use compact safe fields only:
+    confidence_band
+    low_confidence_fallback
+    strongly_recommended / candidate / wildcard / deprioritized ids
+    score bands
+    reason codes
+  advisory content must not include:
+    raw embeddings
+    full profile_text
+    full profile card text
+    hidden prompts or secrets
+
+parser:
+  both A and B outputs must be parsed through
+  parse_router_layers_with_stats(raw_text, agent_catalog)
+  parser allowed catalog and output schema stay unchanged
+
+RP-3A-2B prediction artifact schema hardening:
+  implemented in the same offline harness
+  supports legacy baseline_raw / advisory_raw JSONL predictions
+  supports enriched baseline/advisory side objects with model/token/latency metadata
+  does not call live models
+  does not implement runtime Router advisory
+  does not create promotion evidence by itself
+```
+
+Run artifact schema sketch:
+
+```json
+{
+  "schema_version": "router_advisory_ab_run_v0",
+  "mode": "network-free",
+  "case_id": "...",
+  "question_hash": "sha256:...",
+  "question_preview": "...",
+  "label_source": "manual_gold",
+  "quality_conclusion_allowed": true,
+  "baseline_prompt_chars": 0,
+  "advisory_prompt_chars": 0,
+  "prediction_schema_version": "router_advisory_prediction_v0",
+  "baseline": {
+    "raw": "...",
+    "model_name": null,
+    "model_spec": null,
+    "prompt_chars": null,
+    "token_count": null,
+    "latency_ms": null,
+    "prompt_hash": null,
+    "catalog_hash": null,
+    "parse_latency_ms": null,
+    "parse_stats": {},
+    "layer_plan": {},
+    "layer_mode": {},
+    "selected_agents": []
+  },
+  "advisory": {
+    "raw": "...",
+    "model_name": null,
+    "model_spec": null,
+    "prompt_chars": null,
+    "token_count": null,
+    "latency_ms": null,
+    "prompt_hash": null,
+    "catalog_hash": null,
+    "parse_latency_ms": null,
+    "parse_stats": {},
+    "layer_plan": {},
+    "layer_mode": {},
+    "selected_agents": []
+  },
+  "comparison": {
+    "parse_ok_delta": 0,
+    "used_default_plan_delta": 0,
+    "filtered_agents_delta": 0,
+    "l2_truncated_delta": 0,
+    "selected_jaccard": 0.0,
+    "must_include_recall_delta": 0.0,
+    "critical_agent_miss_delta": 0,
+    "negative_selection_delta": 0,
+    "prompt_char_delta": 0,
+    "token_count_delta": null,
+    "latency_ms_delta": null
+  }
+}
+```
+
+Enriched prediction JSONL schema accepted by RP-3A-2B:
+
+```json
+{
+  "schema_version": "router_advisory_prediction_v0",
+  "id": "case-id",
+  "baseline": {
+    "raw": "{\"layers\": []}",
+    "model_name": "router-baseline-model",
+    "model_spec": "provider/model",
+    "prompt_chars": 1234,
+    "token_count": 345,
+    "latency_ms": 812.5,
+    "prompt_hash": "sha256:...",
+    "catalog_hash": "sha256:...",
+    "parse_latency_ms": 2.1
+  },
+  "advisory": {
+    "raw": "{\"layers\": []}",
+    "model_name": "router-advisory-model",
+    "model_spec": "provider/model",
+    "prompt_chars": 1510,
+    "token_count": 401,
+    "latency_ms": 934.2,
+    "prompt_hash": "sha256:...",
+    "catalog_hash": "sha256:...",
+    "parse_latency_ms": 2.4
+  }
+}
+```
+
+The harness persists only the side metadata above. It does not persist full
+prompt bodies, raw embeddings, profile text, profile card text, secrets, or
+provider credentials. Missing optional metadata is represented as `null`.
+Summary artifacts aggregate average prompt/token/latency deltas and latency
+p50/p90/p95 only when supplied prediction metadata is complete enough to do so.
+
+Summary artifact schema additions from RP-3A-2B:
+
+```json
+{
+  "avg_prompt_char_delta": 0.0,
+  "avg_token_count_delta": null,
+  "avg_latency_ms_delta": null,
+  "latency_ms_delta_p50": null,
+  "latency_ms_delta_p90": null,
+  "latency_ms_delta_p95": null,
+  "prediction_records_with_complete_prompt_char_metadata": 0,
+  "prediction_records_with_complete_token_metadata": 0,
+  "prediction_records_with_complete_latency_metadata": 0,
+  "routing_quality_promotion_evidence": false
+}
+```
+
+Prompt A/B comparison metrics:
+
+```text
+parse_ok_rate
+used_default_plan_rate
+filtered_agents_avg
+l2_truncated_rate
+selected_agents_delta_count
+selected_jaccard_avg
+shortlist_overlap_avg
+must_include_recall
+critical_agent_miss_rate
+critical_agent_miss_delta
+negative_selection_rate
+avg_selected_agents
+prompt_char_delta_avg/p95
+prompt_token_delta_avg/p95
+latency_ms_p50/p90/p95 when live model mode is used
+```
+
+Network-free mode:
+
+```text
+no provider calls
+validate prompt rendering, artifact schema, parser replay, and static budget fields
+may use stored Router prediction artifacts or deterministic fake outputs
+RP-3A-2B enriched prediction replay improves metadata completeness observability only
+cannot support model-behavior quality conclusions
+RP-3A-1 deterministic stubs are label-derived parser smoke only, not routing quality evidence
+```
+
+RP-3A-3 optional-live prediction artifact generator:
+
+```text
+implemented command:
+  python -m ops.regression.route_prior.generate_router_advisory_predictions \
+    --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl \
+    --out ops/regression/route_prior/out/router_advisory_predictions.jsonl \
+    --summary-out ops/regression/route_prior/out/router_advisory_predictions_summary.json \
+    --max-items 20 \
+    --mode dry-run
+
+dry-run mode:
+  default
+  network-free
+  writes schema-valid router_advisory_prediction_v0 JSONL
+  uses deterministic label-derived Router JSON
+  advisory_source = label_stub
+  supports A/B replay wiring and artifact validation only
+
+live mode:
+  explicit opt-in via --mode live
+  uses the configured Router model through the same provider/model utility pattern
+  writes enriched baseline/advisory raw outputs and side metadata when provider calls succeed
+  if required env is missing, writes status=skipped summary and exits 0
+  if provider errors occur, writes status=error summary
+
+RP-3A-5 advisory sources:
+  advisory_source = label_stub | provided_artifact | rarp_shadow
+  label_stub:
+    label-derived smoke path only
+  provided_artifact / rarp_shadow:
+    read a local RP-2 route-prior / route-reliability JSONL artifact via --advisory-artifact
+    key records by case id
+    extract route_reliability_shadow_v0 cards/groups when present
+    group advisory agent ids by formal Router layer
+    record artifact path/hash, confidence band, fallback state, agent ids, reason codes,
+      retrieval enabled/reason, case-found state, and missing reason
+    mark missing/disabled/empty-card cases as provided_artifact_missing or rarp_shadow_missing
+    set advisory_applied = false for no-advisory cases
+    set advisory_noop_reason = noop_no_advisory for no-advisory cases
+    do not render an advisory block for no-advisory cases
+    never silently fall back to label-derived advisory
+```
+
+Prediction generator summary schema:
+
+```json
+{
+  "schema_version": "router_advisory_predictions_summary_v0",
+  "status": "ready | skipped | error",
+  "mode": "dry-run | live",
+  "case_count": 0,
+  "generated_count": 0,
+  "skipped_count": 0,
+  "model_spec": "provider/model",
+  "missing_env_reason": null,
+  "error_message": null,
+  "latency_ms_p50": null,
+  "latency_ms_p90": null,
+  "latency_ms_p95": null,
+  "token_metadata_complete_count": 0,
+  "advisory_source_counts": {"label_stub": 0},
+  "advisory_applied_count": 0,
+  "advisory_noop_count": 0,
+  "advisory_missing_count": 0,
+  "routing_quality_promotion_evidence": false
+}
+```
+
+RP-3A-3 does not persist full prompt bodies, raw embeddings, profile text,
+profile card text, secrets, or provider credentials. It does not modify runtime
+Router prompt construction, parser behavior, State, public API, workflow,
+frontend, manager dispatch, agent execution, or the quality gate. Dry-run and
+optional-live prediction artifacts are still evidence inputs only; they are not
+production promotion evidence by themselves.
+
+RP-3A-4D label-stub layer-constraint hardening:
+
+```text
+implemented in the offline A/B harness and optional prediction generator only
+addresses observed live-smoke regression:
+  case_id = rp3-manual-gold-0004
+  critical agent = a19_market_risk
+  expected layer = L3
+  baseline selected a19_market_risk in L3
+  label_stub advisory live output placed a19_market_risk in L2
+  parser correctly filtered the wrong-layer L2 selection
+
+label_stub advisory now includes:
+  must_include_agents_by_layer
+  critical_agents_by_layer
+  nice_to_have_agents_by_layer
+
+layer grouping source order:
+  1. label expected_layers
+  2. formal Router catalog fallback
+
+layer constraint:
+  Only select each advisory agent in the layer where it is listed.
+  Do not move L3 agents into L2 or L2 agents into L3.
+  If uncertain, omit rather than selecting the agent in the wrong layer.
+  Return only the existing Router JSON schema.
+```
+
+RP-3A-4D does not modify `ROUTER_SYSTEM_PROMPT`, parser behavior, graph runtime
+routing, State schema, public contracts, workflow snapshots, `/api/agents`,
+`/api/health`, frontend behavior, manager dispatch, agent execution, or quality
+gates. It does not implement runtime advisory and does not make a 5-case
+label-stub smoke result promotion evidence.
+
+RP-3A-5 provided-artifact / RARP-shadow advisory-source experiment:
+
+```text
+implemented in the optional prediction generator only
+adds:
+  --advisory-source provided_artifact
+  --advisory-source rarp_shadow
+  --advisory-artifact <route_prior_runs.jsonl>
+
+source material:
+  RP-2 route-prior / route-reliability artifacts
+  route_reliability_shadow_v0 cards and groups when present
+  formal Router catalog for layer grouping
+
+not source material:
+  manual_gold must_include_agents
+  manual_gold critical_agents
+  manual_gold nice_to_have_agents
+
+prediction metadata:
+  advisory_source
+  advisory_artifact_path
+  advisory_artifact_hash
+  advisory_applied
+  advisory_status
+  advisory_noop_reason
+  advisory_case_found
+  advisory_confidence_band
+  advisory_low_confidence_fallback
+  advisory_agent_ids
+  advisory_reason_codes
+  advisory_retrieval_enabled
+  advisory_retrieval_reason
+  advisory_missing_reason
+
+missing / disabled / fallback behavior:
+  missing artifact path:
+    source = provided_artifact_missing | rarp_shadow_missing
+    missing_reason = artifact_not_configured
+  artifact exists but case missing:
+    missing_reason = case_not_found
+  case exists but reliability shadow missing:
+    missing_reason = route_reliability_missing
+  reliability cards empty:
+    missing_reason = reliability_cards_empty
+  retrieval disabled or low confidence:
+    preserve retrieval enabled/reason and confidence/fallback metadata
+
+RP-3A-5B noop fallback behavior:
+  missing artifact path, missing case, missing reliability shadow, empty cards,
+  disabled retrieval, and low-confidence fallback are no-advisory cases
+  no-advisory cases:
+    advisory_applied = false
+    advisory_noop_reason = noop_no_advisory
+    do not render a non-empty advisory prompt block
+    do not make a second live advisory-side model call
+    may copy baseline raw output and metadata to the advisory side for schema compatibility
+  A/B replay:
+    marks comparison mode as noop_no_advisory
+    reports zero prompt/token/latency deltas for noop cases
+    does not count noop side differences as advisory-induced critical regressions
+  summary:
+    advisory_applied_count
+    advisory_noop_count
+    advisory_missing_count
+```
+
+RP-3A-5 does not modify `ROUTER_SYSTEM_PROMPT`, parser behavior, graph runtime
+routing, State schema, public contracts, workflow snapshots, `/api/agents`,
+`/api/health`, frontend behavior, manager dispatch, agent execution, or quality
+gates. It does not implement runtime Router advisory. `provided_artifact` /
+`rarp_shadow` artifacts are experiment inputs only and are not promotion
+evidence by themselves.
+
+RP-3A-5B specifically addresses the disabled/fallback RP-2 artifact case where
+all records had no reliability cards. That path is not RARP-card evidence. It is
+treated as a noop/no-advisory experiment state so empty advisory text cannot
+perturb a Router live smoke.
+
+RP-3A-5E provided-artifact renderer hardening:
+
+```text
+trigger:
+  real Qwen-backed RP-1A retrieval produced non-empty route-reliability cards
+  provided_artifact DeepSeek live A/B on manual_gold_20 had no parse/default regressions
+  but produced critical_miss_regressions=3
+
+triage finding:
+  the missed critical agents were present in route-prior ranking/cards
+  renderer selected only wildcard a15_research_synthesis when strong/candidate groups were empty
+  parser filtering, wrong-layer placement, and label/comparison bugs were not the cause
+
+renderer behavior:
+  never treat wildcard-only advisory ids as clean applied provided_artifact signal
+  when strong/candidate groups are empty:
+    prefer top-ranked non-wildcard route-prior cards as weak non-binding candidates
+    group weak fallback candidates by formal Router layer
+    keep wildcard ids as secondary context only
+  when no non-wildcard card exists:
+    advisory_applied = false
+    advisory_status = noop_wildcard_only
+    no second live advisory call
+
+artifact metadata:
+  advisory_selection_reason = weak_non_wildcard_fallback | noop_wildcard_only | priority_groups
+  advisory_secondary_agent_ids
+  advisory_status may be provided_artifact_weak_non_wildcard_fallback
+```
+
+RP-3A-5E remains an offline experiment-harness hardening. It does not implement
+runtime Router advisory, does not modify `ROUTER_SYSTEM_PROMPT`, parser behavior,
+graph runtime routing, State schema, public contracts/workflow/API/health/frontend
+surfaces, manager dispatch, agent execution, or quality gates. The manual_gold_20
+rerun is smoke evidence only, not promotion evidence.
+
+RP-3A-5F live stability and routing case report evidence:
+
+```text
+route-prior artifact:
+  case_count: 20
+  enabled_count: 20
+  disabled_count: 0
+  retrieval_reason_counts: {"ok": 20}
+  cards_non_empty_count: 20
+  confidence_band_counts: {"normal": 14, "low": 6}
+  low_confidence_fallback_count: 6
+  RARP top5 all-critical coverage: 13/20
+  RARP top10 all-critical coverage: 18/20
+
+three DeepSeek live provided_artifact reruns:
+  run_count: 3
+  total case replays: 60
+  advisory source mix per run: provided_artifact=14, provided_artifact_low_confidence=6
+  advisory_applied_count per run: 14
+  advisory_noop_count per run: 6
+  parse_ok_regressions_total: 0
+  default_plan_regressions_total: 0
+  critical_miss_regressions_total: 1
+  avg_selected_jaccard_mean: 0.7508
+  avg_token_count_delta_mean: 381.78
+  avg_latency_ms_delta_mean: 436.38 ms
+
+remaining risk:
+  rp3-manual-gold-0017 had one stochastic critical miss in run 1.
+  Baseline selected a19_market_risk and a20_fundamental_risk.
+  Advisory selected a20_fundamental_risk but missed a19_market_risk.
+  Runs 2 and 3 did not repeat that critical miss.
+
+case-report artifacts:
+  ops/regression/route_prior/out/rp3_routing_case_report.md
+  ops/regression/route_prior/out/rp3_routing_case_table.json
+```
+
+RP-3A-5F confirms the offline provided-artifact experiment path can consume real
+Qwen-backed RARP reliability cards and remain parse/default stable in a 3 x
+20-case live smoke. It does not prove production routing quality, does not clear
+runtime advisory promotion, and still leaves manual_gold_100 expansion plus
+targeted monitoring of `rp3-manual-gold-0017` as the next evidence work.
+
+RP-3A-5C-Embed-Audit local embedding service note:
+
+```text
+project-external endpoint:
+  health: http://127.0.0.1:8001/healthz
+  embeddings: http://127.0.0.1:8001/v1/embeddings
+  model: Qwen/Qwen3-Embedding-0.6B
+  embedding dimension: 1024
+  serving implementation: FastAPI + SentenceTransformers wrapper outside repo
+
+RP-1A local env:
+  ROUTE_PRIOR_EMBEDDINGS_ENABLED=1
+  ROUTE_PRIOR_EMBEDDINGS_MODEL=Qwen/Qwen3-Embedding-0.6B
+  ROUTE_PRIOR_OPENAI_BASE_URL=http://127.0.0.1:8001/v1
+  ROUTE_PRIOR_OPENAI_API_KEY=local-test
+
+latest checked service state:
+  health ok on http://127.0.0.1:8001/healthz
+  model reported by health: Qwen/Qwen3-Embedding-0.6B
+  project-external local process; re-check health before each live experiment
+  repo code unchanged
+
+endpoint smoke:
+  status=200
+  count=2
+  dims=[1024, 1024]
+
+latest RP-3A-5F route-prior artifact:
+  enabled_count=20
+  disabled_count=0
+  cards_non_empty_count=20
+
+boundary:
+  local service only
+  no Router prompt/parser change
+  no State/public/API/health/frontend expansion
+  no runtime advisory
+  fail-open if unavailable
+```
+
+Optional live mode:
+
+```text
+explicit opt-in only
+writes ignored artifacts under ops/regression/route_prior/out/
+records model, timestamp, prompt size, parse stats, and latency
+remains optional and non-blocking until a future promotion decision
+```
+
+Manual-gold data requirements:
+
+```text
+smoke: 20 manual_gold cases
+  validates harness wiring, artifact shape, and no-leak constraints only
+
+initial gate: 100 manual_gold cases
+  minimum evidence before RP-3A prompt-mode implementation can be accepted
+
+promotion gate: 300 manual_gold cases
+  stronger evidence before broader default availability or any repair work
+```
+
+Seed template path:
+
+```text
+ops/regression/route_prior/fixtures/rp3_manual_gold_seed_template.jsonl
+```
+
+The seed template is not manual gold evidence by itself. Its records remain
+`draft_for_human_review` with `quality_conclusion_allowed=false` until a human
+reviewer verifies the labels and explicitly changes them to `manual_gold` with
+`quality_conclusion_allowed=true`.
+
+Accepted smoke fixture path:
+
+```text
+ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl
+```
+
+As of RP-3G-Gold-Import this file contains 20 reviewed `manual_gold` records
+generated with GPT Pro expert assistance and accepted by the project owner. It
+is a smoke dataset for prompt A/B dry-run wiring and schema validation only; it
+is not the 100-case initial gate, the 300-case promotion gate, or routing-quality
+promotion evidence by itself.
+
+Required label fields:
+
+```text
+schema_version = route_eval_label_v0
+question
+label_source = manual_gold
+quality_conclusion_allowed = true
+must_include_agents
+critical_agents
+nice_to_have_agents
+should_not_include_agents
+task_type
+difficulty
+risk_level
+```
+
+Teacher-proxy and draft labels remain separate diagnostics only:
+
+```text
+deepseek_teacher_v1 -> quality_conclusion_allowed=false
+draft_for_human_review -> quality_conclusion_allowed=false
+```
+
+Threshold draft for RP-3A implementation readiness:
+
+```text
+high_confidence_wrong_rate <= 5% with sufficient high-confidence sample count
+critical_agent_miss_rate_advisory <= critical_agent_miss_rate_baseline
+must_include_recall_advisory >= baseline, or within an explicit non-inferiority margin
+parse_fallback_rate_advisory <= parse_fallback_rate_baseline
+used_default_plan_rate_advisory <= baseline
+filtered_agents_avg_advisory <= baseline + 0.2
+l2_truncated_rate_advisory <= baseline
+avg_selected_agents_advisory <= baseline + 1.0
+negative_selection_rate_advisory <= baseline
+prompt_token_delta_avg <= 1200
+prompt_char_delta_p95 within the agreed prompt budget
+live additional routing latency p50 <= 500 ms
+live additional routing latency p90 <= 1500 ms
+live additional routing latency p95 <= 2500 ms
+```
+
+Rollback policy for future RP-3A:
+
+```text
+ROUTE_PRIOR_ADVISORY_MODE=off | shadow | prompt
+default = off
+one-flag rollback = ROUTE_PRIOR_ADVISORY_MODE=off
+```
+
+As of RP-3A-0D this env is not implemented. It is a future code requirement,
+not a current runtime fact.
+
+Public boundary constraints:
+
+```text
+no State schema field for route_prior / reliability / advisory
+no public contract field
+no workflow.snapshot field
+no /api/agents route-profile or reliability exposure
+no /api/health readiness expansion
+no frontend change
+no manager dispatch change
+no AGENT_TOOLS change
+```
+
+Readiness gate before RP-3A implementation:
+
+```text
+manual_gold smoke set exists
+prompt A/B harness artifact schema is reviewed
+network-free parser stability run passes
+optional live run shows no parse fallback regression
+token/latency budget evidence exists
+no public boundary expansion is proven by tests
+rollback env policy is implemented default-off before prompt mode is usable
+```
+
 ## 18. Runtime Config
 
-Planned RP-2/RP-3 config:
+Private RP-2/RP-3 config:
 
 ```text
 ROUTE_PRIOR_RELIABILITY_ENABLED=0
 ROUTE_PRIOR_ADVISORY_MODE=off
 ROUTE_PRIOR_PROFILE_CARDS_DIR=config/route_profiles
 ROUTE_PRIOR_RELIABILITY_TABLE=
+ROUTE_PRIOR_TRACE_TOP_CARDS=5
 ROUTE_PRIOR_MAX_PROMPT_STRONG=4
 ROUTE_PRIOR_MAX_PROMPT_CANDIDATE=4
 ROUTE_PRIOR_MAX_PROMPT_WILDCARD=2
-ROUTE_PRIOR_TRACE_RELIABILITY=1
 ```
 
 Default behavior:
@@ -1065,7 +1747,7 @@ off:
   preserve current RP-1A behavior
 
 shadow:
-  compute reliability cards and comparison trace
+  RP-2C computes reliability cards and comparison trace when ROUTE_PRIOR_RELIABILITY_ENABLED=1
   no Router prompt change
 
 prompt:
@@ -1139,34 +1821,34 @@ No runtime code.
 
 ### Slice 3: RP-2B Profile Card and Reliability Scorer
 
-Likely files:
+Implemented files:
 
 ```text
 src/react_agent/route_profile_registry.py
 src/react_agent/route_reliability.py
+ops/regression/route_prior/run_route_prior_eval.py
 tests/unit_tests/test_route_reliability_rp2.py
 tests/unit_tests/test_route_profile_registry_rp2.py
 ```
 
-No Router prompt change.
+RP-2B is offline-first and opt-in for run artifacts through `--enable-rarp-scoring`. It adds no Router prompt change, parser change, State/public change, `/api/agents` exposure, `/api/health` readiness field, or manager dispatch change.
 
 ### Slice 4: RP-2C Runtime Shadow Comparison Scaffold
 
-Likely files:
+Implemented files:
 
 ```text
-src/react_agent/route_prior.py
 src/react_agent/route_reliability.py
 src/react_agent/graph.py
 tests/unit_tests/test_route_prior_runtime_invariance_rp2.py
 tests/unit_tests/test_route_prior_router_comparison_rp2.py
 ```
 
-No `layer_plan` mutation.
+RP-2C is env-gated by `ROUTE_PRIOR_RELIABILITY_ENABLED`, trace-only, and fail-open. It adds compact `route_reliability_shadow` and `route_prior_router_comparison` trace events without changing Router prompt/parser behavior, committed `layer_plan`/`layer_mode`/`current_layer`, State schema, public API/workflow/health, manager dispatch, advisory behavior, or repair behavior.
 
-### Slice 5: RP-3A Env-Gated Advisory Prompt
+### Slice 5: Future RP-3A Env-Gated Advisory Prompt
 
-Later only.
+Later only. Not implemented in the current work package; current RP-3A remains offline/ops tooling and evidence only.
 
 Likely files:
 
@@ -1231,8 +1913,6 @@ prior_only_agents
 router_only_agents
 omitted_strong_recommended
 selected_deprioritized
-router_miss_prior_hit
-prior_miss_router_hit
 no layer_plan mutation
 ```
 
@@ -1315,6 +1995,7 @@ RARP trace allowed:
 
 ```text
 route_reliability_shadow summary
+route_prior_router_comparison summary
 top ids
 score bands
 reason codes
@@ -1481,27 +2162,54 @@ implement guarded repair
 promote route-prior eval into mainline gate
 ```
 
-## 30. First Expected Implementation Slice
+## 30. Implementation Slice Status
 
-The first implementation prompt should be limited to RP-2A and RP-2B:
+RP-2A is implemented as offline eval/tooling only:
 
 ```text
 route_eval_label_v0 support
 legacy RP-1B schema compatibility
 expanded offline metrics
+RP-2A focused tests
+docs and changelog update
+no Router prompt change
+no State/public changes
+```
+
+RP-2B is implemented as offline-first profile-card/reliability tooling:
+
+```text
 optional profile card loader/fallback
 deterministic reliability scorer
+optional reliability table reader
+optional run_route_prior_eval --enable-rarp-scoring artifact section
+RP-2B focused tests
 no Router prompt change
 no State/public changes
 docs + changelog update
 ```
 
-It should not include:
+RP-2C is implemented as env-gated runtime shadow trace and post-router comparison:
+
+```text
+ROUTE_PRIOR_RELIABILITY_ENABLED default off
+compact route_reliability_shadow trace
+route_prior_router_comparison trace
+comparison helper does not mutate layer_plan
+scorer/comparison errors fail open
+RP-2C focused tests
+no Router prompt/parser change
+no committed routing output change
+no State/public changes
+docs + changelog update
+```
+
+The next implementation prompt should be scoped separately if it targets RP-3 advisory. It should not include:
 
 ```text
 RP-3 prompt advisory
 RP-4 repair
-runtime mutation
+runtime repair
 ```
 
 ## 31. Final Mental Model

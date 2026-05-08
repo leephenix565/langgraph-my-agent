@@ -156,6 +156,7 @@ def test_sanitize_teacher_label_filters_invalid_and_excluded_agents() -> None:
     )
 
     assert output["label_source"] == LABEL_SOURCE
+    assert output["quality_conclusion_allowed"] is False
     assert output["expected_agents"] == ["a03_macro_policy"]
     assert output["invalid_teacher_agents"] == ["a01_cio_orchestrator", "missing_agent"]
     assert output["teacher_confidence"] == 1.0
@@ -228,6 +229,7 @@ def test_generate_teacher_labels_continues_on_case_error() -> None:
 
     assert outputs[0]["expected_agents"] == []
     assert outputs[0]["label_source"] == LABEL_SOURCE
+    assert outputs[0]["quality_conclusion_allowed"] is False
     assert "HTTP 500" in outputs[0]["error"]
 
 
