@@ -27,7 +27,7 @@ def _build_contract(selected_agents, steps_len=2):
 
 
 def test_validate_contract_steps_bounds() -> None:
-    selected_agents = ["a01_cio_orchestrator", "a03_macro_policy"]
+    selected_agents = ["a01_cio_orchestrator", "a03_macro_industry_research"]
 
     ok, _, _ = validate_contract(_build_contract(selected_agents, steps_len=2), selected_agents)
     assert ok is True
@@ -45,7 +45,7 @@ def test_validate_contract_steps_bounds() -> None:
 
 
 def test_validate_contract_requires_a01() -> None:
-    selected_agents = ["a03_macro_policy"]
+    selected_agents = ["a03_macro_industry_research"]
     ok, reason, _ = validate_contract(_build_contract(selected_agents, steps_len=2), selected_agents)
     assert ok is False
     assert reason == "missing_a01"

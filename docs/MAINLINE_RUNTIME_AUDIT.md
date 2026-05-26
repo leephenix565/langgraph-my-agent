@@ -1,5 +1,11 @@
 # 主线项目理解审计报告
 
+## Phase AC-1A Catalog Update
+
+This audit snapshot is superseded for agent catalog counts by Agent Catalog v2. Current AC-1A facts are: `configCount=21`, `runtimeCount=21`, `disabledIds=[]`, no `a02_task_router` metadata, and no old ordinary agent metadata. `AGENT_TOOLS[agent_id]` remains the execution truth. `/api/agents` remains a public metadata projection and does not expose raw graph messages, route-prior evidence, RARP artifacts, or manual_gold labels.
+
+See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` for the current catalog table and `docs/AGENT_CATALOG_V2_RUNBOOK.md` for validation commands.
+
 本报告基于当前仓库代码、集成测试、前端 smoke 和主文档交叉核对整理。若文档与代码冲突，以 `src/react_agent/*` 和聚焦测试为准。本轮审计的核心结论是：主线代码事实整体稳定，主要偏差集中在权威文档口径和文档提交状态，而不是 runtime / public 协议行为本身。
 
 ## 1. 项目本质
@@ -212,15 +218,14 @@
   - `src/react_agent/graph.py`
   - `src/react_agent/baseline_sidecar.py`
   - `src/react_agent/default_agents.py`
-  - `config/agents/agent_002.json`
 
 ## 10. 已确认事实
 
-- `config/agents/` 当前有 26 个 agent config 文件
-- `default_enabled=false` 的默认禁用 agent 是 `a02_task_router`
-- 默认 node registry 纳入 25 个 enabled agent；`a02` 只有在 `INCLUDE_DISABLED_AGENTS=1` 时才会进入
+- `config/agents/` 当前有 21 个 Agent Catalog v2 config 文件
+- 当前没有 `default_enabled=false` 的默认禁用 agent；`disabledIds=[]`
+- 默认 node registry 纳入 21 个 enabled agent；`INCLUDE_DISABLED_AGENTS=1` 不会恢复已删除的 `a02_task_router` metadata
 - `a01_cio_orchestrator` 和 `a25_report_center` 不是普通功能 agent；二者都有专用 prompt 和专用 assignment/summary 处理
-- `a02_task_router` 也不属于当前普通主线，但原因不同: 它是 reserved/deprecated 且默认 disabled
+- `a02_task_router` metadata 已在 AC-1A 删除；真实 Router runtime 仍是 `router_node`
 - active frontend smoke entry 仍然是 `apps/web/src/test/smoke.tsx`
 - public transcript 的 canonical truth 仍然是 `turn.text`
 - 当前 stream seam 仍然只允许:
@@ -231,7 +236,6 @@
   - `error`
 - 证据:
   - `config/agents/`
-  - `config/agents/agent_002.json`
   - `src/react_agent/graph_bootstrap.py`
   - `tests/unit_tests/test_disabled_agents_nodes.py`
   - `src/react_agent/default_agents.py`
@@ -267,18 +271,14 @@
   - `src/react_agent/graph.py: manager_broadcast`
 - 如果改 Fair Fusion，必须先明确是 shadow 还是 source switch，并同步更新 public mapping、集成测试和前端 final-source 展示
 
-## 13. RP-1A embedding-first shadow seam
+## 13. Historical RP-1A/RP-2C route-prior lineage
 
-- `router_node` now also hosts an internal RP-1A embedding-first semantic-retrieval shadow seam before the formal Router model invoke.
-- This seam is shadow-only:
-  - it does not alter `ROUTER_SYSTEM_PROMPT`
-  - it does not alter `router_parse.parse_router_layers_with_stats(...)`
-  - it does not write `route_semantics`, `route_scores`, `awake_agents`, or `routing_hint` into committed `State`
-  - it does not expand public workflow, transcript, or `/api/health`
-- The seam is fail-open:
-  - disabled or missing embedding config
-  - provider/backend errors
-  - malformed embedding responses
-  all fall back to the existing formal Router path without changing committed routing outputs.
-- The backend/config is private runtime state, not public readiness state. Embedding env/config does not appear on `/api/health`.
-- Observability stays trace-only through `LOCAL_TRACE` / `run_logger`; no raw embeddings or internal shadow artifacts are projected to public surfaces.
+- RP-1A/RP-2C was historical route-prior/RARP lineage, not current graph runtime behavior.
+- As of AC-1B-2A, `src/react_agent/graph.py` no longer imports or executes the old route-prior/RARP runtime seam:
+  - no `route_prior`, `route_reliability`, `route_profile_registry`, or `route_prior_embeddings` import
+  - no `compute_route_prior_shadow(...)` call inside `router_node`
+  - no route-prior/RARP fields added to committed `State`
+  - no route-prior/RARP expansion of public workflow, transcript, or `/api/health`
+- Current routing truth remains the formal Router model output parsed by `router_parse.parse_router_layers_with_stats(...)`.
+- `route_prior.py`, `route_reliability.py`, `route_profile_registry.py`, and `route_prior_embeddings.py` remain in `src/react_agent/` only as archived/offline helper source.
+- Historical changelog and archive/design docs may describe the old seam as past behavior; they do not define current runtime wiring.

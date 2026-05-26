@@ -127,7 +127,7 @@ def test_runtime_results_pool_switches_by_env(monkeypatch) -> None:
 def test_agent_node_writes_ephemeral_and_legacy_mirror_when_enabled(monkeypatch) -> None:
     graph_module = _reload_graph(monkeypatch)
     monkeypatch.setenv("REACT_AGENT_RESULTS_POOLS", "1")
-    agent_id = "a03_macro_policy"
+    agent_id = "a03_macro_industry_research"
     monkeypatch.setitem(graph_module.AGENT_TOOLS, agent_id, _FakeTool())
 
     node = graph_module._build_agent_node(agent_id)

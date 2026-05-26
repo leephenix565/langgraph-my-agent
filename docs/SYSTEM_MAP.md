@@ -1,5 +1,15 @@
 # System Map
 
+## Phase AC-1A Agent Catalog v2
+
+- Catalog authority: `E:\muti-agent\智能体划分4.25.xlsx` Sheet2 plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+- Runtime catalog: 21 enabled metadata files in `config/agents`, with layer counts L1=1, L2=13, L3=6, L4=1 and `disabledIds=[]`.
+- External valuation wrappers: `src/react_agent/external_valuation_agents.py` registers `a16_ml_valuation -> valuation_ml`, `a17_traditional_valuation -> valuation_traditional`, and `a18_meta_valuation -> valuation_meta` before default LLM tool backfill.
+- AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
+- AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
+- AC-1B-2A removes the old route-prior/RARP runtime shadow seam from `react_agent.graph`; the old helper source remains archived/offline and is no longer imported by graph runtime.
+- Runbook: `docs/AGENT_CATALOG_V2_RUNBOOK.md`.
+
 This document is the S0 operational source for the current repo snapshot.
 
 ## 1. Current Phase
@@ -27,21 +37,18 @@ This document is the S0 operational source for the current repo snapshot.
 - Mainline Python dependency truth: `pyproject.toml`
 - Local development/static install path: `python -m pip install -e ".[dev]"`, then `python -m pip install pytest`
 - `.[dev]` supplies static tooling for `scripts/quality/run_quality.py --mode static`: `ruff`, `mypy`, and `codespell`.
+- Phase AC-1A-V2: the quality runner resolves `codespell` from the active Python
+  environment's local `Scripts`/`bin` directory before falling back to shell
+  `PATH`, so Windows/conda validation does not depend on pre-mutating `PATH`.
 - `pytest` is installed separately in local and CI test gates unless dependency-group tooling is used explicitly.
 - `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets for HF/model-side and training/fine-tuning workflows. They are not default mainline quality inputs.
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`.
-- RP-1A private embedding envs:
-  - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`
-  - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
-  - `ROUTE_PRIOR_OPENAI_BASE_URL` with fallback to `OPENAI_BASE_URL`
-  - `ROUTE_PRIOR_OPENAI_API_KEY` with fallback to `OPENAI_API_KEY`
-- RP-2C private reliability trace envs:
-  - `ROUTE_PRIOR_RELIABILITY_ENABLED`
-  - optional `ROUTE_PRIOR_PROFILE_CARDS_DIR`
-  - optional `ROUTE_PRIOR_RELIABILITY_TABLE`
-  - optional `ROUTE_PRIOR_TRACE_TOP_CARDS`
-- These route-prior envs are internal runtime config only. They do not extend `/api/health` readiness or any public-safe contract.
+- Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. Current `react_agent.graph` no longer reads them, and they do not extend `/api/health` readiness or any public-safe contract.
+- Offline RP/RARP/SFT/manual-gold/teacher-proxy artifacts under `ops/regression/route_prior/`, `data/router_sft/`, `data/sft/`, and `data/a01_sft/` are archived/non-mainline lineage as of AC-1B-1. They are not current Agent Catalog v2 acceptance evidence and are not default quality-gate promotion evidence.
 - Static gate tooling lives in the repo's dev dependency surface and is required for `scripts/quality/run_quality.py --mode static`.
+- Static gate executable resolution is a tooling concern only; it does not change
+  Router/parser/State/public API/frontend schema, Agent Catalog v2 metadata, or
+  external valuation wrapper behavior.
 
 Recommended environment self-check:
 
@@ -146,6 +153,17 @@ Active default-gate tests:
 - `tests/integration_tests/test_graph.py`
 - `apps/web/src/test/smoke.tsx`
 
+Archived offline tests:
+
+- `tests/archive/route_prior/`
+- `tests/archive/router_eval/`
+- `tests/archive/sft/`
+
+These archive directories are retained for historical lineage and offline
+reproducibility only. They are not collected by the default
+`pytest tests/unit_tests` gate and are not current Agent Catalog v2 acceptance
+evidence.
+
 Legacy frontend fixtures:
 
 - `apps/web/src/test/app.smoke.legacy.tsx`
@@ -231,9 +249,32 @@ Default gate policy:
 - trace noise remains warning-only
 - provider/live smoke remains outside the default blocking gate
 
-## 8. RP-1B / RP-2A / RP-2B / RP-2C Route-Prior Work
+## 8. Archived RP/RARP/SFT Offline Evidence
 
-Route-prior evaluation is an optional offline regression/eval harness under `ops/regression/route_prior/`. RP-1B validates RP-1A shadow outputs against labeled question JSONL by reporting top-k match, shortlist recall, low-confidence fallback rate, formal-Router overlap observation, wildcard retention, and false-negative examples. RP-2A extends the same offline tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, expanded per-case labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B adds optional internal route profile cards plus deterministic reliability cards. RP-2C wires the scorer into `router_node` only as env-gated private runtime trace plus post-router deterministic comparison.
+AC-1B-1 classifies the RP-1B/RP-2A/RP-2B/RP-3A route-prior/RARP offline
+experiments, manual-gold fixtures, teacher-proxy labels, and Router-SFT/A01-SFT
+data as archived/offline/non-mainline evidence. They are retained for
+historical lineage and reproducibility only. They are not current Agent Catalog
+v2 acceptance evidence, not default quality-gate evidence, and not current
+routing-quality promotion evidence.
+
+Current runtime fact: AC-1B-2A removes the old RP-1A/RP-2C runtime seam from
+`react_agent.graph`. The graph no longer imports or executes `route_prior`,
+`route_reliability`, `load_route_profile_cards`, or old route-prior comparison
+logic. The archived helper source remains in `src/react_agent/` for historical
+lineage and offline reproducibility only; it does not own current routing.
+
+Archived lineage locations:
+
+- `ops/regression/route_prior/README_ARCHIVED.md`
+- `data/router_sft/README_ARCHIVED.md`
+- `data/sft/README_ARCHIVED.md`
+- `data/a01_sft/DATA_MANIFEST.md`
+- `tests/archive/route_prior/`
+- `tests/archive/router_eval/`
+- `tests/archive/sft/`
+
+The commands and inventory below are historical reproduction notes only.
 
 Local Qwen embedding service inventory for RP-1A/RP-3A-5C experiments:
 
@@ -243,9 +284,9 @@ latest checked status:
   model reported by health: Qwen/Qwen3-Embedding-0.6B
   this is a project-external local process, so re-check health before each live route-prior experiment
 
-purpose:
-  project-external local OpenAI-compatible embeddings endpoint for RP-1A
-  embedding-first route-prior shadow retrieval
+historical purpose:
+  project-external local OpenAI-compatible embeddings endpoint for archived
+  RP-1A / RP-3A route-prior experiments
 
   model:
   Qwen/Qwen3-Embedding-0.6B
@@ -302,8 +343,7 @@ service behavior:
   empty string or empty input list returns 400
 ```
 
-Start the project-external embedding service only when local route-prior live
-experiments need it:
+Historical reproduction command for the project-external embedding service:
 
 ```powershell
 $env:QWEN_EMBED_ENV = "D:\AnacondaEnvs\qwen_embedding_py311"
@@ -337,8 +377,8 @@ cd D:\LocalEmbeddingServices\qwen3_embedding_server
 D:\AnacondaEnvs\qwen_embedding_py311\python.exe -m uvicorn qwen_embedding_server:app --host 127.0.0.1 --port 8001
 ```
 
-RP-1A route-prior env for this local service. Keep these in the local shell or
-local `.env` only; do not add them to `.env.example`:
+Historical RP-1A route-prior env for this local service. Keep these in the
+local shell or local `.env` only; do not add them to `.env.example`:
 
 ```powershell
 $env:ROUTE_PRIOR_EMBEDDINGS_ENABLED = "1"
@@ -347,7 +387,7 @@ $env:ROUTE_PRIOR_OPENAI_BASE_URL = "http://127.0.0.1:8001/v1"
 $env:ROUTE_PRIOR_OPENAI_API_KEY = "local-test"
 ```
 
-Minimal local probes, without printing full embeddings:
+Historical local probes, without printing full embeddings:
 
 ```powershell
 Invoke-RestMethod http://127.0.0.1:8001/healthz
@@ -378,20 +418,20 @@ prompt/parser behavior, State schema, public API, `/api/health`, frontend,
 manager dispatch, or the mainline quality gate. When unavailable, RP-1A remains
 shadow-only and fail-open.
 
-Commands:
+Historical offline replay commands:
 
 ```powershell
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
 python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
 ```
 
-Optional RP-2B reliability-card artifact generation:
+Historical optional RP-2B reliability-card artifact generation:
 
 ```powershell
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl --out-dir ops/regression/route_prior/out --enable-rarp-scoring --profile-cards-dir config/route_profiles --reliability-table ops/regression/route_prior/out/route_reliability_table.json
 ```
 
-Optional RP-2C runtime trace:
+Historical private RP-2C runtime-trace envs for archived lineage only:
 
 ```powershell
 $env:ROUTE_PRIOR_RELIABILITY_ENABLED="1"
@@ -424,7 +464,7 @@ This fixture contains 20 GPT Pro assisted records accepted by the project owner
 as reviewed `manual_gold`. It is smoke evidence for schema / fixture / prompt
 A/B dry-run preparation only; it is not an initial or promotion-quality dataset.
 
-Network-free RP-3A-1 Router advisory A/B parser dry-run:
+Historical network-free RP-3A-1 Router advisory A/B parser dry-run:
 
 ```powershell
 python -m ops.regression.route_prior.run_router_advisory_ab --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out-dir ops/regression/route_prior/out --max-items 20 --mode network-free
@@ -444,7 +484,7 @@ metadata in A/B artifacts and aggregates token/latency deltas when provided. It
 does not call a live model, does not store full prompt bodies, does not implement
 runtime advisory, and does not create promotion evidence by itself.
 
-Optional RP-3A-3 Router advisory prediction artifact generator:
+Historical optional RP-3A-3 Router advisory prediction artifact generator:
 
 ```powershell
 python -m ops.regression.route_prior.generate_router_advisory_predictions --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out ops/regression/route_prior/out/router_advisory_predictions_dry_run.jsonl --summary-out ops/regression/route_prior/out/router_advisory_predictions_dry_run_summary.json --max-items 20 --mode dry-run
@@ -495,7 +535,7 @@ modify runtime Router prompt construction, parser behavior, State/public
 surfaces, frontend behavior, manager dispatch, agent execution, quality gates,
 or `/api/health`.
 
-Optional DeepSeek teacher-proxy labeling:
+Historical optional DeepSeek teacher-proxy labeling:
 
 ```powershell
 python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input ops/regression/route_prior/out/rp1b_manual_draft_20.jsonl --out ops/regression/route_prior/out/rp1b_deepseek_teacher_v1_20.jsonl --max-items 20
@@ -512,15 +552,15 @@ Artifacts:
 - `ops/regression/route_prior/out/router_advisory_ab_runs.jsonl`
 - `ops/regression/route_prior/out/router_advisory_ab_summary.json`
 
-Policy:
+Archive policy:
 
-- optional and non-blocking unless future work explicitly promotes it into the mainline gate
+- archived/offline/non-mainline unless future work explicitly re-promotes it with new acceptance evidence
 - default unit coverage stays network-free and does not require a local embeddings endpoint
 - live runs require the private RP-1A embedding envs and a local OpenAI-compatible `/v1/embeddings` service
 - fixture records marked `draft_for_human_review` are labeling drafts, not final quality evidence
 - records marked `deepseek_teacher_v1` are teacher-proxy labels only; metrics should keep `quality_conclusion_allowed=false`
 - RP-2B is offline-first profile-card/reliability tooling: no runtime graph change, Router prompt/parser change, State schema change, manager dispatch change, public API change, public workflow change, frontend change, `/api/agents` route-profile exposure, `/api/health` expansion, or mainline quality-gate promotion
-- RP-2C is runtime trace/comparison only: default off, fail-open, no Router prompt/parser change, no committed `layer_plan`/`layer_mode`/`current_layer` mutation, no State schema field, no public API/workflow/frontend change, no `/api/agents` reliability-card exposure, no `/api/health` expansion, no advisory, no repair, and no mainline quality-gate promotion
+- RP-2C was historical runtime trace/comparison only: default off, fail-open, no Router prompt/parser change, no committed `layer_plan`/`layer_mode`/`current_layer` mutation, no State schema field, no public API/workflow/frontend change, no `/api/agents` reliability-card exposure, no `/api/health` expansion, no advisory, no repair, and no mainline quality-gate promotion. AC-1B-2A removes that runtime wiring from current graph execution.
 - RP-3A-0D is a docs-only Router advisory experiment design checkpoint. It records prompt A/B dry-run artifact shape, parse-stability metrics, manual-gold evidence requirements, token/latency budget evidence, and rollback policy expectations. It adds no command truth, no runtime code, no Router prompt/parser behavior, no State/public/API/workflow/health surface, no tests, no frontend changes, and no mainline quality-gate promotion. RP-3 advisory remains unimplemented.
 - RP-3A-1 adds a network-free offline A/B harness only. It does not modify `ROUTER_SYSTEM_PROMPT`, parser behavior, State schema, graph runtime routing, public contracts, workflow snapshots, `/api/agents`, `/api/health`, frontend behavior, manager dispatch, agent execution, or quality gates.
 - RP-3A-2B only hardens the offline A/B prediction-artifact schema and summary metadata aggregation. It is not an optional-live runner, not runtime advisory, not a Router prompt/parser change, and not promotion evidence.
@@ -541,7 +581,6 @@ Runtime entry:
 Current runtime topology:
 
 - `__start__ -> router`
-- `router_node` also runs an internal RP-1A embedding-first semantic-retrieval shadow seam before the formal Router model invoke
 - `router -> manager_broadcast` and `router -> baseline_sidecar`
 - `agent nodes -> manager_summary`
 - `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
@@ -556,14 +595,16 @@ Default answer-source behavior:
 - Fair Fusion baseline/judge/writer sidecars exist in runtime
 - `enable_fair_fusion=false` and `enable_fair_fusion_source_switch=false` by default
 - the visible answer therefore stays on the mainline path unless source switching is explicitly enabled
-- The checked-in `.env.example` baseline sidecar default is DeepSeek V4 Pro via the OpenAI-compatible path: `BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, and `BASELINE_OPENAI_API_KEY`
+- Phase DS-1 defines the commercial API line as the baseline sidecar/Fair Fusion `BASELINE_*` provider path plus the three valuation-service internal `LLM_*` provider paths. It does not migrate the main multi-agent global `MODEL` / `OPENAI_BASE_URL` / `OPENAI_API_KEY` path.
+- The checked-in `.env.example` baseline sidecar example is DeepSeek V4 Pro via the OpenAI-compatible path: `BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, and `BASELINE_OPENAI_API_KEY`
+- `.env.example` keeps `ENABLE_FAIR_FUSION_SOURCE_SWITCH=0`; baseline output cannot replace the visible mainline answer unless source switching is explicitly enabled.
 - The `google_genai/...` Gemini grounding branch in `baseline_sidecar.py` remains an explicit opt-in implementation path, not the default baseline model in `.env.example`
 
 Important boundaries that remain unchanged on the current mainline:
 
-- keep RP-1A shadow-only, fail-open, and trace-only
-- do not let RP-1A alter formal Router prompt shape, parse semantics, or committed routing outputs
-- do not surface RP-1A embedding config/readiness on `/api/health`
+- formal Router provider output plus `router_parse` own current routing
+- do not reintroduce old route-prior / RARP shadow logic into graph runtime without rebuilding a catalog-v2 `router_prior_v2`
+- do not surface legacy `ROUTE_PRIOR_*` config/readiness on `/api/health`
 - do not treat `state["messages"]` as the public transcript
 - do not turn internal agents into separate public chat speakers
 - keep workflow as a summarized inspector
@@ -629,4 +670,6 @@ Router-SFT training/eval command truth lives in:
 
 - `docs/RUNBOOK_ROUTER_SFT.md`
 
-It is not part of the default mainline quality gate.
+It is archived/offline/non-mainline as of AC-1B-1. It is not part of the
+default mainline quality gate and is not current Agent Catalog v2 acceptance
+evidence.

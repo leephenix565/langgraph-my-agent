@@ -1,16 +1,16 @@
 {
-  "id": "a18_primary_secondary_valuation",
-  "name": "企业通用估值智能体1",
-  "description": "该智能体采用一级与二级市场双架构，针对企业全生命周期的四维度特征，精准匹配差异化建模方案，旨在为七类典型企业提供高效、定制化的估值报告，实现跨模块的响应优化与决策赋能。",
+  "id": "a18_meta_valuation",
+  "name": "元学习估值智能体",
+  "description": "功能：在宏观体制转换或突发黑天鹅事件中，利用元学习实现少样本快速自适应，提供跨周期、跨情境的动态估值修正。\n输入：宏观突变事件标签、行业极端政策冲击信号、跨市场相似历史情境的少量映射数据、标的高频波动指标。\n输出：结构突变下的自适应估值调整幅度；极端冲击情境下（如黑天鹅事件）的目标价压力测试结果。",
   "capabilities": [
-    "valuation",
-    "benchmark",
-    "scenario"
+    "meta_learning",
+    "scenario_adaptation",
+    "stress_test"
   ],
   "input_type": "valuation",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L3",
   "team": "valuation",
   "role_type": "system",

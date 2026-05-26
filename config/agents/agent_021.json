@@ -1,18 +1,18 @@
 {
-  "id": "a21_reg_compliance",
-  "name": "监管合规与投资者保护规则审查智能体",
-  "description": "该系统作为合规规则源头，统一管理监管法规与内部制度以确保规则的一致性与可追溯性，并通过规则检索、版本比对与条款结构化等方式将法规文本转化为可执行、可引用的规则单元，从而对外提供结构化规则库、规则变更记录以及支撑下游合规判断所需的规则依据。",
+  "id": "a21_portfolio_manager",
+  "name": "投资组合经理智能体",
+  "description": "功能：整合多维预测信号，结合用户风险偏好，运用组合优化算法动态生成并调整大类资产配置及股票持仓权重。\n输入：资产池标的预期收益率及协方差矩阵（由底层智能体提供）、用户设定的风险容忍度/最大回撤约束条件。\n输出：最优资产配置方案及成分股权重；投资组合风险敞口（VaR等）评估测算；动态再平衡（调仓）指令建议。",
   "capabilities": [
-    "compliance",
-    "regulatory",
-    "policy"
+    "portfolio",
+    "asset_allocation",
+    "rebalancing"
   ],
-  "input_type": "compliance",
+  "input_type": "portfolio",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L3",
-  "team": "compliance",
+  "team": "investment",
   "role_type": "system",
   "default_enabled": true
 }

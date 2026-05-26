@@ -1,18 +1,18 @@
 {
-  "id": "a07_financial_modeling",
-  "name": "公司财报分析智能体",
-  "description": "该系统专注于财务健康状况的量化分析与利润真实性的精准诊断，通过精准提取核心财务指标，开展全面的健康度评估、风险点识别及影响分析，最终提供包含财务健康度报告、利润真实性评估、财务风险点诊断及数据查询在内的全方位服务输出。",
+  "id": "a07_macro_sentiment",
+  "name": "宏观情绪感知智能体",
+  "description": "功能：实时监控并量化全市场的宏观新闻与社交媒体舆情，构建宏观市场健康指数，洞察大盘整体资金的风险偏好与情绪周期变化。\n输入：宏观经济新闻报道、央行及监管机构动态/发言、知名机构观点、全网主流社交媒体大盘情绪文本。\n输出：宏观市场情感量化指数；市场健康指数实时数值；情绪拐点预警与风险偏好状态（Risk-On/Off）。",
   "capabilities": [
-    "modeling",
-    "valuation",
-    "ratios"
+    "macro_sentiment",
+    "market_health",
+    "risk_preference"
   ],
-  "input_type": "finance",
+  "input_type": "sentiment",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "fundamental",
+  "team": "sentiment",
   "role_type": "system",
   "default_enabled": true
 }

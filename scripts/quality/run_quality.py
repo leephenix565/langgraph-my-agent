@@ -8,6 +8,7 @@ import os
 import shutil
 import subprocess
 import sys
+import sysconfig
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -90,15 +91,69 @@ def _run(
 
 
 def _npm_executable() -> str:
-    if os.name == "nt":
+    if _is_windows():
         return "npm.cmd"
     return "npm"
 
 
+def _is_windows() -> bool:
+    return os.name == "nt"
+
+
+def _codespell_names() -> tuple[str, ...]:
+    if _is_windows():
+        return ("codespell.exe", "codespell")
+    return ("codespell", "codespell.exe")
+
+
+def _unique_paths(paths: Iterable[Path]) -> tuple[Path, ...]:
+    unique: list[Path] = []
+    seen: set[str] = set()
+    for path in paths:
+        key = str(path).casefold() if _is_windows() else str(path)
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return tuple(unique)
+
+
+def _codespell_env_candidates() -> tuple[Path, ...]:
+    scripts_path = sysconfig.get_path("scripts")
+    candidate_dirs: list[Path] = []
+    if scripts_path:
+        candidate_dirs.append(Path(scripts_path))
+
+    python_dir = Path(sys.executable).resolve().parent
+    if _is_windows():
+        candidate_dirs.append(python_dir / "Scripts")
+    candidate_dirs.append(python_dir)
+
+    return _unique_paths(
+        directory / name for directory in candidate_dirs for name in _codespell_names()
+    )
+
+
 def _codespell_executable() -> str:
-    if os.name == "nt":
-        return "codespell.exe"
-    return "codespell"
+    env_candidates = _codespell_env_candidates()
+    for candidate in env_candidates:
+        if candidate.is_file():
+            return str(candidate)
+
+    path_names = _codespell_names()
+    for name in path_names:
+        found = shutil.which(name)
+        if found:
+            return found
+
+    rendered_candidates = "\n".join(f"  - {path}" for path in env_candidates)
+    raise RuntimeError(
+        "Could not locate the codespell executable for the active Python environment.\n"
+        f"Python executable: {sys.executable}\n"
+        "Env-local candidate paths:\n"
+        f"{rendered_candidates}\n"
+        f"PATH lookup attempted: {', '.join(path_names)}"
+    )
 
 
 def _python_module(*args: str, extra_env: Mapping[str, str] | None = None) -> None:

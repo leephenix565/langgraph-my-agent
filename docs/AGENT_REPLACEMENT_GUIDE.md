@@ -1,5 +1,23 @@
 # 功能性智能体替换接入指南
 
+> Scope note: if you are developing a new external HTTP agent from scratch,
+> read `examples/external_agent_scaffold/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md` first. This guide is
+> for replacing an existing repo functional agent while preserving current graph
+> semantics and runtime ids.
+
+> External-agent boundary: this file is a maintainer/internal replacement guide,
+> not the third-party external-agent protocol entrypoint. For independent
+> external agents, use `GET /health`, `POST /v1/agent/invoke`,
+> `external_agent_response_v0`, and a repo-side wrapper as described in
+> `examples/external_agent_scaffold/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md` and
+> `examples/external_agent_scaffold/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`. Any `/invoke`, `/healthz`, or
+> direct `AgentOutput` examples below are private/simple replacement patterns
+> for maintainers and are not the public external-agent standard.
+
+## Phase AC-1A Catalog v2 Note
+
+Agent Catalog v2 changes the ordinary agent id set. Replacement work after AC-1A must start from `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`, not from the old 26-config catalog. The runtime id is still the registration key in `AGENT_TOOLS`; for the three valuation agents, replacement means maintaining the HTTP wrapper contract rather than allowing default LLM valuation output. `a01_cio_orchestrator` and `a25_report_center` remain special runtime roles.
+
 ## 1. 文档目的
 
 本文只回答一个具体工程问题：
@@ -109,9 +127,9 @@
 
 本文讨论的“功能性智能体”，主要指普通分析/研究/风控/组合/估值/合规类 agent，例如：
 
-- `a03_macro_policy`
-- `a21_reg_compliance`
-- `a23_portfolio_opt`
+- `a03_macro_industry_research`
+- `a20_compliance_review`
+- `a21_portfolio_manager`
 
 这类 agent 在当前系统里都走同一类普通执行路径：
 
@@ -127,7 +145,7 @@
 
 - `a01_cio_orchestrator`
 - `a25_report_center`
-- `a02_task_router`
+- `a02_task_router` metadata (removed in AC-1A; real router is `router_node`)
 
 原因不是它们“更高级”，而是它们在当前代码里根本不是普通 analyst 路径。
 
@@ -152,7 +170,7 @@
 - `src/react_agent/prompts.py` 里存在专门的 `REPORT_CENTER_SYSTEM_PROMPT`
 - `src/react_agent/graph.py` 的 summary/build bundle 路径还会单独处理 `a25_report_center` 结果
 
-### 4.3 `a02_task_router`
+### 4.3 `a02_task_router` metadata (removed in AC-1A; real router is `router_node`)
 
 它更接近路由/任务拆解角色，不适合按“同学做了一个普通功能 agent，就直接平替”的思路处理。
 
@@ -263,9 +281,9 @@ graph 真正运行时，不是看 JSON 文案，而是看：
 
 例如下面几类都属于相对标准的功能 agent：
 
-- `a03_macro_policy`
-- `a21_reg_compliance`
-- `a23_portfolio_opt`
+- `a03_macro_industry_research`
+- `a20_compliance_review`
+- `a21_portfolio_manager`
 
 它们在 graph 中都按普通路径运行：
 
@@ -438,12 +456,14 @@ FastAPI/HTTP 只是“同学实现”的承载协议，而不是 graph 的直接
 
 如果你选择把同学的实现做成一个独立服务，建议它提供一个极简私有接口。
 
-推荐接口：
+注意：本节的 `/invoke` / `/healthz` 是内部私有替换模式，只适用于“保留同一个 repo `agent_id`、由维护者写本地 adapter”的简单场景。第三方独立 external-agent 标准入口不是这里的 `/invoke`，而是 `GET /health` + `POST /v1/agent/invoke` + `external_agent_response_v0` + repo-side wrapper。
+
+内部私有替换模式的推荐接口：
 
 - `POST /invoke`
 - 可选 `GET /healthz`
 
-`POST /invoke` 请求体建议固定为：
+在这个内部私有模式中，`POST /invoke` 请求体建议固定为：
 
 - `question`
 - `subtask`
@@ -457,7 +477,7 @@ FastAPI/HTTP 只是“同学实现”的承载协议，而不是 graph 的直接
 - `agent_id`
 - `run_id`
 
-`POST /invoke` 返回体建议直接返回兼容 `AgentOutput` 的 JSON：
+在这个内部私有模式中，`POST /invoke` 返回体可以直接返回兼容 `AgentOutput` 的 JSON：
 
 - `analysis`
 - `key_points`
@@ -602,7 +622,7 @@ FastAPI/HTTP 只是“同学实现”的承载协议，而不是 graph 的直接
 
 ```json
 {
-  "id": "a23_portfolio_opt",
+  "id": "a21_portfolio_manager",
   "name": "投资组合优化智能体",
   "description": "由外部实现替换后的组合优化功能位，继续承担 L3 组合配置与优化分析职责。",
   "capabilities": ["allocation", "hedging", "backtest"],
@@ -666,9 +686,9 @@ async def invoke_classmate_portfolio_agent(payload: Dict[str, Any]) -> Dict[str,
 
 
 def register_external_function_agents() -> None:
-    base_meta = AGENT_METADATA.get("a23_portfolio_opt")
+    base_meta = AGENT_METADATA.get("a21_portfolio_manager")
     meta = base_meta or AgentMetadata(
-        id="a23_portfolio_opt",
+        id="a21_portfolio_manager",
         name="投资组合优化智能体",
         description="外部实现接入的组合优化功能位",
         capabilities=["allocation", "hedging", "backtest"],
@@ -682,8 +702,8 @@ def register_external_function_agents() -> None:
         default_enabled=True,
     )
 
-    @tool("agent_a23_portfolio_opt")
-    async def external_a23_portfolio_opt(
+    @tool("agent_a21_portfolio_manager")
+    async def external_a21_portfolio_manager(
         question: str,
         subtask: str,
         shared_context: Dict[str, Any] | None = None,
@@ -722,7 +742,7 @@ def register_external_function_agents() -> None:
             "parse_ok": bool(result.get("parse_ok", True)),
         }
 
-    register_agent(meta, external_a23_portfolio_opt)
+    register_agent(meta, external_a21_portfolio_manager)
 ```
 
 这个示例的关键点是：
@@ -735,7 +755,7 @@ def register_external_function_agents() -> None:
 
 ## 15. FastAPI/HTTP 方案的最小双端示例
 
-如果同学的功能 agent 是独立服务，更推荐按下面这种形状接入。
+如果同学的功能 agent 是独立服务，下面示例展示一种内部私有替换形状。它不是第三方 external-agent 标准；对外部独立 agent，应优先使用 `/v1/agent/invoke` 标准协议。
 
 ### 15.1 同学侧 FastAPI 服务最小接口示例
 
@@ -813,9 +833,9 @@ REMOTE_BASE_URL = "http://127.0.0.1:9001"
 
 
 def register_external_function_agents() -> None:
-    base_meta = AGENT_METADATA.get("a21_reg_compliance")
+    base_meta = AGENT_METADATA.get("a20_compliance_review")
     meta = base_meta or AgentMetadata(
-        id="a21_reg_compliance",
+        id="a20_compliance_review",
         name="监管合规智能体",
         description="通过外部 FastAPI 服务接入的合规功能位",
         capabilities=["compliance", "regulatory", "policy"],
@@ -829,8 +849,8 @@ def register_external_function_agents() -> None:
         default_enabled=True,
     )
 
-    @tool("agent_a21_reg_compliance")
-    async def external_a21_reg_compliance(
+    @tool("agent_a20_compliance_review")
+    async def external_a20_compliance_review(
         question: str,
         subtask: str,
         shared_context: Dict[str, Any] | None = None,
@@ -843,7 +863,7 @@ def register_external_function_agents() -> None:
         tools_config = tools_config or {}
 
         payload = {
-            "agent_id": "a21_reg_compliance",
+            "agent_id": "a20_compliance_review",
             "question": question,
             "subtask": subtask,
             "shared_context": shared_context,
@@ -852,10 +872,19 @@ def register_external_function_agents() -> None:
             "router_plan_summary": router_plan_summary,
         }
 
-        async with httpx.AsyncClient(timeout=30.0) as client:
-            response = await client.post(f"{REMOTE_BASE_URL}/invoke", json=payload)
-            response.raise_for_status()
-            data = response.json()
+        try:
+            async with httpx.AsyncClient(timeout=30.0) as client:
+                response = await client.post(f"{REMOTE_BASE_URL}/invoke", json=payload)
+                response.raise_for_status()
+                data = response.json()
+        except (httpx.HTTPError, ValueError) as exc:
+            return {
+                "analysis": f"a20_compliance_review 外部替换实现暂不可用：{type(exc).__name__}",
+                "key_points": [],
+                "evidence": ["external replacement wrapper fail-soft"],
+                "confidence": 0.0,
+                "parse_ok": False,
+            }
 
         return {
             "analysis": str(data.get("analysis", "")).strip(),
@@ -873,7 +902,7 @@ def register_external_function_agents() -> None:
             "parse_ok": bool(data.get("parse_ok", True)),
         }
 
-    register_agent(meta, external_a21_reg_compliance)
+    register_agent(meta, external_a20_compliance_review)
 ```
 
 这个例子的关键仍然是：
@@ -927,19 +956,19 @@ def bootstrap_agent_runtime() -> None:
 
 推荐做法：
 
-- **直接抛异常**
+- **在 wrapper 内返回 fail-soft `AgentOutput`**
 
-理由不是“偷懒”，而是当前 `src/react_agent/graph.py` 的 `_build_agent_node(...)` 已经有现成的：
+理由是当前外部 HTTP wrapper 的生产口径应尽量把 transport/schema 失败压缩成可消费的结构化降级结果，避免把一次远端失败扩大成 graph 主链路异常。`src/react_agent/graph.py` 的 `_build_agent_node(...)` 仍有兜底：
 
 - `except Exception`
 - fail-soft 结构化兜底输出
 
-所以不需要为了外部协议接入，额外改 graph 主业务语义。
+但它应作为最后防线，而不是 HTTP adapter 的常规错误处理模板。
 
 同时建议增加一套最小验证 checklist：
 
-1. 外部服务 `GET /healthz` 正常
-2. 本仓库 wrapper 实际命中远端 `POST /invoke`
+1. 外部服务 `GET /healthz` 正常；如果按统一 external-agent 标准接入，则检查 `GET /health`
+2. 本仓库 wrapper 实际命中远端 `POST /invoke`；如果按统一 external-agent 标准接入，则应命中 `POST /v1/agent/invoke`
 3. `AGENT_TOOLS[agent_id]` 已经被 HTTP wrapper 覆盖
 4. graph 调到该 agent 时，日志或 trace 能看到远端调用
 

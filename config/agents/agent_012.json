@@ -1,18 +1,18 @@
 {
-  "id": "a12_ipo_investor_behavior",
-  "name": "IPO投资者构成与行为分析智能体",
-  "description": "该系统通过深度挖掘IPO历史投资数据中的行为模式、统计分析投资人构成、历史投资行为等数据，为用户提供专业的IPO投资行为分析、精准的市场机会捕捉建议以及有效的风险预警信号。",
+  "id": "a12_research_synthesis",
+  "name": "分析师研报与观点集成智能体",
+  "description": "功能：利用大模型阅读全市场卖方研报，提取核心逻辑、目标价及盈利预测，识别市场机构的一致预期方向与观点分歧度。\n输入：全市场券商卖方研报（文本）、分析师盈利预测调整明细（EPS、目标价）、研报评级数据。\n输出：一致预期数据统计图表；分析师盈利预测上修/下调趋势动向；研报核心逻辑摘要与观点分歧度测算。",
   "capabilities": [
-    "liquidity",
-    "flow",
-    "market"
+    "research_synthesis",
+    "consensus",
+    "forecast_revision"
   ],
-  "input_type": "market",
-  "latency_level": "fast",
-  "cost_level": "low",
-  "version": "v0.2",
+  "input_type": "research",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "market",
+  "team": "behavior",
   "role_type": "system",
   "default_enabled": true
 }

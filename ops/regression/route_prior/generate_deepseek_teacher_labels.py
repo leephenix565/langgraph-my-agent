@@ -199,7 +199,7 @@ def build_user_prompt(
         "question": record.question,
         "agent_catalog": catalog_to_prompt_items(catalog),
         "target_json_example": {
-            "expected_agents": ["a03_macro_policy", "a18_primary_secondary_valuation"],
+            "expected_agents": ["a03_macro_industry_research", "a17_traditional_valuation"],
             "tags": ["macro", "valuation"],
             "teacher_reason": "问题核心涉及利率路径和估值折现。",
             "teacher_confidence": 0.82,

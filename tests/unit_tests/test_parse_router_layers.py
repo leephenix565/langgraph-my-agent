@@ -56,8 +56,8 @@ def test_parse_legacy_layer_mapping() -> None:
 def test_route_star_first_time_goes_broadcast() -> None:
     state = {
         "current_layer": "L2",
-        "plan": ["a03_macro_policy"],
-        "layer_plan": {"L2": ["a03_macro_policy"]},
+        "plan": ["a03_macro_industry_research"],
+        "layer_plan": {"L2": ["a03_macro_industry_research"]},
         "layer_mode": {"L2": "Star"},
         "analyst_results": {},
         "fanout_targets": [],
@@ -68,11 +68,11 @@ def test_route_star_first_time_goes_broadcast() -> None:
 def test_route_star_after_fanout_goes_noop() -> None:
     state = {
         "current_layer": "L2",
-        "plan": ["a03_macro_policy"],
-        "layer_plan": {"L2": ["a03_macro_policy"]},
+        "plan": ["a03_macro_industry_research"],
+        "layer_plan": {"L2": ["a03_macro_industry_research"]},
         "layer_mode": {"L2": "Star"},
         "analyst_results": {},
-        "fanout_targets": ["a03_macro_policy"],
+        "fanout_targets": ["a03_macro_industry_research"],
     }
     assert route_from_manager_summary(state) == "noop"
 
@@ -102,8 +102,8 @@ def test_manager_summary_advance_clears_fanout_targets() -> None:
 def test_route_star_first_time_after_advance_goes_broadcast() -> None:
     state = {
         "current_layer": "L2",
-        "plan": ["a03_macro_policy"],
-        "layer_plan": {"L2": ["a03_macro_policy"]},
+        "plan": ["a03_macro_industry_research"],
+        "layer_plan": {"L2": ["a03_macro_industry_research"]},
         "layer_mode": {"L2": "Star"},
         "analyst_results": {},
         "fanout_targets": [],

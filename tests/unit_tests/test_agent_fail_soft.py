@@ -13,7 +13,7 @@ class ErrorTool:
 
 
 def test_agent_fail_soft_on_exception(monkeypatch) -> None:
-    agent_id = "a03_macro_policy"
+    agent_id = "a03_macro_industry_research"
     monkeypatch.setitem(graph_module.AGENT_TOOLS, agent_id, ErrorTool())
 
     node = graph_module._build_agent_node(agent_id)

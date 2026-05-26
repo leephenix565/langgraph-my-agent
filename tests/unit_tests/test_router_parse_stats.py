@@ -7,14 +7,14 @@ def _agent_catalog():
     return {
         "L1": ["a01_cio_orchestrator"],
         "L2": [
-            "a03_macro_policy",
-            "a04_industry_layout",
-            "a05_product_pricing",
-            "a06_financial_reports",
-            "a07_financial_modeling",
-            "a08_tech_due_diligence",
+            "a03_macro_industry_research",
+            "a04_commodity_hedging",
+            "a05_annual_report_analysis",
+            "a06_financial_statement_analysis",
+            "a06_financial_statement_analysis",
+            "a08_industry_hotspot",
         ],
-        "L3": ["a18_primary_secondary_valuation", "a19_market_risk", "a20_fundamental_risk"],
+        "L3": ["a17_traditional_valuation", "a19_risk_identification", "a19_risk_identification"],
         "L4": ["a25_report_center"],
     }
 
@@ -37,18 +37,18 @@ def test_parse_stats_l2_truncated() -> None:
                 "layer": "L2",
                 "mode": "Star",
                 "selected": [
-                    "a03_macro_policy",
-                    "a04_industry_layout",
-                    "a05_product_pricing",
-                    "a06_financial_reports",
-                    "a07_financial_modeling",
-                    "a08_tech_due_diligence",
+                    "a03_macro_industry_research",
+                    "a04_commodity_hedging",
+                    "a05_annual_report_analysis",
+                    "a06_financial_statement_analysis",
+                    "a06_financial_statement_analysis",
+                    "a08_industry_hotspot",
                 ],
             },
             {
                 "layer": "L3",
                 "mode": "Star",
-                "selected": ["a18_primary_secondary_valuation", "a19_market_risk"],
+                "selected": ["a17_traditional_valuation", "a19_risk_identification"],
             },
             {"layer": "L4", "mode": "Chain", "selected": ["a25_report_center"]},
         ],
@@ -70,12 +70,12 @@ def test_parse_stats_filtered_invalid_agents() -> None:
             {
                 "layer": "L2",
                 "mode": "Star",
-                "selected": ["a03_macro_policy", "a19_market_risk", "bad_id"],
+                "selected": ["a03_macro_industry_research", "a19_risk_identification", "bad_id"],
             },
             {
                 "layer": "L3",
                 "mode": "Star",
-                "selected": ["a18_primary_secondary_valuation"],
+                "selected": ["a17_traditional_valuation"],
             },
             {"layer": "L4", "mode": "Chain", "selected": ["a25_report_center"]},
         ],
@@ -87,4 +87,4 @@ def test_parse_stats_filtered_invalid_agents() -> None:
     assert stats["parse_ok"] is True
     assert stats["used_default_plan"] is False
     assert stats["filtered_agents"] == 2
-    assert plan["L2"] == ["a03_macro_policy"]
+    assert plan["L2"] == ["a03_macro_industry_research"]

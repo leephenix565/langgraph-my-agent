@@ -111,7 +111,7 @@ ORCHESTRATOR_SYSTEM_PROMPT = """你是首席编排官（Orchestrator），只能
   "selected_agents": ["a01_cio_orchestrator", "..."],
   "tasks": [
     {
-      "agent_id": "a03_macro_policy",
+      "agent_id": "a03_macro_industry_research",
       "task_id": "L2-a03-001",
       "objective": "...",
       "steps": ["...", "..."],

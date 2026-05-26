@@ -32,14 +32,14 @@ def _build_contract(selected_agents):
 
 
 def test_manager_broadcast_uses_contract_steps() -> None:
-    selected_agents = ["a01_cio_orchestrator", "a03_macro_policy", "a04_risk_control"]
+    selected_agents = ["a01_cio_orchestrator", "a03_macro_industry_research", "a19_risk_identification"]
     contract = _build_contract(selected_agents)
 
     state = {
-        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_policy", "a04_risk_control"]},
+        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_industry_research", "a19_risk_identification"]},
         "layer_mode": {"L1": "Chain", "L2": "Star"},
         "current_layer": "L2",
-        "plan": ["a03_macro_policy", "a04_risk_control"],
+        "plan": ["a03_macro_industry_research", "a19_risk_identification"],
         "analyst_results": {
             "a01_cio_orchestrator": {
                 "analysis": "ok",
@@ -59,19 +59,19 @@ def test_manager_broadcast_uses_contract_steps() -> None:
     send = cmd.goto[0]
     assignment_text = send.arg["messages"][-1].content  # type: ignore[index]
     assert "合同目标" in assignment_text
-    assert "step for a03_macro_policy" in assignment_text or "step for a04_risk_control" in assignment_text
+    assert "step for a03_macro_industry_research" in assignment_text or "step for a19_risk_identification" in assignment_text
 
 
 def test_manager_broadcast_fallback_without_valid_contract() -> None:
-    selected_agents = ["a01_cio_orchestrator", "a03_macro_policy"]
+    selected_agents = ["a01_cio_orchestrator", "a03_macro_industry_research"]
     contract = _build_contract(selected_agents)
     contract["schema_version"] = "invalid_version"
 
     state = {
-        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_policy"]},
+        "layer_plan": {"L1": ["a01_cio_orchestrator"], "L2": ["a03_macro_industry_research"]},
         "layer_mode": {"L1": "Chain", "L2": "Star"},
         "current_layer": "L2",
-        "plan": ["a03_macro_policy"],
+        "plan": ["a03_macro_industry_research"],
         "analyst_results": {
             "a01_cio_orchestrator": {
                 "analysis": "ok",

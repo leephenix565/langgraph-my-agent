@@ -1,5 +1,12 @@
 # A01 SFT DATA MANIFEST (FINAL)
 
+## AC-1B-1 archive status
+
+This directory is archived, offline, non-mainline data lineage. It is retained
+for historical reproducibility only and is not Agent Catalog v2 acceptance
+evidence, default quality-gate evidence, or current routing-quality promotion
+evidence. Runtime mainline does not import these data files.
+
 ## FINAL artifacts (frozen)
 - `data/a01_sft/final/a01_sft_messages_FINAL.train.jsonl`
 - `data/a01_sft/final/a01_sft_messages_FINAL.val.jsonl`

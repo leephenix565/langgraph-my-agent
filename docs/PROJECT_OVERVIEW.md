@@ -1,6 +1,10 @@
 # Project Overview: Current Engineering Snapshot
 
-> Scope note: this document is the narrative and current-snapshot entry for the repo. It does not define command truth. For operational commands, prefer [SYSTEM_MAP.md](/E:/langgraph-my-agent/docs/SYSTEM_MAP.md), [run_quality.py](/E:/langgraph-my-agent/scripts/quality/run_quality.py), and the quality workflows.
+## Phase AC-1A Catalog Snapshot
+
+Agent Catalog v2 is now the current catalog snapshot. The business source is `E:\muti-agent\智能体划分4.25.xlsx` Sheet2, while `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` records the repository id mapping because Sheet2 has no `agent_id` column. The live catalog is 21 enabled agents: L1=1, L2=13, L3=6, L4=1. `a02_task_router` metadata is gone, but the true Router runtime remains `router_node`. The three valuation agents are runtime-connected through HTTP wrappers and default tests use fake HTTP, not live ports 8101/8102/8103.
+
+> Scope note: this document is the narrative and current-snapshot entry for the repo. It does not define command truth. For operational commands, prefer [SYSTEM_MAP.md](SYSTEM_MAP.md), [run_quality.py](../scripts/quality/run_quality.py), and the quality workflows.
 
 ## 1. What This Project Is
 
@@ -11,7 +15,7 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Runtime skeleton: `langgraph.json -> src/react_agent/graph.py:graph`
 - Main runtime topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout flows through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
 - Default answer path: Fair Fusion baseline/judge/writer sidecars exist in runtime, but defaults keep the visible answer on the mainline path unless fusion and source switching are explicitly enabled
-- Baseline sidecar default config: `.env.example` now uses DeepSeek V4 Pro through the OpenAI-compatible baseline override (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`); the existing Gemini grounding path is still code-backed when `baseline_model` is explicitly set to `google_genai/...`
+- Commercial API line: Phase DS-1 keeps the main multi-agent global provider unchanged while fixing the Fair Fusion baseline sidecar example to DeepSeek V4 Pro through the OpenAI-compatible baseline override (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, `BASELINE_OPENAI_API_KEY=`). Source switching remains default-off, and the existing Gemini grounding path is still code-backed when `baseline_model` is explicitly set to `google_genai/...`
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -27,16 +31,18 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Typed input boundary:
   - `structuredInput` is additive only
   - pasted `materials` and additive `urlReferences` must still compile into canonical transcript text
-- RP-1A / RP-2C runtime seams:
-  - the repo now also carries an embedding-first route-prior shadow seam inside `router_node`
-  - phase 1 remains shadow-only: no formal Router ownership change, no committed-state expansion, no public-surface expansion
-  - missing embedding config or backend failures disable the seam privately and fail open to the existing mainline
-  - RP-2C adds optional `ROUTE_PRIOR_RELIABILITY_ENABLED` trace-only reliability shadow and post-router comparison, still default-off and with no Router prompt/parser, State, public API/workflow/health, advisory, or repair change
-- RP-3A offline advisory experiments:
-  - RP-3A-1 adds a network-free Router advisory A/B dry-run harness for parser-stability and selected-agent-delta evidence only
-  - RP-3A-3 adds an optional prediction artifact generator; RP-3A-5 adds `provided_artifact` / `rarp_shadow` advisory-source experiments from RP-2 route-prior/reliability artifacts
-  - RP-3A-5F records the latest real RARP provided-artifact smoke evidence: 20/20 Qwen-backed route-prior enabled cases, 20/20 non-empty reliability-card cases, three DeepSeek live reruns, 0/60 parse/default regressions, and 1/60 critical miss on `rp3-manual-gold-0017`
-  - these remain offline/ops experiment artifacts; they do not implement runtime Router advisory, `ROUTE_PRIOR_ADVISORY_MODE`, Router prompt mutation, parser changes, or public-surface expansion
+- AC-1B-2A route-prior runtime removal:
+  - `react_agent.graph` no longer imports or executes the old route-prior / RARP shadow seam
+  - formal Router provider output plus `router_parse` remain the current routing truth
+  - old route-prior source remains in `src/react_agent/` as archived/offline helper code, not graph runtime code
+  - future `router_prior_v2` must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels
+- AC-1B archival boundary:
+  - offline RP/RARP/SFT/manual-gold/teacher-proxy tests and artifacts are archived, offline, and non-mainline
+  - they are no longer Agent Catalog v2 acceptance evidence or current routing-quality promotion evidence
+- Archived RP-3A offline advisory experiments:
+  - RP-3A-1/RP-3A-3/RP-3A-5/RP-3A-5F artifacts are retained as archived offline lineage only
+  - they are not current Agent Catalog v2 acceptance evidence and not current routing-quality promotion evidence
+  - they do not implement runtime Router advisory, `ROUTE_PRIOR_ADVISORY_MODE`, Router prompt mutation, parser changes, or public-surface expansion
 - Current phase position:
   - frontend/runtime integration: `Phase F3`
   - repo-level closure: `Phase QS-2`
@@ -65,9 +71,15 @@ The workflow-first NDJSON seam landed during WS-1 and remains part of the produc
 
 The current repo position is different. F3 and QS-2 focus on hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority docs without changing LangGraph runtime business semantics, transcript truth, or the single-assistant product model.
 
-Route-prior work still fits inside that same hardening posture. RP-1A is an internal embedding-first runtime shadow seam, not a product-surface expansion and not a new top-level repo phase label. RP-1B adds optional offline shadow validation and replay/eval evidence for that seam. RP-2A extends the offline eval tooling with the versioned `route_eval_label_v0` schema and expanded metrics. RP-2B adds offline-first profile-card loading plus deterministic reliability scoring helpers. RP-2C adds an env-gated runtime reliability shadow trace and post-router comparison scaffold. RP-3A-1 adds a network-free offline Router advisory A/B dry-run harness for parser-stability and selected-agent-delta evidence. RP-3A-3 adds optional prediction artifact generation, RP-3A-5 adds real RARP `provided_artifact` / `rarp_shadow` experiments, and RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using Qwen-backed RARP reliability cards.
+Archived tests under `tests/archive/route_prior`, `tests/archive/router_eval`,
+and `tests/archive/sft` are not part of the default `pytest tests/unit_tests`
+gate. The default unit gate retains a focused no-route-prior runtime contract
+test proving the graph and public contracts remain free of old route-prior
+fields.
 
-RP-3 runtime Router advisory is not implemented. RP-2C remains default-off, trace-only, and fail-open; RP-3A remains offline/ops experimentation. The latest RP-3A-5F smoke shows real RARP cards and parse/default stability, but it still has one stochastic critical miss across 60 live replays and is not production promotion evidence. None of this changes the Router prompt, parser, committed `layer_plan / layer_mode`, State schema, manager dispatch, public API, public workflow, `/api/health`, frontend behavior, or agent execution.
+Route-prior work now fits this posture as archived lineage only. RP-1A was an internal embedding-first runtime shadow seam, not a product-surface expansion and not a new top-level repo phase label. RP-1B added optional offline shadow validation and replay/eval evidence for that seam. RP-2A extended the offline eval tooling with the versioned `route_eval_label_v0` schema and expanded metrics. RP-2B added offline-first profile-card loading plus deterministic reliability scoring helpers. RP-2C added an env-gated runtime reliability shadow trace and post-router comparison scaffold. AC-1B-2A removed the old RP-1A/RP-2C runtime seam from `graph.py`; the source remains only as archived helper code. RP-3A-1 added a network-free offline Router advisory A/B dry-run harness for parser-stability and selected-agent-delta evidence. RP-3A-3 added optional prediction artifact generation, RP-3A-5 added real RARP `provided_artifact` / `rarp_shadow` experiments, and RP-3A-5F recorded three full `manual_gold_20` DeepSeek live provided-artifact reruns using Qwen-backed RARP reliability cards.
+
+RP-3 runtime Router advisory is not implemented. RP-3A remains archived offline/ops experimentation. The latest RP-3A-5F smoke shows real RARP cards and parse/default stability, but it still has one stochastic critical miss across 60 live replays and is not production promotion evidence. As of AC-1B-1, RP/RARP/SFT/manual-gold/teacher-proxy offline artifacts are not default mainline acceptance evidence. As of AC-1B-2A, current graph runtime no longer imports or executes old route-prior code. None of this changes the Router prompt, parser, committed `layer_plan / layer_mode`, State schema, manager dispatch, public API, public workflow, `/api/health`, frontend behavior, or agent execution.
 
 ## 5. Runtime and Public Boundary
 
@@ -88,7 +100,7 @@ Important boundaries remain unchanged on the current mainline:
 
 The repo keeps one repo-level quality entry:
 
-- [run_quality.py](/E:/langgraph-my-agent/scripts/quality/run_quality.py)
+- [run_quality.py](../scripts/quality/run_quality.py)
 
 That entry now orchestrates:
 
@@ -122,7 +134,7 @@ Older frontend test fixtures remain in the repo only as legacy references with a
 
 Provider/live smoke now has:
 
-- a dedicated script: [run_provider_live_smoke.py](/E:/langgraph-my-agent/scripts/quality/run_provider_live_smoke.py)
+- a dedicated script: [run_provider_live_smoke.py](../scripts/quality/run_provider_live_smoke.py)
 - a dedicated artifact path: `ops/regression/provider/out/provider_live_smoke.json`
 - a dedicated optional workflow: `Optional Provider Live Smoke (Non-Blocking)`
 

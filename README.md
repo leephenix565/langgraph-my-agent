@@ -1,5 +1,12 @@
 # LangGraph Layered Multi-Agent System
 
+## Phase AC-1A Agent Catalog v2
+
+- `config/agents` now follows Agent Catalog v2 from `E:\muti-agent\智能体划分4.25.xlsx` Sheet2: L1=1, L2=13, L3=6, L4=1, `configCount=21`, `runtimeCount=21`, `disabledIds=[]`.
+- `a02_task_router` metadata is removed; the real Router remains `router_node` and the Router L1-L4 JSON protocol is unchanged.
+- `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` are registered as HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
+- See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` and `docs/AGENT_CATALOG_V2_RUNBOOK.md` for the mapping and validation runbook.
+
 [![Quality Gate](https://github.com/langchain-ai/react-agent/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/langchain-ai/react-agent/actions/workflows/unit-tests.yml)
 
 This repository is a layered multi-agent orchestration system built on LangGraph `StateGraph`. The runtime entrypoint is `langgraph.json -> src/react_agent/graph.py:graph`, and the current product shell lives under `apps/web/` on top of a Python public adapter in `src/react_agent/public_*.py`.
@@ -9,12 +16,15 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`
 - Runtime mainline topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout runs through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
 - Default answer path: Fair Fusion baseline/judge/writer sidecars exist in the runtime, but `Context.enable_fair_fusion=False` and `Context.enable_fair_fusion_source_switch=False` by default, so the visible answer still comes from the mainline bundle unless those flags are explicitly enabled
-- Baseline sidecar default config: `.env.example` now points the isolated Fair Fusion baseline at DeepSeek V4 Pro through the OpenAI-compatible path (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`); the existing `google_genai/...` Gemini grounding code path remains available only when explicitly configured
-- RP-1A / RP-2C route-prior shadows:
-  - `router_node` now also hosts an internal embedding-first semantic-retrieval shadow seam before the formal Router invoke
-  - it is shadow-only, fail-open, and does not alter formal Router prompt shape, parse semantics, committed state, or public workflow projection
-  - missing or broken embedding config disables the seam privately and does not change `/api/health`
-  - RP-2C can add private reliability shadow and post-router comparison trace when `ROUTE_PRIOR_RELIABILITY_ENABLED=1`; default env keeps current Router behavior unchanged
+- Commercial API line: `.env.example` now fixes the isolated Fair Fusion baseline sidecar provider path to DeepSeek V4 Pro through the OpenAI-compatible override (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, `BASELINE_OPENAI_API_KEY=`). This does not migrate the main multi-agent global provider (`MODEL`, `OPENAI_BASE_URL`, `OPENAI_API_KEY`) and does not enable source switching by default. The existing `google_genai/...` Gemini grounding code path remains available only when explicitly configured
+- AC-1B-2A route-prior runtime removal:
+  - `react_agent.graph` no longer imports or executes the old route-prior / RARP shadow seam
+  - the formal Router provider call and `router_parse` L1-L4 parser are the only current routing owners
+  - old `route_prior.py`, `route_reliability.py`, `route_profile_registry.py`, and `route_prior_embeddings.py` source files remain as archived/offline helpers only
+  - future `router_prior_v2` work must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels
+- AC-1B archive boundary:
+  - offline RP/RARP/SFT/manual-gold/teacher-proxy artifacts are archived, offline, and non-mainline
+  - they are not Agent Catalog v2 acceptance evidence and are not current routing-quality promotion evidence
 - Public product surfaces:
   - Chat: live
   - Settings: live read-only
@@ -84,7 +94,7 @@ Validated local commands:
 
 ```powershell
 & "$env:REACT_AGENT_ENV\python.exe" scripts\quality\run_quality.py --mode static
-& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\unit_tests\test_route_profile_registry_rp1a.py tests\unit_tests\test_route_prior_embeddings_rp1a.py tests\unit_tests\test_route_prior_rp1a.py -q
+& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\unit_tests\test_no_route_prior_runtime_contract.py -q
 & "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_graph.py -q
 & "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_public_api.py -q
 ```
@@ -155,6 +165,15 @@ The active blocking test surface is now explicit:
 - Public adapter integration: `tests/integration_tests/test_public_api.py`
 - Runtime graph smoke: `tests/integration_tests/test_graph.py`
 - Frontend active gate entry: `apps/web/src/test/smoke.tsx`
+
+Archived offline tests are retained outside the default gate:
+
+- `tests/archive/route_prior`
+- `tests/archive/router_eval`
+- `tests/archive/sft`
+
+These directories are historical/offline lineage only and are not Agent Catalog
+v2 acceptance evidence.
 
 Legacy frontend fixtures are kept for reference only and now use a `.legacy.tsx` suffix:
 
@@ -239,11 +258,19 @@ Artifacts:
 - `ops/regression/fusion/out/fusion_metrics.json`
 - `ops/regression/fusion/out/fusion_gate.json`
 
-## RP-1B / RP-2A / RP-2B / RP-2C Route-Prior Work
+## Archived RP/RARP/SFT Offline Evidence
 
-RP-1B adds an optional offline validation harness for the RP-1A route-prior shadow seam. RP-2A extends the same tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, must/critical/nice-to-have/negative labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B adds optional internal route profile cards plus deterministic reliability scoring helpers. RP-2C optionally wires those helpers into `router_node` as private runtime trace and post-router comparison only.
+AC-1B-1 archived the old RP/RARP/SFT/manual-gold/teacher-proxy offline evidence
+line from current mainline acceptance. AC-1B-2A then removed the old
+route-prior runtime seam from `react_agent.graph`; the graph no longer imports
+or executes the archived `route_prior` helpers. Offline eval, advisory,
+teacher-proxy, SFT, and manual-gold artifacts below are retained only for
+historical lineage and reproducibility. They are not Agent Catalog v2
+acceptance evidence and are not current routing-quality promotion evidence.
 
-Minimal live run, requiring a local OpenAI-compatible embeddings endpoint:
+RP-1B added an optional offline validation harness for the historical RP-1A route-prior shadow seam. RP-2A extended the same tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, must/critical/nice-to-have/negative labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B added optional internal route profile cards plus deterministic reliability scoring helpers. RP-2C previously wired those helpers into `router_node` as private runtime trace and post-router comparison only; that runtime wiring is removed as of AC-1B-2A.
+
+Historical offline live run, requiring a local OpenAI-compatible embeddings endpoint:
 
 ```powershell
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
@@ -261,7 +288,7 @@ Optional RP-2B reliability-card artifact generation:
 python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl --out-dir ops/regression/route_prior/out --enable-rarp-scoring --profile-cards-dir config/route_profiles --reliability-table ops/regression/route_prior/out/route_reliability_table.json
 ```
 
-Optional RP-2C runtime trace is private and default-off:
+Historical RP-2C runtime-trace envs, retained only for archived lineage notes:
 
 ```powershell
 $env:ROUTE_PRIOR_RELIABILITY_ENABLED="1"
@@ -292,7 +319,7 @@ python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input op
 
 DeepSeek-generated records use `label_source="deepseek_teacher_v1"`. They are model-generated teacher-proxy labels, not human/manual gold labels, and can only support proxy-quality observations such as Qwen route-prior alignment with that teacher.
 
-Most checked-in fixtures are labeling templates. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` or `manual_gold` labels. RP-3G adds `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl` as a GPT Pro assisted, project-owner accepted 20-case smoke fixture only; it is not an initial or promotion-quality dataset. Route-prior offline eval is not part of the default blocking gate unless explicitly promoted later. RP-2C is env-gated, trace-only, fail-open, and does not alter Router prompt/parser semantics, committed routing outputs, State schema, public workflow, frontend behavior, `/api/agents`, or `/api/health`. RP-3A-1 adds an offline network-free parser dry-run harness only; RP-3A-2B hardens optional prediction JSONL metadata replay for that harness; RP-3A-3 adds an optional prediction artifact generator with default network-free dry-run and explicit optional live mode; RP-3A-4D hardens the label-stub advisory with per-layer agent groups after a wrong-layer smoke regression; RP-3A-5 adds offline `provided_artifact` / `rarp_shadow` advisory-source experiments for the optional prediction-generator path only; RP-3A-5B makes missing, disabled, low-confidence, or empty-card provided artifacts explicit noop/no-advisory cases; RP-3A-5E hardens wildcard-only provided-artifact rendering; RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using real Qwen-backed RARP cards. The latest smoke evidence has `enabled_count=20`, `cards_non_empty_count=20`, `parse/default` regressions `0/60`, and `critical_miss_regressions=1/60` on `rp3-manual-gold-0017`; per-case report artifacts live under ignored `ops/regression/route_prior/out/rp3_routing_case_report.md` and `ops/regression/route_prior/out/rp3_routing_case_table.json`. None of these implement runtime advisory or production promotion. RP-3 runtime prompt advisory and `ROUTE_PRIOR_ADVISORY_MODE` remain unimplemented.
+Most checked-in fixtures are labeling templates. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` or `manual_gold` labels. RP-3G adds `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl` as a GPT Pro assisted, project-owner accepted 20-case smoke fixture only; it is not an initial or promotion-quality dataset. As of AC-1B-1, route-prior offline eval, RARP advisory replays, manual-gold fixtures, and teacher-proxy/SFT data are not part of the default mainline acceptance gate. As of AC-1B-2A, the current graph runtime does not execute old RP-1A/RP-2C route-prior code. RP-3A-1 adds an offline network-free parser dry-run harness only; RP-3A-2B hardens optional prediction JSONL metadata replay for that harness; RP-3A-3 adds an optional prediction artifact generator with default network-free dry-run and explicit optional live mode; RP-3A-4D hardens the label-stub advisory with per-layer agent groups after a wrong-layer smoke regression; RP-3A-5 adds offline `provided_artifact` / `rarp_shadow` advisory-source experiments for the optional prediction-generator path only; RP-3A-5B makes missing, disabled, low-confidence, or empty-card provided artifacts explicit noop/no-advisory cases; RP-3A-5E hardens wildcard-only provided-artifact rendering; RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using real Qwen-backed RARP cards. The latest smoke evidence has `enabled_count=20`, `cards_non_empty_count=20`, `parse/default` regressions `0/60`, and `critical_miss_regressions=1/60` on `rp3-manual-gold-0017`; per-case report artifacts live under ignored `ops/regression/route_prior/out/rp3_routing_case_report.md` and `ops/regression/route_prior/out/rp3_routing_case_table.json`. These are archived offline artifacts, not runtime advisory or production promotion evidence. RP-3 runtime prompt advisory and `ROUTE_PRIOR_ADVISORY_MODE` remain unimplemented.
 
 ## Environment Baseline
 
@@ -304,17 +331,7 @@ Most checked-in fixtures are labeling templates. `draft_for_human_review` labels
 - Mainline Python dependencies come from `pyproject.toml`. Local development/static validation should install `.[dev]` plus `pytest`.
 - `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets and are not default quality-gate inputs.
 - `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`
-- RP-1A private embedding envs:
-  - `ROUTE_PRIOR_EMBEDDINGS_ENABLED`
-  - `ROUTE_PRIOR_EMBEDDINGS_MODEL`
-  - `ROUTE_PRIOR_OPENAI_BASE_URL` falling back to `OPENAI_BASE_URL`
-  - `ROUTE_PRIOR_OPENAI_API_KEY` falling back to `OPENAI_API_KEY`
-- RP-2C private reliability trace envs:
-  - `ROUTE_PRIOR_RELIABILITY_ENABLED`
-  - optional `ROUTE_PRIOR_PROFILE_CARDS_DIR`
-  - optional `ROUTE_PRIOR_RELIABILITY_TABLE`
-  - optional `ROUTE_PRIOR_TRACE_TOP_CARDS`
-- These route-prior envs are runtime-internal only. They do not expand public readiness or the public adapter contract.
+- Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. The current graph runtime no longer reads them and they do not expand public readiness or the public adapter contract.
 - replay continuity remains weaker than persistent graph continuity and must stay labeled that way
 - `state["messages"]` is not the public transcript
 
@@ -345,11 +362,14 @@ What the current mainline still does not do:
 ## Docs
 
 - [Project Overview](docs/PROJECT_OVERVIEW.md)
+- [Agent Catalog v2 Sheet2 Mapping](docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md)
+- [Agent Catalog v2 Runbook](docs/AGENT_CATALOG_V2_RUNBOOK.md)
 - [Mainline Runtime Audit](docs/MAINLINE_RUNTIME_AUDIT.md)
 - [System Map](docs/SYSTEM_MAP.md)
 - [Frontend Architecture](docs/FRONTEND_ARCHITECTURE.md)
+- [External Agent Developer Package](examples/external_agent_scaffold/README.md)
 - [Docs Index](docs/INDEX.md)
-- [Router SFT Runbook](docs/RUNBOOK_ROUTER_SFT.md)
+- [Router SFT Runbook](docs/RUNBOOK_ROUTER_SFT.md) - archived/offline, not current mainline acceptance evidence
 - [Changelog](docs/CHANGELOG.md)
 
 If documentation conflicts with runtime behavior, prefer `src/react_agent/*`, focused tests, and the S0 docs referenced by `docs/INDEX.md`.

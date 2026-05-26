@@ -27,7 +27,7 @@ ORDINARY_EXCLUDED = {
     "a25_report_center",
 }
 _REGISTRY_OVERRIDES: Dict[str, Dict[str, object]] = {
-    "a15_research_synthesis": {
+    "a15_entity_relation_extraction": {
         "wildcard": True,
     }
 }

@@ -1,18 +1,18 @@
 {
-  "id": "a17_client_profile",
-  "name": "客户画像（风险偏好）智能体",
-  "description": "通过综合客户的基本信息、投资历史、问卷及交易行为等多维度数据，动态构建并更新其风险画像，旨在精准识别客户风险偏好类型、提供动态的风险承受能力评分，从而为产品与服务提供精准的适当性匹配支撑。",
+  "id": "a17_traditional_valuation",
+  "name": "传统估值智能体",
+  "description": "功能：实现传统经典模型的自动化进阶，例如通过蒙特卡洛模拟针对WACC和永续增长率进行上万次随机模拟以输出估值概率分布；并针对现金流极其稳定的标的自动切换动态分红折现模型。\n输入：实时无风险利率（如10年期国债收益率）、Beta值（结合标的与沪深300相关性）、基于经营性净现金流减去资本开支推算的自由现金流（FCFF）及一致预期数据。\n输出：绝对估值模型测算结果（如DCF目标价域）；同业相对估值对比矩阵；不同假设情景下的敏感性分析。",
   "capabilities": [
-    "kyc",
-    "suitability",
-    "profiling"
+    "dcf",
+    "relative_valuation",
+    "sensitivity_analysis"
   ],
-  "input_type": "client",
+  "input_type": "valuation",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
-  "layer": "L2",
-  "team": "client",
+  "version": "catalog_v2_sheet2",
+  "layer": "L3",
+  "team": "valuation",
   "role_type": "system",
   "default_enabled": true
 }

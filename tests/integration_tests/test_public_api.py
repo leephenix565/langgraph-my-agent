@@ -3,7 +3,6 @@ import json
 from fastapi.testclient import TestClient
 
 from react_agent import public_api
-from react_agent.agents import AgentMetadata
 from react_agent.public_contracts import (
     AgentStepModel,
     AnswerCardModel,
@@ -53,8 +52,8 @@ def _assistant_turn(final_source: str = "mainline", continuity_mode: str = "repl
         workflow=WorkflowModel(
             layerPlan=[
                 LayerPlanItem(layer="L1", mode="Chain", selected=["a01_cio_orchestrator"]),
-                LayerPlanItem(layer="L2", mode="Star", selected=["a03_macro_policy"]),
-                LayerPlanItem(layer="L3", mode="Star", selected=["a18_primary_secondary_valuation"]),
+                LayerPlanItem(layer="L2", mode="Star", selected=["a03_macro_industry_research"]),
+                LayerPlanItem(layer="L3", mode="Star", selected=["a17_traditional_valuation"]),
                 LayerPlanItem(layer="L4", mode="Chain", selected=["a25_report_center"]),
             ],
             layerMode={"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"},
@@ -163,102 +162,32 @@ def test_health_contract(tmp_path, monkeypatch):
 def test_agent_catalog_contract(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
 
-    def _catalog_metadata():
-        return [
-            AgentMetadata(
-                id="a01_cio_orchestrator",
-                name="CIO Orchestrator",
-                description="Coordinates the layered workflow.",
-                capabilities=["orchestrate", "prioritize"],
-                input_type="management",
-                latency_level="medium",
-                cost_level="normal",
-                version="v0.2",
-                layer="L1",
-                team="management",
-                role_type="system",
-                default_enabled=True,
-            ),
-            AgentMetadata(
-                id="a03_macro_policy",
-                name="Macro Policy Analyst",
-                description="Tracks macro and policy signals.",
-                capabilities=["macro", "policy"],
-                input_type="macro",
-                latency_level="medium",
-                cost_level="normal",
-                version="v0.2",
-                layer="L2",
-                team="research",
-                role_type="system",
-                default_enabled=True,
-            ),
-            AgentMetadata(
-                id="a21_reg_compliance",
-                name="Compliance Monitor",
-                description="Maps public guidance into compliance checks.",
-                capabilities=["compliance"],
-                input_type="compliance",
-                latency_level="medium",
-                cost_level="normal",
-                version="v0.2",
-                layer="L3",
-                team="compliance",
-                role_type="system",
-                default_enabled=True,
-            ),
-            AgentMetadata(
-                id="a25_report_center",
-                name="Report Center",
-                description="Builds the final external answer.",
-                capabilities=["report", "synthesis"],
-                input_type="report",
-                latency_level="medium",
-                cost_level="normal",
-                version="v0.2",
-                layer="L4",
-                team="reporting",
-                role_type="system",
-                default_enabled=True,
-            ),
-            AgentMetadata(
-                id="a02_task_router",
-                name="Task Decomposer",
-                description="Reserved and disabled by default.",
-                capabilities=["route", "plan"],
-                input_type="management",
-                latency_level="fast",
-                cost_level="low",
-                version="v0.2",
-                layer="L1",
-                team="management",
-                role_type="system",
-                default_enabled=False,
-            ),
-        ]
-
-    monkeypatch.setattr(public_api, "_ensure_public_agent_metadata", _catalog_metadata)
-
     response = client.get("/api/agents")
     assert response.status_code == 200
     payload = response.json()
 
-    assert payload["totals"]["configCount"] == 5
-    assert payload["totals"]["runtimeCount"] == 4
-    assert payload["totals"]["disabledIds"] == ["a02_task_router"]
+    assert payload["totals"]["configCount"] == 21
+    assert payload["totals"]["runtimeCount"] == 21
+    assert payload["totals"]["disabledIds"] == []
     assert [layer["layer"] for layer in payload["layers"]] == ["L1", "L2", "L3", "L4"]
+    assert [len(layer["agents"]) for layer in payload["layers"]] == [1, 13, 6, 1]
 
     l1_agents = payload["layers"][0]["agents"]
     assert l1_agents[0]["id"] == "a01_cio_orchestrator"
-    assert l1_agents[0]["description"] == "Coordinates the layered workflow."
-    assert l1_agents[0]["capabilities"] == ["orchestrate", "prioritize"]
+    assert l1_agents[0]["name"] == "资本市场决策协作智能体"
+    assert l1_agents[0]["capabilities"] == ["orchestration", "routing", "evidence_control"]
     assert l1_agents[0]["team"] == "management"
     assert l1_agents[0]["roleType"] == "system"
     assert l1_agents[0]["defaultEnabled"] is True
 
-    disabled = payload["disabledAgents"][0]
-    assert disabled["id"] == "a02_task_router"
-    assert disabled["defaultEnabled"] is False
+    assert payload["disabledAgents"] == []
+    all_ids = {
+        agent["id"]
+        for layer in payload["layers"]
+        for agent in layer["agents"]
+    }
+    assert {"a16_ml_valuation", "a17_traditional_valuation", "a18_meta_valuation"} <= all_ids
+    assert "a02_task_router" not in all_ids
 
     response_text = response.text
     for forbidden in ["messages", "analyst_results", "ephemeral_results", "manager_assignment", "tool_call"]:

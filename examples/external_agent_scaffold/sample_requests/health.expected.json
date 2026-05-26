@@ -1,0 +1,27 @@
+{
+  "schema_version": "external_agent_health_v0",
+  "status": "ok",
+  "agent_id": "example_external_agent",
+  "agent_name": "Example External Agent",
+  "version": "0.1.0",
+  "capabilities": [
+    "example",
+    "structured_response",
+    "fail_soft"
+  ],
+  "input_modes": [
+    "question"
+  ],
+  "output_modes": [
+    "external_agent_response_v0"
+  ],
+  "llm_configured": false,
+  "tools_configured": true,
+  "data_ready": true,
+  "max_concurrency": 1,
+  "timeout_seconds": 15,
+  "warnings": [
+    "scaffold only; not connected to AGENT_TOOLS"
+  ]
+}
+

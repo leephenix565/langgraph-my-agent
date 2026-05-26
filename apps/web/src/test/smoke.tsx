@@ -6,6 +6,7 @@ import userEvent from "@testing-library/user-event";
 import App from "../app/App";
 import { AssistantAnswerCard } from "../components/chat/AssistantAnswerCard";
 import { UserBubble } from "../components/chat/UserBubble";
+import { AGENT_CATALOG } from "../mocks/agents";
 import type { StructuredInputModel } from "../types/chat";
 import { composeStructuredPrompt, parseStructuredUserTurn, toStructuredInputModel } from "../utils/structuredInput";
 
@@ -97,87 +98,7 @@ function degradedHealthPayload() {
 }
 
 function liveAgentCatalogPayload() {
-  return {
-    totals: {
-      configCount: 5,
-      runtimeCount: 4,
-      disabledIds: ["a02_task_router"],
-    },
-    layers: [
-      {
-        layer: "L1",
-        agents: [
-          {
-            id: "a01_cio_orchestrator",
-            name: "CIO Orchestrator",
-            description: "Coordinates the layered workflow and final alignment.",
-            capabilities: ["orchestrate", "prioritize"],
-            layer: "L1",
-            team: "management",
-            roleType: "system",
-            defaultEnabled: true,
-          },
-        ],
-      },
-      {
-        layer: "L2",
-        agents: [
-          {
-            id: "a03_macro_policy",
-            name: "Macro Policy Analyst",
-            description: "Tracks macro and policy signals for research planning.",
-            capabilities: ["macro", "policy"],
-            layer: "L2",
-            team: "research",
-            roleType: "system",
-            defaultEnabled: true,
-          },
-        ],
-      },
-      {
-        layer: "L3",
-        agents: [
-          {
-            id: "a21_reg_compliance",
-            name: "Compliance Monitor",
-            description: "Maps public guidance into compliance checks.",
-            capabilities: ["compliance"],
-            layer: "L3",
-            team: "compliance",
-            roleType: "system",
-            defaultEnabled: true,
-          },
-        ],
-      },
-      {
-        layer: "L4",
-        agents: [
-          {
-            id: "a25_report_center",
-            name: "Report Center",
-            description: "Builds the final external-facing answer.",
-            capabilities: ["report", "synthesis"],
-            layer: "L4",
-            team: "reporting",
-            roleType: "system",
-            defaultEnabled: true,
-          },
-        ],
-      },
-    ],
-    disabledAgents: [
-      {
-        id: "a02_task_router",
-        name: "Task Decomposer",
-        description: "Reserved for experiments and disabled by default.",
-        capabilities: ["route", "plan"],
-        layer: "L1",
-        team: "management",
-        roleType: "system",
-        defaultEnabled: false,
-      },
-    ],
-  };
+  return AGENT_CATALOG;
 }
 
 function assistantTurn(id: string, answer: string) {
@@ -196,8 +117,8 @@ function assistantTurn(id: string, answer: string) {
     workflow: {
       layerPlan: [
         { layer: "L1", mode: "Chain", selected: ["a01_cio_orchestrator"] },
-        { layer: "L2", mode: "Star", selected: ["a03_macro_policy"] },
-        { layer: "L3", mode: "Star", selected: ["a21_reg_compliance"] },
+        { layer: "L2", mode: "Star", selected: ["a03_macro_industry_research"] },
+        { layer: "L3", mode: "Star", selected: ["a20_compliance_review"] },
         { layer: "L4", mode: "Chain", selected: ["a25_report_center"] },
       ],
       layerMode: { L1: "Chain", L2: "Star", L3: "Star", L4: "Chain" },

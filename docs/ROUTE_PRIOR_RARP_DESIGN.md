@@ -1,10 +1,10 @@
 # RARP Design: Reliability-Aware Route Prior
 
-> Status: design document only. This document does not describe implemented runtime behavior unless a section explicitly cites existing RP-1A/RP-1B facts. Runtime behavior remains defined by `src/react_agent/*` and focused tests.
+> Status: design/archive reference only. As of AC-1B-1, offline RP/RARP/SFT/manual-gold/teacher-proxy evidence is archived and non-mainline. As of AC-1B-2A, `react_agent.graph` no longer imports or executes the old RP-1A/RP-2C route-prior runtime seam. This document does not define current Agent Catalog v2 acceptance evidence.
 
 ## 1. Summary
 
-Reliability-Aware Route Prior, abbreviated RARP, is the planned evolution of the current RP-1A embedding-first route-prior shadow seam into a measurable, explainable, calibratable, and reversible reliability-aware routing prior layer.
+Reliability-Aware Route Prior, abbreviated RARP, was the planned evolution of the historical RP-1A embedding-first route-prior shadow seam into a measurable, explainable, calibratable, and reversible reliability-aware routing prior layer. Current graph runtime no longer runs that seam; any future `router_prior_v2` must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels.
 
 RARP is not a replacement Router. It does not make embedding scores directly decide final agent selection. The target architecture is:
 
@@ -96,9 +96,9 @@ Offline:
 
 ## 4. Existing Foundations
 
-### 4.1 RP-1A Runtime Seam
+### 4.1 Historical RP-1A Runtime Seam
 
-RP-1A already exists as an internal embedding-first semantic retrieval seam inside `router_node`, before the formal Router model invoke. It computes semantic similarity, shortlist, confidence band, low-confidence fallback, wildcard retention, and routing hints for ordinary agents.
+RP-1A previously existed as an internal embedding-first semantic retrieval seam inside `router_node`, before the formal Router model invoke. AC-1B-2A removed this runtime wiring from `react_agent.graph`. The source remains as archived/offline helper code only.
 
 RP-1A is shadow-only:
 
@@ -244,7 +244,7 @@ Implementation status:
 
 - implemented as offline eval/tooling only
 - code-backed in `ops/regression/route_prior/run_route_prior_eval.py` and `ops/regression/route_prior/eval_route_prior_outputs.py`
-- focused coverage in `tests/unit_tests/test_route_prior_eval_rp2.py`
+- archived offline coverage in `tests/archive/route_prior/test_route_prior_eval_rp2.py`
 - no runtime graph, Router prompt/parser, State, manager dispatch, public API, public workflow, `/api/health`, frontend, or mainline quality-gate change
 
 Scope:
@@ -263,7 +263,7 @@ Implementation status:
 
 - implemented as offline-first tooling/helpers
 - code-backed in `src/react_agent/route_profile_registry.py`, `src/react_agent/route_reliability.py`, and optional `run_route_prior_eval --enable-rarp-scoring`
-- focused coverage in `tests/unit_tests/test_route_profile_registry_rp2.py` and `tests/unit_tests/test_route_reliability_rp2.py`
+- archived helper coverage in `tests/archive/route_prior/test_route_profile_registry_rp2.py` and `tests/archive/route_prior/test_route_reliability_rp2.py`; current default unit coverage uses the no-route-prior runtime contract test
 - no runtime graph, Router prompt/parser, State, manager dispatch, public API, public workflow, `/api/agents`, `/api/health`, frontend, or mainline quality-gate change
 - no RP-3 advisory or RP-4 repair
 
@@ -276,16 +276,15 @@ Scope:
 - cold-start safe deterministic scoring
 - no Router prompt change
 
-### RP-2C: Runtime Shadow Trace and Post-Router Comparison
+### RP-2C: Historical Runtime Shadow Trace and Post-Router Comparison
 
 Implementation status:
 
-- implemented as env-gated runtime trace/comparison only
-- code-backed in `src/react_agent/graph.py` and `src/react_agent/route_reliability.py`
-- focused coverage in `tests/unit_tests/test_route_prior_runtime_invariance_rp2.py` and `tests/unit_tests/test_route_prior_router_comparison_rp2.py`
-- default off through `ROUTE_PRIOR_RELIABILITY_ENABLED`
-- fail-open on scorer/profile-card/reliability-table/comparison errors
-- no Router prompt/parser, committed routing output, State, manager dispatch, public API, public workflow, `/api/agents`, `/api/health`, frontend, advisory, repair, or mainline quality-gate change
+- historically implemented as env-gated runtime trace/comparison only
+- AC-1B-2A removed the `src/react_agent/graph.py` runtime import/call sites
+- archived helper coverage lives under `tests/archive/route_prior/`
+- the current graph runtime does not read `ROUTE_PRIOR_RELIABILITY_ENABLED`
+- no Router prompt/parser, committed routing output, State, manager dispatch, public API, public workflow, `/api/agents`, `/api/health`, frontend, advisory, repair, or mainline quality-gate behavior remains from this seam
 
 Scope:
 
@@ -406,7 +405,7 @@ input_type
 team
 ```
 
-Fallback is `agent_id`. Existing code supports `_REGISTRY_OVERRIDES`; current override usage is primarily wildcard handling for `a15_research_synthesis`.
+Fallback is `agent_id`. Existing code supports `_REGISTRY_OVERRIDES`; current override usage is primarily wildcard handling for `a15_entity_relation_extraction`.
 
 RP-2 may introduce optional internal profile cards:
 
@@ -707,7 +706,7 @@ Internal route card:
 
 ```json
 {
-  "agent_id": "a11_rates_fx",
+  "agent_id": "a11_index_technical_analysis",
   "priority": "strong",
   "score_band": "high",
   "combined_route_score": 0.78,
@@ -738,9 +737,9 @@ Full shadow object:
   "ordinary_pool_size": 22,
   "cards": [],
   "groups": {
-    "strongly_recommended": ["a03_macro_policy", "a11_rates_fx"],
-    "candidate": ["a09_sector_bank"],
-    "wildcard": ["a15_research_synthesis"],
+    "strongly_recommended": ["a03_macro_industry_research", "a11_index_technical_analysis"],
+    "candidate": ["a09_company_sentiment_radar"],
+    "wildcard": ["a15_entity_relation_extraction"],
     "deprioritized": ["a23_portfolio_opt"]
   }
 }
@@ -799,24 +798,24 @@ New RP-2 schema:
   "quality_conclusion_allowed": true,
   "review_status": "reviewed",
   "must_include_agents": [
-    "a03_macro_policy",
-    "a11_rates_fx",
-    "a09_sector_bank"
+    "a03_macro_industry_research",
+    "a11_index_technical_analysis",
+    "a09_company_sentiment_radar"
   ],
   "critical_agents": [
-    "a11_rates_fx"
+    "a11_index_technical_analysis"
   ],
   "nice_to_have_agents": [
-    "a15_research_synthesis"
+    "a15_entity_relation_extraction"
   ],
   "should_not_include_agents": [
     "a23_portfolio_opt"
   ],
   "expected_layers": {
-    "L2": ["a03_macro_policy"],
-    "L3": ["a11_rates_fx", "a09_sector_bank"]
+    "L2": ["a03_macro_industry_research"],
+    "L3": ["a11_index_technical_analysis", "a09_company_sentiment_radar"]
   },
-  "primary_agent": "a03_macro_policy",
+  "primary_agent": "a03_macro_industry_research",
   "notes": "重点是宏观政策与利率/汇率/银行板块传导，不是组合优化。"
 }
 ```
@@ -1008,7 +1007,7 @@ Output schema:
   "schema_version": "route_prior_router_comparison_v0",
   "prior_confidence_band": "normal",
   "router_overlap": 0.67,
-  "prior_only_agents": ["a09_sector_bank"],
+  "prior_only_agents": ["a09_company_sentiment_radar"],
   "router_only_agents": ["a21_reg_compliance"],
   "omitted_strong_recommended": [],
   "selected_deprioritized": ["a23_portfolio_opt"],
@@ -1492,7 +1491,7 @@ trigger:
 
 triage finding:
   the missed critical agents were present in route-prior ranking/cards
-  renderer selected only wildcard a15_research_synthesis when strong/candidate groups were empty
+  renderer selected only wildcard a15_entity_relation_extraction when strong/candidate groups were empty
   parser filtering, wrong-layer placement, and label/comparison bugs were not the cause
 
 renderer behavior:
@@ -1572,7 +1571,7 @@ project-external endpoint:
   embedding dimension: 1024
   serving implementation: FastAPI + SentenceTransformers wrapper outside repo
 
-RP-1A local env:
+Historical RP-1A local env:
   ROUTE_PRIOR_EMBEDDINGS_ENABLED=1
   ROUTE_PRIOR_EMBEDDINGS_MODEL=Qwen/Qwen3-Embedding-0.6B
   ROUTE_PRIOR_OPENAI_BASE_URL=http://127.0.0.1:8001/v1
@@ -1727,7 +1726,7 @@ rollback env policy is implemented default-off before prompt mode is usable
 
 ## 18. Runtime Config
 
-Private RP-2/RP-3 config:
+Historical private RP-2/RP-3 config, retained for archived lineage only:
 
 ```text
 ROUTE_PRIOR_RELIABILITY_ENABLED=0
@@ -1740,14 +1739,14 @@ ROUTE_PRIOR_MAX_PROMPT_CANDIDATE=4
 ROUTE_PRIOR_MAX_PROMPT_WILDCARD=2
 ```
 
-Default behavior:
+Historical behavior before AC-1B-2A:
 
 ```text
 off:
-  preserve current RP-1A behavior
+  preserved RP-1A behavior
 
 shadow:
-  RP-2C computes reliability cards and comparison trace when ROUTE_PRIOR_RELIABILITY_ENABLED=1
+  RP-2C computed reliability cards and comparison trace when ROUTE_PRIOR_RELIABILITY_ENABLED=1
   no Router prompt change
 
 prompt:
@@ -1814,7 +1813,7 @@ Likely files:
 ops/regression/route_prior/run_route_prior_eval.py
 ops/regression/route_prior/eval_route_prior_outputs.py
 ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl
-tests/unit_tests/test_route_prior_eval_rp2.py
+tests/archive/route_prior/test_route_prior_eval_rp2.py
 ```
 
 No runtime code.
@@ -1827,24 +1826,24 @@ Implemented files:
 src/react_agent/route_profile_registry.py
 src/react_agent/route_reliability.py
 ops/regression/route_prior/run_route_prior_eval.py
-tests/unit_tests/test_route_reliability_rp2.py
-tests/unit_tests/test_route_profile_registry_rp2.py
+tests/archive/route_prior/test_route_reliability_rp2.py
+tests/archive/route_prior/test_route_profile_registry_rp2.py
 ```
 
 RP-2B is offline-first and opt-in for run artifacts through `--enable-rarp-scoring`. It adds no Router prompt change, parser change, State/public change, `/api/agents` exposure, `/api/health` readiness field, or manager dispatch change.
 
-### Slice 4: RP-2C Runtime Shadow Comparison Scaffold
+### Slice 4: Historical RP-2C Runtime Shadow Comparison Scaffold
 
-Implemented files:
+Historical files:
 
 ```text
 src/react_agent/route_reliability.py
-src/react_agent/graph.py
-tests/unit_tests/test_route_prior_runtime_invariance_rp2.py
-tests/unit_tests/test_route_prior_router_comparison_rp2.py
+src/react_agent/graph.py (runtime wiring removed in AC-1B-2A)
+tests/archive/route_prior/test_route_prior_runtime_invariance_rp2.py
+tests/archive/route_prior/test_route_prior_router_comparison_rp2.py
 ```
 
-RP-2C is env-gated by `ROUTE_PRIOR_RELIABILITY_ENABLED`, trace-only, and fail-open. It adds compact `route_reliability_shadow` and `route_prior_router_comparison` trace events without changing Router prompt/parser behavior, committed `layer_plan`/`layer_mode`/`current_layer`, State schema, public API/workflow/health, manager dispatch, advisory behavior, or repair behavior.
+RP-2C was env-gated by `ROUTE_PRIOR_RELIABILITY_ENABLED`, trace-only, and fail-open. AC-1B-2A removed the runtime wiring that emitted `route_reliability_shadow` and `route_prior_router_comparison` trace events. Current routing is owned by the formal Router provider output and `router_parse`.
 
 ### Slice 5: Future RP-3A Env-Gated Advisory Prompt
 
@@ -1989,9 +1988,9 @@ drops keys containing api_key/token/secret/password
 truncates long strings by TRACE_MAX_CHARS
 ```
 
-Current graph logs include `route_prior_shadow`, `router_decision`, `run_start`, and other node events. `router_decision` currently records truncated question and raw Router output.
+Before AC-1B-2A, graph logs included `route_prior_shadow`, `router_decision`, `run_start`, and other node events. Current graph runtime no longer emits the old route-prior/RARP trace events; `router_decision` and `run_start` remain part of normal Router tracing.
 
-RARP trace allowed:
+Historical RARP trace allowed:
 
 ```text
 route_reliability_shadow summary
@@ -2004,7 +2003,7 @@ hashes
 short previews
 ```
 
-RARP trace not allowed:
+Historical RARP trace not allowed:
 
 ```text
 raw embeddings
@@ -2130,13 +2129,13 @@ RP-2 shadow/offline should not affect production hot path unless env-enabled.
 
 ## 28. Rollback
 
-RP-2 rollback:
+Historical RP-2 rollback before AC-1B-2A:
 
 ```text
 ROUTE_PRIOR_RELIABILITY_ENABLED=0
 ```
 
-RP-3 rollback:
+Historical RP-3 rollback:
 
 ```text
 ROUTE_PRIOR_ADVISORY_MODE=off
@@ -2189,7 +2188,7 @@ no State/public changes
 docs + changelog update
 ```
 
-RP-2C is implemented as env-gated runtime shadow trace and post-router comparison:
+Historical RP-2C implementation before AC-1B-2A:
 
 ```text
 ROUTE_PRIOR_RELIABILITY_ENABLED default off

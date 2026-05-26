@@ -1,18 +1,18 @@
 {
-  "id": "a15_research_synthesis",
-  "name": "分析师研报与观点集成智能体2",
-  "description": "该系统借助BayesORN算法对比分析师观点对优劣，经EP算法合成群体共识排名，从嘈杂观点中降噪提纯聚合群体共识，输出Top-K可信研报列表、集成预测结果及群体共识排名，有效提升预测精度。",
+  "id": "a15_entity_relation_extraction",
+  "name": "实体关系抽取智能体",
+  "description": "功能：从非结构化文本中抽取金融实体及其关联（如共同投资、一致行动、上下游），更新底层的穿透式关联网络与图数据库（如Neo4j）。\n输入：财经新闻报道、招股说明书、法院判决书、企业股权披露文件等高潜关联文本。\n输出：结构化的实体知识三元组（实体-关系-实体）；动态更新的股票/基金关联网络与资本派系图谱。",
   "capabilities": [
-    "synthesis",
-    "scenario",
-    "narrative"
+    "entity_relation",
+    "knowledge_graph",
+    "capital_network"
   ],
-  "input_type": "research",
+  "input_type": "entity_relation",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "research",
+  "team": "behavior",
   "role_type": "system",
   "default_enabled": true
 }

@@ -1,18 +1,18 @@
 {
-  "id": "a11_equity_sentiment",
-  "name": "微观个股舆情感知智能体8",
-  "description": "实现将具体舆情信息与对应上市公司进行高精度关联匹配，在此基础上完成面向特定投资场景的情感分析与事件校验，最终输出精细化的个股情感画像、关键事件列表及定制化的风险监控信号",
+  "id": "a11_index_technical_analysis",
+  "name": "指数技术分析智能体",
+  "description": "功能：针对市场主要指数，进行波动率测算与趋势跟踪，测算市场广度，评估系统性行情的强弱及关键拐点。\n输入：各大宽基/行业指数历史量价序列、成分股涨跌停统计、北向/南向资金净流入、期权隐含波动率。\n输出：指数级别趋势判定；系统性风险/反弹技术面预警；指数估值分位与技术指标共振分析。",
   "capabilities": [
-    "equity",
-    "sentiment",
-    "momentum"
+    "index_technical",
+    "volatility",
+    "market_breadth"
   ],
-  "input_type": "equity",
-  "latency_level": "fast",
-  "cost_level": "low",
-  "version": "v0.2",
+  "input_type": "technical",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "research",
+  "team": "technical",
   "role_type": "system",
   "default_enabled": true
 }

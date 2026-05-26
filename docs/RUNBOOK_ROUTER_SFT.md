@@ -13,7 +13,7 @@ This document covers:
 - post-train HF eval / gate
 - expected artifact paths
 
-It does not define the repo-level quality gate. For `Phase QS-3：final residual polish`, use [SYSTEM_MAP.md](/E:/langgraph-my-agent/docs/SYSTEM_MAP.md) and [run_quality.py](/E:/langgraph-my-agent/scripts/quality/run_quality.py).
+It does not define the repo-level quality gate. For `Phase QS-3：final residual polish`, use [SYSTEM_MAP.md](SYSTEM_MAP.md) and [run_quality.py](../scripts/quality/run_quality.py).
 
 ## 2. Environment Baseline
 

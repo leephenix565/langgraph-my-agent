@@ -1,16 +1,16 @@
 {
-  "id": "a19_market_risk",
-  "name": "股价相关风险智能体",
-  "description": "该系统基于多源数据，实现对股价相关风险的实时监测、预测与预警，通过波动率预测、多模态特征融合等模型，对风险进行识别与量化，从而实现股价波动率预测、实时风险预警信号及定期风险监测报告，为用户提供全方位的风险动态跟踪与决策支持。",
+  "id": "a19_risk_identification",
+  "name": "风险识别智能体",
+  "description": "功能：将监管规则、财务约束与关联关系编码为市场约束图，结合大模型推理生成的候选规则，通过合并标准化，精准测度投机性风险、信用评级风险与市场波动性风险。\n输入：多源风险预警规则、实体网络关联关系（主体联系）、公开财务数据、市场高频交易数据与资产资源预算等结构化上下文。\n输出：面向投机性、信用评级、波动性等典型资本市场风险的识别结果与规则溯源依据；可计算、可比较的结构化风险特征指标。",
   "capabilities": [
-    "risk",
-    "var",
-    "liquidity"
+    "risk_identification",
+    "constraint_graph",
+    "risk_rules"
   ],
   "input_type": "risk",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L3",
   "team": "risk",
   "role_type": "system",

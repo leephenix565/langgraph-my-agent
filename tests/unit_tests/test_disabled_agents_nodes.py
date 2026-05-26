@@ -20,10 +20,11 @@ def test_disabled_agents_not_in_nodes_by_default(monkeypatch) -> None:
 
 
 def test_include_disabled_agents_env(monkeypatch) -> None:
-    # Reload module with env set
+    # AC-1A removes disabled metadata, so the env flag no longer resurrects a02.
     monkeypatch.setenv("INCLUDE_DISABLED_AGENTS", "1")
     import importlib
 
     reloaded = importlib.reload(graph_module)
-    assert "a02_task_router" in reloaded.AGENT_NODE_NAMES
+    assert "a02_task_router" not in reloaded.AGENT_NODE_NAMES
+    assert len(reloaded.AGENT_NODE_NAMES) == 21
 

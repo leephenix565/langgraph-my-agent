@@ -1,18 +1,18 @@
 {
-  "id": "a09_macro_sentiment",
-  "name": "宏观舆情感知智能体6",
-  "description": "通过整合多源舆情数据并归类其市场属性，计算整体情感趋势与提取关键事件，最终输出宏观市场情感指数、重要事件清单及系统性的风险预警信号。",
+  "id": "a09_company_sentiment_radar",
+  "name": "企业舆情雷达智能体",
+  "description": "功能：全天候监控特定企业的多源舆情，从海量新闻中抽取特定事件及其论元，结合风险级联演化模型评估舆情发酵对个股的冲击。\n输入：企业相关新闻、自媒体评论、投资者互动平台问答、产品投诉数据、各类突发事件文本。\n输出：企业实时情感得分；具体事件抽取结果（时间/主体/触发词）；负面舆情预警及风险传染推演。",
   "capabilities": [
-    "sentiment",
-    "macro",
-    "monitor"
+    "company_sentiment",
+    "event_extraction",
+    "risk_contagion"
   ],
-  "input_type": "macro",
-  "latency_level": "fast",
-  "cost_level": "low",
-  "version": "v0.2",
+  "input_type": "sentiment",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "research",
+  "team": "sentiment",
   "role_type": "system",
   "default_enabled": true
 }

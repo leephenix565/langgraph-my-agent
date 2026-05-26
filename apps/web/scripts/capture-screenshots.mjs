@@ -97,13 +97,13 @@ function mockThreadDetail() {
             {
               layer: "L2",
               mode: "Star",
-              selected: ["a03_macro_policy", "a06_financial_reports", "a10_industry_sentiment", "a15_research_synthesis"],
+              selected: ["a03_macro_industry_research", "a06_financial_statement_analysis", "a08_industry_hotspot", "a15_entity_relation_extraction"],
               note: "并行获取政策、财务与行业背景。",
             },
             {
               layer: "L3",
               mode: "Star",
-              selected: ["a18_primary_secondary_valuation", "a19_market_risk", "a23_portfolio_opt"],
+              selected: ["a17_traditional_valuation", "a19_risk_identification", "a21_portfolio_manager"],
               note: "补足估值、波动与组合约束判断。",
             },
             { layer: "L4", mode: "Chain", selected: ["a25_report_center"], note: "整理为最终对外回答。" },
@@ -123,7 +123,7 @@ function mockThreadDetail() {
             {
               id: "step-2",
               layer: "L2",
-              agentId: "a06_financial_reports",
+              agentId: "a06_financial_statement_analysis",
               title: "财务报告分析师",
               summary: "识别到 Q3 营收超预期，但现金流承压。",
               status: "complete",
@@ -131,7 +131,7 @@ function mockThreadDetail() {
             {
               id: "step-3",
               layer: "L2",
-              agentId: "a03_macro_policy",
+              agentId: "a03_macro_industry_research",
               title: "宏观政策分析师",
               summary: "行业补贴政策在下季度退坡，存在宏观阻力。",
               status: "complete",
@@ -139,7 +139,7 @@ function mockThreadDetail() {
             {
               id: "step-4",
               layer: "L3",
-              agentId: "a21_reg_compliance",
+              agentId: "a20_compliance_review",
               title: "合规风险监控",
               summary: "暂未发现近期重大诉讼或合规违约风险。",
               status: "complete",

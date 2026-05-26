@@ -1,18 +1,18 @@
 {
-  "id": "a16_fund_manager_behavior",
-  "name": "基金经理投资行为分析智能体",
-  "description": "该系统将基金经理持仓观点建模为“噪声偏序图”，通过图结构排序学习输出全局一致排序，实现持仓观点可排序、可解释、可落地，最终提供经排序的持仓观点及可解释的合成投资组合方案。",
+  "id": "a16_ml_valuation",
+  "name": "机器学习估值智能体",
+  "description": "功能：学习多因子间的非线性交互关系（如研发占比与ROE提升的指数级溢价）；结合动态窗口学习，提取标的前推12个季度的财务演变趋势以捕捉基本面动量，提供非线性创新估值。\n输入：结构化财务指标，包含：成长性因子（营收/利润增长率）、效率因子（资产周转率/毛利率变动）、资本结构因子（资产负债率），及隐性替代数据。\n输出：科创企业内在价值综合评估（非线性定价域）；无形资产与技术创新效用的量化溢价贡献率。",
   "capabilities": [
-    "fundamental",
-    "economics",
-    "cashflow"
+    "ml_valuation",
+    "nonlinear_factors",
+    "innovation_premium"
   ],
-  "input_type": "finance",
+  "input_type": "valuation",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
-  "layer": "L2",
-  "team": "fundamental",
+  "version": "catalog_v2_sheet2",
+  "layer": "L3",
+  "team": "valuation",
   "role_type": "system",
   "default_enabled": true
 }

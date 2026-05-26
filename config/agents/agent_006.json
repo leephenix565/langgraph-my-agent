@@ -1,16 +1,16 @@
 {
-  "id": "a06_financial_reports",
-  "name": "公司年报分析智能体4",
-  "description": "该系统致力于超越传统财务指标的局限，深度解析年报中的非财务信息与长期潜在风险，通过对年报文本及图表的系统分析，精准提取核心数据与关键非财务要素并生成浓缩摘要，最终提供涵盖年报核心数据摘要、长期风险提示、关键词提取以及交互式问答在内的全方位服务输出。",
+  "id": "a06_financial_statement_analysis",
+  "name": "公司财报分析智能体",
+  "description": "功能：结合结构化财务指标（三大表）与非结构化附注文本，通过多模态特征融合模型，评估企业真实盈利能力、营运效率，识别粉饰报表风险。\n输入：结构化财务数据（资产负债表、利润表、现金流量表季度/年度数据）、财务报表附注文本。\n输出：综合财务健康度评分（如Z-score变体）；异常财务指标预警；杜邦分析拆解归因结果。",
   "capabilities": [
-    "filing",
-    "kpi",
-    "guidance"
+    "financial_statement",
+    "profitability",
+    "fraud_risk"
   ],
-  "input_type": "finance",
+  "input_type": "financial_statement",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
   "team": "fundamental",
   "role_type": "system",

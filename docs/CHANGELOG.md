@@ -1,5 +1,420 @@
 # CHANGELOG
 
+## 2026-05-21 - Phase EXT-DOC-5 external agent developer handoff package consolidation
+- Files:
+  - `README.md`
+  - `examples/external_agent_scaffold/README.md`
+  - `examples/external_agent_scaffold/AI_CODING_HANDOFF.md`
+  - `examples/external_agent_scaffold/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md`
+  - `examples/external_agent_scaffold/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`
+  - `docs/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md`
+  - `docs/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`
+  - `docs/AGENT_REPLACEMENT_GUIDE.md`
+  - `docs/INDEX.md`
+  - `docs/RUNBOOK_ROUTER_SFT.md`
+  - `docs/CHANGELOG.md`
+- Moved the canonical external-agent developer guide and protocol reference into
+  the scaffold package so external developers and AI coding assistants can work
+  from one self-contained directory.
+- Kept the `docs/` copies as short redirect files only.
+- Added `AI_CODING_HANDOFF.md` with Codex/Claude Code instructions, validation
+  commands, and handoff checklists.
+- Updated index and maintainer replacement-guide pointers so the canonical
+  external-agent package is under `examples/external_agent_scaffold/`.
+- Replaced a stale local absolute repo link in `docs/RUNBOOK_ROUTER_SFT.md` with
+  repo-relative documentation/script links.
+- Scope boundary:
+  - docs/package cleanup only
+  - no runtime code change
+  - no `config/agents` change
+  - no Router/parser/State/public API/frontend change
+  - no external valuation wrapper behavior change
+  - no scaffold runtime registration
+  - no live graph/Web E2E claim
+
+## 2026-05-21 - Phase EXT-DOC-3 external agent documentation cleanup
+- Files:
+  - `docs/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md`
+  - `docs/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`
+  - `docs/AGENT_REPLACEMENT_GUIDE.md`
+  - `docs/INDEX.md`
+  - `examples/external_agent_scaffold/README.md`
+  - `docs/CHANGELOG.md`
+- Consolidated external-agent documentation roles:
+  - `EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md` is now the single developer-facing entrypoint for independent external HTTP agents.
+  - `EXTERNAL_AGENT_INTEGRATION_STANDARD.md` is now a protocol reference for schemas, typed errors, data sources, wrapper acceptance, and current wrapper compatibility boundaries.
+  - `AGENT_REPLACEMENT_GUIDE.md` is explicitly scoped as a maintainer/internal replacement guide; its `/invoke` examples are private/simple replacement patterns, not the third-party external-agent standard.
+- Clarified current protocol boundaries:
+  - standard external endpoint is `POST /v1/agent/invoke`
+  - `/v1/valuation/invoke` is domain/self-test only and does not replace `/v1/agent/invoke`
+  - `health.agent_id` and response `agent_id` are external service ids such as `valuation_ml`; the main-system id remains `main_agent_id` such as `a16_ml_valuation`
+  - current wrappers send compact `context/options` payloads and do not strictly validate the full `external_agent_response_v0`
+  - top-level `key_points` / `evidence` / `data_sources` are recommended rich fields, while current wrappers primarily extract from `tool_result`, answer fields, warnings, and errors
+- Scope boundary:
+  - docs-only
+  - no runtime code change
+  - no Router prompt/schema or `router_parse.py` change
+  - no State schema change
+  - no public API schema or frontend change
+  - no `config/agents` change
+  - no external valuation wrapper behavior change
+  - no scaffold runtime registration
+
+## 2026-05-21 - Docs-only route-prior runtime truth alignment
+- Files:
+  - `docs/MAINLINE_RUNTIME_AUDIT.md`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/INDEX.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/CHANGELOG.md`
+- Aligned current authority docs with the AC-1B-2A runtime fact:
+  - `react_agent.graph` no longer imports or executes the old route-prior/RARP runtime seam
+  - historical RP-1A/RP-2C wording is now framed as lineage, not current `router_node` behavior
+  - old route-prior helper source remains archived/offline only
+- Removed stale current-doc wording that said `graph.py` still imports route-prior source or that AC-1B runtime cleanup remains future work.
+- Normalized current navigation links away from workspace-specific absolute repo paths.
+- Scope boundary:
+  - docs-only truth alignment
+  - no runtime code change
+  - no Router prompt/schema or `router_parse.py` change
+  - no State schema change
+  - no public API schema or frontend change
+  - no Agent Catalog or `config/agents` change
+  - no external valuation wrapper behavior change
+  - no historical changelog rewrite; older RP-1A/RP-2C entries remain dated history
+
+## 2026-05-15 - Phase EXT-DOC-2 external agent minimal scaffold
+- Files:
+  - `examples/external_agent_scaffold/README.md`
+  - `examples/external_agent_scaffold/service.py`
+  - `examples/external_agent_scaffold/schemas.py`
+  - `examples/external_agent_scaffold/errors.py`
+  - `examples/external_agent_scaffold/.env.example`
+  - `examples/external_agent_scaffold/sample_requests/health.expected.json`
+  - `examples/external_agent_scaffold/sample_requests/invoke.request.json`
+  - `examples/external_agent_scaffold/sample_requests/invoke.response.json`
+  - `examples/external_agent_scaffold/tests/test_service_contract.py`
+  - `docs/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md`
+  - `docs/INDEX.md`
+  - `docs/CHANGELOG.md`
+- Added a copyable minimal FastAPI external-agent scaffold that implements:
+  - `GET /health`
+  - `POST /v1/agent/invoke`
+  - `external_agent_health_v0`
+  - `external_agent_request_v0`
+  - `external_agent_response_v0`
+  - typed errors
+  - deterministic `ok`, `needs_clarification`, and `error` paths
+- Added sample request/response artifacts and focused tests for health schema,
+  invoke success, clarification, typed errors, and no secret/traceback leakage.
+- Linked the scaffold from the external-agent onboarding guide and docs index.
+- Scope boundary:
+  - example scaffold only
+  - no runtime code change
+  - no `config/agents` change
+  - no Router/parser/State/public API/frontend change
+  - no external valuation wrapper behavior change
+  - no real `.env` change
+  - no new agent registration
+  - scaffold does not participate in default graph runtime
+
+## 2026-05-15 - Phase EXT-DOC-1 external agent developer onboarding guide
+- Files:
+  - `docs/EXTERNAL_AGENT_DEVELOPER_ONBOARDING_GUIDE.md`
+  - `docs/INDEX.md`
+  - `docs/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`
+  - `docs/AGENT_REPLACEMENT_GUIDE.md`
+  - `docs/CHANGELOG.md`
+- Added a developer-facing onboarding guide for building external HTTP agents
+  and handing them off for repo-side `AGENT_TOOLS` wrapper integration.
+- Clarified the current mental model:
+  - external FastAPI service
+  - `GET /health`
+  - `POST /v1/agent/invoke`
+  - repo-side `httpx` wrapper
+  - `AGENT_TOOLS[agent_id]`
+  - graph agent node
+  - `AgentOutput`
+  - public-safe assistant answer
+- Added explicit guidance for protocol shape, typed errors, LLM/tool
+  boundaries, wrapper mapping, validation ladder, three valuation reference
+  agents, troubleshooting, checklists, and minimal templates.
+- Scope boundary:
+  - docs-only
+  - no runtime code change
+  - no Router prompt/schema or `router_parse.py` change
+  - no State schema change
+  - no public API schema or frontend change
+  - no Agent Catalog or `config/agents` change
+  - no external valuation wrapper behavior change
+  - no `.env` or secret handling change
+
+## 2026-05-15 - Phase AC-1B-2A remove old route-prior runtime seam
+- Files:
+  - `src/react_agent/graph.py`
+  - `tests/unit_tests/test_no_route_prior_runtime_contract.py`
+  - `tests/archive/route_prior/*`
+  - `README.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/INDEX.md`
+  - `docs/ROUTE_PRIOR_RARP_DESIGN.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Removed the old RP-1A/RP-2C route-prior runtime shadow seam from `react_agent.graph`:
+  - removed graph imports of `route_prior`, `route_reliability`, and `load_route_profile_cards`
+  - removed `router_node` calls to `compute_route_prior_shadow(...)`
+  - removed route-prior disabled/shadow/cache/error logging from the graph runtime
+  - removed runtime reliability shadow and post-router comparison logging from the graph runtime
+- Kept `route_prior.py`, `route_reliability.py`, `route_profile_registry.py`, and
+  `route_prior_embeddings.py` in `src/react_agent/` as archived/offline helper
+  source. They are no longer imported or executed by current graph runtime.
+- Moved remaining route-prior helper/runtime-seam tests out of the default unit
+  gate and retained a focused no-route-prior runtime/public contract test.
+- Scope boundary:
+  - no Agent Catalog v2 or `config/agents` change
+  - no Router prompt/schema or `router_parse.py` change
+  - no State schema, public API schema, frontend, a01/a25, external valuation
+    wrapper, or DS-1 DeepSeek commercial API line change
+  - old RP/RARP/SFT/manual-gold/teacher-proxy evidence remains archived and
+    non-mainline
+  - future `router_prior_v2` must be rebuilt from stable Agent Catalog v2
+    metadata, new profile cards, and new manual labels
+
+## 2026-05-15 - Phase AC-1B-1 route-prior/RARP/SFT offline evidence archival
+- Files:
+  - `tests/archive/route_prior/*`
+  - `tests/archive/router_eval/*`
+  - `tests/archive/sft/*`
+  - `tests/unit_tests/test_route_prior_disabled_graph_imports.py` (superseded
+    by `tests/unit_tests/test_no_route_prior_runtime_contract.py` in AC-1B-2A)
+  - `ops/regression/route_prior/README_ARCHIVED.md`
+  - `data/router_sft/README_ARCHIVED.md`
+  - `data/sft/README_ARCHIVED.md`
+  - `data/a01_sft/DATA_MANIFEST.md`
+  - `README.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/INDEX.md`
+  - `docs/ROUTE_PRIOR_RARP_DESIGN.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Archived offline RP/RARP/SFT/manual-gold/teacher-proxy tests out of the
+  default `pytest tests/unit_tests` mainline acceptance gate.
+- Archived the offline router-eval metric test out of the default unit gate.
+- At the AC-1B-1 boundary, kept RP-1A and helper-level route-profile /
+  route-reliability safety tests in the default unit gate because runtime graph
+  import still depended on the route-prior source family. AC-1B-2A supersedes
+  that boundary by removing the graph runtime seam.
+- Added directory markers that classify route-prior regression artifacts,
+  Router-SFT data, Router-SFT message data, and A01-SFT data as archived,
+  offline, non-mainline lineage.
+- At that boundary, added a focused unit test proving `react_agent.graph` still
+  imported and `router_node` still ran when route-prior embeddings and
+  reliability trace were disabled, without committing route-prior fields to
+  State or public contracts. AC-1B-2A replaces it with a no-route-prior runtime
+  contract test.
+- Scope boundary:
+  - no runtime route-prior source deletion
+  - no graph topology change
+  - no Router prompt/parser change
+  - no State or public API schema change
+  - no frontend product-shape change
+  - no Agent Catalog v2 config change
+  - no external valuation wrapper change
+  - at the AC-1B-1 boundary, runtime route-prior shadow remained
+    default-disabled, private, trace-only, and fail-open
+  - full runtime source cleanup was deferred to AC-1B-2; AC-1B-2A removes the
+    graph runtime seam while retaining archived source
+
+## 2026-05-15 - Phase DS-1-B-D DeepSeek baseline sidecar shadow smoke evidence record
+- Files:
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Recorded the DS-1-B runtime smoke evidence for the DeepSeek V4 baseline
+  sidecar shadow path:
+  - validation ran from `E:\muti-agent\langgraph-my-agent` with
+    `D:\AnacondaEnvs\cline_env\python.exe`
+  - global provider stayed unchanged on the main multi-agent path
+    (`MODEL=openai/qwen-3-235b-a22b-instruct-2507`, base host
+    `api.cerebras.ai`)
+  - baseline provider used `BASELINE_MODEL=openai/deepseek-v4-pro` and base
+    host `api.deepseek.com`
+  - `ENABLE_FAIR_FUSION=1` was set for the process-level shadow smoke while
+    `ENABLE_FAIR_FUSION_SOURCE_SWITCH=0` kept source switch disabled
+  - repository `load_chat_model` baseline probe returned `OK` without printing
+    or storing DeepSeek `reasoning_content`
+  - graph invoke succeeded for a traditional valuation question, selected
+    `a17_traditional_valuation`, and returned target output with
+    `parse_ok=true`, `confidence=0.6`, `evidence_count=2`, and
+    `fail_soft=false`
+  - `baseline_status=ready`, `baseline_bundle` was present, and
+    `baseline_error=false`
+  - `judge_status=ready`, `writer_status=ready`,
+    `final_answer_source=mainline`, and the visible answer stayed mainline
+- Scope boundary:
+  - docs-only evidence record
+  - no runtime code change
+  - no Agent Catalog change
+  - no Router/parser/State/public API/frontend change
+  - no external valuation wrapper behavior change
+  - no real `.env` mutation
+  - no global provider migration
+  - no Fair Fusion source-switch default change
+  - no source-switch passed claim
+  - no baseline visible-answer replacement claim
+  - no Web/public adapter revalidation claim
+
+## 2026-05-15 - Phase DS-1-D DeepSeek V4 commercial API line validation evidence record
+- Files:
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+  - `E:\muti-agent\传统估值智能体\CHANGELOG.md`
+  - `E:\muti-agent\机器学习估值智能体\CHANGELOG.md`
+  - `E:\muti-agent\元学习估值智能体\CHANGELOG.md`
+- Recorded the DS-1 / DS-1-M2 / DS-1-V evidence for the commercial API line:
+  - baseline sidecar examples remain on DeepSeek V4 with
+    `BASELINE_MODEL=openai/deepseek-v4-pro`,
+    `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, and source switch
+    defaults off
+  - valuation-service parser/answerer LLM examples use DeepSeek V4, with
+    `deepseek-v4-flash` recorded as the validated real-env runtime model for
+    the three services
+  - DeepSeek V4 Pro probe passed with `GET /models` and a minimal chat
+    completion returning `OK`; `reasoning_content` was not printed or recorded
+  - DS-1-M2 meta valuation normalization was validated for embedded ticker and
+    embedded company-name inputs while preserving clarification behavior for
+    ambiguous inputs
+  - DS-1-V service-level smoke passed for `valuation_traditional`,
+    `valuation_ml`, and `valuation_meta`: `/health` was `ok`,
+    `POST /v1/agent/invoke` returned `status=ok`, answers were non-empty, and
+    `valuation_result` / `valuation_results` evidence was present
+  - main-system `AGENT_TOOLS` wrapper smoke passed for
+    `a16_ml_valuation -> valuation_ml`,
+    `a17_traditional_valuation -> valuation_traditional`, and
+    `a18_meta_valuation -> valuation_meta` with `parse_ok=true`,
+    `fail_soft=false`, and valuation evidence
+- Scope boundary:
+  - docs-only evidence record
+  - no runtime code change
+  - no Agent Catalog change
+  - no Router/parser/State/public API/frontend change
+  - no external valuation wrapper behavior change
+  - no global provider migration
+  - no Fair Fusion source-switch default change
+  - no graph-level smoke passed claim
+  - no Web/public adapter revalidation claim
+  - no investment advice claim
+
+## 2026-05-15 - Phase DS-1 commercial API line DeepSeek V4 migration
+- Files:
+  - `.env.example`
+  - `README.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/CHANGELOG.md`
+  - `E:\muti-agent\传统估值智能体\.env.example`
+  - `E:\muti-agent\传统估值智能体\LLM_AGENT_DESIGN.md`
+  - `E:\muti-agent\传统估值智能体\CHANGELOG.md`
+  - `E:\muti-agent\机器学习估值智能体\.env.example`
+  - `E:\muti-agent\机器学习估值智能体\LLM_AGENT_DESIGN.md`
+  - `E:\muti-agent\机器学习估值智能体\CHANGELOG.md`
+  - `E:\muti-agent\元学习估值智能体\.env.example`
+  - `E:\muti-agent\元学习估值智能体\LLM_AGENT_DESIGN.md`
+  - `E:\muti-agent\元学习估值智能体\CHANGELOG.md`
+- Locked the commercial API line examples to DeepSeek V4:
+  - Fair Fusion baseline sidecar: `BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, `BASELINE_OPENAI_API_KEY=`
+  - valuation-service internal parser/answerer LLMs: `LLM_BASE_URL=https://api.deepseek.com`, `LLM_MODEL=deepseek-v4-pro`, with `deepseek-v4-flash` documented as the cost/speed alternative
+- Scope boundary:
+  - docs/env-example focused only
+  - no runtime business-logic change
+  - no Agent Catalog change
+  - no Router/parser/State/public API/frontend change
+  - no external valuation wrapper behavior change
+  - no global provider migration; `MODEL` / `OPENAI_BASE_URL` / `OPENAI_API_KEY` remain on the main multi-agent provider path
+  - no source-switch default change; `ENABLE_FAIR_FUSION_SOURCE_SWITCH=0` remains the documented default
+- The three valuation service notes clarify that deterministic valuation numbers still come from each service's structured valuation workflow / `valuation_result`, not from LLM generation.
+
+## 2026-05-14 - Phase AC-1A-L3 external valuation live wrapper smoke evidence record
+- Files: `docs/AGENT_CATALOG_V2_RUNBOOK.md`, `docs/CHANGELOG.md`
+- Recorded the AC-1A-L2 live wrapper smoke evidence for the three external
+  valuation services:
+  - services started with `D:\anaconda3\python.exe` on `127.0.0.1:8101`,
+    `127.0.0.1:8102`, and `127.0.0.1:8103`
+  - `GET /health` returned `status=ok` for `valuation_traditional`,
+    `valuation_ml`, and `valuation_meta`
+  - `httpx` health checks with `trust_env=True` and `trust_env=False` both
+    returned `200/ok`, so no proxy bypass risk was reproduced in this run
+  - main-system `AGENT_TOOLS` wrappers were registered for
+    `a16_ml_valuation -> valuation_ml`,
+    `a17_traditional_valuation -> valuation_traditional`, and
+    `a18_meta_valuation -> valuation_meta`
+  - all three wrapper-level live calls used `POST /v1/agent/invoke`, returned
+    `parse_ok=true`, `confidence=0.6`, `fail_soft=false`, and included external
+    `valuation_result` / `valuation_results` evidence summaries
+- Recorded the service startup boundary: `cline_env` lacked service-side
+  dependencies during startup; the passing service run used
+  `D:\anaconda3\python.exe`, or equivalently requires a dedicated service env.
+- Recorded residual risks: data freshness is not established, graph-level
+  provider-backed smoke was skipped, meta valuation returned a template answer
+  after its LLM answer step failed, and AC-1B route-prior/RARP/SFT cleanup
+  remains future work.
+- Scope boundary:
+  - docs-only evidence record
+  - no runtime code change
+  - no config/agent catalog change
+  - no external valuation wrapper behavior change
+  - no Router/parser/State/public API/frontend schema change
+  - no graph-level smoke passed claim
+  - no Router/provider-backed E2E passed claim
+  - no investment advice claim
+
+## 2026-05-14 - Phase AC-1A-V2 quality runner codespell executable resolution
+- Files: `scripts/quality/run_quality.py`, `tests/unit_tests/test_quality_runner_codespell.py`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
+- Updated the repo quality runner to resolve `codespell` from the active Python
+  environment's local `Scripts`/`bin` directory before falling back to shell
+  `PATH`.
+- Added focused unit coverage for Windows env-local `Scripts\codespell.exe`,
+  POSIX env-local `bin/codespell`, PATH fallback, and missing-executable
+  diagnostics.
+- Scope boundary:
+  - quality runner/tooling fix only
+  - no runtime business semantic change
+  - no Router/parser/State/public API/frontend schema change
+  - no Agent Catalog v2 metadata change
+  - no external valuation wrapper behavior change
+
+## 2026-05-14 - Phase AC-1A Agent Catalog v2 and external valuation wrappers
+- Files:
+  - runtime: `config/agents/*.json`, `src/react_agent/agents.py`, `src/react_agent/graph_bootstrap.py`, `src/react_agent/external_valuation_agents.py`, `src/react_agent/prompts.py`, `src/react_agent/route_profile_registry.py`
+  - tests: `tests/unit_tests/test_agent_catalog_v2.py`, `tests/unit_tests/test_external_valuation_agents.py`, updated public catalog, config-tool, a01 contract, route-prior/RP3, and frontend smoke fixtures
+  - frontend: `apps/web/src/mocks/agents.ts`, `apps/web/src/mocks/workflow.ts`, `apps/web/src/content/zh-CN.ts`, `apps/web/src/test/smoke.tsx`
+  - docs: `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/MAINLINE_RUNTIME_AUDIT.md`, `docs/EXTERNAL_AGENT_INTEGRATION_STANDARD.md`, `docs/AGENT_REPLACEMENT_GUIDE.md`, `docs/FRONTEND_ARCHITECTURE.md`, `docs/INDEX.md`, `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`, `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+- Rebuilt the current agent catalog from `E:\muti-agent\智能体划分4.25.xlsx` Sheet2 as Agent Catalog v2:
+  - L1=1, L2=13, L3=6, L4=1
+  - `configCount=21`, `runtimeCount=21`, `disabledIds=[]`
+  - removed `a02_task_router` metadata and old ordinary agent metadata
+- Added repo-side HTTP wrappers for the three valuation agents:
+  - `a16_ml_valuation -> valuation_ml`
+  - `a17_traditional_valuation -> valuation_traditional`
+  - `a18_meta_valuation -> valuation_meta`
+- Registered valuation wrappers before default `_build_agent_tool(...)` backfill so valuation numbers are not generated by ordinary LLM tools.
+- Scope boundary:
+  - no Router runtime rewrite
+  - no Router L1-L4 JSON protocol change
+  - no `router_parse.py` core semantic change
+  - no new State field
+  - no public API schema change
+  - no multi-speaker frontend transcript change
+  - `a01_cio_orchestrator` and `a25_report_center` special runtime semantics preserved
+  - route-prior/RARP/SFT source cleanup deferred to AC-1B; old manual_gold/RARP/SFT artifacts are no longer Agent Catalog v2 mainline acceptance evidence
+- Validation:
+  - `D:\AnacondaEnvs\cline_env\python.exe -m pytest tests\unit_tests -q -p no:cacheprovider --basetemp E:\muti-agent\langgraph-my-agent\tmp\pytest-ac1a-unit-3` -> 219 passed
+  - `npm --prefix apps/web run test` -> passed
+  - live external valuation E2E was not claimed; default tests use fake HTTP clients.
+
 ## 2026-05-08 - Default Fair Fusion baseline model set to DeepSeek V4 Pro
 - Files: `.env.example`, `README.md`, `docs/PROJECT_OVERVIEW.md`, `docs/SYSTEM_MAP.md`, `docs/CHANGELOG.md`
 - Changed the checked-in Fair Fusion baseline sidecar example configuration from the Gemini Developer API path to DeepSeek V4 Pro through the existing OpenAI-compatible baseline override:

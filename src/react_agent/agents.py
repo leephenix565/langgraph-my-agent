@@ -68,7 +68,7 @@ def register_agent(metadata: AgentMetadata, tool: BaseTool) -> None:
 
 def load_metadata_from_dir(path: Path) -> None:
     """Load agent_{id}.json from a directory into AGENT_METADATA."""
-    for file in path.glob("agent_*.json"):
+    for file in sorted(path.glob("agent_*.json")):
         try:
             data = json.loads(file.read_text(encoding="utf-8"))
             meta = AgentMetadata(**data)

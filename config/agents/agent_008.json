@@ -1,18 +1,18 @@
 {
-  "id": "a08_tech_due_diligence",
-  "name": "上市材料分析智能体",
-  "description": "特色： 专注于IPO阶段材料的智能审查与风险量化评估。\n方法： 智能分析上市材料文本，量化评估信息披露质量与潜在风险水平。\n服务输出： 提供上市材料的量化评估报告、风险点识别结果及信息披露质量评分。",
+  "id": "a08_industry_hotspot",
+  "name": "行业热点洞悉智能体",
+  "description": "功能：基于语义检索与主题动态提取模型，实时跟踪行业新闻热点，计算细粒度行业情感得分，识别资金与舆论共振的板块轮动方向。\n输入：行业主流媒体新闻、产业链相关政策文本、投资者社区各行业板块的高频讨论帖。\n输出：行业热点主题词云及演化路径图；细粒度行业情绪热力图；短期行业主题轮动预测信号。",
   "capabilities": [
-    "tech",
-    "innovation",
-    "moat"
+    "industry_hotspot",
+    "topic_mining",
+    "sector_rotation"
   ],
-  "input_type": "technology",
+  "input_type": "sentiment",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "technology",
+  "team": "sentiment",
   "role_type": "system",
   "default_enabled": true
 }

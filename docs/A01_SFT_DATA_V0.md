@@ -24,7 +24,7 @@
 
 示例（selected_agents 覆盖集合）：
 ```
-selected_agents = ["a01_cio_orchestrator", "a03_macro_policy", "...", "a25_report_center"]
+selected_agents = ["a01_cio_orchestrator", "a03_macro_industry_research", "...", "a25_report_center"]
 ```
 
 ## 4) 过滤与原因码

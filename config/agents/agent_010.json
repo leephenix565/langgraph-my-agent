@@ -1,18 +1,18 @@
 {
-  "id": "a10_industry_sentiment",
-  "name": "中观行业舆情感知智能体7",
-  "description": "该系统动态地监测并提炼行业维度的核心议题，同时关联性地召回相关文本证据并判定其情感倾向，从而为市场提供持续的主题追踪、情感判断及详实的文本证据支持服务",
+  "id": "a10_stock_technical_analysis",
+  "name": "个股技术分析智能体",
+  "description": "功能：运用可视图模型等时序分析技术，对个股历史量价进行图谱化特征提取，捕捉趋势动量、支撑/阻力位及异动形态。\n输入：个股高频及日频的量价数据（开/高/低/收、成交量、换手率）、资金流向明细、融资融券余额。\n输出：经典技术形态识别结果（如突破、背离）；短期趋势及动量研判结论；异常交易异动警报。",
   "capabilities": [
-    "industry",
-    "sentiment",
-    "news"
+    "stock_technical",
+    "momentum",
+    "support_resistance"
   ],
-  "input_type": "industry",
-  "latency_level": "fast",
-  "cost_level": "low",
-  "version": "v0.2",
+  "input_type": "technical",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "research",
+  "team": "technical",
   "role_type": "system",
   "default_enabled": true
 }

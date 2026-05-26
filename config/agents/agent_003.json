@@ -1,18 +1,18 @@
 {
-  "id": "a03_macro_policy",
-  "name": "宏观与货币政策研究智能体",
-  "description": "该系统基于宏观经济多源数据，捕捉指标间非线性关联，实现经济周期拐点预测、货币政策传导效能分析及多维趋势交叉验证，支撑顶层决策报告生成，为用户提供宏观政策与经济运行的前瞻性决策支持",
+  "id": "a03_macro_industry_research",
+  "name": "宏观经济与产业链行业研究智能体",
+  "description": "功能：捕捉宏观经济指标非线性关联，实现经济周期拐点预测；通过动态图神经网络实现产业链结构演化路径量化与行业竞争格局动态推演。\n输入：宏观经济数据（GDP/CPI/M2/利率等）、货币政策文本、产业链上下游结构数据、行业供需指标及进出口数据。\n输出：宏观经济趋势及拐点预测报告；跨周期风险热力图；产业链韧性评估与竞争策略模拟方案。",
   "capabilities": [
     "macro",
-    "policy",
-    "liquidity"
+    "industry_chain",
+    "cycle_prediction"
   ],
-  "input_type": "macro",
+  "input_type": "macro_industry",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "research",
+  "team": "fundamental",
   "role_type": "system",
   "default_enabled": true
 }

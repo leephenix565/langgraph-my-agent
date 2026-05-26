@@ -51,10 +51,10 @@
   "schema_version": "a01_contract_v0",
   "objective": "拆解多层任务并对齐验收标准",
   "constraints": ["不得新增/删除 agent", "必须按 router_plan_summary 对齐"],
-  "selected_agents": ["a01_cio_orchestrator", "a03_macro_policy", "a04_risk_control"],
+  "selected_agents": ["a01_cio_orchestrator", "a03_macro_industry_research", "a19_risk_identification"],
   "tasks": [
     {
-      "agent_id": "a03_macro_policy",
+      "agent_id": "a03_macro_industry_research",
       "task_id": "L2-a03-001",
       "objective": "宏观环境分析",
       "steps": ["界定研究范围", "列出关键假设", "给出结论与不确定性"],

@@ -1,18 +1,18 @@
 {
-  "id": "a20_fundamental_risk",
-  "name": "财务困境风险智能体",
-  "description": "从文本语义层面挖掘财务困境预测的增量信息，结合企业财务指标，通过门控融合机制实现结构化与非结构化信息的高效融合，从而对企业财务困境风险进行前瞻性预测，并输出风险预警报告。",
+  "id": "a20_compliance_review",
+  "name": "合规审查智能体",
+  "description": "功能：构建多维度文本评价框架，通过深度理解海量上市公司公告与问询函内容，精准匹配交易所信披评价及监管合规规则，识别潜在违规隐患。\n输入：历年上市公司公告文本、交易所问询函及回复（百万级样本）、交易所信披评价规则库、各项投资者保护与监管规章。\n输出：涵盖十个维度的信披文本综合质量评价与结构化得分；合规性审查诊断结果（标注违规异常隐患及措辞异常特征）。",
   "capabilities": [
-    "risk",
-    "fundamental",
-    "esg"
+    "compliance",
+    "disclosure_quality",
+    "regulatory_review"
   ],
-  "input_type": "risk",
+  "input_type": "compliance",
   "latency_level": "medium",
   "cost_level": "normal",
-  "version": "v0.2",
+  "version": "catalog_v2_sheet2",
   "layer": "L3",
-  "team": "risk",
+  "team": "compliance",
   "role_type": "system",
   "default_enabled": true
 }

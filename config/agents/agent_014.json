@@ -1,18 +1,18 @@
 {
-  "id": "a14_single_stock_tech",
-  "name": "个股技术分析智能体",
-  "description": "该系统基于深度学习模型，融合历史价格数据、财报信息与舆情文本，实时解析个股K线及多种技术指标，自动生成可视化交易信号，并提供清晰的趋势判断与具体的买卖操作建议。",
+  "id": "a14_ipo_investor_behavior",
+  "name": "IPO投资者构成与行为分析智能体",
+  "description": "功能：分析IPO网下询价机构与网上散户的认购行为，刻画打新资金情绪与剔除偏好，预测新股定价效率与上市初期的博弈特征。\n输入：IPO招股说明书、网下机构询价明细表、网上中签率数据、新股上市初期的高频分笔交易流水。\n输出：网下机构报价分布特征与“人情报价”识别；打新资金情绪指数；新股首发溢价评估及上市表现预测。",
   "capabilities": [
-    "technical",
-    "equity",
-    "momentum"
+    "ipo",
+    "investor_behavior",
+    "pricing_efficiency"
   ],
-  "input_type": "equity",
-  "latency_level": "fast",
-  "cost_level": "low",
-  "version": "v0.2",
+  "input_type": "behavior",
+  "latency_level": "medium",
+  "cost_level": "normal",
+  "version": "catalog_v2_sheet2",
   "layer": "L2",
-  "team": "quant",
+  "team": "behavior",
   "role_type": "system",
   "default_enabled": true
 }
