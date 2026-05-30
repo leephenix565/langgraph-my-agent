@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## 2026-05-30 - Router single-intent cleanliness prompt tightening
+- Files:
+  - `src/react_agent/prompts.py`
+  - `config/agents/agent_022.json`
+  - `tests/unit_tests/test_router_prompt_format.py`
+  - `tests/unit_tests/test_parse_router_layers.py`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `docs/CHANGELOG.md`
+- Tightened the Router prompt for successful-parse routing cleanliness:
+  - single-intent questions should select the minimum sufficient agents,
+    usually one primary functional agent plus required special roles
+  - explicit user exclusions such as "do not call" / "不要调用" must be
+    respected
+  - support agents should not be added just because they might be generally
+    useful
+  - external HTTP wrappers should not be selected on weak relevance or generic
+    support needs
+- Added an explicit `a22_financial_data_service` data-service caution in the
+  Router prompt and narrowed the a22 profile so it is selected only for
+  explicit raw data retrieval, database/API query, Tushare ingestion/update, or
+  database maintenance requests.
+- Added no-provider prompt/parser/profile tests for the new routing-cleanliness
+  contract and current-schema a03-only parsing.
+- Scope boundary:
+  - no provider live smoke
+  - no external `/v1/agent/invoke`
+  - no Web E2E
+  - no graph execution logic, parser fallback, public API, frontend, external
+    wrapper, or `.env` change
+
 ## 2026-05-30 - Router parse-failure fallback fail-closed
 - Files:
   - `src/react_agent/graph.py`

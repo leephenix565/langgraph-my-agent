@@ -18,6 +18,23 @@ def test_parse_old_selected_only() -> None:
     assert modes["L2"] == "Star"
 
 
+def test_parse_current_schema_selecting_a03_only() -> None:
+    raw = (
+        '{"layers":['
+        '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
+        '{"layer":"L2","mode":"Star","selected":["a03_macro_industry_research"]},'
+        '{"layer":"L3","mode":"Star","selected":[]},'
+        '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
+        ']}'
+    )
+    plan, modes = _parse_router_layers(raw)
+    assert plan["L1"] == ["a01_cio_orchestrator"]
+    assert plan["L2"] == ["a03_macro_industry_research"]
+    assert plan["L3"] == []
+    assert plan["L4"] == ["a25_report_center"]
+    assert modes["L2"] == "Star"
+
+
 def test_parse_with_joined_mode() -> None:
     raw = '{"layers":[{"layer":"L1","mode":"Star,Chain,Debate,Tree","selected":["a01"]}]}'
     plan, modes = _parse_router_layers(raw)

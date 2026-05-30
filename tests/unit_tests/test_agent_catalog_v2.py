@@ -130,6 +130,14 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         assert item["capabilities"]
 
 
+def test_a22_profile_is_limited_to_explicit_data_service_requests() -> None:
+    metadata = {item["id"]: item for item in _load_config_metadata()}
+    description = metadata["a22_financial_data_service"]["description"]
+    assert "明确要求原始数据获取" in description
+    assert "数据库/API 查询" in description
+    assert "不应自动把本智能体作为通用支撑" in description
+
+
 def test_load_metadata_from_dir_uses_filename_order(tmp_path) -> None:
     first = {
         "id": "ordered_first",

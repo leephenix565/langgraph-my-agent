@@ -35,8 +35,13 @@ Available agent ids by layer:
 Rules:
 - Allowed layers only: L1,L2,L3,L4; order fixed as above; each layer may be empty but keep the order.
 - Modes allowed: Star/Chain/Debate/Tree. Prefer Chain for L1,L4; prefer Star for L2 unless the task is small; Debate/Tree may be used for contentious tasks.
-- Never full-select all agents; pick a focused subset (L2 usually 2-5 due to scale).
-- Do NOT include data/knowledge-base/tool roles; only system agents.
+- Select the minimum sufficient agents. For a single-intent question in one clear domain, select exactly one primary functional agent for that domain, plus required special roles only.
+- Respect explicit exclusions. If the user says "do not call", "do not do", "do not analyze", "不要调用", "不要做", or "不要分析" a domain, method, or agent type, do not select those agents unless required for safety.
+- Do not add support agents just because they might be generally useful. Add a support agent only when the user explicitly asks for that capability or the primary task cannot be answered without it.
+- Data-service rule: do not select a22_financial_data_service for general analysis questions. Select a22 only for explicit raw data retrieval, data availability, database/API query, Tushare ingestion/update, or database maintenance requests. Prefer domain agents directly; domain agents handle their own data needs.
+- External-wrapper caution: external HTTP agents may trigger live services. Avoid selecting unrelated external wrappers on weak relevance, fallback, or generic support needs.
+- Never full-select all agents; pick a focused subset and prefer fewer agents when relevance is uncertain.
+- Do NOT include knowledge-base/tool roles outside this runtime catalog; only system agents listed in the catalog.
 - Be concise; output JSON only. If uncertain, still produce valid JSON with your best guess.
 Compatibility: if you must fall back, you may output {{"selected":[...]}} as the L2 Star plan.
 Current time: {system_time}
