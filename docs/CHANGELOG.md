@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 2026-05-30 - Internal agent import-error hardening
+- Files:
+  - `src/react_agent/tools.py`
+  - `src/react_agent/utils.py`
+  - `src/react_agent/default_agents.py`
+  - `tests/unit_tests/test_internal_llm_search_placeholders.py`
+  - `docs/CHANGELOG.md`
+- Prevented import-time Tavily construction from blocking graph/bootstrap when
+  search credentials or the search integration are unavailable; search now
+  degrades through a safe placeholder tool instead of crashing import.
+- Routed `deepseek/...` model specs through the installed OpenAI-compatible
+  chat adapter so direct special-agent and placeholder invocations no longer
+  require the absent `langchain-deepseek` package.
+- Normalized provider dependency/configuration failures in internal
+  special-runtime and LLM-search placeholder tools to public-safe fail-soft
+  evidence instead of surfacing raw `ImportError`.
+- Added unit coverage for a01/a25 direct invoke fail-soft behavior, placeholder
+  provider/search failure behavior, external wrapper count, disabled
+  non-callability, and `a02_task_router` absence.
+- Scope boundary: no external agent code change, no external endpoint change,
+  no public API schema change, no frontend change, no `.env` change, no service
+  start/stop, and no live provider assertion.
+
 ## 2026-05-30 - Agent layer business-taxonomy redefinition
 - Files:
   - `src/react_agent/agents.py`

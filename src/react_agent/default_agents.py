@@ -62,6 +62,19 @@ def _placeholder_evidence(
     return "; ".join(parts)
 
 
+def _safe_runtime_error_type(exc: Exception) -> str:
+    """Map environment/provider failures to public-safe categories."""
+    if isinstance(exc, ImportError):
+        return "provider_dependency_missing"
+    error_type = type(exc).__name__
+    message = str(exc).lower()
+    if "api key" in message or "api_key" in message:
+        return "provider_configuration_missing"
+    if error_type in {"ValidationError", "ValueError"} and "key" in message:
+        return "provider_configuration_missing"
+    return error_type
+
+
 def _annotate_placeholder_output(
     output: AgentOutput,
     *,
@@ -90,7 +103,7 @@ def _placeholder_fail_soft_output(
     default_allow_search: bool,
 ) -> AgentOutput:
     """Return a structured placeholder failure instead of crashing direct calls."""
-    error_type = type(exc).__name__
+    error_type = _safe_runtime_error_type(exc)
     if not _is_placeholder_agent(agent_id, default_allow_search):
         return {
             "analysis": f"[AGENT_FAIL_SOFT] {agent_id} could not complete.",
