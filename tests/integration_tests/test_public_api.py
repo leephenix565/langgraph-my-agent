@@ -177,7 +177,7 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
 
     l1_agents = payload["layers"][0]["agents"]
     assert l1_agents[0]["id"] == "a01_cio_orchestrator"
-    assert l1_agents[0]["name"] == "资本市场决策协作智能体"
+    assert l1_agents[0]["name"] == "问题解析与协同编排智能体"
     assert l1_agents[0]["capabilities"] == ["orchestration", "routing", "evidence_control"]
     assert l1_agents[0]["team"] == "management"
     assert l1_agents[0]["roleType"] == "system"

@@ -36,10 +36,18 @@ Rules:
 - Allowed layers only: L1,L2,L3,L4; order fixed as above; each layer may be empty but keep the order.
 - Modes allowed: Star/Chain/Debate/Tree. Prefer Chain for L1,L4; prefer Star for L2 unless the task is small; Debate/Tree may be used for contentious tasks.
 - Select the minimum sufficient agents. For a single-intent question in one clear domain, select exactly one primary functional agent for that domain, plus required special roles only.
+- Layer placement rule: the primary functional agent may live in L2 or L3. Put the selected agent in its catalog layer; it is valid for L2 to be empty when the primary agent is an L3 risk/application agent. For a clear functional request, selecting only a01_cio_orchestrator and/or a25_report_center is not sufficient.
 - Respect explicit exclusions. If the user says "do not call", "do not do", "do not analyze", "不要调用", "不要做", or "不要分析" a domain, method, or agent type, do not select those agents unless required for safety.
 - Do not add support agents just because they might be generally useful. Add a support agent only when the user explicitly asks for that capability or the primary task cannot be answered without it.
 - Data-service rule: do not select a22_financial_data_service for general analysis questions. Select a22 only for explicit raw data retrieval, data availability, database/API query, Tushare ingestion/update, or database maintenance requests. Prefer domain agents directly; domain agents handle their own data needs.
 - External-wrapper caution: external HTTP agents may trigger live services. Avoid selecting unrelated external wrappers on weak relevance, fallback, or generic support needs.
+- Single-intent routing guide:
+  - Macro cycle / macro regime / macro indicators / 宏观经济周期 / 美林时钟 / 货币-信用周期 -> a03_macro_industry_research.
+  - Commodity pricing / commodity price influence / futures influence / 商品定价 / 商品价格影响力 / 大宗商品 / 铜 / 原油 / 黄金 / 农产品 -> a04_commodity_hedging.
+  - Enterprise financial statements / financial health / balance sheet / income statement / cash flow / 财务报表 / 财务健康 / 盈利能力 / 偿债能力 / 现金流 -> a06_financial_statement_analysis.
+  - Stock crash risk / downside crash / NCSKEW / DUVOL / CRASH / 股价崩盘风险 / 暴跌风险 / 负偏度 -> a23_crash_risk.
+- Risk subtype rule: when the user asks specifically for crash risk, select a23_crash_risk as the primary risk agent. If the prompt contains "股价崩盘风险", "崩盘风险", "crash risk", "NCSKEW", "DUVOL", or "CRASH", do not leave the functional selection empty; select a23 unless the user explicitly excludes crash-risk analysis itself. Exclusions of financial statements / 财务报表 / 财务分析 apply to a06_financial_statement_analysis, not to a23_crash_risk. Do not add a06 merely because crash-risk models may use financial variables; select a06 only when the user explicitly requests financial statements, accounting ratios, financial health, or financial report analysis.
+- Crash-risk-only target shape: L2 selected [] and L3 selected ["a23_crash_risk"]. This remains true when the user asks what financial, market, and governance variables are used for crash-risk analysis; those variables are part of a23's domain, not a reason to select a06.
 - Never full-select all agents; pick a focused subset and prefer fewer agents when relevance is uncertain.
 - Do NOT include knowledge-base/tool roles outside this runtime catalog; only system agents listed in the catalog.
 - Be concise; output JSON only. If uncertain, still produce valid JSON with your best guess.

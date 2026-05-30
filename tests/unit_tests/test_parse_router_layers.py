@@ -5,6 +5,10 @@ from react_agent.graph import _default_layer_plan, _parse_router_layers
 from react_agent.graph import route_from_manager_summary
 
 
+def _selected_ids(plan: dict[str, list[str]]) -> set[str]:
+    return {agent_id for selected in plan.values() for agent_id in selected}
+
+
 def test_parse_with_extra_text() -> None:
     raw = 'some text before {"layers":[{"layer":"L1","mode":"Star","selected":["a01"]}]} trailing'
     plan, modes = _parse_router_layers(raw)
@@ -33,6 +37,66 @@ def test_parse_current_schema_selecting_a03_only() -> None:
     assert plan["L3"] == []
     assert plan["L4"] == ["a25_report_center"]
     assert modes["L2"] == "Star"
+
+
+def test_parse_mock_macro_only_route_keeps_a03_without_unrelated_externals() -> None:
+    raw = (
+        '{"layers":['
+        '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
+        '{"layer":"L2","mode":"Star","selected":["a03_macro_industry_research"]},'
+        '{"layer":"L3","mode":"Star","selected":[]},'
+        '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
+        ']}'
+    )
+    plan, _ = _parse_router_layers(raw)
+    selected = _selected_ids(plan)
+    assert "a03_macro_industry_research" in selected
+    assert not (selected & {"a04_commodity_hedging", "a06_financial_statement_analysis", "a23_crash_risk", "a22_financial_data_service"})
+
+
+def test_parse_mock_commodity_only_route_keeps_a04_without_unrelated_externals() -> None:
+    raw = (
+        '{"layers":['
+        '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
+        '{"layer":"L2","mode":"Star","selected":["a04_commodity_hedging"]},'
+        '{"layer":"L3","mode":"Star","selected":[]},'
+        '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
+        ']}'
+    )
+    plan, _ = _parse_router_layers(raw)
+    selected = _selected_ids(plan)
+    assert "a04_commodity_hedging" in selected
+    assert not (selected & {"a03_macro_industry_research", "a06_financial_statement_analysis", "a23_crash_risk", "a22_financial_data_service"})
+
+
+def test_parse_mock_financial_only_route_keeps_a06_without_unrelated_externals() -> None:
+    raw = (
+        '{"layers":['
+        '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
+        '{"layer":"L2","mode":"Star","selected":["a06_financial_statement_analysis"]},'
+        '{"layer":"L3","mode":"Star","selected":[]},'
+        '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
+        ']}'
+    )
+    plan, _ = _parse_router_layers(raw)
+    selected = _selected_ids(plan)
+    assert "a06_financial_statement_analysis" in selected
+    assert not (selected & {"a04_commodity_hedging", "a23_crash_risk", "a22_financial_data_service"})
+
+
+def test_parse_mock_crash_risk_only_route_keeps_a23_without_financial_or_data_service() -> None:
+    raw = (
+        '{"layers":['
+        '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
+        '{"layer":"L2","mode":"Star","selected":[]},'
+        '{"layer":"L3","mode":"Star","selected":["a23_crash_risk"]},'
+        '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
+        ']}'
+    )
+    plan, _ = _parse_router_layers(raw)
+    selected = _selected_ids(plan)
+    assert "a23_crash_risk" in selected
+    assert not (selected & {"a06_financial_statement_analysis", "a04_commodity_hedging", "a22_financial_data_service"})
 
 
 def test_parse_with_joined_mode() -> None:

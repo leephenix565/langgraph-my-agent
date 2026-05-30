@@ -1,5 +1,45 @@
 # CHANGELOG
 
+## 2026-05-30 - Router pre-push route matrix stabilization
+- Files:
+  - `src/react_agent/prompts.py`
+  - `config/agents/agent_004.json`
+  - `config/agents/agent_006.json`
+  - `config/agents/agent_023.json`
+  - `tests/integration_tests/test_public_api.py`
+  - `tests/unit_tests/test_router_prompt_format.py`
+  - `tests/unit_tests/test_parse_router_layers.py`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `docs/CHANGELOG.md`
+- Updated the public agent catalog contract test to expect the latest
+  Excel-aligned a01 display name, `问题解析与协同编排智能体`.
+- Added Router prompt routing guidance for single-intent macro, commodity,
+  enterprise financial statement, and stock crash-risk requests.
+- Added a risk-subtype rule so stock crash-risk prompts select
+  `a23_crash_risk` without automatically adding
+  `a06_financial_statement_analysis` unless the user explicitly asks for
+  financial statements, ratios, financial health, or report analysis.
+- Clarified that excluding financial statement / financial-analysis agents does
+  not exclude `a23_crash_risk` when the user explicitly asks for stock
+  crash-risk analysis.
+- Clarified that a single primary functional agent can live in L3, and that
+  crash-risk-only prompts should place `a23_crash_risk` in L3 while leaving L2
+  empty instead of falling back to special roles only.
+- Tightened Router-facing profile text for:
+  - `a04_commodity_hedging`: commodity pricing / price influence / futures
+    commodity triggers.
+  - `a06_financial_statement_analysis`: financial statement / financial
+    health triggers, avoiding generic risk over-selection.
+  - `a23_crash_risk`: crash-risk / NCSKEW / DUVOL / CRASH triggers, avoiding
+    automatic a06 support.
+- Added no-provider prompt/profile/parser regression coverage for macro,
+  commodity, financial, and crash-risk single-intent route fixtures.
+- Scope boundary:
+  - no provider raw response persisted or exposed
+  - no external wrapper implementation change
+  - no graph execution logic change
+  - no public API schema, state schema, frontend, or `.env` change
+
 ## 2026-05-30 - Latest layer sheet business taxonomy alignment
 - Files:
   - `src/react_agent/agents.py`

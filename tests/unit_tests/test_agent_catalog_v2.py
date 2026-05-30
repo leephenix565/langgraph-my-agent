@@ -188,6 +188,30 @@ def test_a22_profile_is_limited_to_explicit_data_service_requests() -> None:
     assert "不应自动把本智能体作为通用支撑" in description
 
 
+def test_route_sensitive_profiles_are_specific() -> None:
+    metadata = {item["id"]: item for item in _load_config_metadata()}
+
+    a04_description = metadata["a04_commodity_hedging"]["description"]
+    assert "commodity pricing" in a04_description
+    assert "price influence" in a04_description
+    assert "商品定价" in a04_description
+    assert "铜" in a04_description
+    assert "股价崩盘风险" in a04_description
+
+    a06_description = metadata["a06_financial_statement_analysis"]["description"]
+    assert "财务报表" in a06_description
+    assert "企业财务健康" in a06_description
+    assert "不要因为用户提出普通“风险”" in a06_description
+    assert "应优先选择 a23_crash_risk" in a06_description
+
+    a23_description = metadata["a23_crash_risk"]["description"]
+    assert "crash risk" in a23_description
+    assert "NCSKEW" in a23_description
+    assert "DUVOL" in a23_description
+    assert "不代表排除本智能体" in a23_description
+    assert "不要自动加派 a06_financial_statement_analysis" in a23_description
+
+
 def test_load_metadata_from_dir_uses_filename_order(tmp_path) -> None:
     first = {
         "id": "ordered_first",

@@ -20,6 +20,8 @@ def test_router_prompt_contains_single_intent_minimum_sufficient_guidance() -> N
     assert "minimum sufficient agents" in rendered
     assert "single-intent question" in rendered
     assert "exactly one primary functional agent" in rendered
+    assert "primary functional agent may live in L2 or L3" in rendered
+    assert "selecting only a01_cio_orchestrator and/or a25_report_center is not sufficient" in rendered
 
 
 def test_router_prompt_contains_explicit_exclusion_guidance() -> None:
@@ -42,3 +44,27 @@ def test_router_prompt_does_not_encourage_broad_l2_selection() -> None:
     rendered = _render_router_prompt()
     assert "L2 usually 2-5" not in rendered
     assert "usually 2-5" not in rendered
+
+
+def test_router_prompt_contains_single_intent_domain_routing_guide() -> None:
+    rendered = _render_router_prompt()
+    assert "Single-intent routing guide" in rendered
+    assert "a03_macro_industry_research" in rendered
+    assert "a04_commodity_hedging" in rendered
+    assert "a06_financial_statement_analysis" in rendered
+    assert "a23_crash_risk" in rendered
+    assert "商品定价" in rendered
+    assert "财务报表" in rendered
+    assert "股价崩盘风险" in rendered
+
+
+def test_router_prompt_keeps_crash_risk_from_auto_financial_analysis() -> None:
+    rendered = _render_router_prompt()
+    assert "Risk subtype rule" in rendered
+    assert "do not leave the functional selection empty" in rendered
+    assert "Exclusions of financial statements" in rendered
+    assert "apply to a06_financial_statement_analysis, not to a23_crash_risk" in rendered
+    assert "Do not add a06 merely because crash-risk models may use financial variables" in rendered
+    assert "select a06 only when the user explicitly requests financial statements" in rendered
+    assert 'L3 selected ["a23_crash_risk"]' in rendered
+    assert "financial, market, and governance variables are used for crash-risk analysis" in rendered
