@@ -1,6 +1,6 @@
 {
   "id": "a01_cio_orchestrator",
-  "name": "资本市场决策协作智能体",
+  "name": "问题解析与协同编排智能体",
   "description": "功能：基于大语言模型完成复杂金融任务的拆解与路由编排，分层协作组织多类底层专业能力，在执行与汇总阶段引入结构化约束与证据校验，实现稳定可控的多智能体协同。\n输入：用户的复杂自然语言提问/业务指令（如“评估某行业受宏观政策影响及个股投资价值”）；底层各智能体的状态反馈。\n输出：任务拆解与路由编排结论方案；多智能体协同调用日志；最终的综合分析决策结果指引。",
   "capabilities": [
     "orchestration",
@@ -14,5 +14,8 @@
   "layer": "L1",
   "team": "management",
   "role_type": "system",
+  "business_layer": "解析层（2）",
+  "business_category": "问题解析",
+  "business_subcategory": "",
   "default_enabled": true
 }

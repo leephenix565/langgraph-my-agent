@@ -2,12 +2,14 @@
 
 ## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog v2
 
-- Functional-agent catalog authority: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
-- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles. They are excluded from the Excel functional-agent count and must not be replaced by external functional profiles.
-- Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=1, L2=12, L3=11, L4=1. This equals 23 Excel functional agents plus 2 special runtime roles.
+- Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`; endpoint/profile lineage remains `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+- Runtime `layer` is the graph dispatch layer (`L1`/`L2`/`L3`/`L4`) and is intentionally separate from latest-sheet business layers (`解析层` / `分析层` / `应用层` / `报告层`).
+- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
+- Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=1, L2=12, L3=11, L4=1. This equals 23 enabled functional entries plus 2 special runtime roles; 22 functional entries are listed in the latest layer sheet and `a03_macro_industry_research` is retained from the older CSV because its macro wrapper is already live-verified.
 - Metadata catalog: 27 config files. `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]` are retained non-Excel historical functional metadata and are not default runtime nodes.
-- External valuation wrappers: `src/react_agent/external_valuation_agents.py` registers `a16_ml_valuation -> valuation_ml`, `a17_traditional_valuation -> valuation_traditional`, and `a18_meta_valuation -> valuation_meta` before default LLM tool backfill.
-- No new external HTTP wrappers were added by the Excel catalog/profile alignment. Functional profile alignment is not runtime wrapper integration; `AGENT_TOOLS` remains the execution truth.
+- Agent metadata includes `business_layer`, `business_category`, and `business_subcategory` for latest-sheet taxonomy without changing Router/parser/State/public API schemas.
+- Generic external HTTP wrappers currently register 13 configured agents in `AGENT_TOOLS`; wrapper registration is separate from live service verification.
+- `a03_macro_industry_research` remains enabled and callable as a live-verified macro wrapper even though it is not listed in `/sdb/dlut/agent_layer_latest.xlsx`; it is marked `保留层（旧CSV）/价值分析` pending taxonomy decision.
 - AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
 - AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
 - AC-1B-2A removes the old route-prior/RARP runtime shadow seam from `react_agent.graph`; the old helper source remains archived/offline and is no longer imported by graph runtime.

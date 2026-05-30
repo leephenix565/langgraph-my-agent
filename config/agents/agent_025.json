@@ -1,6 +1,6 @@
 {
   "id": "a25_report_center",
-  "name": "综合推理结构与报告生成智能体",
+  "name": "报告生成智能体",
   "description": "功能：归集底层所有智能体的图谱、数据与文字推论，按照投研逻辑自动生成结构化、可视化、可交互的多模态研报（日报/周报/复盘）。\n输入：各底层智能体产出的分析结论、指标数值、情感得分、K线图/事件图谱截图；用户设定的报告时间区间。\n输出：自动化生成的智能分析报表（含行情研判、舆情事件追踪、价情联动、多源特征融合预警等完整版块）。",
   "capabilities": [
     "report",
@@ -14,5 +14,8 @@
   "layer": "L4",
   "team": "reporting",
   "role_type": "system",
+  "business_layer": "报告层（1）",
+  "business_category": "报告生成",
+  "business_subcategory": "",
   "default_enabled": true
 }

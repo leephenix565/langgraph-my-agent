@@ -14,5 +14,8 @@
   "layer": "L2",
   "team": "fundamental",
   "role_type": "system",
+  "business_layer": "保留层（旧CSV）",
+  "business_category": "价值分析",
+  "business_subcategory": "宏观分析；未列入 agent_layer_latest.xlsx",
   "default_enabled": true
 }

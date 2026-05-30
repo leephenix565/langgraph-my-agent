@@ -13,5 +13,8 @@
   "layer": "L3",
   "team": "compliance",
   "role_type": "system",
+  "business_layer": "分析层（17）",
+  "business_category": "风险分析",
+  "business_subcategory": "",
   "default_enabled": true
 }

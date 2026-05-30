@@ -71,6 +71,33 @@ REMOVED_OLD_IDS = {
     "a27_portfolio_backtest",
 }
 
+EXPECTED_BUSINESS_TAXONOMY = {
+    "a01_cio_orchestrator": ("问题解析与协同编排智能体", "解析层（2）", "问题解析"),
+    "a22_financial_data_service": ("金融数据服务智能体", "解析层（2）", "数据支撑"),
+    "a17_traditional_valuation": ("传统企业估值智能体", "分析层（17）", "价值分析"),
+    "a16_ml_valuation": ("机器学习企业估值智能体", "分析层（17）", "价值分析"),
+    "a18_meta_valuation": ("元学习企业估值智能体", "分析层（17）", "价值分析"),
+    "a11_index_technical_analysis": ("股票指数估值智能体", "分析层（17）", "价值分析"),
+    "a04_commodity_hedging": ("商品定价分析智能体", "分析层（17）", "价值分析"),
+    "a06_financial_statement_analysis": ("企业财务分析智能体", "分析层（17）", "价值分析"),
+    "a12_research_synthesis": ("分析师研报与观点集成智能体", "分析层（17）", "行为分析"),
+    "a13_fund_manager_behavior": ("基金经理投资行为分析智能体", "分析层（17）", "行为分析"),
+    "a14_ipo_investor_behavior": ("IPO投资者构成与行为分析智能体", "分析层（17）", "行为分析"),
+    "a10_stock_technical_analysis": ("个股技术分析智能体", "分析层（17）", "行为分析"),
+    "a19_risk_identification": ("风险识别智能体", "分析层（17）", "风险分析"),
+    "a20_compliance_review": ("公告合规审查智能体", "分析层（17）", "风险分析"),
+    "a23_crash_risk": ("股价崩盘风险智能体", "分析层（17）", "风险分析"),
+    "a24_financial_fraud_risk": ("财务造假风险智能体", "分析层（17）", "风险分析"),
+    "a15_entity_relation_extraction": ("实体关系抽取智能体", "分析层（17）", "舆情分析"),
+    "a07_macro_sentiment": ("宏观情绪感知智能体", "分析层（17）", "舆情分析"),
+    "a08_industry_hotspot": ("行业热点洞悉智能体", "分析层（17）", "舆情分析"),
+    "a09_company_sentiment_radar": ("企业舆情雷达智能体", "分析层（17）", "舆情分析"),
+    "a26_composite_valuation": ("综合估值智能体", "应用层（3）", "估值研判"),
+    "a27_risk_constraint": ("风险约束智能体", "应用层（3）", "风险控制"),
+    "a28_composite_sentiment": ("综合舆情智能体", "应用层（3）", "舆情判断"),
+    "a25_report_center": ("报告生成智能体", "报告层（1）", "报告生成"),
+}
+
 
 def _load_config_metadata() -> list[dict]:
     return [
@@ -119,6 +146,9 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         "layer",
         "team",
         "role_type",
+        "business_layer",
+        "business_category",
+        "business_subcategory",
         "default_enabled",
     }
     for item in _load_config_metadata():
@@ -128,6 +158,26 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         assert "输入：" in item["description"]
         assert "输出：" in item["description"]
         assert item["capabilities"]
+        assert item["business_layer"]
+        assert item["business_category"]
+
+
+def test_agent_catalog_latest_business_taxonomy_fields() -> None:
+    metadata = {item["id"]: item for item in _load_config_metadata()}
+    for agent_id, (name, business_layer, business_category) in EXPECTED_BUSINESS_TAXONOMY.items():
+        item = metadata[agent_id]
+        assert item["name"] == name
+        assert item["business_layer"] == business_layer
+        assert item["business_category"] == business_category
+
+    assert metadata["a03_macro_industry_research"]["name"] == "宏观分析智能体"
+    assert metadata["a03_macro_industry_research"]["business_layer"] == "保留层（旧CSV）"
+    assert "未列入 agent_layer_latest.xlsx" in metadata["a03_macro_industry_research"][
+        "business_subcategory"
+    ]
+
+    for disabled_id in DISABLED_NON_EXCEL_FUNCTIONAL_IDS:
+        assert metadata[disabled_id]["business_layer"] == "历史保留（disabled）"
 
 
 def test_a22_profile_is_limited_to_explicit_data_service_requests() -> None:

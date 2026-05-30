@@ -14,5 +14,8 @@
   "layer": "L3",
   "team": "investment",
   "role_type": "system",
+  "business_layer": "历史保留（disabled）",
+  "business_category": "未列入最新表",
+  "business_subcategory": "disabled metadata only",
   "default_enabled": false
 }

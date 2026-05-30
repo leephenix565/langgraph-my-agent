@@ -52,6 +52,9 @@ class AgentMetadata:
     layer: Optional[str] = None
     team: Optional[str] = None
     role_type: Optional[str] = None
+    business_layer: Optional[str] = None
+    business_category: Optional[str] = None
+    business_subcategory: Optional[str] = None
     default_enabled: bool = True
 
 

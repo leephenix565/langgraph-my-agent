@@ -14,5 +14,8 @@
   "layer": "L3",
   "team": "valuation",
   "role_type": "system",
+  "business_layer": "分析层（17）",
+  "business_category": "价值分析",
+  "business_subcategory": "",
   "default_enabled": true
 }

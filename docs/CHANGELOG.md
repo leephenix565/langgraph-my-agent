@@ -1,5 +1,39 @@
 # CHANGELOG
 
+## 2026-05-30 - Latest layer sheet business taxonomy alignment
+- Files:
+  - `src/react_agent/agents.py`
+  - `config/agents/*.json`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/CHANGELOG.md`
+- Added non-dispatch metadata fields `business_layer`, `business_category`, and
+  `business_subcategory` to `AgentMetadata` and all `config/agents/*.json`
+  files.
+- Aligned listed agent Chinese names and business taxonomy to
+  `/sdb/dlut/agent_layer_latest.xlsx` while keeping runtime `layer`
+  (`L1`/`L2`/`L3`/`L4`) unchanged.
+- Renamed catalog display names to the latest sheet where applicable:
+  `a01_cio_orchestrator` -> `问题解析与协同编排智能体`,
+  `a24_financial_fraud_risk` -> `财务造假风险智能体`, and
+  `a25_report_center` -> `报告生成智能体`.
+- Kept `a03_macro_industry_research` enabled and callable because the macro
+  external wrapper is already live-verified; it is not listed in the latest
+  layer sheet, so metadata marks it as `保留层（旧CSV）/价值分析` pending an
+  explicit taxonomy decision.
+- Preserved disabled non-callability for `a05_annual_report_analysis` and
+  `a21_portfolio_manager`, preserved absence of `a02_task_router`, and left all
+  external wrapper endpoint/default id mappings unchanged.
+- Scope boundary:
+  - no provider live smoke
+  - no external `/v1/agent/invoke`
+  - no Web E2E
+  - no graph execution logic, parser fallback, public API/schema, frontend,
+    external wrapper, or `.env` change
+
 ## 2026-05-30 - Router single-intent cleanliness prompt tightening
 - Files:
   - `src/react_agent/prompts.py`

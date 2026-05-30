@@ -1,14 +1,17 @@
 # Agent Catalog v2 Runbook
 
-Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A`  
-Authority: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A` + `LATEST-LAYER-SHEET`
+Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Endpoint/profile lineage: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
 
 ## Current Functional-Agent Authority
 
-- Excel/CSV is now the profile authority for functional agents.
-- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and are excluded from the Excel functional-agent count.
+- `/sdb/dlut/agent_layer_latest.xlsx` is now the profile authority for business-layer and business-category metadata on listed agents.
+- Runtime `layer` remains the graph dispatch layer (`L1`/`L2`/`L3`/`L4`) and is intentionally separate from latest-sheet business layers (`解析层` / `分析层` / `应用层` / `报告层`).
+- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
 - The enabled catalog now has 23 functional agents plus 2 special runtime roles: `runtimeCount=25`.
 - `config/agents` keeps 27 metadata files because `a05_annual_report_analysis` and `a21_portfolio_manager` are retained disabled as non-Excel historical functional metadata.
+- `config/agents/*.json` carries `business_layer`, `business_category`, and `business_subcategory` fields for the business taxonomy while leaving runtime `layer` unchanged.
+- `a03_macro_industry_research` remains enabled and callable because the a03 macro external wrapper is already live-verified. It is not listed in `/sdb/dlut/agent_layer_latest.xlsx`, so it is tagged as `保留层（旧CSV）/价值分析` pending an explicit taxonomy decision.
 - Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
 - Catalog/profile alignment remains separate from runtime wrapper integration.
 - External HTTP P0 migrates `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` from early local trial defaults to generic table-driven HTTP wrappers using the Excel/CSV production invoke endpoints as formal defaults.
