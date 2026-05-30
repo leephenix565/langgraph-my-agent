@@ -1,13 +1,12 @@
 {
   "id": "a09_company_sentiment_radar",
   "name": "企业舆情雷达智能体",
-  "description": "功能：全天候监控特定企业的多源舆情，从海量新闻中抽取特定事件及其论元，结合风险级联演化模型评估舆情发酵对个股的冲击。\n输入：企业相关新闻、自媒体评论、投资者互动平台问答、产品投诉数据、各类突发事件文本。\n输出：企业实时情感得分；具体事件抽取结果（时间/主体/触发词）；负面舆情预警及风险传染推演。",
+  "description": "功能：NEEDS_OWNER_DESCRIPTION；Excel/CSV 功能智能体清单提供了该智能体名称与访问规划，但描述表未提供能力摘要。\n输入：NEEDS_OWNER_DESCRIPTION；需要负责人补充适用场景、必要输入和边界条件。\n输出：NEEDS_OWNER_DESCRIPTION；在 profile 补齐前仅保留为功能 catalog 占位，不代表外部 wrapper 已接入。",
   "capabilities": [
     "company_sentiment",
-    "event_extraction",
-    "risk_contagion"
+    "needs_owner_description"
   ],
-  "input_type": "sentiment",
+  "input_type": "company_sentiment",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",

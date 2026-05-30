@@ -1,13 +1,13 @@
 {
   "id": "a14_ipo_investor_behavior",
   "name": "IPO投资者构成与行为分析智能体",
-  "description": "功能：分析IPO网下询价机构与网上散户的认购行为，刻画打新资金情绪与剔除偏好，预测新股定价效率与上市初期的博弈特征。\n输入：IPO招股说明书、网下机构询价明细表、网上中签率数据、新股上市初期的高频分笔交易流水。\n输出：网下机构报价分布特征与“人情报价”识别；打新资金情绪指数；新股首发溢价评估及上市表现预测。",
+  "description": "功能：基于本地 V.csv / U.csv 计算 IPO 公司的 CRJ 指数（风险投资机构质量与赋能强度），对高 / 低 CRJ 组在抑价率、市值比等指标上的差异进行统计检验（T 检验、曼 - 惠特尼秩和检验、OLS 回归），输出分组结论与投资建议。\n适用场景：用户想了解某只 IPO 公司的投资者结构质量（CRJ 指数）及其对 IPO 表现的影响。 用户需要基于投资者行为数据，判断公司所处 CRJ 高低分组及统计显著性。 用户需要基于 CRJ 指数和回归结果，获取投资建议（增持 / 减持 / 观望）。 用户提供公司 ID，希望得到 CRJ 指数、分组结论与投资建议的结构化输出。\n不适用场景：用户需要对指数、大盘或非 IPO 个股进行估值或择时分析，不属于投资者结构分析场景。 用户需要短线交易信号、买卖点、K 线形态或盘口分析，本智能体不支持。 用户没有 V.csv / U.csv 数据文件，或数据中无 company_id、V/U 等必要字段。 用户只需要原始数据导出，而非 CRJ 指数计算与统计检验结论。\n输入：公司 ID：IPO 公司的唯一标识（如 10567、C0001），必须与 V.csv / U.csv 中的 company_id 字段匹配。（这里后续可能会变股票代码等） （隐含依赖）本地 V.csv 和 U.csv 文件，需包含 company_id、V、U 等必要字段。\n缺输入处理：未提供公司 ID 时，返回 needs_clarification，提示用户补充公司 ID（如示例 10567）。 公司 ID 在数据中不存在时，返回 404 错误，提示 “公司 ID 未找到”。 数据文件缺失 / 读取失败（如无 V.csv/U.csv、编码错误、字段缺失），返回 500 错误，提示检查文件路径、格式和字段。\n输出：依据描述表的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
   "capabilities": [
     "ipo",
     "investor_behavior",
-    "pricing_efficiency"
+    "crj_index"
   ],
-  "input_type": "behavior",
+  "input_type": "ipo_investor_behavior",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",

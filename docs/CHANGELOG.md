@@ -1,5 +1,139 @@
 # CHANGELOG
 
+## 2026-05-30 - Disabled retained metadata no-callability fix
+- Files:
+  - `src/react_agent/graph_bootstrap.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `tests/unit_tests/test_disabled_agents_nodes.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Tightened disabled metadata semantics so retained disabled catalog entries no
+  longer create `AGENT_TOOLS` entries through default LLM backfill.
+- `a05_annual_report_analysis` and `a21_portfolio_manager` remain disabled
+  catalog metadata for history, but they are not graph nodes, not external
+  wrappers, not default tools, and not callable through `AGENT_TOOLS`.
+- Graph nodes and `AGENT_TOOLS` now agree on disabled non-callability.
+- Scope boundary:
+  - no external live endpoint call
+  - no provider live smoke
+  - no Router/public API/frontend/.env change
+  - no P1-B wrapper registration
+
+## 2026-05-30 - Phase EXTERNAL-HTTP-P1A wrapper registration
+- Files:
+  - `src/react_agent/external_http_agents.py`
+  - `tests/unit_tests/test_external_http_agents.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Added P1-A generic external HTTP wrapper registrations for 10 dev-present
+  functional agents:
+  `a22_financial_data_service`, `a03_macro_industry_research`,
+  `a04_commodity_hedging`, `a06_financial_statement_analysis`,
+  `a10_stock_technical_analysis`, `a11_index_technical_analysis`,
+  `a12_research_synthesis`, `a14_ipo_investor_behavior`,
+  `a23_crash_risk`, and `a26_composite_valuation`.
+- Kept P0 `a16_ml_valuation`, `a17_traditional_valuation`, and
+  `a18_meta_valuation` in the generic wrapper config; total generic external
+  HTTP wrapper configs are now 13.
+- Used Excel/CSV production invoke URLs as default endpoints and preserved env
+  overrides for each registered external agent.
+- Added mock-only unit coverage for P1-A config/default endpoints, env
+  overrides, request/response mapping, bootstrap registration, default-backfill
+  exclusion, and held/future agent non-registration.
+- Scope boundary:
+  - no live endpoint call
+  - no provider live smoke
+  - no frontend/public API/Router/a01/a25 behavior change
+  - no P1-B/P2/source-missing agent registration
+  - `a27_risk_constraint` remains held because route standard is unclear
+  - source-missing agents remain pending delivery or future endpoint-only policy
+
+## 2026-05-30 - Phase EXTERNAL-HTTP-P0 mapper acceptance blocker fix
+- Files:
+  - `src/react_agent/external_http_agents.py`
+  - `tests/unit_tests/test_external_http_agents.py`
+  - `docs/CHANGELOG.md`
+- Fixed the generic external HTTP response mapper to preserve top-level
+  `key_points` and `evidence` fields while still merging compatible
+  `tool_result` key points, evidence, and data-source summaries.
+- Added mock-only unit coverage for top-level `key_points`, top-level
+  `evidence`, merged top-level/tool-result key points, preserved
+  tool-result evidence, and malformed top-level evidence shapes.
+- Scope boundary:
+  - no live endpoint call
+  - no P1 agent registration
+  - no Router/a01/a25 behavior change
+  - no public API/frontend behavior change
+
+## 2026-05-30 - Phase EXTERNAL-HTTP-P0 generic wrapper and valuation endpoint migration
+- Files:
+  - `src/react_agent/external_http_agents.py`
+  - `src/react_agent/external_valuation_agents.py`
+  - `src/react_agent/graph_bootstrap.py`
+  - `tests/unit_tests/test_external_http_agents.py`
+  - `tests/unit_tests/test_external_valuation_agents.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Added a generic table-driven external HTTP wrapper framework for
+  `external_agent_request_v0` compatible services.
+- Migrated only `a16_ml_valuation`, `a17_traditional_valuation`, and
+  `a18_meta_valuation` from early local trial valuation-wrapper defaults to
+  Excel/CSV production invoke defaults:
+  - `a16_ml_valuation -> http://222.73.85.26:10001/v1/agent/invoke`
+  - `a17_traditional_valuation -> http://222.73.85.26:10000/v1/agent/invoke`
+  - `a18_meta_valuation -> http://222.73.85.26:10002/v1/agent/invoke`
+- Preserved env override compatibility:
+  `VALUATION_ML_AGENT_URL`, `VALUATION_TRADITIONAL_AGENT_URL`, and
+  `VALUATION_META_AGENT_URL`.
+- Kept `external_valuation_agents.py` as a compatibility facade so existing
+  imports continue to work while graph bootstrap registers the generic wrapper.
+- Added mock-only unit coverage for success mapping, timeout, HTTPError,
+  non-2xx, invalid JSON, non-object response, missing status, unexpected
+  exception, returned `agent_id` mismatch warning, endpoint defaults, env
+  overrides, and bootstrap wrapper markers.
+- Scope boundary:
+  - no external service startup
+  - no real HTTP endpoint calls
+  - no provider live smoke
+  - no P1/P2 external agent wrapper registration
+  - no Router/a01/a25 behavior change
+  - no public API/frontend behavior change
+  - metadata/profile alignment remains separate from runtime wrapper integration
+
+## 2026-05-30 - Phase EXCEL-CATALOG-ALIGN-1 functional catalog/profile alignment
+- Files:
+  - `config/agents/*.json`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `tests/unit_tests/test_disabled_agents_nodes.py`
+  - `tests/integration_tests/test_public_api.py`
+- Re-aligned Agent Catalog v2 functional profiles to the current Excel/CSV authority:
+  `/sdb/dlut/智能体分工及访问接口.csv` and `/sdb/dlut/智能体的描述.csv`.
+- Excluded Router runtime, `a01_cio_orchestrator`, and `a25_report_center` from
+  the Excel functional-agent count because they are special system runtime roles.
+- Updated the enabled catalog to 23 Excel functional agents plus 2 special roles
+  (`runtimeCount=25`), with `a05_annual_report_analysis` and
+  `a21_portfolio_manager` retained disabled as non-Excel historical metadata.
+- Added functional metadata for financial data service, crash risk, financial
+  fraud risk, composite valuation, risk constraint, and composite sentiment.
+- Preserved the existing `a16/a17/a18` external valuation wrappers unchanged.
+- Scope boundary:
+  - catalog/profile/docs/tests alignment only
+  - no Router/runtime graph behavior change
+  - no public API or frontend code change
+  - no new external HTTP wrapper integration
+  - no external service startup or live endpoint call
+  - metadata alignment is not `AGENT_TOOLS` runtime wrapper integration
+
 ## 2026-05-21 - Phase EXT-DOC-5 external agent developer handoff package consolidation
 - Files:
   - `README.md`

@@ -1,7 +1,7 @@
 {
   "id": "a05_annual_report_analysis",
   "name": "公司年报分析智能体",
-  "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n输出：年报核心财务与业务摘要；管理层情感偏离度打分（乐观/悲观态度量化）；隐性风险提示点。",
+  "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n输出：年报核心财务与业务摘要；管理层情感偏离度打分（乐观/悲观态度量化）；隐性风险提示点。\n状态：DISABLED_OR_REMOVE_NON_EXCEL_FUNCTIONAL_AGENT；Excel/CSV 当前功能智能体清单未包含该功能项，保留文件用于历史映射，不参与默认运行时节点。",
   "capabilities": [
     "annual_report",
     "mdna",
@@ -14,5 +14,5 @@
   "layer": "L2",
   "team": "fundamental",
   "role_type": "system",
-  "default_enabled": true
+  "default_enabled": false
 }

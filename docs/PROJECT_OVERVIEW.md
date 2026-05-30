@@ -1,8 +1,8 @@
 # Project Overview: Current Engineering Snapshot
 
-## Phase AC-1A Catalog Snapshot
+## Phase EXCEL-CATALOG-ALIGN-1 Catalog Snapshot
 
-Agent Catalog v2 is now the current catalog snapshot. The business source is `E:\muti-agent\智能体划分4.25.xlsx` Sheet2, while `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` records the repository id mapping because Sheet2 has no `agent_id` column. The live catalog is 21 enabled agents: L1=1, L2=13, L3=6, L4=1. `a02_task_router` metadata is gone, but the true Router runtime remains `router_node`. The three valuation agents are runtime-connected through HTTP wrappers and default tests use fake HTTP, not live ports 8101/8102/8103.
+Agent Catalog v2 is now aligned to the current Excel/CSV functional-agent authority: `/sdb/dlut/智能体分工及访问接口.csv` plus `/sdb/dlut/智能体的描述.csv`. The main-system row is excluded from the functional-agent count. Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and are not Excel functional agents. The active runtime catalog is 25 enabled roles: 23 functional agents plus 2 special roles, with enabled layer counts L1=1, L2=12, L3=11, L4=1. `config/agents` contains 27 metadata files because `a05_annual_report_analysis` and `a21_portfolio_manager` are retained disabled as non-Excel historical functional metadata. `a02_task_router` metadata remains gone, and the true Router runtime remains `router_node`. The three valuation agents are still the only runtime-connected HTTP wrappers; this profile/catalog alignment does not implement new external wrappers.
 
 > Scope note: this document is the narrative and current-snapshot entry for the repo. It does not define command truth. For operational commands, prefer [SYSTEM_MAP.md](SYSTEM_MAP.md), [run_quality.py](../scripts/quality/run_quality.py), and the quality workflows.
 

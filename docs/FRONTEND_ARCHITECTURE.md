@@ -1,8 +1,8 @@
 # FRONTEND_ARCHITECTURE
 
-## Phase AC-1A Agent Catalog Surface
+## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog Surface
 
-The frontend `/agents` surface still consumes the same `/api/agents` schema, but the backing catalog is now Agent Catalog v2: 21 enabled agents, no disabled ids, and no `a02_task_router` metadata. Frontend mocks, labels, workflow fixtures, and smoke tests have been updated to the v2 ids. This does not change the single assistant persona rule and the frontend still does not render raw graph messages.
+The frontend `/agents` surface still consumes the same `/api/agents` schema, but the backing catalog is now aligned to the Excel/CSV functional-agent authority: 27 metadata configs, 25 enabled runtime roles, disabled ids `a05_annual_report_analysis` and `a21_portfolio_manager`, and no `a02_task_router` metadata. This is data projected from the public adapter; no frontend behavior changed. The single assistant persona rule remains unchanged and the frontend still does not render raw graph messages.
 
 ## 1. Phase Position
 

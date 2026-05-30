@@ -1,13 +1,28 @@
 # Agent Catalog v2 Runbook
 
-Phase: `AC-1A`  
-Authority: `E:\muti-agent\智能体划分4.25.xlsx` Sheet2 and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A`  
+Authority: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+
+## Current Functional-Agent Authority
+
+- Excel/CSV is now the profile authority for functional agents.
+- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and are excluded from the Excel functional-agent count.
+- The enabled catalog now has 23 functional agents plus 2 special runtime roles: `runtimeCount=25`.
+- `config/agents` keeps 27 metadata files because `a05_annual_report_analysis` and `a21_portfolio_manager` are retained disabled as non-Excel historical functional metadata.
+- Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
+- Catalog/profile alignment remains separate from runtime wrapper integration.
+- External HTTP P0 migrates `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` from early local trial defaults to generic table-driven HTTP wrappers using the Excel/CSV production invoke endpoints as formal defaults.
+- Existing env var overrides remain compatible: `VALUATION_ML_AGENT_URL`, `VALUATION_TRADITIONAL_AGENT_URL`, and `VALUATION_META_AGENT_URL`.
+- External HTTP P1-A registers 10 additional dev-present functional agents on the generic wrapper path: `a22_financial_data_service`, `a03_macro_industry_research`, `a04_commodity_hedging`, `a06_financial_statement_analysis`, `a10_stock_technical_analysis`, `a11_index_technical_analysis`, `a12_research_synthesis`, `a14_ipo_investor_behavior`, `a23_crash_risk`, and `a26_composite_valuation`.
+- P0 + P1-A total 13 generic external HTTP wrapper configs. Wrapper registration is not live service verification.
+- `a27_risk_constraint` remains held because the route standard is unclear. Source-missing agents remain pending delivery or an explicitly approved endpoint-only policy.
+- Functional agents without `/sdb/dlut/dev` source are still included in catalog/profile alignment and documented as pending delivery/wrapper.
 
 ## What AC-1A Changes
 
-- Rebuilds `config/agents` to 21 enabled Agent Catalog v2 metadata files.
+- Rebuilds `config/agents` around the current Excel/CSV functional-agent authority.
 - Removes `a02_task_router` metadata without changing the real `router_node` runtime.
-- Registers `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` as HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
+- Registers P0 + P1-A ids as generic external HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
 - Keeps Router/a01/a25 protocol and public adapter schema unchanged.
 - Keeps route-prior/RARP/SFT source in place as archived/offline helpers; those artifacts are no longer catalog-v2 mainline acceptance evidence.
 - AC-1B-1 moves offline RP/RARP/SFT/manual-gold/teacher-proxy tests and markers into an archived/non-mainline posture.
@@ -50,20 +65,42 @@ npm --prefix apps/web run test
 
 `pytest` in this Windows/Codex setup may require an explicit `--basetemp` and normal Windows permissions. Bundled Python is not sufficient here because its user-site pytest dependency surface is incomplete.
 
-## External Valuation Services
+## External HTTP P0 / P1-A Services
 
-Default endpoints:
+Default endpoints now come from the Excel/CSV production main-system invoke URLs:
 
 ```powershell
-$env:VALUATION_TRADITIONAL_AGENT_URL = "http://127.0.0.1:8101/v1/agent/invoke"
-$env:VALUATION_ML_AGENT_URL = "http://127.0.0.1:8102/v1/agent/invoke"
-$env:VALUATION_META_AGENT_URL = "http://127.0.0.1:8103/v1/agent/invoke"
+# Env vars remain override-compatible. These examples show the formal defaults,
+# not required local shell configuration.
+$env:FINANCIAL_DATA_AGENT_URL = "http://222.73.85.26:11000/v1/agent/invoke"
+$env:MACRO_ANALYSIS_AGENT_URL = "http://222.73.85.26:10014/v1/agent/invoke"
+$env:COMMODITY_PRICING_AGENT_URL = "http://222.73.85.26:10004/v1/agent/invoke"
+$env:ENTERPRISE_FINANCIAL_ANALYSIS_AGENT_URL = "http://222.73.85.26:10005/v1/agent/invoke"
+$env:STOCK_TECHNICAL_ANALYSIS_AGENT_URL = "http://222.73.85.26:10009/v1/agent/invoke"
+$env:INDEX_VALUATION_AGENT_URL = "http://222.73.85.26:10003/v1/agent/invoke"
+$env:RESEARCH_SYNTHESIS_AGENT_URL = "http://222.73.85.26:10006/v1/agent/invoke"
+$env:IPO_INVESTOR_BEHAVIOR_AGENT_URL = "http://222.73.85.26:10008/v1/agent/invoke"
+$env:VALUATION_TRADITIONAL_AGENT_URL = "http://222.73.85.26:10000/v1/agent/invoke"
+$env:VALUATION_ML_AGENT_URL = "http://222.73.85.26:10001/v1/agent/invoke"
+$env:VALUATION_META_AGENT_URL = "http://222.73.85.26:10002/v1/agent/invoke"
+$env:CRASH_RISK_AGENT_URL = "http://222.73.85.26:10012/v1/agent/invoke"
+$env:COMPOSITE_VALUATION_AGENT_URL = "http://222.73.85.26:10015/v1/agent/invoke"
 $env:EXTERNAL_AGENT_TIMEOUT_SECONDS = "90"
 ```
 
-The default test suite uses fake HTTP clients and does not require real services on ports `8101`, `8102`, or `8103`.
+The old local trial defaults are no longer formal defaults:
 
-Before claiming live E2E, start the three external FastAPI services and verify each service health endpoint, then run an end-to-end graph invocation that selects the corresponding valuation agent. AC-1A mock tests prove wrapper construction, request mapping, response mapping, and fail-soft behavior; they do not prove live service data freshness.
+```powershell
+http://127.0.0.1:8101/v1/agent/invoke
+http://127.0.0.1:8102/v1/agent/invoke
+http://127.0.0.1:8103/v1/agent/invoke
+```
+
+Local trial endpoints can still be used through env overrides when explicitly needed. The default test suite uses fake HTTP clients and does not require real services on ports `8101`, `8102`, or `8103`, nor does it call the production endpoints.
+
+Before claiming live E2E, verify each service health endpoint and then run an end-to-end graph invocation that selects the corresponding functional agent. P0/P1-A mock tests prove wrapper construction, request mapping, response mapping, endpoint default selection, env override compatibility, bootstrap registration, and fail-soft behavior; they do not prove live service availability or data freshness.
+
+P1-A deliberately does not register `a27_risk_constraint` because the route standard is unclear. Source-missing agents remain pending delivery or a separately approved endpoint-only policy. Profile/catalog alignment remains separate from runtime wrapper integration, and runtime wrapper registration remains separate from live service verification.
 
 ## AC-1A-L2 Live Wrapper Smoke Evidence
 
@@ -382,19 +419,19 @@ Remaining risks after DS-1-B:
 `GET /api/agents` should expose:
 
 ```json
-{"configCount":21,"runtimeCount":21,"disabledIds":[]}
+{"configCount":27,"runtimeCount":25,"disabledIds":["a05_annual_report_analysis","a21_portfolio_manager"]}
 ```
 
 Layer counts should be:
 
 ```json
-{"L1":1,"L2":13,"L3":6,"L4":1}
+{"enabledRuntimeRoles":{"L1":1,"L2":12,"L3":11,"L4":1},"publicCatalogRowsIncludingDisabled":{"L1":1,"L2":13,"L3":12,"L4":1}}
 ```
 
 ## Fail-Soft Behavior
 
-The HTTP wrappers return `AgentOutput` with `parse_ok=false` and `confidence=0` for timeout, network error, non-2xx status, invalid JSON, or invalid schema. The failure output intentionally avoids traceback, API key, token, and raw provider response leakage.
+The generic HTTP wrappers return `AgentOutput` with `parse_ok=false` and `confidence=0` for timeout, network error, non-2xx status, invalid JSON, missing `status`, invalid schema, or unexpected exception. The failure output intentionally avoids traceback, API key, token, and raw provider response leakage.
 
 ## Rollback Notes
 
-Rollback requires restoring the previous `config/agents` set and removing the wrapper registration. Route-prior helpers remain archived/offline only after AC-1B-2A; future `router_prior_v2` work must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels before any graph runtime integration.
+Rollback for P0 requires restoring the previous valuation-wrapper registration path and default endpoints. Route-prior helpers remain archived/offline only after AC-1B-2A; future `router_prior_v2` work must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels before any graph runtime integration.

@@ -1,10 +1,13 @@
 # System Map
 
-## Phase AC-1A Agent Catalog v2
+## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog v2
 
-- Catalog authority: `E:\muti-agent\智能体划分4.25.xlsx` Sheet2 plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
-- Runtime catalog: 21 enabled metadata files in `config/agents`, with layer counts L1=1, L2=13, L3=6, L4=1 and `disabledIds=[]`.
+- Functional-agent catalog authority: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles. They are excluded from the Excel functional-agent count and must not be replaced by external functional profiles.
+- Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=1, L2=12, L3=11, L4=1. This equals 23 Excel functional agents plus 2 special runtime roles.
+- Metadata catalog: 27 config files. `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]` are retained non-Excel historical functional metadata and are not default runtime nodes.
 - External valuation wrappers: `src/react_agent/external_valuation_agents.py` registers `a16_ml_valuation -> valuation_ml`, `a17_traditional_valuation -> valuation_traditional`, and `a18_meta_valuation -> valuation_meta` before default LLM tool backfill.
+- No new external HTTP wrappers were added by the Excel catalog/profile alignment. Functional profile alignment is not runtime wrapper integration; `AGENT_TOOLS` remains the execution truth.
 - AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
 - AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
 - AC-1B-2A removes the old route-prior/RARP runtime shadow seam from `react_agent.graph`; the old helper source remains archived/offline and is no longer imported by graph runtime.

@@ -166,11 +166,14 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert response.status_code == 200
     payload = response.json()
 
-    assert payload["totals"]["configCount"] == 21
-    assert payload["totals"]["runtimeCount"] == 21
-    assert payload["totals"]["disabledIds"] == []
+    assert payload["totals"]["configCount"] == 27
+    assert payload["totals"]["runtimeCount"] == 25
+    assert payload["totals"]["disabledIds"] == [
+        "a05_annual_report_analysis",
+        "a21_portfolio_manager",
+    ]
     assert [layer["layer"] for layer in payload["layers"]] == ["L1", "L2", "L3", "L4"]
-    assert [len(layer["agents"]) for layer in payload["layers"]] == [1, 13, 6, 1]
+    assert [len(layer["agents"]) for layer in payload["layers"]] == [1, 13, 12, 1]
 
     l1_agents = payload["layers"][0]["agents"]
     assert l1_agents[0]["id"] == "a01_cio_orchestrator"
@@ -180,7 +183,10 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert l1_agents[0]["roleType"] == "system"
     assert l1_agents[0]["defaultEnabled"] is True
 
-    assert payload["disabledAgents"] == []
+    assert [agent["id"] for agent in payload["disabledAgents"]] == [
+        "a05_annual_report_analysis",
+        "a21_portfolio_manager",
+    ]
     all_ids = {
         agent["id"]
         for layer in payload["layers"]

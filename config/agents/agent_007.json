@@ -1,13 +1,12 @@
 {
   "id": "a07_macro_sentiment",
   "name": "宏观情绪感知智能体",
-  "description": "功能：实时监控并量化全市场的宏观新闻与社交媒体舆情，构建宏观市场健康指数，洞察大盘整体资金的风险偏好与情绪周期变化。\n输入：宏观经济新闻报道、央行及监管机构动态/发言、知名机构观点、全网主流社交媒体大盘情绪文本。\n输出：宏观市场情感量化指数；市场健康指数实时数值；情绪拐点预警与风险偏好状态（Risk-On/Off）。",
+  "description": "功能：NEEDS_OWNER_DESCRIPTION；Excel/CSV 功能智能体清单提供了该智能体名称与访问规划，但描述表未提供能力摘要。\n输入：NEEDS_OWNER_DESCRIPTION；需要负责人补充适用场景、必要输入和边界条件。\n输出：NEEDS_OWNER_DESCRIPTION；在 profile 补齐前仅保留为功能 catalog 占位，不代表外部 wrapper 已接入。",
   "capabilities": [
     "macro_sentiment",
-    "market_health",
-    "risk_preference"
+    "needs_owner_description"
   ],
-  "input_type": "sentiment",
+  "input_type": "macro_sentiment",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",

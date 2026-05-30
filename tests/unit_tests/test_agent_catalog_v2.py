@@ -12,27 +12,36 @@ TARGET_IDS_BY_LAYER = {
     "L2": [
         "a03_macro_industry_research",
         "a04_commodity_hedging",
-        "a05_annual_report_analysis",
         "a06_financial_statement_analysis",
         "a07_macro_sentiment",
         "a08_industry_hotspot",
         "a09_company_sentiment_radar",
         "a10_stock_technical_analysis",
-        "a11_index_technical_analysis",
         "a12_research_synthesis",
         "a13_fund_manager_behavior",
         "a14_ipo_investor_behavior",
         "a15_entity_relation_extraction",
+        "a22_financial_data_service",
     ],
     "L3": [
+        "a11_index_technical_analysis",
         "a16_ml_valuation",
         "a17_traditional_valuation",
         "a18_meta_valuation",
         "a19_risk_identification",
         "a20_compliance_review",
-        "a21_portfolio_manager",
+        "a23_crash_risk",
+        "a24_financial_fraud_risk",
+        "a26_composite_valuation",
+        "a27_risk_constraint",
+        "a28_composite_sentiment",
     ],
     "L4": ["a25_report_center"],
+}
+
+DISABLED_NON_EXCEL_FUNCTIONAL_IDS = {
+    "a05_annual_report_analysis",
+    "a21_portfolio_manager",
 }
 
 REMOVED_OLD_IDS = {
@@ -73,14 +82,28 @@ def _load_config_metadata() -> list[dict]:
 def test_agent_catalog_v2_config_shape() -> None:
     metadata = _load_config_metadata()
     ids = [item["id"] for item in metadata]
-    assert len(metadata) == 21
-    assert all(item["default_enabled"] is True for item in metadata)
+    enabled = [item for item in metadata if item["default_enabled"] is True]
+    disabled = [item for item in metadata if item["default_enabled"] is False]
+    assert len(metadata) == 27
+    assert len(enabled) == 25
+    assert {item["id"] for item in disabled} == DISABLED_NON_EXCEL_FUNCTIONAL_IDS
     assert all(item["version"] == "catalog_v2_sheet2" for item in metadata)
     assert not (set(ids) & REMOVED_OLD_IDS)
 
     for layer, expected_ids in TARGET_IDS_BY_LAYER.items():
-        actual_ids = [item["id"] for item in metadata if item["layer"] == layer]
+        actual_ids = [
+            item["id"] for item in metadata if item["layer"] == layer and item["default_enabled"]
+        ]
         assert actual_ids == expected_ids
+
+
+def test_excel_functional_catalog_excludes_special_runtime_roles() -> None:
+    metadata = _load_config_metadata()
+    enabled_ids = {item["id"] for item in metadata if item["default_enabled"]}
+    special_ids = {"a01_cio_orchestrator", "a25_report_center"}
+    assert special_ids <= enabled_ids
+    assert "a02_task_router" not in enabled_ids
+    assert len(enabled_ids - special_ids) == 23
 
 
 def test_agent_catalog_v2_required_metadata_fields() -> None:

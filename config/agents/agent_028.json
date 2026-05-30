@@ -1,16 +1,16 @@
 {
-  "id": "a08_industry_hotspot",
-  "name": "行业热点洞悉智能体",
+  "id": "a28_composite_sentiment",
+  "name": "综合舆情智能体",
   "description": "功能：NEEDS_OWNER_DESCRIPTION；Excel/CSV 功能智能体清单提供了该智能体名称与访问规划，但描述表未提供能力摘要。\n输入：NEEDS_OWNER_DESCRIPTION；需要负责人补充适用场景、必要输入和边界条件。\n输出：NEEDS_OWNER_DESCRIPTION；在 profile 补齐前仅保留为功能 catalog 占位，不代表外部 wrapper 已接入。",
   "capabilities": [
-    "industry_hotspot",
+    "composite_sentiment",
     "needs_owner_description"
   ],
-  "input_type": "industry_hotspot",
+  "input_type": "composite_sentiment",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",
-  "layer": "L2",
+  "layer": "L3",
   "team": "sentiment",
   "role_type": "system",
   "default_enabled": true

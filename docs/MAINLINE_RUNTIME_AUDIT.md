@@ -1,8 +1,8 @@
 # 主线项目理解审计报告
 
-## Phase AC-1A Catalog Update
+## Phase EXCEL-CATALOG-ALIGN-1 Catalog Update
 
-This audit snapshot is superseded for agent catalog counts by Agent Catalog v2. Current AC-1A facts are: `configCount=21`, `runtimeCount=21`, `disabledIds=[]`, no `a02_task_router` metadata, and no old ordinary agent metadata. `AGENT_TOOLS[agent_id]` remains the execution truth. `/api/agents` remains a public metadata projection and does not expose raw graph messages, route-prior evidence, RARP artifacts, or manual_gold labels.
+This audit snapshot is superseded for agent catalog counts by the Excel/CSV-aligned Agent Catalog v2. Current facts are: `configCount=27`, `runtimeCount=25`, `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]`, no `a02_task_router` metadata, and 23 enabled Excel functional agents plus the two special runtime roles `a01_cio_orchestrator` and `a25_report_center`. `AGENT_TOOLS[agent_id]` remains the execution truth. `/api/agents` remains a public metadata projection and does not expose raw graph messages, route-prior evidence, RARP artifacts, or manual_gold labels.
 
 See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` for the current catalog table and `docs/AGENT_CATALOG_V2_RUNBOOK.md` for validation commands.
 
@@ -221,9 +221,9 @@ See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` for the current catalog table and 
 
 ## 10. 已确认事实
 
-- `config/agents/` 当前有 21 个 Agent Catalog v2 config 文件
-- 当前没有 `default_enabled=false` 的默认禁用 agent；`disabledIds=[]`
-- 默认 node registry 纳入 21 个 enabled agent；`INCLUDE_DISABLED_AGENTS=1` 不会恢复已删除的 `a02_task_router` metadata
+- `config/agents/` 当前有 27 个 Agent Catalog v2 config 文件
+- 当前有两个默认禁用的非 Excel 历史功能 agent: `a05_annual_report_analysis`, `a21_portfolio_manager`
+- 默认 node registry 纳入 25 个 enabled runtime roles；`INCLUDE_DISABLED_AGENTS=1` 只会恢复保留的 disabled metadata，不会恢复已删除的 `a02_task_router` metadata
 - `a01_cio_orchestrator` 和 `a25_report_center` 不是普通功能 agent；二者都有专用 prompt 和专用 assignment/summary 处理
 - `a02_task_router` metadata 已在 AC-1A 删除；真实 Router runtime 仍是 `router_node`
 - active frontend smoke entry 仍然是 `apps/web/src/test/smoke.tsx`

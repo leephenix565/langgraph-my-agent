@@ -1,16 +1,23 @@
 # Agent Catalog v2 Sheet2 Mapping
 
-Phase: `AC-1A`  
-Business authority: `E:\muti-agent\智能体划分4.25.xlsx` Sheet2  
-Repository authority after AC-1A: this mapping document plus `config/agents/*.json`
+Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A`
+Functional-agent authority: `/sdb/dlut/智能体分工及访问接口.csv` plus `/sdb/dlut/智能体的描述.csv`
+Repository authority after this alignment: this mapping document plus `config/agents/*.json`
 
 ## Current Catalog Facts
 
-- Sheet2 has 21 effective agent rows: L1=1, L2=13, L3=6, L4=1.
-- Sheet2 does not contain an `agent_id` column. The stable runtime ids below are the repository mapping adopted in AC-1A.
-- `configCount=21`, `runtimeCount=21`, `disabledIds=[]`.
-- `a02_task_router` metadata is removed. The real Router runtime remains `router_node` inside `src/react_agent/graph.py` and is not represented as catalog metadata.
-- Public transcript behavior is unchanged: one assistant persona, no raw graph messages rendered in the frontend.
+- Excel/CSV is now the authority for functional-agent names and profile intent.
+- The main-system row `主系统 / 资本市场认知多智能体系统` is excluded from the functional-agent count.
+- Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles. They are not Excel functional agents and must not be replaced by external functional profiles.
+- `config/agents` now has `configCount=27`, `runtimeCount=25`, and `disabledIds=["a05_annual_report_analysis", "a21_portfolio_manager"]`.
+- Enabled runtime roles are L1=1, L2=12, L3=11, L4=1. The 23 enabled functional agents are `runtimeCount - 2 special roles`.
+- Layer display in `/api/agents` includes disabled metadata, so public catalog layer rows are L1=1, L2=13, L3=12, L4=1.
+- Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
+- `a02_task_router` metadata remains absent. The real Router runtime remains `router_node` inside `src/react_agent/graph.py`.
+- Catalog/profile alignment is separate from runtime wrapper integration and does not bypass `AGENT_TOOLS`.
+- Runtime wrapper P0 migrates `a16/a17/a18` onto the generic table-driven external HTTP wrapper using Excel/CSV production invoke endpoints as defaults.
+- Runtime wrapper P1-A registers 10 dev-present functional agents on the same generic external HTTP wrapper path. Wrapper registration is mock/unit verified only and is not live service verification.
+- `a27_risk_constraint` remains held because the route standard is unclear. Source-missing agents remain pending delivery or an explicitly approved endpoint-only policy.
 
 ## Runtime Chain
 
@@ -19,55 +26,86 @@ config/agents/*.json
 -> react_agent.agents.load_metadata_from_dir(...), sorted by filename
 -> AGENT_METADATA
 -> graph_bootstrap.bootstrap_agent_runtime()
--> external valuation wrapper registration for a16/a17/a18
--> default _build_agent_tool(...) fallback for remaining enabled agents
+-> generic external HTTP wrapper registration for P0 + P1-A ids
+-> default _build_agent_tool(...) fallback for other enabled agents
 -> AGENT_TOOLS as the execution truth
 -> /api/agents as public metadata projection
 ```
 
-The three valuation agents are not allowed to fall back to ordinary LLM valuation tools. They are registered into `AGENT_TOOLS` before default tool backfill.
+The 13 P0 + P1-A ids are runtime-wrapped external HTTP agents. Other enabled functional profiles default to LLM tools until a repo-side wrapper is explicitly implemented and registered.
 
-## Catalog Table
+## Enabled Catalog Table
 
-| File | Runtime agent id | Layer | Team | Sheet2 name | Execution |
-|---|---:|---|---|---|---|
-| `agent_001.json` | `a01_cio_orchestrator` | L1 | management | 资本市场决策协作智能体 | special runtime prompt / orchestration contract |
-| `agent_003.json` | `a03_macro_industry_research` | L2 | fundamental | 宏观经济与产业链行业研究智能体 | default LLM tool |
-| `agent_004.json` | `a04_commodity_hedging` | L2 | fundamental | 大宗商品价格分析与套期保值智能体 | default LLM tool |
-| `agent_005.json` | `a05_annual_report_analysis` | L2 | fundamental | 公司年报分析智能体 | default LLM tool |
-| `agent_006.json` | `a06_financial_statement_analysis` | L2 | fundamental | 公司财报分析智能体 | default LLM tool |
-| `agent_007.json` | `a07_macro_sentiment` | L2 | sentiment | 宏观情绪感知智能体 | default LLM tool |
-| `agent_008.json` | `a08_industry_hotspot` | L2 | sentiment | 行业热点洞悉智能体 | default LLM tool |
-| `agent_009.json` | `a09_company_sentiment_radar` | L2 | sentiment | 企业舆情雷达智能体 | default LLM tool |
-| `agent_010.json` | `a10_stock_technical_analysis` | L2 | technical | 个股技术分析智能体 | default LLM tool |
-| `agent_011.json` | `a11_index_technical_analysis` | L2 | technical | 指数技术分析智能体 | default LLM tool |
-| `agent_012.json` | `a12_research_synthesis` | L2 | behavior | 分析师研报与观点集成智能体 | default LLM tool |
-| `agent_013.json` | `a13_fund_manager_behavior` | L2 | behavior | 基金经理投资行为分析智能体 | default LLM tool |
-| `agent_014.json` | `a14_ipo_investor_behavior` | L2 | behavior | IPO投资者构成与行为分析智能体 | default LLM tool |
-| `agent_015.json` | `a15_entity_relation_extraction` | L2 | behavior | 实体关系抽取智能体 | default LLM tool |
-| `agent_016.json` | `a16_ml_valuation` | L3 | valuation | 机器学习估值智能体 | HTTP wrapper -> valuation_ml |
-| `agent_017.json` | `a17_traditional_valuation` | L3 | valuation | 传统估值智能体 | HTTP wrapper -> valuation_traditional |
-| `agent_018.json` | `a18_meta_valuation` | L3 | valuation | 元学习估值智能体 | HTTP wrapper -> valuation_meta |
-| `agent_019.json` | `a19_risk_identification` | L3 | risk | 风险识别智能体 | default LLM tool |
-| `agent_020.json` | `a20_compliance_review` | L3 | compliance | 合规审查智能体 | default LLM tool |
-| `agent_021.json` | `a21_portfolio_manager` | L3 | investment | 投资组合经理智能体 | default LLM tool |
-| `agent_025.json` | `a25_report_center` | L4 | reporting | 综合推理结构与报告生成智能体 | special runtime prompt / report center |
+| File | Runtime agent id | Layer | Team | Excel official name | Execution status |
+|---|---|---|---|---|---|
+| `agent_001.json` | `a01_cio_orchestrator` | L1 | management | special main-system orchestration | special runtime role |
+| `agent_003.json` | `a03_macro_industry_research` | L2 | fundamental | 宏观分析智能体 | generic HTTP wrapper -> `macro_analysis` |
+| `agent_004.json` | `a04_commodity_hedging` | L2 | fundamental | 商品定价分析智能体 | generic HTTP wrapper -> `commodity_pricing` |
+| `agent_006.json` | `a06_financial_statement_analysis` | L2 | fundamental | 企业财务分析智能体 | generic HTTP wrapper -> `enterprise_financial_analysis` |
+| `agent_007.json` | `a07_macro_sentiment` | L2 | sentiment | 宏观情绪感知智能体 | source not present / pending owner description |
+| `agent_008.json` | `a08_industry_hotspot` | L2 | sentiment | 行业热点洞悉智能体 | source not present / pending owner description |
+| `agent_009.json` | `a09_company_sentiment_radar` | L2 | sentiment | 企业舆情雷达智能体 | source not present / pending owner description |
+| `agent_010.json` | `a10_stock_technical_analysis` | L2 | technical | 个股技术分析智能体 | generic HTTP wrapper -> `stock_technical_analysis` |
+| `agent_012.json` | `a12_research_synthesis` | L2 | behavior | 分析师研报与观点集成智能体 | generic HTTP wrapper -> `research_synthesis` |
+| `agent_013.json` | `a13_fund_manager_behavior` | L2 | behavior | 基金经理投资行为分析智能体 | source not present / pending owner description |
+| `agent_014.json` | `a14_ipo_investor_behavior` | L2 | behavior | IPO投资者构成与行为分析智能体 | generic HTTP wrapper -> `ipo_investor_behavior` |
+| `agent_015.json` | `a15_entity_relation_extraction` | L2 | sentiment | 实体关系抽取智能体 | source not present / pending owner description |
+| `agent_022.json` | `a22_financial_data_service` | L2 | data_support | 金融数据服务智能体 | generic HTTP wrapper -> `financial_data_service` |
+| `agent_011.json` | `a11_index_technical_analysis` | L3 | valuation | 股票指数估值智能体 | generic HTTP wrapper -> `index_valuation` |
+| `agent_016.json` | `a16_ml_valuation` | L3 | valuation | 机器学习企业估值智能体 | generic HTTP wrapper -> `valuation_ml` |
+| `agent_017.json` | `a17_traditional_valuation` | L3 | valuation | 传统企业估值智能体 | generic HTTP wrapper -> `valuation_traditional` |
+| `agent_018.json` | `a18_meta_valuation` | L3 | valuation | 元学习企业估值智能体 | generic HTTP wrapper -> `valuation_meta` |
+| `agent_019.json` | `a19_risk_identification` | L3 | risk | 风险识别智能体 | source not present / pending owner description |
+| `agent_020.json` | `a20_compliance_review` | L3 | compliance | 公告合规审查智能体 | source not present / pending owner description |
+| `agent_023.json` | `a23_crash_risk` | L3 | risk | 股价崩盘风险智能体 | generic HTTP wrapper -> `crash_risk` |
+| `agent_024.json` | `a24_financial_fraud_risk` | L3 | risk | 财务欺诈（造假）风险智能体 | source not present pending delivery |
+| `agent_025.json` | `a25_report_center` | L4 | reporting | special final synthesis | special runtime role |
+| `agent_026.json` | `a26_composite_valuation` | L3 | valuation | 综合估值智能体 | generic HTTP wrapper -> `composite_valuation` |
+| `agent_027.json` | `a27_risk_constraint` | L3 | risk | 风险约束智能体 | standard route unclear pending fix |
+| `agent_028.json` | `a28_composite_sentiment` | L3 | sentiment | 综合舆情智能体 | source not present / pending owner description |
 
-## External Valuation Id Mapping
+## Disabled Non-Excel Functional Metadata
+
+| File | Runtime agent id | Previous name | Rationale |
+|---|---|---|---|
+| `agent_005.json` | `a05_annual_report_analysis` | 公司年报分析智能体 | Not present in the current Excel/CSV functional-agent authority. Retained disabled for history; not a graph node and not in `AGENT_TOOLS`. |
+| `agent_021.json` | `a21_portfolio_manager` | 投资组合经理智能体 | Not present in the current Excel/CSV functional-agent authority. Retained disabled for history; not a graph node and not in `AGENT_TOOLS`. |
+
+## External HTTP P0 / P1-A Id Mapping
 
 | Main system id | External service id | Default endpoint | Env override |
 |---|---|---|---|
-| `a16_ml_valuation` | `valuation_ml` | `http://127.0.0.1:8102/v1/agent/invoke` | `VALUATION_ML_AGENT_URL` |
-| `a17_traditional_valuation` | `valuation_traditional` | `http://127.0.0.1:8101/v1/agent/invoke` | `VALUATION_TRADITIONAL_AGENT_URL` |
-| `a18_meta_valuation` | `valuation_meta` | `http://127.0.0.1:8103/v1/agent/invoke` | `VALUATION_META_AGENT_URL` |
+| `a03_macro_industry_research` | `macro_analysis` | `http://222.73.85.26:10014/v1/agent/invoke` | `MACRO_ANALYSIS_AGENT_URL` |
+| `a04_commodity_hedging` | `commodity_pricing` | `http://222.73.85.26:10004/v1/agent/invoke` | `COMMODITY_PRICING_AGENT_URL` |
+| `a06_financial_statement_analysis` | `enterprise_financial_analysis` | `http://222.73.85.26:10005/v1/agent/invoke` | `ENTERPRISE_FINANCIAL_ANALYSIS_AGENT_URL` |
+| `a10_stock_technical_analysis` | `stock_technical_analysis` | `http://222.73.85.26:10009/v1/agent/invoke` | `STOCK_TECHNICAL_ANALYSIS_AGENT_URL` |
+| `a11_index_technical_analysis` | `index_valuation` | `http://222.73.85.26:10003/v1/agent/invoke` | `INDEX_VALUATION_AGENT_URL` |
+| `a12_research_synthesis` | `research_synthesis` | `http://222.73.85.26:10006/v1/agent/invoke` | `RESEARCH_SYNTHESIS_AGENT_URL` |
+| `a14_ipo_investor_behavior` | `ipo_investor_behavior` | `http://222.73.85.26:10008/v1/agent/invoke` | `IPO_INVESTOR_BEHAVIOR_AGENT_URL` |
+| `a16_ml_valuation` | `valuation_ml` | `http://222.73.85.26:10001/v1/agent/invoke` | `VALUATION_ML_AGENT_URL` |
+| `a17_traditional_valuation` | `valuation_traditional` | `http://222.73.85.26:10000/v1/agent/invoke` | `VALUATION_TRADITIONAL_AGENT_URL` |
+| `a18_meta_valuation` | `valuation_meta` | `http://222.73.85.26:10002/v1/agent/invoke` | `VALUATION_META_AGENT_URL` |
+| `a22_financial_data_service` | `financial_data_service` | `http://222.73.85.26:11000/v1/agent/invoke` | `FINANCIAL_DATA_AGENT_URL` |
+| `a23_crash_risk` | `crash_risk` | `http://222.73.85.26:10012/v1/agent/invoke` | `CRASH_RISK_AGENT_URL` |
+| `a26_composite_valuation` | `composite_valuation` | `http://222.73.85.26:10015/v1/agent/invoke` | `COMPOSITE_VALUATION_AGENT_URL` |
 
 `EXTERNAL_AGENT_TIMEOUT_SECONDS` controls HTTP wrapper timeout and defaults to `90`.
+
+The old `127.0.0.1:8101/8102/8103` valuation endpoints are now compatibility/local trial endpoints only and must be supplied through the env override variables if needed. They are not the formal default integration target.
+
+## Pending Wrapper / Delivery Notes
+
+- Agents present in Excel/CSV but missing under `/sdb/dlut/dev` remain enabled functional catalog entries. Their profile may be marked `NEEDS_OWNER_DESCRIPTION` when the description CSV lacks capability details.
+- P1-A dev-present agents listed above now have repo-side wrapper registration. This does not prove the external services are live or healthy.
+- Agents with dev source present but no repo-side wrapper still use default LLM tools. Future HTTP integration must register through `AGENT_TOOLS`.
+- `a27_risk_constraint` remains held because its route standard is unclear. Source-missing agents remain pending delivery or endpoint-only policy approval.
+- `/health` plus `/v1/agent/invoke` remain the expected external service boundary for later wrapper work; `/healthz` is not treated as the main standard.
 
 ## Boundaries
 
 - Router L1-L4 JSON protocol is unchanged.
 - `router_parse.py` core semantics are unchanged.
 - No new graph State fields are introduced.
-- Public API schema is unchanged.
+- Public API and frontend behavior are unchanged apart from the catalog data projected from metadata.
 - `a01_cio_orchestrator` and `a25_report_center` keep their special runtime semantics.
-- RP/SFT/RARP/manual_gold artifacts are not Agent Catalog v2 authority. As of AC-1B-2A, current `graph.py` no longer imports or executes the old route-prior/RARP runtime seam. The old route-prior source files remain only as archived/offline helper source.
+- RP/SFT/RARP/manual_gold artifacts remain archived/offline only and are not current runtime routing authority.

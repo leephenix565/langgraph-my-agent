@@ -1,13 +1,12 @@
 {
   "id": "a13_fund_manager_behavior",
   "name": "基金经理投资行为分析智能体",
-  "description": "功能：分析公募及私募机构的历史持仓与净值变动，刻画其投资风格漂移、抱团行为与调仓逻辑。\n输入：基金季报/年报持仓明细（十大重仓等）、基金净值高频序列、基金经理公开发言及路演纪要。\n输出：基金经理投资风格画像归因；投资风格漂移监测；机构抱团股网络识别及抱团松动预警。",
+  "description": "功能：NEEDS_OWNER_DESCRIPTION；Excel/CSV 功能智能体清单提供了该智能体名称与访问规划，但描述表未提供能力摘要。\n输入：NEEDS_OWNER_DESCRIPTION；需要负责人补充适用场景、必要输入和边界条件。\n输出：NEEDS_OWNER_DESCRIPTION；在 profile 补齐前仅保留为功能 catalog 占位，不代表外部 wrapper 已接入。",
   "capabilities": [
-    "fund_manager",
-    "position_behavior",
-    "style_drift"
+    "fund_manager_behavior",
+    "needs_owner_description"
   ],
-  "input_type": "behavior",
+  "input_type": "fund_manager_behavior",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",

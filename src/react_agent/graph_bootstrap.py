@@ -14,7 +14,7 @@ from react_agent.agents import (
     register_agent,
 )
 from react_agent.default_agents import _build_agent_tool, register_builtin_agents
-from react_agent.external_valuation_agents import register_external_valuation_agents
+from react_agent.external_http_agents import register_external_http_agents
 from react_agent.generic_agent import build_generic_agent_tool
 
 CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
@@ -28,10 +28,15 @@ def bootstrap_agent_runtime() -> None:
         register_builtin_agents()
     if config_exists:
         load_metadata_from_dir(CONFIG_AGENT_DIR)
-    for aid, tool in register_external_valuation_agents(AGENT_METADATA).items():
+    for aid, meta in list(AGENT_METADATA.items()):
+        if not getattr(meta, "default_enabled", True):
+            AGENT_TOOLS.pop(aid, None)
+    for aid, tool in register_external_http_agents(AGENT_METADATA).items():
         if aid not in AGENT_TOOLS:
             AGENT_TOOLS[aid] = tool
     for aid, meta in list(AGENT_METADATA.items()):
+        if not getattr(meta, "default_enabled", True):
+            continue
         if aid in AGENT_TOOLS:
             continue
         desc = (meta.description or "").strip()
@@ -48,8 +53,9 @@ def bootstrap_agent_runtime() -> None:
 
 
 def build_node_registry(include_disabled: bool) -> Tuple[List[str], Dict[str, str]]:
+    del include_disabled
     agent_ids_for_nodes: List[str] = [
-        aid for aid, meta in AGENT_METADATA.items() if include_disabled or meta.default_enabled
+        aid for aid, meta in AGENT_METADATA.items() if meta.default_enabled
     ]
     agent_node_names: Dict[str, str] = {
         aid: f"agent_{aid}_node" for aid in agent_ids_for_nodes

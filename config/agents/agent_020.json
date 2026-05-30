@@ -1,13 +1,12 @@
 {
   "id": "a20_compliance_review",
-  "name": "合规审查智能体",
-  "description": "功能：构建多维度文本评价框架，通过深度理解海量上市公司公告与问询函内容，精准匹配交易所信披评价及监管合规规则，识别潜在违规隐患。\n输入：历年上市公司公告文本、交易所问询函及回复（百万级样本）、交易所信披评价规则库、各项投资者保护与监管规章。\n输出：涵盖十个维度的信披文本综合质量评价与结构化得分；合规性审查诊断结果（标注违规异常隐患及措辞异常特征）。",
+  "name": "公告合规审查智能体",
+  "description": "功能：NEEDS_OWNER_DESCRIPTION；Excel/CSV 功能智能体清单提供了该智能体名称与访问规划，但描述表未提供能力摘要。\n输入：NEEDS_OWNER_DESCRIPTION；需要负责人补充适用场景、必要输入和边界条件。\n输出：NEEDS_OWNER_DESCRIPTION；在 profile 补齐前仅保留为功能 catalog 占位，不代表外部 wrapper 已接入。",
   "capabilities": [
-    "compliance",
-    "disclosure_quality",
-    "regulatory_review"
+    "compliance_review",
+    "needs_owner_description"
   ],
-  "input_type": "compliance",
+  "input_type": "compliance_review",
   "latency_level": "medium",
   "cost_level": "normal",
   "version": "catalog_v2_sheet2",
