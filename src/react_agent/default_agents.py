@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import os
 import re
 import time
 from typing import Any, Dict, List
@@ -20,6 +21,103 @@ from react_agent.tools import build_tavily_search, tavily_search
 from react_agent.utils import get_message_text, load_chat_model
 
 
+SPECIAL_RUNTIME_AGENT_IDS = {"a01_cio_orchestrator", "a25_report_center"}
+PLACEHOLDER_SOURCE_TYPE = "source_type=llm_search_placeholder"
+
+
+def _safe_runtime_context() -> Context | None:
+    """Return the current LangGraph runtime context when invoked inside a graph."""
+    try:
+        runtime = get_runtime(Context)
+    except Exception:
+        return None
+    if runtime and getattr(runtime, "context", None):
+        return runtime.context
+    return None
+
+
+def _effective_model_name() -> str:
+    """Resolve a model name for direct AGENT_TOOLS calls as well as graph calls."""
+    context = _safe_runtime_context()
+    if context and getattr(context, "model", ""):
+        return context.model
+    try:
+        return Context().model
+    except Exception:
+        return os.environ.get("MODEL", "deepseek/deepseek-chat")
+
+
+def _is_placeholder_agent(agent_id: str, default_allow_search: bool) -> bool:
+    return default_allow_search and agent_id not in SPECIAL_RUNTIME_AGENT_IDS
+
+
+def _placeholder_evidence(
+    *,
+    search_status: str,
+    error_type: str = "",
+) -> str:
+    parts = [PLACEHOLDER_SOURCE_TYPE, f"search_status={search_status}"]
+    if error_type:
+        parts.append(f"error_type={error_type}")
+    return "; ".join(parts)
+
+
+def _annotate_placeholder_output(
+    output: AgentOutput,
+    *,
+    agent_id: str,
+    default_allow_search: bool,
+    search_status: str,
+) -> AgentOutput:
+    """Mark generic internal-agent outputs as main-system LLM/search placeholders."""
+    if not _is_placeholder_agent(agent_id, default_allow_search):
+        return output
+    evidence = list(output.get("evidence") or [])
+    marker = _placeholder_evidence(search_status=search_status)
+    if not any(PLACEHOLDER_SOURCE_TYPE in str(item) for item in evidence):
+        evidence.append(marker)
+    output["evidence"] = evidence
+    output.setdefault("answer", output.get("analysis", ""))
+    output["runtime_path"] = "INTERNAL_LLM_SEARCH_PLACEHOLDER"
+    return output
+
+
+def _placeholder_fail_soft_output(
+    *,
+    agent_id: str,
+    exc: Exception,
+    search_status: str,
+    default_allow_search: bool,
+) -> AgentOutput:
+    """Return a structured placeholder failure instead of crashing direct calls."""
+    error_type = type(exc).__name__
+    if not _is_placeholder_agent(agent_id, default_allow_search):
+        return {
+            "analysis": f"[AGENT_FAIL_SOFT] {agent_id} could not complete.",
+            "key_points": [],
+            "evidence": [f"source_type=internal_runtime_agent; error_type={error_type}"],
+            "confidence": 0.0,
+            "parse_ok": False,
+        }
+    return {
+        "answer": "主系统内部 LLM+search 占位能力暂时无法完成调用。",
+        "analysis": (
+            f"[INTERNAL_LLM_SEARCH_PLACEHOLDER_FAIL_SOFT] {agent_id} "
+            "placeholder could not complete; graph execution may continue with degraded evidence."
+        ),
+        "key_points": [
+            "该结果来自主系统 generic placeholder，不等同于外部专属智能体已上线。",
+            "provider 或搜索工具不可用时，结果会降级并标记 parse_ok=false。",
+        ],
+        "evidence": [
+            _placeholder_evidence(search_status=search_status, error_type=error_type)
+        ],
+        "confidence": 0.3,
+        "parse_ok": False,
+        "runtime_path": "INTERNAL_LLM_SEARCH_PLACEHOLDER",
+    }
+
+
 def _model_trace_fields(model_spec: str) -> Dict[str, str]:
     spec = str(model_spec or "")
     provider = ""
@@ -35,12 +133,12 @@ def _model_trace_fields(model_spec: str) -> Dict[str, str]:
 
 async def _call_with_tools(tool_list: List[BaseTool], messages: List[Dict[str, Any]]) -> AIMessage:
     """Run the tool-calling loop until no tool_calls remain."""
-    runtime = get_runtime(Context)
+    context = _safe_runtime_context()
     run_id = ""
-    model_name = ""
-    if runtime and getattr(runtime, "context", None):
-        run_id = getattr(runtime.context, "run_id", "") or ""
-        model_name = runtime.context.model
+    model_name = _effective_model_name()
+    if context:
+        run_id = getattr(context, "run_id", "") or ""
+        model_name = getattr(context, "model", "") or model_name
     logger = get_run_logger(run_id) if run_id else None
     base_metadata = {"run_id": run_id, "node_name": "agent_tool"}
     base_tags = ["react_agent"] + ([f"run_id:{run_id}"] if run_id else [])
@@ -189,26 +287,48 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
-        allow_search = tools_config.get("allow_search", default_allow_search)
+        search_disabled = os.environ.get("DISABLE_SEARCH", "0") == "1"
+        allow_search = False if search_disabled else tools_config.get(
+            "allow_search", default_allow_search
+        )
+        search_status = "disabled" if not allow_search else "enabled"
         tool_list: List[BaseTool] = []
         if allow_search:
             max_results = tools_config.get("max_search_results")
             if max_results is None:
-                runtime = get_runtime(Context)
-                if runtime and getattr(runtime, "context", None):
-                    max_results = getattr(runtime.context, "max_search_results", None)
+                context = _safe_runtime_context()
+                if context:
+                    max_results = getattr(context, "max_search_results", None)
             try:
                 max_results_int = int(max_results) if max_results is not None else None
             except (TypeError, ValueError):
                 max_results_int = None
-            if max_results_int and max_results_int > 0:
-                tool_list = [build_tavily_search(max_results_int)]
-            else:
-                tool_list = [tavily_search]
-        response = await _call_with_tools(tool_list or [], base_msgs)
+            try:
+                if max_results_int and max_results_int > 0:
+                    tool_list = [build_tavily_search(max_results_int)]
+                else:
+                    tool_list = [tavily_search]
+            except Exception:
+                search_status = "unavailable"
+                tool_list = []
+        try:
+            response = await _call_with_tools(tool_list or [], base_msgs)
+        except Exception as exc:
+            status = "failed" if allow_search else search_status
+            return _placeholder_fail_soft_output(
+                agent_id=agent_id,
+                exc=exc,
+                search_status=status,
+                default_allow_search=default_allow_search,
+            )
         first_parsed = _parse_agent_output(get_message_text(response))
         if first_parsed.get("parse_ok", True):
-            return first_parsed
+            return _annotate_placeholder_output(
+                first_parsed,
+                agent_id=agent_id,
+                default_allow_search=default_allow_search,
+                search_status=search_status,
+            )
 
         # Retry once with a strict JSON-only prompt.
         retry_prompt = (
@@ -219,10 +339,31 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
             {"role": "system", "content": retry_prompt},
             {"role": "user", "content": user_content},
         ]
-        retry_resp = await _call_with_tools(tool_list or [], retry_msgs)
+        try:
+            retry_resp = await _call_with_tools(tool_list or [], retry_msgs)
+        except Exception as exc:
+            status = "failed" if allow_search else search_status
+            return _placeholder_fail_soft_output(
+                agent_id=agent_id,
+                exc=exc,
+                search_status=status,
+                default_allow_search=default_allow_search,
+            )
         retry_parsed = _parse_agent_output(get_message_text(retry_resp))
-        return retry_parsed
+        return _annotate_placeholder_output(
+            retry_parsed,
+            agent_id=agent_id,
+            default_allow_search=default_allow_search,
+            search_status=search_status,
+        )
 
+    object.__setattr__(
+        _agent_tool,
+        "is_llm_search_placeholder",
+        _is_placeholder_agent(agent_id, default_allow_search),
+    )
+    if _is_placeholder_agent(agent_id, default_allow_search):
+        object.__setattr__(_agent_tool, "runtime_path", "INTERNAL_LLM_SEARCH_PLACEHOLDER")
     return _agent_tool
 
 

@@ -1,5 +1,33 @@
 # CHANGELOG
 
+## 2026-05-30 - Agent access matrix and LLM-search placeholders
+- Files:
+  - `src/react_agent/default_agents.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `tests/unit_tests/test_internal_llm_search_placeholders.py`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/CHANGELOG.md`
+- Finalized the runtime access matrix for enabled agents:
+  - `SPECIAL_RUNTIME`: `a01_cio_orchestrator`, `a25_report_center`
+  - `EXTERNAL_HTTP_WRAPPER`: 13 registered external HTTP wrappers
+  - `INTERNAL_LLM_SEARCH_PLACEHOLDER`: 10 enabled non-wrapper functional agents
+  - `DISABLED_NOT_CALLABLE`: `a05_annual_report_analysis`,
+    `a21_portfolio_manager`
+- Marked internal non-wrapper default tools with
+  `is_llm_search_placeholder=true` and `runtime_path=INTERNAL_LLM_SEARCH_PLACEHOLDER`.
+- Hardened direct `AGENT_TOOLS` calls for placeholder agents:
+  - direct calls can resolve the default model outside graph runtime
+  - `DISABLE_SEARCH=1` produces explicit placeholder limitation evidence
+  - search/provider failures return structured fail-soft output instead of
+    crashing direct invocation
+  - successful placeholder outputs carry `source_type=llm_search_placeholder`
+    evidence so they are not confused with dedicated external agent services
+- Preserved external wrapper registrations, special runtime roles, disabled
+  non-callability, `a02_task_router` absence, State/public API schemas,
+  frontend, and `.env`.
+
 ## 2026-05-30 - Router pre-push route matrix stabilization
 - Files:
   - `src/react_agent/prompts.py`

@@ -110,6 +110,8 @@ def test_held_or_future_agents_still_use_default_llm_tools() -> None:
         assert not getattr(tool, "is_external_http_wrapper", False)
         assert not getattr(tool, "is_external_valuation_wrapper", False)
         assert not getattr(tool, "is_stub", False)
+        assert getattr(tool, "is_llm_search_placeholder", False)
+        assert getattr(tool, "runtime_path", "") == "INTERNAL_LLM_SEARCH_PLACEHOLDER"
 
 
 def test_disabled_retained_metadata_is_not_callable() -> None:

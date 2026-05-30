@@ -18,14 +18,27 @@ Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Endpoint/profi
 - Existing env var overrides remain compatible: `VALUATION_ML_AGENT_URL`, `VALUATION_TRADITIONAL_AGENT_URL`, and `VALUATION_META_AGENT_URL`.
 - External HTTP P1-A registers 10 additional dev-present functional agents on the generic wrapper path: `a22_financial_data_service`, `a03_macro_industry_research`, `a04_commodity_hedging`, `a06_financial_statement_analysis`, `a10_stock_technical_analysis`, `a11_index_technical_analysis`, `a12_research_synthesis`, `a14_ipo_investor_behavior`, `a23_crash_risk`, and `a26_composite_valuation`.
 - P0 + P1-A total 13 generic external HTTP wrapper configs. Wrapper registration is not live service verification.
-- `a27_risk_constraint` remains held because the route standard is unclear. Source-missing agents remain pending delivery or an explicitly approved endpoint-only policy.
-- Functional agents without `/sdb/dlut/dev` source are still included in catalog/profile alignment and documented as pending delivery/wrapper.
+- Enabled non-wrapper functional agents use a main-system
+  `INTERNAL_LLM_SEARCH_PLACEHOLDER` path until a dedicated external service is
+  delivered: `a07_macro_sentiment`, `a08_industry_hotspot`,
+  `a09_company_sentiment_radar`, `a13_fund_manager_behavior`,
+  `a15_entity_relation_extraction`, `a19_risk_identification`,
+  `a20_compliance_review`, `a24_financial_fraud_risk`,
+  `a27_risk_constraint`, and `a28_composite_sentiment`.
+- Placeholder tools are not dedicated external-agent verification. They are
+  generic LLM tools that use the agent profile, optional Tavily search, and
+  structured fail-soft output. When search is disabled or unavailable, evidence
+  records `source_type=llm_search_placeholder` with the limitation.
+- Source-missing agents remain pending delivery or an explicitly approved
+  endpoint-only policy even though they have a callable placeholder path.
 
 ## What AC-1A Changes
 
 - Rebuilds `config/agents` around the current Excel/CSV functional-agent authority.
 - Removes `a02_task_router` metadata without changing the real `router_node` runtime.
 - Registers P0 + P1-A ids as generic external HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
+- Backfills enabled non-wrapper functional ids with generic
+  LLM/search-placeholder tools after wrapper registration.
 - Keeps Router/a01/a25 protocol and public adapter schema unchanged.
 - Keeps route-prior/RARP/SFT source in place as archived/offline helpers; those artifacts are no longer catalog-v2 mainline acceptance evidence.
 - AC-1B-1 moves offline RP/RARP/SFT/manual-gold/teacher-proxy tests and markers into an archived/non-mainline posture.

@@ -9,6 +9,10 @@
 - Metadata catalog: 27 config files. `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]` are retained non-Excel historical functional metadata and are not default runtime nodes.
 - Agent metadata includes `business_layer`, `business_category`, and `business_subcategory` for latest-sheet taxonomy without changing Router/parser/State/public API schemas.
 - Generic external HTTP wrappers currently register 13 configured agents in `AGENT_TOOLS`; wrapper registration is separate from live service verification.
+- Ten enabled non-wrapper functional agents have a callable
+  `INTERNAL_LLM_SEARCH_PLACEHOLDER` path in `AGENT_TOOLS`: a generic LLM tool
+  using the agent profile plus optional Tavily search and fail-soft limitation
+  evidence. This is not a claim that dedicated external services are live.
 - `a03_macro_industry_research` remains enabled and callable as a live-verified macro wrapper even though it is not listed in `/sdb/dlut/agent_layer_latest.xlsx`; it is marked `保留层（旧CSV）/价值分析` pending taxonomy decision.
 - AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
 - AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
