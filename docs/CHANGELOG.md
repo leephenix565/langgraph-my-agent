@@ -1,5 +1,38 @@
 # CHANGELOG
 
+## 2026-05-30 - Agent layer business-taxonomy redefinition
+- Files:
+  - `src/react_agent/agents.py`
+  - `src/react_agent/public_api.py`
+  - `src/react_agent/router_parse.py`
+  - `src/react_agent/prompts.py`
+  - `config/agents/*.json`
+  - `tests/integration_tests/test_public_api.py`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `tests/unit_tests/test_parse_router_layers.py`
+  - `tests/unit_tests/test_router_parse_stats.py`
+  - `tests/unit_tests/test_router_prompt_format.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/CHANGELOG.md`
+- Redefined `layer` as the business layer code:
+  `L1=解析层`, `L2=分析层`, `L3=应用层`, `L4=报告层`.
+- Added `business_order`, `business_role`, and `business_status` metadata
+  support and aligned the 24 formal agents to the user-confirmed business
+  sequence. Agent id prefixes remain stable runtime keys, not business order.
+- Kept `a03_macro_industry_research` callable as `legacy_retained` with no
+  formal `business_order`; kept `a05/a21` disabled historical and kept
+  `a02_task_router` absent.
+- Removed the old valid-output L2 first-five truncation from
+  `router_parse.py`; parse-failure fallback still fail-closes to a01/a25 only.
+- Updated public/catalog ordering to use `business_order` where present without
+  changing the public API schema.
+- Scope boundary: no provider live call, no external `/v1/agent/invoke`, no
+  external wrapper endpoint change, no State schema change, no frontend change,
+  and no `.env` change.
+
 ## 2026-05-30 - Agent access matrix and LLM-search placeholders
 - Files:
   - `src/react_agent/default_agents.py`
@@ -86,7 +119,7 @@
   (`L1`/`L2`/`L3`/`L4`) unchanged.
 - Renamed catalog display names to the latest sheet where applicable:
   `a01_cio_orchestrator` -> `问题解析与协同编排智能体`,
-  `a24_financial_fraud_risk` -> `财务造假风险智能体`, and
+  `a24_financial_fraud_risk` -> `财务欺诈（造假）风险智能体`, and
   `a25_report_center` -> `报告生成智能体`.
 - Kept `a03_macro_industry_research` enabled and callable because the macro
   external wrapper is already live-verified; it is not listed in the latest

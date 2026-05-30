@@ -3,11 +3,12 @@
 ## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog v2
 
 - Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`; endpoint/profile lineage remains `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
-- Runtime `layer` is the graph dispatch layer (`L1`/`L2`/`L3`/`L4`) and is intentionally separate from latest-sheet business layers (`解析层` / `分析层` / `应用层` / `报告层`).
+- Runtime `layer` is now the business layer code: `L1=解析层`, `L2=分析层`, `L3=应用层`, and `L4=报告层`.
+- Agent id prefixes are stable runtime keys, not business order. Formal display/acceptance order is carried by `business_order` for the 24 latest-sheet agents.
 - Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
-- Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=1, L2=12, L3=11, L4=1. This equals 23 enabled functional entries plus 2 special runtime roles; 22 functional entries are listed in the latest layer sheet and `a03_macro_industry_research` is retained from the older CSV because its macro wrapper is already live-verified.
+- Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=2, L2=19, L3=3, L4=1. This equals 23 enabled functional entries plus 2 special runtime roles; 22 enabled functional entries are listed in the latest layer sheet and `a03_macro_industry_research` is retained from the older CSV because its macro wrapper is already live-verified.
 - Metadata catalog: 27 config files. `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]` are retained non-Excel historical functional metadata and are not default runtime nodes.
-- Agent metadata includes `business_layer`, `business_category`, and `business_subcategory` for latest-sheet taxonomy without changing Router/parser/State/public API schemas.
+- Agent metadata includes `business_order`, `business_role`, `business_status`, `business_layer`, `business_category`, and `business_subcategory` for latest-sheet taxonomy without changing State/public API schemas.
 - Generic external HTTP wrappers currently register 13 configured agents in `AGENT_TOOLS`; wrapper registration is separate from live service verification.
 - Ten enabled non-wrapper functional agents have a callable
   `INTERNAL_LLM_SEARCH_PLACEHOLDER` path in `AGENT_TOOLS`: a generic LLM tool

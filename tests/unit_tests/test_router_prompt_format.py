@@ -44,6 +44,8 @@ def test_router_prompt_does_not_encourage_broad_l2_selection() -> None:
     rendered = _render_router_prompt()
     assert "L2 usually 2-5" not in rendered
     assert "usually 2-5" not in rendered
+    assert "first 5" not in rendered
+    assert "first five" not in rendered
 
 
 def test_router_prompt_contains_single_intent_domain_routing_guide() -> None:
@@ -66,5 +68,5 @@ def test_router_prompt_keeps_crash_risk_from_auto_financial_analysis() -> None:
     assert "apply to a06_financial_statement_analysis, not to a23_crash_risk" in rendered
     assert "Do not add a06 merely because crash-risk models may use financial variables" in rendered
     assert "select a06 only when the user explicitly requests financial statements" in rendered
-    assert 'L3 selected ["a23_crash_risk"]' in rendered
+    assert 'L2 selected ["a23_crash_risk"]' in rendered
     assert "financial, market, and governance variables are used for crash-risk analysis" in rendered

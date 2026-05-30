@@ -5,13 +5,14 @@ Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Endpoint/profi
 
 ## Current Functional-Agent Authority
 
-- `/sdb/dlut/agent_layer_latest.xlsx` is now the profile authority for business-layer and business-category metadata on listed agents.
-- Runtime `layer` remains the graph dispatch layer (`L1`/`L2`/`L3`/`L4`) and is intentionally separate from latest-sheet business layers (`解析层` / `分析层` / `应用层` / `报告层`).
+- `/sdb/dlut/agent_layer_latest.xlsx` is now the profile authority for formal business-layer, business-category, and business-order metadata on listed agents.
+- Runtime `layer` is now the business layer code: `L1=解析层`, `L2=分析层`, `L3=应用层`, and `L4=报告层`.
+- Agent id prefixes are stable runtime keys and no longer imply display or business order. Use `business_order` for the formal 24-agent business sequence.
 - Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
 - The enabled catalog now has 23 functional agents plus 2 special runtime roles: `runtimeCount=25`.
 - `config/agents` keeps 27 metadata files because `a05_annual_report_analysis` and `a21_portfolio_manager` are retained disabled as non-Excel historical functional metadata.
-- `config/agents/*.json` carries `business_layer`, `business_category`, and `business_subcategory` fields for the business taxonomy while leaving runtime `layer` unchanged.
-- `a03_macro_industry_research` remains enabled and callable because the a03 macro external wrapper is already live-verified. It is not listed in `/sdb/dlut/agent_layer_latest.xlsx`, so it is tagged as `保留层（旧CSV）/价值分析` pending an explicit taxonomy decision.
+- `config/agents/*.json` carries `business_order`, `business_role`, `business_status`, `business_layer`, `business_category`, and `business_subcategory` fields for the business taxonomy.
+- `a03_macro_industry_research` remains enabled and callable because the a03 macro external wrapper is already live-verified. It is not listed in `/sdb/dlut/agent_layer_latest.xlsx`, so it is tagged `business_status=legacy_retained`, has no `business_order`, and is excluded from the formal 24-agent sequence.
 - Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
 - Catalog/profile alignment remains separate from runtime wrapper integration.
 - External HTTP P0 migrates `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` from early local trial defaults to generic table-driven HTTP wrappers using the Excel/CSV production invoke endpoints as formal defaults.

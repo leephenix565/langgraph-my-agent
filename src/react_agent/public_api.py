@@ -11,7 +11,12 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
-from react_agent.agents import AGENT_METADATA, AgentMetadata, load_metadata_from_dir
+from react_agent.agents import (
+    AGENT_METADATA,
+    AgentMetadata,
+    agent_sort_key,
+    load_metadata_from_dir,
+)
 from react_agent.public_contracts import (
     AnswerFinalEvent,
     AnswerFinalEventData,
@@ -98,7 +103,7 @@ def _sorted_summaries(details: List[PublicThreadDetail]) -> List[ChatSessionSumm
 def _ensure_public_agent_metadata() -> List[AgentMetadata]:
     if not AGENT_METADATA:
         load_metadata_from_dir(Path(__file__).resolve().parents[2] / "config" / "agents")
-    return [meta for _, meta in sorted(AGENT_METADATA.items(), key=lambda item: item[0])]
+    return sorted(AGENT_METADATA.values(), key=agent_sort_key)
 
 
 def _public_agent_metadata(meta: AgentMetadata) -> PublicAgentMetadataModel:

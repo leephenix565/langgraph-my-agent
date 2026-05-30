@@ -7,15 +7,16 @@ Repository authority after this alignment: this mapping document plus `config/ag
 
 ## Current Catalog Facts
 
-- `/sdb/dlut/agent_layer_latest.xlsx` is now the authority for business-layer and business-category metadata on listed agents.
-- Runtime `layer` remains the graph dispatch layer (`L1`/`L2`/`L3`/`L4`) and must not be overwritten by business layers such as `解析层` / `分析层` / `应用层` / `报告层`.
+- `/sdb/dlut/agent_layer_latest.xlsx` is now the authority for formal business-layer, business-category, and business-order metadata on listed agents.
+- Runtime `layer` is now the business layer code: `L1=解析层`, `L2=分析层`, `L3=应用层`, and `L4=报告层`.
+- Agent id prefixes are stable runtime keys and no longer imply display or business order. Use `business_order` for the formal 24-agent sequence.
 - Excel/CSV lineage remains the authority for endpoint defaults and profile intent where the latest layer sheet does not carry service URLs.
 - The main-system row `主系统 / 资本市场认知多智能体系统` is excluded from the functional-agent count.
 - Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles. They must not be replaced by external functional profiles.
-- `config/agents/*.json` includes `business_layer`, `business_category`, and `business_subcategory` for the latest business taxonomy without changing dispatch semantics.
+- `config/agents/*.json` includes `business_order`, `business_role`, `business_status`, `business_layer`, `business_category`, and `business_subcategory` for the latest business taxonomy.
 - `config/agents` now has `configCount=27`, `runtimeCount=25`, and `disabledIds=["a05_annual_report_analysis", "a21_portfolio_manager"]`.
-- Enabled runtime roles are L1=1, L2=12, L3=11, L4=1. The 23 enabled functional agents are `runtimeCount - 2 special roles`.
-- Layer display in `/api/agents` includes disabled metadata, so public catalog layer rows are L1=1, L2=13, L3=12, L4=1.
+- Enabled runtime roles are L1=2, L2=19, L3=3, L4=1. The 23 enabled functional agents are `runtimeCount - 2 special roles`; `a03_macro_industry_research` is retained outside the formal 24-agent business order.
+- Layer display in `/api/agents` includes disabled metadata, so public catalog layer rows are L1=2, L2=20, L3=4, L4=1.
 - Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
 - `a02_task_router` metadata remains absent. The real Router runtime remains `router_node` inside `src/react_agent/graph.py`.
 - Catalog/profile alignment is separate from runtime wrapper integration and does not bypass `AGENT_TOOLS`.
@@ -30,6 +31,7 @@ Repository authority after this alignment: this mapping document plus `config/ag
 config/agents/*.json
 -> react_agent.agents.load_metadata_from_dir(...), sorted by filename
 -> AGENT_METADATA
+-> catalog display/router layer lists sorted by business_order where present
 -> graph_bootstrap.bootstrap_agent_runtime()
 -> generic external HTTP wrapper registration for P0 + P1-A ids
 -> default _build_agent_tool(...) fallback for other enabled agents
@@ -41,33 +43,40 @@ The 13 P0 + P1-A ids are runtime-wrapped external HTTP agents. Other enabled fun
 
 ## Enabled Catalog Table
 
-| File | Runtime agent id | Layer | Team | Business layer | Business category | Official name | Execution status |
+Formal rows below are sorted by `business_order`, not by the numeric `agent_id` prefix.
+
+| Order | File | Runtime agent id | Layer | Business layer | Business category | Official name | Execution status |
+|---:|---|---|---|---|---|---|---|
+| 1 | `agent_001.json` | `a01_cio_orchestrator` | L1 | 解析层 | 问题解析 | 问题解析与协同编排智能体 | SPECIAL_RUNTIME |
+| 2 | `agent_022.json` | `a22_financial_data_service` | L1 | 解析层 | 数据支撑 | 金融数据服务智能体 | EXTERNAL_HTTP_WRAPPER -> financial_data_service |
+| 3 | `agent_017.json` | `a17_traditional_valuation` | L2 | 分析层 | 价值分析 | 传统企业估值智能体 | EXTERNAL_HTTP_WRAPPER -> valuation_traditional |
+| 4 | `agent_016.json` | `a16_ml_valuation` | L2 | 分析层 | 价值分析 | 机器学习企业估值智能体 | EXTERNAL_HTTP_WRAPPER -> valuation_ml |
+| 5 | `agent_018.json` | `a18_meta_valuation` | L2 | 分析层 | 价值分析 | 元学习企业估值智能体 | EXTERNAL_HTTP_WRAPPER -> valuation_meta |
+| 6 | `agent_011.json` | `a11_index_technical_analysis` | L2 | 分析层 | 价值分析 | 股票指数估值智能体 | EXTERNAL_HTTP_WRAPPER -> valuation_index |
+| 7 | `agent_004.json` | `a04_commodity_hedging` | L2 | 分析层 | 价值分析 | 商品定价分析智能体 | EXTERNAL_HTTP_WRAPPER -> price_influence_agent |
+| 8 | `agent_006.json` | `a06_financial_statement_analysis` | L2 | 分析层 | 价值分析 | 企业财务分析智能体 | EXTERNAL_HTTP_WRAPPER -> financial_report_agent |
+| 9 | `agent_012.json` | `a12_research_synthesis` | L2 | 分析层 | 行为分析 | 分析师研报与观点集成智能体 | EXTERNAL_HTTP_WRAPPER -> analyst_research |
+| 10 | `agent_013.json` | `a13_fund_manager_behavior` | L2 | 分析层 | 行为分析 | 基金经理投资行为分析智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 11 | `agent_014.json` | `a14_ipo_investor_behavior` | L2 | 分析层 | 行为分析 | IPO投资者构成与行为分析智能体 | EXTERNAL_HTTP_WRAPPER -> ipo_investor_behavior |
+| 12 | `agent_010.json` | `a10_stock_technical_analysis` | L2 | 分析层 | 行为分析 | 个股技术分析智能体 | EXTERNAL_HTTP_WRAPPER -> technical_stock |
+| 13 | `agent_019.json` | `a19_risk_identification` | L2 | 分析层 | 风险分析 | 风险识别智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 14 | `agent_020.json` | `a20_compliance_review` | L2 | 分析层 | 风险分析 | 公告合规审查智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 15 | `agent_023.json` | `a23_crash_risk` | L2 | 分析层 | 风险分析 | 股价崩盘风险智能体 | EXTERNAL_HTTP_WRAPPER -> crash_risk |
+| 16 | `agent_024.json` | `a24_financial_fraud_risk` | L2 | 分析层 | 风险分析 | 财务欺诈（造假）风险智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 17 | `agent_015.json` | `a15_entity_relation_extraction` | L2 | 分析层 | 舆情分析 | 实体关系抽取智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 18 | `agent_007.json` | `a07_macro_sentiment` | L2 | 分析层 | 舆情分析 | 宏观情绪感知智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 19 | `agent_008.json` | `a08_industry_hotspot` | L2 | 分析层 | 舆情分析 | 行业热点洞悉智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 20 | `agent_009.json` | `a09_company_sentiment_radar` | L2 | 分析层 | 舆情分析 | 企业舆情雷达智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 21 | `agent_026.json` | `a26_composite_valuation` | L3 | 应用层 | 估值研判 | 综合估值智能体 | EXTERNAL_HTTP_WRAPPER -> composite_valuation |
+| 22 | `agent_027.json` | `a27_risk_constraint` | L3 | 应用层 | 风险控制 | 风险约束智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 23 | `agent_028.json` | `a28_composite_sentiment` | L3 | 应用层 | 舆情判断 | 综合舆情智能体 | INTERNAL_LLM_SEARCH_PLACEHOLDER |
+| 24 | `agent_025.json` | `a25_report_center` | L4 | 报告层 | 报告生成 | 报告生成智能体 | SPECIAL_RUNTIME |
+
+Legacy retained callable outside the formal 24-agent business order:
+
+| File | Runtime agent id | Layer | Business status | Business layer | Business category | Official name | Execution status |
 |---|---|---|---|---|---|---|---|
-| `agent_001.json` | `a01_cio_orchestrator` | L1 | management | 解析层（2） | 问题解析 | 问题解析与协同编排智能体 | special runtime role |
-| `agent_003.json` | `a03_macro_industry_research` | L2 | fundamental | 保留层（旧CSV） | 价值分析 | 宏观分析智能体 | generic HTTP wrapper -> `macro_analysis`; pending latest-sheet decision |
-| `agent_004.json` | `a04_commodity_hedging` | L2 | fundamental | 分析层（17） | 价值分析 | 商品定价分析智能体 | generic HTTP wrapper -> `price_influence_agent` |
-| `agent_006.json` | `a06_financial_statement_analysis` | L2 | fundamental | 分析层（17） | 价值分析 | 企业财务分析智能体 | generic HTTP wrapper -> `financial_report_agent` |
-| `agent_007.json` | `a07_macro_sentiment` | L2 | sentiment | 分析层（17） | 舆情分析 | 宏观情绪感知智能体 | source not present / pending owner description |
-| `agent_008.json` | `a08_industry_hotspot` | L2 | sentiment | 分析层（17） | 舆情分析 | 行业热点洞悉智能体 | source not present / pending owner description |
-| `agent_009.json` | `a09_company_sentiment_radar` | L2 | sentiment | 分析层（17） | 舆情分析 | 企业舆情雷达智能体 | source not present / pending owner description |
-| `agent_010.json` | `a10_stock_technical_analysis` | L2 | technical | 分析层（17） | 行为分析 | 个股技术分析智能体 | generic HTTP wrapper -> `technical_stock` |
-| `agent_012.json` | `a12_research_synthesis` | L2 | behavior | 分析层（17） | 行为分析 | 分析师研报与观点集成智能体 | generic HTTP wrapper -> `analyst_research` |
-| `agent_013.json` | `a13_fund_manager_behavior` | L2 | behavior | 分析层（17） | 行为分析 | 基金经理投资行为分析智能体 | source not present / pending owner description |
-| `agent_014.json` | `a14_ipo_investor_behavior` | L2 | behavior | 分析层（17） | 行为分析 | IPO投资者构成与行为分析智能体 | generic HTTP wrapper -> `ipo_investor_behavior` |
-| `agent_015.json` | `a15_entity_relation_extraction` | L2 | sentiment | 分析层（17） | 舆情分析 | 实体关系抽取智能体 | source not present / pending owner description |
-| `agent_022.json` | `a22_financial_data_service` | L2 | data_support | 解析层（2） | 数据支撑 | 金融数据服务智能体 | generic HTTP wrapper -> `financial_data_service` |
-| `agent_011.json` | `a11_index_technical_analysis` | L3 | valuation | 分析层（17） | 价值分析 | 股票指数估值智能体 | generic HTTP wrapper -> `valuation_index` |
-| `agent_016.json` | `a16_ml_valuation` | L3 | valuation | 分析层（17） | 价值分析 | 机器学习企业估值智能体 | generic HTTP wrapper -> `valuation_ml` |
-| `agent_017.json` | `a17_traditional_valuation` | L3 | valuation | 分析层（17） | 价值分析 | 传统企业估值智能体 | generic HTTP wrapper -> `valuation_traditional` |
-| `agent_018.json` | `a18_meta_valuation` | L3 | valuation | 分析层（17） | 价值分析 | 元学习企业估值智能体 | generic HTTP wrapper -> `valuation_meta` |
-| `agent_019.json` | `a19_risk_identification` | L3 | risk | 分析层（17） | 风险分析 | 风险识别智能体 | source not present / pending owner description |
-| `agent_020.json` | `a20_compliance_review` | L3 | compliance | 分析层（17） | 风险分析 | 公告合规审查智能体 | source not present / pending owner description |
-| `agent_023.json` | `a23_crash_risk` | L3 | risk | 分析层（17） | 风险分析 | 股价崩盘风险智能体 | generic HTTP wrapper -> `crash_risk` |
-| `agent_024.json` | `a24_financial_fraud_risk` | L3 | risk | 分析层（17） | 风险分析 | 财务造假风险智能体 | source not present pending delivery |
-| `agent_025.json` | `a25_report_center` | L4 | reporting | 报告层（1） | 报告生成 | 报告生成智能体 | special runtime role |
-| `agent_026.json` | `a26_composite_valuation` | L3 | valuation | 应用层（3） | 估值研判 | 综合估值智能体 | generic HTTP wrapper -> `composite_valuation` |
-| `agent_027.json` | `a27_risk_constraint` | L3 | risk | 应用层（3） | 风险控制 | 风险约束智能体 | standard route unclear pending fix |
-| `agent_028.json` | `a28_composite_sentiment` | L3 | sentiment | 应用层（3） | 舆情判断 | 综合舆情智能体 | source not present / pending owner description |
+| `agent_003.json` | `a03_macro_industry_research` | L2 | legacy_retained | 保留层（旧CSV） | 价值分析 | 宏观分析智能体 | EXTERNAL_HTTP_WRAPPER -> macro_analysis; excluded from formal 24 order |
 
 ## Disabled Non-Excel Functional Metadata
 
@@ -109,7 +118,7 @@ The old `127.0.0.1:8101/8102/8103` valuation endpoints are now compatibility/loc
 ## Boundaries
 
 - Router L1-L4 JSON protocol is unchanged.
-- `router_parse.py` core semantics are unchanged.
+- `router_parse.py` still fail-closes parse failures to special roles only; the old valid-output L2 first-five cap is removed.
 - No new graph State fields are introduced.
 - Public API and frontend behavior are unchanged apart from the catalog data projected from metadata.
 - `a01_cio_orchestrator` and `a25_report_center` keep their special runtime semantics.

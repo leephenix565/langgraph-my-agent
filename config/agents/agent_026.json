@@ -14,7 +14,10 @@
   "layer": "L3",
   "team": "valuation",
   "role_type": "system",
-  "business_layer": "应用层（3）",
+  "business_order": 21,
+  "business_role": "综合估值智能体",
+  "business_status": "formal",
+  "business_layer": "应用层",
   "business_category": "估值研判",
   "business_subcategory": "",
   "default_enabled": true

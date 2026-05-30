@@ -20,8 +20,8 @@ class _FakeRouterModel:
             content=(
                 '{"layers":['
                 '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
-                '{"layer":"L2","mode":"Star","selected":["a03_macro_industry_research"]},'
-                '{"layer":"L3","mode":"Star","selected":["a20_compliance_review"]},'
+                '{"layer":"L2","mode":"Star","selected":["a03_macro_industry_research","a20_compliance_review"]},'
+                '{"layer":"L3","mode":"Star","selected":[]},'
                 '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
                 ']}'
             )
@@ -117,8 +117,11 @@ def test_graph_import_and_router_run_without_route_prior_runtime_seam(monkeypatc
     assert not any(event.startswith("route_prior") for event in event_names)
     assert "route_reliability_shadow" not in event_names
 
-    assert output["layer_plan"]["L2"] == ["a03_macro_industry_research"]
-    assert output["layer_plan"]["L3"] == ["a20_compliance_review"]
+    assert output["layer_plan"]["L2"] == [
+        "a03_macro_industry_research",
+        "a20_compliance_review",
+    ]
+    assert output["layer_plan"]["L3"] == []
     assert output["current_layer"] == "L1"
     assert output["plan"] == ["a01_cio_orchestrator"]
 

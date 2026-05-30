@@ -8,36 +8,58 @@ REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config" / "agents"
 
 TARGET_IDS_BY_LAYER = {
-    "L1": ["a01_cio_orchestrator"],
+    "L1": ["a01_cio_orchestrator", "a22_financial_data_service"],
     "L2": [
-        "a03_macro_industry_research",
+        "a17_traditional_valuation",
+        "a16_ml_valuation",
+        "a18_meta_valuation",
+        "a11_index_technical_analysis",
         "a04_commodity_hedging",
         "a06_financial_statement_analysis",
-        "a07_macro_sentiment",
-        "a08_industry_hotspot",
-        "a09_company_sentiment_radar",
-        "a10_stock_technical_analysis",
         "a12_research_synthesis",
         "a13_fund_manager_behavior",
         "a14_ipo_investor_behavior",
-        "a15_entity_relation_extraction",
-        "a22_financial_data_service",
-    ],
-    "L3": [
-        "a11_index_technical_analysis",
-        "a16_ml_valuation",
-        "a17_traditional_valuation",
-        "a18_meta_valuation",
+        "a10_stock_technical_analysis",
         "a19_risk_identification",
         "a20_compliance_review",
         "a23_crash_risk",
         "a24_financial_fraud_risk",
-        "a26_composite_valuation",
-        "a27_risk_constraint",
-        "a28_composite_sentiment",
+        "a15_entity_relation_extraction",
+        "a07_macro_sentiment",
+        "a08_industry_hotspot",
+        "a09_company_sentiment_radar",
+        "a03_macro_industry_research",
     ],
+    "L3": ["a26_composite_valuation", "a27_risk_constraint", "a28_composite_sentiment"],
     "L4": ["a25_report_center"],
 }
+
+EXPECTED_FORMAL_BUSINESS_ORDER = [
+    (1, "a01_cio_orchestrator", "L1", "解析层", "问题解析", "问题解析与协同编排智能体"),
+    (2, "a22_financial_data_service", "L1", "解析层", "数据支撑", "金融数据服务智能体"),
+    (3, "a17_traditional_valuation", "L2", "分析层", "价值分析", "传统企业估值智能体"),
+    (4, "a16_ml_valuation", "L2", "分析层", "价值分析", "机器学习企业估值智能体"),
+    (5, "a18_meta_valuation", "L2", "分析层", "价值分析", "元学习企业估值智能体"),
+    (6, "a11_index_technical_analysis", "L2", "分析层", "价值分析", "股票指数估值智能体"),
+    (7, "a04_commodity_hedging", "L2", "分析层", "价值分析", "商品定价分析智能体"),
+    (8, "a06_financial_statement_analysis", "L2", "分析层", "价值分析", "企业财务分析智能体"),
+    (9, "a12_research_synthesis", "L2", "分析层", "行为分析", "分析师研报与观点集成智能体"),
+    (10, "a13_fund_manager_behavior", "L2", "分析层", "行为分析", "基金经理投资行为分析智能体"),
+    (11, "a14_ipo_investor_behavior", "L2", "分析层", "行为分析", "IPO投资者构成与行为分析智能体"),
+    (12, "a10_stock_technical_analysis", "L2", "分析层", "行为分析", "个股技术分析智能体"),
+    (13, "a19_risk_identification", "L2", "分析层", "风险分析", "风险识别智能体"),
+    (14, "a20_compliance_review", "L2", "分析层", "风险分析", "公告合规审查智能体"),
+    (15, "a23_crash_risk", "L2", "分析层", "风险分析", "股价崩盘风险智能体"),
+    (16, "a24_financial_fraud_risk", "L2", "分析层", "风险分析", "财务欺诈（造假）风险智能体"),
+    (17, "a15_entity_relation_extraction", "L2", "分析层", "舆情分析", "实体关系抽取智能体"),
+    (18, "a07_macro_sentiment", "L2", "分析层", "舆情分析", "宏观情绪感知智能体"),
+    (19, "a08_industry_hotspot", "L2", "分析层", "舆情分析", "行业热点洞悉智能体"),
+    (20, "a09_company_sentiment_radar", "L2", "分析层", "舆情分析", "企业舆情雷达智能体"),
+    (21, "a26_composite_valuation", "L3", "应用层", "估值研判", "综合估值智能体"),
+    (22, "a27_risk_constraint", "L3", "应用层", "风险控制", "风险约束智能体"),
+    (23, "a28_composite_sentiment", "L3", "应用层", "舆情判断", "综合舆情智能体"),
+    (24, "a25_report_center", "L4", "报告层", "报告生成", "报告生成智能体"),
+]
 
 DISABLED_NON_EXCEL_FUNCTIONAL_IDS = {
     "a05_annual_report_analysis",
@@ -72,30 +94,9 @@ REMOVED_OLD_IDS = {
 }
 
 EXPECTED_BUSINESS_TAXONOMY = {
-    "a01_cio_orchestrator": ("问题解析与协同编排智能体", "解析层（2）", "问题解析"),
-    "a22_financial_data_service": ("金融数据服务智能体", "解析层（2）", "数据支撑"),
-    "a17_traditional_valuation": ("传统企业估值智能体", "分析层（17）", "价值分析"),
-    "a16_ml_valuation": ("机器学习企业估值智能体", "分析层（17）", "价值分析"),
-    "a18_meta_valuation": ("元学习企业估值智能体", "分析层（17）", "价值分析"),
-    "a11_index_technical_analysis": ("股票指数估值智能体", "分析层（17）", "价值分析"),
-    "a04_commodity_hedging": ("商品定价分析智能体", "分析层（17）", "价值分析"),
-    "a06_financial_statement_analysis": ("企业财务分析智能体", "分析层（17）", "价值分析"),
-    "a12_research_synthesis": ("分析师研报与观点集成智能体", "分析层（17）", "行为分析"),
-    "a13_fund_manager_behavior": ("基金经理投资行为分析智能体", "分析层（17）", "行为分析"),
-    "a14_ipo_investor_behavior": ("IPO投资者构成与行为分析智能体", "分析层（17）", "行为分析"),
-    "a10_stock_technical_analysis": ("个股技术分析智能体", "分析层（17）", "行为分析"),
-    "a19_risk_identification": ("风险识别智能体", "分析层（17）", "风险分析"),
-    "a20_compliance_review": ("公告合规审查智能体", "分析层（17）", "风险分析"),
-    "a23_crash_risk": ("股价崩盘风险智能体", "分析层（17）", "风险分析"),
-    "a24_financial_fraud_risk": ("财务造假风险智能体", "分析层（17）", "风险分析"),
-    "a15_entity_relation_extraction": ("实体关系抽取智能体", "分析层（17）", "舆情分析"),
-    "a07_macro_sentiment": ("宏观情绪感知智能体", "分析层（17）", "舆情分析"),
-    "a08_industry_hotspot": ("行业热点洞悉智能体", "分析层（17）", "舆情分析"),
-    "a09_company_sentiment_radar": ("企业舆情雷达智能体", "分析层（17）", "舆情分析"),
-    "a26_composite_valuation": ("综合估值智能体", "应用层（3）", "估值研判"),
-    "a27_risk_constraint": ("风险约束智能体", "应用层（3）", "风险控制"),
-    "a28_composite_sentiment": ("综合舆情智能体", "应用层（3）", "舆情判断"),
-    "a25_report_center": ("报告生成智能体", "报告层（1）", "报告生成"),
+    agent_id: (name, business_layer, business_category)
+    for _order, agent_id, _layer, business_layer, business_category, name
+    in EXPECTED_FORMAL_BUSINESS_ORDER
 }
 
 
@@ -104,6 +105,17 @@ def _load_config_metadata() -> list[dict]:
         json.loads(path.read_text(encoding="utf-8"))
         for path in sorted(CONFIG_DIR.glob("agent_*.json"))
     ]
+
+
+def _catalog_sort_key(item: dict) -> tuple[int, int, str]:
+    order = item.get("business_order")
+    if order is not None:
+        return (0, int(order), item["id"])
+    if item.get("business_status") == "legacy_retained":
+        return (1, 0, item["id"])
+    if not item.get("default_enabled", True) or item.get("business_status") == "disabled_historical":
+        return (2, 0, item["id"])
+    return (1, 1, item["id"])
 
 
 def test_agent_catalog_v2_config_shape() -> None:
@@ -119,7 +131,9 @@ def test_agent_catalog_v2_config_shape() -> None:
 
     for layer, expected_ids in TARGET_IDS_BY_LAYER.items():
         actual_ids = [
-            item["id"] for item in metadata if item["layer"] == layer and item["default_enabled"]
+            item["id"]
+            for item in sorted(metadata, key=_catalog_sort_key)
+            if item["layer"] == layer and item["default_enabled"]
         ]
         assert actual_ids == expected_ids
 
@@ -146,6 +160,9 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         "layer",
         "team",
         "role_type",
+        "business_order",
+        "business_role",
+        "business_status",
         "business_layer",
         "business_category",
         "business_subcategory",
@@ -160,6 +177,8 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         assert item["capabilities"]
         assert item["business_layer"]
         assert item["business_category"]
+        assert item["business_role"]
+        assert item["business_status"] in {"formal", "legacy_retained", "disabled_historical"}
 
 
 def test_agent_catalog_latest_business_taxonomy_fields() -> None:
@@ -169,15 +188,52 @@ def test_agent_catalog_latest_business_taxonomy_fields() -> None:
         assert item["name"] == name
         assert item["business_layer"] == business_layer
         assert item["business_category"] == business_category
+        assert item["business_role"] == name
+        assert item["business_status"] == "formal"
 
     assert metadata["a03_macro_industry_research"]["name"] == "宏观分析智能体"
     assert metadata["a03_macro_industry_research"]["business_layer"] == "保留层（旧CSV）"
+    assert metadata["a03_macro_industry_research"]["business_order"] is None
+    assert metadata["a03_macro_industry_research"]["business_status"] == "legacy_retained"
     assert "未列入 agent_layer_latest.xlsx" in metadata["a03_macro_industry_research"][
         "business_subcategory"
     ]
 
     for disabled_id in DISABLED_NON_EXCEL_FUNCTIONAL_IDS:
         assert metadata[disabled_id]["business_layer"] == "历史保留（disabled）"
+        assert metadata[disabled_id]["business_order"] is None
+        assert metadata[disabled_id]["business_status"] == "disabled_historical"
+
+
+def test_formal_business_order_matches_authoritative_table() -> None:
+    metadata = {item["id"]: item for item in _load_config_metadata()}
+    ordered_ids = [
+        item["id"]
+        for item in sorted(metadata.values(), key=_catalog_sort_key)
+        if item.get("business_status") == "formal"
+    ]
+    assert ordered_ids == [agent_id for _order, agent_id, *_rest in EXPECTED_FORMAL_BUSINESS_ORDER]
+
+    orders = [
+        item["business_order"]
+        for item in metadata.values()
+        if item.get("business_status") == "formal"
+    ]
+    assert sorted(orders) == list(range(1, 25))
+
+    for order, agent_id, layer, business_layer, business_category, name in EXPECTED_FORMAL_BUSINESS_ORDER:
+        item = metadata[agent_id]
+        assert item["business_order"] == order
+        assert item["layer"] == layer
+        assert item["business_layer"] == business_layer
+        assert item["business_category"] == business_category
+        assert item["name"] == name
+        assert item["business_role"] == name
+
+    assert [metadata[agent_id]["layer"] for _order, agent_id, *_ in EXPECTED_FORMAL_BUSINESS_ORDER[:2]] == ["L1", "L1"]
+    assert {metadata[agent_id]["layer"] for _order, agent_id, *_ in EXPECTED_FORMAL_BUSINESS_ORDER[2:20]} == {"L2"}
+    assert {metadata[agent_id]["layer"] for _order, agent_id, *_ in EXPECTED_FORMAL_BUSINESS_ORDER[20:23]} == {"L3"}
+    assert metadata["a25_report_center"]["layer"] == "L4"
 
 
 def test_a22_profile_is_limited_to_explicit_data_service_requests() -> None:

@@ -14,7 +14,10 @@
   "layer": "L2",
   "team": "behavior",
   "role_type": "system",
-  "business_layer": "分析层（17）",
+  "business_order": 11,
+  "business_role": "IPO投资者构成与行为分析智能体",
+  "business_status": "formal",
+  "business_layer": "分析层",
   "business_category": "行为分析",
   "business_subcategory": "",
   "default_enabled": true

@@ -146,9 +146,6 @@ def parse_router_layers_with_stats(
                     stats["filtered_agents"] += 1
         if selected_raw and not selected:
             selected = plan.get("L2", [])
-        if len(selected) > 5:
-            stats["l2_truncated"] += len(selected) - 5
-            selected = selected[:5]
         plan["L2"] = selected or plan.get("L2", [])
         modes["L2"] = "Star"
         stats["parse_ok"] = True
@@ -193,9 +190,6 @@ def parse_router_layers_with_stats(
                     stats["filtered_agents"] += 1
         if selected_raw and not selected:
             selected = default_plan.get(layer, [])
-        if layer == "L2" and len(selected) > 5:
-            stats["l2_truncated"] += len(selected) - 5
-            selected = selected[:5]
         layer_plan[layer] = selected
         layer_mode[layer] = mode
 

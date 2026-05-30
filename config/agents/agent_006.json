@@ -14,7 +14,10 @@
   "layer": "L2",
   "team": "fundamental",
   "role_type": "system",
-  "business_layer": "分析层（17）",
+  "business_order": 8,
+  "business_role": "企业财务分析智能体",
+  "business_status": "formal",
+  "business_layer": "分析层",
   "business_category": "价值分析",
   "business_subcategory": "",
   "default_enabled": true

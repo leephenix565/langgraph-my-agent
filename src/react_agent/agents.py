@@ -52,6 +52,9 @@ class AgentMetadata:
     layer: Optional[str] = None
     team: Optional[str] = None
     role_type: Optional[str] = None
+    business_order: Optional[int] = None
+    business_role: Optional[str] = None
+    business_status: Optional[str] = None
     business_layer: Optional[str] = None
     business_category: Optional[str] = None
     business_subcategory: Optional[str] = None
@@ -85,7 +88,18 @@ def agents_by_layer(layer: str) -> List[str]:
     """Return agent ids assigned to a given layer and enabled."""
     layer_upper = layer.upper()
     return [
-        aid
-        for aid, meta in AGENT_METADATA.items()
+        meta.id
+        for meta in sorted(AGENT_METADATA.values(), key=agent_sort_key)
         if (meta.layer or "").upper() == layer_upper and meta.default_enabled
     ]
+
+
+def agent_sort_key(meta: AgentMetadata) -> tuple[int, int, str]:
+    """Sort formal business agents by business_order before legacy/historical ids."""
+    if meta.business_order is not None:
+        return (0, int(meta.business_order), meta.id)
+    if meta.business_status == "legacy_retained":
+        return (1, 0, meta.id)
+    if not meta.default_enabled or meta.business_status == "disabled_historical":
+        return (2, 0, meta.id)
+    return (1, 1, meta.id)

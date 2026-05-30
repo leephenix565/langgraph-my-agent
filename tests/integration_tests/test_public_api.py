@@ -173,7 +173,7 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
         "a21_portfolio_manager",
     ]
     assert [layer["layer"] for layer in payload["layers"]] == ["L1", "L2", "L3", "L4"]
-    assert [len(layer["agents"]) for layer in payload["layers"]] == [1, 13, 12, 1]
+    assert [len(layer["agents"]) for layer in payload["layers"]] == [2, 20, 4, 1]
 
     l1_agents = payload["layers"][0]["agents"]
     assert l1_agents[0]["id"] == "a01_cio_orchestrator"
@@ -182,6 +182,7 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert l1_agents[0]["team"] == "management"
     assert l1_agents[0]["roleType"] == "system"
     assert l1_agents[0]["defaultEnabled"] is True
+    assert l1_agents[1]["id"] == "a22_financial_data_service"
 
     assert [agent["id"] for agent in payload["disabledAgents"]] == [
         "a05_annual_report_analysis",

@@ -1,3 +1,4 @@
+import json
 import types
 
 from react_agent.context import Context
@@ -88,8 +89,8 @@ def test_parse_mock_crash_risk_only_route_keeps_a23_without_financial_or_data_se
     raw = (
         '{"layers":['
         '{"layer":"L1","mode":"Chain","selected":["a01_cio_orchestrator"]},'
-        '{"layer":"L2","mode":"Star","selected":[]},'
-        '{"layer":"L3","mode":"Star","selected":["a23_crash_risk"]},'
+        '{"layer":"L2","mode":"Star","selected":["a23_crash_risk"]},'
+        '{"layer":"L3","mode":"Star","selected":[]},'
         '{"layer":"L4","mode":"Chain","selected":["a25_report_center"]}'
         ']}'
     )
@@ -97,6 +98,31 @@ def test_parse_mock_crash_risk_only_route_keeps_a23_without_financial_or_data_se
     selected = _selected_ids(plan)
     assert "a23_crash_risk" in selected
     assert not (selected & {"a06_financial_statement_analysis", "a04_commodity_hedging", "a22_financial_data_service"})
+
+
+def test_valid_parse_does_not_truncate_multiple_l2_agents() -> None:
+    l2_agents = [
+        "a17_traditional_valuation",
+        "a16_ml_valuation",
+        "a18_meta_valuation",
+        "a11_index_technical_analysis",
+        "a04_commodity_hedging",
+        "a06_financial_statement_analysis",
+        "a12_research_synthesis",
+        "a23_crash_risk",
+    ]
+    raw = json.dumps(
+        {
+            "layers": [
+                {"layer": "L1", "mode": "Chain", "selected": ["a01_cio_orchestrator"]},
+                {"layer": "L2", "mode": "Star", "selected": l2_agents},
+                {"layer": "L3", "mode": "Star", "selected": []},
+                {"layer": "L4", "mode": "Chain", "selected": ["a25_report_center"]},
+            ]
+        }
+    )
+    plan, _ = _parse_router_layers(raw)
+    assert plan["L2"] == l2_agents
 
 
 def test_parse_with_joined_mode() -> None:

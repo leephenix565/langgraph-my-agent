@@ -13,7 +13,10 @@
   "layer": "L2",
   "team": "sentiment",
   "role_type": "system",
-  "business_layer": "分析层（17）",
+  "business_order": 18,
+  "business_role": "宏观情绪感知智能体",
+  "business_status": "formal",
+  "business_layer": "分析层",
   "business_category": "舆情分析",
   "business_subcategory": "",
   "default_enabled": true

@@ -14,7 +14,10 @@
   "layer": "L4",
   "team": "reporting",
   "role_type": "system",
-  "business_layer": "报告层（1）",
+  "business_order": 24,
+  "business_role": "报告生成智能体",
+  "business_status": "formal",
+  "business_layer": "报告层",
   "business_category": "报告生成",
   "business_subcategory": "",
   "default_enabled": true
