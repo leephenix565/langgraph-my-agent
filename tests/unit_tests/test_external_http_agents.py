@@ -42,27 +42,27 @@ P1A_EXTERNAL_HTTP_CONFIG = {
         "http://222.73.85.26:10014/v1/agent/invoke",
     ),
     "a04_commodity_hedging": (
-        "commodity_pricing",
+        "price_influence_agent",
         "COMMODITY_PRICING_AGENT_URL",
         "http://222.73.85.26:10004/v1/agent/invoke",
     ),
     "a06_financial_statement_analysis": (
-        "enterprise_financial_analysis",
+        "financial_report_agent",
         "ENTERPRISE_FINANCIAL_ANALYSIS_AGENT_URL",
         "http://222.73.85.26:10005/v1/agent/invoke",
     ),
     "a10_stock_technical_analysis": (
-        "stock_technical_analysis",
+        "technical_stock",
         "STOCK_TECHNICAL_ANALYSIS_AGENT_URL",
         "http://222.73.85.26:10009/v1/agent/invoke",
     ),
     "a11_index_technical_analysis": (
-        "index_valuation",
+        "valuation_index",
         "INDEX_VALUATION_AGENT_URL",
         "http://222.73.85.26:10003/v1/agent/invoke",
     ),
     "a12_research_synthesis": (
-        "research_synthesis",
+        "analyst_research",
         "RESEARCH_SYNTHESIS_AGENT_URL",
         "http://222.73.85.26:10006/v1/agent/invoke",
     ),
@@ -460,6 +460,78 @@ def test_p1a_env_override_takes_precedence(monkeypatch) -> None:
 
     assert output["parse_ok"] is True
     assert captured["url"] == "http://test.local/macro"
+
+
+def test_service_reported_external_agent_id_does_not_warn(monkeypatch) -> None:
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "agent_id": "price_influence_agent",
+                "status": "ok",
+                "answer": "商品定价影响分析完成。",
+                "tool_result": {},
+            }
+
+    class FakeClient:
+        def __init__(self, timeout):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, json):
+            assert json["context"]["main_agent_id"] == "a04_commodity_hedging"
+            assert json["context"]["external_agent_id"] == "price_influence_agent"
+            assert json["options"]["external_agent_id"] == "price_influence_agent"
+            return FakeResponse()
+
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", FakeClient)
+    tool = build_external_http_tool("a04_commodity_hedging")
+    output = anyio.run(tool.ainvoke, {"question": "q", "subtask": "s"})
+
+    assert output["parse_ok"] is True
+    assert not any("returned_agent_id=" in item for item in output.get("evidence", []))
+
+
+def test_old_external_agent_id_now_warns_but_does_not_fail(monkeypatch) -> None:
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "agent_id": "commodity_pricing",
+                "status": "ok",
+                "answer": "旧 external_agent_id 仍返回成功体。",
+                "tool_result": {},
+            }
+
+    class FakeClient:
+        def __init__(self, timeout):
+            pass
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, json):
+            return FakeResponse()
+
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", FakeClient)
+    tool = build_external_http_tool("a04_commodity_hedging")
+    output = anyio.run(tool.ainvoke, {"question": "q", "subtask": "s"})
+
+    assert output["parse_ok"] is True
+    assert any(
+        "returned_agent_id=commodity_pricing, expected=price_influence_agent" in item
+        for item in output["evidence"]
+    )
 
 
 @pytest.mark.parametrize(

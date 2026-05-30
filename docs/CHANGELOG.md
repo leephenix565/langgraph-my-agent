@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## 2026-05-30 - External HTTP service-reported id alignment
+- Files:
+  - `src/react_agent/external_http_agents.py`
+  - `tests/unit_tests/test_external_http_agents.py`
+  - `tests/unit_tests/test_config_agents_tools.py`
+  - `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`
+  - `docs/CHANGELOG.md`
+- Health-only no-proxy probes found five P1-A services whose `/health`
+  `agent_id` values differed from the wrapper `external_agent_id`.
+- Aligned wrapper `external_agent_id` values to the service-reported health ids:
+  - `a04_commodity_hedging`: `commodity_pricing` -> `price_influence_agent`
+  - `a06_financial_statement_analysis`: `enterprise_financial_analysis` -> `financial_report_agent`
+  - `a10_stock_technical_analysis`: `stock_technical_analysis` -> `technical_stock`
+  - `a11_index_technical_analysis`: `index_valuation` -> `valuation_index`
+  - `a12_research_synthesis`: `research_synthesis` -> `analyst_research`
+- Main-system `main_agent_id`, Router-facing profile/catalog names, default
+  endpoints, and env override variable names are unchanged.
+- Added mock-only regression coverage proving service-reported ids do not
+  create mismatch warnings, while old ids now warn without hard failure.
+- Remaining service-side health issues:
+  - `a22_financial_data_service` `/health` returns an HTML app shell instead of
+    standard health JSON.
+  - `a26_composite_valuation` was connection refused on port `10015`.
+- Scope boundary:
+  - no `/v1/agent/invoke` live call
+  - no provider live smoke
+  - no frontend/public API/Router/a01/a25 behavior change
+  - no wrapper count change and no P1-B/source-missing registration
+
 ## 2026-05-30 - Disabled retained metadata no-callability fix
 - Files:
   - `src/react_agent/graph_bootstrap.py`

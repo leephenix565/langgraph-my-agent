@@ -40,18 +40,18 @@ The 13 P0 + P1-A ids are runtime-wrapped external HTTP agents. Other enabled fun
 |---|---|---|---|---|---|
 | `agent_001.json` | `a01_cio_orchestrator` | L1 | management | special main-system orchestration | special runtime role |
 | `agent_003.json` | `a03_macro_industry_research` | L2 | fundamental | 宏观分析智能体 | generic HTTP wrapper -> `macro_analysis` |
-| `agent_004.json` | `a04_commodity_hedging` | L2 | fundamental | 商品定价分析智能体 | generic HTTP wrapper -> `commodity_pricing` |
-| `agent_006.json` | `a06_financial_statement_analysis` | L2 | fundamental | 企业财务分析智能体 | generic HTTP wrapper -> `enterprise_financial_analysis` |
+| `agent_004.json` | `a04_commodity_hedging` | L2 | fundamental | 商品定价分析智能体 | generic HTTP wrapper -> `price_influence_agent` |
+| `agent_006.json` | `a06_financial_statement_analysis` | L2 | fundamental | 企业财务分析智能体 | generic HTTP wrapper -> `financial_report_agent` |
 | `agent_007.json` | `a07_macro_sentiment` | L2 | sentiment | 宏观情绪感知智能体 | source not present / pending owner description |
 | `agent_008.json` | `a08_industry_hotspot` | L2 | sentiment | 行业热点洞悉智能体 | source not present / pending owner description |
 | `agent_009.json` | `a09_company_sentiment_radar` | L2 | sentiment | 企业舆情雷达智能体 | source not present / pending owner description |
-| `agent_010.json` | `a10_stock_technical_analysis` | L2 | technical | 个股技术分析智能体 | generic HTTP wrapper -> `stock_technical_analysis` |
-| `agent_012.json` | `a12_research_synthesis` | L2 | behavior | 分析师研报与观点集成智能体 | generic HTTP wrapper -> `research_synthesis` |
+| `agent_010.json` | `a10_stock_technical_analysis` | L2 | technical | 个股技术分析智能体 | generic HTTP wrapper -> `technical_stock` |
+| `agent_012.json` | `a12_research_synthesis` | L2 | behavior | 分析师研报与观点集成智能体 | generic HTTP wrapper -> `analyst_research` |
 | `agent_013.json` | `a13_fund_manager_behavior` | L2 | behavior | 基金经理投资行为分析智能体 | source not present / pending owner description |
 | `agent_014.json` | `a14_ipo_investor_behavior` | L2 | behavior | IPO投资者构成与行为分析智能体 | generic HTTP wrapper -> `ipo_investor_behavior` |
 | `agent_015.json` | `a15_entity_relation_extraction` | L2 | sentiment | 实体关系抽取智能体 | source not present / pending owner description |
 | `agent_022.json` | `a22_financial_data_service` | L2 | data_support | 金融数据服务智能体 | generic HTTP wrapper -> `financial_data_service` |
-| `agent_011.json` | `a11_index_technical_analysis` | L3 | valuation | 股票指数估值智能体 | generic HTTP wrapper -> `index_valuation` |
+| `agent_011.json` | `a11_index_technical_analysis` | L3 | valuation | 股票指数估值智能体 | generic HTTP wrapper -> `valuation_index` |
 | `agent_016.json` | `a16_ml_valuation` | L3 | valuation | 机器学习企业估值智能体 | generic HTTP wrapper -> `valuation_ml` |
 | `agent_017.json` | `a17_traditional_valuation` | L3 | valuation | 传统企业估值智能体 | generic HTTP wrapper -> `valuation_traditional` |
 | `agent_018.json` | `a18_meta_valuation` | L3 | valuation | 元学习企业估值智能体 | generic HTTP wrapper -> `valuation_meta` |
@@ -76,11 +76,11 @@ The 13 P0 + P1-A ids are runtime-wrapped external HTTP agents. Other enabled fun
 | Main system id | External service id | Default endpoint | Env override |
 |---|---|---|---|
 | `a03_macro_industry_research` | `macro_analysis` | `http://222.73.85.26:10014/v1/agent/invoke` | `MACRO_ANALYSIS_AGENT_URL` |
-| `a04_commodity_hedging` | `commodity_pricing` | `http://222.73.85.26:10004/v1/agent/invoke` | `COMMODITY_PRICING_AGENT_URL` |
-| `a06_financial_statement_analysis` | `enterprise_financial_analysis` | `http://222.73.85.26:10005/v1/agent/invoke` | `ENTERPRISE_FINANCIAL_ANALYSIS_AGENT_URL` |
-| `a10_stock_technical_analysis` | `stock_technical_analysis` | `http://222.73.85.26:10009/v1/agent/invoke` | `STOCK_TECHNICAL_ANALYSIS_AGENT_URL` |
-| `a11_index_technical_analysis` | `index_valuation` | `http://222.73.85.26:10003/v1/agent/invoke` | `INDEX_VALUATION_AGENT_URL` |
-| `a12_research_synthesis` | `research_synthesis` | `http://222.73.85.26:10006/v1/agent/invoke` | `RESEARCH_SYNTHESIS_AGENT_URL` |
+| `a04_commodity_hedging` | `price_influence_agent` | `http://222.73.85.26:10004/v1/agent/invoke` | `COMMODITY_PRICING_AGENT_URL` |
+| `a06_financial_statement_analysis` | `financial_report_agent` | `http://222.73.85.26:10005/v1/agent/invoke` | `ENTERPRISE_FINANCIAL_ANALYSIS_AGENT_URL` |
+| `a10_stock_technical_analysis` | `technical_stock` | `http://222.73.85.26:10009/v1/agent/invoke` | `STOCK_TECHNICAL_ANALYSIS_AGENT_URL` |
+| `a11_index_technical_analysis` | `valuation_index` | `http://222.73.85.26:10003/v1/agent/invoke` | `INDEX_VALUATION_AGENT_URL` |
+| `a12_research_synthesis` | `analyst_research` | `http://222.73.85.26:10006/v1/agent/invoke` | `RESEARCH_SYNTHESIS_AGENT_URL` |
 | `a14_ipo_investor_behavior` | `ipo_investor_behavior` | `http://222.73.85.26:10008/v1/agent/invoke` | `IPO_INVESTOR_BEHAVIOR_AGENT_URL` |
 | `a16_ml_valuation` | `valuation_ml` | `http://222.73.85.26:10001/v1/agent/invoke` | `VALUATION_ML_AGENT_URL` |
 | `a17_traditional_valuation` | `valuation_traditional` | `http://222.73.85.26:10000/v1/agent/invoke` | `VALUATION_TRADITIONAL_AGENT_URL` |
