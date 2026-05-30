@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## 2026-05-30 - Router parse-failure fallback fail-closed
+- Files:
+  - `src/react_agent/graph.py`
+  - `src/react_agent/router_parse.py`
+  - `tests/unit_tests/test_no_route_prior_runtime_contract.py`
+  - `tests/unit_tests/test_router_parse_stats.py`
+  - `tests/unit_tests/test_parse_router_layers.py`
+  - `docs/CHANGELOG.md`
+- Changed Router parse-failure fallback to fail closed to special runtime roles
+  only: `a01_cio_orchestrator` in L1 and `a25_report_center` in L4 when present
+  in the catalog.
+- Parse failures and unavailable/non-JSON Router output no longer default-select
+  ordinary functional agents, preventing broad accidental dispatch to external
+  HTTP wrappers.
+- Preserved normal `parse_ok=true` behavior for valid Router selections,
+  including functional agents selected by parseable Router JSON.
+- Added safe internal Router telemetry for provider and parse failures without
+  logging raw provider output, prompt text, response body, headers, or secrets.
+  Telemetry records provider-error booleans/types/categories plus raw-output
+  length and shape booleans only.
+- Added parser-only regression coverage for special-role-only fallback, external
+  wrapper exclusion, disabled-agent exclusion, valid functional route
+  preservation, and `a02_task_router` non-restoration.
+- Added mocked `router_node` coverage for provider exceptions, invalid Router
+  output, and valid Router output while preserving selected functional agents.
+- Scope boundary:
+  - no external endpoint calls
+  - no provider live smoke
+  - no Web E2E
+  - no graph/state/public API/schema/external wrapper/profile changes
+
 ## 2026-05-30 - External HTTP service-reported id alignment
 - Files:
   - `src/react_agent/external_http_agents.py`

@@ -12,7 +12,7 @@ def test_parse_with_extra_text() -> None:
 
 
 def test_parse_old_selected_only() -> None:
-    raw = '{"selected":["a01","a02"]}'
+    raw = '{"selected":["a03_macro_industry_research"]}'
     plan, modes = _parse_router_layers(raw)
     assert plan["L2"]  # old format should populate L2
     assert modes["L2"] == "Star"

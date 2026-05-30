@@ -8,6 +8,10 @@ from typing import Any, Dict, List, Optional, Tuple
 LAYER_ORDER: List[str] = ["L1", "L2", "L3", "L4"]
 DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"}
 LEGACY_LAYER_MAP: Dict[str, str] = {"L4": "L3", "L5": "L4"}
+SPECIAL_FALLBACK_BY_LAYER: Dict[str, List[str]] = {
+    "L1": ["a01_cio_orchestrator"],
+    "L4": ["a25_report_center"],
+}
 
 
 def normalize_mode(mode: Any) -> str:
@@ -47,25 +51,47 @@ def extract_json_str(text: str) -> Optional[str]:
         return None
 
 
+def _normalize_agent_catalog(agent_catalog: Dict[str, Any]) -> Dict[str, List[str]]:
+    """Return a layer -> agent ids catalog from layer maps or metadata maps."""
+    normalized: Dict[str, List[str]] = {layer: [] for layer in LAYER_ORDER}
+    if any(layer in agent_catalog for layer in LAYER_ORDER):
+        for layer in LAYER_ORDER:
+            raw_ids = agent_catalog.get(layer, [])
+            if isinstance(raw_ids, list):
+                normalized[layer] = [aid for aid in raw_ids if isinstance(aid, str)]
+        return normalized
+
+    for fallback_id, meta in agent_catalog.items():
+        if not isinstance(fallback_id, str):
+            continue
+        if isinstance(meta, dict):
+            layer = str(meta.get("layer", "") or "").upper()
+            enabled = bool(meta.get("default_enabled", True))
+            agent_id = str(meta.get("id", fallback_id) or "")
+        else:
+            layer = str(getattr(meta, "layer", "") or "").upper()
+            enabled = bool(getattr(meta, "default_enabled", True))
+            agent_id = str(getattr(meta, "id", fallback_id) or "")
+        if enabled and layer in normalized and agent_id:
+            normalized[layer].append(agent_id)
+    return normalized
+
+
 def default_layer_plan(
-    agent_catalog: Dict[str, List[str]],
+    agent_catalog: Dict[str, Any],
 ) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
+    """Fail closed on Router parse failure: special management/report roles only."""
+    normalized_catalog = _normalize_agent_catalog(agent_catalog)
     plan: Dict[str, List[str]] = {}
     modes: Dict[str, str] = {}
     for layer in LAYER_ORDER:
-        ids = list(agent_catalog.get(layer, []))
         modes[layer] = DEFAULT_MODES.get(layer, "Star")
-        if not ids:
-            plan[layer] = []
-            continue
-        if layer == "L1":
-            plan[layer] = ids[:1]
-        elif layer == "L2":
-            plan[layer] = ids[: min(5, len(ids))]
-        elif layer == "L3":
-            plan[layer] = ids[: min(3, len(ids))]
-        else:
-            plan[layer] = ids[:1]
+        allowed_ids = set(normalized_catalog.get(layer, []))
+        plan[layer] = [
+            agent_id
+            for agent_id in SPECIAL_FALLBACK_BY_LAYER.get(layer, [])
+            if agent_id in allowed_ids
+        ]
     return plan, modes
 
 
@@ -74,11 +100,12 @@ def parse_router_layers_with_stats(
     agent_catalog: Optional[Dict[str, List[str]]] = None,
 ) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, Any]]:
     """Parse router JSON into layer_plan/layer_mode with parse stats."""
-    agent_catalog = agent_catalog or {}
+    agent_catalog = _normalize_agent_catalog(agent_catalog or {})
     default_plan, default_modes = default_layer_plan(agent_catalog)
     stats: Dict[str, Any] = {
         "parse_ok": False,
         "used_default_plan": False,
+        "fallback_reason": None,
         "l2_truncated": 0,
         "filtered_agents": 0,
     }
@@ -86,15 +113,18 @@ def parse_router_layers_with_stats(
     json_str = extract_json_str(raw or "")
     if not json_str:
         stats["used_default_plan"] = True
+        stats["fallback_reason"] = "parse_failed"
         return default_plan, default_modes, stats
     try:
         parsed = json.loads(json_str)
     except Exception:
         stats["used_default_plan"] = True
+        stats["fallback_reason"] = "parse_failed"
         return default_plan, default_modes, stats
 
     if not isinstance(parsed, dict):
         stats["used_default_plan"] = True
+        stats["fallback_reason"] = "parse_failed"
         return default_plan, default_modes, stats
 
     allowed_by_layer = {
@@ -127,6 +157,7 @@ def parse_router_layers_with_stats(
     layers_raw = parsed.get("layers")
     if not isinstance(layers_raw, list):
         stats["used_default_plan"] = True
+        stats["fallback_reason"] = "parse_failed"
         return default_plan, default_modes, stats
 
     legacy_mode = any(

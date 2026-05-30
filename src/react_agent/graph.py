@@ -73,6 +73,42 @@ DEFAULT_MODES: Dict[str, str] = router_parse.DEFAULT_MODES
 FINAL_LAYER: str = LAYER_ORDER[-1]
 
 
+def _router_provider_error_category(exc_type: str) -> str:
+    """Return a coarse, non-sensitive provider error category."""
+    lowered = exc_type.lower()
+    if "timeout" in lowered:
+        return "timeout"
+    if any(token in lowered for token in ["auth", "permission", "unauthorized", "forbidden"]):
+        return "authentication"
+    if "rate" in lowered:
+        return "rate_limit"
+    if any(token in lowered for token in ["http", "connection", "network", "transport"]):
+        return "transport"
+    if any(token in lowered for token in ["value", "import", "config"]):
+        return "configuration"
+    return "provider"
+
+
+def _router_raw_text_shape(raw_text: str, agent_catalog: Dict[str, List[str]]) -> Dict[str, object]:
+    """Build safe Router output shape telemetry without storing raw content."""
+    text = raw_text or ""
+    stripped = text.lstrip()
+    known_ids = {
+        aid
+        for ids in agent_catalog.values()
+        if isinstance(ids, list)
+        for aid in ids
+        if isinstance(aid, str)
+    }
+    return {
+        "router_raw_text_length": len(text),
+        "router_raw_text_starts_with_json": stripped.startswith("{") or stripped.startswith("["),
+        "router_raw_text_contains_layers": '"layers"' in text or "'layers'" in text,
+        "router_raw_text_contains_fenced_json": "```" in text,
+        "router_raw_text_contains_agent_ids": any(aid in text for aid in known_ids),
+    }
+
+
 async def _with_temp_openai_env(
     base_url: str, api_key: str, fn
 ) -> AIMessage:
@@ -287,6 +323,9 @@ async def router_node(
     msgs.extend(ctx_messages)
     router_model_name = runtime.context.router_model or runtime.context.model
     fallback_model_name = runtime.context.model
+    router_provider_error = False
+    router_provider_error_type = ""
+    router_provider_error_category = ""
     try:
         metadata = {
             "run_id": run_id,
@@ -309,6 +348,11 @@ async def router_node(
                     lambda: _invoke_router(router_model_name),
                 )
             except Exception as exc:
+                router_provider_error = True
+                router_provider_error_type = type(exc).__name__
+                router_provider_error_category = _router_provider_error_category(
+                    router_provider_error_type
+                )
                 logger.log_event(
                     "router_provider_fallback",
                     node="router",
@@ -316,9 +360,8 @@ async def router_node(
                     router_base_url=runtime.context.router_openai_base_url,
                     fallback_model=fallback_model_name,
                     elapsed_ms=_elapsed_ms(node_started_at),
-                    exception_type=type(exc).__name__,
-                    exception_repr=repr(exc),
-                    error=str(exc),
+                    exception_type=router_provider_error_type,
+                    error_category=router_provider_error_category,
                     **_model_trace_fields(router_model_name, "router_model"),
                     **_model_trace_fields(fallback_model_name, "fallback_model"),
                 )
@@ -327,26 +370,45 @@ async def router_node(
             response = await _invoke_router(router_model_name)
         raw_text = get_message_text(response)
     except Exception as exc:
+        router_provider_error = True
+        router_provider_error_type = type(exc).__name__
+        router_provider_error_category = _router_provider_error_category(
+            router_provider_error_type
+        )
         logger.log_event(
             "router_error",
             node="router",
             current_layer="L1",
             elapsed_ms=_elapsed_ms(node_started_at),
-            exception_type=type(exc).__name__,
-            exception_repr=repr(exc),
-            error=str(exc),
+            exception_type=router_provider_error_type,
+            error_category=router_provider_error_category,
             **_model_trace_fields(router_model_name, "router_model"),
             **_model_trace_fields(fallback_model_name, "fallback_model"),
         )
-        response = AIMessage(content=f"[router fallback] {exc}")
-        raw_text = "{}"
+        response = AIMessage(content="[router fallback]")
+        raw_text = ""
+    raw_shape = _router_raw_text_shape(raw_text, agent_catalog)
+    router_provider_telemetry: Dict[str, object] = {
+        "router_provider_error": router_provider_error,
+        "router_provider_error_type": router_provider_error_type,
+        "router_provider_error_category": router_provider_error_category,
+        **raw_shape,
+    }
+    layer_plan, layer_mode, parse_stats = router_parse.parse_router_layers_with_stats(
+        raw_text, agent_catalog=agent_catalog
+    )
+    parse_stats.update(
+        {
+            **router_provider_telemetry,
+            "router_parse_ok": bool(parse_stats.get("parse_ok")),
+            "router_used_default_plan": bool(parse_stats.get("used_default_plan")),
+            "router_fallback_reason": parse_stats.get("fallback_reason"),
+        }
+    )
     logger.log_event(
         "router_decision",
         question=_truncate(question),
-        raw=_truncate(raw_text),
-    )
-    layer_plan, layer_mode, parse_stats = router_parse.parse_router_layers_with_stats(
-        raw_text, agent_catalog=agent_catalog
+        **parse_stats,
     )
     current_layer = LAYER_ORDER[0]
     logger.log_event(
