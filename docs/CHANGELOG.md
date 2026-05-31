@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## 2026-05-31 - Web history deletion controls
+- Files:
+  - `src/react_agent/public_store.py`
+  - `src/react_agent/public_api.py`
+  - `tests/integration_tests/test_public_api.py`
+  - `apps/web/src/app/App.tsx`
+  - `apps/web/src/app/routes.tsx`
+  - `apps/web/src/components/shell/Sidebar.tsx`
+  - `apps/web/src/components/shell/ThreadHeader.tsx`
+  - `apps/web/src/content/zh-CN.ts`
+  - `apps/web/src/pages/ChatPage.tsx`
+  - `apps/web/src/services/chat.ts`
+  - `apps/web/src/styles/components.css`
+  - `apps/web/src/test/smoke.tsx`
+  - `docs/CHANGELOG.md`
+- Added public API support for deleting a thread and clearing all messages in
+  one thread while preserving existing read/create/send contracts.
+- Added frontend controls for deleting conversations from the sidebar and
+  clearing the current conversation, both with explicit confirmation and
+  loading/error handling.
+- Added backend integration coverage and frontend smoke coverage for the new
+  history mutation flows.
+- Scope boundary: no graph/router/state schema change, no external wrapper
+  change, no provider call, no external agent invoke, no deployment/auth/rate
+  limit implementation, and no `.env` change.
+
 ## 2026-05-30 - Internal agent import-error hardening
 - Files:
   - `src/react_agent/tools.py`

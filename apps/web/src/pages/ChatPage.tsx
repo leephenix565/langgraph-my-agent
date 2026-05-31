@@ -9,8 +9,10 @@ interface ChatPageProps {
   session: ChatSessionSummary | null;
   turns: PublicTurn[];
   onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;
+  isClearing: boolean;
   unavailable: boolean;
   degraded: boolean;
   errorMessage: string | null;
@@ -30,8 +32,10 @@ export function ChatPage({
   session,
   turns,
   onSendMessage,
+  onClearMessages,
   isLoading,
   isSending,
+  isClearing,
   unavailable,
   degraded,
   errorMessage,
@@ -42,7 +46,14 @@ export function ChatPage({
 
   return (
     <div className="page page--chat">
-      <ThreadHeader session={session} health={health} />
+      <ThreadHeader
+        session={session}
+        health={health}
+        hasMessages={turns.length > 0}
+        onClearMessages={onClearMessages}
+        clearDisabled={unavailable || isLoading || isSending}
+        isClearing={isClearing}
+      />
 
       {unavailable ? (
         <section className="thread-notice thread-notice--unavailable" aria-label="服务不可用提示">

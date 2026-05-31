@@ -132,6 +132,24 @@
   line-height: 1.6;
 }
 
+.sidebar__session-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 30px;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease;
+}
+
+.sidebar__session-row:hover,
+.sidebar__session-row.is-active {
+  background: rgba(255, 255, 255, 0.66);
+  border-color: rgba(22, 32, 51, 0.035);
+}
+
 .sidebar__session {
   display: grid;
   grid-template-columns: 14px minmax(0, 1fr);
@@ -139,20 +157,10 @@
   align-items: center;
   width: 100%;
   padding: 8px 10px 8px 8px;
-  border: 1px solid transparent;
-  border-radius: 14px;
+  border: 0;
   background: transparent;
   text-align: left;
   cursor: pointer;
-  transition:
-    background-color 140ms ease,
-    border-color 140ms ease;
-}
-
-.sidebar__session:hover,
-.sidebar__session.is-active {
-  background: rgba(255, 255, 255, 0.66);
-  border-color: rgba(22, 32, 51, 0.035);
 }
 
 .sidebar__session-marker {
@@ -163,7 +171,7 @@
   background: var(--bg-surface);
 }
 
-.sidebar__session.is-active .sidebar__session-marker {
+.sidebar__session-row.is-active .sidebar__session-marker {
   border-color: rgba(101, 109, 227, 0.28);
   background: var(--accent-soft);
 }
@@ -187,6 +195,32 @@
 .sidebar__session-copy small {
   font-size: 11px;
   color: var(--ink-faint);
+}
+
+.sidebar__session-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ink-faint);
+  cursor: pointer;
+  font-size: 15px;
+  line-height: 1;
+}
+
+.sidebar__session-delete:hover:not(:disabled) {
+  border-color: rgba(196, 86, 86, 0.16);
+  background: rgba(196, 86, 86, 0.08);
+  color: #9f3f3f;
+}
+
+.sidebar__session-delete:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
 }
 
 .sidebar__footer {
@@ -312,6 +346,29 @@
   color: var(--ink-faint);
   font-size: 10px;
   white-space: nowrap;
+}
+
+.thread-header__action {
+  min-height: 28px;
+  padding: 0 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.72);
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.thread-header__action:hover:not(:disabled) {
+  border-color: rgba(196, 86, 86, 0.18);
+  background: rgba(196, 86, 86, 0.08);
+  color: #9f3f3f;
+}
+
+.thread-header__action:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .source-badge,

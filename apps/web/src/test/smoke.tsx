@@ -167,6 +167,18 @@ function threadSummary(title: string, preview: string) {
   };
 }
 
+function historyThreadSummary(id: string, title: string, preview: string) {
+  return {
+    id,
+    title,
+    updatedAt: "2026-04-04 18:06",
+    preview,
+    finalSource: "mainline",
+    phase: "Live",
+    continuityMode: "replay",
+  };
+}
+
 function getComposerElements(container: HTMLElement) {
   const taskInput = container.querySelector("#chat-composer") as HTMLTextAreaElement | null;
   const sendButton = container.querySelector(".composer__submit") as HTMLButtonElement | null;
@@ -633,6 +645,91 @@ async function runStreamingErrorScenario() {
   cleanup();
 }
 
+async function runHistoryMutationScenario() {
+  dom.reconfigure({ url: "http://localhost/" });
+  const user = userEvent.setup({ document: dom.window.document });
+  const confirmCalls: string[] = [];
+  const originalConfirm = dom.window.confirm;
+  const confirmHandler = (message?: string) => {
+    confirmCalls.push(message ?? "");
+    return true;
+  };
+  dom.window.confirm = confirmHandler;
+  globalThis.confirm = confirmHandler;
+
+  const activeThread = historyThreadSummary("thread-live-1", "Active Thread", "Stored answer before clear.");
+  const oldThread = historyThreadSummary("thread-old-2", "Old Thread", "Older answer.");
+  let deletedThreadId: string | null = null;
+  let clearedThreadId: string | null = null;
+
+  installFetchMock(async (url, init) => {
+    const method = init?.method ?? "GET";
+    if (url.endsWith("/api/health")) {
+      return jsonResponse(degradedHealthPayload());
+    }
+    if (url.endsWith("/api/threads") && method === "GET") {
+      const threads = deletedThreadId ? [activeThread] : [activeThread, oldThread];
+      return jsonResponse({ threads });
+    }
+    if (url.endsWith("/api/threads/thread-live-1") && method === "GET") {
+      return jsonResponse({
+        thread: activeThread,
+        turns: [
+          {
+            id: "user-before-clear",
+            role: "user",
+            text: "Stored prompt before clear.",
+            createdAt: "2026-04-04 18:04",
+          },
+          assistantTurn("assistant-before-clear", "Stored answer before clear."),
+        ],
+      });
+    }
+    if (url.endsWith("/api/threads/thread-live-1/messages") && method === "DELETE") {
+      clearedThreadId = "thread-live-1";
+      return jsonResponse({
+        thread: { ...activeThread, preview: "Awaiting first message.", updatedAt: "2026-04-04 18:08" },
+        turns: [],
+      });
+    }
+    if (url.endsWith("/api/threads/thread-old-2") && method === "DELETE") {
+      deletedThreadId = "thread-old-2";
+      return new Response(null, { status: 204 });
+    }
+    if (url.endsWith("/api/agents") && method === "GET") {
+      return jsonResponse(liveAgentCatalogPayload());
+    }
+
+    return jsonResponse(
+      { detail: { code: "unhandled_request", message: `Unhandled request: ${method} ${url}`, category: "request" } },
+      500,
+    );
+  });
+
+  const view = render(<App />);
+
+  await waitFor(() => {
+    assert.ok(view.getByText("Stored answer before clear."));
+  });
+
+  await user.click(view.getByRole("button", { name: "清空记录" }));
+  await waitFor(() => {
+    assert.equal(clearedThreadId, "thread-live-1");
+    assert.equal(view.queryByText("Stored answer before clear."), null);
+    assert.ok(view.getByText("从一个问题开始"));
+  });
+
+  await user.click(view.getByRole("button", { name: "删除会话: Old Thread" }));
+  await waitFor(() => {
+    assert.equal(deletedThreadId, "thread-old-2");
+    assert.equal(view.queryByText("Old Thread"), null);
+  });
+
+  assert.deepEqual(confirmCalls, ["确认清空当前会话记录？此操作不可撤销。", "确认删除此会话？此操作不可撤销。"]);
+  dom.window.confirm = originalConfirm;
+  cleanup();
+}
+
 async function runUnavailableScenario() {
   dom.reconfigure({ url: "http://localhost/" });
   installFetchMock(async () => {
@@ -656,6 +753,7 @@ async function runSmoke() {
   await runAssistantMarkdownRenderChecks();
   await runStreamingSuccessScenario();
   await runStreamingErrorScenario();
+  await runHistoryMutationScenario();
   await runUnavailableScenario();
   console.log("Frontend live integration smoke checks passed.");
 }

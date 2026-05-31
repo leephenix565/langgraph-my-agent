@@ -18,8 +18,10 @@ describe("workflow and agents smoke", () => {
         session={INITIAL_SESSIONS[0]}
         turns={TRANSCRIPTS_BY_SESSION["session-mainline"]}
         onSendMessage={() => {}}
+        onClearMessages={() => {}}
         isLoading={false}
         isSending={false}
+        isClearing={false}
         unavailable={false}
         degraded={false}
         errorMessage={null}

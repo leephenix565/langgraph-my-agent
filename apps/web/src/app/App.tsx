@@ -1,8 +1,18 @@
 import { startTransition, useEffect, useRef, useState } from "react";
 import { BrowserRouter, useLocation } from "react-router-dom";
 import { Sidebar } from "../components/shell/Sidebar";
-import { createThread, getHealth, getThread, getThreads, sendMessage, sendMessageStream } from "../services/chat";
+import {
+  clearThreadMessages,
+  createThread,
+  deleteThread,
+  getHealth,
+  getThread,
+  getThreads,
+  sendMessage,
+  sendMessageStream,
+} from "../services/chat";
 import { ApiError, getApiErrorMessage, isApiUnavailableError } from "../services/api";
+import { zhCN } from "../content/zh-CN";
 import type {
   ChatSessionSummary,
   HealthResponse,
@@ -30,9 +40,13 @@ interface WorkspaceFrameProps {
   activeTurns: PublicTurn[];
   onSelectSession: (sessionId: string) => void;
   onCreateThread: () => void;
+  onDeleteThread: (sessionId: string) => void;
   onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;
+  deletingThreadId: string | null;
+  clearingThreadId: string | null;
   unavailable: boolean;
   degraded: boolean;
   errorMessage: string | null;
@@ -121,9 +135,13 @@ function WorkspaceFrame({
   activeTurns,
   onSelectSession,
   onCreateThread,
+  onDeleteThread,
   onSendMessage,
+  onClearMessages,
   isLoading,
   isSending,
+  deletingThreadId,
+  clearingThreadId,
   unavailable,
   degraded,
   errorMessage,
@@ -142,7 +160,10 @@ function WorkspaceFrame({
         activeSessionId={activeSession?.id ?? ""}
         onSelectSession={onSelectSession}
         onCreateThread={onCreateThread}
+        onDeleteThread={onDeleteThread}
         createDisabled={unavailable || isLoading}
+        deleteDisabled={unavailable || isLoading || isSending || Boolean(deletingThreadId)}
+        deletingThreadId={deletingThreadId}
         connectionState={connectionState}
       />
       <main className="app-main">
@@ -150,8 +171,10 @@ function WorkspaceFrame({
           activeSession={activeSession}
           activeTurns={activeTurns}
           onSendMessage={onSendMessage}
+          onClearMessages={onClearMessages}
           isLoading={isLoading}
           isSending={isSending}
+          isClearing={Boolean(activeSession?.id && clearingThreadId === activeSession.id)}
           unavailable={unavailable}
           degraded={degraded}
           errorMessage={errorMessage}
@@ -173,6 +196,8 @@ export default function App() {
   const [turnsBySession, setTurnsBySession] = useState<Record<string, PublicTurn[]>>({});
   const [isLoading, setIsLoading] = useState(true);
   const [isSending, setIsSending] = useState(false);
+  const [deletingThreadId, setDeletingThreadId] = useState<string | null>(null);
+  const [clearingThreadId, setClearingThreadId] = useState<string | null>(null);
   const [unavailable, setUnavailable] = useState(false);
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
@@ -427,6 +452,100 @@ export default function App() {
     }
   }
 
+  async function handleDeleteThread(sessionId: string) {
+    if (deletingThreadId || isSending || !window.confirm(zhCN.sidebar.confirmDeleteThread)) {
+      return;
+    }
+    setDeletingThreadId(sessionId);
+    setErrorMessage(null);
+    setErrorMeta(null);
+    try {
+      await deleteThread(sessionId);
+      await refreshHealthState();
+
+      const threadList = await getThreads();
+      let nextSessions = threadList.threads;
+      let nextActiveSessionId =
+        activeSessionId === sessionId ? nextSessions[0]?.id ?? null : activeSessionId;
+      let nextDetail: PublicThreadDetail | null = null;
+
+      if (!nextSessions.length) {
+        nextDetail = await createThread();
+        nextSessions = [nextDetail.thread];
+        nextActiveSessionId = nextDetail.thread.id;
+      } else if (nextActiveSessionId && !turnsBySession[nextActiveSessionId]) {
+        nextDetail = await getThread(nextActiveSessionId);
+        nextSessions = nextSessions.map((session) =>
+          session.id === nextDetail!.thread.id ? nextDetail!.thread : session,
+        );
+      }
+
+      startTransition(() => {
+        setActiveSessionId(nextActiveSessionId);
+        setTurnsBySession((current) => {
+          const nextTurns = { ...current };
+          delete nextTurns[sessionId];
+          if (nextDetail) {
+            nextTurns[nextDetail.thread.id] = nextDetail.turns;
+          }
+          return nextTurns;
+        });
+        setSessions(markActiveSession(nextSessions, nextActiveSessionId));
+      });
+    } catch (error) {
+      setRequestError(error, "删除会话失败，请稍后重试。");
+      if (!isApiUnavailableError(error)) {
+        try {
+          await refreshHealthState();
+        } catch {
+          // Keep the original request error visible.
+        }
+      }
+    } finally {
+      setDeletingThreadId(null);
+    }
+  }
+
+  async function handleClearMessages() {
+    const sessionId = activeSessionId;
+    if (
+      !sessionId ||
+      !activeTurns.length ||
+      clearingThreadId ||
+      isSending ||
+      !window.confirm(zhCN.thread.confirmClearMessages)
+    ) {
+      return;
+    }
+    setClearingThreadId(sessionId);
+    setErrorMessage(null);
+    setErrorMeta(null);
+    try {
+      const detail = await clearThreadMessages(sessionId);
+      await refreshHealthState();
+      startTransition(() => {
+        setTurnsBySession((current) => ({ ...current, [sessionId]: detail.turns }));
+        setSessions((current) =>
+          markActiveSession(
+            current.map((session) => (session.id === sessionId ? detail.thread : session)),
+            sessionId,
+          ),
+        );
+      });
+    } catch (error) {
+      setRequestError(error, "清空会话记录失败，请稍后重试。");
+      if (!isApiUnavailableError(error)) {
+        try {
+          await refreshHealthState();
+        } catch {
+          // Keep the original request error visible.
+        }
+      }
+    } finally {
+      setClearingThreadId(null);
+    }
+  }
+
   return (
     <BrowserRouter>
       <WorkspaceFrame
@@ -435,9 +554,13 @@ export default function App() {
         activeTurns={activeTurns}
         onSelectSession={handleSelectSession}
         onCreateThread={handleCreateThread}
+        onDeleteThread={handleDeleteThread}
         onSendMessage={handleSendMessage}
+        onClearMessages={handleClearMessages}
         isLoading={isLoading}
         isSending={isSending}
+        deletingThreadId={deletingThreadId}
+        clearingThreadId={clearingThreadId}
         unavailable={unavailable}
         degraded={degraded}
         errorMessage={errorMessage}

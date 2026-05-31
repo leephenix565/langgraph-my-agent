@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import threading
+from datetime import datetime
 from pathlib import Path
 from typing import List, Optional
 
@@ -14,6 +15,10 @@ DEFAULT_STORE_PATH = Path("var/public_api/threads.json")
 
 def default_store_path() -> Path:
     return DEFAULT_STORE_PATH
+
+
+def _now_label() -> str:
+    return datetime.now().strftime("%Y-%m-%d %H:%M")
 
 
 class PublicStoreError(RuntimeError):
@@ -62,3 +67,30 @@ class PublicThreadStore:
             envelope.threads[detail.thread.id] = detail
             self._write_envelope(envelope)
         return detail
+
+    def delete_thread(self, thread_id: str) -> bool:
+        with self._lock:
+            envelope = self._read_envelope()
+            if thread_id not in envelope.threads:
+                return False
+            del envelope.threads[thread_id]
+            self._write_envelope(envelope)
+        return True
+
+    def clear_thread_messages(self, thread_id: str) -> Optional[PublicThreadDetail]:
+        with self._lock:
+            envelope = self._read_envelope()
+            detail = envelope.threads.get(thread_id)
+            if detail is None:
+                return None
+            cleared_thread = detail.thread.model_copy(
+                update={
+                    "updatedAt": _now_label(),
+                    "preview": "Awaiting first message.",
+                    "finalSource": "mainline",
+                }
+            )
+            cleared_detail = detail.model_copy(update={"thread": cleared_thread, "turns": []})
+            envelope.threads[thread_id] = cleared_detail
+            self._write_envelope(envelope)
+        return cleared_detail

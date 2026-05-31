@@ -8,6 +8,9 @@ export const zhCN = {
   sidebar: {
     primaryAction: "开启新对话",
     history: "对话历史",
+    deleteThread: "删除会话",
+    deletingThread: "删除中",
+    confirmDeleteThread: "确认删除此会话？此操作不可撤销。",
     navAgents: "智能体目录",
     navSettings: "系统设置",
     serviceStatus: "服务状态",
@@ -18,6 +21,9 @@ export const zhCN = {
     updatedAt: "最近更新",
     degradedMeta: "部分能力受限",
     menuLabel: "会话导航",
+    clearMessages: "清空记录",
+    clearingMessages: "清空中",
+    confirmClearMessages: "确认清空当前会话记录？此操作不可撤销。",
   },
   answer: {
     references: "参考依据",

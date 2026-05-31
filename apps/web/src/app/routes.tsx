@@ -9,8 +9,10 @@ export interface AppRoutesProps {
   activeSession: ChatSessionSummary | null;
   activeTurns: PublicTurn[];
   onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;
+  isClearing: boolean;
   unavailable: boolean;
   degraded: boolean;
   errorMessage: string | null;
@@ -22,8 +24,10 @@ export function AppRoutes({
   activeSession,
   activeTurns,
   onSendMessage,
+  onClearMessages,
   isLoading,
   isSending,
+  isClearing,
   unavailable,
   degraded,
   errorMessage,
@@ -39,8 +43,10 @@ export function AppRoutes({
             session={activeSession}
             turns={activeTurns}
             onSendMessage={onSendMessage}
+            onClearMessages={onClearMessages}
             isLoading={isLoading}
             isSending={isSending}
+            isClearing={isClearing}
             unavailable={unavailable}
             degraded={degraded}
             errorMessage={errorMessage}

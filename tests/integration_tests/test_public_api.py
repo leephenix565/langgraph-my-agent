@@ -241,6 +241,88 @@ def test_thread_lifecycle_and_replay_contract(tmp_path, monkeypatch):
         assert forbidden not in response_text
 
 
+def test_delete_thread_removes_only_target_thread(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    first = client.post("/api/threads", json={}).json()
+    second = client.post("/api/threads", json={}).json()
+    first_id = first["thread"]["id"]
+    second_id = second["thread"]["id"]
+
+    list_before = client.get("/api/threads").json()
+    assert {thread["id"] for thread in list_before["threads"]} == {first_id, second_id}
+
+    delete_response = client.delete(f"/api/threads/{first_id}")
+    assert delete_response.status_code == 204
+    assert not delete_response.content
+
+    list_after = client.get("/api/threads").json()
+    assert {thread["id"] for thread in list_after["threads"]} == {second_id}
+
+    missing_get = client.get(f"/api/threads/{first_id}")
+    assert missing_get.status_code == 404
+    assert missing_get.json()["detail"]["code"] == "thread_not_found"
+
+    remaining_get = client.get(f"/api/threads/{second_id}")
+    assert remaining_get.status_code == 200
+    assert remaining_get.json()["thread"]["id"] == second_id
+
+
+def test_delete_missing_thread_returns_404(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    response = client.delete("/api/threads/thread-missing")
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "thread_not_found"
+
+
+def test_clear_thread_messages_preserves_thread_and_does_not_affect_others(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    first_id = client.post("/api/threads", json={"title": "Keep title"}).json()["thread"]["id"]
+    second_id = client.post("/api/threads", json={"title": "Other thread"}).json()["thread"]["id"]
+
+    first_message = client.post(
+        f"/api/threads/{first_id}/messages",
+        json={"text": "Please summarize the public answer."},
+    )
+    second_message = client.post(
+        f"/api/threads/{second_id}/messages",
+        json={"text": "Leave this thread intact."},
+    )
+    assert first_message.status_code == 200
+    assert second_message.status_code == 200
+    assert len(first_message.json()["turns"]) == 2
+    assert len(second_message.json()["turns"]) == 2
+    first_title_before_clear = first_message.json()["thread"]["title"]
+    second_title_before_clear = second_message.json()["thread"]["title"]
+
+    clear_response = client.delete(f"/api/threads/{first_id}/messages")
+
+    assert clear_response.status_code == 200
+    cleared = clear_response.json()
+    assert cleared["thread"]["id"] == first_id
+    assert cleared["thread"]["title"] == first_title_before_clear
+    assert cleared["thread"]["preview"] == "Awaiting first message."
+    assert cleared["turns"] == []
+
+    first_get = client.get(f"/api/threads/{first_id}").json()
+    second_get = client.get(f"/api/threads/{second_id}").json()
+    assert first_get["turns"] == []
+    assert len(second_get["turns"]) == 2
+    assert second_get["thread"]["title"] == second_title_before_clear
+
+
+def test_clear_missing_thread_returns_404(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    response = client.delete("/api/threads/thread-missing/messages")
+
+    assert response.status_code == 404
+    assert response.json()["detail"]["code"] == "thread_not_found"
+
+
 def test_send_message_accepts_structured_input_and_get_thread_returns_it(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
 

@@ -33,6 +33,18 @@ export function getThread(threadId: string) {
   return apiRequest<PublicThreadDetail>(`/api/threads/${threadId}`);
 }
 
+export function deleteThread(threadId: string) {
+  return apiRequest<void>(`/api/threads/${threadId}`, {
+    method: "DELETE",
+  });
+}
+
+export function clearThreadMessages(threadId: string) {
+  return apiRequest<PublicThreadDetail>(`/api/threads/${threadId}/messages`, {
+    method: "DELETE",
+  });
+}
+
 export function sendMessage(threadId: string, text: string, structuredInput?: StructuredInputModel) {
   const payload: SendMessageRequest = structuredInput ? { text, structuredInput } : { text };
   return apiRequest<SendMessageResponse>(`/api/threads/${threadId}/messages`, {

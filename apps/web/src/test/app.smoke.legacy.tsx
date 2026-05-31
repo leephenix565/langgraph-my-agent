@@ -16,8 +16,10 @@ describe("chat, settings, and agents shell smoke", () => {
         session={INITIAL_SESSIONS[2]}
         turns={TRANSCRIPTS_BY_SESSION["session-fused"]}
         onSendMessage={() => {}}
+        onClearMessages={() => {}}
         isLoading={false}
         isSending={false}
+        isClearing={false}
         unavailable={false}
         degraded={false}
         errorMessage={null}

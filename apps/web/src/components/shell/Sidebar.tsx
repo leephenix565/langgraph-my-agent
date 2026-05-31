@@ -8,7 +8,10 @@ interface SidebarProps {
   activeSessionId: string;
   onSelectSession: (sessionId: string) => void;
   onCreateThread: () => void;
+  onDeleteThread: (sessionId: string) => void;
   createDisabled?: boolean;
+  deleteDisabled?: boolean;
+  deletingThreadId?: string | null;
   connectionState: "loading" | "live" | "degraded" | "unavailable";
 }
 
@@ -17,7 +20,10 @@ export function Sidebar({
   activeSessionId,
   onSelectSession,
   onCreateThread,
+  onDeleteThread,
   createDisabled = false,
+  deleteDisabled = false,
+  deletingThreadId = null,
   connectionState,
 }: SidebarProps) {
   const navigate = useNavigate();
@@ -61,18 +67,32 @@ export function Sidebar({
         <div className="sidebar__session-list">
           {sessions.length === 0 ? <div className="sidebar__empty">{zhCN.sidebar.empty}</div> : null}
           {sessions.map((session) => (
-            <button
+            <div
               key={session.id}
-              type="button"
-              className={`sidebar__session${session.id === activeSessionId ? " is-active" : ""}`}
-              onClick={() => handleSessionSelect(session.id)}
+              className={`sidebar__session-row${session.id === activeSessionId ? " is-active" : ""}`}
             >
-              <span className="sidebar__session-marker" aria-hidden="true" />
-              <div className="sidebar__session-copy">
-                <strong>{session.title}</strong>
-                <small>{session.updatedAt}</small>
-              </div>
-            </button>
+              <button
+                type="button"
+                className="sidebar__session"
+                onClick={() => handleSessionSelect(session.id)}
+              >
+                <span className="sidebar__session-marker" aria-hidden="true" />
+                <div className="sidebar__session-copy">
+                  <strong>{session.title}</strong>
+                  <small>{session.updatedAt}</small>
+                </div>
+              </button>
+              <button
+                type="button"
+                className="sidebar__session-delete"
+                onClick={() => onDeleteThread(session.id)}
+                disabled={deleteDisabled || deletingThreadId === session.id}
+                aria-label={`${zhCN.sidebar.deleteThread}: ${session.title}`}
+                title={zhCN.sidebar.deleteThread}
+              >
+                {deletingThreadId === session.id ? "…" : "×"}
+              </button>
+            </div>
           ))}
         </div>
       </section>

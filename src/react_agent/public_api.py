@@ -7,7 +7,7 @@ import uuid
 from pathlib import Path
 from typing import Any, List
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import StreamingResponse
 
@@ -257,6 +257,48 @@ def _encode_ndjson_event(event: Any) -> bytes:
 @app.get("/api/threads/{thread_id}", response_model=PublicThreadDetail)
 async def get_thread(thread_id: str) -> PublicThreadDetail:
     return _get_thread_detail(thread_id)
+
+
+@app.delete("/api/threads/{thread_id}", status_code=204)
+async def delete_thread(thread_id: str) -> Response:
+    try:
+        deleted = store.delete_thread(thread_id)
+    except PublicStoreError as exc:
+        raise _http_error(
+            500,
+            code="public_store_unavailable",
+            message="Public thread store is unavailable.",
+            category="store",
+        ) from exc
+    if not deleted:
+        raise _http_error(
+            404,
+            code="thread_not_found",
+            message=f"Unknown thread_id: {thread_id}",
+            category="request",
+        )
+    return Response(status_code=204)
+
+
+@app.delete("/api/threads/{thread_id}/messages", response_model=PublicThreadDetail)
+async def clear_thread_messages(thread_id: str) -> PublicThreadDetail:
+    try:
+        detail = store.clear_thread_messages(thread_id)
+    except PublicStoreError as exc:
+        raise _http_error(
+            500,
+            code="public_store_unavailable",
+            message="Public thread store is unavailable.",
+            category="store",
+        ) from exc
+    if detail is None:
+        raise _http_error(
+            404,
+            code="thread_not_found",
+            message=f"Unknown thread_id: {thread_id}",
+            category="request",
+        )
+    return detail
 
 
 @app.post("/api/threads/{thread_id}/messages", response_model=SendMessageResponse)
