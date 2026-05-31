@@ -14,6 +14,9 @@
   `INTERNAL_LLM_SEARCH_PLACEHOLDER` path in `AGENT_TOOLS`: a generic LLM tool
   using the agent profile plus optional Tavily search and fail-soft limitation
   evidence. This is not a claim that dedicated external services are live.
+- Tavily is optional transitional fallback for placeholder agents, not a
+  required main-system dependency. The target architecture is for business
+  agents to be delivered as owner-provided external HTTP services.
 - `a03_macro_industry_research` remains enabled and callable as a live-verified macro wrapper even though it is not listed in `/sdb/dlut/agent_layer_latest.xlsx`; it is marked `保留层（旧CSV）/价值分析` pending taxonomy decision.
 - AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
 - AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
@@ -52,7 +55,13 @@ This document is the S0 operational source for the current repo snapshot.
   `PATH`, so Windows/conda validation does not depend on pre-mutating `PATH`.
 - `pytest` is installed separately in local and CI test gates unless dependency-group tooling is used explicitly.
 - `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets for HF/model-side and training/fine-tuning workflows. They are not default mainline quality inputs.
-- `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`.
+- Search readiness is optional by default. `TAVILY_API_KEY` enables Tavily
+  fallback search, `DISABLE_SEARCH=1|true|yes|on` is a supported LLM-only
+  placeholder mode, and only `SEARCH_REQUIRED=true` makes missing search
+  credentials block public runtime invocation.
+- DeepSeek is currently an LLM provider path only. Do not treat the DeepSeek App
+  web-search feature as evidence that this repo has verified default DeepSeek
+  API web search.
 - Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. Current `react_agent.graph` no longer reads them, and they do not extend `/api/health` readiness or any public-safe contract.
 - Offline RP/RARP/SFT/manual-gold/teacher-proxy artifacts under `ops/regression/route_prior/`, `data/router_sft/`, `data/sft/`, and `data/a01_sft/` are archived/non-mainline lineage as of AC-1B-1. They are not current Agent Catalog v2 acceptance evidence and are not default quality-gate promotion evidence.
 - Static gate tooling lives in the repo's dev dependency surface and is required for `scripts/quality/run_quality.py --mode static`.
@@ -231,7 +240,7 @@ Residual boundary:
 - the current local evidence still remains a scripted `skipped` path rather than a passed provider-backed artifact
 - current missing conditions in this environment are:
   - provider credentials (`OPENAI_API_KEY`, `ROUTER_OPENAI_API_KEY`, `BASELINE_OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
-  - `TAVILY_API_KEY`
+  - optional Tavily search credentials only when a search-backed run is explicitly required
   - runtime import/readiness in a fully configured provider-backed state
 
 ## 7. Deterministic Fusion Gate

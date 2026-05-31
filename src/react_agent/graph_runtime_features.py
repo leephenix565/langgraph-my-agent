@@ -13,10 +13,12 @@ from react_agent.graph_observability import _truncate
 from react_agent.state import State
 from react_agent.utils import get_message_text
 
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+
 
 def _is_search_disabled_globally() -> bool:
     """Read DISABLE_SEARCH at call time so long-lived processes can reflect env updates."""
-    return os.environ.get("DISABLE_SEARCH", "0") == "1"
+    return str(os.environ.get("DISABLE_SEARCH", "") or "").strip().lower() in _TRUTHY_ENV_VALUES
 
 
 def _thread_summary_enabled() -> bool:

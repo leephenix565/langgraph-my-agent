@@ -215,7 +215,7 @@ Current local evidence snapshot:
 - latest artifact status: `skipped`
 - current missing prerequisites in this environment:
   - provider credentials (`OPENAI_API_KEY`, `ROUTER_OPENAI_API_KEY`, `BASELINE_OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
-  - search credential (`TAVILY_API_KEY`)
+  - optional search credential (`TAVILY_API_KEY`) only for search-required validation
   - runtime import/readiness is still unavailable in the current environment
 - this remains an acceptable residual because provider/live smoke is scripted evidence, but still optional and non-blocking by design
 
@@ -330,7 +330,8 @@ Most checked-in fixtures are labeling templates. `draft_for_human_review` labels
 - Dev quality tools should be installed alongside the project when you intend to run `--mode static`
 - Mainline Python dependencies come from `pyproject.toml`. Local development/static validation should install `.[dev]` plus `pytest`.
 - `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets and are not default quality-gate inputs.
-- `TAVILY_API_KEY` remains an import-time prerequisite for `react_agent.graph`
+- `TAVILY_API_KEY` is optional transitional search fallback. Missing Tavily no longer blocks graph import or public runtime by default; use `SEARCH_REQUIRED=true` only when a search-backed run must require it, and `DISABLE_SEARCH=1|true|yes|on` for LLM-only placeholder mode.
+- DeepSeek is currently an LLM provider path only. Do not treat DeepSeek App web search as verified default API search in this repo.
 - Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. The current graph runtime no longer reads them and they do not expand public readiness or the public adapter contract.
 - replay continuity remains weaker than persistent graph continuity and must stay labeled that way
 - `state["messages"]` is not the public transcript

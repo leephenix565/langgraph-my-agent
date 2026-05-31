@@ -30,6 +30,16 @@ Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Endpoint/profi
   generic LLM tools that use the agent profile, optional Tavily search, and
   structured fail-soft output. When search is disabled or unavailable, evidence
   records `source_type=llm_search_placeholder` with the limitation.
+- Tavily is optional transitional fallback only. Missing `TAVILY_API_KEY` does
+  not block public runtime by default; use `SEARCH_REQUIRED=true` only for
+  explicit search-required validation. `DISABLE_SEARCH=1|true|yes|on` is the
+  supported LLM-only placeholder mode.
+- Target architecture: business agents should ultimately be owner-provided
+  external HTTP agent services. The main system should not depend on Tavily to
+  fill permanent agent capability gaps.
+- DeepSeek is currently documented in this repo as an LLM provider path only;
+  do not claim default DeepSeek API web search unless a supported request
+  contract is implemented and verified.
 - Source-missing agents remain pending delivery or an explicitly approved
   endpoint-only policy even though they have a callable placeholder path.
 
@@ -194,8 +204,10 @@ recommendations and do not establish data freshness.
 
 Graph-level smoke was skipped because the shell did not have provider/search
 prerequisites such as `OPENAI_API_KEY`, `ROUTER_OPENAI_API_KEY`,
-`BASELINE_OPENAI_API_KEY`, `GOOGLE_API_KEY`, or `TAVILY_API_KEY`. This does not
-block the wrapper-level live smoke.
+`BASELINE_OPENAI_API_KEY`, `GOOGLE_API_KEY`, or optional Tavily credentials for
+search-required runs. Missing `TAVILY_API_KEY` alone does not block public
+runtime unless `SEARCH_REQUIRED=true`. This does not block the wrapper-level
+live smoke.
 
 Remaining risks after AC-1A-L2:
 

@@ -29,6 +29,8 @@ from react_agent.public_runtime import (
     PublicRuntimeUnavailable,
     RuntimeReadinessProbe,
     StreamPublicTurnCompleted,
+    prepare_public_turn_invoke,
+    probe_public_runtime,
 )
 from react_agent.public_store import PublicThreadStore
 
@@ -157,6 +159,64 @@ def test_health_contract(tmp_path, monkeypatch):
     assert payload["checkpointer"]["status"] == "disabled"
     assert payload["checkpointer"]["code"] == "checkpointer_disabled"
     assert payload["store"] == "json-file"
+
+
+def test_public_runtime_allows_disabled_search_without_tavily(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.setenv("DISABLE_SEARCH", "true")
+    monkeypatch.delenv("SEARCH_REQUIRED", raising=False)
+
+    probe = probe_public_runtime()
+    assert probe.search_env.status == "disabled"
+    assert probe.search_env.code == "search_env_disabled"
+
+    prepared = prepare_public_turn_invoke(thread_id="thread-search-disabled", history_turns=[], user_text="hello")
+    assert prepared.continuity_mode in {"replay", "persistent"}
+
+
+def test_public_runtime_allows_optional_missing_tavily(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.delenv("DISABLE_SEARCH", raising=False)
+    monkeypatch.delenv("SEARCH_REQUIRED", raising=False)
+
+    probe = probe_public_runtime()
+    assert probe.search_env.status == "missing"
+    assert probe.search_env.code == "search_env_missing_optional"
+
+    prepared = prepare_public_turn_invoke(thread_id="thread-search-optional", history_turns=[], user_text="hello")
+    assert prepared.continuity_mode in {"replay", "persistent"}
+
+
+def test_public_runtime_blocks_missing_required_tavily(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.delenv("DISABLE_SEARCH", raising=False)
+    monkeypatch.setenv("SEARCH_REQUIRED", "true")
+
+    probe = probe_public_runtime()
+    assert probe.search_env.status == "missing"
+    assert probe.search_env.code == "search_env_missing_required"
+
+    try:
+        prepare_public_turn_invoke(thread_id="thread-search-required", history_turns=[], user_text="hello")
+    except PublicRuntimeUnavailable as exc:
+        assert exc.code == "search_env_missing_required"
+        assert exc.category == "provider_env"
+    else:  # pragma: no cover - defensive assertion for explicit contract.
+        raise AssertionError("missing required search should block public invocation")
+
+
+def test_public_runtime_marks_tavily_as_available(monkeypatch):
+    monkeypatch.setenv("OPENAI_API_KEY", "test-provider-key")
+    monkeypatch.setenv("TAVILY_API_KEY", "test-search-key")
+    monkeypatch.delenv("DISABLE_SEARCH", raising=False)
+    monkeypatch.delenv("SEARCH_REQUIRED", raising=False)
+
+    probe = probe_public_runtime()
+    assert probe.search_env.status == "configured"
+    assert probe.search_env.code == "search_env_available"
 
 
 def test_agent_catalog_contract(tmp_path, monkeypatch):

@@ -155,8 +155,9 @@ The adapter keeps health and error signaling on the existing public surface inst
 - readiness details are carried as structured public-safe fields:
   - runtime import readiness
   - provider env readiness
-  - search env readiness
+  - search env readiness; Tavily is optional by default, `DISABLE_SEARCH=1|true|yes|on` is an allowed LLM-only mode, and only `SEARCH_REQUIRED=true` makes missing search credentials a public-invoke blocker
   - checkpointer status
+- Search boundary: Tavily is a transitional fallback for placeholder agents, not a required frontend/public-adapter dependency. DeepSeek is currently treated as an LLM provider path only, not as a verified default web-search provider.
 - transport failures remain distinct from degraded readiness:
   - unavailable: the web shell cannot reach the adapter at all
   - degraded: the adapter is alive, but readiness is below the preferred baseline

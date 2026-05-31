@@ -1,5 +1,32 @@
 # CHANGELOG
 
+## 2026-05-31 - Optional Tavily search readiness
+- Files:
+  - `src/react_agent/public_runtime.py`
+  - `src/react_agent/default_agents.py`
+  - `src/react_agent/graph_runtime_features.py`
+  - `tests/integration_tests/test_public_api.py`
+  - `tests/unit_tests/test_internal_llm_search_placeholders.py`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Made Tavily optional for public runtime readiness. Missing `TAVILY_API_KEY`
+  no longer blocks public invocation by default; it is reported as
+  `search_env_missing_optional` and the runtime may continue in degraded
+  LLM-only/placeholder mode.
+- Added `SEARCH_REQUIRED=true` as the explicit opt-in gate that makes missing
+  search configuration block public invocation. `DISABLE_SEARCH=1|true|yes|on`
+  is a valid LLM-only mode and reports `search_env_disabled`.
+- Kept Tavily support as a transitional fallback for non-wrapper placeholder
+  agents. The target architecture remains owner-provided external HTTP agent
+  services for business agents, not main-system Tavily supplementation.
+- Clarified that DeepSeek is currently used as an LLM provider path only; this
+  change does not introduce or claim verified DeepSeek API web search.
+- Scope boundary: no graph/router/external-wrapper change, no provider call, no
+  external agent invoke, no Web-P0B auth/rate-limit work, no `.env` change, and
+  no push.
+
 ## 2026-05-31 - Web history deletion controls
 - Files:
   - `src/react_agent/public_store.py`

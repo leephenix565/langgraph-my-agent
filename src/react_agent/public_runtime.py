@@ -36,6 +36,8 @@ _PROVIDER_ENV_KEYS = (
     "GOOGLE_API_KEY",
 )
 _DISABLED_CHECKPOINTER_MODES = {"", "none", "off", "0"}
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
+_SEARCH_BLOCKING_CODES = {"search_env_missing_required"}
 
 
 class PublicRuntimeError(RuntimeError):
@@ -91,6 +93,10 @@ def _is_env_present(name: str) -> bool:
     return bool(str(os.environ.get(name, "") or "").strip())
 
 
+def _is_truthy_env(name: str) -> bool:
+    return str(os.environ.get(name, "") or "").strip().lower() in _TRUTHY_ENV_VALUES
+
+
 def _truncate_debug_text(text: str | None, limit: int = 200) -> str:
     value = " ".join(str(text or "").split())
     if len(value) <= limit:
@@ -137,12 +143,24 @@ def _provider_env_surface() -> ReadinessSurface:
 
 
 def _search_env_surface() -> ReadinessSurface:
+    if _is_truthy_env("DISABLE_SEARCH"):
+        return ReadinessSurface(
+            status="disabled",
+            code="search_env_disabled",
+            hint="Search is disabled by DISABLE_SEARCH; public runtime may continue in LLM-only mode.",
+        )
     if _is_env_present("TAVILY_API_KEY"):
-        return ReadinessSurface(status="configured", code="search_env_configured")
+        return ReadinessSurface(status="configured", code="search_env_available")
+    if _is_truthy_env("SEARCH_REQUIRED"):
+        return ReadinessSurface(
+            status="missing",
+            code="search_env_missing_required",
+            hint="Set TAVILY_API_KEY or disable/relax search before public runtime invocation.",
+        )
     return ReadinessSurface(
         status="missing",
-        code="search_env_missing",
-        hint="Set TAVILY_API_KEY before importing react_agent.graph.",
+        code="search_env_missing_optional",
+        hint="Tavily search is optional; placeholder agents may continue with LLM-only degraded evidence.",
     )
 
 
@@ -234,9 +252,9 @@ def prepare_public_turn_invoke(
             code=probe.provider_env.code,
             category="provider_env",
         )
-    if probe.search_env.status != "configured":
+    if probe.search_env.code in _SEARCH_BLOCKING_CODES:
         raise PublicRuntimeUnavailable(
-            "Search dependency is not configured for public runtime invocation.",
+            "Search dependency is required but not configured for public runtime invocation.",
             code=probe.search_env.code,
             category="provider_env",
         )

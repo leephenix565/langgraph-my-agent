@@ -153,7 +153,8 @@ def test_placeholder_direct_invoke_with_mock_search_success(monkeypatch) -> None
 
 
 def test_placeholder_direct_invoke_with_disabled_search_marks_limitation(monkeypatch) -> None:
-    monkeypatch.setenv("DISABLE_SEARCH", "1")
+    monkeypatch.delenv("TAVILY_API_KEY", raising=False)
+    monkeypatch.setenv("DISABLE_SEARCH", "yes")
     captured = {}
 
     class FakeModel:

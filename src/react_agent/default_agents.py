@@ -23,6 +23,7 @@ from react_agent.utils import get_message_text, load_chat_model
 
 SPECIAL_RUNTIME_AGENT_IDS = {"a01_cio_orchestrator", "a25_report_center"}
 PLACEHOLDER_SOURCE_TYPE = "source_type=llm_search_placeholder"
+TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 
 def _safe_runtime_context() -> Context | None:
@@ -34,6 +35,10 @@ def _safe_runtime_context() -> Context | None:
     if runtime and getattr(runtime, "context", None):
         return runtime.context
     return None
+
+
+def _is_truthy_env(name: str) -> bool:
+    return str(os.environ.get(name, "") or "").strip().lower() in TRUTHY_ENV_VALUES
 
 
 def _effective_model_name() -> str:
@@ -300,7 +305,7 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
             {"role": "system", "content": system_prompt},
             {"role": "user", "content": user_content},
         ]
-        search_disabled = os.environ.get("DISABLE_SEARCH", "0") == "1"
+        search_disabled = _is_truthy_env("DISABLE_SEARCH")
         allow_search = False if search_disabled else tools_config.get(
             "allow_search", default_allow_search
         )
