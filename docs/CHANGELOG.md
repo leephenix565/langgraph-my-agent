@@ -1,5 +1,35 @@
 # CHANGELOG
 
+## 2026-05-31 - Web-P0B-lite public API guardrails
+- Files:
+  - `src/react_agent/public_guardrails.py`
+  - `src/react_agent/public_api.py`
+  - `tests/integration_tests/test_public_api.py`
+  - `apps/web/src/config/runtimeLimits.ts`
+  - `apps/web/src/components/shell/Composer.tsx`
+  - `apps/web/src/content/zh-CN.ts`
+  - `apps/web/src/test/smoke.tsx`
+  - `README.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/FRONTEND_ARCHITECTURE.md`
+  - `docs/CHANGELOG.md`
+- Added small-trial public API guardrails: per-IP in-memory rate limiting,
+  maximum user-message length validation, and per-IP active stream caps.
+- Defaults are intentionally loose for small-scale trials:
+  `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`,
+  `PUBLIC_API_MAX_MESSAGE_CHARS=20000`,
+  `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`, and
+  `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300` is documented for deployment
+  planning but not wired as a hard cancellation layer in this change.
+- `/api/health` stays exempt from the stricter request limiter so health probes
+  remain usable.
+- Added frontend composer protection for overlong composed transcript text with
+  a Chinese user-facing prompt.
+- Kept Tavily optional. This change does not introduce token auth, login,
+  HTTPS/reverse-proxy deployment, provider calls, external agent invokes, or
+  public-internet security completeness.
+
 ## 2026-05-31 - Optional Tavily search readiness
 - Files:
   - `src/react_agent/public_runtime.py`

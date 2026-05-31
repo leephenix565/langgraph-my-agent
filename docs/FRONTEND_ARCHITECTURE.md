@@ -157,6 +157,18 @@ The adapter keeps health and error signaling on the existing public surface inst
   - provider env readiness
   - search env readiness; Tavily is optional by default, `DISABLE_SEARCH=1|true|yes|on` is an allowed LLM-only mode, and only `SEARCH_REQUIRED=true` makes missing search credentials a public-invoke blocker
   - checkpointer status
+- Web-P0B-lite trial guardrails are backend-enforced and frontend-assisted:
+  - backend defaults: `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`,
+    `PUBLIC_API_MAX_MESSAGE_CHARS=20000`,
+    `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`
+  - `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300` is documented for deployment
+    planning, not a hard cancellation layer in this phase
+  - the composer blocks overlong composed transcript text with a short Chinese
+    prompt before sending
+  - `/api/health` remains available for readiness probes
+  - this is not a formal public deployment security scheme; token/auth, HTTPS,
+    reverse proxy hardening, trusted proxy IP handling, and cost quotas remain
+    future deployment work
 - Search boundary: Tavily is a transitional fallback for placeholder agents, not a required frontend/public-adapter dependency. DeepSeek is currently treated as an LLM provider path only, not as a verified default web-search provider.
 - transport failures remain distinct from degraded readiness:
   - unavailable: the web shell cannot reach the adapter at all

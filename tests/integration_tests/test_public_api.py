@@ -23,6 +23,7 @@ from react_agent.public_contracts import (
     WorkflowStageEventData,
     WorkflowStageProgressModel,
 )
+from react_agent.public_guardrails import acquire_stream_slot, release_stream_slot, reset_public_guardrail_state
 from react_agent.public_mapping import compose_structured_input_text, replay_messages
 from react_agent.public_runtime import (
     PreparedPublicTurnInvoke,
@@ -33,6 +34,14 @@ from react_agent.public_runtime import (
     probe_public_runtime,
 )
 from react_agent.public_store import PublicThreadStore
+
+
+def setup_function() -> None:
+    reset_public_guardrail_state()
+
+
+def teardown_function() -> None:
+    reset_public_guardrail_state()
 
 
 def _assistant_turn(final_source: str = "mainline", continuity_mode: str = "replay") -> PublicTurn:
@@ -127,6 +136,7 @@ def _structured_input(**overrides) -> StructuredInputModel:
 
 
 def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> TestClient:
+    reset_public_guardrail_state()
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
     monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe(continuity_mode))
@@ -159,6 +169,78 @@ def test_health_contract(tmp_path, monkeypatch):
     assert payload["checkpointer"]["status"] == "disabled"
     assert payload["checkpointer"]["code"] == "checkpointer_disabled"
     assert payload["store"] == "json-file"
+
+
+def test_public_api_default_trial_guardrails_allow_normal_request(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "A normal short public trial request."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["assistantTurn"]["role"] == "assistant"
+
+
+def test_public_api_rejects_message_over_configured_length(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_MAX_MESSAGE_CHARS", "10")
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "x" * 11},
+    )
+
+    assert response.status_code == 413
+    assert response.json()["detail"]["code"] == "message_too_long"
+    assert response.json()["detail"]["category"] == "request"
+
+
+def test_public_api_rate_limit_returns_safe_429(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "1")
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    first = client.get("/api/threads")
+    second = client.get("/api/threads")
+
+    assert first.status_code == 200
+    assert second.status_code == 429
+    assert second.json()["detail"]["code"] == "public_rate_limit_exceeded"
+    assert "Traceback" not in second.text
+
+
+def test_public_api_health_is_not_blocked_by_rate_limit(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "1")
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+
+    first = client.get("/api/health")
+    second = client.get("/api/health")
+
+    assert first.status_code == 200
+    assert second.status_code == 200
+
+
+def test_public_api_stream_active_limit_returns_safe_429(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    monkeypatch.setenv("PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP", "1")
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    acquire_stream_slot("testclient")
+    try:
+        response = client.post(
+            f"/api/threads/{thread_id}/messages/stream",
+            json={"text": "Stream while another stream is active."},
+        )
+    finally:
+        release_stream_slot("testclient")
+
+    assert response.status_code == 429
+    assert response.json()["detail"]["code"] == "public_stream_limit_exceeded"
+    assert "Traceback" not in response.text
 
 
 def test_public_runtime_allows_disabled_search_without_tavily(monkeypatch):
@@ -564,7 +646,36 @@ def test_send_message_runtime_failure_contract(tmp_path, monkeypatch):
         assert forbidden not in response_text
 
 
+def test_send_message_unexpected_exception_is_sanitized(tmp_path, monkeypatch):
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    client = TestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    async def _unexpected_invoke_public_turn(*, thread_id, history_turns, user_text):
+        raise RuntimeError("Traceback provider raw body secret-token should not be returned")
+
+    monkeypatch.setattr(public_api, "invoke_public_turn", _unexpected_invoke_public_turn)
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Trigger unexpected exception sanitization."},
+    )
+
+    assert response.status_code == 500
+    payload = response.json()
+    assert payload["detail"]["code"] == "public_runtime_unexpected"
+    assert payload["detail"]["category"] == "runtime"
+    assert "Traceback" not in response.text
+    assert "secret-token" not in response.text
+    assert "provider raw body" not in response.text
+
+
 def test_send_message_stream_success_persists_only_final_turns(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    monkeypatch.setenv("PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP", "1")
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
     monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("persistent"))
@@ -642,6 +753,15 @@ def test_send_message_stream_success_persists_only_final_turns(tmp_path, monkeyp
     assert len(persisted.turns) == 2
     assert persisted.turns[1].role == "assistant"
     assert persisted.turns[1].continuityMode == "persistent"
+
+    with client.stream(
+        "POST",
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Stream the final answer."},
+    ) as second_response:
+        assert second_response.status_code == 200
+        second_events = _stream_lines(second_response)
+    assert second_events[-1]["type"] == "answer.final"
 
 
 def test_send_message_stream_emits_error_and_does_not_persist_failed_turn(tmp_path, monkeypatch):

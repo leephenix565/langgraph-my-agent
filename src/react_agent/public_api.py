@@ -7,9 +7,9 @@ import uuid
 from pathlib import Path
 from typing import Any, List
 
-from fastapi import FastAPI, HTTPException, Response
+from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import StreamingResponse
+from fastapi.responses import JSONResponse, StreamingResponse
 
 from react_agent.agents import (
     AGENT_METADATA,
@@ -43,6 +43,14 @@ from react_agent.public_mapping import (
     build_user_turn,
     compose_structured_input_text,
     normalize_structured_input,
+)
+from react_agent.public_guardrails import (
+    PublicApiGuardrailViolation,
+    acquire_stream_slot,
+    check_rate_limit,
+    client_key_from_request,
+    release_stream_slot,
+    validate_message_length,
 )
 from react_agent.public_runtime import (
     PublicRuntimeError,
@@ -90,6 +98,26 @@ def _error_detail(code: str, message: str, category: str) -> dict:
 
 def _http_error(status_code: int, *, code: str, message: str, category: str) -> HTTPException:
     return HTTPException(status_code=status_code, detail=_error_detail(code, message, category))
+
+
+def _guardrail_http_error(exc: PublicApiGuardrailViolation) -> HTTPException:
+    return _http_error(exc.status_code, code=exc.code, message=exc.message, category=exc.category)
+
+
+@app.middleware("http")
+async def _public_trial_guardrails(request: Request, call_next):
+    path = request.url.path
+    if path == "/api/health" or not path.startswith("/api/"):
+        return await call_next(request)
+
+    try:
+        check_rate_limit(client_key_from_request(request))
+    except PublicApiGuardrailViolation as exc:
+        return JSONResponse(
+            status_code=exc.status_code,
+            content={"detail": _error_detail(exc.code, exc.message, exc.category)},
+        )
+    return await call_next(request)
 
 
 def _sorted_summaries(details: List[PublicThreadDetail]) -> List[ChatSessionSummary]:
@@ -247,6 +275,11 @@ def _prepare_user_message(payload: SendMessageRequest) -> tuple[str, StructuredI
                 category="request",
             )
 
+    try:
+        validate_message_length(user_text)
+    except PublicApiGuardrailViolation as exc:
+        raise _guardrail_http_error(exc) from exc
+
     return user_text, structured_input, build_user_turn(user_text, structured_input)
 
 
@@ -315,6 +348,13 @@ async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessa
         raise _http_error(503, code=exc.code, message=exc.message, category=exc.category) from exc
     except PublicRuntimeError as exc:
         raise _http_error(502, code=exc.code, message=exc.message, category=exc.category) from exc
+    except Exception as exc:
+        raise _http_error(
+            500,
+            code="public_runtime_unexpected",
+            message="Public runtime failed before a safe response could be produced.",
+            category="runtime",
+        ) from exc
 
     updated_detail = append_turns(detail, user_turn, assistant_turn, continuity_mode)
     try:
@@ -335,7 +375,7 @@ async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessa
 
 
 @app.post("/api/threads/{thread_id}/messages/stream")
-async def send_message_stream(thread_id: str, payload: SendMessageRequest) -> StreamingResponse:
+async def send_message_stream(thread_id: str, request: Request, payload: SendMessageRequest) -> StreamingResponse:
     detail = _get_thread_detail(thread_id)
     user_text, structured_input, user_turn = _prepare_user_message(payload)
     try:
@@ -348,88 +388,104 @@ async def send_message_stream(thread_id: str, payload: SendMessageRequest) -> St
         raise _http_error(503, code=exc.code, message=exc.message, category=exc.category) from exc
     except PublicRuntimeError as exc:
         raise _http_error(502, code=exc.code, message=exc.message, category=exc.category) from exc
+    except Exception as exc:
+        raise _http_error(
+            500,
+            code="public_runtime_unexpected",
+            message="Public runtime failed before a safe streaming response could be produced.",
+            category="runtime",
+        ) from exc
+
+    client_key = client_key_from_request(request)
+    try:
+        acquire_stream_slot(client_key)
+    except PublicApiGuardrailViolation as exc:
+        raise _guardrail_http_error(exc) from exc
 
     async def _event_stream():
         completion: StreamPublicTurnCompleted | None = None
         try:
-            async for event in stream_public_turn(
-                thread_id=thread_id,
-                user_text=user_text,
-                prepared=prepared,
-            ):
-                if isinstance(event, StreamPublicTurnCompleted):
-                    completion = event
-                    break
-                yield _encode_ndjson_event(event)
-        except PublicRuntimeUnavailable as exc:
-            yield _encode_ndjson_event(
-                StreamErrorEvent(
-                    type="error",
-                    data=StreamErrorEventData(code=exc.code, message=exc.message, category=exc.category),
-                )
-            )
-            return
-        except PublicRuntimeError as exc:
-            yield _encode_ndjson_event(
-                StreamErrorEvent(
-                    type="error",
-                    data=StreamErrorEventData(code=exc.code, message=exc.message, category=exc.category),
-                )
-            )
-            return
-        except Exception:
-            yield _encode_ndjson_event(
-                StreamErrorEvent(
-                    type="error",
-                    data=StreamErrorEventData(
-                        code="runtime_stream_unexpected",
-                        message="Streaming invocation ended unexpectedly before a final public answer could be produced.",
-                        category="runtime",
-                    ),
-                )
-            )
-            return
-
-        if completion is None:
-            yield _encode_ndjson_event(
-                StreamErrorEvent(
-                    type="error",
-                    data=StreamErrorEventData(
-                        code="runtime_stream_incomplete",
-                        message="LangGraph runtime stream ended before a final public answer could be produced.",
-                        category="runtime",
-                    ),
-                )
-            )
-            return
-
-        updated_detail = append_turns(detail, user_turn, completion.assistant_turn, completion.continuity_mode)
-        try:
-            store.upsert_thread(updated_detail)
-        except PublicStoreError:
-            yield _encode_ndjson_event(
-                StreamErrorEvent(
-                    type="error",
-                    data=StreamErrorEventData(
-                        code="public_store_unavailable",
-                        message="Public thread store is unavailable.",
-                        category="store",
-                    ),
-                )
-            )
-            return
-
-        yield _encode_ndjson_event(
-            AnswerFinalEvent(
-                type="answer.final",
-                data=AnswerFinalEventData(
-                    response=SendMessageResponse(
-                        thread=updated_detail.thread,
-                        assistantTurn=completion.assistant_turn,
-                        turns=updated_detail.turns,
+            try:
+                async for event in stream_public_turn(
+                    thread_id=thread_id,
+                    user_text=user_text,
+                    prepared=prepared,
+                ):
+                    if isinstance(event, StreamPublicTurnCompleted):
+                        completion = event
+                        break
+                    yield _encode_ndjson_event(event)
+            except PublicRuntimeUnavailable as exc:
+                yield _encode_ndjson_event(
+                    StreamErrorEvent(
+                        type="error",
+                        data=StreamErrorEventData(code=exc.code, message=exc.message, category=exc.category),
                     )
-                ),
+                )
+                return
+            except PublicRuntimeError as exc:
+                yield _encode_ndjson_event(
+                    StreamErrorEvent(
+                        type="error",
+                        data=StreamErrorEventData(code=exc.code, message=exc.message, category=exc.category),
+                    )
+                )
+                return
+            except Exception:
+                yield _encode_ndjson_event(
+                    StreamErrorEvent(
+                        type="error",
+                        data=StreamErrorEventData(
+                            code="runtime_stream_unexpected",
+                            message="Streaming invocation ended unexpectedly before a final public answer could be produced.",
+                            category="runtime",
+                        ),
+                    )
+                )
+                return
+
+            if completion is None:
+                yield _encode_ndjson_event(
+                    StreamErrorEvent(
+                        type="error",
+                        data=StreamErrorEventData(
+                            code="runtime_stream_incomplete",
+                            message="LangGraph runtime stream ended before a final public answer could be produced.",
+                            category="runtime",
+                        ),
+                    ),
+                )
+                return
+
+            updated_detail = append_turns(detail, user_turn, completion.assistant_turn, completion.continuity_mode)
+            try:
+                store.upsert_thread(updated_detail)
+            except PublicStoreError:
+                yield _encode_ndjson_event(
+                    StreamErrorEvent(
+                        type="error",
+                        data=StreamErrorEventData(
+                            code="public_store_unavailable",
+                            message="Public thread store is unavailable.",
+                            category="store",
+                        ),
+                    )
+                )
+                return
+
+            yield _encode_ndjson_event(
+                AnswerFinalEvent(
+                    type="answer.final",
+                    data=AnswerFinalEventData(
+                        response=SendMessageResponse(
+                            thread=updated_detail.thread,
+                            assistantTurn=completion.assistant_turn,
+                            turns=updated_detail.turns,
+                        )
+                    ),
+                )
             )
-        )
+        finally:
+            release_stream_slot(client_key)
 
     return StreamingResponse(_event_stream(), media_type="application/x-ndjson")

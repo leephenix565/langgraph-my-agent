@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { PUBLIC_API_MAX_MESSAGE_CHARS } from "../../config/runtimeLimits";
 import { zhCN } from "../../content/zh-CN";
 import type { StructuredInputModel } from "../../types/chat";
 import {
@@ -14,9 +15,16 @@ interface ComposerProps {
   disabled?: boolean;
   busy?: boolean;
   unavailable?: boolean;
+  maxMessageChars?: number;
 }
 
-export function Composer({ onSubmit, disabled = false, busy = false, unavailable = false }: ComposerProps) {
+export function Composer({
+  onSubmit,
+  disabled = false,
+  busy = false,
+  unavailable = false,
+  maxMessageChars = PUBLIC_API_MAX_MESSAGE_CHARS,
+}: ComposerProps) {
   const [structuredOpen, setStructuredOpen] = useState(false);
   const [draft, setDraft] = useState<StructuredInputDraft>(EMPTY_STRUCTURED_INPUT_DRAFT);
   const materialsLabel = "补充材料 / 笔记";
@@ -25,6 +33,8 @@ export function Composer({ onSubmit, disabled = false, busy = false, unavailable
   const urlReferencesLabel = "链接参考 / URL 引用";
   const urlReferencesPlaceholder = "每行填写一个完整链接，例如 https://example.com/report";
   const validationError = getStructuredInputValidationError(draft);
+  const composedValue = composeStructuredPrompt(draft);
+  const inputTooLong = composedValue.length > maxMessageChars;
 
   function updateDraft(field: keyof StructuredInputDraft, value: string) {
     setDraft((current) => ({ ...current, [field]: value }));
@@ -32,16 +42,16 @@ export function Composer({ onSubmit, disabled = false, busy = false, unavailable
 
   function handleSubmit(event: React.FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const nextValue = composeStructuredPrompt(draft);
+    const nextValue = composedValue;
     const nextStructuredInput = toStructuredInputModel(draft);
-    if (!nextValue || !nextStructuredInput || disabled || busy) {
+    if (!nextValue || !nextStructuredInput || inputTooLong || disabled || busy) {
       return;
     }
     onSubmit(nextValue, nextStructuredInput);
     setDraft(EMPTY_STRUCTURED_INPUT_DRAFT);
   }
 
-  const canSubmit = Boolean(composeStructuredPrompt(draft)) && !validationError && !disabled && !busy;
+  const canSubmit = Boolean(composedValue) && !validationError && !inputTooLong && !disabled && !busy;
 
   return (
     <form className="composer" onSubmit={handleSubmit}>
@@ -135,6 +145,7 @@ export function Composer({ onSubmit, disabled = false, busy = false, unavailable
           {validationError ? <p className="composer__structured-warning">{validationError}</p> : null}
         </div>
       ) : null}
+      {inputTooLong ? <p className="composer__structured-warning">{zhCN.composer.inputTooLong}</p> : null}
       <p className="composer__hint">{zhCN.composer.helper}</p>
     </form>
   );

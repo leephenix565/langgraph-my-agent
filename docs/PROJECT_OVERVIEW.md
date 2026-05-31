@@ -21,6 +21,11 @@ This repository is a layered multi-agent orchestration system built on LangGraph
   - Chat: live
   - Settings: live read-only
   - Agents: live read-only
+- Public adapter protection: Web-P0B-lite adds small-trial runtime guardrails
+  around the public API: per-IP in-memory rate limiting, maximum message length,
+  and active stream caps. This is not a formal public deployment security
+  solution and does not add token auth, login, HTTPS, or reverse-proxy
+  hardening.
 - Public transcript boundary:
   - one visible assistant persona only
   - workflow is an inspector, not a second transcript
@@ -146,6 +151,19 @@ Current local evidence still shows a `skipped` artifact rather than a passed pro
 - provider credentials (`OPENAI_API_KEY`, `ROUTER_OPENAI_API_KEY`, `BASELINE_OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
 - optional Tavily search credentials when a search-backed smoke is explicitly required (`SEARCH_REQUIRED=true`)
 - runtime import/readiness in a fully configured provider-backed state
+
+Public API small-trial guardrail defaults are:
+
+- `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`
+- `PUBLIC_API_MAX_MESSAGE_CHARS=20000`
+- `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`
+- `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300`
+
+`/api/health` remains available for readiness probes and is not blocked by the
+stricter request limiter. These guardrails reduce accidental overload and
+oversized-input mistakes, but public exposure still requires token/auth, HTTPS,
+reverse proxy hardening, trusted proxy header review, stronger distributed rate
+limits, and cost controls.
 
 ## 9. Current Product Scope
 

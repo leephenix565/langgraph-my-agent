@@ -59,6 +59,15 @@ This document is the S0 operational source for the current repo snapshot.
   fallback search, `DISABLE_SEARCH=1|true|yes|on` is a supported LLM-only
   placeholder mode, and only `SEARCH_REQUIRED=true` makes missing search
   credentials block public runtime invocation.
+- Web-P0B-lite public API trial guardrails are enabled by default:
+  `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`,
+  `PUBLIC_API_MAX_MESSAGE_CHARS=20000`,
+  `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`, and
+  `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300` for deployment planning. Values
+  `<=0` disable the corresponding limiter/check. Client keys use
+  `request.client.host`; reverse-proxy deployments must separately review
+  trusted proxy headers. These are small-scope trial protections only, not
+  token/auth, HTTPS, or formal public deployment security.
 - DeepSeek is currently an LLM provider path only. Do not treat the DeepSeek App
   web-search feature as evidence that this repo has verified default DeepSeek
   API web search.

@@ -1,0 +1,1 @@
+export const PUBLIC_API_MAX_MESSAGE_CHARS = 20_000;

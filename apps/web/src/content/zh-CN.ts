@@ -68,6 +68,7 @@ export const zhCN = {
     constraintsPlaceholder: "例如时间范围、分析边界、必须覆盖的点…",
     outputPreferenceLabel: "输出偏好",
     outputPreferencePlaceholder: "例如篇幅、结构、语气或是否需要表格/要点…",
+    inputTooLong: "输入过长，请缩短后重试。",
   },
   states: {
     unavailableTitle: "系统暂时不可用，请稍后重试",

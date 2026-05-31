@@ -1,11 +1,12 @@
 import assert from "node:assert/strict";
 import { JSDOM } from "jsdom";
 import React from "react";
-import { cleanup, render, waitFor, within } from "@testing-library/react";
+import { cleanup, fireEvent, render, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import App from "../app/App";
 import { AssistantAnswerCard } from "../components/chat/AssistantAnswerCard";
 import { UserBubble } from "../components/chat/UserBubble";
+import { Composer } from "../components/shell/Composer";
 import { AGENT_CATALOG } from "../mocks/agents";
 import type { StructuredInputModel } from "../types/chat";
 import { composeStructuredPrompt, parseStructuredUserTurn, toStructuredInputModel } from "../utils/structuredInput";
@@ -322,6 +323,32 @@ async function runAssistantMarkdownRenderChecks() {
   assert.ok(article.querySelector("pre code"));
   assert.ok(scope.getByText('const signal = "watch";'));
 
+  cleanup();
+}
+
+async function runComposerLengthLimitChecks() {
+  const user = userEvent.setup({ document: dom.window.document });
+  let submitCount = 0;
+  const view = render(<Composer maxMessageChars={10} onSubmit={() => { submitCount += 1; }} />);
+  const form = view.container.querySelector("form") as HTMLFormElement;
+  const { taskInput, sendButton } = getComposerElements(view.container);
+
+  await user.click(taskInput);
+  await user.type(taskInput, "exceeds-limit");
+  await waitFor(() => {
+    assert.equal(sendButton.disabled, true);
+    assert.ok(view.getByText("输入过长，请缩短后重试。"));
+  });
+  fireEvent.submit(form);
+  assert.equal(submitCount, 0);
+
+  await user.clear(taskInput);
+  await user.type(taskInput, "Normal");
+  await waitFor(() => {
+    assert.equal(sendButton.disabled, false);
+  });
+  fireEvent.submit(form);
+  assert.equal(submitCount, 1);
   cleanup();
 }
 
@@ -751,6 +778,7 @@ async function runSmoke() {
   runStructuredInputHelperChecks();
   await runUserBubbleStructuredRenderChecks();
   await runAssistantMarkdownRenderChecks();
+  await runComposerLengthLimitChecks();
   await runStreamingSuccessScenario();
   await runStreamingErrorScenario();
   await runHistoryMutationScenario();

@@ -332,6 +332,14 @@ Most checked-in fixtures are labeling templates. `draft_for_human_review` labels
 - `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets and are not default quality-gate inputs.
 - `TAVILY_API_KEY` is optional transitional search fallback. Missing Tavily no longer blocks graph import or public runtime by default; use `SEARCH_REQUIRED=true` only when a search-backed run must require it, and `DISABLE_SEARCH=1|true|yes|on` for LLM-only placeholder mode.
 - DeepSeek is currently an LLM provider path only. Do not treat DeepSeek App web search as verified default API search in this repo.
+- Web-P0B-lite public API guardrails are for small-scope trials, not formal
+  public-internet security. Defaults:
+  `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`,
+  `PUBLIC_API_MAX_MESSAGE_CHARS=20000`,
+  `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`, and
+  `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300` for deployment planning. Before
+  public exposure, add token/auth, HTTPS, reverse proxy hardening, trusted proxy
+  IP handling, persistent/distributed rate limits, and cost quotas.
 - Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. The current graph runtime no longer reads them and they do not expand public readiness or the public adapter contract.
 - replay continuity remains weaker than persistent graph continuity and must stay labeled that way
 - `state["messages"]` is not the public transcript
