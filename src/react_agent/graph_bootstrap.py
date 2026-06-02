@@ -4,12 +4,13 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Dict, List, Tuple
+from typing import Any, Dict, List, Tuple
 
 from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
     agents_by_layer,
+    format_agent_profile,
     load_metadata_from_dir,
     register_agent,
 )
@@ -41,12 +42,13 @@ def bootstrap_agent_runtime() -> None:
             continue
         desc = (meta.description or "").strip()
         if desc:
+            profile = format_agent_profile(meta)
             if aid == "a01_cio_orchestrator":
-                desc = (
-                    f"{desc}\n[Router alignment] 严格根据 router_plan_summary 执行任务拆解，"
+                profile = (
+                    f"{profile}\n[Router alignment] 严格根据 router_plan_summary 执行任务拆解，"
                     "不得新增/删除 agent，只能解释既定分工、补充验收点与风险门禁。"
                 )
-            tool = _build_agent_tool(aid, desc, default_allow_search=True)
+            tool = _build_agent_tool(aid, profile, default_allow_search=True)
         else:
             tool = build_generic_agent_tool(aid, meta.description)
         register_agent(meta, tool)
@@ -63,5 +65,23 @@ def build_node_registry(include_disabled: bool) -> Tuple[List[str], Dict[str, st
     return agent_ids_for_nodes, agent_node_names
 
 
-def build_agent_catalog(layer_order: List[str]) -> Dict[str, List[str]]:
-    return {layer: agents_by_layer(layer) for layer in layer_order}
+def _agent_profile_card(meta_id: str) -> Dict[str, Any]:
+    meta = AGENT_METADATA[meta_id]
+    return {
+        "id": meta.id,
+        "name": meta.name,
+        "business_layer": meta.business_layer or "",
+        "business_category": meta.business_category or "",
+        "profile_summary": meta.profile_summary or meta.description,
+        "when_to_use": meta.when_to_use or "",
+        "when_not_to_use": meta.when_not_to_use or "",
+        "required_inputs": meta.required_inputs or "",
+        "missing_input_policy": meta.missing_input_policy or "",
+    }
+
+
+def build_agent_catalog(layer_order: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+    return {
+        layer: [_agent_profile_card(agent_id) for agent_id in agents_by_layer(layer)]
+        for layer in layer_order
+    }

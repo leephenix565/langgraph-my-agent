@@ -26,6 +26,7 @@ from react_agent.agents import (
     AGENT_METADATA,
     AGENT_TOOLS,
     AgentOutput,
+    format_agent_profile,
 )
 from react_agent.baseline_sidecar import run_baseline_sidecar
 from react_agent.context import Context
@@ -89,17 +90,24 @@ def _router_provider_error_category(exc_type: str) -> str:
     return "provider"
 
 
-def _router_raw_text_shape(raw_text: str, agent_catalog: Dict[str, List[str]]) -> Dict[str, object]:
+def _catalog_agent_ids(agent_catalog: Dict[str, Any]) -> List[str]:
+    ids: List[str] = []
+    for layer_items in agent_catalog.values():
+        if not isinstance(layer_items, list):
+            continue
+        for item in layer_items:
+            if isinstance(item, str):
+                ids.append(item)
+            elif isinstance(item, dict) and isinstance(item.get("id"), str):
+                ids.append(item["id"])
+    return ids
+
+
+def _router_raw_text_shape(raw_text: str, agent_catalog: Dict[str, Any]) -> Dict[str, object]:
     """Build safe Router output shape telemetry without storing raw content."""
     text = raw_text or ""
     stripped = text.lstrip()
-    known_ids = {
-        aid
-        for ids in agent_catalog.values()
-        if isinstance(ids, list)
-        for aid in ids
-        if isinstance(aid, str)
-    }
+    known_ids = set(_catalog_agent_ids(agent_catalog))
     return {
         "router_raw_text_length": len(text),
         "router_raw_text_starts_with_json": stripped.startswith("{") or stripped.startswith("["),
@@ -253,7 +261,7 @@ def _normalize_mode(mode: str) -> str:
     return router_parse.normalize_mode(mode)
 
 
-def _build_agent_catalog() -> Dict[str, List[str]]:
+def _build_agent_catalog() -> Dict[str, List[Dict[str, Any]]]:
     return _bootstrap_build_agent_catalog(LAYER_ORDER)
 
 
@@ -551,7 +559,11 @@ async def manager_broadcast(
         used_contract = False
         step_count = 0
         task_id = ""
-        profile_label = AGENT_METADATA.get(next_id, None).description if next_id in AGENT_METADATA else next_id
+        profile_label = (
+            format_agent_profile(AGENT_METADATA[next_id])
+            if next_id in AGENT_METADATA
+            else next_id
+        )
         if contract_ok and next_id in contract_tasks and contract:
             assignment_text, step_count, task_id = _build_assignment_from_contract(
                 next_id, contract_tasks[next_id], contract, question, profile_label
@@ -615,7 +627,11 @@ async def manager_broadcast(
         used_contract = False
         step_count = 0
         task_id = ""
-        profile_label = AGENT_METADATA.get(agent_id, None).description if agent_id in AGENT_METADATA else agent_id
+        profile_label = (
+            format_agent_profile(AGENT_METADATA[agent_id])
+            if agent_id in AGENT_METADATA
+            else agent_id
+        )
         if contract_ok and agent_id in contract_tasks and contract:
             assignment_text, step_count, task_id = _build_assignment_from_contract(
                 agent_id, contract_tasks[agent_id], contract, question, profile_label

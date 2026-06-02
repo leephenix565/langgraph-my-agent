@@ -1,18 +1,23 @@
 # Agent Catalog v2 Runbook
 
-Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A` + `LATEST-LAYER-SHEET`
-Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Endpoint/profile lineage: `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+Phase: `EXCEL-CATALOG-ALIGN-1` + `EXTERNAL-HTTP-P0` + `EXTERNAL-HTTP-P1A` + `LATEST-LAYER-SHEET` + `PROFILE-EXCEL-ALIGN`
+Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`. Profile authority for routing cards: `/sdb/dlut/doc/智能体的描述.xlsx`. Endpoint lineage remains `/sdb/dlut/智能体分工及访问接口.csv` and `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
 
 ## Current Functional-Agent Authority
 
-- `/sdb/dlut/agent_layer_latest.xlsx` is now the profile authority for formal business-layer, business-category, and business-order metadata on listed agents.
+- `/sdb/dlut/agent_layer_latest.xlsx` is the authority for formal business-layer, business-category, business-order, and formal listed-agent names.
+- `/sdb/dlut/doc/智能体的描述.xlsx` is the current profile workbook. `config/agents/*.json` stores its profile fields as `profile_summary`, `when_to_use`, `when_not_to_use`, `required_inputs`, `missing_input_policy`, `owner`, `profile_source`, and `profile_updated_from_excel`.
+- Router catalog construction now passes per-agent profile cards to the Router LLM: `id`, `name`, `business_layer`, `business_category`, `profile_summary`, `when_to_use`, `when_not_to_use`, `required_inputs`, and `missing_input_policy`. The parser still accepts only ids from the catalog and keeps fail-closed fallback behavior.
+- The main system must not implement per-agent deterministic task rewrite or domain-specific parameter extraction. It maintains accurate profiles and lets the Router LLM choose agents from the profile catalog.
+- `/api/agents` keeps the existing public schema and continues to expose `description` as a compatibility summary; it does not expose the internal profile fields as separate public keys.
 - Runtime `layer` is now the business layer code: `L1=解析层`, `L2=分析层`, `L3=应用层`, and `L4=报告层`.
 - Agent id prefixes are stable runtime keys and no longer imply display or business order. Use `business_order` for the formal 24-agent business sequence.
 - Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
 - The enabled catalog now has 23 functional agents plus 2 special runtime roles: `runtimeCount=25`.
 - `config/agents` keeps 27 metadata files because `a05_annual_report_analysis` and `a21_portfolio_manager` are retained disabled as non-Excel historical functional metadata.
 - `config/agents/*.json` carries `business_order`, `business_role`, `business_status`, `business_layer`, `business_category`, and `business_subcategory` fields for the business taxonomy.
-- `a03_macro_industry_research` remains enabled and callable because the a03 macro external wrapper is already live-verified. It is not listed in `/sdb/dlut/agent_layer_latest.xlsx`, so it is tagged `business_status=legacy_retained`, has no `business_order`, and is excluded from the formal 24-agent sequence.
+- `a03_macro_industry_research` remains enabled and callable because the a03 macro external wrapper is already live-verified. It is not listed in `/sdb/dlut/agent_layer_latest.xlsx`, so it is tagged `business_status=legacy_retained`, has no `business_order`, and is excluded from the formal 24-agent sequence even though the profile workbook contains a macro row.
+- The profile workbook still has gaps. Blank profile rows are represented as restricted catalog profiles that tell Router to use the agent only on explicit profile match and otherwise prefer clearer profiles or clarification. Known name mismatches remain flagged in `profile_source`, including `上市公司财务与市场风险规则推理智能体 -> 风险识别智能体` and latest-sheet `财务造假风险智能体` vs config/profile `财务欺诈（造假）风险智能体`.
 - Disabled retained metadata may appear in catalog metadata, but disabled ids are not graph nodes, not `AGENT_TOOLS` tools, and not callable.
 - Catalog/profile alignment remains separate from runtime wrapper integration.
 - External HTTP P0 migrates `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` from early local trial defaults to generic table-driven HTTP wrappers using the Excel/CSV production invoke endpoints as formal defaults.

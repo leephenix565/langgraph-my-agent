@@ -1,5 +1,47 @@
 # CHANGELOG
 
+## 2026-06-02 - Excel profile-aligned Router catalog
+- Files:
+  - `config/agents/*.json`
+  - `src/react_agent/agents.py`
+  - `src/react_agent/graph_bootstrap.py`
+  - `src/react_agent/graph.py`
+  - `src/react_agent/prompts.py`
+  - `src/react_agent/router_parse.py`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `tests/unit_tests/test_router_prompt_format.py`
+  - `tests/unit_tests/test_router_parse_stats.py`
+  - `tests/integration_tests/test_public_api.py`
+  - `apps/web/src/content/zh-CN.ts`
+  - `apps/web/src/mocks/agents.ts`
+  - `apps/web/src/mocks/workflow.ts`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/FRONTEND_ARCHITECTURE.md`
+  - `docs/CHANGELOG.md`
+- Added internal routing-profile fields to agent metadata from
+  `/sdb/dlut/doc/智能体的描述.xlsx`: `profile_summary`, `when_to_use`,
+  `when_not_to_use`, `required_inputs`, `missing_input_policy`, `owner`,
+  `profile_source`, and `profile_updated_from_excel`.
+- Changed Router catalog construction from layer -> id list to layer ->
+  profile cards, while keeping parser validation id-based and fail-closed.
+- Replaced per-agent deterministic Router prompt routing guides with generic
+  profile-driven selection rules. Router still decides selected agents through
+  the LLM and must read `when_to_use`, `when_not_to_use`, and
+  `required_inputs`.
+- Kept `/api/agents` schema unchanged; public catalog descriptions remain a
+  compatibility summary and internal profile fields are not exposed as new
+  public keys.
+- Updated frontend labels and mock catalog fixtures to current formal names.
+- Known mismatches remain flagged, not silently renamed:
+  `上市公司财务与市场风险规则推理智能体 -> 风险识别智能体` and latest-sheet
+  `财务造假风险智能体` vs config/profile
+  `财务欺诈（造假）风险智能体`.
+- Scope boundary: no push, no `.env`, no provider calls, no external
+  `/v1/agent/invoke`, no Web E2E, no service start/stop, and no
+  profile-aware task rewriting.
+
 ## 2026-06-02 - Demo stack process supervision hardening
 - Files:
   - `scripts/dev/start_8200_demo_stack.sh`

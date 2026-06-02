@@ -58,7 +58,16 @@ def _normalize_agent_catalog(agent_catalog: Dict[str, Any]) -> Dict[str, List[st
         for layer in LAYER_ORDER:
             raw_ids = agent_catalog.get(layer, [])
             if isinstance(raw_ids, list):
-                normalized[layer] = [aid for aid in raw_ids if isinstance(aid, str)]
+                agent_ids: List[str] = []
+                for item in raw_ids:
+                    if isinstance(item, str):
+                        agent_ids.append(item)
+                    elif isinstance(item, dict):
+                        agent_id = item.get("id")
+                        enabled = bool(item.get("default_enabled", True))
+                        if isinstance(agent_id, str) and enabled:
+                            agent_ids.append(agent_id)
+                normalized[layer] = agent_ids
         return normalized
 
     for fallback_id, meta in agent_catalog.items():
@@ -97,7 +106,7 @@ def default_layer_plan(
 
 def parse_router_layers_with_stats(
     raw: str,
-    agent_catalog: Optional[Dict[str, List[str]]] = None,
+    agent_catalog: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, Any]]:
     """Parse router JSON into layer_plan/layer_mode with parse stats."""
     agent_catalog = _normalize_agent_catalog(agent_catalog or {})
@@ -203,7 +212,7 @@ def parse_router_layers_with_stats(
 
 def parse_router_layers(
     raw: str,
-    agent_catalog: Optional[Dict[str, List[str]]] = None,
+    agent_catalog: Optional[Dict[str, Any]] = None,
 ) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
     plan, modes, _stats = parse_router_layers_with_stats(raw, agent_catalog)
     return plan, modes

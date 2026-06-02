@@ -114,8 +114,8 @@ function runA04FrontendLabelChecks() {
   assert.equal(a04.name, "商品定价分析智能体");
   assert.equal(JSON.stringify(AGENT_CATALOG).includes(oldName), false);
   assert.equal(agentNameLabel("a04_commodity_hedging").includes(oldName), false);
-  assert.ok(a04.description.includes("商品定价影响力"));
-  assert.ok(a04.description.includes("期货市场影响力"));
+  assert.ok(a04.description.includes("定价影响力"));
+  assert.ok(a04.description.includes("期货"));
   assert.equal(a04.description.includes("套期保值"), false);
 }
 

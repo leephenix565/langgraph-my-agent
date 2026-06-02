@@ -108,6 +108,37 @@ def test_valid_parse_still_preserves_selected_functional_agents() -> None:
     assert plan["L3"] == ["a26_composite_valuation"]
 
 
+def test_detailed_profile_catalog_is_normalized_to_allowed_ids() -> None:
+    catalog = {
+        "L1": [{"id": "a01_cio_orchestrator", "name": "问题解析与协同编排智能体"}],
+        "L2": [
+            {
+                "id": "a17_traditional_valuation",
+                "name": "传统企业估值智能体",
+                "when_to_use": "传统估值",
+                "when_not_to_use": "指数估值",
+            }
+        ],
+        "L3": [],
+        "L4": [{"id": "a25_report_center", "name": "报告生成智能体"}],
+    }
+    raw = {
+        "layers": [
+            {"layer": "L1", "mode": "Chain", "selected": ["a01_cio_orchestrator"]},
+            {"layer": "L2", "mode": "Star", "selected": ["a17_traditional_valuation"]},
+            {"layer": "L3", "mode": "Star", "selected": ["a26_composite_valuation"]},
+            {"layer": "L4", "mode": "Chain", "selected": ["a25_report_center"]},
+        ]
+    }
+    plan, _modes, stats = router_parse.parse_router_layers_with_stats(
+        json.dumps(raw), catalog
+    )
+    assert stats["parse_ok"] is True
+    assert stats["filtered_agents"] == 1
+    assert plan["L2"] == ["a17_traditional_valuation"]
+    assert plan["L3"] == []
+
+
 def test_default_layer_plan_does_not_restore_a02_task_router() -> None:
     catalog = dict(_agent_catalog())
     catalog["L1"] = ["a01_cio_orchestrator", "a02_task_router"]

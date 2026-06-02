@@ -2,13 +2,16 @@
 
 ## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog v2
 
-- Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`; endpoint/profile lineage remains `/sdb/dlut/智能体分工及访问接口.csv`, `/sdb/dlut/智能体的描述.csv`, plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
+- Business taxonomy authority: `/sdb/dlut/agent_layer_latest.xlsx`; routing-profile authority is `/sdb/dlut/doc/智能体的描述.xlsx`; endpoint lineage remains `/sdb/dlut/智能体分工及访问接口.csv` plus `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md`.
 - Runtime `layer` is now the business layer code: `L1=解析层`, `L2=分析层`, `L3=应用层`, and `L4=报告层`.
 - Agent id prefixes are stable runtime keys, not business order. Formal display/acceptance order is carried by `business_order` for the 24 latest-sheet agents.
 - Router runtime, `a01_cio_orchestrator`, and `a25_report_center` are special system runtime roles and must not be replaced by external functional profiles.
 - Runtime catalog: 25 enabled roles in `config/agents`, with enabled layer counts L1=2, L2=19, L3=3, L4=1. This equals 23 enabled functional entries plus 2 special runtime roles; 22 enabled functional entries are listed in the latest layer sheet and `a03_macro_industry_research` is retained from the older CSV because its macro wrapper is already live-verified.
 - Metadata catalog: 27 config files. `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]` are retained non-Excel historical functional metadata and are not default runtime nodes.
 - Agent metadata includes `business_order`, `business_role`, `business_status`, `business_layer`, `business_category`, and `business_subcategory` for latest-sheet taxonomy without changing State/public API schemas.
+- Agent metadata also includes internal routing-profile fields: `profile_summary`, `when_to_use`, `when_not_to_use`, `required_inputs`, `missing_input_policy`, `owner`, `profile_source`, and `profile_updated_from_excel`.
+- Router catalog construction now gives the Router LLM profile cards with `name`, business taxonomy, and the profile fields above. Router selection remains LLM-owned; the main system no longer carries per-agent deterministic domain routing guides in the Router prompt.
+- `router_parse` still normalizes the catalog to allowed ids, filters invalid selections, and fails closed to special roles only on parse failure. It does not restore L2 first-N truncation, broad fallback, or `a02_task_router`.
 - Generic external HTTP wrappers currently register 13 configured agents in `AGENT_TOOLS`; wrapper registration is separate from live service verification.
 - Ten enabled non-wrapper functional agents have a callable
   `INTERNAL_LLM_SEARCH_PLACEHOLDER` path in `AGENT_TOOLS`: a generic LLM tool
@@ -17,7 +20,7 @@
 - Tavily is optional transitional fallback for placeholder agents, not a
   required main-system dependency. The target architecture is for business
   agents to be delivered as owner-provided external HTTP services.
-- `a03_macro_industry_research` remains enabled and callable as a live-verified macro wrapper even though it is not listed in `/sdb/dlut/agent_layer_latest.xlsx`; it is marked `保留层（旧CSV）/价值分析` pending taxonomy decision.
+- `a03_macro_industry_research` remains enabled and callable as a live-verified macro wrapper even though it is not listed in `/sdb/dlut/agent_layer_latest.xlsx`; it is marked `保留层（旧CSV）/价值分析` pending taxonomy decision. The current profile workbook contains a macro profile row, but latest-sheet taxonomy still controls formal status.
 - AC-1A kept Router/parser/State/public API schemas unchanged and left route-prior/RARP/SFT helper source in place; AC-1B-2A later removed the old runtime seam while retaining that helper source as archived/offline lineage.
 - AC-1B-1 archives offline RP/RARP/SFT/manual-gold/teacher-proxy evidence from mainline acceptance.
 - AC-1B-2A removes the old route-prior/RARP runtime shadow seam from `react_agent.graph`; the old helper source remains archived/offline and is no longer imported by graph runtime.

@@ -58,7 +58,30 @@ class AgentMetadata:
     business_layer: Optional[str] = None
     business_category: Optional[str] = None
     business_subcategory: Optional[str] = None
+    profile_summary: Optional[str] = None
+    when_to_use: Optional[str] = None
+    when_not_to_use: Optional[str] = None
+    required_inputs: Optional[str] = None
+    missing_input_policy: Optional[str] = None
+    owner: Optional[str] = None
+    profile_source: Optional[str] = None
+    profile_updated_from_excel: Optional[str] = None
     default_enabled: bool = True
+
+
+def format_agent_profile(meta: AgentMetadata) -> str:
+    """Return the structured profile shown to Router and selected agents."""
+    lines = [
+        f"name: {meta.name}",
+        f"business_layer: {meta.business_layer or ''}",
+        f"business_category: {meta.business_category or ''}",
+        f"profile_summary: {meta.profile_summary or meta.description}",
+        f"when_to_use: {meta.when_to_use or ''}",
+        f"when_not_to_use: {meta.when_not_to_use or ''}",
+        f"required_inputs: {meta.required_inputs or ''}",
+        f"missing_input_policy: {meta.missing_input_policy or ''}",
+    ]
+    return "\n".join(lines)
 
 
 # Runtime registries (includes built-ins + loaded metadata).

@@ -1,7 +1,7 @@
 {
   "id": "a25_report_center",
   "name": "报告生成智能体",
-  "description": "功能：归集底层所有智能体的图谱、数据与文字推论，按照投研逻辑自动生成结构化、可视化、可交互的多模态研报（日报/周报/复盘）。\n输入：各底层智能体产出的分析结论、指标数值、情感得分、K线图/事件图谱截图；用户设定的报告时间区间。\n输出：自动化生成的智能分析报表（含行情研判、舆情事件追踪、价情联动、多源特征融合预警等完整版块）。",
+  "description": "功能：归集底层所有智能体的图谱、数据与文字推论，按照投研逻辑自动生成结构化、可视化、可交互的多模态研报（日报/周报/复盘）。\n适用场景：仅当用户明确要求报告生成智能体职责范围内的报告生成任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：各底层智能体产出的分析结论、指标数值、情感得分、K线图/事件图谱截图；用户设定的报告时间区间。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
   "capabilities": [
     "report",
     "synthesis",
@@ -20,5 +20,13 @@
   "business_layer": "报告层",
   "business_category": "报告生成",
   "business_subcategory": "",
+  "profile_summary": "归集底层所有智能体的图谱、数据与文字推论，按照投研逻辑自动生成结构化、可视化、可交互的多模态研报（日报/周报/复盘）。",
+  "when_to_use": "仅当用户明确要求报告生成智能体职责范围内的报告生成任务，且 catalog 中没有更具体的 agent profile 匹配时使用。",
+  "when_not_to_use": "当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。",
+  "required_inputs": "各底层智能体产出的分析结论、指标数值、情感得分、K线图/事件图谱截图；用户设定的报告时间区间。",
+  "missing_input_policy": "缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。",
+  "owner": "",
+  "profile_source": "agent_layer_latest.xlsx + current_config_system_role_profile; profile row absent in description workbook",
+  "profile_updated_from_excel": "2026-06-02",
   "default_enabled": true
 }

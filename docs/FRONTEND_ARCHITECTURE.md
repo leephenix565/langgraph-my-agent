@@ -1,8 +1,8 @@
 # FRONTEND_ARCHITECTURE
 
-## Phase EXCEL-CATALOG-ALIGN-1 Agent Catalog Surface
+## Phase PROFILE-EXCEL-ALIGN Agent Catalog Surface
 
-The frontend `/agents` surface still consumes the same `/api/agents` schema, but the backing catalog is now aligned to the Excel/CSV functional-agent authority: 27 metadata configs, 25 enabled runtime roles, disabled ids `a05_annual_report_analysis` and `a21_portfolio_manager`, and no `a02_task_router` metadata. This is data projected from the public adapter; no frontend behavior changed. The single assistant persona rule remains unchanged and the frontend still does not render raw graph messages.
+The frontend `/agents` surface still consumes the same `/api/agents` schema, but the backing catalog is now aligned to the latest Excel taxonomy and routing profiles: 27 metadata configs, 25 enabled runtime roles, disabled ids `a05_annual_report_analysis` and `a21_portfolio_manager`, and no `a02_task_router` metadata. Internal Router profile fields are not exposed as separate public API keys; `/api/agents` still projects the compatibility `description`. The single assistant persona rule remains unchanged and the frontend still does not render raw graph messages.
 
 ## 1. Phase Position
 
@@ -26,6 +26,11 @@ Active frontend labels should mirror the live public catalog. In particular,
 `商品定价分析智能体`, backed by external agent `price_influence_agent`. The old
 display name `大宗商品价格分析与套期保值智能体` must not appear on active frontend
 labels or mock catalog fixtures.
+
+Static mock catalog fixtures under `apps/web/src/mocks` are regenerated from
+`config/agents/*.json` so formal names such as `问题解析与协同编排智能体`,
+`股票指数估值智能体`, and `报告生成智能体` stay aligned with the live public
+catalog contract.
 
 ## 2. Product Shape
 

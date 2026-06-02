@@ -166,6 +166,14 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         "business_layer",
         "business_category",
         "business_subcategory",
+        "profile_summary",
+        "when_to_use",
+        "when_not_to_use",
+        "required_inputs",
+        "missing_input_policy",
+        "owner",
+        "profile_source",
+        "profile_updated_from_excel",
         "default_enabled",
     }
     for item in _load_config_metadata():
@@ -179,6 +187,50 @@ def test_agent_catalog_v2_required_metadata_fields() -> None:
         assert item["business_category"]
         assert item["business_role"]
         assert item["business_status"] in {"formal", "legacy_retained", "disabled_historical"}
+        for field in [
+            "profile_summary",
+            "when_to_use",
+            "when_not_to_use",
+            "required_inputs",
+            "missing_input_policy",
+            "profile_source",
+            "profile_updated_from_excel",
+        ]:
+            assert item[field]
+
+
+def test_excel_profile_completeness_for_formal_and_retained_agents() -> None:
+    metadata = {item["id"]: item for item in _load_config_metadata()}
+    profile_fields = [
+        "profile_summary",
+        "when_to_use",
+        "when_not_to_use",
+        "required_inputs",
+        "missing_input_policy",
+    ]
+
+    formal_ids = [
+        agent_id
+        for _order, agent_id, *_rest in EXPECTED_FORMAL_BUSINESS_ORDER
+    ]
+    assert len(formal_ids) == 24
+    for agent_id in formal_ids:
+        item = metadata[agent_id]
+        for field in profile_fields:
+            assert item[field].strip(), f"{agent_id} missing {field}"
+
+    a03 = metadata["a03_macro_industry_research"]
+    assert a03["business_status"] == "legacy_retained"
+    assert "未列入 agent_layer_latest.xlsx" in a03["business_subcategory"]
+    for field in profile_fields:
+        assert a03[field].strip(), f"a03 missing {field}"
+
+    assert metadata["a19_risk_identification"]["profile_source"].startswith(
+        "/sdb/dlut/doc/智能体的描述.xlsx; profile_name_mismatch_requires_confirmation:"
+    )
+    assert "formal_name_mismatch_requires_confirmation" in metadata[
+        "a24_financial_fraud_risk"
+    ]["profile_source"]
 
 
 def test_agent_catalog_latest_business_taxonomy_fields() -> None:
@@ -238,37 +290,37 @@ def test_formal_business_order_matches_authoritative_table() -> None:
 
 def test_a22_profile_is_limited_to_explicit_data_service_requests() -> None:
     metadata = {item["id"]: item for item in _load_config_metadata()}
-    description = metadata["a22_financial_data_service"]["description"]
-    assert "明确要求原始数据获取" in description
-    assert "数据库/API 查询" in description
-    assert "不应自动把本智能体作为通用支撑" in description
+    profile = metadata["a22_financial_data_service"]
+    combined = "\n".join(
+        [profile["when_to_use"], profile["when_not_to_use"], profile["required_inputs"]]
+    )
+    assert "Tushare" in combined
+    assert "查询金融数据" in combined
+    assert "数据库" in combined
+    assert "策略回测" in profile["when_not_to_use"]
 
 
 def test_route_sensitive_profiles_are_specific() -> None:
     metadata = {item["id"]: item for item in _load_config_metadata()}
 
-    a04_description = metadata["a04_commodity_hedging"]["description"]
+    a04 = metadata["a04_commodity_hedging"]
     old_display_name = "大宗商品价格分析" + "与套期保值智能体"
-    assert metadata["a04_commodity_hedging"]["name"] == "商品定价分析智能体"
-    assert old_display_name not in a04_description
-    assert "commodity pricing" in a04_description
-    assert "price influence" in a04_description
-    assert "商品定价" in a04_description
-    assert "铜" in a04_description
-    assert "股价崩盘风险" in a04_description
+    assert a04["name"] == "商品定价分析智能体"
+    assert old_display_name not in a04["description"]
+    assert "定价影响力" in a04["when_to_use"]
+    assert "实时行情" in a04["when_not_to_use"]
+    assert "交易建议" in a04["when_not_to_use"]
+    assert "品种" in a04["required_inputs"]
 
-    a06_description = metadata["a06_financial_statement_analysis"]["description"]
-    assert "财务报表" in a06_description
-    assert "企业财务健康" in a06_description
-    assert "不要因为用户提出普通“风险”" in a06_description
-    assert "应优先选择 a23_crash_risk" in a06_description
+    a06 = metadata["a06_financial_statement_analysis"]
+    assert "财务报表" in a06["profile_summary"]
+    assert "财务状况分析" in a06["when_to_use"]
+    assert "估值分析" in a06["when_not_to_use"]
 
-    a23_description = metadata["a23_crash_risk"]["description"]
-    assert "crash risk" in a23_description
-    assert "NCSKEW" in a23_description
-    assert "DUVOL" in a23_description
-    assert "不代表排除本智能体" in a23_description
-    assert "不要自动加派 a06_financial_statement_analysis" in a23_description
+    a23 = metadata["a23_crash_risk"]
+    assert "股价崩盘" in a23["profile_summary"]
+    assert "NCSKEW" in a23["when_to_use"]
+    assert "目标价" in a23["when_not_to_use"]
 
 
 def test_load_metadata_from_dir_uses_filename_order(tmp_path) -> None:

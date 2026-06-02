@@ -1,7 +1,7 @@
 {
   "id": "a05_annual_report_analysis",
   "name": "公司年报分析智能体",
-  "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n输出：年报核心财务与业务摘要；管理层情感偏离度打分（乐观/悲观态度量化）；隐性风险提示点。\n状态：DISABLED_OR_REMOVE_NON_EXCEL_FUNCTIONAL_AGENT；Excel/CSV 当前功能智能体清单未包含该功能项，保留文件用于历史映射，不参与默认运行时节点。",
+  "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n适用场景：仅当用户明确要求公司年报分析智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
   "capabilities": [
     "annual_report",
     "mdna",
@@ -20,5 +20,13 @@
   "business_layer": "历史保留（disabled）",
   "business_category": "未列入最新表",
   "business_subcategory": "disabled metadata only",
+  "profile_summary": "运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。",
+  "when_to_use": "仅当用户明确要求公司年报分析智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。",
+  "when_not_to_use": "当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。",
+  "required_inputs": "上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。",
+  "missing_input_policy": "缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。",
+  "owner": "",
+  "profile_source": "disabled_historical_current_config; profile row absent in description workbook",
+  "profile_updated_from_excel": "2026-06-02",
   "default_enabled": false
 }

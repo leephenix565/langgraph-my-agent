@@ -325,6 +325,18 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert l1_agents[0]["roleType"] == "system"
     assert l1_agents[0]["defaultEnabled"] is True
     assert l1_agents[1]["id"] == "a22_financial_data_service"
+    assert set(l1_agents[0]) == {
+        "id",
+        "name",
+        "description",
+        "capabilities",
+        "layer",
+        "team",
+        "roleType",
+        "defaultEnabled",
+    }
+    assert "profile_summary" not in l1_agents[0]
+    assert "when_to_use" not in l1_agents[0]
 
     assert [agent["id"] for agent in payload["disabledAgents"]] == [
         "a05_annual_report_analysis",
