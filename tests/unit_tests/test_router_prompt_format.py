@@ -60,6 +60,20 @@ def test_router_prompt_contains_single_intent_domain_routing_guide() -> None:
     assert "股价崩盘风险" in rendered
 
 
+def test_router_prompt_limits_a04_to_pricing_influence_boundary() -> None:
+    rendered = _render_router_prompt()
+    old_display_name = "大宗商品价格分析" + "与套期保值智能体"
+    assert old_display_name not in rendered
+    assert "Commodity boundary rule" in rendered
+    assert "商品定价影响力" in rendered
+    assert "期货市场影响力" in rendered
+    assert "境内外定价关系" in rendered
+    assert "非实时走势预测" in rendered
+    assert "非交易建议" in rendered
+    assert "非投资预测" in rendered
+    assert "do not use a04 as the sole prediction tool" in rendered
+
+
 def test_router_prompt_keeps_crash_risk_from_auto_financial_analysis() -> None:
     rendered = _render_router_prompt()
     assert "Risk subtype rule" in rendered

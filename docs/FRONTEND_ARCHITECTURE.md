@@ -21,6 +21,12 @@ The repo now contains:
 - a Python public adapter under `src/react_agent/public_*.py`
 - a JSON file-backed public thread store at `var/public_api/threads.json`
 
+Active frontend labels should mirror the live public catalog. In particular,
+`a04_commodity_hedging` is a stable runtime id only; the active display name is
+`商品定价分析智能体`, backed by external agent `price_influence_agent`. The old
+display name `大宗商品价格分析与套期保值智能体` must not appear on active frontend
+labels or mock catalog fixtures.
+
 ## 2. Product Shape
 
 The product remains a chat-first workspace with one visible assistant persona.

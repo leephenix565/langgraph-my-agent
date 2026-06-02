@@ -1,5 +1,31 @@
 # CHANGELOG
 
+## 2026-06-02 - A04 commodity display and routing boundary cleanup
+- Files:
+  - `apps/web/src/content/zh-CN.ts`
+  - `apps/web/src/mocks/agents.ts`
+  - `apps/web/src/test/smoke.tsx`
+  - `src/react_agent/prompts.py`
+  - `tests/unit_tests/test_router_prompt_format.py`
+  - `tests/unit_tests/test_agent_catalog_v2.py`
+  - `docs/FRONTEND_ARCHITECTURE.md`
+  - `docs/CHANGELOG.md`
+- Aligned the active frontend label and mock catalog for
+  `a04_commodity_hedging` to the current formal display name:
+  `商品定价分析智能体`.
+- Kept the stable runtime id `a04_commodity_hedging` unchanged. It remains the
+  main-system id for the formal commodity-pricing agent and maps to external
+  agent `price_influence_agent`.
+- Tightened Router prompt wording so a04 is selected for commodity pricing
+  influence, futures market influence, and cross-market price-influence
+  analysis, not as a generic real-time price outlook, trading-advice, or
+  investment-forecast agent.
+- Added frontend and Python no-provider tests that reject the stale old display
+  name `大宗商品价格分析与套期保值智能体` on active surfaces.
+- Scope boundary: no runtime id rename, no wrapper endpoint/config change, no
+  provider call, no external `/v1/agent/invoke`, no service restart, and no
+  push.
+
 ## 2026-06-02 - Dev 8200 demo stack launcher
 - Files:
   - `scripts/dev/start_8200_demo_stack.sh`

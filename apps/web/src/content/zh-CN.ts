@@ -238,7 +238,7 @@ const confidenceLabels: Record<string, string> = {
 const agentNameLabels: Record<string, string> = {
   a01_cio_orchestrator: "资本市场决策协作智能体",
   a03_macro_industry_research: "宏观经济与产业链行业研究智能体",
-  a04_commodity_hedging: "大宗商品价格分析与套期保值智能体",
+  a04_commodity_hedging: "商品定价分析智能体",
   a05_annual_report_analysis: "公司年报分析智能体",
   a06_financial_statement_analysis: "公司财报分析智能体",
   a07_macro_sentiment: "宏观情绪感知智能体",

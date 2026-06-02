@@ -248,6 +248,9 @@ def test_route_sensitive_profiles_are_specific() -> None:
     metadata = {item["id"]: item for item in _load_config_metadata()}
 
     a04_description = metadata["a04_commodity_hedging"]["description"]
+    old_display_name = "大宗商品价格分析" + "与套期保值智能体"
+    assert metadata["a04_commodity_hedging"]["name"] == "商品定价分析智能体"
+    assert old_display_name not in a04_description
     assert "commodity pricing" in a04_description
     assert "price influence" in a04_description
     assert "商品定价" in a04_description

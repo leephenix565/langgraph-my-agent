@@ -7,6 +7,7 @@ import App from "../app/App";
 import { AssistantAnswerCard } from "../components/chat/AssistantAnswerCard";
 import { UserBubble } from "../components/chat/UserBubble";
 import { Composer } from "../components/shell/Composer";
+import { agentNameLabel } from "../content/zh-CN";
 import { AGENT_CATALOG } from "../mocks/agents";
 import type { StructuredInputModel } from "../types/chat";
 import { composeStructuredPrompt, parseStructuredUserTurn, toStructuredInputModel } from "../utils/structuredInput";
@@ -100,6 +101,22 @@ function degradedHealthPayload() {
 
 function liveAgentCatalogPayload() {
   return AGENT_CATALOG;
+}
+
+function runA04FrontendLabelChecks() {
+  const oldName = "大宗商品价格分析" + "与套期保值智能体";
+  const a04 = AGENT_CATALOG.layers
+    .flatMap((layer) => layer.agents)
+    .find((agent) => agent.id === "a04_commodity_hedging");
+
+  assert.equal(agentNameLabel("a04_commodity_hedging"), "商品定价分析智能体");
+  assert.ok(a04);
+  assert.equal(a04.name, "商品定价分析智能体");
+  assert.equal(JSON.stringify(AGENT_CATALOG).includes(oldName), false);
+  assert.equal(agentNameLabel("a04_commodity_hedging").includes(oldName), false);
+  assert.ok(a04.description.includes("商品定价影响力"));
+  assert.ok(a04.description.includes("期货市场影响力"));
+  assert.equal(a04.description.includes("套期保值"), false);
 }
 
 function assistantTurn(id: string, answer: string) {
@@ -775,6 +792,7 @@ async function runUnavailableScenario() {
 }
 
 async function runSmoke() {
+  runA04FrontendLabelChecks();
   runStructuredInputHelperChecks();
   await runUserBubbleStructuredRenderChecks();
   await runAssistantMarkdownRenderChecks();
