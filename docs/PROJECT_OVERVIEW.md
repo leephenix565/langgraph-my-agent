@@ -26,6 +26,11 @@ This repository is a layered multi-agent orchestration system built on LangGraph
   and active stream caps. This is not a formal public deployment security
   solution and does not add token auth, login, HTTPS, or reverse-proxy
   hardening.
+- Development web demo: `scripts/dev/start_8200_demo_stack.sh` can prepare the
+  mentor-facing development address `http://222.73.85.26:8200` by running the
+  public API on `127.0.0.1:8210`, running the Vite web shell on
+  `0.0.0.0:8200`, and setting the Vite `/api` proxy to the API port. This is a
+  short-lived demo launcher, not production deployment evidence.
 - Public transcript boundary:
   - one visible assistant persona only
   - workflow is an inspector, not a second transcript

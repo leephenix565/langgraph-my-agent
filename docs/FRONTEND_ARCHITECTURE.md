@@ -175,7 +175,29 @@ The adapter keeps health and error signaling on the existing public surface inst
   - degraded: the adapter is alive, but readiness is below the preferred baseline
   - request error: a specific request failed while the adapter remained reachable
 
-## 9. Active Frontend Test Surface
+## 9. Development 8200 Demo Stack
+
+The development demo stack is intentionally separate from formal deployment.
+
+- `scripts/dev/start_8200_demo_stack.sh` starts or confirms the external
+  wrapper services, then starts `react_agent.public_api:app` on
+  `127.0.0.1:8210` and the Vite web shell on `0.0.0.0:8200`.
+- `apps/web/vite.config.ts` reads `VITE_API_PROXY_TARGET`, allowing the dev
+  server to proxy `/api/*` to `http://127.0.0.1:8210` while the browser uses
+  one address: `http://222.73.85.26:8200`.
+- `scripts/dev/status_8200_demo_stack.sh` reports public API, web, and external
+  wrapper health without calling business invoke endpoints.
+- `scripts/dev/stop_8200_demo_stack.sh` stops only PID-file tracked demo
+  processes by default. External services are stopped only with
+  `--include-external`, and only when the start script recorded that it started
+  them.
+- Logs and PID files live under `/tmp/lma-demo-stack`.
+
+This stack does not provide token auth, HTTPS, reverse-proxy hardening,
+distributed rate limiting, or production observability. It is only suitable for
+short-lived development demos.
+
+## 10. Active Frontend Test Surface
 
 The active frontend gate entry is:
 
@@ -188,7 +210,7 @@ Legacy fixtures are retained only as reference files:
 
 They are not part of the default frontend gate and should not be described as if they were.
 
-## 10. Current Implementation Boundary
+## 11. Current Implementation Boundary
 
 The current frontend/public-adapter phase intentionally does all of the following:
 

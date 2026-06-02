@@ -129,6 +129,34 @@ Before claiming live E2E, verify each service health endpoint and then run an en
 
 P1-A deliberately does not register `a27_risk_constraint` because the route standard is unclear. Source-missing agents remain pending delivery or a separately approved endpoint-only policy. Profile/catalog alignment remains separate from runtime wrapper integration, and runtime wrapper registration remains separate from live service verification.
 
+## Development 8200 Demo Stack
+
+The dev-only launcher checks the 13 generic external HTTP wrapper services
+before starting the main web shell:
+
+```bash
+scripts/dev/start_8200_demo_stack.sh
+scripts/dev/status_8200_demo_stack.sh
+scripts/dev/stop_8200_demo_stack.sh
+```
+
+Operational shape:
+
+- public API: `react_agent.public_api:app` on `127.0.0.1:8210`
+- web: Vite dev server on `0.0.0.0:8200`
+- browser URL: `http://222.73.85.26:8200`
+- proxy: `VITE_API_PROXY_TARGET=http://127.0.0.1:8210`
+- logs/PIDs: `/tmp/lma-demo-stack`
+
+The launcher does not call `/v1/agent/invoke` and does not prove graph-level or
+provider-backed E2E. It health-checks wrapper services and starts a service only
+when the configured port is free and a clear local startup command is known.
+Existing external service listeners are left alone. `a22_financial_data_service`
+is flagged if `/health` returns an HTML app shell instead of standard health
+JSON, and `a26_composite_valuation` remains tied to the formal `10015` wrapper
+port. Internal placeholder agents remain transitional fallback tools, not
+dedicated external services.
+
 ## AC-1A-L2 Live Wrapper Smoke Evidence
 
 Phase `AC-1A-L2` validated the three external valuation services through the

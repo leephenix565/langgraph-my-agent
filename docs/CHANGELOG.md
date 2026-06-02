@@ -1,5 +1,36 @@
 # CHANGELOG
 
+## 2026-06-02 - Dev 8200 demo stack launcher
+- Files:
+  - `scripts/dev/start_8200_demo_stack.sh`
+  - `scripts/dev/status_8200_demo_stack.sh`
+  - `scripts/dev/stop_8200_demo_stack.sh`
+  - `apps/web/vite.config.ts`
+  - `README.md`
+  - `docs/PROJECT_OVERVIEW.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/FRONTEND_ARCHITECTURE.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Added a development-only demo stack launcher for the mentor-facing
+  `http://222.73.85.26:8200` address. The launcher uses `127.0.0.1:8210` for
+  the Python public API and `0.0.0.0:8200` for the Vite web shell.
+- Added status and stop scripts. PID and log files live under
+  `/tmp/lma-demo-stack`; repo files are not used for runtime logs.
+- External HTTP wrapper services are checked by health endpoint and started
+  only when the configured port is free and a clear local startup command is
+  known. Existing listener processes are never killed or restarted by these
+  scripts.
+- Marked known service-side risks in the demo flow: `a22_financial_data_service`
+  may return an HTML app shell on `/health`, and
+  `a26_composite_valuation` must be verified on formal port `10015`.
+- Made the Vite `/api` proxy target configurable through
+  `VITE_API_PROXY_TARGET`, so the 8200 dev server can proxy to the 8210 public
+  API without changing the public API schema.
+- Scope boundary: development demo only, no token auth, no HTTPS/reverse-proxy
+  deployment, no provider call, no external `/v1/agent/invoke`, no Web E2E, no
+  `.env` change, and no push.
+
 ## 2026-05-31 - Web-P0B-lite public API guardrails
 - Files:
   - `src/react_agent/public_guardrails.py`

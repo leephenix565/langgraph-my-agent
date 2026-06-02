@@ -68,6 +68,14 @@ This document is the S0 operational source for the current repo snapshot.
   `request.client.host`; reverse-proxy deployments must separately review
   trusted proxy headers. These are small-scope trial protections only, not
   token/auth, HTTPS, or formal public deployment security.
+- Development 8200 demo stack:
+  `scripts/dev/start_8200_demo_stack.sh` checks/starts the configured external
+  wrapper services when safe, starts `react_agent.public_api:app` on
+  `127.0.0.1:8210`, and starts the Vite shell on `0.0.0.0:8200` with
+  `VITE_API_PROXY_TARGET=http://127.0.0.1:8210`. Status and stop helpers live in
+  the same `scripts/dev` directory. Logs and PID files are under
+  `/tmp/lma-demo-stack`. This is dev-demo operation only; it is not
+  HTTPS/auth/reverse-proxy production deployment.
 - DeepSeek is currently an LLM provider path only. Do not treat the DeepSeek App
   web-search feature as evidence that this repo has verified default DeepSeek
   API web search.

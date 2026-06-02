@@ -62,6 +62,41 @@ This repository is a layered multi-agent orchestration system built on LangGraph
 conda run --no-capture-output -n cline_env python demo_layered_run.py
 ```
 
+## Development 8200 Web Demo
+
+For short-lived mentor demos on the development host, use the dev-only stack
+launcher:
+
+```bash
+scripts/dev/start_8200_demo_stack.sh
+scripts/dev/status_8200_demo_stack.sh
+scripts/dev/stop_8200_demo_stack.sh
+```
+
+The demo address is `http://222.73.85.26:8200`. The launcher runs the Python
+public API on `127.0.0.1:8210`, runs the Vite web shell on `0.0.0.0:8200`, and
+sets `VITE_API_PROXY_TARGET=http://127.0.0.1:8210` so browser requests to
+`/api/*` stay on the single 8200 address.
+
+This is not a production deployment. It does not add token auth, HTTPS,
+nginx/Caddy/systemd hardening, user accounts, or cost quotas. Logs and PID
+files are written under `/tmp/lma-demo-stack`, not in the repo. The external
+HTTP agent services are health-checked and only started when their configured
+port is free and the local startup command is explicit. The scripts do not call
+external `/v1/agent/invoke` endpoints, do not call providers, and do not stop
+pre-existing external service processes unless `stop_8200_demo_stack.sh
+--include-external` is used for processes that the launcher itself started.
+
+Known demo service caveats:
+
+- `a22_financial_data_service` may expose an HTML management shell at
+  `/health`; treat that as a health-schema issue until the service provides the
+  standard external-agent health JSON.
+- `a26_composite_valuation` must be verified on the formal wrapper port
+  `10015`; do not treat another stub port as the production invoke service.
+- Internal placeholder agents are transitional LLM/profile/search fallbacks,
+  not owner-provided external HTTP agent services.
+
 ## Local Clean Python Environment
 
 For stable local and Codex validation on Windows, prefer a clean Python 3.11 environment when the documented `cline_env` is polluted, unavailable through `conda run`, or not active in the current shell. The mainline Python dependency truth is `pyproject.toml`.
