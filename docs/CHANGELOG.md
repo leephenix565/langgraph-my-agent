@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 2026-06-02 - External wrapper proxy hardening
+- Files:
+  - `src/react_agent/external_http_agents.py`
+  - `scripts/dev/start_8200_demo_stack.sh`
+  - `scripts/dev/status_8200_demo_stack.sh`
+  - `tests/unit_tests/test_external_http_agents.py`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/CHANGELOG.md`
+- Hardened generic external HTTP wrappers against local proxy leakage by
+  defaulting wrapper HTTP clients to `trust_env=False`. The only opt-in path to
+  inherit `HTTP_PROXY` / `HTTPS_PROXY` for external agent calls is
+  `EXTERNAL_AGENT_TRUST_ENV=true`.
+- Updated the 8200 dev demo launcher so the public API process has
+  `NO_PROXY` and `no_proxy` entries for `localhost`, `127.0.0.1`, `::1`, and
+  `222.73.85.26`.
+- Added status-script proxy readiness output for the public API process without
+  printing secrets or full environment values.
+- Scope boundary: transport/proxy hardening only. This does not implement
+  profile-aware task rewriting, does not repair service-side issues for
+  `a14` / `a22` / `a26`, does not call providers, does not call external
+  `/v1/agent/invoke`, and does not prove full graph/Web E2E.
+
 ## 2026-06-02 - A04 commodity display and routing boundary cleanup
 - Files:
   - `apps/web/src/content/zh-CN.ts`

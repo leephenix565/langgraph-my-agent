@@ -309,8 +309,9 @@ def test_external_http_tool_success_and_env_override(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             captured["timeout"] = timeout
+            captured["trust_env"] = trust_env
 
         async def __aenter__(self):
             return self
@@ -324,6 +325,9 @@ def test_external_http_tool_success_and_env_override(monkeypatch) -> None:
             return FakeResponse()
 
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", FakeClient)
+    monkeypatch.setenv("HTTP_PROXY", "http://127.0.0.1:8080")
+    monkeypatch.setenv("HTTPS_PROXY", "http://127.0.0.1:8080")
+    monkeypatch.delenv("EXTERNAL_AGENT_TRUST_ENV", raising=False)
     monkeypatch.setenv("VALUATION_ML_AGENT_URL", "http://test.local/v1/agent/invoke")
 
     tool = build_external_http_tool("a16_ml_valuation")
@@ -331,11 +335,50 @@ def test_external_http_tool_success_and_env_override(monkeypatch) -> None:
 
     assert output["parse_ok"] is True
     assert output["analysis"] == "机器学习估值结果。"
+    assert captured["trust_env"] is False
     assert captured["url"] == "http://test.local/v1/agent/invoke"
     assert captured["json"]["options"]["external_agent_id"] == "valuation_ml"
     assert getattr(tool, "is_external_http_wrapper", False)
     assert getattr(tool, "is_external_valuation_wrapper", False)
     assert getattr(tool, "external_agent_id", "") == "valuation_ml"
+
+
+def test_external_http_tool_can_explicitly_trust_env_when_enabled(monkeypatch) -> None:
+    captured = {}
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "agent_id": "valuation_ml",
+                "status": "ok",
+                "answer": "ok",
+                "tool_result": {},
+            }
+
+    class FakeClient:
+        def __init__(self, timeout, trust_env=False):
+            captured["timeout"] = timeout
+            captured["trust_env"] = trust_env
+
+        async def __aenter__(self):
+            return self
+
+        async def __aexit__(self, exc_type, exc, tb):
+            return None
+
+        async def post(self, url, json):
+            return FakeResponse()
+
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", FakeClient)
+    monkeypatch.setenv("EXTERNAL_AGENT_TRUST_ENV", "true")
+
+    tool = build_external_http_tool("a16_ml_valuation")
+    output = anyio.run(tool.ainvoke, {"question": "q", "subtask": "s"})
+
+    assert output["parse_ok"] is True
+    assert captured["trust_env"] is True
 
 
 def test_p1a_external_http_tool_success_and_request_mapping(monkeypatch) -> None:
@@ -363,8 +406,9 @@ def test_p1a_external_http_tool_success_and_request_mapping(monkeypatch) -> None
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             captured["timeout"] = timeout
+            captured["trust_env"] = trust_env
 
         async def __aenter__(self):
             return self
@@ -386,6 +430,7 @@ def test_p1a_external_http_tool_success_and_request_mapping(monkeypatch) -> None
     assert output["parse_ok"] is True
     assert output["analysis"] == "金融数据服务返回了行情与财务摘要。"
     assert output["confidence"] == 0.72
+    assert captured["trust_env"] is False
     assert output["key_points"][:3] == [
         "行情数据已归一化",
         "财务数据已归一化",
@@ -439,7 +484,7 @@ def test_p1a_env_override_takes_precedence(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -475,7 +520,7 @@ def test_service_reported_external_agent_id_does_not_warn(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -511,7 +556,7 @@ def test_old_external_agent_id_now_warns_but_does_not_fail(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -551,7 +596,7 @@ def test_external_http_tool_fail_soft_response_cases(monkeypatch, response, expe
             return response["json"]()
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -581,7 +626,7 @@ def test_external_http_tool_fail_soft_response_cases(monkeypatch, response, expe
 )
 def test_external_http_tool_fail_soft_exceptions(monkeypatch, exception, expected_reason) -> None:
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -614,7 +659,7 @@ def test_external_http_agent_id_mismatch_is_warning(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):

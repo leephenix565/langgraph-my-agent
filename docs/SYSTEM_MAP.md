@@ -75,7 +75,10 @@ This document is the S0 operational source for the current repo snapshot.
   `VITE_API_PROXY_TARGET=http://127.0.0.1:8210`. Status and stop helpers live in
   the same `scripts/dev` directory. Logs and PID files are under
   `/tmp/lma-demo-stack`. This is dev-demo operation only; it is not
-  HTTPS/auth/reverse-proxy production deployment.
+  HTTPS/auth/reverse-proxy production deployment. The launcher sets
+  `NO_PROXY` / `no_proxy` for local hosts and `222.73.85.26`, while generic
+  external HTTP wrappers bypass inherited proxy env by default
+  (`EXTERNAL_AGENT_TRUST_ENV=true` is the explicit opt-in).
 - DeepSeek is currently an LLM provider path only. Do not treat the DeepSeek App
   web-search feature as evidence that this repo has verified default DeepSeek
   API web search.

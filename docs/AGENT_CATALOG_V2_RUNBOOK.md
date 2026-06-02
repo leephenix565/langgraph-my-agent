@@ -157,6 +157,14 @@ JSON, and `a26_composite_valuation` remains tied to the formal `10015` wrapper
 port. Internal placeholder agents remain transitional fallback tools, not
 dedicated external services.
 
+The launcher also hardens the public API process against local proxy leakage by
+ensuring `NO_PROXY` and `no_proxy` include `localhost`, `127.0.0.1`, `::1`, and
+`222.73.85.26`. Generic external HTTP wrappers default to bypassing inherited
+proxy environment settings (`trust_env=False`); only
+`EXTERNAL_AGENT_TRUST_ENV=true` opts external wrapper calls back into
+environment proxy handling. `status_8200_demo_stack.sh` reports the public API
+proxy readiness summary without printing secrets or full environment values.
+
 ## AC-1A-L2 Live Wrapper Smoke Evidence
 
 Phase `AC-1A-L2` validated the three external valuation services through the

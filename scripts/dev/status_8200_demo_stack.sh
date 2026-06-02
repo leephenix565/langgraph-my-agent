@@ -57,6 +57,68 @@ fi
 echo "demo_url=http://${PUBLIC_HOST}:${WEB_PORT}"
 echo
 
+echo "== Public API proxy readiness =="
+python3 - "$STACK_DIR/public-api-${API_PORT}.pid" "$PUBLIC_HOST" <<'PY'
+import os
+import sys
+from pathlib import Path
+from urllib.parse import urlparse
+
+pid_file = Path(sys.argv[1])
+public_host = sys.argv[2]
+
+
+def summarize_proxy(value: str | None) -> str:
+    if not value:
+        return "unset"
+    parsed = urlparse(value)
+    host = parsed.hostname or ""
+    port = parsed.port or ""
+    return f"set host={host or '-'} port={port or '-'}"
+
+
+def truthy(value: str | None) -> bool:
+    return str(value or "").strip().lower() in {"1", "true", "yes", "on"}
+
+
+def contains_host(value: str | None, host: str) -> bool:
+    items = [item.strip() for item in str(value or "").split(",") if item.strip()]
+    return host in items
+
+
+if not pid_file.exists():
+    print("public_api_pid: missing")
+    print("HTTP_PROXY: unknown")
+    print("HTTPS_PROXY: unknown")
+    print(f"NO_PROXY contains {public_host}: unknown")
+    print(f"no_proxy contains {public_host}: unknown")
+    print("external wrapper trust_env effective: false")
+    raise SystemExit(0)
+
+pid = pid_file.read_text(encoding="utf-8", errors="replace").strip()
+print(f"public_api_pid: {pid or 'missing'}")
+env: dict[str, str] = {}
+if pid:
+    environ_path = Path(f"/proc/{pid}/environ")
+    if environ_path.exists():
+        for item in environ_path.read_bytes().split(b"\0"):
+            if b"=" in item:
+                key, value = item.split(b"=", 1)
+                env[key.decode(errors="replace")] = value.decode(errors="replace")
+    else:
+        print("public_api_env: unavailable")
+
+print(f"HTTP_PROXY: {summarize_proxy(env.get('HTTP_PROXY') or env.get('http_proxy'))}")
+print(f"HTTPS_PROXY: {summarize_proxy(env.get('HTTPS_PROXY') or env.get('https_proxy'))}")
+print(f"NO_PROXY contains {public_host}: {'yes' if contains_host(env.get('NO_PROXY'), public_host) else 'no'}")
+print(f"no_proxy contains {public_host}: {'yes' if contains_host(env.get('no_proxy'), public_host) else 'no'}")
+print(
+    "external wrapper trust_env effective: "
+    f"{'true' if truthy(env.get('EXTERNAL_AGENT_TRUST_ENV')) else 'false'}"
+)
+PY
+echo
+
 echo "== External wrapper health =="
 python3 - <<'PY'
 import json

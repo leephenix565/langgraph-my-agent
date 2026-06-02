@@ -8,8 +8,35 @@ API_PORT="${LMA_DEMO_API_PORT:-8210}"
 WEB_PORT="${LMA_DEMO_WEB_PORT:-8200}"
 PUBLIC_HOST="${LMA_DEMO_PUBLIC_HOST:-222.73.85.26}"
 API_PROXY_TARGET="${VITE_API_PROXY_TARGET:-http://127.0.0.1:${API_PORT}}"
+EXTERNAL_NO_PROXY_HOSTS=("localhost" "127.0.0.1" "::1" "$PUBLIC_HOST")
 
 mkdir -p "$STACK_DIR"
+
+list_contains_item() {
+  local list="$1"
+  local item="$2"
+  [[ ",$list," == *",$item,"* ]]
+}
+
+append_no_proxy_item() {
+  local var_name="$1"
+  local item="$2"
+  local current="${!var_name:-}"
+  if [[ -z "$current" ]]; then
+    printf -v "$var_name" '%s' "$item"
+  elif ! list_contains_item "$current" "$item"; then
+    printf -v "$var_name" '%s,%s' "$current" "$item"
+  fi
+  export "$var_name"
+}
+
+ensure_external_no_proxy() {
+  local host
+  for host in "${EXTERNAL_NO_PROXY_HOSTS[@]}"; do
+    append_no_proxy_item "NO_PROXY" "$host"
+    append_no_proxy_item "no_proxy" "$host"
+  done
+}
 
 port_listening() {
   local port="$1"
@@ -127,15 +154,19 @@ done
 echo
 
 echo "== Public API =="
+ensure_external_no_proxy
+echo "public API NO_PROXY includes ${PUBLIC_HOST}: $(list_contains_item "${NO_PROXY:-}" "$PUBLIC_HOST" && echo yes || echo no)"
+echo "public API no_proxy includes ${PUBLIC_HOST}: $(list_contains_item "${no_proxy:-}" "$PUBLIC_HOST" && echo yes || echo no)"
 if port_listening "$API_PORT"; then
   echo "public API: existing_process on port $API_PORT; not starting"
 elif [[ ! -x "$PYTHON_BIN" ]]; then
   echo "public API: python not executable: $PYTHON_BIN"
 else
+  public_api_command="NO_PROXY=\"$NO_PROXY\" no_proxy=\"$no_proxy\" \"$PYTHON_BIN\" -m dotenv run --no-override -- \"$PYTHON_BIN\" -m uvicorn react_agent.public_api:app --host 127.0.0.1 --port \"$API_PORT\""
   start_process \
     "public-api-${API_PORT}" \
     "$ROOT_DIR" \
-    "\"$PYTHON_BIN\" -m uvicorn react_agent.public_api:app --host 127.0.0.1 --port \"$API_PORT\" --env-file .env" \
+    "$public_api_command" \
     "$STACK_DIR/public-api-${API_PORT}.log" \
     "$STACK_DIR/public-api-${API_PORT}.pid" || true
 fi

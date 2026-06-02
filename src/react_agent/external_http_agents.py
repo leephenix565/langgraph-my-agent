@@ -126,6 +126,12 @@ def _timeout_seconds() -> float:
     return timeout if timeout > 0 else 90.0
 
 
+def _trust_env_for_external_agents() -> bool:
+    """Return whether external HTTP wrappers may inherit proxy env settings."""
+    raw = os.environ.get("EXTERNAL_AGENT_TRUST_ENV", "")
+    return raw.strip().lower() in {"1", "true", "yes", "on"}
+
+
 def _endpoint_for(agent_id: str) -> str:
     config = EXTERNAL_HTTP_AGENT_CONFIG[agent_id]
     return os.environ.get(config.env_var, config.default_url)
@@ -384,7 +390,10 @@ def build_external_http_tool(agent_id: str) -> BaseTool:
         )
         timeout = _timeout_seconds()
         try:
-            async with httpx.AsyncClient(timeout=timeout) as client:
+            async with httpx.AsyncClient(
+                timeout=timeout,
+                trust_env=_trust_env_for_external_agents(),
+            ) as client:
                 response = await client.post(_endpoint_for(agent_id), json=request)
             if response.status_code < 200 or response.status_code >= 300:
                 return _fail_soft_output(f"http_status_{response.status_code}")
