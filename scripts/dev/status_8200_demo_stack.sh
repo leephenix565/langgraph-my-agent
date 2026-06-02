@@ -41,24 +41,105 @@ pid_status() {
   fi
 }
 
+read_pid() {
+  local pid_file="$1"
+  [[ -f "$pid_file" ]] || return 0
+  local pid
+  pid="$(tr -d '[:space:]' <"$pid_file" 2>/dev/null || true)"
+  if [[ "$pid" =~ ^[0-9]+$ ]]; then
+    echo "$pid"
+  fi
+}
+
+pid_alive() {
+  local pid="${1:-}"
+  [[ "$pid" =~ ^[0-9]+$ ]] && [[ -d "/proc/$pid" ]]
+}
+
+http_status() {
+  local url="$1"
+  curl --noproxy '*' -sS -m 5 -o /dev/null -w '%{http_code}' "$url" 2>/dev/null || true
+}
+
+yes_no() {
+  if [[ "$1" == true ]]; then
+    echo yes
+  else
+    echo no
+  fi
+}
+
+API_PID_FILE="$STACK_DIR/public-api-${API_PORT}.pid"
+WEB_PID_FILE="$STACK_DIR/web-${WEB_PORT}.pid"
+API_HEALTH_URL="http://127.0.0.1:${API_PORT}/api/health"
+WEB_ROOT_URL="http://127.0.0.1:${WEB_PORT}/"
+WEB_API_HEALTH_URL="http://127.0.0.1:${WEB_PORT}/api/health"
+
 echo "== Main demo services =="
-pid_status "public-api-${API_PORT}" "$STACK_DIR/public-api-${API_PORT}.pid"
-pid_status "web-${WEB_PORT}" "$STACK_DIR/web-${WEB_PORT}.pid"
-if port_listening "$API_PORT"; then
+api_pid="$(read_pid "$API_PID_FILE")"
+web_pid="$(read_pid "$WEB_PID_FILE")"
+api_pid_file_exists=false
+web_pid_file_exists=false
+api_pid_alive=false
+web_pid_alive=false
+api_port_listening=false
+web_port_listening=false
+
+[[ -f "$API_PID_FILE" ]] && api_pid_file_exists=true
+[[ -f "$WEB_PID_FILE" ]] && web_pid_file_exists=true
+pid_alive "$api_pid" && api_pid_alive=true
+pid_alive "$web_pid" && web_pid_alive=true
+port_listening "$API_PORT" && api_port_listening=true
+port_listening "$WEB_PORT" && web_port_listening=true
+
+api_health_status="$(http_status "$API_HEALTH_URL")"
+web_root_status="$(http_status "$WEB_ROOT_URL")"
+web_api_health_status="$(http_status "$WEB_API_HEALTH_URL")"
+
+api_state="down"
+if [[ "$api_port_listening" == true && "$api_health_status" == "200" && "$api_pid_alive" == true ]]; then
+  api_state="tracked_running"
+elif [[ "$api_port_listening" == true && "$api_health_status" == "200" ]]; then
+  api_state="untracked_running"
+elif [[ "$api_port_listening" == true ]]; then
+  api_state="unhealthy"
+elif [[ "$api_pid_file_exists" == true && "$api_pid_alive" != true ]]; then
+  api_state="stale_pid"
+fi
+
+web_state="down"
+if [[ "$web_port_listening" == true && "$web_root_status" == "200" && "$web_api_health_status" == "200" && "$web_pid_alive" == true ]]; then
+  web_state="tracked_running"
+elif [[ "$web_port_listening" == true && "$web_root_status" == "200" && "$web_api_health_status" == "200" ]]; then
+  web_state="untracked_running"
+elif [[ "$web_port_listening" == true && "$web_root_status" == "200" ]]; then
+  web_state="proxy_unhealthy"
+elif [[ "$web_port_listening" == true ]]; then
+  web_state="unhealthy"
+elif [[ "$web_pid_file_exists" == true && "$web_pid_alive" != true ]]; then
+  web_state="stale_pid"
+fi
+
+echo "public_api: state=$api_state pid_file=$(yes_no "$api_pid_file_exists") pid=${api_pid:-none} pid_alive=$(yes_no "$api_pid_alive") port_8210=$(yes_no "$api_port_listening") health_status=$api_health_status"
+echo "web: state=$web_state pid_file=$(yes_no "$web_pid_file_exists") pid=${web_pid:-none} pid_alive=$(yes_no "$web_pid_alive") port_8200=$(yes_no "$web_port_listening") root_status=$web_root_status api_health_status=$web_api_health_status"
+if [[ "$api_port_listening" == true ]]; then
   echo "port $API_PORT: listening"
 else
   echo "port $API_PORT: not listening"
 fi
-if port_listening "$WEB_PORT"; then
+if [[ "$web_port_listening" == true ]]; then
   echo "port $WEB_PORT: listening"
 else
   echo "port $WEB_PORT: not listening"
+fi
+if [[ "$web_port_listening" == true && ( "$api_health_status" != "200" || "$web_api_health_status" != "200" ) ]]; then
+  echo "DEMO_STACK_UNHEALTHY: web is up but public API is down or /api proxy is unhealthy; /api proxy will return 500."
 fi
 echo "demo_url=http://${PUBLIC_HOST}:${WEB_PORT}"
 echo
 
 echo "== Public API proxy readiness =="
-python3 - "$STACK_DIR/public-api-${API_PORT}.pid" "$PUBLIC_HOST" <<'PY'
+python3 - "$API_PID_FILE" "$PUBLIC_HOST" <<'PY'
 import os
 import sys
 from pathlib import Path

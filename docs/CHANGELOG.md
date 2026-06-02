@@ -1,5 +1,34 @@
 # CHANGELOG
 
+## 2026-06-02 - Demo stack process supervision hardening
+- Files:
+  - `scripts/dev/start_8200_demo_stack.sh`
+  - `scripts/dev/status_8200_demo_stack.sh`
+  - `scripts/dev/stop_8200_demo_stack.sh`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/SYSTEM_MAP.md`
+  - `docs/CHANGELOG.md`
+- Hardened the development 8200 demo stack scripts against the web-only
+  unhealthy state where the Vite process on `8200` remains alive but the public
+  API on `8210` has exited.
+- `start_8200_demo_stack.sh` now removes stale PID files, verifies
+  `127.0.0.1:8210/api/health` and the Vite-proxied
+  `127.0.0.1:8200/api/health`, and fails with log pointers instead of
+  reporting a usable demo when `/api/*` would proxy to a dead backend.
+- Demo stack child processes are launched detached from the invoking shell, and
+  `start` performs a short post-health stability check so a backend that exits
+  immediately after initial health probes is not reported as started.
+- `status_8200_demo_stack.sh` now reports tracked, untracked, stale, unhealthy,
+  and proxy-unhealthy states for the web/API pair and emits a clear
+  `DEMO_STACK_UNHEALTHY` warning when `/api/*` would return 500 due to an
+  unavailable backend.
+- `stop_8200_demo_stack.sh` now stops only tracked PID-file processes, removes
+  stale PID files, and reports untracked listeners without killing them.
+- Scope boundary: dev-demo process supervision only. This does not implement
+  production deployment, token auth, profile-aware task rewriting, provider
+  calls, external `/v1/agent/invoke` calls, or service-side repairs for
+  `a14` / `a22` / `a26`.
+
 ## 2026-06-02 - External wrapper proxy hardening
 - Files:
   - `src/react_agent/external_http_agents.py`

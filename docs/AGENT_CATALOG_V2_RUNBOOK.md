@@ -165,6 +165,25 @@ proxy environment settings (`trust_env=False`); only
 environment proxy handling. `status_8200_demo_stack.sh` reports the public API
 proxy readiness summary without printing secrets or full environment values.
 
+The 8200 web listener and the 8210 public API are separate dev-demo processes.
+An open `http://222.73.85.26:8200` page does not by itself prove that `/api/*`
+is usable. The launcher removes stale PID files before startup, waits for
+`127.0.0.1:8210/api/health`, waits for Vite-proxied
+`127.0.0.1:8200/api/health`, and fails with log pointers if either check is not
+healthy. It also performs a short post-health stability check so an API process
+that exits immediately after initial probes is not reported as started. The
+status script reports tracked, untracked, stale, unhealthy, and
+proxy-unhealthy states. If it prints `DEMO_STACK_UNHEALTHY`, the safe recovery
+path is:
+
+```bash
+scripts/dev/start_8200_demo_stack.sh
+```
+
+The stop helper only stops processes recorded in `/tmp/lma-demo-stack/*.pid`.
+It removes stale PID files and reports untracked listeners without killing
+them; do not use broad `pkill` commands for the demo stack.
+
 ## AC-1A-L2 Live Wrapper Smoke Evidence
 
 Phase `AC-1A-L2` validated the three external valuation services through the

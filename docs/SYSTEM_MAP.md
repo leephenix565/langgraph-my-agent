@@ -79,6 +79,12 @@ This document is the S0 operational source for the current repo snapshot.
   `NO_PROXY` / `no_proxy` for local hosts and `222.73.85.26`, while generic
   external HTTP wrappers bypass inherited proxy env by default
   (`EXTERNAL_AGENT_TRUST_ENV=true` is the explicit opt-in).
+  The web and API processes are supervised separately: `start` removes stale
+  PID files and requires both `127.0.0.1:8210/api/health` and the Vite-proxied
+  `127.0.0.1:8200/api/health` to return 200, followed by a short stability
+  check; `status` reports tracked, untracked, stale, unhealthy, and
+  proxy-unhealthy states; `stop` only stops PID-file tracked processes and
+  never broadly kills untracked listeners.
 - DeepSeek is currently an LLM provider path only. Do not treat the DeepSeek App
   web-search feature as evidence that this repo has verified default DeepSeek
   API web search.
