@@ -1,3 +1,7 @@
+from react_agent.fixed_dag_contracts import (
+    build_deterministic_fixed_dag_plan,
+    build_workflow_snapshot_v2,
+)
 from react_agent.public_runtime import _build_stage_progress_data
 
 
@@ -5,51 +9,38 @@ def _statuses(data):
     return {stage.key: stage.status for stage in data.stages}
 
 
-def test_stage_progress_starts_with_routing_running():
+def test_stage_progress_starts_with_planning_running():
     data = _build_stage_progress_data({})
-    assert data.currentStage == "routing"
+    assert data.currentStage == "planning"
     assert _statuses(data) == {
-        "routing": "running",
-        "analysis": "waiting",
-        "risk": "waiting",
-        "summary": "waiting",
-        "fusion": "waiting",
+        "planning": "running",
+        "evidence": "waiting",
+        "l2_analysis": "waiting",
+        "dimension_composite": "waiting",
+        "decision": "waiting",
+        "report": "waiting",
     }
 
 
-def test_stage_progress_marks_fusion_complete_when_answer_is_emitted():
-    data = _build_stage_progress_data(
-        {
-            "layer_plan": {"L1": ["a01_cio_orchestrator"]},
-            "current_layer": "L4",
-            "layer_done": {"L1": True, "L2": True, "L3": True},
-            "mainline_status": "ready",
-            "emitted_bundle": {"answer": "Final answer"},
-            "final_answer_source": "fused",
-            "baseline_status": "ready",
-            "judge_status": "ready",
-            "writer_status": "ready",
-        }
+def test_stage_progress_marks_report_complete_when_all_steps_done():
+    plan = build_deterministic_fixed_dag_plan("q")
+    snapshot = build_workflow_snapshot_v2(
+        plan=plan,
+        current_stage="report",
+        completed_steps=[step["id"] for step in plan["steps"]],
     )
-    assert data.currentStage == "fusion"
-    assert _statuses(data) == {
-        "routing": "completed",
-        "analysis": "completed",
-        "risk": "completed",
-        "summary": "completed",
-        "fusion": "completed",
-    }
+    data = _build_stage_progress_data({"workflow_snapshot": snapshot})
+    assert data.currentStage == "report"
+    assert set(_statuses(data).values()) == {"completed"}
 
 
-def test_stage_progress_marks_failed_fusion_when_stream_errors_after_start():
-    data = _build_stage_progress_data(
-        {
-            "layer_plan": {"L1": ["a01_cio_orchestrator"]},
-            "current_layer": "L4",
-            "layer_done": {"L1": True, "L2": True, "L3": True},
-            "baseline_status": "ready",
-        },
-        failed=True,
+def test_stage_progress_marks_current_stage_failed_when_stream_errors():
+    plan = build_deterministic_fixed_dag_plan("q")
+    snapshot = build_workflow_snapshot_v2(
+        plan=plan,
+        current_stage="decision",
+        completed_steps=["route_planner"],
     )
-    assert data.currentStage == "fusion"
-    assert _statuses(data)["fusion"] == "failed"
+    data = _build_stage_progress_data({"workflow_snapshot": snapshot}, failed=True)
+    assert data.currentStage == "decision"
+    assert _statuses(data)["decision"] == "failed"

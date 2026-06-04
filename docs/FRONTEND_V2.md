@@ -1,24 +1,42 @@
 # Frontend V2 Target
 
-This document describes the target frontend boundary for the Fixed DAG reset. R1-A does not implement the frontend rewrite.
+This document describes the frontend boundary for the Fixed DAG reset.
 
 ## Product Boundary
 
-The public chat remains a single user and assistant transcript. Internal DAG execution belongs in a workflow inspector, not in separate public agent chat lanes.
+The public chat remains a single user and assistant transcript. Internal DAG
+execution belongs in a workflow inspector, not in separate public agent chat
+lanes.
+
+## Current R1-B Boundary
+
+The Python public adapter now emits `workflow_snapshot_v2` with:
+
+- `stages`
+- `dagSteps`
+- `dimensionGroups`
+- `currentStage`
+- `completedSteps`
+- `provenance`
+- `finalSource`
+
+The existing `apps/web` shell is retained. Its full workflow inspector rewrite
+is deferred to R5, so frontend code may still contain old mock/UI labels until
+that phase.
 
 ## Target Composer Flow
 
 ```text
 composer text
   -> public API request
-  -> Fixed DAG runtime
-  -> workflow snapshots
+  -> Fixed DAG runtime skeleton
+  -> workflow_snapshot_v2
   -> final assistant answer
 ```
 
 ## Workflow Inspector Target
 
-The inspector should move from old layer/mode/fusion concepts to:
+The inspector should show:
 
 - DAG stage
 - dimension
@@ -27,11 +45,14 @@ The inspector should move from old layer/mode/fusion concepts to:
 - evidence coverage
 - final report readiness
 
-The inspector may show safe structured summaries. It must not show provider raw responses, raw graph messages, manager assignment JSON, or secret-bearing metadata.
+The inspector may show safe structured summaries. It must not show provider raw
+responses, raw graph messages, manager assignment JSON, or secret-bearing
+metadata.
 
 ## Implementation Preference
 
-Rewrite the existing `apps/web` shell in place unless a later phase explicitly approves a separate app. Do not create a second public transcript model.
+Rewrite the existing `apps/web` shell in place unless a later phase explicitly
+approves a separate app. Do not create a second public transcript model.
 
 ## Deferred Work
 

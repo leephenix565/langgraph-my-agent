@@ -1,3 +1,4 @@
+# ruff: noqa: D103
 """Safe mappings from runtime state to public web contracts."""
 
 from __future__ import annotations
@@ -5,37 +6,36 @@ from __future__ import annotations
 import uuid
 from datetime import datetime
 from pathlib import Path
-from typing import Any, Dict, Iterable, List, Sequence
+from typing import Any, Iterable, List, Sequence
 from urllib.parse import urlparse
 
 from react_agent.agents import AGENT_METADATA, load_metadata_from_dir
+from react_agent.fixed_dag_contracts import build_deterministic_fixed_dag_plan
 from react_agent.public_contracts import (
-    AgentStepModel,
     AnswerCardModel,
     ChatSessionSummary,
     CitationModel,
     ContinuityMode,
-    EmitPath,
+    DagStepModel,
+    DimensionGroupModel,
     EvidenceCardModel,
     FinalSource,
-    FusionStepModel,
-    LayerPlanItem,
     PublicThreadDetail,
     PublicTurn,
     StructuredInputModel,
     WorkflowModel,
     WorkflowProvenanceModel,
+    WorkflowStageModel,
 )
 
-LAYER_ORDER: Sequence[str] = ("L1", "L2", "L3", "L4")
 CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
 STRUCTURED_INPUT_SECTIONS: Sequence[tuple[str, str]] = (
-    ("task", "【任务】"),
-    ("context", "【已知背景/材料】"),
-    ("materials", "【补充材料/笔记】"),
-    ("urlReferences", "【链接参考 / URL 引用】"),
-    ("constraints", "【约束要求】"),
-    ("outputPreference", "【输出偏好】"),
+    ("task", "[Task]"),
+    ("context", "[Known context]"),
+    ("materials", "[Supplemental materials]"),
+    ("urlReferences", "[URL references]"),
+    ("constraints", "[Constraints]"),
+    ("outputPreference", "[Output preference]"),
 )
 
 
@@ -112,11 +112,11 @@ def normalize_structured_input(structured_input: StructuredInputModel) -> Struct
 
 
 def _compose_materials_text(materials: Sequence[str]) -> str:
-    return "\n\n".join(f"[材料 {index + 1}]\n{material}" for index, material in enumerate(materials))
+    return "\n\n".join(f"[Material {index + 1}]\n{material}" for index, material in enumerate(materials))
 
 
 def _compose_url_references_text(url_references: Sequence[str]) -> str:
-    return "\n\n".join(f"[链接 {index + 1}]\n{url}" for index, url in enumerate(url_references))
+    return "\n\n".join(f"[URL {index + 1}]\n{url}" for index, url in enumerate(url_references))
 
 
 def compose_structured_input_text(structured_input: StructuredInputModel) -> str:
@@ -151,10 +151,8 @@ def compose_structured_input_text(structured_input: StructuredInputModel) -> str
 
 
 def _normalize_final_source(value: Any) -> FinalSource:
-    source = _coerce_str(value).lower()
-    if source in {"baseline", "fused"}:
-        return source
-    return "mainline"
+    del value
+    return "reset_skeleton"
 
 
 def _confidence_label(value: Any) -> str | None:
@@ -211,7 +209,7 @@ def _derive_citations(cards: Iterable[EvidenceCardModel]) -> List[CitationModel]
         citations.append(
             CitationModel(
                 label=card.title,
-                note=card.note or "Evidence carried through the public adapter.",
+                note=card.note or "Evidence carried through the reset public adapter.",
             )
         )
     return citations[:3]
@@ -221,7 +219,6 @@ def build_user_turn(text: str, structured_input: StructuredInputModel | None = N
     normalized_text = text.strip()
     normalized_structured = None
     if structured_input is not None:
-        # Keep transcript text as the canonical public truth; structured input is only an additive mirror.
         normalized_structured = normalize_structured_input(structured_input)
         if compose_structured_input_text(normalized_structured) != normalized_text:
             raise ValueError("Structured input does not match canonical transcript text.")
@@ -236,217 +233,119 @@ def build_user_turn(text: str, structured_input: StructuredInputModel | None = N
     )
 
 
-def _layer_plan_items(layer_plan_raw: Any, layer_mode_raw: Any) -> List[LayerPlanItem]:
-    layer_plan = layer_plan_raw if isinstance(layer_plan_raw, dict) else {}
-    layer_mode = layer_mode_raw if isinstance(layer_mode_raw, dict) else {}
-    items: List[LayerPlanItem] = []
-    for layer in LAYER_ORDER:
-        selected_raw = layer_plan.get(layer, [])
-        selected = (
-            [str(item).strip() for item in selected_raw if str(item).strip()]
-            if isinstance(selected_raw, list)
-            else []
-        )
-        mode = _coerce_str(layer_mode.get(layer)) or "Star"
-        items.append(
-            LayerPlanItem(
-                layer=layer,  # type: ignore[arg-type]
-                mode=mode,
-                selected=selected,
-                note="No agents selected." if not selected else None,
-            )
-        )
-    return items
-
-
-def _layer_done_list(raw: Any) -> List[str]:
-    if not isinstance(raw, dict):
-        return []
-    return [layer for layer in LAYER_ORDER if bool(raw.get(layer))]
-
-
-def _agent_summary(agent_id: str) -> str:
-    _ensure_agent_metadata()
-    meta = AGENT_METADATA.get(agent_id)
-    if meta and meta.description:
-        return _truncate(meta.description.replace("\n", " "), 140)
-    return "Selected in the workflow plan."
-
-
 def _agent_title(agent_id: str) -> str:
     _ensure_agent_metadata()
     meta = AGENT_METADATA.get(agent_id)
     return meta.name if meta and meta.name else agent_id
 
 
-def _build_agent_steps(
-    layer_plan_raw: Any,
-    layer_done_raw: Any,
-    fanout_targets_raw: Any,
-) -> List[AgentStepModel]:
-    layer_plan = layer_plan_raw if isinstance(layer_plan_raw, dict) else {}
-    done = set(_layer_done_list(layer_done_raw))
-    fanout_targets = (
-        {str(item).strip() for item in fanout_targets_raw if str(item).strip()}
-        if isinstance(fanout_targets_raw, list)
-        else set()
-    )
-    steps: List[AgentStepModel] = []
-    for layer in LAYER_ORDER:
-        selected = layer_plan.get(layer, [])
-        if not isinstance(selected, list):
-            continue
-        for index, agent_id in enumerate(selected):
-            agent_id = str(agent_id).strip()
-            if not agent_id:
-                continue
-            if layer in done:
-                status = "complete"
-            elif agent_id in fanout_targets:
-                status = "running"
-            else:
-                status = "queued"
-            steps.append(
-                AgentStepModel(
-                    id=f"{layer}-{agent_id}-{index}",
-                    layer=layer,  # type: ignore[arg-type]
-                    agentId=agent_id,
-                    title=_agent_title(agent_id),
-                    summary=_agent_summary(agent_id),
-                    status=status,  # type: ignore[arg-type]
-                    signal="Completed in the final answer path." if status == "complete" else None,
-                )
-            )
-    return steps
+def _workflow_snapshot_dict(state: dict[str, Any]) -> dict[str, Any]:
+    raw = state.get("workflow_snapshot")
+    if isinstance(raw, dict) and raw.get("schema") == "workflow_snapshot_v2":
+        return raw
+    plan = state.get("fixed_dag_plan")
+    if not isinstance(plan, dict):
+        plan = build_deterministic_fixed_dag_plan(_coerce_str(state.get("current_question")))
+    return {
+        "schema": "workflow_snapshot_v2",
+        "planId": plan.get("plan_id", "reset-fixed-dag-plan-v1"),
+        "stages": [
+            {"key": item.get("id"), "title": item.get("title"), "stepIds": item.get("step_ids", [])}
+            for item in plan.get("stages", [])
+        ],
+        "dagSteps": [
+            {
+                "id": step.get("id"),
+                "stage": step.get("stage"),
+                "agentId": step.get("agent_id"),
+                "dimension": step.get("dimension"),
+                "title": step.get("title") or _agent_title(_coerce_str(step.get("agent_id"))),
+                "summary": step.get("description", ""),
+                "status": step.get("status", "pending_implementation"),
+            }
+            for step in plan.get("steps", [])
+        ],
+        "dimensionGroups": [],
+        "currentStage": "planning",
+        "completedSteps": [],
+        "provenance": {
+            "source": "reset_skeleton",
+            "providerInvoked": False,
+            "externalInvoked": False,
+        },
+        "finalSource": "reset_skeleton",
+    }
 
 
-def _fusion_step_status(kind: str, raw_status: str, final_source: FinalSource) -> str:
-    status = raw_status.strip().lower()
-    if status in {"", "disabled"}:
-        return "disabled"
-    if status == "error":
-        return "error"
-    if kind == "baseline" and final_source == "baseline" and status == "ready":
-        return "selected"
-    if kind == "writer" and final_source == "fused" and status == "ready":
-        return "selected"
-    if status == "ready":
-        return "shadow"
-    return "shadow"
-
-
-def _fusion_step_summary(kind: str, status: str, final_source: FinalSource) -> str:
-    if status == "disabled":
-        return "This sidecar was not active for the completed turn."
-    if status == "error":
-        return "This sidecar encountered an error and did not become the public answer."
-    if status == "selected":
-        if kind == "baseline":
-            return "The baseline sidecar supplied the final visible answer."
-        if kind == "writer":
-            return "The fusion writer produced the final visible answer."
-    if kind == "judge":
-        return "Judge output stayed in sidecar mode and informed the fusion decision without becoming a transcript speaker."
-    return "This sidecar completed in shadow mode and stayed outside the public transcript."
-
-
-def _build_fusion_steps(state: Dict[str, Any], final_source: FinalSource) -> List[FusionStepModel]:
-    raw_steps = [
-        ("baseline", "Baseline sidecar", _coerce_str(state.get("baseline_status"))),
-        ("judge", "Fusion judge", _coerce_str(state.get("judge_status"))),
-        ("writer", "Fusion writer", _coerce_str(state.get("writer_status"))),
-    ]
-    steps: List[FusionStepModel] = []
-    for kind, label, raw_status in raw_steps:
-        status = _fusion_step_status(kind, raw_status, final_source)
-        steps.append(
-            FusionStepModel(
-                id=f"fusion-{kind}",
-                kind=kind,  # type: ignore[arg-type]
-                label=label,
-                status=status,  # type: ignore[arg-type]
-                summary=_fusion_step_summary(kind, status, final_source),
-            )
-        )
-    return steps
-
-
-def _normalize_emit_path(summary_source: Any) -> EmitPath:
-    normalized = _coerce_str(summary_source).lower()
-    if normalized == "baseline_sidecar":
-        return "baseline_sidecar"
-    if normalized == "fusion_writer_shadow":
-        return "fusion_writer"
-    return "mainline_summary"
-
-
-def _provenance_summary(
-    emit_path: EmitPath,
-    final_source: FinalSource,
-    continuity_mode: ContinuityMode,
-) -> str:
-    if emit_path == "baseline_sidecar":
-        summary = "The final answer was emitted from the baseline sidecar path."
-    elif emit_path == "fusion_writer":
-        summary = "The final answer was emitted from the fusion writer path."
-    else:
-        summary = "The final answer was emitted from the mainline summary path."
-    if final_source == "baseline":
-        summary += " Final source stayed on the baseline branch."
-    elif final_source == "fused":
-        summary += " Final source stayed on the fused writer branch."
-    else:
-        summary += " Final source stayed on the mainline branch."
-    if continuity_mode == "replay":
-        summary += " Continuity uses transcript replay, which is weaker than persistent graph state."
-    return summary
-
-
-def _build_provenance(state: Dict[str, Any], continuity_mode: ContinuityMode) -> WorkflowProvenanceModel:
-    final_source = _normalize_final_source(state.get("final_answer_source"))
-    emitted_bundle = state.get("emitted_bundle", {})
-    emitted_bundle = emitted_bundle if isinstance(emitted_bundle, dict) else {}
-    emit_path = _normalize_emit_path(emitted_bundle.get("summary_source"))
-    return WorkflowProvenanceModel(
-        emitPath=emit_path,
-        finalSource=final_source,
+def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMode) -> WorkflowModel:
+    snapshot = _workflow_snapshot_dict(state)
+    provenance_raw = snapshot.get("provenance", {})
+    provenance_raw = provenance_raw if isinstance(provenance_raw, dict) else {}
+    provenance = WorkflowProvenanceModel(
+        source="reset_skeleton",
         continuityMode=continuity_mode,
-        summary=_provenance_summary(emit_path, final_source, continuity_mode),
-    )
-
-
-def build_workflow_snapshot(state: Dict[str, Any], continuity_mode: ContinuityMode) -> WorkflowModel:
-    final_source = _normalize_final_source(state.get("final_answer_source"))
-    provenance = _build_provenance(state, continuity_mode)
-    return WorkflowModel(
-        layerPlan=_layer_plan_items(state.get("layer_plan", {}), state.get("layer_mode", {})),
-        layerMode=state.get("layer_mode", {}) if isinstance(state.get("layer_mode", {}), dict) else {},
-        currentLayer=_coerce_str(state.get("current_layer")),
-        layerDone=_layer_done_list(state.get("layer_done", {})),
-        agentSteps=_build_agent_steps(
-            state.get("layer_plan", {}),
-            state.get("layer_done", {}),
-            state.get("fanout_targets", []),
+        providerInvoked=bool(provenance_raw.get("providerInvoked", False)),
+        externalInvoked=bool(provenance_raw.get("externalInvoked", False)),
+        summary=(
+            "Fixed DAG reset skeleton emitted the public answer. No provider or "
+            "external agent endpoint was invoked."
         ),
-        fusionSteps=_build_fusion_steps(state, final_source),
-        finalSource=final_source,
+    )
+    return WorkflowModel(
+        schema="workflow_snapshot_v2",
+        planId=_coerce_str(snapshot.get("planId")) or "reset-fixed-dag-plan-v1",
+        stages=[
+            WorkflowStageModel(
+                key=item.get("key"),  # type: ignore[arg-type]
+                title=_coerce_str(item.get("title")) or _coerce_str(item.get("key")),
+                stepIds=list(item.get("stepIds", []) or []),
+            )
+            for item in snapshot.get("stages", [])
+            if isinstance(item, dict) and item.get("key")
+        ],
+        dagSteps=[
+            DagStepModel(
+                id=_coerce_str(item.get("id")),
+                stage=item.get("stage"),  # type: ignore[arg-type]
+                agentId=_optional_str(item.get("agentId")),
+                dimension=_optional_str(item.get("dimension")),
+                title=_coerce_str(item.get("title")) or _coerce_str(item.get("id")),
+                summary=_coerce_str(item.get("summary")),
+                status=item.get("status", "pending_implementation"),  # type: ignore[arg-type]
+            )
+            for item in snapshot.get("dagSteps", [])
+            if isinstance(item, dict) and item.get("id") and item.get("stage")
+        ],
+        dimensionGroups=[
+            DimensionGroupModel(
+                id=_coerce_str(item.get("id")),
+                title=_coerce_str(item.get("title")) or _coerce_str(item.get("id")),
+                stepIds=list(item.get("stepIds", []) or []),
+                status=item.get("status", "pending_implementation"),  # type: ignore[arg-type]
+                summary=_coerce_str(item.get("summary")),
+            )
+            for item in snapshot.get("dimensionGroups", [])
+            if isinstance(item, dict) and item.get("id")
+        ],
+        currentStage=snapshot.get("currentStage"),  # type: ignore[arg-type]
+        completedSteps=list(snapshot.get("completedSteps", []) or []),
+        finalSource="reset_skeleton",
         provenanceNote=provenance.summary,
         provenance=provenance,
     )
 
 
-def build_assistant_turn(state: Dict[str, Any], continuity_mode: ContinuityMode) -> PublicTurn:
+def build_assistant_turn(state: dict[str, Any], continuity_mode: ContinuityMode) -> PublicTurn:
     bundle = state.get("emitted_bundle", {})
     if not isinstance(bundle, dict):
         raise ValueError("emitted_bundle missing from completed state")
     answer = _coerce_str(bundle.get("answer"))
     if not answer:
         raise ValueError("emitted_bundle.answer missing from completed state")
-    final_source = _normalize_final_source(state.get("final_answer_source"))
     evidence_cards = _normalize_evidence_cards(bundle.get("evidence_cards", []))
     answer_card = AnswerCardModel(
         answer=answer,
-        finalSource=final_source,
+        finalSource=_normalize_final_source(state.get("final_answer_source")),
         confidence=_confidence_label(bundle.get("confidence")),
         evidenceCards=evidence_cards,
         citations=_derive_citations(evidence_cards),
@@ -481,18 +380,13 @@ def build_thread_summary(
         else latest_turn.text if latest_turn else "Awaiting first message."
     )
     updated_at = latest_turn.createdAt if latest_turn else _now_label()
-    final_source = (
-        latest_assistant.answerCard.finalSource
-        if latest_assistant and latest_assistant.answerCard
-        else "mainline"
-    )
     return ChatSessionSummary(
         id=thread_id,
         title=_truncate(title_source or "New thread", 24) or "New thread",
         updatedAt=updated_at,
         preview=_truncate(preview_source or "Awaiting first message.", 72) or "Awaiting first message.",
-        finalSource=final_source,  # type: ignore[arg-type]
-        phase="Phase F3 / health-debug polish",
+        finalSource="reset_skeleton",
+        phase="Phase R1-B / fixed DAG skeleton",
         continuityMode=continuity_mode,
     )
 
@@ -504,8 +398,8 @@ def build_new_thread(thread_id: str, continuity_mode: ContinuityMode) -> PublicT
         title="New thread",
         updatedAt=_now_label(),
         preview="Awaiting first message.",
-        finalSource="mainline",
-        phase="Phase F3 / health-debug polish",
+        finalSource="reset_skeleton",
+        phase="Phase R1-B / fixed DAG skeleton",
         continuityMode=continuity_mode,
     )
     return PublicThreadDetail(thread=summary, turns=turns)
@@ -525,7 +419,6 @@ def append_turns(
 
 
 def replay_messages(turns: Sequence[PublicTurn], pending_user_text: str) -> List[tuple[str, str]]:
-    # Replay stays anchored to stored transcript text even when a typed structured-input mirror exists.
     messages: List[tuple[str, str]] = []
     for turn in turns:
         role = "assistant" if turn.role == "assistant" else "user"

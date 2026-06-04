@@ -1,24 +1,25 @@
 # System Map
 
-This file is the reset branch operational map for Phase R1-A.
+This file is the reset branch operational map for Phase R1-B.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R1-A hard slimming.
-- Phase purpose: delete old lineage, rebuild minimal reset docs, and keep runtime untouched.
+- Current phase: R1-B fixed DAG runtime protocol skeleton.
+- Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
+  a deterministic provider-free fixed DAG skeleton.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 
 ## Current Runtime Entry
 
-The current executable graph remains:
+The executable graph is:
 
 ```text
 langgraph.json
   -> src/react_agent/graph.py:graph
 ```
 
-The public path remains:
+The public path is:
 
 ```text
 apps/web
@@ -27,43 +28,47 @@ apps/web
   -> src/react_agent/graph.py
 ```
 
-This is a retained current boundary, not the new Fixed DAG runtime.
+The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
+is retained and still needs the R5 workflow inspector rewrite.
 
-## Retained Runtime Files
-
-R1-A intentionally keeps:
-
-- `src/react_agent/graph.py`
-- `src/react_agent/prompts.py`
-- `src/react_agent/router_parse.py`
-- `src/react_agent/state.py`
-- `src/react_agent/public_contracts.py`
-- `src/react_agent/public_mapping.py`
-- `src/react_agent/public_api.py`
-- `src/react_agent/public_runtime.py`
-- `src/react_agent/public_store.py`
-- `src/react_agent/public_guardrails.py`
-- `src/react_agent/baseline_sidecar.py`
-- `apps/web`
-
-Mode prompt/parser/state fields, Fair Fusion sidecars, and current public workflow projection are deferred to later phases.
-
-## Target Fixed DAG
-
-The target architecture is:
+## Active Fixed DAG Skeleton
 
 ```mermaid
 flowchart TD
-    U["User input"] --> P["fixed_dag_plan_v1"]
-    P --> L1["L1 parse and data preparation"]
-    L1 --> L2["L2 dimension analysis"]
-    L2 --> L3["L3 dimension composites"]
+    U["User input"] --> P["route_planner"]
+    P --> E["prepare_l1_context"]
+    E --> L2["run_l2_conclusions"]
+    L2 --> L3["run_dimension_composites"]
     L3 --> D["decision_synthesizer"]
     D --> R["report_generator"]
-    R --> T["single assistant transcript"]
+    R --> F["final_emit"]
+    F --> M["memory_update"]
 ```
 
-The target formal agent set has 28 agents:
+Active skeleton properties:
+
+- No provider call.
+- No search call.
+- No external `/v1/agent/invoke` call.
+- No A01 contract consumption.
+- No mode-based Manager dispatch.
+- No Fair Fusion or baseline sidecar active graph branch.
+- Final public source is `reset_skeleton`.
+
+## Retained But Inactive Infrastructure
+
+R1-B keeps these files for later phases or compatibility, but they are not active
+runtime authority:
+
+- `src/react_agent/baseline_sidecar.py`
+- `src/react_agent/external_http_agents.py`
+- `src/react_agent/external_valuation_agents.py`
+- `config/agents/*.json`
+- `apps/web`
+
+## Target Fixed DAG IDs
+
+The reset skeleton has one planner node plus 28 target ids:
 
 - L1: 3
 - L2: 19
@@ -74,7 +79,7 @@ See `docs/ARCHITECTURE_FIXED_DAG.md`.
 
 ## Deleted Old-Lineage Boundary
 
-R1-A removes:
+R1-A removed:
 
 - old Agent Catalog v2 docs and runbooks
 - old mainline audit snapshots
@@ -90,17 +95,16 @@ Historical recovery is through the pre-reset tag, not through current docs.
 
 Later phases own:
 
-- removal of route mode prompt/parser/state/public workflow concepts
-- Fair Fusion and baseline sidecar removal or replacement
-- Fixed DAG contract implementation
-- graph skeleton rewrite
-- snake_case catalog/runtime registry
-- frontend DAG workflow inspector
+- real business agent algorithms
+- snake_case catalog/runtime registry replacement
+- external service readiness and protocol repair
+- frontend DAG workflow inspector rewrite
 - rebuilt mainline quality gate
+- production deployment, auth, HTTPS, observability, persistence, and rate limits
 
 ## Quality Entry Points
 
-Safe R1-A validation commands:
+Safe R1-B validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -110,14 +114,16 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-Do not run provider smoke, external live invoke, demo stack commands, or artifact-writing mainline/fusion gates unless a later phase explicitly owns them.
+Do not run provider smoke, external live invoke, demo stack commands, or
+artifact-writing mainline/fusion gates unless a later phase explicitly owns
+them.
 
 ## Non-Claims
 
-R1-A does not claim:
+R1-B does not claim:
 
-- Fixed DAG runtime completion
 - frontend v2 completion
+- business-agent correctness
 - provider readiness
 - external service readiness
 - production deployment readiness

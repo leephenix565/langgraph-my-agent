@@ -1,19 +1,16 @@
-from react_agent.graph import _normalize_mode
+from react_agent import prompts
+from react_agent.fixed_dag_contracts import FIXED_DAG_STAGE_ORDER
 
 
-def test_normalize_mode_single_ok() -> None:
-    assert _normalize_mode("Star") == "Star"
-    assert _normalize_mode("chain") == "Chain"
+def test_active_router_prompt_has_no_legacy_execution_modes() -> None:
+    forbidden = ("Star", "Chain", "Debate", "Tree")
+    for token in forbidden:
+        assert token not in prompts.ROUTER_SYSTEM_PROMPT
 
 
-def test_normalize_mode_joined_string() -> None:
-    # Comma-joined should pick the first valid token and not raise.
-    assert _normalize_mode("Star,Chain,Debate,Tree") == "Star"
-    # Space or semicolon separated also tolerated.
-    assert _normalize_mode("Debate Tree") == "Debate"
-    assert _normalize_mode("Tree;Star") == "Tree"
-
-
-def test_normalize_mode_invalid_fallback() -> None:
-    assert _normalize_mode("invalid") == "Star"
-    assert _normalize_mode("") == "Star"
+def test_active_router_prompt_mentions_fixed_dag_stages() -> None:
+    rendered = prompts.ROUTER_SYSTEM_PROMPT
+    for stage in FIXED_DAG_STAGE_ORDER:
+        assert stage in rendered
+    assert "fixed_dag_plan_v1" in rendered
+    assert "mode" not in rendered.lower()

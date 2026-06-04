@@ -1,34 +1,31 @@
-"""Blocking runtime graph smoke for the active quality gate."""
+"""Blocking runtime graph smoke for the active reset quality gate."""
 
 import pytest
-from langchain_core.messages import AIMessage
 
-import react_agent.default_agents as default_agents
 import react_agent.graph as graph_module
 from react_agent.context import Context
 
 pytestmark = pytest.mark.anyio
 
 
-async def test_react_agent_simple_passthrough(monkeypatch) -> None:
-    class FakeModel:
-        def bind_tools(self, tool_list):
-            return self
+async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
+    def fail_provider(*args, **kwargs):
+        raise AssertionError("provider should not be called by R1-B skeleton")
 
-        async def ainvoke(self, msgs, config=None):  # type: ignore[override]
-            return AIMessage(content='{"analysis":"ok","key_points":[],"evidence":[],"confidence":0.7}', tool_calls=[])
-
-    fm = FakeModel()
-    monkeypatch.setattr(graph_module, "load_chat_model", lambda name: fm)
-    monkeypatch.setattr(default_agents, "load_chat_model", lambda name: fm)
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
 
     res = await graph_module.graph.ainvoke(
-        {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore
-        context=Context(model="deepseek/deepseek-chat", system_prompt="You are a helpful AI assistant."),
+        {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
+        context=Context(model="deepseek/deepseek-chat", system_prompt="inactive"),
     )
 
-    # Should have layered plans and a final message.
-    assert set(res.get("layer_plan", {}).keys()) == {"L1", "L2", "L3", "L4"}
+    assert res["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"
+    assert len(res["fixed_dag_plan"]["target_agent_ids"]) == 28
+    assert res["workflow_snapshot"]["schema"] == "workflow_snapshot_v2"
+    assert res["report_result"]["schema"] == "report_result_v1"
     assert res.get("messages")
-    # By default (config exists, builtin disabled) old built-ins should not be present.
+    assert "Fixed DAG reset skeleton is active" in res["messages"][-1].content
+    assert "layer_plan" not in res
+    assert "fusion_verdict" not in res
+    assert "contract" not in graph_module.__dict__
     assert "news" not in graph_module.AGENT_METADATA

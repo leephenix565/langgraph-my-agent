@@ -1,218 +1,111 @@
-"""Router parsing helpers shared by runtime and offline evaluation."""
+# ruff: noqa: D103
+"""Parser for the Phase R1-B fixed DAG planner response."""
 
 from __future__ import annotations
 
 import json
-from typing import Any, Dict, List, Optional, Tuple
+import re
+from collections.abc import Mapping
+from typing import Any
 
-LAYER_ORDER: List[str] = ["L1", "L2", "L3", "L4"]
-DEFAULT_MODES: Dict[str, str] = {"L1": "Chain", "L2": "Star", "L3": "Star", "L4": "Chain"}
-LEGACY_LAYER_MAP: Dict[str, str] = {"L4": "L3", "L5": "L4"}
-SPECIAL_FALLBACK_BY_LAYER: Dict[str, List[str]] = {
-    "L1": ["a01_cio_orchestrator"],
-    "L4": ["a25_report_center"],
-}
+from react_agent.fixed_dag_contracts import (
+    FIXED_DAG_SCHEMA_VERSION,
+    RESET_RUNTIME_AGENT_IDS,
+    build_deterministic_fixed_dag_plan,
+)
 
-
-def normalize_mode(mode: Any) -> str:
-    """Return a single valid mode (Star/Chain/Debate/Tree) with light tolerance."""
-    allowed = {"star", "chain", "debate", "tree"}
-    if not mode:
-        return "Star"
-    raw = str(mode).strip()
-    for sep in [",", ";", "|", "/"]:
-        if sep in raw:
-            raw = raw.split(sep)[0]
-            break
-    raw = raw.strip().split()[0]
-    token = raw.lower()
-    if token in allowed:
-        return token.title()
-    return "Star"
+_JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 
 
-def extract_json_str(text: str) -> Optional[str]:
-    """Best-effort extract a JSON object string; return None if not parseable."""
-    try:
-        json.loads(text)
-        return text
-    except Exception:
-        pass
-
-    first = text.find("{")
-    last = text.rfind("}")
-    if first == -1 or last == -1 or last <= first:
+def extract_json_str(raw: str) -> str | None:
+    """Extract the first JSON object from a provider-style response."""
+    if not raw:
         return None
-    candidate = text[first : last + 1]
-    try:
-        json.loads(candidate)
+    candidate = raw.strip()
+    if candidate.startswith("{") and candidate.endswith("}"):
         return candidate
-    except Exception:
-        return None
+    match = _JSON_BLOCK_RE.search(candidate)
+    if match:
+        return match.group(0)
+    return None
 
 
-def _normalize_agent_catalog(agent_catalog: Dict[str, Any]) -> Dict[str, List[str]]:
-    """Return a layer -> agent ids catalog from layer maps or metadata maps."""
-    normalized: Dict[str, List[str]] = {layer: [] for layer in LAYER_ORDER}
-    if any(layer in agent_catalog for layer in LAYER_ORDER):
-        for layer in LAYER_ORDER:
-            raw_ids = agent_catalog.get(layer, [])
-            if isinstance(raw_ids, list):
-                agent_ids: List[str] = []
-                for item in raw_ids:
-                    if isinstance(item, str):
-                        agent_ids.append(item)
-                    elif isinstance(item, dict):
-                        agent_id = item.get("id")
-                        enabled = bool(item.get("default_enabled", True))
-                        if isinstance(agent_id, str) and enabled:
-                            agent_ids.append(agent_id)
-                normalized[layer] = agent_ids
-        return normalized
-
-    for fallback_id, meta in agent_catalog.items():
-        if not isinstance(fallback_id, str):
+def _normalize_agent_ids(raw_ids: Any) -> tuple[list[str], list[str]]:
+    if not isinstance(raw_ids, list):
+        return list(RESET_RUNTIME_AGENT_IDS), []
+    known = set(RESET_RUNTIME_AGENT_IDS)
+    filtered: list[str] = []
+    seen: set[str] = set()
+    for value in raw_ids:
+        if not isinstance(value, str):
+            filtered.append(str(value))
             continue
-        if isinstance(meta, dict):
-            layer = str(meta.get("layer", "") or "").upper()
-            enabled = bool(meta.get("default_enabled", True))
-            agent_id = str(meta.get("id", fallback_id) or "")
+        agent_id = value.strip()
+        if agent_id in known and agent_id not in seen:
+            seen.add(agent_id)
         else:
-            layer = str(getattr(meta, "layer", "") or "").upper()
-            enabled = bool(getattr(meta, "default_enabled", True))
-            agent_id = str(getattr(meta, "id", fallback_id) or "")
-        if enabled and layer in normalized and agent_id:
-            normalized[layer].append(agent_id)
-    return normalized
+            filtered.append(agent_id)
+    return list(RESET_RUNTIME_AGENT_IDS), filtered
 
 
-def default_layer_plan(
-    agent_catalog: Dict[str, Any],
-) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
-    """Fail closed on Router parse failure: special management/report roles only."""
-    normalized_catalog = _normalize_agent_catalog(agent_catalog)
-    plan: Dict[str, List[str]] = {}
-    modes: Dict[str, str] = {}
-    for layer in LAYER_ORDER:
-        modes[layer] = DEFAULT_MODES.get(layer, "Star")
-        allowed_ids = set(normalized_catalog.get(layer, []))
-        plan[layer] = [
-            agent_id
-            for agent_id in SPECIAL_FALLBACK_BY_LAYER.get(layer, [])
-            if agent_id in allowed_ids
-        ]
-    return plan, modes
-
-
-def parse_router_layers_with_stats(
+def parse_fixed_dag_plan_with_stats(
     raw: str,
-    agent_catalog: Optional[Dict[str, Any]] = None,
-) -> Tuple[Dict[str, List[str]], Dict[str, str], Dict[str, Any]]:
-    """Parse router JSON into layer_plan/layer_mode with parse stats."""
-    agent_catalog = _normalize_agent_catalog(agent_catalog or {})
-    default_plan, default_modes = default_layer_plan(agent_catalog)
-    stats: Dict[str, Any] = {
-        "parse_ok": False,
-        "used_default_plan": False,
-        "fallback_reason": None,
-        "l2_truncated": 0,
-        "filtered_agents": 0,
-    }
+    *,
+    user_text: str = "",
+) -> tuple[dict[str, Any], dict[str, Any]]:
+    """Parse a fixed DAG plan and fail-soft to the deterministic reset plan."""
+    fallback = build_deterministic_fixed_dag_plan(user_text)
+    extracted = extract_json_str(raw)
+    if not extracted:
+        return fallback, {
+            "schema": FIXED_DAG_SCHEMA_VERSION,
+            "parse_ok": False,
+            "used_fallback": True,
+            "fallback_reason": "missing_json",
+            "filtered_agents": [],
+        }
 
-    json_str = extract_json_str(raw or "")
-    if not json_str:
-        stats["used_default_plan"] = True
-        stats["fallback_reason"] = "parse_failed"
-        return default_plan, default_modes, stats
     try:
-        parsed = json.loads(json_str)
-    except Exception:
-        stats["used_default_plan"] = True
-        stats["fallback_reason"] = "parse_failed"
-        return default_plan, default_modes, stats
+        parsed = json.loads(extracted)
+    except json.JSONDecodeError as exc:
+        return fallback, {
+            "schema": FIXED_DAG_SCHEMA_VERSION,
+            "parse_ok": False,
+            "used_fallback": True,
+            "fallback_reason": f"json_decode_error:{exc.msg}",
+            "filtered_agents": [],
+        }
 
-    if not isinstance(parsed, dict):
-        stats["used_default_plan"] = True
-        stats["fallback_reason"] = "parse_failed"
-        return default_plan, default_modes, stats
+    if not isinstance(parsed, Mapping):
+        return fallback, {
+            "schema": FIXED_DAG_SCHEMA_VERSION,
+            "parse_ok": False,
+            "used_fallback": True,
+            "fallback_reason": "not_object",
+            "filtered_agents": [],
+        }
 
-    allowed_by_layer = {
-        layer: set(agent_catalog.get(layer, [])) for layer in LAYER_ORDER
+    target_agent_ids, filtered_agents = _normalize_agent_ids(
+        parsed.get("target_agent_ids")
+    )
+    plan = dict(fallback)
+    if isinstance(parsed.get("plan_id"), str) and parsed["plan_id"].strip():
+        plan["plan_id"] = parsed["plan_id"].strip()
+    plan["target_agent_ids"] = target_agent_ids
+    plan["provenance"] = {
+        **fallback["provenance"],
+        "source": "parsed_fixed_dag_plan",
+        "parser_filtered_agents": filtered_agents,
+    }
+    return plan, {
+        "schema": FIXED_DAG_SCHEMA_VERSION,
+        "parse_ok": True,
+        "used_fallback": False,
+        "fallback_reason": None,
+        "filtered_agents": filtered_agents,
     }
 
-    if "layers" not in parsed and "selected" in parsed:
-        plan, modes = default_layer_plan(agent_catalog)
-        selected_raw = parsed.get("selected", [])
-        selected: List[str] = []
-        if isinstance(selected_raw, list):
-            for aid in selected_raw:
-                if not isinstance(aid, str):
-                    stats["filtered_agents"] += 1
-                    continue
-                if aid in allowed_by_layer.get("L2", set()):
-                    selected.append(aid)
-                else:
-                    stats["filtered_agents"] += 1
-        if selected_raw and not selected:
-            selected = plan.get("L2", [])
-        plan["L2"] = selected or plan.get("L2", [])
-        modes["L2"] = "Star"
-        stats["parse_ok"] = True
-        return plan, modes, stats
 
-    layers_raw = parsed.get("layers")
-    if not isinstance(layers_raw, list):
-        stats["used_default_plan"] = True
-        stats["fallback_reason"] = "parse_failed"
-        return default_plan, default_modes, stats
-
-    legacy_mode = any(
-        isinstance(entry, dict)
-        and isinstance(entry.get("layer"), str)
-        and entry.get("layer").strip() == "L5"
-        for entry in layers_raw
-    )
-
-    layer_plan: Dict[str, List[str]] = {}
-    layer_mode: Dict[str, str] = {}
-    for layer_entry in layers_raw:
-        if not isinstance(layer_entry, dict):
-            continue
-        layer = layer_entry.get("layer")
-        if isinstance(layer, str):
-            layer = layer.strip()
-            if legacy_mode:
-                layer = LEGACY_LAYER_MAP.get(layer, layer)
-        if not layer or layer not in LAYER_ORDER:
-            continue
-        mode = normalize_mode(layer_entry.get("mode"))
-        selected_raw = layer_entry.get("selected", []) or []
-        selected: List[str] = []
-        if isinstance(selected_raw, list):
-            for aid in selected_raw:
-                if not isinstance(aid, str):
-                    stats["filtered_agents"] += 1
-                    continue
-                if aid in allowed_by_layer.get(layer, set()):
-                    selected.append(aid)
-                else:
-                    stats["filtered_agents"] += 1
-        if selected_raw and not selected:
-            selected = default_plan.get(layer, [])
-        layer_plan[layer] = selected
-        layer_mode[layer] = mode
-
-    for layer in LAYER_ORDER:
-        layer_plan.setdefault(layer, default_plan.get(layer, []))
-        layer_mode.setdefault(layer, default_modes.get(layer, "Star"))
-
-    stats["parse_ok"] = True
-    return layer_plan, layer_mode, stats
-
-
-def parse_router_layers(
-    raw: str,
-    agent_catalog: Optional[Dict[str, Any]] = None,
-) -> Tuple[Dict[str, List[str]], Dict[str, str]]:
-    plan, modes, _stats = parse_router_layers_with_stats(raw, agent_catalog)
-    return plan, modes
+def parse_fixed_dag_plan(raw: str, *, user_text: str = "") -> dict[str, Any]:
+    plan, _stats = parse_fixed_dag_plan_with_stats(raw, user_text=user_text)
+    return plan

@@ -1,4 +1,4 @@
-"""Define the state structures for the multi-agent graph."""
+"""State structures for the fixed-DAG reset graph."""
 
 from __future__ import annotations
 
@@ -11,12 +11,12 @@ from typing_extensions import Annotated, TypedDict
 from react_agent.agents import AgentOutput
 
 
-def merge_analyst_results(a: Dict[str, AgentOutput], b: Dict[str, AgentOutput]) -> Dict[str, AgentOutput]:
-    """Merge analyst_results from parallel branches; allow explicit reset."""
-    # If a branch requests reset, drop previous results for a fresh turn.
+def merge_analyst_results(
+    a: Dict[str, AgentOutput], b: Dict[str, AgentOutput]
+) -> Dict[str, AgentOutput]:
+    """Merge result pools from parallel branches; allow explicit reset."""
     if "__reset__" in b:
         return {}
-
     merged = dict(a)
     merged.update(b)
     merged.pop("__reset__", None)
@@ -30,9 +30,27 @@ class InputState(TypedDict):
 
 
 class State(InputState, total=False):
-    """Internal state shared by Router -> Manager -> Agents."""
+    """Internal state shared by the Phase R1-B fixed DAG skeleton."""
 
-    plan: List[str]
+    fixed_dag_plan: Dict[str, Any]
+    data_bundle: Dict[str, Any]
+    entity_relation_bundle: Dict[str, Any]
+    l2_conclusions: Dict[str, Any]
+    dimension_results: Dict[str, Any]
+    decision_result: Dict[str, Any]
+    report_result: Dict[str, Any]
+    workflow_snapshot: Dict[str, Any]
+    final_emit_payload: Dict[str, Any]
+    emitted_bundle: Dict[str, Any]
+    run_id: str
+    current_question: str
+    thread_summary: str
+    stable_findings: List[Dict[str, Any]]
+    is_last_step: bool
+
+    # Compatibility pools retained for non-reset helper tests and external
+    # wrapper infrastructure.  The active fixed-DAG graph does not project or
+    # write legacy layer/mode/fusion fields.
     analyst_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
     ephemeral_results: Annotated[Dict[str, AgentOutput], merge_analyst_results]
     multi_agent_bundle: Dict[str, Any]
@@ -43,18 +61,12 @@ class State(InputState, total=False):
     fusion_verdict: Dict[str, Any]
     writer_status: str
     writer_output: Dict[str, Any]
-    final_emit_payload: Dict[str, Any]
-    emitted_bundle: Dict[str, Any]
     baseline_status: str
     baseline_bundle: Dict[str, Any]
-    stable_findings: List[Dict[str, Any]]
-    run_id: str
-    is_last_step: bool
-    current_question: str
+    plan: List[str]
     fanout_targets: List[str]
     layer_plan: Dict[str, List[str]]
     layer_mode: Dict[str, str]
     current_layer: str
     layer_done: Dict[str, bool]
     chain_cursor: int
-    thread_summary: str

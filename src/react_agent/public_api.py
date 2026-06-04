@@ -1,3 +1,4 @@
+# ruff: noqa: D103
 """FastAPI public adapter for the chat-first web client."""
 
 from __future__ import annotations
@@ -18,11 +19,11 @@ from react_agent.agents import (
     load_metadata_from_dir,
 )
 from react_agent.public_contracts import (
-    AnswerFinalEvent,
-    AnswerFinalEventData,
     AgentCatalogLayerModel,
     AgentCatalogResponse,
     AgentCatalogTotalsModel,
+    AnswerFinalEvent,
+    AnswerFinalEventData,
     ChatSessionSummary,
     CreateThreadRequest,
     ErrorDetail,
@@ -37,13 +38,6 @@ from react_agent.public_contracts import (
     StructuredInputModel,
     ThreadsResponse,
 )
-from react_agent.public_mapping import (
-    append_turns,
-    build_new_thread,
-    build_user_turn,
-    compose_structured_input_text,
-    normalize_structured_input,
-)
 from react_agent.public_guardrails import (
     PublicApiGuardrailViolation,
     acquire_stream_slot,
@@ -52,19 +46,30 @@ from react_agent.public_guardrails import (
     release_stream_slot,
     validate_message_length,
 )
+from react_agent.public_mapping import (
+    append_turns,
+    build_new_thread,
+    build_user_turn,
+    compose_structured_input_text,
+    normalize_structured_input,
+)
 from react_agent.public_runtime import (
     PublicRuntimeError,
     PublicRuntimeUnavailable,
     RuntimeReadinessProbe,
+    StreamPublicTurnCompleted,
     invoke_public_turn,
     prepare_public_turn_invoke,
     probe_public_runtime,
-    StreamPublicTurnCompleted,
     stream_public_turn,
 )
-from react_agent.public_store import PublicStoreError, PublicThreadStore, default_store_path
+from react_agent.public_store import (
+    PublicStoreError,
+    PublicThreadStore,
+    default_store_path,
+)
 
-API_VERSION = "phase-f3"
+API_VERSION = "phase-r1b"
 AGENT_LAYER_ORDER = ("L1", "L2", "L3", "L4")
 
 

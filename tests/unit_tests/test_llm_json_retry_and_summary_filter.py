@@ -1,12 +1,14 @@
-import types
-
 import anyio
 from langchain_core.messages import AIMessage
 
-import react_agent.graph as graph_module
 from react_agent.default_agents import _build_agent_tool
-from react_agent.graph import manager_summary
-from react_agent.context import Context
+from react_agent.fixed_dag_contracts import (
+    build_decision_result,
+    build_deterministic_fixed_dag_plan,
+    build_dimension_results,
+    build_l2_conclusions,
+)
+from react_agent.graph import final_emit_node, report_generator_node
 
 
 class FakeModelRetry:
@@ -21,15 +23,6 @@ class FakeModelRetry:
         if self.call_count == 1:
             return AIMessage(content="not json", tool_calls=[])
         return AIMessage(content='{"analysis":"ok","key_points":[],"evidence":[],"confidence":0.8}', tool_calls=[])
-
-
-class FakeModelSummary:
-    def __init__(self):
-        self.last_msgs = None
-
-    async def ainvoke(self, msgs, config=None):  # type: ignore[override]
-        self.last_msgs = msgs
-        return AIMessage(content="summary")
 
 
 def test_llm_json_retry_success(monkeypatch) -> None:
@@ -51,25 +44,20 @@ def test_llm_json_retry_success(monkeypatch) -> None:
     assert res.get("analysis") == "ok"
 
 
-def test_summary_filters_parse_fail(monkeypatch) -> None:
-    fm = FakeModelSummary()
-    monkeypatch.setattr(graph_module, "load_chat_model", lambda name: fm)
-
+def test_reset_report_and_final_emit_do_not_need_manager_summary() -> None:
+    plan = build_deterministic_fixed_dag_plan("q")
+    l2 = build_l2_conclusions()
+    dimensions = build_dimension_results(l2)
     state = {
-        "layer_plan": {"L4": []},
-        "layer_mode": {"L4": "Chain"},
-        "current_layer": "L4",
-        "plan": [],
-        "analyst_results": {
-            "ok": {"analysis": "keep", "key_points": [], "evidence": [], "confidence": 0.9, "parse_ok": True},
-            "bad": {"analysis": "drop", "key_points": [], "evidence": [], "confidence": 0.1, "parse_ok": False},
-        },
-        "messages": [],
         "current_question": "q",
+        "fixed_dag_plan": plan,
+        "l2_conclusions": l2,
+        "dimension_results": dimensions,
+        "decision_result": build_decision_result(),
     }
-    res = anyio.run(manager_summary, state, types.SimpleNamespace(context=Context()))
-    # Fake model returns "summary", but we inspect the inputs it received.
-    user_msg = fm.last_msgs[-1]["content"]
-    assert "bad" not in user_msg
-    assert "ok" in user_msg
-    assert "解析失败" in user_msg
+
+    report_update = report_generator_node(state)  # type: ignore[arg-type]
+    final_update = final_emit_node({**state, **report_update})  # type: ignore[arg-type]
+    assert final_update["is_last_step"] is True
+    assert final_update["final_answer_source"] == "reset_skeleton"
+    assert "No provider" in final_update["emitted_bundle"]["answer"]

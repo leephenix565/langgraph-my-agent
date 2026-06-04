@@ -1,3 +1,4 @@
+# ruff: noqa: D102, D103, D107
 """File-backed store for public API thread state."""
 
 from __future__ import annotations
@@ -87,7 +88,7 @@ class PublicThreadStore:
                 update={
                     "updatedAt": _now_label(),
                     "preview": "Awaiting first message.",
-                    "finalSource": "mainline",
+                    "finalSource": "reset_skeleton",
                 }
             )
             cleared_detail = detail.model_copy(update={"thread": cleared_thread, "turns": []})

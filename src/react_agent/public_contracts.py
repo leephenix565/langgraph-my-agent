@@ -1,3 +1,4 @@
+# ruff: noqa: D101
 """Public API contracts for the chat-first web client."""
 
 from __future__ import annotations
@@ -6,23 +7,33 @@ from typing import Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
-FinalSource = Literal["mainline", "baseline", "fused"]
+FinalSource = Literal["reset_skeleton"]
 ContinuityMode = Literal["persistent", "replay"]
 AgentLayer = Literal["L1", "L2", "L3", "L4"]
-AgentStepStatus = Literal["complete", "running", "queued"]
-FusionStepStatus = Literal["disabled", "shadow", "ready", "selected", "error"]
+DagStepStatus = Literal["complete", "running", "queued", "pending_implementation", "partial", "error"]
+DimensionStatus = Literal["complete", "running", "queued", "pending_implementation", "partial", "error"]
 OverallStatus = Literal["ready", "degraded"]
-EmitPath = Literal["mainline_summary", "baseline_sidecar", "fusion_writer"]
 ErrorCategory = Literal["runtime", "provider_env", "store", "contract", "request"]
 StreamEventType = Literal["run.started", "workflow.stage", "workflow.snapshot", "answer.final", "error"]
-WorkflowStageKey = Literal["routing", "analysis", "risk", "summary", "fusion"]
+WorkflowStageKey = Literal[
+    "planning",
+    "evidence",
+    "l2_analysis",
+    "dimension_composite",
+    "decision",
+    "report",
+]
 WorkflowStageStatus = Literal["waiting", "running", "completed", "failed"]
 
 
 class PublicBaseModel(BaseModel):
     """Base model that keeps the public contract closed."""
 
-    model_config = ConfigDict(extra="forbid")
+    model_config = ConfigDict(
+        extra="forbid",
+        populate_by_name=True,
+        serialize_by_alias=True,
+    )
 
 
 class CitationModel(PublicBaseModel):
@@ -53,45 +64,49 @@ class StructuredInputModel(PublicBaseModel):
     outputPreference: Optional[str] = None
 
 
-class LayerPlanItem(PublicBaseModel):
-    layer: Literal["L1", "L2", "L3", "L4"]
-    mode: str
-    selected: List[str] = Field(default_factory=list)
-    note: Optional[str] = None
+class WorkflowStageModel(PublicBaseModel):
+    key: WorkflowStageKey
+    title: str
+    stepIds: List[str] = Field(default_factory=list)
 
 
-class AgentStepModel(PublicBaseModel):
+class DagStepModel(PublicBaseModel):
     id: str
-    layer: Literal["L1", "L2", "L3", "L4"]
-    agentId: str
+    stage: WorkflowStageKey
+    agentId: Optional[str] = None
+    dimension: Optional[str] = None
     title: str
     summary: str
-    status: AgentStepStatus
-    signal: Optional[str] = None
+    status: DagStepStatus
 
 
-class FusionStepModel(PublicBaseModel):
+class DimensionGroupModel(PublicBaseModel):
     id: str
-    kind: Literal["baseline", "judge", "writer"]
-    label: str
-    status: FusionStepStatus
+    title: str
+    stepIds: List[str] = Field(default_factory=list)
+    status: DimensionStatus
     summary: str
 
 
 class WorkflowProvenanceModel(PublicBaseModel):
-    emitPath: EmitPath
-    finalSource: FinalSource
+    source: FinalSource
     continuityMode: ContinuityMode
+    providerInvoked: bool = False
+    externalInvoked: bool = False
     summary: str
 
 
 class WorkflowModel(PublicBaseModel):
-    layerPlan: List[LayerPlanItem] = Field(default_factory=list)
-    layerMode: Dict[str, str] = Field(default_factory=dict)
-    currentLayer: str = ""
-    layerDone: List[str] = Field(default_factory=list)
-    agentSteps: List[AgentStepModel] = Field(default_factory=list)
-    fusionSteps: List[FusionStepModel] = Field(default_factory=list)
+    schema_: Literal["workflow_snapshot_v2"] = Field(
+        default="workflow_snapshot_v2",
+        alias="schema",
+    )
+    planId: str
+    stages: List[WorkflowStageModel] = Field(default_factory=list)
+    dagSteps: List[DagStepModel] = Field(default_factory=list)
+    dimensionGroups: List[DimensionGroupModel] = Field(default_factory=list)
+    currentStage: Optional[WorkflowStageKey] = None
+    completedSteps: List[str] = Field(default_factory=list)
     finalSource: FinalSource
     provenanceNote: str
     provenance: Optional[WorkflowProvenanceModel] = None

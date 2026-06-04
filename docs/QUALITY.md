@@ -2,7 +2,7 @@
 
 This document defines safe validation for the reset branch.
 
-## Safe R1-A Commands
+## Safe R1-B Commands
 
 ```powershell
 git status --short --branch
@@ -15,9 +15,9 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-## Not Safe For R1-A
+## Not Safe For R1-B
 
-Do not run during R1-A unless the user explicitly asks:
+Do not run during R1-B unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -28,16 +28,24 @@ Do not run during R1-A unless the user explicitly asks:
 
 ## Current Quality Runner Boundary
 
-`scripts/quality/run_quality.py --mode static` checks maintained reset docs and selected static code surfaces. Old Router-SFT docs are no longer quality targets.
+`scripts/quality/run_quality.py --mode static` checks maintained reset docs and
+selected static code surfaces. Old Router-SFT docs are no longer quality targets.
 
-The previous mainline and fusion-gate modes still exist in code but are not reset acceptance evidence. They must be rebuilt in later phases before being used as Fixed DAG gate claims.
+The previous mainline and fusion-gate modes still exist in code but are not
+reset acceptance evidence. They must be rebuilt in later phases before being
+used as Fixed DAG gate claims.
 
 ## Validation Meaning
 
-Passing safe commands means the reset cleanup did not break the checked static/unit/public/graph surfaces. It does not mean:
+Passing safe commands means the deterministic fixed-DAG protocol skeleton
+imports, parses, invokes without provider/external calls, exposes
+`workflow_snapshot_v2`, and preserves public transcript safety.
+
+It does not mean:
 
 - provider readiness
 - external service readiness
-- Fixed DAG runtime completion
+- live market-data correctness
+- real business-agent correctness
 - frontend v2 completion
 - production deployment readiness

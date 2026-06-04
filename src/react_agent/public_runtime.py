@@ -1,3 +1,4 @@
+# ruff: noqa: D101, D103, D107
 """Runtime invocation helpers for the public API."""
 
 from __future__ import annotations
@@ -10,6 +11,7 @@ from importlib import import_module
 from typing import Any, AsyncIterator, Dict, Sequence
 
 from react_agent.context import Context
+from react_agent.fixed_dag_contracts import FIXED_DAG_STAGE_ORDER
 from react_agent.graph_entry import maybe_make_checkpointer
 from react_agent.public_contracts import (
     CheckpointerStatus,
@@ -27,7 +29,11 @@ from react_agent.public_contracts import (
     WorkflowStageProgressModel,
     WorkflowStageStatus,
 )
-from react_agent.public_mapping import build_assistant_turn, build_workflow_snapshot, replay_messages
+from react_agent.public_mapping import (
+    build_assistant_turn,
+    build_workflow_snapshot,
+    replay_messages,
+)
 
 _PROVIDER_ENV_KEYS = (
     "OPENAI_API_KEY",
@@ -37,7 +43,6 @@ _PROVIDER_ENV_KEYS = (
 )
 _DISABLED_CHECKPOINTER_MODES = {"", "none", "off", "0"}
 _TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
-_SEARCH_BLOCKING_CODES = {"search_env_missing_required"}
 
 
 class PublicRuntimeError(RuntimeError):
@@ -80,13 +85,14 @@ class StreamPublicTurnCompleted:
 
 
 _WORKFLOW_STAGE_TITLES: Dict[WorkflowStageKey, str] = {
-    "routing": "路由规划",
-    "analysis": "多角度分析",
-    "risk": "风险校验",
-    "summary": "汇总结论",
-    "fusion": "融合判断",
+    "planning": "Planning",
+    "evidence": "Evidence seams",
+    "l2_analysis": "L2 conclusions",
+    "dimension_composite": "Dimension composites",
+    "decision": "Decision",
+    "report": "Report",
 }
-_WORKFLOW_STAGE_ORDER: tuple[WorkflowStageKey, ...] = ("routing", "analysis", "risk", "summary", "fusion")
+_WORKFLOW_STAGE_ORDER: tuple[WorkflowStageKey, ...] = FIXED_DAG_STAGE_ORDER
 
 
 def _is_env_present(name: str) -> bool:
@@ -127,7 +133,8 @@ def _debug_runtime_exception(
         "exception_type": type(exc).__name__,
         "exception_repr": repr(exc),
     }
-    print("[public_runtime][exception]", context, file=sys.stderr, flush=True)
+    sys.stderr.write(f"[public_runtime][exception] {context}\n")
+    sys.stderr.flush()
     traceback.print_exception(type(exc), exc, exc.__traceback__, file=sys.stderr)
     sys.stderr.flush()
 
@@ -137,8 +144,8 @@ def _provider_env_surface() -> ReadinessSurface:
         return ReadinessSurface(status="configured", code="provider_env_configured")
     return ReadinessSurface(
         status="missing",
-        code="provider_env_missing",
-        hint="Set OPENAI_API_KEY, ROUTER_OPENAI_API_KEY, BASELINE_OPENAI_API_KEY, or GOOGLE_API_KEY.",
+        code="provider_env_missing_optional_for_reset",
+        hint="R1-B reset skeleton can invoke without provider credentials.",
     )
 
 
@@ -147,20 +154,14 @@ def _search_env_surface() -> ReadinessSurface:
         return ReadinessSurface(
             status="disabled",
             code="search_env_disabled",
-            hint="Search is disabled by DISABLE_SEARCH; public runtime may continue in LLM-only mode.",
+            hint="Search is disabled; R1-B reset skeleton does not require search.",
         )
     if _is_env_present("TAVILY_API_KEY"):
         return ReadinessSurface(status="configured", code="search_env_available")
-    if _is_truthy_env("SEARCH_REQUIRED"):
-        return ReadinessSurface(
-            status="missing",
-            code="search_env_missing_required",
-            hint="Set TAVILY_API_KEY or disable/relax search before public runtime invocation.",
-        )
     return ReadinessSurface(
         status="missing",
-        code="search_env_missing_optional",
-        hint="Tavily search is optional; placeholder agents may continue with LLM-only degraded evidence.",
+        code="search_env_missing_optional_for_reset",
+        hint="R1-B reset skeleton can invoke without Tavily search.",
     )
 
 
@@ -211,19 +212,14 @@ def probe_public_runtime() -> RuntimeReadinessProbe:
         runtime = ReadinessSurface(
             status="import_unavailable",
             code="runtime_import_unavailable",
-            hint="LangGraph runtime could not be imported. Check runtime dependencies and required environment variables.",
+            hint="LangGraph runtime could not be imported.",
         )
     else:
         if getattr(graph_module, "graph_persistent", None) is not None:
             continuity_mode = "persistent"
 
     overall_status: OverallStatus = "ready"
-    if (
-        runtime.status != "ready"
-        or provider_env.status != "configured"
-        or search_env.status != "configured"
-        or checkpointer.status != "enabled"
-    ):
+    if runtime.status != "ready" or checkpointer.status != "enabled":
         overall_status = "degraded"
 
     return RuntimeReadinessProbe(
@@ -245,19 +241,6 @@ def prepare_public_turn_invoke(
 ) -> PreparedPublicTurnInvoke:
     """Prepare a public-safe invoke session shared by sync and stream entrypoints."""
     probe = probe_public_runtime()
-
-    if probe.provider_env.status != "configured":
-        raise PublicRuntimeUnavailable(
-            "Provider credentials are not configured for public runtime invocation.",
-            code=probe.provider_env.code,
-            category="provider_env",
-        )
-    if probe.search_env.code in _SEARCH_BLOCKING_CODES:
-        raise PublicRuntimeUnavailable(
-            "Search dependency is required but not configured for public runtime invocation.",
-            code=probe.search_env.code,
-            category="provider_env",
-        )
     if probe.runtime.status != "ready" or probe.graph_module is None:
         raise PublicRuntimeUnavailable(
             "LangGraph runtime is unavailable for public invocation.",
@@ -284,7 +267,6 @@ def prepare_public_turn_invoke(
 
 
 def get_checkpointer_status() -> tuple[bool, str]:
-    """Return whether the configured checkpointer is available."""
     probe = probe_public_runtime()
     return probe.checkpointer.enabled, probe.checkpointer.mode
 
@@ -294,11 +276,32 @@ def _coerce_optional_str(value: Any) -> str | None:
     return text or None
 
 
-def _layer_done_set(state: Dict[str, Any]) -> set[str]:
-    raw = state.get("layer_done", {})
-    if not isinstance(raw, dict):
+def _completed_steps(state: Dict[str, Any]) -> set[str]:
+    snapshot = state.get("workflow_snapshot", {})
+    if not isinstance(snapshot, dict):
         return set()
-    return {str(layer).strip().upper() for layer, done in raw.items() if done}
+    raw = snapshot.get("completedSteps", [])
+    if not isinstance(raw, list):
+        return set()
+    return {str(item) for item in raw if str(item)}
+
+
+def _stage_step_ids(state: Dict[str, Any]) -> dict[str, set[str]]:
+    snapshot = state.get("workflow_snapshot", {})
+    if not isinstance(snapshot, dict):
+        return {}
+    stages = snapshot.get("stages", [])
+    result: dict[str, set[str]] = {}
+    if not isinstance(stages, list):
+        return result
+    for item in stages:
+        if not isinstance(item, dict):
+            continue
+        key = str(item.get("key") or "")
+        step_ids = item.get("stepIds", [])
+        if key and isinstance(step_ids, list):
+            result[key] = {str(step_id) for step_id in step_ids}
+    return result
 
 
 def _build_stage_progress_data(
@@ -306,83 +309,55 @@ def _build_stage_progress_data(
     *,
     failed: bool = False,
 ) -> WorkflowStageEventData:
-    layer_plan = state.get("layer_plan", {})
-    current_layer = str(state.get("current_layer", "") or "").strip().upper()
-    layer_done = _layer_done_set(state)
-    mainline_ready = str(state.get("mainline_status", "") or "").strip().lower() == "ready"
-    emitted_bundle = state.get("emitted_bundle", {})
-    emitted_answer = bool(
-        isinstance(emitted_bundle, dict) and str(emitted_bundle.get("answer", "") or "").strip()
-    )
-    final_answer_source = _coerce_optional_str(state.get("final_answer_source"))
-    fusion_running = any(
-        _coerce_optional_str(state.get(key))
-        for key in ("baseline_status", "judge_status", "writer_status")
-    )
+    snapshot = state.get("workflow_snapshot", {})
+    current_stage = None
+    if isinstance(snapshot, dict):
+        current_stage = snapshot.get("currentStage")
+    current_stage = current_stage or "planning"
+    completed_steps = _completed_steps(state)
+    stage_steps = _stage_step_ids(state)
 
-    routing_completed = bool(layer_plan) or bool(current_layer)
-    analysis_completed = "L2" in layer_done or current_layer in {"L3", "L4"} or mainline_ready
-    risk_completed = "L3" in layer_done or current_layer == "L4" or mainline_ready
-    summary_completed = mainline_ready or emitted_answer
-    fusion_completed = bool(final_answer_source) or emitted_answer
-
-    statuses: Dict[WorkflowStageKey, WorkflowStageStatus] = {
-        "routing": "completed" if routing_completed else "running",
-        "analysis": "completed" if analysis_completed else "running" if routing_completed else "waiting",
-        "risk": (
-            "completed"
-            if risk_completed
-            else "running"
-            if current_layer == "L3" or ("L2" in layer_done and not mainline_ready)
-            else "waiting"
-        ),
-        "summary": (
-            "completed"
-            if summary_completed
-            else "running"
-            if current_layer == "L4" or "L3" in layer_done
-            else "waiting"
-        ),
-        "fusion": "completed" if fusion_completed else "running" if fusion_running else "waiting",
-    }
-
-    if failed and not fusion_completed:
-        statuses["fusion"] = "failed"
+    statuses: Dict[WorkflowStageKey, WorkflowStageStatus] = {}
+    reached_current = False
+    for key in _WORKFLOW_STAGE_ORDER:
+        step_ids = stage_steps.get(key, set())
+        if step_ids and step_ids.issubset(completed_steps):
+            statuses[key] = "completed"
+            continue
+        if key == current_stage:
+            statuses[key] = "failed" if failed else "running"
+            reached_current = True
+            continue
+        statuses[key] = "waiting" if reached_current else "completed" if completed_steps else "waiting"
 
     stages = [
         WorkflowStageProgressModel(key=key, title=_WORKFLOW_STAGE_TITLES[key], status=statuses[key])
         for key in _WORKFLOW_STAGE_ORDER
     ]
 
-    current_stage: WorkflowStageKey | None = None
+    active_stage: WorkflowStageKey | None = None
     for stage in stages:
-        if stage.status == "failed":
-            current_stage = stage.key
+        if stage.status in {"failed", "running"}:
+            active_stage = stage.key
             break
-    if current_stage is None:
-        for stage in stages:
-            if stage.status == "running":
-                current_stage = stage.key
-                break
-    if current_stage is None and all(stage.status == "completed" for stage in stages):
-        current_stage = "fusion"
+    if active_stage is None and all(stage.status == "completed" for stage in stages):
+        active_stage = "report"
 
-    return WorkflowStageEventData(stages=stages, currentStage=current_stage)
+    return WorkflowStageEventData(stages=stages, currentStage=active_stage)
 
 
 def _has_workflow_snapshot_signal(state: Dict[str, Any]) -> bool:
     relevant_keys = (
         "run_id",
-        "layer_plan",
-        "layer_mode",
-        "current_layer",
-        "layer_done",
-        "fanout_targets",
-        "mainline_status",
-        "baseline_status",
-        "judge_status",
-        "writer_status",
-        "final_answer_source",
+        "fixed_dag_plan",
+        "data_bundle",
+        "entity_relation_bundle",
+        "l2_conclusions",
+        "dimension_results",
+        "decision_result",
+        "report_result",
+        "workflow_snapshot",
+        "final_emit_payload",
         "emitted_bundle",
     )
     for key in relevant_keys:

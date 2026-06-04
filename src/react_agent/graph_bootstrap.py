@@ -1,4 +1,5 @@
-"""Bootstrap helpers for graph agent registration and node registry."""
+# ruff: noqa: D103
+"""Bootstrap helpers for graph agent registration and catalog loading."""
 
 from __future__ import annotations
 
@@ -22,7 +23,7 @@ CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
 
 
 def bootstrap_agent_runtime() -> None:
-    """Register config/builtin agents using the existing import-time behavior."""
+    """Register configured agents and wrappers without changing active DAG flow."""
     enable_builtin = os.environ.get("ENABLE_BUILTIN_AGENTS", "0") == "1"
     config_exists = CONFIG_AGENT_DIR.exists()
     if enable_builtin or not config_exists:
@@ -43,11 +44,6 @@ def bootstrap_agent_runtime() -> None:
         desc = (meta.description or "").strip()
         if desc:
             profile = format_agent_profile(meta)
-            if aid == "a01_cio_orchestrator":
-                profile = (
-                    f"{profile}\n[Router alignment] 严格根据 router_plan_summary 执行任务拆解，"
-                    "不得新增/删除 agent，只能解释既定分工、补充验收点与风险门禁。"
-                )
             tool = _build_agent_tool(aid, profile, default_allow_search=True)
         else:
             tool = build_generic_agent_tool(aid, meta.description)

@@ -1,118 +1,132 @@
-# Target Contracts
+# Contracts
 
-This document names the target Fixed DAG contracts. R1-A does not implement these contracts in runtime code.
+This document names the Phase R1-B Fixed DAG contracts implemented by
+`src/react_agent/fixed_dag_contracts.py`.
 
 ## Contract Boundary
 
-Contracts separate internal DAG execution from the public transcript. Internal payloads can be inspected by workflow tooling, but only mapped public fields may reach the public adapter.
+Contracts separate internal DAG execution from the public transcript. Internal
+payloads can be inspected by workflow tooling, but only mapped public fields may
+reach the public adapter.
 
 ## fixed_dag_plan_v1
 
-Purpose: describe the topological execution plan for a user request.
+Purpose: describe the deterministic reset execution plan for a user request.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
-- `request_id`
+- `schema`
+- `plan_id`
 - `user_text`
 - `stages`
-- `required_inputs`
-- `missing_input_policy`
+- `steps`
+- `target_agent_ids`
+- `dimension_groups`
+- `provenance`
+
+The plan has no dispatch strategy field and no legacy layer-mode selector.
 
 ## data_bundle_v1
 
-Purpose: carry normalized market, financial, and source data into analysis agents.
+Purpose: carry the financial data service seam into analysis placeholders.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
-- `entities`
-- `market_data`
-- `financial_data`
-- `source_coverage`
-- `data_quality_flags`
+- `schema`
+- `status`
+- `as_of`
+- `data_as_of`
+- `sources`
+- `notes`
 
 ## entity_relation_bundle_v1
 
-Purpose: describe entities, tickers, industries, relationships, and ambiguous references.
+Purpose: describe the entity and relation resolution seam.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
+- `schema`
+- `status`
 - `entities`
 - `relations`
-- `ambiguities`
-- `resolution_notes`
+- `notes`
 
 ## conclusion_object_v1
 
 Purpose: carry an agent-level finding with evidence and uncertainty.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
+- `schema`
 - `agent_id`
-- `dimension`
-- `summary`
-- `evidence`
+- `stance`
 - `confidence`
-- `limits`
+- `status`
+- `evidence`
+- `as_of`
+- `data_as_of`
+- optional `output_routes`
 
 ## dimension_composite_result_v1
 
 Purpose: combine L2 findings into one dimension-level result.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
+- `schema`
 - `dimension`
-- `inputs`
-- `composite_summary`
-- `score`
-- `target_range`
-- `reasoning_trace`
-- `risk_flags`
+- `stance`
+- `confidence`
+- `status`
+- `contributing_agents`
+- `evidence_refs`
+- risk-only `gate`, `veto`, `penalty`
+- macro-only `dimension_weights`, `risk_sensitivity`
 
 ## decision_result_v1
 
-Purpose: combine dimension composites into an investment or research decision object.
+Purpose: combine dimension composites into a decision object.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
+- `schema`
 - `decision`
-- `confidence`
-- `dimension_weights`
-- `supporting_points`
-- `opposing_points`
-- `uncertainties`
+- `score`
+- `target_price_range`
+- `reasoning_trace`
+- `status`
 
 ## report_result_v1
 
 Purpose: render the final assistant-facing report.
 
-Expected fields:
+Runtime fields:
 
-- `schema_version`
+- `schema`
 - `title`
 - `answer`
+- `status`
 - `sections`
-- `evidence_notes`
 - `limitations`
 
 ## workflow_snapshot_v2
 
-Purpose: expose safe workflow inspector state without leaking raw graph messages or provider responses.
+Purpose: expose safe workflow inspector state without leaking raw graph messages
+or provider responses.
 
-Expected fields:
+Public fields:
 
-- `schema_version`
-- `run_id`
-- `stage`
-- `steps`
-- `dimension_status`
-- `final_status`
-- `public_turn_id`
+- `schema`
+- `planId`
+- `stages`
+- `dagSteps`
+- `dimensionGroups`
+- `currentStage`
+- `completedSteps`
+- `provenance`
+- `finalSource`
+
+`finalSource` is currently `reset_skeleton`.
 
 ## Public Exclusions
 
