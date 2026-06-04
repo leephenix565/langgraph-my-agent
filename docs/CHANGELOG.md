@@ -3,6 +3,39 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R4-A fixed DAG catalog source and public projection
+
+### Added
+
+- Added `config/fixed_dag/agent_catalog.json` as the active reset backend
+  catalog source for the 27 formal `snake_case` fixed DAG agents.
+- Added `src/react_agent/fixed_dag_catalog.py` with stdlib-only catalog loading,
+  validation, grouping helpers, and public catalog projection.
+- Added catalog tests covering schema, counts, duplicate ids, legacy aNN id
+  rejection, sentiment market-only routing, risk-composite exclusion of
+  sentiment, and public projection counts.
+
+### Changed
+
+- Changed fixed DAG roster constants to derive from the fixed DAG catalog.
+- Changed public `/api/agents` to project the fixed DAG 27-agent catalog through
+  the existing `AgentCatalogResponse` shape.
+- Changed public API catalog tests from old `27/25/aNN` config semantics to
+  reset `27/27/snake_case` semantics.
+- Updated reset docs to mark old `config/agents/*.json` as legacy migration
+  input, not active reset public catalog truth.
+
+### Not Done
+
+- No real business-agent algorithm implementation.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No external endpoint mapping adapter.
+- No R4-C legacy aNN config cleanup.
+- No R5 frontend workflow UI rewrite.
+- No R6 mainline/fusion/provider readiness rebuild.
+- No push.
+
 ## 2026-06-04 - Phase R3.6 safe dead-file cleanup and R4 Excel baseline
 
 ### Added

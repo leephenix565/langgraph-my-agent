@@ -18,15 +18,17 @@ runtime authority in R3.
 
 ## ADR-002: snake_case Runtime IDs Replace aNN IDs
 
-Status: accepted for reset target.
+Status: accepted for reset target; active for backend catalog projection in
+R4-A.
 
 Decision: target formal agents use descriptive `snake_case` ids.
 
 Reason: ids should carry stable role meaning and avoid coupling new architecture
 to old catalog numbering.
 
-Consequence: legacy config files remain until the catalog/runtime registry phase
-replaces them.
+Consequence: the fixed DAG catalog uses `snake_case` ids as active reset public
+catalog truth. Legacy aNN config files remain as migration input until later R4
+cleanup.
 
 ## ADR-003: Sentiment Radar Belongs To Market L2
 
@@ -144,3 +146,25 @@ Consequence: R3.6 does not delete `config/agents`, external wrappers,
 Non-consequence: adding the workbook does not complete the R4 registry
 migration, and cleanup does not prove provider, external, frontend v2,
 mainline/fusion-gate, or production readiness.
+
+## ADR-011: R4-A Uses Fixed DAG Catalog For Public Agent Projection
+
+Status: accepted for backend catalog projection.
+
+Decision: `config/fixed_dag/agent_catalog.json` is the active reset backend
+catalog source, and `/api/agents` projects its 27 `snake_case` agents through
+the existing public `AgentCatalogResponse` shape.
+
+Reason: public workflow steps already use fixed DAG ids. Keeping `/api/agents`
+on old aNN config metadata makes the public catalog disagree with runtime DAG
+steps and hides the R4 target roster.
+
+Consequence: in R4-A, `/api/agents` reports `configCount=27`,
+`runtimeCount=27`, `disabledIds=[]`, and layer counts L1=3, L2=18, L3=4, L4=2.
+Old `config/agents/*.json` remains in the repo as legacy migration input for
+external wrapper and cleanup phases, but it is no longer the active reset public
+catalog truth.
+
+Non-consequence: R4-A does not implement real business agents, provider/live
+readiness, external endpoint mapping, frontend workflow UI rewrite,
+mainline/fusion-gate rebuild, or production deployment.

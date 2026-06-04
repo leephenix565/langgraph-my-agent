@@ -1,0 +1,601 @@
+{
+  "schema_version": "fixed_dag_agent_catalog_v1",
+  "source": "新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx",
+  "total_count": 27,
+  "layer_counts": {
+    "L1": 3,
+    "L2": 18,
+    "L3": 4,
+    "L4": 2
+  },
+  "dimension_counts": {
+    "l1": 3,
+    "value": 4,
+    "market": 5,
+    "risk": 4,
+    "macro": 5,
+    "composite": 4,
+    "l4": 2
+  },
+  "agents": [
+    {
+      "id": "route_planner",
+      "display_name": "任务路由规划智能体",
+      "layer": "L1",
+      "dimension": "l1",
+      "role_type": "system_planner",
+      "stage": "planning",
+      "default_enabled": true,
+      "implementation_status": "deterministic_skeleton",
+      "description": "Creates the deterministic fixed DAG plan. Business routing intelligence remains pending implementation.",
+      "input_contract": "user_question_v1",
+      "output_contract": "fixed_dag_plan_v1",
+      "upstream": [],
+      "downstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ]
+    },
+    {
+      "id": "financial_data_service",
+      "display_name": "金融数据服务智能体",
+      "layer": "L1",
+      "dimension": "l1",
+      "role_type": "evidence_service",
+      "stage": "evidence",
+      "default_enabled": true,
+      "implementation_status": "deterministic_skeleton",
+      "description": "Prepares the financial data bundle seam without provider, search, or external service calls.",
+      "input_contract": "fixed_dag_plan_v1",
+      "output_contract": "data_bundle_v1",
+      "upstream": [
+        "route_planner"
+      ],
+      "downstream": [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar",
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot"
+      ]
+    },
+    {
+      "id": "entity_relation_extractor",
+      "display_name": "实体关系抽取智能体",
+      "layer": "L1",
+      "dimension": "l1",
+      "role_type": "evidence_service",
+      "stage": "evidence",
+      "default_enabled": true,
+      "implementation_status": "deterministic_skeleton",
+      "description": "Prepares the entity and relation bundle seam without provider, search, or external service calls.",
+      "input_contract": "fixed_dag_plan_v1",
+      "output_contract": "entity_relation_bundle_v1",
+      "upstream": [
+        "route_planner"
+      ],
+      "downstream": [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar",
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot"
+      ]
+    },
+    {
+      "id": "value_traditional_valuation",
+      "display_name": "传统企业估值智能体",
+      "layer": "L2",
+      "dimension": "value",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Value-dimension L2 placeholder for traditional company valuation.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "value_composite"
+      ]
+    },
+    {
+      "id": "value_ml_valuation",
+      "display_name": "机器学习企业估值智能体",
+      "layer": "L2",
+      "dimension": "value",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Value-dimension L2 placeholder for machine-learning company valuation.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "value_composite"
+      ]
+    },
+    {
+      "id": "value_meta_valuation",
+      "display_name": "元学习企业估值智能体",
+      "layer": "L2",
+      "dimension": "value",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Value-dimension L2 placeholder for meta-learning company valuation.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "value_composite"
+      ]
+    },
+    {
+      "id": "value_research_synthesis",
+      "display_name": "分析师研报与观点集成智能体",
+      "layer": "L2",
+      "dimension": "value",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Value-dimension L2 placeholder for analyst research and opinion synthesis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "value_composite"
+      ]
+    },
+    {
+      "id": "market_stock_technical",
+      "display_name": "个股技术分析智能体",
+      "layer": "L2",
+      "dimension": "market",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Market-dimension L2 placeholder for single-stock technical analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "market_composite"
+      ]
+    },
+    {
+      "id": "market_fund_manager_behavior",
+      "display_name": "基金经理投资行为分析智能体",
+      "layer": "L2",
+      "dimension": "market",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Market-dimension L2 placeholder for fund manager behavior analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "market_composite"
+      ]
+    },
+    {
+      "id": "market_ipo_investor_behavior",
+      "display_name": "IPO投资者构成与行为分析智能体",
+      "layer": "L2",
+      "dimension": "market",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Market-dimension L2 placeholder for IPO investor composition and behavior analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "market_composite"
+      ]
+    },
+    {
+      "id": "market_capital_flow_chip",
+      "display_name": "资金流/筹码分析智能体",
+      "layer": "L2",
+      "dimension": "market",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Market-dimension L2 placeholder for capital-flow and chip-structure analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "market_composite"
+      ]
+    },
+    {
+      "id": "sentiment_company_radar",
+      "display_name": "企业舆情雷达智能体",
+      "layer": "L2",
+      "dimension": "market",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Market-dimension L2 placeholder for company sentiment radar. It routes only to market_composite.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "market_composite"
+      ]
+    },
+    {
+      "id": "risk_crash",
+      "display_name": "股价崩盘风险智能体",
+      "layer": "L2",
+      "dimension": "risk",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Risk-dimension L2 placeholder for stock-price crash risk.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "risk_composite"
+      ]
+    },
+    {
+      "id": "risk_financial_fraud",
+      "display_name": "财务欺诈（造假）风险智能体",
+      "layer": "L2",
+      "dimension": "risk",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Risk-dimension L2 placeholder for financial fraud risk.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "risk_composite"
+      ]
+    },
+    {
+      "id": "risk_identification",
+      "display_name": "风险识别智能体",
+      "layer": "L2",
+      "dimension": "risk",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Risk-dimension L2 placeholder for general risk identification.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "risk_composite"
+      ]
+    },
+    {
+      "id": "risk_compliance_review",
+      "display_name": "公告合规审查智能体",
+      "layer": "L2",
+      "dimension": "risk",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Risk-dimension L2 placeholder for announcement compliance review.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "risk_composite"
+      ]
+    },
+    {
+      "id": "macro_analysis",
+      "display_name": "宏观分析智能体",
+      "layer": "L2",
+      "dimension": "macro",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Macro-dimension L2 placeholder for macro analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "macro_composite"
+      ]
+    },
+    {
+      "id": "macro_commodity_pricing",
+      "display_name": "商品定价分析智能体",
+      "layer": "L2",
+      "dimension": "macro",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Macro-dimension L2 placeholder for commodity pricing analysis.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "macro_composite"
+      ]
+    },
+    {
+      "id": "macro_index_valuation",
+      "display_name": "股票指数估值智能体",
+      "layer": "L2",
+      "dimension": "macro",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Macro-dimension L2 placeholder for stock-index valuation.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "macro_composite"
+      ]
+    },
+    {
+      "id": "macro_sentiment",
+      "display_name": "宏观情绪感知智能体",
+      "layer": "L2",
+      "dimension": "macro",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Macro-dimension L2 placeholder for macro sentiment sensing.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "macro_composite"
+      ]
+    },
+    {
+      "id": "macro_industry_hotspot",
+      "display_name": "行业热点洞悉智能体",
+      "layer": "L2",
+      "dimension": "macro",
+      "role_type": "analysis_agent",
+      "stage": "l2_analysis",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "Macro-dimension L2 placeholder for industry hotspot discovery.",
+      "input_contract": "data_bundle_v1+entity_relation_bundle_v1",
+      "output_contract": "conclusion_object_v1",
+      "upstream": [
+        "financial_data_service",
+        "entity_relation_extractor"
+      ],
+      "downstream": [
+        "macro_composite"
+      ]
+    },
+    {
+      "id": "value_composite",
+      "display_name": "价值综合智能体",
+      "layer": "L3",
+      "dimension": "composite",
+      "role_type": "dimension_composite",
+      "stage": "dimension_composite",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L3 placeholder that combines value-dimension L2 conclusions.",
+      "input_contract": "conclusion_object_v1[]",
+      "output_contract": "dimension_composite_result_v1",
+      "upstream": [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis"
+      ],
+      "downstream": [
+        "decision_synthesizer"
+      ]
+    },
+    {
+      "id": "market_composite",
+      "display_name": "市场面综合智能体",
+      "layer": "L3",
+      "dimension": "composite",
+      "role_type": "dimension_composite",
+      "stage": "dimension_composite",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L3 placeholder that combines market-dimension L2 conclusions including company sentiment radar.",
+      "input_contract": "conclusion_object_v1[]",
+      "output_contract": "dimension_composite_result_v1",
+      "upstream": [
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar"
+      ],
+      "downstream": [
+        "decision_synthesizer"
+      ]
+    },
+    {
+      "id": "risk_composite",
+      "display_name": "风险综合智能体",
+      "layer": "L3",
+      "dimension": "composite",
+      "role_type": "dimension_composite",
+      "stage": "dimension_composite",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L3 placeholder that combines risk-dimension L2 conclusions. Company sentiment radar is not an input.",
+      "input_contract": "conclusion_object_v1[]",
+      "output_contract": "dimension_composite_result_v1",
+      "upstream": [
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review"
+      ],
+      "downstream": [
+        "decision_synthesizer"
+      ]
+    },
+    {
+      "id": "macro_composite",
+      "display_name": "宏观综合智能体",
+      "layer": "L3",
+      "dimension": "composite",
+      "role_type": "dimension_composite",
+      "stage": "dimension_composite",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L3 placeholder that combines macro-dimension L2 conclusions.",
+      "input_contract": "conclusion_object_v1[]",
+      "output_contract": "dimension_composite_result_v1",
+      "upstream": [
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot"
+      ],
+      "downstream": [
+        "decision_synthesizer"
+      ]
+    },
+    {
+      "id": "decision_synthesizer",
+      "display_name": "综合研判智能体",
+      "layer": "L4",
+      "dimension": "l4",
+      "role_type": "decision_synthesizer",
+      "stage": "decision",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L4 placeholder that synthesizes value, market, risk, and macro composites into a decision result.",
+      "input_contract": "dimension_composite_result_v1[]",
+      "output_contract": "decision_result_v1",
+      "upstream": [
+        "value_composite",
+        "market_composite",
+        "risk_composite",
+        "macro_composite"
+      ],
+      "downstream": [
+        "report_generator"
+      ]
+    },
+    {
+      "id": "report_generator",
+      "display_name": "报告生成智能体",
+      "layer": "L4",
+      "dimension": "l4",
+      "role_type": "report_generator",
+      "stage": "report",
+      "default_enabled": true,
+      "implementation_status": "pending_implementation",
+      "description": "L4 placeholder that generates the final public reset skeleton answer.",
+      "input_contract": "decision_result_v1",
+      "output_contract": "report_result_v1",
+      "upstream": [
+        "decision_synthesizer"
+      ],
+      "downstream": []
+    }
+  ]
+}

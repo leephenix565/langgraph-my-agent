@@ -12,23 +12,15 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
-from react_agent.agents import (
-    AGENT_METADATA,
-    AgentMetadata,
-    agent_sort_key,
-    load_metadata_from_dir,
-)
+from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
 from react_agent.public_contracts import (
-    AgentCatalogLayerModel,
     AgentCatalogResponse,
-    AgentCatalogTotalsModel,
     AnswerFinalEvent,
     AnswerFinalEventData,
     ChatSessionSummary,
     CreateThreadRequest,
     ErrorDetail,
     HealthResponse,
-    PublicAgentMetadataModel,
     PublicThreadDetail,
     PublicTurn,
     SendMessageRequest,
@@ -70,7 +62,6 @@ from react_agent.public_store import (
 )
 
 API_VERSION = "phase-r3"
-AGENT_LAYER_ORDER = ("L1", "L2", "L3", "L4")
 
 
 def _store_path_from_env() -> Path:
@@ -133,47 +124,8 @@ def _sorted_summaries(details: List[PublicThreadDetail]) -> List[ChatSessionSumm
     )
 
 
-def _ensure_public_agent_metadata() -> List[AgentMetadata]:
-    if not AGENT_METADATA:
-        load_metadata_from_dir(Path(__file__).resolve().parents[2] / "config" / "agents")
-    return sorted(AGENT_METADATA.values(), key=agent_sort_key)
-
-
-def _public_agent_metadata(meta: AgentMetadata) -> PublicAgentMetadataModel:
-    return PublicAgentMetadataModel(
-        id=meta.id,
-        name=meta.name,
-        description=meta.description,
-        capabilities=list(meta.capabilities or []),
-        layer=(meta.layer or "L1"),  # type: ignore[arg-type]
-        team=meta.team or "",
-        roleType=meta.role_type,
-        defaultEnabled=bool(meta.default_enabled),
-    )
-
-
 def _build_agent_catalog_response() -> AgentCatalogResponse:
-    metadata = _ensure_public_agent_metadata()
-    enabled = [meta for meta in metadata if meta.default_enabled]
-    disabled = [meta for meta in metadata if not meta.default_enabled]
-
-    layers = [
-        AgentCatalogLayerModel(
-            layer=layer,  # type: ignore[arg-type]
-            agents=[_public_agent_metadata(meta) for meta in metadata if (meta.layer or "").upper() == layer],
-        )
-        for layer in AGENT_LAYER_ORDER
-    ]
-
-    return AgentCatalogResponse(
-        totals=AgentCatalogTotalsModel(
-            configCount=len(metadata),
-            runtimeCount=len(enabled),
-            disabledIds=[meta.id for meta in disabled],
-        ),
-        layers=layers,
-        disabledAgents=[_public_agent_metadata(meta) for meta in disabled],
-    )
+    return AgentCatalogResponse(**fixed_dag_public_agent_catalog())
 
 
 @app.get("/api/health", response_model=HealthResponse)

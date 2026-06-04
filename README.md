@@ -4,19 +4,23 @@ This branch is the Fixed DAG reset branch. It replaces the old route-mode,
 Router-SFT, route-prior, A01 contract dispatch, and Fair Fusion mainline with a
 smaller deterministic fixed-DAG runtime skeleton.
 
-Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. The
-runtime validates `dag_steps[].depends_on`, computes deterministic
-`execution_batches`, emits per-step `step_results`, and remains a provider-free
-placeholder skeleton. It is not a completed business analysis engine.
+Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
+R4-A adds the fixed DAG catalog source and switches the backend public
+`/api/agents` projection to the 27 `snake_case` reset agents. The runtime
+validates `dag_steps[].depends_on`, computes deterministic `execution_batches`,
+emits per-step `step_results`, and remains a provider-free placeholder skeleton.
+It is not a completed business analysis engine.
 
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R3.6 safe dead-file cleanup and R4 Excel baseline.
+- Current phase: R4-A fixed DAG catalog source and public projection.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
+- Public agent catalog: fixed DAG 27-agent `snake_case` projection from
+  `config/fixed_dag/agent_catalog.json`.
 - Public web shell: retained for later in-place frontend v2 migration.
 - Production status: not a production deployment claim.
 
@@ -56,6 +60,23 @@ runtime.
 
 See `docs/ARCHITECTURE_FIXED_DAG.md` for the current skeleton map.
 
+## Active Agent Catalog
+
+R4-A makes the fixed DAG catalog the active backend catalog source:
+
+- `config/fixed_dag/agent_catalog.json`
+- `src/react_agent/fixed_dag_catalog.py`
+
+The catalog is aligned to the v4 feedback workbook:
+
+- `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`
+
+The public `/api/agents` endpoint now projects 27 enabled `snake_case` reset
+agents with layer counts L1=3, L2=18, L3=4, L4=2. Its public shape remains
+compatible with the existing `AgentCatalogResponse`, but in R4-A
+`configCount`, `runtimeCount`, and `disabledIds` describe the fixed DAG reset
+catalog, not the old aNN config catalog.
+
 ## Current Runtime Boundary
 
 R3 keeps the graph deterministic and routes graph/public fallback construction
@@ -77,20 +98,22 @@ The graph state now carries `dag_execution`, `dag_step_results`, and
 
 The external HTTP wrapper infrastructure and baseline sidecar module remain in
 the repository, but they are not connected to the active reset graph. Existing
-`config/agents/*.json` remains until the R4 catalog/runtime registry phase.
+`config/agents/*.json` remains as legacy migration input until a later R4
+cleanup phase. It is no longer the active reset public catalog truth.
 
-## R3.6 Cleanup Boundary
+## Previous R3.6 Cleanup Boundary
 
-R3.6 only removes high-confidence dead local artifacts and legacy test fixtures
-that are not active entry points, and adds the v4 feedback workbook to the repo:
+R3.6 removed high-confidence dead local artifacts and legacy test fixtures that
+were not active entry points, and added the v4 feedback workbook to the repo:
 
 - `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`
 
-That workbook is an R4 input for the future `snake_case` catalog/runtime
-registry. R3.6 does not enter R4, R5, or R6. It does not delete the old aNN
-catalog/config files, the existing web workflow implementation, external wrapper
-production code, baseline/fusion regression inputs, or tracked historical
-benchmark/trace artifacts that still need an archive policy.
+That workbook is the R4 baseline input for the `snake_case` catalog/runtime
+registry. R4-A adds the backend catalog source and public projection. R3.6 did
+not delete the old aNN catalog/config files, the existing web workflow
+implementation, external wrapper production code, baseline/fusion regression
+inputs, or tracked historical benchmark/trace artifacts that still need an
+archive policy.
 
 ## Public Transcript Boundary
 
@@ -131,10 +154,11 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3/R3.6.
-- No `external /v1/agent/invoke` call is part of R3/R3.6 validation.
-- No demo stack startup is part of R3/R3.6 validation.
-- No real business algorithms for individual agents are implemented in R3/R3.6.
-- No frontend v2 rewrite is complete in R3/R3.6.
-- No mainline or fusion-gate reset quality gate is rebuilt in R3/R3.6.
+- No provider or live external service was verified by R3/R4-A.
+- No `external /v1/agent/invoke` call is part of R3/R4-A validation.
+- No demo stack startup is part of R3/R4-A validation.
+- No real business algorithms for individual agents are implemented in R3/R4-A.
+- No frontend v2 rewrite is complete in R3/R4-A.
+- No mainline or fusion-gate reset quality gate is rebuilt in R3/R4-A.
+- No external endpoint mapping adapter or legacy aNN cleanup is complete in R4-A.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

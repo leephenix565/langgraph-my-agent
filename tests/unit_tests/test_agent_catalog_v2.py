@@ -1,8 +1,12 @@
 import json
 from pathlib import Path
 
-from react_agent.agents import AGENT_METADATA, AgentMetadata, load_metadata_from_dir
-
+from react_agent.agents import (
+    AGENT_METADATA,
+    AgentMetadata,
+    load_metadata_from_dir,
+)
+from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config" / "agents"
@@ -348,3 +352,22 @@ def test_load_metadata_from_dir_uses_filename_order(tmp_path) -> None:
     finally:
         AGENT_METADATA.clear()
         AGENT_METADATA.update(previous)
+
+
+def test_legacy_config_catalog_is_not_active_reset_public_catalog() -> None:
+    legacy_ids = {item["id"] for item in _load_config_metadata()}
+    public_payload = fixed_dag_public_agent_catalog()
+    public_ids = {
+        agent["id"]
+        for layer in public_payload["layers"]
+        for agent in layer["agents"]
+    }
+
+    assert any(agent_id.startswith("a") and agent_id[1:3].isdigit() for agent_id in legacy_ids)
+    assert not any(agent_id.startswith("a") and agent_id[1:3].isdigit() for agent_id in public_ids)
+    assert "a05_annual_report_analysis" in legacy_ids
+    assert "a21_portfolio_manager" in legacy_ids
+    assert "a05_annual_report_analysis" not in public_ids
+    assert "a21_portfolio_manager" not in public_ids
+    assert public_payload["totals"]["runtimeCount"] == 27
+    assert public_payload["totals"]["disabledIds"] == []

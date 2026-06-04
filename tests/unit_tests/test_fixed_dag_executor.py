@@ -32,7 +32,7 @@ def test_default_plan_validates_and_batches_are_stable() -> None:
 
     assert valid, reason
     assert batches[0] == ["route_planner"]
-    assert batches[1] == ["entity_relation_extractor", "financial_data_service"]
+    assert batches[1] == ["financial_data_service", "entity_relation_extractor"]
     assert set(batches[2]) == {f"l2:{agent_id}" for agent_id in l2_agent_ids}
     assert batches[3] == ["dimension:value", "dimension:market", "dimension:risk", "dimension:macro"]
     assert batches[4] == ["decision_synthesizer"]

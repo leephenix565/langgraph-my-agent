@@ -11,6 +11,14 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
+from react_agent.fixed_dag_catalog import (
+    fixed_dag_agent_ids,
+    fixed_dag_agents_by_dimension,
+    fixed_dag_agents_by_layer,
+    load_fixed_dag_catalog,
+    validate_fixed_dag_catalog,
+)
+
 FIXED_DAG_SCHEMA_VERSION = "fixed_dag_plan_v1"
 DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
 ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
@@ -50,59 +58,27 @@ FIXED_DAG_STAGE_ORDER: tuple[FixedDagStage, ...] = (
     "report",
 )
 
-L1_AGENT_IDS: tuple[str, ...] = (
-    "route_planner",
-    "entity_relation_extractor",
-    "financial_data_service",
-)
-VALUE_AGENT_IDS: tuple[str, ...] = (
-    "value_traditional_valuation",
-    "value_ml_valuation",
-    "value_meta_valuation",
-    "value_research_synthesis",
-)
-MARKET_AGENT_IDS: tuple[str, ...] = (
-    "market_stock_technical",
-    "market_fund_manager_behavior",
-    "market_ipo_investor_behavior",
-    "market_capital_flow_chip",
-    "sentiment_company_radar",
-)
-RISK_AGENT_IDS: tuple[str, ...] = (
-    "risk_crash",
-    "risk_financial_fraud",
-    "risk_identification",
-    "risk_compliance_review",
-)
-MACRO_AGENT_IDS: tuple[str, ...] = (
-    "macro_analysis",
-    "macro_commodity_pricing",
-    "macro_index_valuation",
-    "macro_sentiment",
-    "macro_industry_hotspot",
-)
+_CATALOG_VALID, _CATALOG_VALIDATION_REASON = validate_fixed_dag_catalog(load_fixed_dag_catalog())
+if not _CATALOG_VALID:
+    raise RuntimeError(f"Invalid fixed DAG catalog: {_CATALOG_VALIDATION_REASON}")
+
+_AGENTS_BY_LAYER = fixed_dag_agents_by_layer()
+_AGENTS_BY_DIMENSION = fixed_dag_agents_by_dimension()
+
+L1_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L1"]
+VALUE_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["value"]
+MARKET_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["market"]
+RISK_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["risk"]
+MACRO_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["macro"]
 L2_CONCLUSION_AGENT_IDS: tuple[str, ...] = (
     *VALUE_AGENT_IDS,
     *MARKET_AGENT_IDS,
     *RISK_AGENT_IDS,
     *MACRO_AGENT_IDS,
 )
-L3_COMPOSITE_AGENT_IDS: tuple[str, ...] = (
-    "value_composite",
-    "market_composite",
-    "risk_composite",
-    "macro_composite",
-)
-L4_AGENT_IDS: tuple[str, ...] = (
-    "decision_synthesizer",
-    "report_generator",
-)
-RESET_RUNTIME_AGENT_IDS: tuple[str, ...] = (
-    *L1_AGENT_IDS,
-    *L2_CONCLUSION_AGENT_IDS,
-    *L3_COMPOSITE_AGENT_IDS,
-    *L4_AGENT_IDS,
-)
+L3_COMPOSITE_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L3"]
+L4_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L4"]
+RESET_RUNTIME_AGENT_IDS: tuple[str, ...] = fixed_dag_agent_ids()
 
 DIMENSION_GROUPS: dict[str, tuple[str, ...]] = {
     "value": VALUE_AGENT_IDS,
@@ -336,20 +312,20 @@ def _build_steps() -> list[FixedDagStep]:
             dimension="l1",
         ),
         _step(
-            step_id="entity_relation_extractor",
-            stage="evidence",
-            title="Entity relation extractor",
-            description="Resolve entities and extract relations without live lookup.",
-            agent_id="entity_relation_extractor",
-            dimension="l1",
-            depends_on=("route_planner",),
-        ),
-        _step(
             step_id="financial_data_service",
             stage="evidence",
             title="Financial data service",
             description="Prepare a data bundle seam without external service calls.",
             agent_id="financial_data_service",
+            dimension="l1",
+            depends_on=("route_planner",),
+        ),
+        _step(
+            step_id="entity_relation_extractor",
+            stage="evidence",
+            title="Entity relation extractor",
+            description="Resolve entities and extract relations without live lookup.",
+            agent_id="entity_relation_extractor",
             dimension="l1",
             depends_on=("route_planner",),
         ),
@@ -363,7 +339,7 @@ def _build_steps() -> list[FixedDagStep]:
                 description="Produce a normalized pending conclusion object.",
                 agent_id=agent_id,
                 dimension=AGENT_DIMENSIONS[agent_id],
-                depends_on=("entity_relation_extractor", "financial_data_service"),
+                depends_on=("financial_data_service", "entity_relation_extractor"),
             )
         )
     for dimension, agent_ids in DIMENSION_GROUPS.items():

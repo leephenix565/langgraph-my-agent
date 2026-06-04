@@ -8,7 +8,7 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R3 Boundary
+## Current R4-A Backend Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
 
@@ -25,6 +25,11 @@ The Python public adapter emits `workflow_snapshot_v2` with:
 The existing `apps/web` shell is retained. Its full workflow inspector rewrite
 is deferred to R5, so frontend code may still contain old mock/UI labels until
 that phase.
+
+R4-A changes the backend `/api/agents` projection to the fixed DAG catalog: 27
+enabled `snake_case` agents with L1=3, L2=18, L3=4, and L4=2. Frontend code that
+still carries old aNN mock labels is legacy migration input for R5, not active
+backend truth.
 
 R3 hardens backend workflow payload construction through
 `fixed_dag_contracts.py` and `fixed_dag_executor.py`. It exposes the data needed

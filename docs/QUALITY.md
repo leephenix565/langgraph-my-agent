@@ -2,10 +2,11 @@
 
 This document defines safe validation for the reset branch.
 
-R3.6 uses the same non-provider validation boundary as R3. It is a cleanup and
-Excel-baseline phase, not a runtime capability expansion.
+R4-A uses the same non-provider validation boundary as R3/R3.6. It adds backend
+catalog/public projection coverage, not provider, external, frontend, or
+business-agent capability.
 
-## Safe R3 Commands
+## Safe R4-A Commands
 
 ```powershell
 git status --short --branch
@@ -20,7 +21,7 @@ conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py
 
 ## Not Safe For R3
 
-Do not run during R3/R3.6 unless the user explicitly asks:
+Do not run during R3/R4-A unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -29,8 +30,8 @@ Do not run during R3/R3.6 unless the user explicitly asks:
 - artifact-writing fusion gates
 - frontend production build if it writes repo artifacts
 
-R3.6 also does not treat `mainline`, `fusion-gate`, provider live smoke, or
-frontend build/test results as required cleanup evidence.
+R4-A also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
+stack, or frontend build/test results as required catalog evidence.
 
 ## Current Quality Runner Boundary
 
@@ -47,12 +48,12 @@ Passing safe commands means the deterministic fixed-DAG executor skeleton
 imports, parses, validates plan dependencies, generates topological execution
 batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
 projects `step_results` and `execution_batches`, preserves public transcript
-safety, and keeps the R3 contract/executor seams and 27-agent roster aligned in
-reset docs/tests.
+safety, and keeps the contract/executor/catalog seams and 27-agent roster
+aligned in reset docs/tests.
 
-R3-specific tests cover `validate_dag_steps`, `topological_batches`,
-`execute_fixed_dag_plan`, `validate_dag_execution_result`, graph executor
-integration, and public workflow trace projection.
+R3/R4-A-specific tests cover `validate_dag_steps`, `topological_batches`,
+`execute_fixed_dag_plan`, `validate_dag_execution_result`, fixed DAG catalog
+validation, graph executor integration, and public workflow/catalog projection.
 
 It does not mean:
 

@@ -3,6 +3,7 @@ import json
 from fastapi.testclient import TestClient
 
 from react_agent import public_api
+from react_agent.fixed_dag_contracts import RESET_RUNTIME_AGENT_IDS
 from react_agent.public_contracts import (
     AnswerCardModel,
     CheckpointerStatus,
@@ -54,7 +55,7 @@ def _workflow(continuity_mode: str = "replay") -> WorkflowModel:
         planId="reset-fixed-dag-plan-v1",
         stages=[
             WorkflowStageModel(key="planning", title="Planning", stepIds=["route_planner"]),
-            WorkflowStageModel(key="evidence", title="Evidence", stepIds=["entity_relation_extractor"]),
+            WorkflowStageModel(key="evidence", title="Evidence", stepIds=["financial_data_service"]),
             WorkflowStageModel(key="l2_analysis", title="L2", stepIds=["l2:value_traditional_valuation"]),
             WorkflowStageModel(key="dimension_composite", title="Composite", stepIds=["dimension:value"]),
             WorkflowStageModel(key="decision", title="Decision", stepIds=["decision_synthesizer"]),
@@ -263,16 +264,20 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert response.status_code == 200
     payload = response.json()
     assert payload["totals"]["configCount"] == 27
-    assert payload["totals"]["runtimeCount"] == 25
-    assert payload["totals"]["disabledIds"] == [
-        "a05_annual_report_analysis",
-        "a21_portfolio_manager",
-    ]
+    assert payload["totals"]["runtimeCount"] == 27
+    assert payload["totals"]["disabledIds"] == []
     assert [layer["layer"] for layer in payload["layers"]] == ["L1", "L2", "L3", "L4"]
-    assert [len(layer["agents"]) for layer in payload["layers"]] == [2, 20, 4, 1]
-    assert "a02_task_router" not in {
-        agent["id"] for layer in payload["layers"] for agent in layer["agents"]
-    }
+    assert [len(layer["agents"]) for layer in payload["layers"]] == [3, 18, 4, 2]
+    agents = [agent for layer in payload["layers"] for agent in layer["agents"]]
+    ids = [agent["id"] for agent in agents]
+    assert ids == list(RESET_RUNTIME_AGENT_IDS)
+    assert all(not agent_id.startswith("a") or not agent_id[1:3].isdigit() for agent_id in ids)
+    assert "value_financial_analysis" not in ids
+    sentiment = next(agent for agent in agents if agent["id"] == "sentiment_company_radar")
+    assert sentiment["layer"] == "L2"
+    assert sentiment["team"] == "market"
+    assert "pending_implementation" in sentiment["capabilities"]
+    assert payload["disabledAgents"] == []
     for forbidden in ["messages", "analyst_results", "ephemeral_results", "manager_assignment", "tool_call"]:
         assert forbidden not in response.text
 

@@ -83,8 +83,8 @@ def test_fixed_dag_plan_has_explicit_dependencies_and_dimensions() -> None:
     assert steps["financial_data_service"]["depends_on"] == ["route_planner"]
     for agent_id in L2_CONCLUSION_AGENT_IDS:
         assert steps[f"l2:{agent_id}"]["depends_on"] == [
-            "entity_relation_extractor",
             "financial_data_service",
+            "entity_relation_extractor",
         ]
     for dimension, agent_ids in DIMENSION_GROUPS.items():
         assert set(steps[f"dimension:{dimension}"]["depends_on"]) == {
@@ -281,7 +281,7 @@ def test_workflow_snapshot_v2_uses_execution_results_when_available() -> None:
     snapshot = build_workflow_snapshot_v2(
         plan=plan,
         step_results=step_results,
-        execution_batches=[["route_planner"], ["entity_relation_extractor", "financial_data_service"]],
+        execution_batches=[["route_planner"], ["financial_data_service", "entity_relation_extractor"]],
         dag_execution={
             "status": "degraded",
             "fallback_used": True,
@@ -299,7 +299,7 @@ def test_workflow_snapshot_v2_uses_execution_results_when_available() -> None:
     assert snapshot["completedSteps"] == ["route_planner", "financial_data_service"]
     assert snapshot["executionBatches"] == [
         ["route_planner"],
-        ["entity_relation_extractor", "financial_data_service"],
+        ["financial_data_service", "entity_relation_extractor"],
     ]
     assert snapshot["stepResults"] == step_results
     assert snapshot["provenance"]["executionStatus"] == "degraded"

@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R3/R3.6.
+This file is the reset branch operational map for Phase R4-A.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R3.6 safe dead-file cleanup and R4 Excel baseline.
+- Current phase: R4-A fixed DAG catalog source and public projection.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -14,6 +14,8 @@ This file is the reset branch operational map for Phase R3/R3.6.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 - R4 roster baseline input:
   `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`.
+- Active backend catalog source:
+  `config/fixed_dag/agent_catalog.json`.
 
 ## Current Runtime Entry
 
@@ -35,6 +37,9 @@ apps/web
 
 The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
 is retained and still needs the R5 workflow inspector rewrite.
+
+The public `/api/agents` path now projects the fixed DAG catalog's 27
+`snake_case` reset agents through the existing `AgentCatalogResponse` shape.
 
 ## Active Fixed DAG Skeleton
 
@@ -74,6 +79,10 @@ compatibility, but they are not active runtime authority:
 - `config/agents/*.json`
 - `apps/web`
 
+In R4-A, `config/agents/*.json` is a legacy aNN migration input. It is retained
+for external wrapper and migration work, but it is not the active reset public
+catalog truth.
+
 ## Target Fixed DAG IDs
 
 The reset skeleton has 27 formal agent ids:
@@ -103,13 +112,13 @@ R1-A removed:
 
 Historical recovery is through the pre-reset tag, not through current docs.
 
-## R3.6 Cleanup Boundary
+## Historical R3.6 Cleanup Boundary
 
-R3.6 removes only high-confidence dead local artifacts and legacy fixtures that
-are not active entry points. It also commits the v4 feedback workbook as an R4
-input.
+R3.6 removed only high-confidence dead local artifacts and legacy fixtures that
+were not active entry points. It also committed the v4 feedback workbook as an
+R4 input.
 
-R3.6 does not delete or migrate:
+R3.6 did not delete or migrate:
 
 - `config/agents/*.json`
 - external HTTP wrapper production code
@@ -126,7 +135,8 @@ R3.6 does not delete or migrate:
 Later phases own:
 
 - real business agent algorithms
-- R4 snake_case catalog/runtime registry replacement
+- R4-B runtime registry and external endpoint mapping adapters
+- R4-C legacy aNN catalog cleanup after replacement
 - external service readiness and protocol repair
 - R5 frontend DAG workflow inspector rewrite
 - R6 rebuilt mainline and fusion-gate quality gates
@@ -134,7 +144,7 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R3 validation commands:
+Safe R4-A validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality

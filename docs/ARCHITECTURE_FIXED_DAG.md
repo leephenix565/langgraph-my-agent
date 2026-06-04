@@ -1,8 +1,9 @@
 # Fixed DAG Architecture
 
-This document describes the active Phase R3 reset skeleton. The skeleton is
-deterministic, provider-free, plan-driven, and backed by explicit contract,
-executor, and function seams. It is not a completed business analysis engine.
+This document describes the active reset skeleton and the Phase R4-A fixed DAG
+catalog source. The skeleton is deterministic, provider-free, plan-driven, and
+backed by explicit catalog, contract, executor, and function seams. It is not a
+completed business analysis engine.
 
 ## Active Skeleton Flow
 
@@ -20,13 +21,18 @@ flowchart TD
 The formal reset roster has 27 agent ids. The DAG executor itself is
 infrastructure and is not counted as an agent id.
 
+The active catalog source is `config/fixed_dag/agent_catalog.json`, loaded and
+validated by `src/react_agent/fixed_dag_catalog.py`. The source workbook
+`新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx` is retained as the
+R4 baseline input.
+
 ## Target IDs
 
 | target_id | runtime layer | dimension | role |
 | --- | --- | --- | --- |
 | route_planner | L1 | planning | fixed DAG plan seam |
-| entity_relation_extractor | L1 | evidence | entity and relation extraction seam |
 | financial_data_service | L1 | evidence | financial data bundle seam |
+| entity_relation_extractor | L1 | evidence | entity and relation extraction seam |
 | value_traditional_valuation | L2 | value | traditional valuation conclusion |
 | value_ml_valuation | L2 | value | ML valuation conclusion |
 | value_meta_valuation | L2 | value | meta valuation conclusion |
@@ -59,6 +65,8 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 ## Execution Principles
 
 - The DAG executor is infrastructure and is not counted as a target id.
+- `fixed_dag_agent_catalog_v1` is the active roster/catalog source for reset
+  backend projection.
 - `fixed_dag_plan_v1.dag_steps[].depends_on` is the executor input.
 - `validate_dag_steps` checks unique ids, dependency existence, acyclicity,
   stage/dimension legality, roster membership, and dimension dependency rules.
@@ -77,5 +85,7 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.
-- R4 owns catalog/runtime registry replacement, R5 owns frontend workflow UI,
-  and R6 owns mainline/fusion-gate rebuild.
+- R4-A owns the fixed DAG catalog source and `/api/agents` public projection.
+- R4-B/R4-C still own runtime registry/external endpoint mapping and legacy aNN
+  cleanup, R5 owns frontend workflow UI, and R6 owns mainline/fusion-gate
+  rebuild.

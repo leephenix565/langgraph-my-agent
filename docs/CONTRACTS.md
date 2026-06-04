@@ -4,6 +4,10 @@ This document names the Phase R3 Fixed DAG contracts implemented by
 `src/react_agent/fixed_dag_contracts.py` and
 `src/react_agent/fixed_dag_executor.py`.
 
+Phase R4-A adds the fixed DAG agent catalog contract implemented by
+`src/react_agent/fixed_dag_catalog.py` and sourced from
+`config/fixed_dag/agent_catalog.json`.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal
@@ -13,6 +17,48 @@ reach the public adapter.
 R3 hardens these contracts with deterministic constructors, normalizers,
 validators, and topological executor seams. These seams do not implement real
 business algorithms and do not call providers or external services.
+
+R4-A makes the fixed DAG catalog the active backend `/api/agents` projection
+source. The old `config/agents/*.json` aNN catalog is retained as legacy
+migration input, not active reset public catalog truth.
+
+## fixed_dag_agent_catalog_v1
+
+Purpose: define the active reset backend catalog of 27 formal `snake_case`
+agents.
+
+Catalog fields:
+
+- `schema_version`
+- `source`
+- `total_count`
+- `layer_counts`
+- `dimension_counts`
+- `agents`
+
+Each agent includes:
+
+- `id`
+- `display_name`
+- `layer`
+- `dimension`
+- `role_type`
+- `stage`
+- `default_enabled`
+- `implementation_status`
+- `description`
+- `input_contract`
+- `output_contract`
+- `upstream`
+- `downstream`
+
+Validation rejects duplicate ids, legacy `aNN` primary ids,
+`value_financial_analysis`, bad layer/dimension counts, sentiment-to-risk
+routing, and `risk_composite` reading `sentiment_company_radar`.
+
+Seams: `load_fixed_dag_catalog`, `validate_fixed_dag_catalog`,
+`fixed_dag_agents`, `fixed_dag_agent_ids`, `fixed_dag_agents_by_layer`,
+`fixed_dag_agents_by_dimension`, and `fixed_dag_public_agent_catalog`.
 
 ## fixed_dag_plan_v1
 
@@ -35,7 +81,8 @@ Runtime fields:
 
 The plan has no dispatch strategy field and no legacy layer-mode selector.
 The current reset roster in `target_agent_ids` contains the 27 formal v4
-feedback-aligned agent ids: L1=3, L2=18, L3=4, L4=2.
+feedback-aligned agent ids from `fixed_dag_agent_catalog_v1`: L1=3, L2=18,
+L3=4, L4=2.
 
 Each step includes `depends_on`. R3 validates step id uniqueness, dependency
 existence, acyclicity, legal stage, legal dimension, roster membership, and the
@@ -227,7 +274,6 @@ or provider responses.
 Public fields:
 
 - `schema`
-- `schemaVersion`
 - `planId`
 - `stages`
 - `dagSteps`
@@ -249,6 +295,27 @@ Graph final emission also uses `build_final_emit_payload`,
 `build_emitted_bundle`, and `build_reset_multi_agent_bundle`.
 `fixed_dag_reset_bundle_v1` includes `dag_execution`, `dag_step_results`, and
 `execution_batches`.
+
+## Public Agent Catalog
+
+Purpose: expose the reset agent catalog to the web shell without leaking old
+config/profile/tool internals.
+
+Endpoint: `GET /api/agents`
+
+Public response model: `AgentCatalogResponse`.
+
+R4-A semantics:
+
+- `configCount=27`
+- `runtimeCount=27`
+- `disabledIds=[]`
+- layer rows L1=3, L2=18, L3=4, L4=2
+- agent ids are the fixed DAG `snake_case` ids
+- descriptions may say `pending_implementation` or `deterministic_skeleton`
+
+The field names remain compatible with the existing public schema. Their R4-A
+meaning is reset catalog projection, not old aNN config file enablement.
 
 ## Public Exclusions
 
