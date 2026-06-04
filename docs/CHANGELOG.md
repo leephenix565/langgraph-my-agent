@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R2 contract and function seam hardening
+
+### Added
+
+- Added deterministic constructors, normalizers, and validators for fixed DAG
+  plan, L1 bundles, L2 conclusions, L3 composites, L4 decision/report, workflow
+  snapshot, and final emit bundles.
+- Added authoritative roster partition constants for L1, L2, L3, L4, and
+  value/market/risk/macro dimensions.
+- Added unit coverage for R2 contract invariants, sentiment market-only routing,
+  risk-composite exclusion of sentiment, public workflow fallback, and graph
+  final bundle shape.
+
+### Changed
+
+- Changed graph nodes to consume contract/function seams instead of scattering
+  payload fields in node bodies.
+- Changed public workflow fallback mapping to reuse `build_workflow_snapshot_v2`
+  so dimension groups remain stable.
+- Updated reset docs to describe R2 seam hardening and later R4/R5/R6 ownership.
+
+### Not Done
+
+- No provider, search, or external live verification.
+- No frontend workflow UI rewrite.
+- No snake_case catalog/runtime registry migration.
+- No real business agent algorithm implementation.
+- No mainline or fusion-gate artifact-writing validation.
+- No push.
+
 ## 2026-06-04 - Phase R1-B-Delta fixed DAG roster alignment
 
 ### Changed

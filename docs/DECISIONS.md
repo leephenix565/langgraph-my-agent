@@ -14,7 +14,7 @@ Reason: the reset needs deterministic structure, clearer public workflow
 projection, and fewer historical branches.
 
 Consequence: old mode prompt/parser/state/public workflow code is not active
-runtime authority in R1-B.
+runtime authority in R2.
 
 ## ADR-002: snake_case Runtime IDs Replace aNN IDs
 
@@ -90,3 +90,17 @@ Reason: the v4 feedback table is the reset roster authority for R1-B-Delta.
 
 Consequence: tests and docs must not describe pre-delta target counts as current
 runtime facts.
+
+## ADR-008: R2 Uses Contract And Function Seams
+
+Status: accepted for reset runtime.
+
+Decision: fixed DAG payloads are generated through deterministic constructors,
+normalizers, and validators in `fixed_dag_contracts.py`.
+
+Reason: graph nodes and public workflow fallbacks need stable protocol objects
+before business algorithms, registry migration, or frontend workflow UI work.
+
+Consequence: R2 hardens the skeleton contracts but does not implement real
+business agents, provider readiness, external service readiness, frontend v2, or
+mainline/fusion-gate reset quality gates.

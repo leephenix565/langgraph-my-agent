@@ -1,13 +1,14 @@
 # System Map
 
-This file is the reset branch operational map for Phase R1-B-Delta.
+This file is the reset branch operational map for Phase R2.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R1-B-Delta fixed DAG runtime protocol skeleton with v4 roster alignment.
+- Current phase: R2 contract and function seam hardening.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
-  a deterministic provider-free fixed DAG skeleton.
+  a deterministic provider-free fixed DAG skeleton whose payloads are built by
+  explicit constructors, normalizers, and validators.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 
 ## Current Runtime Entry
@@ -54,6 +55,8 @@ Active skeleton properties:
 - No mode-based Manager dispatch.
 - No Fair Fusion or baseline sidecar active graph branch.
 - Final public source is `reset_skeleton`.
+- Plan, bundle, conclusion, composite, decision, report, workflow, and final
+  emit payloads are generated from `fixed_dag_contracts.py` seams.
 
 ## Retained But Inactive Infrastructure
 
@@ -100,15 +103,15 @@ Historical recovery is through the pre-reset tag, not through current docs.
 Later phases own:
 
 - real business agent algorithms
-- snake_case catalog/runtime registry replacement
+- R4 snake_case catalog/runtime registry replacement
 - external service readiness and protocol repair
-- frontend DAG workflow inspector rewrite
-- rebuilt mainline quality gate
+- R5 frontend DAG workflow inspector rewrite
+- R6 rebuilt mainline and fusion-gate quality gates
 - production deployment, auth, HTTPS, observability, persistence, and rate limits
 
 ## Quality Entry Points
 
-Safe R1-B validation commands:
+Safe R2 validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -124,10 +127,11 @@ them.
 
 ## Non-Claims
 
-R1-B does not claim:
+R2 does not claim:
 
 - frontend v2 completion
 - business-agent correctness
 - provider readiness
 - external service readiness
+- mainline/fusion-gate reset gate completion
 - production deployment readiness

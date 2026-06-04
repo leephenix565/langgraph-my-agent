@@ -1,17 +1,26 @@
 # ruff: noqa: D101, D103
-"""Deterministic fixed-DAG reset contracts.
+"""Deterministic fixed-DAG reset contracts and function seams.
 
-These helpers define the reset skeleton protocol used by the active graph in
-Phase R1-B.  They deliberately avoid provider calls, external agent invokes, and
-legacy routing modes.
+Phase R2 keeps the active runtime provider-free and external-free while making
+the reset skeleton contracts explicit, validated, and reusable by graph nodes
+and public workflow mapping.
 """
 
 from __future__ import annotations
 
-from typing import Any, Literal, NotRequired, TypedDict
+from collections.abc import Mapping
+from typing import Any, Literal, NotRequired, TypedDict, cast
 
 FIXED_DAG_SCHEMA_VERSION = "fixed_dag_plan_v1"
+DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
+ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
+CONCLUSION_OBJECT_SCHEMA_VERSION = "conclusion_object_v1"
+DIMENSION_COMPOSITE_SCHEMA_VERSION = "dimension_composite_result_v1"
+DECISION_RESULT_SCHEMA_VERSION = "decision_result_v1"
+REPORT_RESULT_SCHEMA_VERSION = "report_result_v1"
 WORKFLOW_SNAPSHOT_SCHEMA_VERSION = "workflow_snapshot_v2"
+RESET_SOURCE = "reset_skeleton"
+DEFAULT_AS_OF = "not_available"
 
 FixedDagStage = Literal[
     "planning",
@@ -21,8 +30,8 @@ FixedDagStage = Literal[
     "decision",
     "report",
 ]
-
 ConclusionStatus = Literal["pending_implementation", "partial", "complete", "error"]
+DimensionName = Literal["value", "market", "risk", "macro"]
 
 FIXED_DAG_STAGE_ORDER: tuple[FixedDagStage, ...] = (
     "planning",
@@ -33,89 +42,89 @@ FIXED_DAG_STAGE_ORDER: tuple[FixedDagStage, ...] = (
     "report",
 )
 
-RESET_RUNTIME_AGENT_IDS: tuple[str, ...] = (
+L1_AGENT_IDS: tuple[str, ...] = (
     "route_planner",
     "entity_relation_extractor",
     "financial_data_service",
+)
+VALUE_AGENT_IDS: tuple[str, ...] = (
     "value_traditional_valuation",
     "value_ml_valuation",
     "value_meta_valuation",
     "value_research_synthesis",
+)
+MARKET_AGENT_IDS: tuple[str, ...] = (
     "market_stock_technical",
     "market_fund_manager_behavior",
     "market_ipo_investor_behavior",
     "market_capital_flow_chip",
     "sentiment_company_radar",
+)
+RISK_AGENT_IDS: tuple[str, ...] = (
     "risk_crash",
     "risk_financial_fraud",
     "risk_identification",
     "risk_compliance_review",
+)
+MACRO_AGENT_IDS: tuple[str, ...] = (
     "macro_analysis",
     "macro_commodity_pricing",
     "macro_index_valuation",
     "macro_sentiment",
     "macro_industry_hotspot",
+)
+L2_CONCLUSION_AGENT_IDS: tuple[str, ...] = (
+    *VALUE_AGENT_IDS,
+    *MARKET_AGENT_IDS,
+    *RISK_AGENT_IDS,
+    *MACRO_AGENT_IDS,
+)
+L3_COMPOSITE_AGENT_IDS: tuple[str, ...] = (
     "value_composite",
     "market_composite",
     "risk_composite",
     "macro_composite",
+)
+L4_AGENT_IDS: tuple[str, ...] = (
     "decision_synthesizer",
     "report_generator",
 )
-
-L2_CONCLUSION_AGENT_IDS: tuple[str, ...] = (
-    "value_traditional_valuation",
-    "value_ml_valuation",
-    "value_meta_valuation",
-    "value_research_synthesis",
-    "market_stock_technical",
-    "market_fund_manager_behavior",
-    "market_ipo_investor_behavior",
-    "market_capital_flow_chip",
-    "sentiment_company_radar",
-    "risk_crash",
-    "risk_financial_fraud",
-    "risk_identification",
-    "risk_compliance_review",
-    "macro_analysis",
-    "macro_commodity_pricing",
-    "macro_index_valuation",
-    "macro_sentiment",
-    "macro_industry_hotspot",
+RESET_RUNTIME_AGENT_IDS: tuple[str, ...] = (
+    *L1_AGENT_IDS,
+    *L2_CONCLUSION_AGENT_IDS,
+    *L3_COMPOSITE_AGENT_IDS,
+    *L4_AGENT_IDS,
 )
 
 DIMENSION_GROUPS: dict[str, tuple[str, ...]] = {
-    "value": (
-        "value_traditional_valuation",
-        "value_ml_valuation",
-        "value_meta_valuation",
-        "value_research_synthesis",
-    ),
-    "market": (
-        "market_stock_technical",
-        "market_fund_manager_behavior",
-        "market_ipo_investor_behavior",
-        "market_capital_flow_chip",
-        "sentiment_company_radar",
-    ),
-    "risk": (
-        "risk_crash",
-        "risk_financial_fraud",
-        "risk_identification",
-        "risk_compliance_review",
-    ),
-    "macro": (
-        "macro_analysis",
-        "macro_commodity_pricing",
-        "macro_index_valuation",
-        "macro_sentiment",
-        "macro_industry_hotspot",
-    ),
+    "value": VALUE_AGENT_IDS,
+    "market": MARKET_AGENT_IDS,
+    "risk": RISK_AGENT_IDS,
+    "macro": MACRO_AGENT_IDS,
 }
-
-SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES: tuple[str, ...] = (
-    "market_composite",
-)
+DIMENSION_COMPOSITE_AGENT_IDS: dict[str, str] = {
+    "value": "value_composite",
+    "market": "market_composite",
+    "risk": "risk_composite",
+    "macro": "macro_composite",
+}
+AGENT_DIMENSIONS: dict[str, str] = {
+    **{agent_id: "value" for agent_id in VALUE_AGENT_IDS},
+    **{agent_id: "market" for agent_id in MARKET_AGENT_IDS},
+    **{agent_id: "risk" for agent_id in RISK_AGENT_IDS},
+    **{agent_id: "macro" for agent_id in MACRO_AGENT_IDS},
+}
+SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES: tuple[str, ...] = ("market_composite",)
+LEGACY_CONTRACT_KEYS = {
+    "mode",
+    "layerMode",
+    "layer_mode",
+    "layerPlan",
+    "layer_plan",
+    "fusionSteps",
+    "fusion_verdict",
+    "baseline_bundle",
+}
 
 
 class FixedDagStep(TypedDict):
@@ -131,18 +140,25 @@ class FixedDagStep(TypedDict):
 
 class FixedDagPlan(TypedDict):
     schema: str
+    schema_version: str
     plan_id: str
     user_text: str
+    as_of: str
     stages: list[dict[str, Any]]
     steps: list[FixedDagStep]
+    dag_steps: list[FixedDagStep]
     target_agent_ids: list[str]
+    target: list[str]
     dimension_groups: dict[str, list[str]]
     provenance: dict[str, Any]
 
 
 class EntityRelationBundle(TypedDict):
     schema: str
+    schema_version: str
     status: ConclusionStatus
+    as_of: str
+    data_as_of: str
     entities: list[dict[str, Any]]
     relations: list[dict[str, Any]]
     notes: list[str]
@@ -150,6 +166,7 @@ class EntityRelationBundle(TypedDict):
 
 class DataBundle(TypedDict):
     schema: str
+    schema_version: str
     status: ConclusionStatus
     as_of: str
     data_as_of: str
@@ -159,129 +176,220 @@ class DataBundle(TypedDict):
 
 class ConclusionObject(TypedDict):
     schema: str
+    schema_version: str
     agent_id: str
+    dimension: str
     stance: str
     confidence: float
     status: ConclusionStatus
     evidence: list[dict[str, Any]]
     as_of: str
     data_as_of: str
+    event_flags: NotRequired[list[str]]
     output_routes: NotRequired[list[str]]
+    provenance: dict[str, Any]
 
 
 class DimensionCompositeResult(TypedDict):
     schema: str
+    schema_version: str
+    agent_id: str
     dimension: str
     stance: str
     confidence: float
     status: ConclusionStatus
     contributing_agents: list[str]
     evidence_refs: list[str]
+    as_of: str
+    data_as_of: str
+    vote_type: NotRequired[str]
     gate: NotRequired[str]
     veto: NotRequired[bool]
     penalty: NotRequired[float]
+    risk_score: NotRequired[float]
+    regime: NotRequired[str]
     dimension_weights: NotRequired[dict[str, float]]
     risk_sensitivity: NotRequired[str]
 
 
 class DecisionResult(TypedDict):
     schema: str
+    schema_version: str
     decision: str
-    score: float | None
+    score: float
     target_price_range: dict[str, float | None]
-    reasoning_trace: list[str]
+    dimension_views: dict[str, dict[str, Any]]
+    reasoning_trace: list[dict[str, Any]]
+    confidence: float
     status: ConclusionStatus
+    as_of: str
 
 
 class ReportResult(TypedDict):
     schema: str
+    schema_version: str
     title: str
     answer: str
     status: ConclusionStatus
     sections: list[dict[str, Any]]
+    evidence_cards: list[dict[str, Any]]
     limitations: list[str]
 
 
-def build_deterministic_fixed_dag_plan(user_text: str = "") -> FixedDagPlan:
-    """Build the deterministic reset plan used when no provider is available."""
-    steps: list[FixedDagStep] = [
-        {
-            "id": "route_planner",
-            "stage": "planning",
-            "title": "Route planner",
-            "description": "Create a fixed DAG execution plan.",
-            "agent_id": "route_planner",
-            "status": "complete",
-        },
-        {
-            "id": "entity_relation_extractor",
-            "stage": "evidence",
-            "title": "Entity relation extractor",
-            "description": "Resolve entities and extract relations without live lookup.",
-            "agent_id": "entity_relation_extractor",
-            "status": "pending_implementation",
-        },
-        {
-            "id": "financial_data_service",
-            "stage": "evidence",
-            "title": "Financial data service",
-            "description": "Prepare a data bundle seam for future services.",
-            "agent_id": "financial_data_service",
-            "status": "pending_implementation",
-        },
-    ]
+def _as_of(value: str | None = None) -> str:
+    text = str(value or "").strip()
+    return text or DEFAULT_AS_OF
 
+
+def _data_as_of_for(as_of: str) -> str:
+    return as_of
+
+
+def _data_not_after(data_as_of: Any, as_of: Any) -> bool:
+    left = str(data_as_of or "")
+    right = str(as_of or "")
+    if not left or not right:
+        return False
+    return left <= right
+
+
+def _contains_legacy_key(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return any(
+            key in LEGACY_CONTRACT_KEYS or _contains_legacy_key(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_legacy_key(item) for item in value)
+    return False
+
+
+def _status_for_expected(
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, Any],
+) -> ConclusionStatus:
+    present = [agent_id for agent_id in expected_agent_ids if agent_id in conclusions]
+    if not present:
+        return "pending_implementation"
+    if len(present) < len(expected_agent_ids):
+        return "partial"
+    if any(
+        isinstance(conclusions.get(agent_id), Mapping)
+        and conclusions[agent_id].get("status") == "error"
+        for agent_id in present
+    ):
+        return "partial"
+    return "pending_implementation"
+
+
+def _step(
+    *,
+    step_id: str,
+    stage: FixedDagStage,
+    title: str,
+    description: str,
+    status: str = "pending_implementation",
+    agent_id: str | None = None,
+    target_ids: tuple[str, ...] = (),
+    dimension: str | None = None,
+) -> FixedDagStep:
+    step: FixedDagStep = {
+        "id": step_id,
+        "stage": stage,
+        "title": title,
+        "description": description,
+        "status": status,
+    }
+    if agent_id:
+        step["agent_id"] = agent_id
+    if target_ids:
+        step["target_ids"] = list(target_ids)
+    if dimension:
+        step["dimension"] = dimension
+    return step
+
+
+def _build_steps() -> list[FixedDagStep]:
+    steps = [
+        _step(
+            step_id="route_planner",
+            stage="planning",
+            title="Route planner",
+            description="Create the deterministic fixed DAG execution plan.",
+            status="complete",
+            agent_id="route_planner",
+        ),
+        _step(
+            step_id="entity_relation_extractor",
+            stage="evidence",
+            title="Entity relation extractor",
+            description="Resolve entities and extract relations without live lookup.",
+            agent_id="entity_relation_extractor",
+        ),
+        _step(
+            step_id="financial_data_service",
+            stage="evidence",
+            title="Financial data service",
+            description="Prepare a data bundle seam without external service calls.",
+            agent_id="financial_data_service",
+        ),
+    ]
     for agent_id in L2_CONCLUSION_AGENT_IDS:
         steps.append(
-            {
-                "id": f"l2:{agent_id}",
-                "stage": "l2_analysis",
-                "title": agent_id.replace("_", " ").title(),
-                "description": "Produce a normalized conclusion object.",
-                "agent_id": agent_id,
-                "status": "pending_implementation",
-            }
+            _step(
+                step_id=f"l2:{agent_id}",
+                stage="l2_analysis",
+                title=agent_id.replace("_", " ").title(),
+                description="Produce a normalized pending conclusion object.",
+                agent_id=agent_id,
+                dimension=AGENT_DIMENSIONS[agent_id],
+            )
         )
-
     for dimension, agent_ids in DIMENSION_GROUPS.items():
         steps.append(
-            {
-                "id": f"dimension:{dimension}",
-                "stage": "dimension_composite",
-                "title": f"{dimension.title()} composite",
-                "description": "Combine L2 conclusions for one decision dimension.",
-                "target_ids": list(agent_ids),
-                "agent_id": f"{dimension}_composite",
-                "dimension": dimension,
-                "status": "pending_implementation",
-            }
+            _step(
+                step_id=f"dimension:{dimension}",
+                stage="dimension_composite",
+                title=f"{dimension.title()} composite",
+                description="Combine L2 conclusions for one deterministic dimension seam.",
+                agent_id=DIMENSION_COMPOSITE_AGENT_IDS[dimension],
+                target_ids=agent_ids,
+                dimension=dimension,
+            )
         )
-
     steps.extend(
         [
-            {
-                "id": "decision_synthesizer",
-                "stage": "decision",
-                "title": "Decision synthesizer",
-                "description": "Create a deterministic decision placeholder.",
-                "agent_id": "decision_synthesizer",
-                "status": "pending_implementation",
-            },
-            {
-                "id": "report_generator",
-                "stage": "report",
-                "title": "Report generator",
-                "description": "Generate the public reset skeleton answer.",
-                "agent_id": "report_generator",
-                "status": "pending_implementation",
-            },
+            _step(
+                step_id="decision_synthesizer",
+                stage="decision",
+                title="Decision synthesizer",
+                description="Create a deterministic decision placeholder.",
+                agent_id="decision_synthesizer",
+            ),
+            _step(
+                step_id="report_generator",
+                stage="report",
+                title="Report generator",
+                description="Generate the public reset skeleton answer.",
+                agent_id="report_generator",
+            ),
         ]
     )
+    return steps
 
+
+def build_default_fixed_dag_plan(
+    question: str = "",
+    as_of: str | None = None,
+) -> FixedDagPlan:
+    normalized_as_of = _as_of(as_of)
+    steps = _build_steps()
     return {
         "schema": FIXED_DAG_SCHEMA_VERSION,
+        "schema_version": FIXED_DAG_SCHEMA_VERSION,
         "plan_id": "reset-fixed-dag-plan-v1",
-        "user_text": user_text,
+        "user_text": str(question or ""),
+        "as_of": normalized_as_of,
         "stages": [
             {
                 "id": stage,
@@ -291,8 +399,13 @@ def build_deterministic_fixed_dag_plan(user_text: str = "") -> FixedDagPlan:
             for stage in FIXED_DAG_STAGE_ORDER
         ],
         "steps": steps,
+        "dag_steps": steps,
         "target_agent_ids": list(RESET_RUNTIME_AGENT_IDS),
-        "dimension_groups": {key: list(value) for key, value in DIMENSION_GROUPS.items()},
+        "target": list(RESET_RUNTIME_AGENT_IDS),
+        "dimension_groups": {
+            dimension: list(agent_ids)
+            for dimension, agent_ids in DIMENSION_GROUPS.items()
+        },
         "provenance": {
             "source": "deterministic_reset_skeleton",
             "provider_invoked": False,
@@ -301,112 +414,462 @@ def build_deterministic_fixed_dag_plan(user_text: str = "") -> FixedDagPlan:
     }
 
 
-def build_entity_relation_bundle(user_text: str) -> EntityRelationBundle:
+def build_deterministic_fixed_dag_plan(user_text: str = "") -> FixedDagPlan:
+    return build_default_fixed_dag_plan(user_text)
+
+
+def validate_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
+    if not isinstance(plan, Mapping):
+        return False, "plan_not_mapping"
+    if plan.get("schema") != FIXED_DAG_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if plan.get("schema_version", FIXED_DAG_SCHEMA_VERSION) != FIXED_DAG_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if _contains_legacy_key(plan):
+        return False, "legacy_dispatch_field_present"
+    if list(plan.get("target_agent_ids", [])) != list(RESET_RUNTIME_AGENT_IDS):
+        return False, "target_agent_ids_mismatch"
+    if list(plan.get("target", RESET_RUNTIME_AGENT_IDS)) != list(RESET_RUNTIME_AGENT_IDS):
+        return False, "target_mismatch"
+    if plan.get("dimension_groups") != {
+        key: list(value) for key, value in DIMENSION_GROUPS.items()
+    }:
+        return False, "dimension_groups_mismatch"
+    steps = plan.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return False, "steps_missing"
+    if len(steps) != len(RESET_RUNTIME_AGENT_IDS):
+        return False, "steps_count_mismatch"
+    if plan.get("dag_steps") != steps:
+        return False, "dag_steps_mismatch"
+    step_agent_ids = {
+        step.get("agent_id")
+        for step in steps
+        if isinstance(step, Mapping) and step.get("agent_id")
+    }
+    if not set(RESET_RUNTIME_AGENT_IDS) <= step_agent_ids:
+        return False, "step_agent_ids_mismatch"
+    step_ids_by_stage = {
+        stage: [step["id"] for step in steps if isinstance(step, Mapping) and step.get("stage") == stage]
+        for stage in FIXED_DAG_STAGE_ORDER
+    }
+    stage_items = plan.get("stages")
+    if not isinstance(stage_items, list) or len(stage_items) != len(FIXED_DAG_STAGE_ORDER):
+        return False, "stages_mismatch"
+    for item in stage_items:
+        if not isinstance(item, Mapping):
+            return False, "invalid_stage_item"
+        stage_id = item.get("id")
+        if stage_id not in step_ids_by_stage:
+            return False, "unknown_stage"
+        if item.get("step_ids") != step_ids_by_stage[stage_id]:
+            return False, "stage_step_ids_mismatch"
+    return True, "ok"
+
+
+def normalize_fixed_dag_plan(plan: Mapping[str, Any]) -> FixedDagPlan:
+    question = str(plan.get("user_text") or plan.get("question") or "")
+    as_of = _as_of(cast(str | None, plan.get("as_of")))
+    normalized = build_default_fixed_dag_plan(question, as_of)
+    if isinstance(plan.get("plan_id"), str) and str(plan["plan_id"]).strip():
+        normalized["plan_id"] = str(plan["plan_id"]).strip()
+    normalized["provenance"] = {
+        **normalized["provenance"],
+        "source": "normalized_fixed_dag_plan",
+    }
+    return normalized
+
+
+def build_data_bundle(plan: Mapping[str, Any]) -> DataBundle:
+    normalized = normalize_fixed_dag_plan(plan)
+    as_of = normalized["as_of"]
     return {
-        "schema": "entity_relation_bundle_v1",
+        "schema": DATA_BUNDLE_SCHEMA_VERSION,
+        "schema_version": DATA_BUNDLE_SCHEMA_VERSION,
         "status": "pending_implementation",
+        "as_of": as_of,
+        "data_as_of": _data_as_of_for(as_of),
+        "sources": [],
+        "notes": [
+            "Financial data service is a deterministic seam in Phase R2.",
+            "No provider, search, or external service was invoked.",
+        ],
+    }
+
+
+def validate_data_bundle(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != DATA_BUNDLE_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if obj.get("schema_version", DATA_BUNDLE_SCHEMA_VERSION) != DATA_BUNDLE_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if obj.get("status") not in {"pending_implementation", "partial", "complete", "error"}:
+        return False, "invalid_status"
+    if not _data_not_after(obj.get("data_as_of"), obj.get("as_of")):
+        return False, "data_as_of_after_as_of"
+    if not isinstance(obj.get("sources"), list):
+        return False, "invalid_sources"
+    if _contains_legacy_key(obj):
+        return False, "legacy_dispatch_field_present"
+    return True, "ok"
+
+
+def build_entity_relation_bundle(plan: Mapping[str, Any]) -> EntityRelationBundle:
+    normalized = normalize_fixed_dag_plan(plan)
+    as_of = normalized["as_of"]
+    return {
+        "schema": ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        "schema_version": ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        "status": "pending_implementation",
+        "as_of": as_of,
+        "data_as_of": _data_as_of_for(as_of),
         "entities": [],
         "relations": [],
         "notes": [
-            "Entity resolution is a fixed-DAG seam in Phase R1-B.",
-            f"Original question length: {len(user_text)}",
+            "Entity and relation extraction is a deterministic Phase R2 seam.",
+            "No provider or external service was invoked.",
+            f"Original question length: {len(normalized['user_text'])}",
         ],
     }
 
 
-def build_data_bundle() -> DataBundle:
-    return {
-        "schema": "data_bundle_v1",
+def validate_entity_relation_bundle(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if obj.get("schema_version", ENTITY_RELATION_BUNDLE_SCHEMA_VERSION) != ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if obj.get("status") not in {"pending_implementation", "partial", "complete", "error"}:
+        return False, "invalid_status"
+    if not _data_not_after(obj.get("data_as_of"), obj.get("as_of")):
+        return False, "data_as_of_after_as_of"
+    if not isinstance(obj.get("entities"), list) or not isinstance(obj.get("relations"), list):
+        return False, "invalid_entity_relation_lists"
+    if _contains_legacy_key(obj):
+        return False, "legacy_dispatch_field_present"
+    return True, "ok"
+
+
+def build_pending_conclusion(
+    agent_id: str,
+    dimension: str,
+    *,
+    as_of: str,
+    reason: str,
+) -> ConclusionObject:
+    item: ConclusionObject = {
+        "schema": CONCLUSION_OBJECT_SCHEMA_VERSION,
+        "schema_version": CONCLUSION_OBJECT_SCHEMA_VERSION,
+        "agent_id": agent_id,
+        "dimension": dimension,
+        "stance": "not_evaluated",
+        "confidence": 0.0,
         "status": "pending_implementation",
-        "as_of": "not_available",
-        "data_as_of": "not_available",
-        "sources": [],
-        "notes": [
-            "No provider, search, or external service was invoked in the reset skeleton."
-        ],
+        "evidence": [],
+        "as_of": as_of,
+        "data_as_of": _data_as_of_for(as_of),
+        "event_flags": [],
+        "provenance": {
+            "source": RESET_SOURCE,
+            "reason": reason,
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    }
+    if agent_id == "sentiment_company_radar":
+        item["output_routes"] = list(SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES)
+    return item
+
+
+def validate_conclusion_object(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != CONCLUSION_OBJECT_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if obj.get("schema_version", CONCLUSION_OBJECT_SCHEMA_VERSION) != CONCLUSION_OBJECT_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if obj.get("agent_id") not in L2_CONCLUSION_AGENT_IDS:
+        return False, "unknown_agent_id"
+    if obj.get("dimension") != AGENT_DIMENSIONS.get(str(obj.get("agent_id"))):
+        return False, "dimension_mismatch"
+    try:
+        confidence = float(obj.get("confidence"))
+    except (TypeError, ValueError):
+        return False, "invalid_confidence"
+    if not 0.0 <= confidence <= 1.0:
+        return False, "confidence_out_of_range"
+    if obj.get("status") not in {"pending_implementation", "partial", "complete", "error"}:
+        return False, "invalid_status"
+    if not isinstance(obj.get("evidence"), list):
+        return False, "invalid_evidence"
+    if "event_flags" in obj and not isinstance(obj.get("event_flags"), list):
+        return False, "invalid_event_flags"
+    if not _data_not_after(obj.get("data_as_of"), obj.get("as_of")):
+        return False, "data_as_of_after_as_of"
+    if obj.get("agent_id") == "sentiment_company_radar" and obj.get("output_routes") != [
+        "market_composite"
+    ]:
+        return False, "sentiment_route_mismatch"
+    if obj.get("agent_id") != "sentiment_company_radar" and obj.get("output_routes"):
+        return False, "unexpected_output_routes"
+    provenance = obj.get("provenance", {})
+    if not isinstance(provenance, Mapping):
+        return False, "invalid_provenance"
+    if isinstance(provenance, Mapping) and (
+        provenance.get("provider_invoked") or provenance.get("external_invoked")
+    ):
+        return False, "live_invocation_claim_present"
+    return True, "ok"
+
+
+def build_l2_conclusions(
+    plan: Mapping[str, Any] | None = None,
+    *,
+    as_of: str | None = None,
+) -> dict[str, ConclusionObject]:
+    normalized_as_of = _as_of(
+        as_of
+        or (str(plan.get("as_of")) if isinstance(plan, Mapping) and plan.get("as_of") else None)
+    )
+    return {
+        agent_id: build_pending_conclusion(
+            agent_id,
+            AGENT_DIMENSIONS[agent_id],
+            as_of=normalized_as_of,
+            reason="Business agent implementation is pending in Phase R2.",
+        )
+        for agent_id in L2_CONCLUSION_AGENT_IDS
     }
 
 
-def build_l2_conclusions() -> dict[str, ConclusionObject]:
-    conclusions: dict[str, ConclusionObject] = {}
-    for agent_id in L2_CONCLUSION_AGENT_IDS:
-        item: ConclusionObject = {
-            "schema": "conclusion_object_v1",
-            "agent_id": agent_id,
-            "stance": "not_evaluated",
-            "confidence": 0.0,
-            "status": "pending_implementation",
-            "evidence": [],
-            "as_of": "not_available",
-            "data_as_of": "not_available",
-        }
-        if agent_id == "sentiment_company_radar":
-            item["output_routes"] = list(SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES)
-        conclusions[agent_id] = item
-    return conclusions
+def _build_dimension_composite(
+    dimension: DimensionName,
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str,
+) -> DimensionCompositeResult:
+    result: DimensionCompositeResult = {
+        "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "agent_id": DIMENSION_COMPOSITE_AGENT_IDS[dimension],
+        "dimension": dimension,
+        "stance": "not_evaluated",
+        "confidence": 0.0,
+        "status": _status_for_expected(expected_agent_ids, conclusions),
+        "contributing_agents": list(expected_agent_ids),
+        "evidence_refs": [],
+        "as_of": as_of,
+        "data_as_of": _data_as_of_for(as_of),
+    }
+    if dimension in {"value", "market"}:
+        result["vote_type"] = "direction_vote_placeholder"
+    if dimension == "risk":
+        result.update(
+            {
+                "gate": "not_evaluated",
+                "veto": False,
+                "penalty": 0.0,
+                "risk_score": 0.0,
+            }
+        )
+    if dimension == "macro":
+        result.update(
+            {
+                "regime": "not_evaluated",
+                "dimension_weights": {
+                    "market": 0.25,
+                    "value": 0.35,
+                    "risk": 0.25,
+                    "macro": 0.15,
+                },
+                "risk_sensitivity": "not_evaluated",
+            }
+        )
+    return result
+
+
+def build_value_composite(
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str,
+) -> DimensionCompositeResult:
+    return _build_dimension_composite("value", VALUE_AGENT_IDS, conclusions, as_of=as_of)
+
+
+def build_market_composite(
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str,
+) -> DimensionCompositeResult:
+    return _build_dimension_composite("market", MARKET_AGENT_IDS, conclusions, as_of=as_of)
+
+
+def build_risk_composite(
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str,
+) -> DimensionCompositeResult:
+    risk_only = {
+        agent_id: conclusions[agent_id]
+        for agent_id in RISK_AGENT_IDS
+        if agent_id in conclusions
+    }
+    return _build_dimension_composite("risk", RISK_AGENT_IDS, risk_only, as_of=as_of)
+
+
+def build_macro_composite(
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str,
+) -> DimensionCompositeResult:
+    return _build_dimension_composite("macro", MACRO_AGENT_IDS, conclusions, as_of=as_of)
+
+
+def validate_dimension_composite_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != DIMENSION_COMPOSITE_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    dimension = str(obj.get("dimension") or "")
+    if dimension not in DIMENSION_GROUPS:
+        return False, "invalid_dimension"
+    if obj.get("agent_id") != DIMENSION_COMPOSITE_AGENT_IDS[dimension]:
+        return False, "agent_dimension_mismatch"
+    if list(obj.get("contributing_agents", [])) != list(DIMENSION_GROUPS[dimension]):
+        return False, "contributing_agents_mismatch"
+    if dimension == "risk" and "sentiment_company_radar" in obj.get("contributing_agents", []):
+        return False, "risk_reads_sentiment"
+    try:
+        confidence = float(obj.get("confidence"))
+    except (TypeError, ValueError):
+        return False, "invalid_confidence"
+    if not 0.0 <= confidence <= 1.0:
+        return False, "confidence_out_of_range"
+    if not _data_not_after(obj.get("data_as_of"), obj.get("as_of")):
+        return False, "data_as_of_after_as_of"
+    if dimension == "risk":
+        for field in ("gate", "veto", "penalty", "risk_score"):
+            if field not in obj:
+                return False, f"missing_{field}"
+    if dimension == "macro":
+        for field in ("regime", "dimension_weights", "risk_sensitivity"):
+            if field not in obj:
+                return False, f"missing_{field}"
+    return True, "ok"
 
 
 def build_dimension_results(
-    l2_conclusions: dict[str, ConclusionObject],
+    l2_conclusions: Mapping[str, dict[str, Any]],
+    *,
+    as_of: str | None = None,
 ) -> dict[str, DimensionCompositeResult]:
-    del l2_conclusions
-    results: dict[str, DimensionCompositeResult] = {}
-    for dimension, agent_ids in DIMENSION_GROUPS.items():
-        result: DimensionCompositeResult = {
-            "schema": "dimension_composite_result_v1",
-            "dimension": dimension,
-            "stance": "not_evaluated",
-            "confidence": 0.0,
-            "status": "pending_implementation",
-            "contributing_agents": list(agent_ids),
-            "evidence_refs": [],
-        }
-        if dimension == "risk":
-            result.update({"gate": "not_evaluated", "veto": False, "penalty": 0.0})
-        if dimension == "macro":
-            result.update(
-                {
-                    "dimension_weights": {
-                        "market": 0.25,
-                        "value": 0.35,
-                        "risk": 0.25,
-                        "macro": 0.15,
-                    },
-                    "risk_sensitivity": "not_evaluated",
-                }
-            )
-        results[dimension] = result
-    return results
-
-
-def build_decision_result() -> DecisionResult:
+    normalized_as_of = _as_of(as_of)
     return {
-        "schema": "decision_result_v1",
-        "decision": "pending_implementation",
-        "score": None,
-        "target_price_range": {"low": None, "mid": None, "high": None},
-        "reasoning_trace": [
-            "Phase R1-B only verifies the fixed DAG runtime skeleton.",
-            "No provider, external agent, or live market data source was invoked.",
-        ],
-        "status": "pending_implementation",
+        "value": build_value_composite(l2_conclusions, as_of=normalized_as_of),
+        "market": build_market_composite(l2_conclusions, as_of=normalized_as_of),
+        "risk": build_risk_composite(l2_conclusions, as_of=normalized_as_of),
+        "macro": build_macro_composite(l2_conclusions, as_of=normalized_as_of),
     }
 
 
-def build_report_result(question: str, decision: DecisionResult) -> ReportResult:
-    del decision
+def build_decision_result(
+    dimension_results: Mapping[str, dict[str, Any]] | None = None,
+    *,
+    as_of: str | None = None,
+) -> DecisionResult:
+    dimension_results = dimension_results or {}
+    normalized_as_of = _as_of(as_of)
+    risk = dimension_results.get("risk", {})
+    risk_veto = bool(risk.get("veto")) if isinstance(risk, Mapping) else False
+    decision = "conservative_pending" if risk_veto else "pending_implementation"
+    score = -0.25 if risk_veto else 0.0
+    return {
+        "schema": DECISION_RESULT_SCHEMA_VERSION,
+        "schema_version": DECISION_RESULT_SCHEMA_VERSION,
+        "decision": decision,
+        "score": score,
+        "target_price_range": {"low": None, "mid": None, "high": None},
+        "dimension_views": {
+            dimension: {
+                "stance": result.get("stance", "not_evaluated"),
+                "confidence": result.get("confidence", 0.0),
+                "status": result.get("status", "pending_implementation"),
+            }
+            for dimension, result in dimension_results.items()
+            if isinstance(result, Mapping)
+        },
+        "reasoning_trace": [
+            {
+                "stage": "dimension_induction",
+                "summary": "Dimension composites remain deterministic placeholders.",
+            },
+            {
+                "stage": "macro_risk_adjustment",
+                "summary": "Macro and risk seams can adjust later business decisions.",
+            },
+            {
+                "stage": "conflict_resolution",
+                "summary": "No live business conflict resolution is implemented in Phase R2.",
+            },
+        ],
+        "confidence": 0.0,
+        "status": "pending_implementation",
+        "as_of": normalized_as_of,
+    }
+
+
+def validate_decision_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != DECISION_RESULT_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if obj.get("schema_version", DECISION_RESULT_SCHEMA_VERSION) != DECISION_RESULT_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    try:
+        score = float(obj.get("score"))
+    except (TypeError, ValueError):
+        return False, "invalid_score"
+    if not -1.0 <= score <= 1.0:
+        return False, "score_out_of_range"
+    target_range = obj.get("target_price_range")
+    if not isinstance(target_range, Mapping):
+        return False, "target_price_range_missing"
+    if set(target_range) != {"low", "mid", "high"}:
+        return False, "target_price_range_keys_mismatch"
+    if not isinstance(obj.get("dimension_views"), Mapping):
+        return False, "dimension_views_missing"
+    try:
+        confidence = float(obj.get("confidence"))
+    except (TypeError, ValueError):
+        return False, "invalid_confidence"
+    if not 0.0 <= confidence <= 1.0:
+        return False, "confidence_out_of_range"
+    trace = obj.get("reasoning_trace")
+    if not isinstance(trace, list) or len(trace) < 3:
+        return False, "reasoning_trace_too_short"
+    stages = {
+        str(item.get("stage"))
+        for item in trace
+        if isinstance(item, Mapping) and item.get("stage")
+    }
+    required = {"dimension_induction", "macro_risk_adjustment", "conflict_resolution"}
+    if not required <= stages:
+        return False, "reasoning_trace_stage_missing"
+    if str(obj.get("decision")) == "strong_buy" and score > 0.5:
+        return False, "unsupported_strong_positive_decision"
+    return True, "ok"
+
+
+def build_report_result(
+    decision_result: Mapping[str, Any],
+    *,
+    question: str = "",
+) -> ReportResult:
+    del decision_result
     answer = (
-        "Fixed DAG reset skeleton is active. This response is a deterministic "
-        "Phase R1-B placeholder, not a live investment analysis. No provider, "
-        "search service, or external /v1/agent/invoke endpoint was called. "
-        "L1 evidence seams, L2 conclusion agents, L3 dimension composites, "
-        "the decision synthesizer, and the report generator are present as "
-        "protocol placeholders pending business implementation."
+        "Fixed DAG reset skeleton is active. This Phase R2 response is produced "
+        "from deterministic contract and function seams, not from live business "
+        "agent algorithms. No provider, search service, or external "
+        "/v1/agent/invoke endpoint was called."
     )
     if question:
         answer = f"{answer}\n\nReceived question: {question}"
     return {
-        "schema": "report_result_v1",
+        "schema": REPORT_RESULT_SCHEMA_VERSION,
+        "schema_version": REPORT_RESULT_SCHEMA_VERSION,
         "title": "Fixed DAG Reset Skeleton",
         "answer": answer,
         "status": "pending_implementation",
@@ -415,34 +878,117 @@ def build_report_result(question: str, decision: DecisionResult) -> ReportResult
                 "id": "runtime_scope",
                 "title": "Runtime scope",
                 "content": "Reset skeleton only; no live external execution.",
+            },
+            {
+                "id": "implementation_status",
+                "title": "Implementation status",
+                "content": "Business agent algorithms remain pending.",
+            },
+        ],
+        "evidence_cards": [
+            {
+                "title": "Reset runtime scope",
+                "note": "Deterministic fixed DAG skeleton; business agents are placeholders.",
             }
         ],
         "limitations": [
-            "External service readiness is not verified.",
-            "Business agent algorithms are not implemented in Phase R1-B.",
+            "Business agent algorithms are not implemented in Phase R2.",
+            "Provider readiness was not verified.",
+            "External service readiness was not verified.",
             "Frontend workflow v2 polish remains a later reset phase.",
         ],
     }
 
 
+def validate_report_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != REPORT_RESULT_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if obj.get("schema_version", REPORT_RESULT_SCHEMA_VERSION) != REPORT_RESULT_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    answer = str(obj.get("answer") or "")
+    if not answer:
+        return False, "answer_missing"
+    if "No provider" not in answer or "external /v1/agent/invoke" not in answer:
+        return False, "reset_limitation_missing"
+    if not isinstance(obj.get("sections"), list):
+        return False, "sections_missing"
+    if not isinstance(obj.get("evidence_cards"), list):
+        return False, "evidence_cards_missing"
+    limitations = obj.get("limitations")
+    if not isinstance(limitations, list) or not limitations:
+        return False, "limitations_missing"
+    forbidden_claims = ("provider verified", "external service verified", "live analysis complete")
+    lowered = answer.lower()
+    if any(claim in lowered for claim in forbidden_claims):
+        return False, "live_claim_present"
+    return True, "ok"
+
+
+def _completed_from_payloads(
+    plan: Mapping[str, Any],
+    *,
+    l2_conclusions: Mapping[str, Any] | None,
+    dimension_results: Mapping[str, Any] | None,
+    decision_result: Mapping[str, Any] | None,
+    report_result: Mapping[str, Any] | None,
+) -> list[str]:
+    completed: list[str] = ["route_planner"]
+    if plan.get("schema") == FIXED_DAG_SCHEMA_VERSION:
+        completed.extend(
+            step["id"]
+            for step in plan.get("steps", [])
+            if isinstance(step, Mapping) and step.get("stage") == "evidence"
+        )
+    if l2_conclusions:
+        completed.extend(
+            f"l2:{agent_id}"
+            for agent_id in L2_CONCLUSION_AGENT_IDS
+            if agent_id in l2_conclusions
+        )
+    if dimension_results:
+        completed.extend(
+            f"dimension:{dimension}"
+            for dimension in DIMENSION_GROUPS
+            if dimension in dimension_results
+        )
+    if decision_result:
+        completed.append("decision_synthesizer")
+    if report_result:
+        completed.append("report_generator")
+    return list(dict.fromkeys(completed))
+
+
 def build_workflow_snapshot_v2(
     *,
-    plan: FixedDagPlan,
-    current_stage: FixedDagStage,
-    completed_steps: list[str],
-    dimension_results: dict[str, DimensionCompositeResult] | None = None,
+    plan: Mapping[str, Any],
+    l2_conclusions: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+    report_result: Mapping[str, Any] | None = None,
+    current_stage: FixedDagStage | None = None,
+    completed_steps: list[str] | None = None,
 ) -> dict[str, Any]:
+    normalized_plan = normalize_fixed_dag_plan(plan)
     dimension_results = dimension_results or {}
+    completed = completed_steps or _completed_from_payloads(
+        normalized_plan,
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+        report_result=report_result,
+    )
+    stage = current_stage or ("report" if report_result else "planning")
     return {
         "schema": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
-        "planId": plan["plan_id"],
+        "schemaVersion": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
+        "planId": normalized_plan["plan_id"],
         "stages": [
             {
-                "key": stage["id"],
-                "title": stage["title"],
-                "stepIds": stage["step_ids"],
+                "key": item["id"],
+                "title": item["title"],
+                "stepIds": item["step_ids"],
             }
-            for stage in plan["stages"]
+            for item in normalized_plan["stages"]
         ],
         "dagSteps": [
             {
@@ -452,11 +998,9 @@ def build_workflow_snapshot_v2(
                 "dimension": step.get("dimension"),
                 "title": step["title"],
                 "summary": step["description"],
-                "status": "complete"
-                if step["id"] in completed_steps
-                else step["status"],
+                "status": "complete" if step["id"] in completed else step["status"],
             }
-            for step in plan["steps"]
+            for step in normalized_plan["steps"]
         ],
         "dimensionGroups": [
             {
@@ -465,17 +1009,96 @@ def build_workflow_snapshot_v2(
                 "stepIds": [f"dimension:{dimension}"],
                 "status": dimension_results.get(dimension, {}).get(
                     "status", "pending_implementation"
-                ),
+                )
+                if isinstance(dimension_results.get(dimension), Mapping)
+                else "pending_implementation",
                 "summary": "Deterministic reset skeleton composite.",
             }
             for dimension in DIMENSION_GROUPS
         ],
-        "currentStage": current_stage,
-        "completedSteps": completed_steps,
+        "currentStage": stage,
+        "completedSteps": completed,
         "provenance": {
-            "source": "reset_skeleton",
+            "source": RESET_SOURCE,
             "providerInvoked": False,
             "externalInvoked": False,
         },
-        "finalSource": "reset_skeleton",
+        "finalSource": RESET_SOURCE,
+    }
+
+
+def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
+    if obj.get("schema") != WORKFLOW_SNAPSHOT_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if _contains_legacy_key(obj):
+        return False, "legacy_public_field_present"
+    if obj.get("finalSource") != RESET_SOURCE:
+        return False, "invalid_final_source"
+    for field in (
+        "planId",
+        "stages",
+        "dagSteps",
+        "dimensionGroups",
+        "currentStage",
+        "completedSteps",
+        "provenance",
+    ):
+        if field not in obj:
+            return False, f"missing_{field}"
+    provenance = obj.get("provenance", {})
+    if not isinstance(provenance, Mapping):
+        return False, "invalid_provenance"
+    if provenance.get("providerInvoked") or provenance.get("externalInvoked"):
+        return False, "live_invocation_claim_present"
+    dag_steps = obj.get("dagSteps")
+    completed = obj.get("completedSteps")
+    if not isinstance(dag_steps, list) or not isinstance(completed, list):
+        return False, "invalid_steps"
+    known_step_ids = {
+        item.get("id")
+        for item in dag_steps
+        if isinstance(item, Mapping) and item.get("id")
+    }
+    if not set(completed) <= known_step_ids:
+        return False, "completed_steps_unknown"
+    return True, "ok"
+
+
+def build_final_emit_payload(report_result: Mapping[str, Any]) -> dict[str, Any]:
+    answer = str(report_result.get("answer") or "").strip()
+    if not answer:
+        answer = "Fixed DAG reset skeleton completed without a report body."
+    return {"source": RESET_SOURCE, "status": "complete", "answer": answer}
+
+
+def build_emitted_bundle(report_result: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "answer": str(report_result.get("answer") or ""),
+        "summary_source": RESET_SOURCE,
+        "confidence": 0.0,
+        "evidence_cards": list(report_result.get("evidence_cards", []) or []),
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+
+
+def build_reset_multi_agent_bundle(
+    *,
+    fixed_dag_plan: Mapping[str, Any],
+    data_bundle: Mapping[str, Any],
+    entity_relation_bundle: Mapping[str, Any],
+    l2_conclusions: Mapping[str, Any],
+    dimension_results: Mapping[str, Any],
+    decision_result: Mapping[str, Any],
+    report_result: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "schema": "fixed_dag_reset_bundle_v1",
+        "fixed_dag_plan": dict(fixed_dag_plan),
+        "data_bundle": dict(data_bundle),
+        "entity_relation_bundle": dict(entity_relation_bundle),
+        "l2_conclusions": dict(l2_conclusions),
+        "dimension_results": dict(dimension_results),
+        "decision_result": dict(decision_result),
+        "report_result": dict(report_result),
     }

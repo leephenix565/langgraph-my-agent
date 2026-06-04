@@ -8,9 +8,9 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R1-B Boundary
+## Current R2 Boundary
 
-The Python public adapter now emits `workflow_snapshot_v2` with:
+The Python public adapter emits `workflow_snapshot_v2` with:
 
 - `stages`
 - `dagSteps`
@@ -23,6 +23,9 @@ The Python public adapter now emits `workflow_snapshot_v2` with:
 The existing `apps/web` shell is retained. Its full workflow inspector rewrite
 is deferred to R5, so frontend code may still contain old mock/UI labels until
 that phase.
+
+R2 hardens the backend workflow payload construction through
+`fixed_dag_contracts.py`. It does not rewrite the frontend workflow UI or types.
 
 The workflow inspector target should treat the reset roster as 27 formal agents
 (L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
@@ -64,6 +67,7 @@ approves a separate app. Do not create a second public transcript model.
 - DAG progress timeline
 - dimension-level status panels
 - report evidence view
+- alignment of frontend mocks with the full 27-agent DAG snapshot
 - production auth and rate limits
 - persistent run history
 - deployment hardening

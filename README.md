@@ -4,14 +4,15 @@ This branch is the Fixed DAG reset branch. It replaces the old route-mode,
 Router-SFT, route-prior, A01 contract dispatch, and Fair Fusion mainline with a
 smaller deterministic fixed-DAG runtime skeleton.
 
-Phase R1-B has landed the active reset skeleton. It is not a completed business
-analysis engine.
+Phase R2 has hardened the active reset skeleton with explicit contracts,
+validators, normalizers, and deterministic function seams. It is not a
+completed business analysis engine.
 
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R1-B-Delta fixed DAG roster alignment.
+- Current phase: R2 contract and function seam hardening.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public web shell: retained for later in-place frontend v2 migration.
@@ -55,6 +56,8 @@ See `docs/ARCHITECTURE_FIXED_DAG.md` for the current skeleton map.
 ## Current Runtime Boundary
 
 R1-B changes the active graph and Python public workflow adapter:
+R2 keeps that graph deterministic and routes graph/public fallback construction
+through `src/react_agent/fixed_dag_contracts.py` contract/function seams:
 
 - `src/react_agent/fixed_dag_contracts.py`
 - `src/react_agent/graph.py`
@@ -68,7 +71,7 @@ R1-B changes the active graph and Python public workflow adapter:
 
 The external HTTP wrapper infrastructure and baseline sidecar module remain in
 the repository, but they are not connected to the active reset graph. Existing
-`config/agents/*.json` remains until the catalog/runtime registry phase.
+`config/agents/*.json` remains until the R4 catalog/runtime registry phase.
 
 ## Public Transcript Boundary
 
@@ -76,9 +79,10 @@ The product keeps a single assistant transcript. Internal graph steps, raw graph
 messages, manager assignments, agent JSON, and provider raw responses must not
 be treated as public transcript content.
 
-The workflow inspector is a diagnostic panel. The Python public adapter now
-projects DAG stages, steps, dimensions, provenance, and final source as
-`workflow_snapshot_v2`. The current web UI still needs its R5 workflow rewrite.
+The workflow inspector is a diagnostic panel. The Python public adapter projects
+DAG stages, steps, dimensions, provenance, and final source as
+`workflow_snapshot_v2` through reset contract seams. The current web UI still
+needs its R5 workflow rewrite.
 
 ## Documentation Index
 
@@ -107,9 +111,10 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R1-B.
-- No `external /v1/agent/invoke` call is part of R1-B validation.
-- No demo stack startup is part of R1-B validation.
-- No real business algorithms for individual agents are implemented in R1-B.
-- No frontend v2 rewrite is complete in R1-B.
+- No provider or live external service was verified by R2.
+- No `external /v1/agent/invoke` call is part of R2 validation.
+- No demo stack startup is part of R2 validation.
+- No real business algorithms for individual agents are implemented in R2.
+- No frontend v2 rewrite is complete in R2.
+- No mainline or fusion-gate reset quality gate is rebuilt in R2.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

@@ -19,11 +19,14 @@ from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_decision_result,
-    build_deterministic_fixed_dag_plan,
+    build_default_fixed_dag_plan,
     build_dimension_results,
+    build_emitted_bundle,
     build_entity_relation_bundle,
+    build_final_emit_payload,
     build_l2_conclusions,
     build_report_result,
+    build_reset_multi_agent_bundle,
     build_workflow_snapshot_v2,
 )
 from react_agent.graph_bootstrap import bootstrap_agent_runtime, build_node_registry
@@ -85,7 +88,7 @@ def _completed_from_stage(plan: dict[str, Any], stage_key: str) -> list[str]:
 
 def route_planner_node(state: State) -> dict[str, Any]:
     question = _latest_user_question(state)
-    plan = build_deterministic_fixed_dag_plan(question)
+    plan = build_default_fixed_dag_plan(question)
     completed = _completed_from_stage(plan, "planning")
     return {
         "run_id": str(state.get("run_id") or uuid.uuid4()),
@@ -102,15 +105,14 @@ def route_planner_node(state: State) -> dict[str, Any]:
 
 
 def prepare_l1_context_node(state: State) -> dict[str, Any]:
-    question = str(state.get("current_question", "") or "")
     plan = state["fixed_dag_plan"]
     completed = [
         *_completed_from_stage(plan, "planning"),
         *_completed_from_stage(plan, "evidence"),
     ]
     return {
-        "entity_relation_bundle": build_entity_relation_bundle(question),
-        "data_bundle": build_data_bundle(),
+        "entity_relation_bundle": build_entity_relation_bundle(plan),
+        "data_bundle": build_data_bundle(plan),
         "workflow_snapshot": build_workflow_snapshot_v2(
             plan=plan,
             current_stage="evidence",
@@ -127,7 +129,7 @@ def run_l2_conclusions_node(state: State) -> dict[str, Any]:
         *_completed_from_stage(plan, "evidence"),
         *_completed_from_stage(plan, "l2_analysis"),
     ]
-    conclusions = build_l2_conclusions()
+    conclusions = build_l2_conclusions(plan)
     return {
         "l2_conclusions": conclusions,
         "workflow_snapshot": build_workflow_snapshot_v2(
@@ -142,7 +144,7 @@ def run_l2_conclusions_node(state: State) -> dict[str, Any]:
 def run_dimension_composites_node(state: State) -> dict[str, Any]:
     plan = state["fixed_dag_plan"]
     conclusions = state.get("l2_conclusions", {})
-    dimension_results = build_dimension_results(conclusions)
+    dimension_results = build_dimension_results(conclusions, as_of=plan.get("as_of"))
     completed = [
         *_completed_from_stage(plan, "planning"),
         *_completed_from_stage(plan, "evidence"),
@@ -171,7 +173,7 @@ def decision_synthesizer_node(state: State) -> dict[str, Any]:
         *_completed_from_stage(plan, "dimension_composite"),
         *_completed_from_stage(plan, "decision"),
     ]
-    decision = build_decision_result()
+    decision = build_decision_result(dimension_results, as_of=plan.get("as_of"))
     return {
         "decision_result": decision,
         "workflow_snapshot": build_workflow_snapshot_v2(
@@ -187,7 +189,7 @@ def decision_synthesizer_node(state: State) -> dict[str, Any]:
 def report_generator_node(state: State) -> dict[str, Any]:
     plan = state["fixed_dag_plan"]
     dimension_results = state.get("dimension_results", {})
-    decision = state.get("decision_result", build_decision_result())
+    decision = state.get("decision_result", build_decision_result(dimension_results))
     completed = [
         *_completed_from_stage(plan, "planning"),
         *_completed_from_stage(plan, "evidence"),
@@ -196,7 +198,10 @@ def report_generator_node(state: State) -> dict[str, Any]:
         *_completed_from_stage(plan, "decision"),
         *_completed_from_stage(plan, "report"),
     ]
-    report = build_report_result(str(state.get("current_question", "") or ""), decision)
+    report = build_report_result(
+        decision,
+        question=str(state.get("current_question", "") or ""),
+    )
     return {
         "report_result": report,
         "workflow_snapshot": build_workflow_snapshot_v2(
@@ -217,36 +222,19 @@ def final_emit_node(state: State) -> dict[str, Any]:
             "Fixed DAG reset skeleton completed without a report body. No provider "
             "or external agent endpoint was invoked."
         )
-    emitted_bundle = {
-        "answer": answer,
-        "summary_source": "reset_skeleton",
-        "confidence": 0.0,
-        "evidence_cards": [
-            {
-                "title": "Reset runtime scope",
-                "note": "Deterministic fixed DAG skeleton; business agents are placeholders.",
-            }
-        ],
-        "provider_invoked": False,
-        "external_invoked": False,
-    }
+    report = {**report, "answer": answer}
     return {
-        "final_emit_payload": {
-            "source": "reset_skeleton",
-            "status": "complete",
-            "answer": answer,
-        },
-        "emitted_bundle": emitted_bundle,
-        "multi_agent_bundle": {
-            "schema": "fixed_dag_reset_bundle_v1",
-            "fixed_dag_plan": state.get("fixed_dag_plan", {}),
-            "data_bundle": state.get("data_bundle", {}),
-            "entity_relation_bundle": state.get("entity_relation_bundle", {}),
-            "l2_conclusions": state.get("l2_conclusions", {}),
-            "dimension_results": state.get("dimension_results", {}),
-            "decision_result": state.get("decision_result", {}),
-            "report_result": report,
-        },
+        "final_emit_payload": build_final_emit_payload(report),
+        "emitted_bundle": build_emitted_bundle(report),
+        "multi_agent_bundle": build_reset_multi_agent_bundle(
+            fixed_dag_plan=state.get("fixed_dag_plan", {}),
+            data_bundle=state.get("data_bundle", {}),
+            entity_relation_bundle=state.get("entity_relation_bundle", {}),
+            l2_conclusions=state.get("l2_conclusions", {}),
+            dimension_results=state.get("dimension_results", {}),
+            decision_result=state.get("decision_result", {}),
+            report_result=report,
+        ),
         "final_answer_source": "reset_skeleton",
         "messages": [AIMessage(content=answer)],
         "is_last_step": True,

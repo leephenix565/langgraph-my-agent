@@ -10,7 +10,10 @@ from typing import Any, Iterable, List, Sequence
 from urllib.parse import urlparse
 
 from react_agent.agents import AGENT_METADATA, load_metadata_from_dir
-from react_agent.fixed_dag_contracts import build_deterministic_fixed_dag_plan
+from react_agent.fixed_dag_contracts import (
+    build_default_fixed_dag_plan,
+    build_workflow_snapshot_v2,
+)
 from react_agent.public_contracts import (
     AnswerCardModel,
     ChatSessionSummary,
@@ -245,36 +248,22 @@ def _workflow_snapshot_dict(state: dict[str, Any]) -> dict[str, Any]:
         return raw
     plan = state.get("fixed_dag_plan")
     if not isinstance(plan, dict):
-        plan = build_deterministic_fixed_dag_plan(_coerce_str(state.get("current_question")))
-    return {
-        "schema": "workflow_snapshot_v2",
-        "planId": plan.get("plan_id", "reset-fixed-dag-plan-v1"),
-        "stages": [
-            {"key": item.get("id"), "title": item.get("title"), "stepIds": item.get("step_ids", [])}
-            for item in plan.get("stages", [])
-        ],
-        "dagSteps": [
-            {
-                "id": step.get("id"),
-                "stage": step.get("stage"),
-                "agentId": step.get("agent_id"),
-                "dimension": step.get("dimension"),
-                "title": step.get("title") or _agent_title(_coerce_str(step.get("agent_id"))),
-                "summary": step.get("description", ""),
-                "status": step.get("status", "pending_implementation"),
-            }
-            for step in plan.get("steps", [])
-        ],
-        "dimensionGroups": [],
-        "currentStage": "planning",
-        "completedSteps": [],
-        "provenance": {
-            "source": "reset_skeleton",
-            "providerInvoked": False,
-            "externalInvoked": False,
-        },
-        "finalSource": "reset_skeleton",
-    }
+        plan = build_default_fixed_dag_plan(_coerce_str(state.get("current_question")))
+    return build_workflow_snapshot_v2(
+        plan=plan,
+        l2_conclusions=state.get("l2_conclusions")
+        if isinstance(state.get("l2_conclusions"), dict)
+        else None,
+        dimension_results=state.get("dimension_results")
+        if isinstance(state.get("dimension_results"), dict)
+        else None,
+        decision_result=state.get("decision_result")
+        if isinstance(state.get("decision_result"), dict)
+        else None,
+        report_result=state.get("report_result")
+        if isinstance(state.get("report_result"), dict)
+        else None,
+    )
 
 
 def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMode) -> WorkflowModel:

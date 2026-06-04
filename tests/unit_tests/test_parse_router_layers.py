@@ -4,6 +4,7 @@ from react_agent.fixed_dag_contracts import (
     FIXED_DAG_SCHEMA_VERSION,
     RESET_RUNTIME_AGENT_IDS,
     build_deterministic_fixed_dag_plan,
+    validate_fixed_dag_plan,
 )
 from react_agent.router_parse import parse_fixed_dag_plan_with_stats
 
@@ -15,6 +16,11 @@ def test_parse_with_extra_text_preserves_plan_id() -> None:
     assert stats["used_fallback"] is False
     assert plan["plan_id"] == "custom"
     assert plan["schema"] == FIXED_DAG_SCHEMA_VERSION
+    assert plan["schema_version"] == FIXED_DAG_SCHEMA_VERSION
+    assert plan["target"] == list(RESET_RUNTIME_AGENT_IDS)
+    assert plan["dag_steps"] == plan["steps"]
+    valid, reason = validate_fixed_dag_plan(plan)
+    assert valid, reason
 
 
 def test_parse_invalid_json_falls_back_to_deterministic_plan() -> None:
@@ -39,6 +45,8 @@ def test_parse_filters_unknown_agents_and_restores_full_reset_targets() -> None:
     assert "route_planner" not in stats["filtered_agents"]
     assert "route_planner" in plan["target_agent_ids"]
     assert plan["target_agent_ids"] == list(RESET_RUNTIME_AGENT_IDS)
+    valid, reason = validate_fixed_dag_plan(plan)
+    assert valid, reason
 
 
 def test_fixed_dag_plan_has_no_mode_or_layer_dispatch_fields() -> None:

@@ -1,7 +1,8 @@
 # Fixed DAG Architecture
 
-This document describes the active Phase R1-B reset skeleton. The skeleton is
-deterministic and provider-free. It is not a completed business analysis engine.
+This document describes the active Phase R2 reset skeleton. The skeleton is
+deterministic, provider-free, and backed by explicit contract/function seams. It
+is not a completed business analysis engine.
 
 ## Active Skeleton Flow
 
@@ -66,10 +67,15 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 ## Execution Principles
 
 - The DAG executor is infrastructure and is not counted as a target id.
-- L1 prepares the plan, entity/relation bundle, and financial data bundle.
-- L2 produces normalized conclusion objects.
-- L3 produces deterministic dimension composite placeholders.
-- L4 produces a deterministic decision placeholder and report placeholder.
+- L1 prepares the plan, entity/relation bundle, and financial data bundle through
+  deterministic constructors and validators.
+- L2 produces normalized pending conclusion objects with `as_of`, `data_as_of`,
+  optional generic `event_flags`, and no live invocation claims.
+- L3 produces deterministic dimension composite placeholders. Value and market
+  are direction-vote seams, risk is a gate seam, and macro is a regulator seam.
+- L4 produces deterministic decision and report placeholders with stable fields.
 - Public output remains a single assistant answer.
-- R1-B placeholders use `status=pending_implementation` until real business
+- R2 placeholders use `status=pending_implementation` until real business
   implementations replace them.
+- R4 owns catalog/runtime registry replacement, R5 owns frontend workflow UI,
+  and R6 owns mainline/fusion-gate rebuild.

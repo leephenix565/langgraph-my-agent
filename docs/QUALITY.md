@@ -2,7 +2,7 @@
 
 This document defines safe validation for the reset branch.
 
-## Safe R1-B / R1-B-Delta Commands
+## Safe R2 Commands
 
 ```powershell
 git status --short --branch
@@ -15,9 +15,9 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-## Not Safe For R1-B
+## Not Safe For R2
 
-Do not run during R1-B unless the user explicitly asks:
+Do not run during R2 unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -40,7 +40,7 @@ used as Fixed DAG gate claims.
 Passing safe commands means the deterministic fixed-DAG protocol skeleton
 imports, parses, invokes without provider/external calls, exposes
 `workflow_snapshot_v2`, preserves public transcript safety, and keeps the
-R1-B-Delta 27-agent roster aligned in reset docs/tests.
+R2 contract/function seams and 27-agent roster aligned in reset docs/tests.
 
 It does not mean:
 
@@ -49,4 +49,5 @@ It does not mean:
 - live market-data correctness
 - real business-agent correctness
 - frontend v2 completion
+- mainline/fusion-gate reset gate completion
 - production deployment readiness

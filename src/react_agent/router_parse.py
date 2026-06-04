@@ -11,7 +11,9 @@ from typing import Any
 from react_agent.fixed_dag_contracts import (
     FIXED_DAG_SCHEMA_VERSION,
     RESET_RUNTIME_AGENT_IDS,
-    build_deterministic_fixed_dag_plan,
+    build_default_fixed_dag_plan,
+    normalize_fixed_dag_plan,
+    validate_fixed_dag_plan,
 )
 
 _JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
@@ -54,7 +56,7 @@ def parse_fixed_dag_plan_with_stats(
     user_text: str = "",
 ) -> tuple[dict[str, Any], dict[str, Any]]:
     """Parse a fixed DAG plan and fail-soft to the deterministic reset plan."""
-    fallback = build_deterministic_fixed_dag_plan(user_text)
+    fallback = build_default_fixed_dag_plan(user_text)
     extracted = extract_json_str(raw)
     if not extracted:
         return fallback, {
@@ -85,18 +87,42 @@ def parse_fixed_dag_plan_with_stats(
             "filtered_agents": [],
         }
 
+    if parsed.get("schema") != FIXED_DAG_SCHEMA_VERSION:
+        return fallback, {
+            "schema": FIXED_DAG_SCHEMA_VERSION,
+            "parse_ok": False,
+            "used_fallback": True,
+            "fallback_reason": "invalid_schema",
+            "filtered_agents": [],
+        }
+
     target_agent_ids, filtered_agents = _normalize_agent_ids(
         parsed.get("target_agent_ids")
     )
-    plan = dict(fallback)
-    if isinstance(parsed.get("plan_id"), str) and parsed["plan_id"].strip():
-        plan["plan_id"] = parsed["plan_id"].strip()
+    plan = normalize_fixed_dag_plan(
+        {
+            **parsed,
+            "user_text": user_text,
+            "target_agent_ids": target_agent_ids,
+            "target": target_agent_ids,
+        }
+    )
     plan["target_agent_ids"] = target_agent_ids
+    plan["target"] = target_agent_ids
     plan["provenance"] = {
         **fallback["provenance"],
         "source": "parsed_fixed_dag_plan",
         "parser_filtered_agents": filtered_agents,
     }
+    valid, reason = validate_fixed_dag_plan(plan)
+    if not valid:
+        return fallback, {
+            "schema": FIXED_DAG_SCHEMA_VERSION,
+            "parse_ok": False,
+            "used_fallback": True,
+            "fallback_reason": f"validation_error:{reason}",
+            "filtered_agents": filtered_agents,
+        }
     return plan, {
         "schema": FIXED_DAG_SCHEMA_VERSION,
         "parse_ok": True,
