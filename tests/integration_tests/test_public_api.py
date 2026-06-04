@@ -81,6 +81,21 @@ def _workflow(continuity_mode: str = "replay") -> WorkflowModel:
         ],
         currentStage="report",
         completedSteps=["route_planner"],
+        executionBatches=[["route_planner"]],
+        stepResults={
+            "route_planner": {
+                "schema_version": "fixed_dag_step_result_v1",
+                "step_id": "route_planner",
+                "agent_id": "route_planner",
+                "stage": "planning",
+                "dimension": "l1",
+                "status": "complete",
+                "depends_on": [],
+                "output_ref": "fixed_dag_plan",
+                "summary": "Fixed DAG planning completed.",
+                "warnings": [],
+            }
+        },
         finalSource="reset_skeleton",
         provenanceNote="Fixed DAG reset skeleton emitted the public answer.",
         provenance=WorkflowProvenanceModel(
@@ -88,6 +103,9 @@ def _workflow(continuity_mode: str = "replay") -> WorkflowModel:
             continuityMode=continuity_mode,  # type: ignore[arg-type]
             providerInvoked=False,
             externalInvoked=False,
+            executionStatus="complete",
+            fallbackUsed=False,
+            limitations=[],
             summary="Fixed DAG reset skeleton emitted the public answer.",
         ),
     )
@@ -168,7 +186,7 @@ def test_health_contract(tmp_path, monkeypatch):
     response = client.get("/api/health")
     assert response.status_code == 200
     payload = response.json()
-    assert payload["apiVersion"] == "phase-r1b"
+    assert payload["apiVersion"] == "phase-r3"
     assert payload["overallStatus"] == "degraded"
     assert payload["providerEnv"]["code"] == "provider_env_missing_optional_for_reset"
     assert payload["searchEnv"]["code"] == "search_env_missing_optional_for_reset"
@@ -263,7 +281,7 @@ def test_thread_lifecycle_and_fixed_workflow_contract(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
     created = client.post("/api/threads", json={}).json()
     thread_id = created["thread"]["id"]
-    assert created["thread"]["phase"] == "Phase R1-B / fixed DAG skeleton"
+    assert created["thread"]["phase"] == "Phase R3 / plan-driven fixed DAG execution"
     assert created["thread"]["finalSource"] == "reset_skeleton"
 
     response = client.post(
@@ -278,6 +296,8 @@ def test_thread_lifecycle_and_fixed_workflow_contract(tmp_path, monkeypatch):
     assert workflow["finalSource"] == "reset_skeleton"
     assert workflow["currentStage"] == "report"
     assert "dagSteps" in workflow
+    assert workflow["executionBatches"] == [["route_planner"]]
+    assert workflow["stepResults"]["route_planner"]["status"] == "complete"
     for forbidden in ["layerMode", "fusionSteps", "layerPlan", "messages", "analyst_results"]:
         assert forbidden not in response.text
 

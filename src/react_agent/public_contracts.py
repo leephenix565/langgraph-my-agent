@@ -3,14 +3,24 @@
 
 from __future__ import annotations
 
-from typing import Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
 FinalSource = Literal["reset_skeleton"]
 ContinuityMode = Literal["persistent", "replay"]
 AgentLayer = Literal["L1", "L2", "L3", "L4"]
-DagStepStatus = Literal["complete", "running", "queued", "pending_implementation", "partial", "error"]
+DagStepStatus = Literal[
+    "complete",
+    "running",
+    "queued",
+    "pending_implementation",
+    "partial",
+    "error",
+    "skipped",
+    "blocked",
+    "failed",
+]
 DimensionStatus = Literal["complete", "running", "queued", "pending_implementation", "partial", "error"]
 OverallStatus = Literal["ready", "degraded"]
 ErrorCategory = Literal["runtime", "provider_env", "store", "contract", "request"]
@@ -93,6 +103,9 @@ class WorkflowProvenanceModel(PublicBaseModel):
     continuityMode: ContinuityMode
     providerInvoked: bool = False
     externalInvoked: bool = False
+    executionStatus: Optional[str] = None
+    fallbackUsed: bool = False
+    limitations: List[str] = Field(default_factory=list)
     summary: str
 
 
@@ -107,6 +120,8 @@ class WorkflowModel(PublicBaseModel):
     dimensionGroups: List[DimensionGroupModel] = Field(default_factory=list)
     currentStage: Optional[WorkflowStageKey] = None
     completedSteps: List[str] = Field(default_factory=list)
+    executionBatches: List[List[str]] = Field(default_factory=list)
+    stepResults: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     finalSource: FinalSource
     provenanceNote: str
     provenance: Optional[WorkflowProvenanceModel] = None

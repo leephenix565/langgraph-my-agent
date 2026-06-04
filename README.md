@@ -4,15 +4,16 @@ This branch is the Fixed DAG reset branch. It replaces the old route-mode,
 Router-SFT, route-prior, A01 contract dispatch, and Fair Fusion mainline with a
 smaller deterministic fixed-DAG runtime skeleton.
 
-Phase R2 has hardened the active reset skeleton with explicit contracts,
-validators, normalizers, and deterministic function seams. It is not a
-completed business analysis engine.
+Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. The
+runtime validates `dag_steps[].depends_on`, computes deterministic
+`execution_batches`, emits per-step `step_results`, and remains a provider-free
+placeholder skeleton. It is not a completed business analysis engine.
 
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R2 contract and function seam hardening.
+- Current phase: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public web shell: retained for later in-place frontend v2 migration.
@@ -31,13 +32,14 @@ The active graph is now deterministic and provider-free:
 user input
   -> route_planner
   -> prepare_l1_context
-  -> run_l2_conclusions
-  -> run_dimension_composites
-  -> decision_synthesizer
-  -> report_generator
+  -> execute_fixed_dag
   -> final_emit
   -> memory_update
 ```
+
+`execute_fixed_dag` walks the 27-agent `fixed_dag_plan_v1` by validated
+dependencies, produces topological batches, records per-step execution results,
+and fills the L2/L3/L4 placeholder result contracts.
 
 The reset target has 27 formal agent ids:
 
@@ -55,11 +57,11 @@ See `docs/ARCHITECTURE_FIXED_DAG.md` for the current skeleton map.
 
 ## Current Runtime Boundary
 
-R1-B changes the active graph and Python public workflow adapter:
-R2 keeps that graph deterministic and routes graph/public fallback construction
-through `src/react_agent/fixed_dag_contracts.py` contract/function seams:
+R3 keeps the graph deterministic and routes graph/public fallback construction
+through contract, executor, and public mapping seams:
 
 - `src/react_agent/fixed_dag_contracts.py`
+- `src/react_agent/fixed_dag_executor.py`
 - `src/react_agent/graph.py`
 - `src/react_agent/prompts.py`
 - `src/react_agent/router_parse.py`
@@ -68,6 +70,9 @@ through `src/react_agent/fixed_dag_contracts.py` contract/function seams:
 - `src/react_agent/public_mapping.py`
 - `src/react_agent/public_runtime.py`
 - `src/react_agent/public_api.py`
+
+The graph state now carries `dag_execution`, `dag_step_results`, and
+`execution_batches` in addition to the reset result contracts.
 
 The external HTTP wrapper infrastructure and baseline sidecar module remain in
 the repository, but they are not connected to the active reset graph. Existing
@@ -81,7 +86,8 @@ be treated as public transcript content.
 
 The workflow inspector is a diagnostic panel. The Python public adapter projects
 DAG stages, steps, dimensions, provenance, and final source as
-`workflow_snapshot_v2` through reset contract seams. The current web UI still
+`workflow_snapshot_v2` through reset contract seams. R3 also exposes
+`executionBatches` and `stepResults` for the inspector. The current web UI still
 needs its R5 workflow rewrite.
 
 ## Documentation Index
@@ -111,10 +117,10 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R2.
-- No `external /v1/agent/invoke` call is part of R2 validation.
-- No demo stack startup is part of R2 validation.
-- No real business algorithms for individual agents are implemented in R2.
-- No frontend v2 rewrite is complete in R2.
-- No mainline or fusion-gate reset quality gate is rebuilt in R2.
+- No provider or live external service was verified by R3.
+- No `external /v1/agent/invoke` call is part of R3 validation.
+- No demo stack startup is part of R3 validation.
+- No real business algorithms for individual agents are implemented in R3.
+- No frontend v2 rewrite is complete in R3.
+- No mainline or fusion-gate reset quality gate is rebuilt in R3.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

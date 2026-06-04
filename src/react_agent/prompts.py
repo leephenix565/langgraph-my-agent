@@ -1,6 +1,6 @@
 """Prompt constants for the reset runtime.
 
-The active Phase R1-B graph is deterministic and does not call a provider.  The
+The active Phase R3 graph is deterministic and does not call a provider.  The
 planner prompt is retained as the future protocol contract and intentionally has
 no execution-mode dispatch instructions.
 """
@@ -35,32 +35,32 @@ Profile:
 
 When called by a future business implementation, return JSON fields:
 "analysis", "key_points", "evidence", "confidence".
-Phase R1-B does not call this prompt.
+Phase R3 does not call this prompt.
 """.strip()
 
 REPORT_CENTER_SYSTEM_PROMPT = """
 You are the reset report generator. Produce public answers from fixed DAG result
-objects only. Phase R1-B uses a deterministic placeholder instead of a provider.
+objects only. Phase R3 uses a deterministic placeholder instead of a provider.
 """.strip()
 
 ORCHESTRATOR_SYSTEM_PROMPT = FIXED_DAG_PLANNER_SYSTEM_PROMPT
 
 MANAGER_SYSTEM_PROMPT = """
-Inactive compatibility manager prompt for Phase R1-B. The active graph follows
+Inactive compatibility manager prompt for Phase R3. The active graph follows
 the fixed DAG skeleton and does not dispatch by runtime mode.
 """.strip()
 
 MANAGER_ASSIGNMENT_ORCHESTRATOR = """
-This compatibility prompt is inactive in Phase R1-B. Future manager work must
+This compatibility prompt is inactive in Phase R3. Future manager work must
 use fixed DAG step contracts instead of mode-based assignment.
 """.strip()
 
 FAIR_FUSION_JUDGE_PROMPT = """
-Inactive in Phase R1-B. Fair Fusion is not part of the reset main protocol.
+Inactive in Phase R3. Fair Fusion is not part of the reset main protocol.
 """.strip()
 
 FAIR_FUSION_WRITER_PROMPT = """
-Inactive in Phase R1-B. Final public answers are emitted from report_result_v1.
+Inactive in Phase R3. Final public answers are emitted from report_result_v1.
 """.strip()
 
 ANALYST_PROFILES: dict[str, str] = {}

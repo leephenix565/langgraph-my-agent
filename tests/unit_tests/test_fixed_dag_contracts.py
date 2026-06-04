@@ -73,6 +73,32 @@ def test_fixed_dag_plan_normalizes_and_validates() -> None:
     assert not _contains_key(plan, "layerMode")
 
 
+def test_fixed_dag_plan_has_explicit_dependencies_and_dimensions() -> None:
+    plan = build_default_fixed_dag_plan("q", as_of="2026-06-04")
+    steps = {step["id"]: step for step in plan["steps"]}
+
+    assert steps["route_planner"]["depends_on"] == []
+    assert steps["route_planner"]["dimension"] == "l1"
+    assert steps["entity_relation_extractor"]["depends_on"] == ["route_planner"]
+    assert steps["financial_data_service"]["depends_on"] == ["route_planner"]
+    for agent_id in L2_CONCLUSION_AGENT_IDS:
+        assert steps[f"l2:{agent_id}"]["depends_on"] == [
+            "entity_relation_extractor",
+            "financial_data_service",
+        ]
+    for dimension, agent_ids in DIMENSION_GROUPS.items():
+        assert set(steps[f"dimension:{dimension}"]["depends_on"]) == {
+            f"l2:{agent_id}" for agent_id in agent_ids
+        }
+    assert set(steps["decision_synthesizer"]["depends_on"]) == {
+        "dimension:value",
+        "dimension:market",
+        "dimension:risk",
+        "dimension:macro",
+    }
+    assert steps["report_generator"]["depends_on"] == ["decision_synthesizer"]
+
+
 def test_normalize_fixed_dag_plan_fail_soft_restores_deterministic_shape() -> None:
     normalized = normalize_fixed_dag_plan(
         {
@@ -210,3 +236,72 @@ def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:
     for field in ("layerMode", "fusionSteps", "layerPlan"):
         assert field not in payload
     assert set(DIMENSION_GROUPS) == {item["id"] for item in snapshot["dimensionGroups"]}
+
+
+def test_workflow_snapshot_v2_uses_execution_results_when_available() -> None:
+    plan = build_default_fixed_dag_plan("q")
+    step_results = {
+        "route_planner": {
+            "schema_version": "fixed_dag_step_result_v1",
+            "step_id": "route_planner",
+            "agent_id": "route_planner",
+            "stage": "planning",
+            "dimension": "l1",
+            "status": "complete",
+            "depends_on": [],
+            "output_ref": "fixed_dag_plan",
+            "summary": "done",
+            "warnings": [],
+        },
+        "entity_relation_extractor": {
+            "schema_version": "fixed_dag_step_result_v1",
+            "step_id": "entity_relation_extractor",
+            "agent_id": "entity_relation_extractor",
+            "stage": "evidence",
+            "dimension": "l1",
+            "status": "blocked",
+            "depends_on": ["route_planner"],
+            "output_ref": "",
+            "summary": "blocked",
+            "warnings": [],
+        },
+        "financial_data_service": {
+            "schema_version": "fixed_dag_step_result_v1",
+            "step_id": "financial_data_service",
+            "agent_id": "financial_data_service",
+            "stage": "evidence",
+            "dimension": "l1",
+            "status": "pending_implementation",
+            "depends_on": ["route_planner"],
+            "output_ref": "data_bundle",
+            "summary": "pending",
+            "warnings": [],
+        },
+    }
+    snapshot = build_workflow_snapshot_v2(
+        plan=plan,
+        step_results=step_results,
+        execution_batches=[["route_planner"], ["entity_relation_extractor", "financial_data_service"]],
+        dag_execution={
+            "status": "degraded",
+            "fallback_used": True,
+            "limitations": ["fallback test"],
+        },
+        current_stage="evidence",
+    )
+    statuses = {step["id"]: step["status"] for step in snapshot["dagSteps"]}
+    valid, reason = validate_workflow_snapshot_v2(snapshot)
+
+    assert valid, reason
+    assert statuses["route_planner"] == "complete"
+    assert statuses["entity_relation_extractor"] == "blocked"
+    assert statuses["financial_data_service"] == "pending_implementation"
+    assert snapshot["completedSteps"] == ["route_planner", "financial_data_service"]
+    assert snapshot["executionBatches"] == [
+        ["route_planner"],
+        ["entity_relation_extractor", "financial_data_service"],
+    ]
+    assert snapshot["stepResults"] == step_results
+    assert snapshot["provenance"]["executionStatus"] == "degraded"
+    assert snapshot["provenance"]["fallbackUsed"] is True
+    assert snapshot["provenance"]["limitations"] == ["fallback test"]

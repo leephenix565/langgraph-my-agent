@@ -8,4 +8,6 @@ def test_fair_fusion_fan_in_seam_removed_from_active_graph() -> None:
 
 
 def test_fixed_dag_uses_dimension_composite_stage_instead() -> None:
-    assert "run_dimension_composites" in graph_module.builder.nodes
+    assert "execute_fixed_dag" in graph_module.builder.nodes
+    assert "run_dimension_composites" not in graph_module.builder.nodes
+    assert hasattr(graph_module, "run_dimension_composites_node")

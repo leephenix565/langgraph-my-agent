@@ -7,5 +7,6 @@ def test_fusion_judge_shadow_is_not_active_reset_node() -> None:
 
 
 def test_reset_decision_synthesizer_replaces_judge_shadow() -> None:
-    assert "decision_synthesizer" in graph_module.builder.nodes
+    assert "execute_fixed_dag" in graph_module.builder.nodes
+    assert "decision_synthesizer" not in graph_module.builder.nodes
     assert hasattr(graph_module, "decision_synthesizer_node")

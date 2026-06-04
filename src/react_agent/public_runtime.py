@@ -145,7 +145,7 @@ def _provider_env_surface() -> ReadinessSurface:
     return ReadinessSurface(
         status="missing",
         code="provider_env_missing_optional_for_reset",
-        hint="R1-B reset skeleton can invoke without provider credentials.",
+        hint="R3 reset skeleton can invoke without provider credentials.",
     )
 
 
@@ -154,14 +154,14 @@ def _search_env_surface() -> ReadinessSurface:
         return ReadinessSurface(
             status="disabled",
             code="search_env_disabled",
-            hint="Search is disabled; R1-B reset skeleton does not require search.",
+            hint="Search is disabled; R3 reset skeleton does not require search.",
         )
     if _is_env_present("TAVILY_API_KEY"):
         return ReadinessSurface(status="configured", code="search_env_available")
     return ReadinessSurface(
         status="missing",
         code="search_env_missing_optional_for_reset",
-        hint="R1-B reset skeleton can invoke without Tavily search.",
+        hint="R3 reset skeleton can invoke without Tavily search.",
     )
 
 
@@ -352,6 +352,9 @@ def _has_workflow_snapshot_signal(state: Dict[str, Any]) -> bool:
         "fixed_dag_plan",
         "data_bundle",
         "entity_relation_bundle",
+        "dag_execution",
+        "dag_step_results",
+        "execution_batches",
         "l2_conclusions",
         "dimension_results",
         "decision_result",

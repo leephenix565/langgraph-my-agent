@@ -14,7 +14,7 @@ Reason: the reset needs deterministic structure, clearer public workflow
 projection, and fewer historical branches.
 
 Consequence: old mode prompt/parser/state/public workflow code is not active
-runtime authority in R2.
+runtime authority in R3.
 
 ## ADR-002: snake_case Runtime IDs Replace aNN IDs
 
@@ -103,4 +103,24 @@ before business algorithms, registry migration, or frontend workflow UI work.
 
 Consequence: R2 hardens the skeleton contracts but does not implement real
 business agents, provider readiness, external service readiness, frontend v2, or
-mainline/fusion-gate reset quality gates.
+mainline/fusion-gate reset quality gates. These seams are the prerequisite for
+R3 executor orchestration.
+
+## ADR-009: R3 Uses Plan-Driven Fixed DAG Executor
+
+Status: accepted for reset runtime.
+
+Decision: after L1 preparation, the active graph delegates deterministic
+orchestration to `execute_fixed_dag`.
+
+Reason: execution order should be derived from validated
+`dag_steps[].depends_on`, not from hand-maintained graph fanout nodes.
+
+Consequence: runtime emits `fixed_dag_execution_v1`, `execution_batches`, and
+`fixed_dag_step_result_v1`; public workflow snapshots include
+`executionBatches` and `stepResults`. The executor remains deterministic and
+provider-free.
+
+Non-consequence: R3 does not implement real business agents, provider readiness,
+external readiness, R5 frontend rewrite, R6 quality gates, or production
+deployment.

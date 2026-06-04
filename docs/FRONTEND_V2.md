@@ -8,7 +8,7 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R2 Boundary
+## Current R3 Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
 
@@ -17,6 +17,8 @@ The Python public adapter emits `workflow_snapshot_v2` with:
 - `dimensionGroups`
 - `currentStage`
 - `completedSteps`
+- `executionBatches`
+- `stepResults`
 - `provenance`
 - `finalSource`
 
@@ -24,8 +26,9 @@ The existing `apps/web` shell is retained. Its full workflow inspector rewrite
 is deferred to R5, so frontend code may still contain old mock/UI labels until
 that phase.
 
-R2 hardens the backend workflow payload construction through
-`fixed_dag_contracts.py`. It does not rewrite the frontend workflow UI or types.
+R3 hardens backend workflow payload construction through
+`fixed_dag_contracts.py` and `fixed_dag_executor.py`. It exposes the data needed
+for a richer inspector, but it does not rewrite the frontend workflow UI.
 
 The workflow inspector target should treat the reset roster as 27 formal agents
 (L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
@@ -37,6 +40,7 @@ step and should not be shown as a direct risk-composite input.
 composer text
   -> public API request
   -> Fixed DAG runtime skeleton
+  -> execute_fixed_dag
   -> workflow_snapshot_v2
   -> final assistant answer
 ```
@@ -48,7 +52,9 @@ The inspector should show:
 - DAG stage
 - dimension
 - step
+- dependency batch
 - status
+- per-step result summary
 - evidence coverage
 - final report readiness
 
@@ -64,7 +70,8 @@ approves a separate app. Do not create a second public transcript model.
 ## Deferred Work
 
 - frontend workflow type update
-- DAG progress timeline
+- DAG progress timeline using `executionBatches`
+- per-step dependency and result status panels
 - dimension-level status panels
 - report evidence view
 - alignment of frontend mocks with the full 27-agent DAG snapshot

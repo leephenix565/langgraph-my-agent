@@ -1,9 +1,9 @@
 # ruff: noqa: D101, D103
 """Deterministic fixed-DAG reset contracts and function seams.
 
-Phase R2 keeps the active runtime provider-free and external-free while making
-the reset skeleton contracts explicit, validated, and reusable by graph nodes
-and public workflow mapping.
+Phase R3 keeps the active runtime provider-free and external-free while making
+the reset skeleton contracts explicit, validated, execution-aware, and reusable
+by graph nodes and public workflow mapping.
 """
 
 from __future__ import annotations
@@ -32,6 +32,14 @@ FixedDagStage = Literal[
 ]
 ConclusionStatus = Literal["pending_implementation", "partial", "complete", "error"]
 DimensionName = Literal["value", "market", "risk", "macro"]
+FixedDagDimension = Literal["l1", "value", "market", "risk", "macro", "l4"]
+FixedDagStepStatus = Literal[
+    "complete",
+    "pending_implementation",
+    "skipped",
+    "blocked",
+    "failed",
+]
 
 FIXED_DAG_STAGE_ORDER: tuple[FixedDagStage, ...] = (
     "planning",
@@ -125,6 +133,7 @@ LEGACY_CONTRACT_KEYS = {
     "fusion_verdict",
     "baseline_bundle",
 }
+EXECUTED_STEP_STATUSES = {"complete", "pending_implementation"}
 
 
 class FixedDagStep(TypedDict):
@@ -135,6 +144,7 @@ class FixedDagStep(TypedDict):
     agent_id: NotRequired[str]
     target_ids: NotRequired[list[str]]
     dimension: NotRequired[str]
+    depends_on: NotRequired[list[str]]
     status: str
 
 
@@ -292,6 +302,7 @@ def _step(
     agent_id: str | None = None,
     target_ids: tuple[str, ...] = (),
     dimension: str | None = None,
+    depends_on: tuple[str, ...] = (),
 ) -> FixedDagStep:
     step: FixedDagStep = {
         "id": step_id,
@@ -306,6 +317,10 @@ def _step(
         step["target_ids"] = list(target_ids)
     if dimension:
         step["dimension"] = dimension
+    if depends_on:
+        step["depends_on"] = list(depends_on)
+    else:
+        step["depends_on"] = []
     return step
 
 
@@ -318,6 +333,7 @@ def _build_steps() -> list[FixedDagStep]:
             description="Create the deterministic fixed DAG execution plan.",
             status="complete",
             agent_id="route_planner",
+            dimension="l1",
         ),
         _step(
             step_id="entity_relation_extractor",
@@ -325,6 +341,8 @@ def _build_steps() -> list[FixedDagStep]:
             title="Entity relation extractor",
             description="Resolve entities and extract relations without live lookup.",
             agent_id="entity_relation_extractor",
+            dimension="l1",
+            depends_on=("route_planner",),
         ),
         _step(
             step_id="financial_data_service",
@@ -332,6 +350,8 @@ def _build_steps() -> list[FixedDagStep]:
             title="Financial data service",
             description="Prepare a data bundle seam without external service calls.",
             agent_id="financial_data_service",
+            dimension="l1",
+            depends_on=("route_planner",),
         ),
     ]
     for agent_id in L2_CONCLUSION_AGENT_IDS:
@@ -343,6 +363,7 @@ def _build_steps() -> list[FixedDagStep]:
                 description="Produce a normalized pending conclusion object.",
                 agent_id=agent_id,
                 dimension=AGENT_DIMENSIONS[agent_id],
+                depends_on=("entity_relation_extractor", "financial_data_service"),
             )
         )
     for dimension, agent_ids in DIMENSION_GROUPS.items():
@@ -355,6 +376,7 @@ def _build_steps() -> list[FixedDagStep]:
                 agent_id=DIMENSION_COMPOSITE_AGENT_IDS[dimension],
                 target_ids=agent_ids,
                 dimension=dimension,
+                depends_on=tuple(f"l2:{agent_id}" for agent_id in agent_ids),
             )
         )
     steps.extend(
@@ -365,6 +387,8 @@ def _build_steps() -> list[FixedDagStep]:
                 title="Decision synthesizer",
                 description="Create a deterministic decision placeholder.",
                 agent_id="decision_synthesizer",
+                dimension="l4",
+                depends_on=tuple(f"dimension:{dimension}" for dimension in DIMENSION_GROUPS),
             ),
             _step(
                 step_id="report_generator",
@@ -372,6 +396,8 @@ def _build_steps() -> list[FixedDagStep]:
                 title="Report generator",
                 description="Generate the public reset skeleton answer.",
                 agent_id="report_generator",
+                dimension="l4",
+                depends_on=("decision_synthesizer",),
             ),
         ]
     )
@@ -491,7 +517,7 @@ def build_data_bundle(plan: Mapping[str, Any]) -> DataBundle:
         "data_as_of": _data_as_of_for(as_of),
         "sources": [],
         "notes": [
-            "Financial data service is a deterministic seam in Phase R2.",
+            "Financial data service is a deterministic seam in Phase R3.",
             "No provider, search, or external service was invoked.",
         ],
     }
@@ -525,7 +551,7 @@ def build_entity_relation_bundle(plan: Mapping[str, Any]) -> EntityRelationBundl
         "entities": [],
         "relations": [],
         "notes": [
-            "Entity and relation extraction is a deterministic Phase R2 seam.",
+            "Entity and relation extraction is a deterministic Phase R3 seam.",
             "No provider or external service was invoked.",
             f"Original question length: {len(normalized['user_text'])}",
         ],
@@ -632,7 +658,7 @@ def build_l2_conclusions(
             agent_id,
             AGENT_DIMENSIONS[agent_id],
             as_of=normalized_as_of,
-            reason="Business agent implementation is pending in Phase R2.",
+            reason="Business agent implementation is pending in Phase R3.",
         )
         for agent_id in L2_CONCLUSION_AGENT_IDS
     }
@@ -804,7 +830,7 @@ def build_decision_result(
             },
             {
                 "stage": "conflict_resolution",
-                "summary": "No live business conflict resolution is implemented in Phase R2.",
+                "summary": "No live business conflict resolution is implemented in Phase R3.",
             },
         ],
         "confidence": 0.0,
@@ -860,8 +886,8 @@ def build_report_result(
 ) -> ReportResult:
     del decision_result
     answer = (
-        "Fixed DAG reset skeleton is active. This Phase R2 response is produced "
-        "from deterministic contract and function seams, not from live business "
+        "Fixed DAG reset skeleton is active. This Phase R3 response is produced "
+        "from deterministic contract, executor, and function seams, not from live business "
         "agent algorithms. No provider, search service, or external "
         "/v1/agent/invoke endpoint was called."
     )
@@ -892,7 +918,7 @@ def build_report_result(
             }
         ],
         "limitations": [
-            "Business agent algorithms are not implemented in Phase R2.",
+            "Business agent algorithms are not implemented in Phase R3.",
             "Provider readiness was not verified.",
             "External service readiness was not verified.",
             "Frontend workflow v2 polish remains a later reset phase.",
@@ -958,6 +984,31 @@ def _completed_from_payloads(
     return list(dict.fromkeys(completed))
 
 
+def _completed_from_step_results(step_results: Mapping[str, Any]) -> list[str]:
+    completed: list[str] = []
+    for step_id, result in step_results.items():
+        if not isinstance(result, Mapping):
+            continue
+        if result.get("status") in EXECUTED_STEP_STATUSES:
+            completed.append(str(result.get("step_id") or step_id))
+    return list(dict.fromkeys(completed))
+
+
+def _step_status_from_results(
+    step: Mapping[str, Any],
+    step_results: Mapping[str, Any] | None,
+    completed_steps: list[str],
+) -> str:
+    step_id = str(step.get("id") or "")
+    if isinstance(step_results, Mapping):
+        result = step_results.get(step_id)
+        if isinstance(result, Mapping) and result.get("status"):
+            return str(result["status"])
+    if step_id in completed_steps:
+        return "complete"
+    return str(step.get("status") or "pending_implementation")
+
+
 def build_workflow_snapshot_v2(
     *,
     plan: Mapping[str, Any],
@@ -965,17 +1016,30 @@ def build_workflow_snapshot_v2(
     dimension_results: Mapping[str, Any] | None = None,
     decision_result: Mapping[str, Any] | None = None,
     report_result: Mapping[str, Any] | None = None,
+    dag_execution: Mapping[str, Any] | None = None,
+    step_results: Mapping[str, Any] | None = None,
+    execution_batches: list[list[str]] | None = None,
     current_stage: FixedDagStage | None = None,
     completed_steps: list[str] | None = None,
 ) -> dict[str, Any]:
-    normalized_plan = normalize_fixed_dag_plan(plan)
+    plan_valid, _plan_reason = validate_fixed_dag_plan(plan)
+    normalized_plan = cast(FixedDagPlan, plan) if plan_valid else normalize_fixed_dag_plan(plan)
     dimension_results = dimension_results or {}
-    completed = completed_steps or _completed_from_payloads(
-        normalized_plan,
-        l2_conclusions=l2_conclusions,
-        dimension_results=dimension_results,
-        decision_result=decision_result,
-        report_result=report_result,
+    if isinstance(dag_execution, Mapping):
+        if step_results is None and isinstance(dag_execution.get("step_results"), Mapping):
+            step_results = cast(Mapping[str, Any], dag_execution["step_results"])
+        if execution_batches is None and isinstance(dag_execution.get("execution_batches"), list):
+            execution_batches = cast(list[list[str]], dag_execution["execution_batches"])
+    completed = (
+        completed_steps
+        or (_completed_from_step_results(step_results) if isinstance(step_results, Mapping) else [])
+        or _completed_from_payloads(
+            normalized_plan,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            report_result=report_result,
+        )
     )
     stage = current_stage or ("report" if report_result else "planning")
     return {
@@ -998,7 +1062,7 @@ def build_workflow_snapshot_v2(
                 "dimension": step.get("dimension"),
                 "title": step["title"],
                 "summary": step["description"],
-                "status": "complete" if step["id"] in completed else step["status"],
+                "status": _step_status_from_results(step, step_results, completed),
             }
             for step in normalized_plan["steps"]
         ],
@@ -1018,10 +1082,21 @@ def build_workflow_snapshot_v2(
         ],
         "currentStage": stage,
         "completedSteps": completed,
+        "executionBatches": execution_batches or [],
+        "stepResults": dict(step_results or {}),
         "provenance": {
             "source": RESET_SOURCE,
             "providerInvoked": False,
             "externalInvoked": False,
+            "executionStatus": str(dag_execution.get("status"))
+            if isinstance(dag_execution, Mapping) and dag_execution.get("status")
+            else "not_started",
+            "fallbackUsed": bool(dag_execution.get("fallback_used"))
+            if isinstance(dag_execution, Mapping)
+            else False,
+            "limitations": list(dag_execution.get("limitations", []) or [])
+            if isinstance(dag_execution, Mapping)
+            else [],
         },
         "finalSource": RESET_SOURCE,
     }
@@ -1061,6 +1136,12 @@ def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
     }
     if not set(completed) <= known_step_ids:
         return False, "completed_steps_unknown"
+    execution_batches = obj.get("executionBatches", [])
+    if not isinstance(execution_batches, list):
+        return False, "invalid_execution_batches"
+    step_results = obj.get("stepResults", {})
+    if not isinstance(step_results, Mapping):
+        return False, "invalid_step_results"
     return True, "ok"
 
 
@@ -1091,12 +1172,18 @@ def build_reset_multi_agent_bundle(
     dimension_results: Mapping[str, Any],
     decision_result: Mapping[str, Any],
     report_result: Mapping[str, Any],
+    dag_execution: Mapping[str, Any] | None = None,
+    dag_step_results: Mapping[str, Any] | None = None,
+    execution_batches: list[list[str]] | None = None,
 ) -> dict[str, Any]:
     return {
         "schema": "fixed_dag_reset_bundle_v1",
         "fixed_dag_plan": dict(fixed_dag_plan),
         "data_bundle": dict(data_bundle),
         "entity_relation_bundle": dict(entity_relation_bundle),
+        "dag_execution": dict(dag_execution or {}),
+        "dag_step_results": dict(dag_step_results or {}),
+        "execution_batches": list(execution_batches or []),
         "l2_conclusions": dict(l2_conclusions),
         "dimension_results": dict(dimension_results),
         "decision_result": dict(decision_result),

@@ -1,28 +1,20 @@
 # Fixed DAG Architecture
 
-This document describes the active Phase R2 reset skeleton. The skeleton is
-deterministic, provider-free, and backed by explicit contract/function seams. It
-is not a completed business analysis engine.
+This document describes the active Phase R3 reset skeleton. The skeleton is
+deterministic, provider-free, plan-driven, and backed by explicit contract,
+executor, and function seams. It is not a completed business analysis engine.
 
 ## Active Skeleton Flow
 
 ```mermaid
 flowchart TD
     A["user input"] --> B["route_planner"]
-    B --> C["entity_relation_extractor"]
-    B --> E["financial_data_service"]
-    C --> F["L2 conclusion placeholders"]
-    E --> F
-    F --> G["market_composite"]
-    F --> H["value_composite"]
-    F --> I["risk_composite"]
-    F --> J["macro_composite"]
-    G --> K["decision_synthesizer"]
-    H --> K
-    I --> K
-    J --> K
-    K --> L["report_generator"]
-    L --> M["single assistant transcript"]
+    B --> C["prepare_l1_context"]
+    C --> D["execute_fixed_dag"]
+    D --> E["topological execution batches"]
+    E --> F["fixed_dag_step_result_v1 per step"]
+    F --> G["L2 conclusions, L3 composites, L4 decision/report"]
+    G --> H["single assistant transcript"]
 ```
 
 The formal reset roster has 27 agent ids. The DAG executor itself is
@@ -67,6 +59,14 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 ## Execution Principles
 
 - The DAG executor is infrastructure and is not counted as a target id.
+- `fixed_dag_plan_v1.dag_steps[].depends_on` is the executor input.
+- `validate_dag_steps` checks unique ids, dependency existence, acyclicity,
+  stage/dimension legality, roster membership, and dimension dependency rules.
+- `topological_batches` groups ready steps into deterministic
+  `execution_batches`.
+- Each walked step records a `fixed_dag_step_result_v1` placeholder.
+- The executor output is `fixed_dag_execution_v1` and feeds
+  `workflow_snapshot_v2`.
 - L1 prepares the plan, entity/relation bundle, and financial data bundle through
   deterministic constructors and validators.
 - L2 produces normalized pending conclusion objects with `as_of`, `data_as_of`,
@@ -75,7 +75,7 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   are direction-vote seams, risk is a gate seam, and macro is a regulator seam.
 - L4 produces deterministic decision and report placeholders with stable fields.
 - Public output remains a single assistant answer.
-- R2 placeholders use `status=pending_implementation` until real business
+- R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.
 - R4 owns catalog/runtime registry replacement, R5 owns frontend workflow UI,
   and R6 owns mainline/fusion-gate rebuild.

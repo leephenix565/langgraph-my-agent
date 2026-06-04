@@ -30,11 +30,14 @@ class InputState(TypedDict):
 
 
 class State(InputState, total=False):
-    """Internal state shared by the Phase R1-B fixed DAG skeleton."""
+    """Internal state shared by the Phase R3 fixed DAG executor skeleton."""
 
     fixed_dag_plan: Dict[str, Any]
     data_bundle: Dict[str, Any]
     entity_relation_bundle: Dict[str, Any]
+    dag_execution: Dict[str, Any]
+    dag_step_results: Dict[str, Any]
+    execution_batches: List[List[str]]
     l2_conclusions: Dict[str, Any]
     dimension_results: Dict[str, Any]
     decision_result: Dict[str, Any]

@@ -1,7 +1,8 @@
 # Contracts
 
-This document names the Phase R2 Fixed DAG contracts implemented by
-`src/react_agent/fixed_dag_contracts.py`.
+This document names the Phase R3 Fixed DAG contracts implemented by
+`src/react_agent/fixed_dag_contracts.py` and
+`src/react_agent/fixed_dag_executor.py`.
 
 ## Contract Boundary
 
@@ -9,9 +10,9 @@ Contracts separate internal DAG execution from the public transcript. Internal
 payloads can be inspected by workflow tooling, but only mapped public fields may
 reach the public adapter.
 
-R2 hardens these contracts with deterministic constructors, normalizers, and
-validators. These seams do not implement real business algorithms and do not
-call providers or external services.
+R3 hardens these contracts with deterministic constructors, normalizers,
+validators, and topological executor seams. These seams do not implement real
+business algorithms and do not call providers or external services.
 
 ## fixed_dag_plan_v1
 
@@ -33,14 +34,69 @@ Runtime fields:
 - `provenance`
 
 The plan has no dispatch strategy field and no legacy layer-mode selector.
-For R1-B-Delta, `target_agent_ids` contains the 27 formal v4 feedback-aligned
-agent ids: L1=3, L2=18, L3=4, L4=2.
+The current reset roster in `target_agent_ids` contains the 27 formal v4
+feedback-aligned agent ids: L1=3, L2=18, L3=4, L4=2.
+
+Each step includes `depends_on`. R3 validates step id uniqueness, dependency
+existence, acyclicity, legal stage, legal dimension, roster membership, and the
+dimension-specific dependency rules before execution.
 
 Seams:
 
 - `build_default_fixed_dag_plan`
 - `normalize_fixed_dag_plan`
 - `validate_fixed_dag_plan`
+- `validate_dag_steps`
+- `topological_batches`
+
+## fixed_dag_execution_v1
+
+Purpose: record deterministic execution of a fixed DAG plan.
+
+Runtime fields:
+
+- `schema_version`
+- `plan_id`
+- `status`
+- `fallback_used`
+- `fallback_reason`
+- `execution_batches`
+- `step_results`
+- `l2_conclusions`
+- `dimension_results`
+- `decision_result`
+- `report_result`
+- `limitations`
+- `provenance`
+
+`status` is `complete`, `partial`, or `degraded`. Invalid plans fail soft to the
+deterministic default plan and set `fallback_used=true`.
+
+Seams: `execute_fixed_dag_plan`, `validate_dag_execution_result`.
+
+## fixed_dag_step_result_v1
+
+Purpose: record one walked DAG step without exposing raw agent/provider output.
+
+Runtime fields:
+
+- `schema_version`
+- `step_id`
+- `agent_id`
+- `stage`
+- `dimension`
+- `status`
+- `depends_on`
+- `output_ref`
+- `summary`
+- `warnings`
+
+Allowed statuses are `complete`, `pending_implementation`, `skipped`, `blocked`,
+and `failed`. R3 uses `complete` for planning and `pending_implementation` for
+business placeholders.
+
+Seams: `build_step_result`, `validate_step_result`,
+`build_initial_step_results`.
 
 ## data_bundle_v1
 
@@ -178,14 +234,21 @@ Public fields:
 - `dimensionGroups`
 - `currentStage`
 - `completedSteps`
+- `executionBatches`
+- `stepResults`
 - `provenance`
 - `finalSource`
 
 `finalSource` is currently `reset_skeleton`.
+`provenance` includes executor-oriented fields such as `executionStatus`,
+`fallbackUsed`, and `limitations` while keeping provider and external invocation
+flags false.
 
 Seams: `build_workflow_snapshot_v2`, `validate_workflow_snapshot_v2`.
 Graph final emission also uses `build_final_emit_payload`,
 `build_emitted_bundle`, and `build_reset_multi_agent_bundle`.
+`fixed_dag_reset_bundle_v1` includes `dag_execution`, `dag_step_results`, and
+`execution_batches`.
 
 ## Public Exclusions
 

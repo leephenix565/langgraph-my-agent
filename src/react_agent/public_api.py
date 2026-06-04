@@ -69,7 +69,7 @@ from react_agent.public_store import (
     default_store_path,
 )
 
-API_VERSION = "phase-r1b"
+API_VERSION = "phase-r3"
 AGENT_LAYER_ORDER = ("L1", "L2", "L3", "L4")
 
 

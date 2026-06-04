@@ -2,7 +2,7 @@
 
 This document defines safe validation for the reset branch.
 
-## Safe R2 Commands
+## Safe R3 Commands
 
 ```powershell
 git status --short --branch
@@ -15,9 +15,9 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-## Not Safe For R2
+## Not Safe For R3
 
-Do not run during R2 unless the user explicitly asks:
+Do not run during R3 unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -37,10 +37,16 @@ used as Fixed DAG gate claims.
 
 ## Validation Meaning
 
-Passing safe commands means the deterministic fixed-DAG protocol skeleton
-imports, parses, invokes without provider/external calls, exposes
-`workflow_snapshot_v2`, preserves public transcript safety, and keeps the
-R2 contract/function seams and 27-agent roster aligned in reset docs/tests.
+Passing safe commands means the deterministic fixed-DAG executor skeleton
+imports, parses, validates plan dependencies, generates topological execution
+batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
+projects `step_results` and `execution_batches`, preserves public transcript
+safety, and keeps the R3 contract/executor seams and 27-agent roster aligned in
+reset docs/tests.
+
+R3-specific tests cover `validate_dag_steps`, `topological_batches`,
+`execute_fixed_dag_plan`, `validate_dag_execution_result`, graph executor
+integration, and public workflow trace projection.
 
 It does not mean:
 

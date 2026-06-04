@@ -1,14 +1,15 @@
 # System Map
 
-This file is the reset branch operational map for Phase R2.
+This file is the reset branch operational map for Phase R3.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R2 contract and function seam hardening.
+- Current phase: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
-  a deterministic provider-free fixed DAG skeleton whose payloads are built by
-  explicit constructors, normalizers, and validators.
+  a deterministic provider-free fixed DAG skeleton whose execution order is
+  derived from validated `dag_steps[].depends_on` and whose payloads are built
+  by explicit constructors, normalizers, validators, and executor seams.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 
 ## Current Runtime Entry
@@ -38,11 +39,8 @@ is retained and still needs the R5 workflow inspector rewrite.
 flowchart TD
     U["User input"] --> P["route_planner"]
     P --> E["prepare_l1_context"]
-    E --> L2["run_l2_conclusions"]
-    L2 --> L3["run_dimension_composites"]
-    L3 --> D["decision_synthesizer"]
-    D --> R["report_generator"]
-    R --> F["final_emit"]
+    E --> X["execute_fixed_dag"]
+    X --> F["final_emit"]
     F --> M["memory_update"]
 ```
 
@@ -57,11 +55,15 @@ Active skeleton properties:
 - Final public source is `reset_skeleton`.
 - Plan, bundle, conclusion, composite, decision, report, workflow, and final
   emit payloads are generated from `fixed_dag_contracts.py` seams.
+- `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
+  records per-step `step_results`.
+- Invalid plans fail soft to the deterministic default plan and surface degraded
+  fallback provenance in the workflow snapshot.
 
 ## Retained But Inactive Infrastructure
 
-R1-B keeps these files for later phases or compatibility, but they are not active
-runtime authority:
+R3 keeps these files and some old helper functions for later phases or
+compatibility, but they are not active runtime authority:
 
 - `src/react_agent/baseline_sidecar.py`
 - `src/react_agent/external_http_agents.py`
@@ -111,7 +113,7 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R2 validation commands:
+Safe R3 validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -127,7 +129,7 @@ them.
 
 ## Non-Claims
 
-R2 does not claim:
+R3 does not claim:
 
 - frontend v2 completion
 - business-agent correctness

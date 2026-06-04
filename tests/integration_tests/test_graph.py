@@ -12,13 +12,14 @@ from react_agent.fixed_dag_contracts import (
     validate_report_result,
     validate_workflow_snapshot_v2,
 )
+from react_agent.fixed_dag_executor import validate_dag_execution_result
 
 pytestmark = pytest.mark.anyio
 
 
 async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_provider(*args, **kwargs):
-        raise AssertionError("provider should not be called by R1-B skeleton")
+        raise AssertionError("provider should not be called by R3 skeleton")
 
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
 
@@ -30,6 +31,12 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"
     valid, reason = validate_fixed_dag_plan(res["fixed_dag_plan"])
     assert valid, reason
+    valid, reason = validate_dag_execution_result(res["dag_execution"])
+    assert valid, reason
+    assert res["dag_execution"]["provenance"]["provider_invoked"] is False
+    assert res["dag_execution"]["provenance"]["external_invoked"] is False
+    assert res["execution_batches"] == res["dag_execution"]["execution_batches"]
+    assert res["dag_step_results"] == res["dag_execution"]["step_results"]
     assert len(res["fixed_dag_plan"]["target_agent_ids"]) == 27
     assert res["workflow_snapshot"]["schema"] == "workflow_snapshot_v2"
     valid, reason = validate_workflow_snapshot_v2(res["workflow_snapshot"])
@@ -44,10 +51,13 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
         valid, reason = validate_dimension_composite_result(item)
         assert valid, reason
     assert len(res["workflow_snapshot"]["dagSteps"]) == len(res["fixed_dag_plan"]["steps"])
+    assert res["workflow_snapshot"]["executionBatches"] == res["execution_batches"]
+    assert res["workflow_snapshot"]["stepResults"] == res["dag_step_results"]
     assert len(res["workflow_snapshot"]["dimensionGroups"]) == 4
     assert res["emitted_bundle"]["provider_invoked"] is False
     assert res["emitted_bundle"]["external_invoked"] is False
     assert res["multi_agent_bundle"]["schema"] == "fixed_dag_reset_bundle_v1"
+    assert res["multi_agent_bundle"]["dag_execution"]["schema_version"] == "fixed_dag_execution_v1"
     assert res.get("messages")
     assert "Fixed DAG reset skeleton is active" in res["messages"][-1].content
     assert "layer_plan" not in res

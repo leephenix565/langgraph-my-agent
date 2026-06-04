@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R3 plan-driven fixed DAG execution
+
+### Added
+
+- Added `src/react_agent/fixed_dag_executor.py` with deterministic DAG
+  validation, topological batching, step result construction, plan execution,
+  and execution result validation.
+- Added `fixed_dag_execution_v1` and `fixed_dag_step_result_v1` runtime
+  contracts.
+- Added workflow projection for `executionBatches` and `stepResults`.
+- Added unit and integration coverage for dependency validation, invalid-plan
+  fallback, executor output, graph integration, and public workflow mapping.
+
+### Changed
+
+- Changed the active graph edge path to
+  `route_planner -> prepare_l1_context -> execute_fixed_dag -> final_emit ->
+  memory_update`.
+- Changed public workflow contracts and mapping to include executor trace fields
+  while keeping the transcript as a single assistant answer.
+- Changed the final reset bundle to include `dag_execution`, `dag_step_results`,
+  and `execution_batches`.
+- Updated reset docs for R3 execution orchestration and later R4/R5/R6
+  ownership.
+
+### Not Done
+
+- No business-agent algorithm implementation.
+- No provider, search, or external live verification.
+- No frontend workflow UI rewrite.
+- No snake_case catalog/runtime registry migration.
+- No mainline or fusion-gate artifact-writing validation.
+- No push.
+
 ## 2026-06-04 - Phase R2 contract and function seam hardening
 
 ### Added

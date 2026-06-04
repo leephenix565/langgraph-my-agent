@@ -263,6 +263,15 @@ def _workflow_snapshot_dict(state: dict[str, Any]) -> dict[str, Any]:
         report_result=state.get("report_result")
         if isinstance(state.get("report_result"), dict)
         else None,
+        dag_execution=state.get("dag_execution")
+        if isinstance(state.get("dag_execution"), dict)
+        else None,
+        step_results=state.get("dag_step_results")
+        if isinstance(state.get("dag_step_results"), dict)
+        else None,
+        execution_batches=state.get("execution_batches")
+        if isinstance(state.get("execution_batches"), list)
+        else None,
     )
 
 
@@ -275,6 +284,15 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         continuityMode=continuity_mode,
         providerInvoked=bool(provenance_raw.get("providerInvoked", False)),
         externalInvoked=bool(provenance_raw.get("externalInvoked", False)),
+        executionStatus=_optional_str(provenance_raw.get("executionStatus")),
+        fallbackUsed=bool(provenance_raw.get("fallbackUsed", False)),
+        limitations=[
+            _coerce_str(item)
+            for item in provenance_raw.get("limitations", [])
+            if _coerce_str(item)
+        ]
+        if isinstance(provenance_raw.get("limitations", []), list)
+        else [],
         summary=(
             "Fixed DAG reset skeleton emitted the public answer. No provider or "
             "external agent endpoint was invoked."
@@ -318,6 +336,18 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         ],
         currentStage=snapshot.get("currentStage"),  # type: ignore[arg-type]
         completedSteps=list(snapshot.get("completedSteps", []) or []),
+        executionBatches=[
+            [str(step_id) for step_id in batch]
+            for batch in snapshot.get("executionBatches", [])
+            if isinstance(batch, list)
+        ],
+        stepResults={
+            str(step_id): dict(result)
+            for step_id, result in (snapshot.get("stepResults", {}) or {}).items()
+            if isinstance(result, dict)
+        }
+        if isinstance(snapshot.get("stepResults", {}), dict)
+        else {},
         finalSource="reset_skeleton",
         provenanceNote=provenance.summary,
         provenance=provenance,
@@ -375,7 +405,7 @@ def build_thread_summary(
         updatedAt=updated_at,
         preview=_truncate(preview_source or "Awaiting first message.", 72) or "Awaiting first message.",
         finalSource="reset_skeleton",
-        phase="Phase R1-B / fixed DAG skeleton",
+        phase="Phase R3 / plan-driven fixed DAG execution",
         continuityMode=continuity_mode,
     )
 
@@ -388,7 +418,7 @@ def build_new_thread(thread_id: str, continuity_mode: ContinuityMode) -> PublicT
         updatedAt=_now_label(),
         preview="Awaiting first message.",
         finalSource="reset_skeleton",
-        phase="Phase R1-B / fixed DAG skeleton",
+        phase="Phase R3 / plan-driven fixed DAG execution",
         continuityMode=continuity_mode,
     )
     return PublicThreadDetail(thread=summary, turns=turns)

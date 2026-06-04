@@ -1,5 +1,5 @@
 # ruff: noqa: D103
-"""Parser for the Phase R1-B fixed DAG planner response."""
+"""Parser for the Phase R3 fixed DAG planner response."""
 
 from __future__ import annotations
 
