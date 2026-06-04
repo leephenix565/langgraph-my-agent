@@ -1,5 +1,28 @@
 # CHANGELOG
 
+## 2026-06-03 - Phase QS-2A non-provider quality gate cleanup
+- Files:
+  - `tests/integration_tests/test_public_api.py`
+  - `tests/unit_tests/test_external_valuation_agents.py`
+  - `README.md`
+  - `docs/AGENT_CATALOG_V2_RUNBOOK.md`
+  - `docs/CHANGELOG.md`
+- Fixed the blocking ruff import-order failure in the public API integration
+  test without changing the public API contract.
+- Updated external valuation wrapper test fakes to accept the current
+  `httpx.AsyncClient(timeout=..., trust_env=...)` call shape and assert the
+  default non-proxy behavior remains `trust_env=False`.
+- Refreshed active README and Agent Catalog runbook counts to the current
+  catalog facts: `configCount=27`, `runtimeCount=25`,
+  `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]`,
+  enabled layer counts `L1=2,L2=19,L3=3,L4=1`, and public rows including
+  disabled metadata `L1=2,L2=20,L3=4,L4=1`.
+- Scope boundary: no provider calls, no external `/v1/agent/invoke`, no
+  Router prompt/schema change, no `router_parse.py` fallback/filtering change,
+  no State schema change, no public API schema change, no frontend product
+  change, no `config/agents/*.json` change, no `.env` change, and no service
+  start/stop.
+
 ## 2026-06-02 - Excel profile-aligned Router catalog
 - Files:
   - `config/agents/*.json`

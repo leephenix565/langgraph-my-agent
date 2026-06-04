@@ -514,7 +514,7 @@ Remaining risks after DS-1-B:
 Layer counts should be:
 
 ```json
-{"enabledRuntimeRoles":{"L1":1,"L2":12,"L3":11,"L4":1},"publicCatalogRowsIncludingDisabled":{"L1":1,"L2":13,"L3":12,"L4":1}}
+{"enabledRuntimeRoles":{"L1":2,"L2":19,"L3":3,"L4":1},"publicCatalogRowsIncludingDisabled":{"L1":2,"L2":20,"L3":4,"L4":1}}
 ```
 
 ## Fail-Soft Behavior

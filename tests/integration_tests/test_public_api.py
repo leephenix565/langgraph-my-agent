@@ -23,7 +23,11 @@ from react_agent.public_contracts import (
     WorkflowStageEventData,
     WorkflowStageProgressModel,
 )
-from react_agent.public_guardrails import acquire_stream_slot, release_stream_slot, reset_public_guardrail_state
+from react_agent.public_guardrails import (
+    acquire_stream_slot,
+    release_stream_slot,
+    reset_public_guardrail_state,
+)
 from react_agent.public_mapping import compose_structured_input_text, replay_messages
 from react_agent.public_runtime import (
     PreparedPublicTurnInvoke,

@@ -1,8 +1,9 @@
 # LangGraph Layered Multi-Agent System
 
-## Phase AC-1A Agent Catalog v2
+## Current Agent Catalog v2 Snapshot
 
-- `config/agents` now follows Agent Catalog v2 from `E:\muti-agent\智能体划分4.25.xlsx` Sheet2: L1=1, L2=13, L3=6, L4=1, `configCount=21`, `runtimeCount=21`, `disabledIds=[]`.
+- `config/agents` is aligned to the current Agent Catalog v2 facts: `configCount=27`, `runtimeCount=25`, `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]`.
+- Enabled runtime layer counts are `L1=2`, `L2=19`, `L3=3`, `L4=1`; public `/api/agents` rows including disabled metadata are `L1=2`, `L2=20`, `L3=4`, `L4=1`.
 - `a02_task_router` metadata is removed; the real Router remains `router_node` and the Router L1-L4 JSON protocol is unchanged.
 - `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` are registered as HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
 - See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` and `docs/AGENT_CATALOG_V2_RUNBOOK.md` for the mapping and validation runbook.

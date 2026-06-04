@@ -1,6 +1,6 @@
+import anyio
 import httpx
 import pytest
-import anyio
 
 from react_agent.external_valuation_agents import (
     EXTERNAL_VALUATION_AGENT_CONFIG,
@@ -120,8 +120,9 @@ def test_external_valuation_tool_success(monkeypatch) -> None:
             }
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             captured["timeout"] = timeout
+            captured["trust_env"] = trust_env
 
         async def __aenter__(self):
             return self
@@ -146,6 +147,7 @@ def test_external_valuation_tool_success(monkeypatch) -> None:
     assert output["parse_ok"] is True
     assert output["analysis"] == "机器学习估值结果。"
     assert captured["url"] == "http://test.local/v1/agent/invoke"
+    assert captured["trust_env"] is False
     assert captured["json"]["options"]["external_agent_id"] == "valuation_ml"
     assert getattr(tool, "is_external_valuation_wrapper", False)
     assert getattr(tool, "external_agent_id", "") == "valuation_ml"
@@ -166,7 +168,7 @@ def test_external_valuation_tool_fail_soft_http_and_json(monkeypatch, response, 
             return response["json"]()
 
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
@@ -188,7 +190,7 @@ def test_external_valuation_tool_fail_soft_http_and_json(monkeypatch, response, 
 
 def test_external_valuation_tool_timeout_fail_soft(monkeypatch) -> None:
     class FakeClient:
-        def __init__(self, timeout):
+        def __init__(self, timeout, trust_env=False):
             pass
 
         async def __aenter__(self):
