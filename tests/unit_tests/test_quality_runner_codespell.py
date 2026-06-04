@@ -5,6 +5,20 @@ import pytest
 from scripts.quality import run_quality
 
 
+def test_static_quality_targets_exist() -> None:
+    targets = (
+        *run_quality.STATIC_RUFF_TARGETS,
+        *run_quality.STATIC_MYPY_TARGETS,
+        *run_quality.STATIC_CODESPELL_TARGETS,
+    )
+
+    missing = [
+        target for target in targets if not (run_quality.REPO_ROOT / target).exists()
+    ]
+
+    assert missing == []
+
+
 def _patch_codespell_env(
     monkeypatch: pytest.MonkeyPatch,
     *,

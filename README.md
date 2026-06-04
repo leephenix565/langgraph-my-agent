@@ -1,420 +1,98 @@
-# LangGraph Layered Multi-Agent System
+# langgraph-my-agent
 
-## Current Agent Catalog v2 Snapshot
+This branch is a Fixed DAG reset branch. It is a reset baseline for replacing the old agent-catalog, route mode, Router-SFT, route-prior, and Fair Fusion lineage with a smaller fixed-DAG architecture.
 
-- `config/agents` is aligned to the current Agent Catalog v2 facts: `configCount=27`, `runtimeCount=25`, `disabledIds=["a05_annual_report_analysis","a21_portfolio_manager"]`.
-- Enabled runtime layer counts are `L1=2`, `L2=19`, `L3=3`, `L4=1`; public `/api/agents` rows including disabled metadata are `L1=2`, `L2=20`, `L3=4`, `L4=1`.
-- `a02_task_router` metadata is removed; the real Router remains `router_node` and the Router L1-L4 JSON protocol is unchanged.
-- `a16_ml_valuation`, `a17_traditional_valuation`, and `a18_meta_valuation` are registered as HTTP wrappers in `AGENT_TOOLS` before default LLM tool backfill.
-- See `docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md` and `docs/AGENT_CATALOG_V2_RUNBOOK.md` for the mapping and validation runbook.
+Phase R1-A is a hard slimming phase only. It deletes archived/offline lineage and rebuilds the reset documentation set. It does not mean the Fixed DAG runtime has been implemented.
 
-[![Quality Gate](https://github.com/langchain-ai/react-agent/actions/workflows/unit-tests.yml/badge.svg)](https://github.com/langchain-ai/react-agent/actions/workflows/unit-tests.yml)
+## Current Branch Scope
 
-This repository is a layered multi-agent orchestration system built on LangGraph `StateGraph`. The runtime entrypoint is `langgraph.json -> src/react_agent/graph.py:graph`, and the current product shell lives under `apps/web/` on top of a Python public adapter in `src/react_agent/public_*.py`.
+- Branch: `reset/fixed-dag-v1`.
+- Reset base: `pre-fixed-dag-reset-20260604-1457`.
+- Target architecture: 28 formal agents plus a fixed topological DAG executor.
+- Runtime status: current `langgraph.json` still points at `src/react_agent/graph.py:graph`.
+- Public surface status: the existing public adapter and web shell remain in place.
+- Production status: not a production deployment claim.
 
-## Current Snapshot
+Historical material removed on this branch remains recoverable from the pre-reset tag. Do not use old Agent Catalog v2 docs, old `aNN` ids, route mode docs, Fair Fusion docs, route-prior/RARP material, or Router-SFT material as current reset facts.
 
-- Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`
-- Runtime mainline topology: `__start__ -> router`, then `router -> manager_broadcast` and `router -> baseline_sidecar`; agent nodes return to `manager_summary`; final closeout runs through `manager_summary/finalize_summary -> fusion_gate -> fusion_judge_shadow -> fusion_writer_shadow -> final_emit -> (memory_update | __end__)`
-- Default answer path: Fair Fusion baseline/judge/writer sidecars exist in the runtime, but `Context.enable_fair_fusion=False` and `Context.enable_fair_fusion_source_switch=False` by default, so the visible answer still comes from the mainline bundle unless those flags are explicitly enabled
-- Commercial API line: `.env.example` now fixes the isolated Fair Fusion baseline sidecar provider path to DeepSeek V4 Pro through the OpenAI-compatible override (`BASELINE_MODEL=openai/deepseek-v4-pro`, `BASELINE_OPENAI_BASE_URL=https://api.deepseek.com`, `BASELINE_OPENAI_API_KEY=`). This does not migrate the main multi-agent global provider (`MODEL`, `OPENAI_BASE_URL`, `OPENAI_API_KEY`) and does not enable source switching by default. The existing `google_genai/...` Gemini grounding code path remains available only when explicitly configured
-- AC-1B-2A route-prior runtime removal:
-  - `react_agent.graph` no longer imports or executes the old route-prior / RARP shadow seam
-  - the formal Router provider call and `router_parse` L1-L4 parser are the only current routing owners
-  - old `route_prior.py`, `route_reliability.py`, `route_profile_registry.py`, and `route_prior_embeddings.py` source files remain as archived/offline helpers only
-  - future `router_prior_v2` work must be rebuilt from stable Agent Catalog v2 metadata, new profile cards, and new manual labels
-- AC-1B archive boundary:
-  - offline RP/RARP/SFT/manual-gold/teacher-proxy artifacts are archived, offline, and non-mainline
-  - they are not Agent Catalog v2 acceptance evidence and are not current routing-quality promotion evidence
-- Public product surfaces:
-  - Chat: live
-  - Settings: live read-only
-  - Agents: live read-only
-- Public transcript boundary:
-  - one visible assistant persona only
-  - workflow stays an inspector
-  - `text` remains the canonical transcript / store / replay truth
-- Assistant answer rendering:
-  - `answerCard.answer` is now rendered as safe client-side Markdown in the web shell
-  - this is a presentation-layer change only; it does not change the Python public adapter contract or transcript truth
-- Typed input boundary:
-  - `structuredInput` is additive only
-  - pasted `materials` and additive `urlReferences` must still compile into canonical transcript text
-- Streaming boundary:
-  - sync `POST /api/threads/{thread_id}/messages` remains supported and unchanged
-  - additive `POST /api/threads/{thread_id}/messages/stream` now returns safe NDJSON workflow events
-  - workflow progress is client-visible but not persisted; only the final assistant turn remains transcript / store / replay truth
-- Current phase position:
-  - frontend/runtime integration: `Phase F3`
-  - repo-level closure: `Phase QS-2`
-  - `Phase WS-1` workflow-first streaming is a landed seam, not the current repo phase label
-- Current positioning: the repo is hardening the public-adapter/web mainline, continuity/readiness surfaces, and authority-doc truth without changing transcript truth or LangGraph runtime business semantics
+## Target Architecture
 
-## Quickstart
+The reset target is:
 
-1. Copy `.env.example` to `.env`.
-2. Fill only the keys you actually need for your local workflow.
-3. Use the documented local baseline:
-   - Python: conda env `cline_env`
-   - Frontend: `node` + `npm` under `apps/web/`
-4. Minimal local demo:
-
-```powershell
-conda run --no-capture-output -n cline_env python demo_layered_run.py
+```text
+user input
+  -> fixed_dag_plan_v1
+  -> L1 parse and data preparation
+  -> L2 dimension analysis
+  -> L3 dimension composites
+  -> L4 decision synthesis and report generation
+  -> public single-assistant transcript
 ```
 
-## Development 8200 Web Demo
+The target formal agent set has 28 ids:
 
-For short-lived mentor demos on the development host, use the dev-only stack
-launcher:
+- L1 parse layer: 3 agents.
+- L2 analysis layer: 19 agents.
+- L3 application layer: 4 agents.
+- L4 report layer: 2 agents.
 
-```bash
-scripts/dev/start_8200_demo_stack.sh
-scripts/dev/status_8200_demo_stack.sh
-scripts/dev/stop_8200_demo_stack.sh
-```
+See `docs/ARCHITECTURE_FIXED_DAG.md` for the target agent table and high-level DAG.
 
-The demo address is `http://222.73.85.26:8200`. The launcher runs the Python
-public API on `127.0.0.1:8210`, runs the Vite web shell on `0.0.0.0:8200`, and
-sets `VITE_API_PROXY_TARGET=http://127.0.0.1:8210` so browser requests to
-`/api/*` stay on the single 8200 address.
+## Current Runtime Boundary
 
-This is not a production deployment. It does not add token auth, HTTPS,
-nginx/Caddy/systemd hardening, user accounts, or cost quotas. Logs and PID
-files are written under `/tmp/lma-demo-stack`, not in the repo. The external
-HTTP agent services are health-checked and only started when their configured
-port is free and the local startup command is explicit. The scripts do not call
-external `/v1/agent/invoke` endpoints, do not call providers, and do not stop
-pre-existing external service processes unless `stop_8200_demo_stack.sh
---include-external` is used for processes that the launcher itself started.
+R1-A keeps the current runtime files intact:
 
-Known demo service caveats:
+- `src/react_agent/graph.py`
+- `src/react_agent/prompts.py`
+- `src/react_agent/router_parse.py`
+- `src/react_agent/state.py`
+- `src/react_agent/public_contracts.py`
+- `src/react_agent/public_mapping.py`
+- `src/react_agent/public_api.py`
+- `src/react_agent/public_runtime.py`
+- `src/react_agent/public_store.py`
+- `src/react_agent/public_guardrails.py`
+- `src/react_agent/baseline_sidecar.py`
+- `apps/web`
 
-- `a22_financial_data_service` may expose an HTML management shell at
-  `/health`; treat that as a health-schema issue until the service provides the
-  standard external-agent health JSON.
-- `a26_composite_valuation` must be verified on the formal wrapper port
-  `10015`; do not treat another stub port as the production invoke service.
-- Internal placeholder agents are transitional LLM/profile/search fallbacks,
-  not owner-provided external HTTP agent services.
+Those files still describe the old running graph and public workflow until later phases replace them. Do not read the reset docs as evidence that the code already executes the new DAG.
 
-## Local Clean Python Environment
+## Public Transcript Boundary
 
-For stable local and Codex validation on Windows, prefer a clean Python 3.11 environment when the documented `cline_env` is polluted, unavailable through `conda run`, or not active in the current shell. The mainline Python dependency truth is `pyproject.toml`.
+The target product keeps a single assistant transcript. Internal graph steps, raw graph messages, manager assignments, agent JSON, and provider raw responses must not be treated as public transcript content.
 
-Install the mainline runtime and static-tooling surface into the clean environment:
+The workflow inspector is a diagnostic panel. In the target frontend it should describe DAG stages, dimensions, and steps. It must not create a multi-agent public chat transcript.
 
-```powershell
-python -m pip install -e ".[dev]"
-python -m pip install pytest
-```
+## Documentation Index
 
-`.[dev]` installs the static quality tools used by `scripts/quality/run_quality.py --mode static`: `ruff`, `mypy`, and `codespell`. Install `pytest` separately for local test gates unless your dependency-group tooling explicitly installs the repo's dev dependency group.
+- `docs/INDEX.md` - reset documentation map.
+- `docs/SYSTEM_MAP.md` - current operational boundary and phase map.
+- `docs/ARCHITECTURE_FIXED_DAG.md` - target 28-agent fixed DAG.
+- `docs/CONTRACTS.md` - target contract names and payload boundaries.
+- `docs/FRONTEND_V2.md` - target frontend/public transcript boundary.
+- `docs/QUALITY.md` - safe quality commands for the reset branch.
+- `docs/DECISIONS.md` - reset architecture decisions.
+- `docs/CHANGELOG.md` - reset branch changelog.
 
-Do not install `requirements-hf.txt` or `requirements-train.txt` into the default mainline environment. They are optional non-mainline dependency sets for HF/model-side and training/fine-tuning workflows.
+## Safe Local Validation
 
-Windows example path:
+Use the project conda environment when available:
 
 ```powershell
-$env:REACT_AGENT_ENV = "D:\AnacondaEnvs\langgraph_agent_py311"
-$env:PYTHONNOUSERSITE = "1"
-$env:TEMP = "$env:REACT_AGENT_ENV\pip-tmp"
-$env:TMP = "$env:REACT_AGENT_ENV\pip-tmp"
-$env:MYPY_CACHE_DIR = "$env:REACT_AGENT_ENV\mypy-cache"
-$env:Path = "$env:REACT_AGENT_ENV;$env:REACT_AGENT_ENV\Scripts;$env:REACT_AGENT_ENV\Library\bin;$env:Path"
-```
-
-The `PYTHONNOUSERSITE=1` setting prevents user-site packages from contaminating validation. The env-local `TEMP`, `TMP`, and `MYPY_CACHE_DIR` settings avoid unreliable C-drive temp space or repo-local cache permissions on Windows.
-
-Validated local commands:
-
-```powershell
-& "$env:REACT_AGENT_ENV\python.exe" scripts\quality\run_quality.py --mode static
-& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\unit_tests\test_no_route_prior_runtime_contract.py -q
-& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_graph.py -q
-& "$env:REACT_AGENT_ENV\python.exe" -m pytest tests\integration_tests\test_public_api.py -q
-```
-
-## Unified Quality Entry
-
-The repo keeps one repo-level quality command source of truth:
-
-```powershell
-conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
-```
-
-Available modes:
-
-- `mainline`
-- `static`
-- `unit`
-- `public-api`
-- `graph-smoke`
-- `frontend`
-- `fusion-gate`
-
-`mainline` now runs:
-
-1. `ruff`
-2. `mypy`
-3. `codespell`
-4. `pytest tests/unit_tests`
-5. `pytest tests/integration_tests/test_public_api.py`
-6. `pytest tests/integration_tests/test_graph.py`
-7. `npm --prefix apps/web run build`
-8. `npm --prefix apps/web run test`
-9. deterministic fusion regression / eval / gate
-
-The blocking static step currently targets the maintained quality-closure surface:
-
-- `scripts/quality/`
-- active Python integration tests
-- current authority docs / README / `AGENTS.md`
-
-Examples:
-
-```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
+conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
+conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
-conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode public-api
-conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode graph-smoke
-conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode frontend
 ```
 
-Convenience wrappers remain in `Makefile`, but they are wrappers only:
+Do not use successful tests as production readiness evidence.
 
-```powershell
-make quality
-make quality_static
-make quality_unit
-make quality_public_api
-make quality_graph_smoke
-make quality_frontend
-make quality_fusion_gate
-make quality_provider_smoke
-```
+## Explicit Non-Claims
 
-## Active Test Surface
-
-The active blocking test surface is now explicit:
-
-- Python unit tests: `tests/unit_tests`
-- Public adapter integration: `tests/integration_tests/test_public_api.py`
-- Runtime graph smoke: `tests/integration_tests/test_graph.py`
-- Frontend active gate entry: `apps/web/src/test/smoke.tsx`
-
-Archived offline tests are retained outside the default gate:
-
-- `tests/archive/route_prior`
-- `tests/archive/router_eval`
-- `tests/archive/sft`
-
-These directories are historical/offline lineage only and are not Agent Catalog
-v2 acceptance evidence.
-
-Legacy frontend fixtures are kept for reference only and now use a `.legacy.tsx` suffix:
-
-- `apps/web/src/test/app.smoke.legacy.tsx`
-- `apps/web/src/test/workflow.smoke.legacy.tsx`
-
-They are not part of the default frontend gate.
-
-## Optional Provider / Live Smoke
-
-Provider/live smoke is scripted, but it remains optional and non-blocking for the default quality gate.
-
-Command:
-
-```powershell
-conda run --no-capture-output -n cline_env python scripts/quality/run_provider_live_smoke.py --out-dir ops/regression/provider/out
-```
-
-Artifact:
-
-- `ops/regression/provider/out/provider_live_smoke.json`
-
-Behavior:
-
-- if provider/search/checkpointer prerequisites are not satisfied, the script writes a `skipped` artifact and exits `0`
-- if the environment is ready, it runs the live public seam:
-  - `GET /api/health`
-  - `POST /api/threads`
-  - `POST /api/threads/{id}/messages`
-- if the real live invocation fails, the script writes a failure artifact and exits non-zero
-
-Important boundary:
-
-- this script is not part of the default blocking gate
-- URL references remain references only; the smoke does not fetch URLs, parse HTML, upload files, or change runtime business semantics
-
-Current local evidence snapshot:
-
-- latest artifact status: `skipped`
-- current missing prerequisites in this environment:
-  - provider credentials (`OPENAI_API_KEY`, `ROUTER_OPENAI_API_KEY`, `BASELINE_OPENAI_API_KEY`, or `GOOGLE_API_KEY`)
-  - optional search credential (`TAVILY_API_KEY`) only for search-required validation
-  - runtime import/readiness is still unavailable in the current environment
-- this remains an acceptable residual because provider/live smoke is scripted evidence, but still optional and non-blocking by design
-
-## CI Workflows
-
-Mainline blocking workflow:
-
-- file: `.github/workflows/unit-tests.yml`
-- workflow name: `Quality Gate`
-- blocking jobs:
-  - `python-static`
-  - `python-unit`
-  - `public-adapter-integration`
-  - `graph-smoke`
-  - `frontend`
-  - `fusion-gate`
-
-Optional provider/live smoke workflow:
-
-- file: `.github/workflows/integration-tests.yml`
-- workflow name: `Optional Provider Live Smoke (Non-Blocking)`
-- trigger: scheduled or manual only
-- not part of the default blocking gate
-
-## Deterministic Fusion Gate
-
-The deterministic FF-5B fusion regression / eval / gate chain is part of the mainline quality entry.
-
-Underlying commands:
-
-```powershell
-conda run --no-capture-output -n cline_env python -m ops.regression.fusion.run_fusion_regression --out-dir ops/regression/fusion/out
-conda run --no-capture-output -n cline_env python -m ops.regression.fusion.eval_fusion_outputs --in ops/regression/fusion/out/fusion_runs.jsonl --out ops/regression/fusion/out/fusion_metrics.json
-conda run --no-capture-output -n cline_env python -m ops.regression.fusion.gate_fusion_outputs --in ops/regression/fusion/out/fusion_metrics.json --out ops/regression/fusion/out/fusion_gate.json
-```
-
-Artifacts:
-
-- `ops/regression/fusion/out/fusion_runs.jsonl`
-- `ops/regression/fusion/out/fusion_metrics.json`
-- `ops/regression/fusion/out/fusion_gate.json`
-
-## Archived RP/RARP/SFT Offline Evidence
-
-AC-1B-1 archived the old RP/RARP/SFT/manual-gold/teacher-proxy offline evidence
-line from current mainline acceptance. AC-1B-2A then removed the old
-route-prior runtime seam from `react_agent.graph`; the graph no longer imports
-or executes the archived `route_prior` helpers. Offline eval, advisory,
-teacher-proxy, SFT, and manual-gold artifacts below are retained only for
-historical lineage and reproducibility. They are not Agent Catalog v2
-acceptance evidence and are not current routing-quality promotion evidence.
-
-RP-1B added an optional offline validation harness for the historical RP-1A route-prior shadow seam. RP-2A extended the same tooling with `route_eval_label_v0`, legacy `expected_agents` compatibility, must/critical/nice-to-have/negative labels, safe/effective recall, precision/F1/Jaccard, cost, high-confidence wrong, ECE/Brier, and label-source grouped metrics. RP-2B added optional internal route profile cards plus deterministic reliability scoring helpers. RP-2C previously wired those helpers into `router_node` as private runtime trace and post-router comparison only; that runtime wiring is removed as of AC-1B-2A.
-
-Historical offline live run, requiring a local OpenAI-compatible embeddings endpoint:
-
-```powershell
-python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp1b_labeling_template.jsonl --out-dir ops/regression/route_prior/out --max-items 10 --prewarm-endpoint
-python -m ops.regression.route_prior.eval_route_prior_outputs --runs ops/regression/route_prior/out/route_prior_runs.jsonl --out ops/regression/route_prior/out/route_prior_metrics.json
-```
-
-Local RP-1A embedding experiments can use the project-external Qwen service
-documented in `docs/SYSTEM_MAP.md`: `Qwen/Qwen3-Embedding-0.6B` served on
-`http://127.0.0.1:8001/v1/embeddings`. It is not repo runtime code; keep the
-matching `ROUTE_PRIOR_*` env values local and do not add them to `.env.example`.
-
-Optional RP-2B reliability-card artifact generation:
-
-```powershell
-python -m ops.regression.route_prior.run_route_prior_eval --dataset ops/regression/route_prior/fixtures/rp2_labeling_template.jsonl --out-dir ops/regression/route_prior/out --enable-rarp-scoring --profile-cards-dir config/route_profiles --reliability-table ops/regression/route_prior/out/route_reliability_table.json
-```
-
-Historical RP-2C runtime-trace envs, retained only for archived lineage notes:
-
-```powershell
-$env:ROUTE_PRIOR_RELIABILITY_ENABLED="1"
-$env:LOCAL_TRACE="1"
-```
-
-Optional RP-3A-1 network-free Router advisory A/B parser dry-run:
-
-```powershell
-python -m ops.regression.route_prior.run_router_advisory_ab --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out-dir ops/regression/route_prior/out --max-items 20 --mode network-free
-```
-
-This harness does not call an LLM and does not change runtime Router behavior.
-
-Optional RP-3A-3 Router advisory prediction artifact generation:
-
-```powershell
-python -m ops.regression.route_prior.generate_router_advisory_predictions --dataset ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl --out ops/regression/route_prior/out/router_advisory_predictions_dry_run.jsonl --summary-out ops/regression/route_prior/out/router_advisory_predictions_dry_run_summary.json --max-items 20 --mode dry-run
-```
-
-Default `dry-run` mode is network-free and writes enriched prediction JSONL for the replay harness. Explicit `--mode live` is optional and writes skipped/error summaries when provider prerequisites are missing or fail.
-
-Optional DeepSeek teacher-proxy labeling for offline experiments:
-
-```powershell
-python -m ops.regression.route_prior.generate_deepseek_teacher_labels --input ops/regression/route_prior/out/rp1b_manual_draft_20.jsonl --out ops/regression/route_prior/out/rp1b_deepseek_teacher_v1_20.jsonl --max-items 20
-```
-
-DeepSeek-generated records use `label_source="deepseek_teacher_v1"`. They are model-generated teacher-proxy labels, not human/manual gold labels, and can only support proxy-quality observations such as Qwen route-prior alignment with that teacher.
-
-Most checked-in fixtures are labeling templates. `draft_for_human_review` labels are not final quality evidence; quality conclusions require human-reviewed `manual` or `manual_gold` labels. RP-3G adds `ops/regression/route_prior/fixtures/rp3_manual_gold_20.jsonl` as a GPT Pro assisted, project-owner accepted 20-case smoke fixture only; it is not an initial or promotion-quality dataset. As of AC-1B-1, route-prior offline eval, RARP advisory replays, manual-gold fixtures, and teacher-proxy/SFT data are not part of the default mainline acceptance gate. As of AC-1B-2A, the current graph runtime does not execute old RP-1A/RP-2C route-prior code. RP-3A-1 adds an offline network-free parser dry-run harness only; RP-3A-2B hardens optional prediction JSONL metadata replay for that harness; RP-3A-3 adds an optional prediction artifact generator with default network-free dry-run and explicit optional live mode; RP-3A-4D hardens the label-stub advisory with per-layer agent groups after a wrong-layer smoke regression; RP-3A-5 adds offline `provided_artifact` / `rarp_shadow` advisory-source experiments for the optional prediction-generator path only; RP-3A-5B makes missing, disabled, low-confidence, or empty-card provided artifacts explicit noop/no-advisory cases; RP-3A-5E hardens wildcard-only provided-artifact rendering; RP-3A-5F records three full `manual_gold_20` DeepSeek live provided-artifact reruns using real Qwen-backed RARP cards. The latest smoke evidence has `enabled_count=20`, `cards_non_empty_count=20`, `parse/default` regressions `0/60`, and `critical_miss_regressions=1/60` on `rp3-manual-gold-0017`; per-case report artifacts live under ignored `ops/regression/route_prior/out/rp3_routing_case_report.md` and `ops/regression/route_prior/out/rp3_routing_case_table.json`. These are archived offline artifacts, not runtime advisory or production promotion evidence. RP-3 runtime prompt advisory and `ROUTE_PRIOR_ADVISORY_MODE` remain unimplemented.
-
-## Environment Baseline
-
-- Python requirement: `>=3.11,<4.0`
-- Local baseline: conda env `cline_env`
-- Clean Windows/Codex validation example: `D:\AnacondaEnvs\langgraph_agent_py311`
-- Frontend baseline: `npm`, not `pnpm` or `yarn`
-- Dev quality tools should be installed alongside the project when you intend to run `--mode static`
-- Mainline Python dependencies come from `pyproject.toml`. Local development/static validation should install `.[dev]` plus `pytest`.
-- `requirements-hf.txt` and `requirements-train.txt` are optional non-mainline dependency sets and are not default quality-gate inputs.
-- `TAVILY_API_KEY` is optional transitional search fallback. Missing Tavily no longer blocks graph import or public runtime by default; use `SEARCH_REQUIRED=true` only when a search-backed run must require it, and `DISABLE_SEARCH=1|true|yes|on` for LLM-only placeholder mode.
-- DeepSeek is currently an LLM provider path only. Do not treat DeepSeek App web search as verified default API search in this repo.
-- Web-P0B-lite public API guardrails are for small-scope trials, not formal
-  public-internet security. Defaults:
-  `PUBLIC_API_RATE_LIMIT_PER_MINUTE=120`,
-  `PUBLIC_API_MAX_MESSAGE_CHARS=20000`,
-  `PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP=3`, and
-  `PUBLIC_API_REQUEST_TIMEOUT_SECONDS=300` for deployment planning. Before
-  public exposure, add token/auth, HTTPS, reverse proxy hardening, trusted proxy
-  IP handling, persistent/distributed rate limits, and cost quotas.
-- Legacy `ROUTE_PRIOR_*` envs are archived/offline lineage only after AC-1B-2A. The current graph runtime no longer reads them and they do not expand public readiness or the public adapter contract.
-- replay continuity remains weaker than persistent graph continuity and must stay labeled that way
-- `state["messages"]` is not the public transcript
-
-## Product Boundary
-
-What this repo does on the current mainline:
-
-- keeps a single assistant persona in the public transcript
-- keeps workflow as an answer-level inspector
-- keeps the final visible answer on the mainline path by default; Fair Fusion remains a sidecar/shadow path unless explicitly gated on
-- renders assistant answer Markdown on the client while keeping the answer payload as plain text from the backend
-- keeps the chat view inside a readable width and contains wide Markdown blocks inside the assistant card instead of letting them push the page wider
-- adds a workflow-first NDJSON streaming seam that emits only safe public events and keeps the old sync seam available
-- keeps `structuredInput` additive and honest
-- keeps `materials` and `urlReferences` compiled into canonical transcript text
-- keeps `/settings` and `/agents` read-only
-
-What the current mainline still does not do:
-
-- no new product feature expansion
-- no runtime business-semantic change
-- no file upload
-- no URL fetch / HTML parsing / snapshot persistence
-- no SSE
-- no token streaming
-- no raw graph-event or chain-of-thought streaming
-
-## Docs
-
-- [Project Overview](docs/PROJECT_OVERVIEW.md)
-- [Agent Catalog v2 Sheet2 Mapping](docs/AGENT_CATALOG_V2_SHEET2_MAPPING.md)
-- [Agent Catalog v2 Runbook](docs/AGENT_CATALOG_V2_RUNBOOK.md)
-- [Mainline Runtime Audit](docs/MAINLINE_RUNTIME_AUDIT.md)
-- [System Map](docs/SYSTEM_MAP.md)
-- [Frontend Architecture](docs/FRONTEND_ARCHITECTURE.md)
-- [External Agent Developer Package](examples/external_agent_scaffold/README.md)
-- [Docs Index](docs/INDEX.md)
-- [Router SFT Runbook](docs/RUNBOOK_ROUTER_SFT.md) - archived/offline, not current mainline acceptance evidence
-- [Changelog](docs/CHANGELOG.md)
-
-If documentation conflicts with runtime behavior, prefer `src/react_agent/*`, focused tests, and the S0 docs referenced by `docs/INDEX.md`.
+- No provider or live external service was verified by R1-A docs.
+- No `external /v1/agent/invoke` call is part of R1-A validation.
+- No demo stack startup is part of R1-A validation.
+- No Fixed DAG runtime execution is complete in R1-A.
+- No frontend v2 rewrite is complete in R1-A.
+- No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

@@ -63,11 +63,14 @@ STATIC_MYPY_TARGETS = (
 STATIC_CODESPELL_TARGETS = (
     "README.md",
     "AGENTS.md",
-    "docs/PROJECT_OVERVIEW.md",
     "docs/SYSTEM_MAP.md",
     "docs/INDEX.md",
-    "docs/RUNBOOK_ROUTER_SFT.md",
-    "docs/FRONTEND_ARCHITECTURE.md",
+    "docs/ARCHITECTURE_FIXED_DAG.md",
+    "docs/CONTRACTS.md",
+    "docs/FRONTEND_V2.md",
+    "docs/QUALITY.md",
+    "docs/DECISIONS.md",
+    "docs/CHANGELOG.md",
 )
 
 
