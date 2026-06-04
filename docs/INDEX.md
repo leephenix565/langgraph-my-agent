@@ -7,10 +7,10 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R1-B runtime skeleton, and non-claims. |
+| `README.md` | Reset branch overview, active R1-B-Delta runtime skeleton, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, retained inactive files, deletion boundary, quality entrypoints. |
-| `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG skeleton and 28 target ids. |
+| `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG skeleton and 27 formal agent ids. |
 | `docs/CONTRACTS.md` | Runtime contract names and public/runtime boundary. |
 | `docs/FRONTEND_V2.md` | Frontend and workflow inspector boundary. |
 | `docs/QUALITY.md` | Safe validation commands for reset phases. |
@@ -28,6 +28,7 @@ when historical recovery is required.
 
 ## Current Caveat
 
-R1-B proves deterministic skeleton topology and public Python contract alignment.
+R1-B-Delta proves deterministic skeleton topology, v4 roster alignment, and
+public Python contract alignment.
 It does not prove business-agent correctness, frontend v2 completion, provider
 readiness, external service readiness, or production deployment readiness.

@@ -30,14 +30,14 @@ def test_parse_filters_unknown_agents_and_restores_full_reset_targets() -> None:
         {
             "schema": "fixed_dag_plan_v1",
             "plan_id": "filtered",
-            "target_agent_ids": ["route_planner", "bad_id", "route_planner"],
+            "target_agent_ids": ["route_planner", "bad_id"],
         }
     )
     plan, stats = parse_fixed_dag_plan_with_stats(raw)
     assert stats["parse_ok"] is True
     assert "bad_id" in stats["filtered_agents"]
-    assert "route_planner" in stats["filtered_agents"]
-    assert "route_planner" not in plan["target_agent_ids"]
+    assert "route_planner" not in stats["filtered_agents"]
+    assert "route_planner" in plan["target_agent_ids"]
     assert plan["target_agent_ids"] == list(RESET_RUNTIME_AGENT_IDS)
 
 

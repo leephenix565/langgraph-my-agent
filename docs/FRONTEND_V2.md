@@ -24,6 +24,10 @@ The existing `apps/web` shell is retained. Its full workflow inspector rewrite
 is deferred to R5, so frontend code may still contain old mock/UI labels until
 that phase.
 
+The workflow inspector target should treat the reset roster as 27 formal agents
+(L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
+step and should not be shown as a direct risk-composite input.
+
 ## Target Composer Flow
 
 ```text

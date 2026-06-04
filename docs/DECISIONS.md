@@ -28,17 +28,18 @@ to old catalog numbering.
 Consequence: legacy config files remain until the catalog/runtime registry phase
 replaces them.
 
-## ADR-003: Sentiment Radar Is Cross-Cutting L2
+## ADR-003: Sentiment Radar Belongs To Market L2
 
 Status: accepted for reset runtime.
 
-Decision: the company sentiment radar belongs in L2 as a cross-cutting signal,
-not as a fifth dimension composite.
+Decision: the company sentiment radar belongs in the market dimension as an L2
+signal, not as a cross-cutting risk input and not as a fifth dimension composite.
 
-Reason: it feeds market and risk interpretation without creating a separate L3
-composite.
+Reason: v4 feedback aligned the radar to market sentiment, heat, and attention.
+Risk handling remains owned by explicit risk L2 agents and the risk composite.
 
-Consequence: L3 has four composites: market, fundamental, risk, and macro.
+Consequence: L3 has four composites: value, market, risk, and macro.
+`sentiment_company_radar` routes to `market_composite` only.
 
 ## ADR-004: Pre-Reset Tag Preserves Old History
 
@@ -77,3 +78,15 @@ or live service readiness.
 Consequence: tests can claim skeleton import/invoke/public projection only; they
 cannot claim live analysis, provider readiness, external readiness, or production
 readiness.
+
+## ADR-007: V4 Feedback Sets The 27-Agent Formal Roster
+
+Status: accepted for reset runtime.
+
+Decision: the active reset roster has 27 formal agent ids: L1=3, L2=18, L3=4,
+L4=2. The enterprise financial analysis target is removed.
+
+Reason: the v4 feedback table is the reset roster authority for R1-B-Delta.
+
+Consequence: tests and docs must not describe pre-delta target counts as current
+runtime facts.

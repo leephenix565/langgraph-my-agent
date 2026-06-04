@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R1-B.
+This file is the reset branch operational map for Phase R1-B-Delta.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R1-B fixed DAG runtime protocol skeleton.
+- Current phase: R1-B-Delta fixed DAG runtime protocol skeleton with v4 roster alignment.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
@@ -68,14 +68,18 @@ runtime authority:
 
 ## Target Fixed DAG IDs
 
-The reset skeleton has one planner node plus 28 target ids:
+The reset skeleton has 27 formal agent ids:
 
 - L1: 3
-- L2: 19
+- L2: 18
 - L3: 4
 - L4: 2
 
 See `docs/ARCHITECTURE_FIXED_DAG.md`.
+
+The v4 feedback-aligned roster removes the enterprise financial analysis target.
+`sentiment_company_radar` is a market-dimension L2 agent and does not route
+directly to `risk_composite`.
 
 ## Deleted Old-Lineage Boundary
 

@@ -8,7 +8,7 @@ def _repo_root() -> Path:
 
 
 def test_fixed_dag_architecture_doc_lists_target_agents() -> None:
-    assert len(RESET_RUNTIME_AGENT_IDS) == 28
+    assert len(RESET_RUNTIME_AGENT_IDS) == 27
 
     path = _repo_root() / "docs" / "ARCHITECTURE_FIXED_DAG.md"
     text = path.read_text(encoding="utf-8")

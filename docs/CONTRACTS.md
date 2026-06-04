@@ -25,6 +25,8 @@ Runtime fields:
 - `provenance`
 
 The plan has no dispatch strategy field and no legacy layer-mode selector.
+For R1-B-Delta, `target_agent_ids` contains the 27 formal v4 feedback-aligned
+agent ids: L1=3, L2=18, L3=4, L4=2.
 
 ## data_bundle_v1
 
@@ -66,6 +68,10 @@ Runtime fields:
 - `as_of`
 - `data_as_of`
 - optional `output_routes`
+
+`output_routes` is a generic contract field. In the current roster,
+`sentiment_company_radar` sets it to `["market_composite"]`; it does not route
+directly to `risk_composite`.
 
 ## dimension_composite_result_v1
 

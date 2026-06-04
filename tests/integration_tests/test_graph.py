@@ -20,7 +20,7 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     )
 
     assert res["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"
-    assert len(res["fixed_dag_plan"]["target_agent_ids"]) == 28
+    assert len(res["fixed_dag_plan"]["target_agent_ids"]) == 27
     assert res["workflow_snapshot"]["schema"] == "workflow_snapshot_v2"
     assert res["report_result"]["schema"] == "report_result_v1"
     assert res.get("messages")

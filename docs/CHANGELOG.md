@@ -3,6 +3,28 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R1-B-Delta fixed DAG roster alignment
+
+### Changed
+
+- Aligned the active reset roster with the v4 feedback table: 27 formal agent
+  ids with L1=3, L2=18, L3=4, and L4=2.
+- Removed the enterprise financial analysis target from the fixed-DAG runtime
+  skeleton.
+- Moved `sentiment_company_radar` to the market dimension and limited its output
+  route to `market_composite`.
+- Renamed the L3 value dimension composite from the earlier fundamental wording
+  to `value_composite`.
+- Updated reset docs and tests to reject the stale pre-delta target-count,
+  L2-count, and sentiment-to-risk wording.
+
+### Not Done
+
+- No real business agent implementation.
+- No provider, search, or external live verification.
+- No frontend v2 workflow rewrite.
+- No production deployment hardening.
+
 ## 2026-06-04 - Phase R1-B fixed DAG runtime protocol skeleton
 
 ### Added

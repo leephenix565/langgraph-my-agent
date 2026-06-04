@@ -2,7 +2,7 @@
 
 This document defines safe validation for the reset branch.
 
-## Safe R1-B Commands
+## Safe R1-B / R1-B-Delta Commands
 
 ```powershell
 git status --short --branch
@@ -39,7 +39,8 @@ used as Fixed DAG gate claims.
 
 Passing safe commands means the deterministic fixed-DAG protocol skeleton
 imports, parses, invokes without provider/external calls, exposes
-`workflow_snapshot_v2`, and preserves public transcript safety.
+`workflow_snapshot_v2`, preserves public transcript safety, and keeps the
+R1-B-Delta 27-agent roster aligned in reset docs/tests.
 
 It does not mean:
 

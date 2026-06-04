@@ -11,7 +11,7 @@ analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R1-B fixed DAG runtime protocol skeleton.
+- Current phase: R1-B-Delta fixed DAG roster alignment.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public web shell: retained for later in-place frontend v2 migration.
@@ -38,12 +38,17 @@ user input
   -> memory_update
 ```
 
-The reset target has one planner node plus 28 target ids:
+The reset target has 27 formal agent ids:
 
-- L1 evidence seams: 3 target ids.
-- L2 conclusion placeholders: 19 target ids.
+- L1 planning/evidence seams: 3 target ids.
+- L2 conclusion placeholders: 18 target ids.
 - L3 dimension composites: 4 target ids.
 - L4 decision/report: 2 target ids.
+
+The v4 feedback-aligned roster removes the enterprise financial analysis target.
+`sentiment_company_radar` belongs to the market dimension and routes only to
+`market_composite`; it is not a direct risk-composite input in this reset
+runtime.
 
 See `docs/ARCHITECTURE_FIXED_DAG.md` for the current skeleton map.
 

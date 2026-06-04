@@ -54,9 +54,9 @@ def _workflow(continuity_mode: str = "replay") -> WorkflowModel:
         planId="reset-fixed-dag-plan-v1",
         stages=[
             WorkflowStageModel(key="planning", title="Planning", stepIds=["route_planner"]),
-            WorkflowStageModel(key="evidence", title="Evidence", stepIds=["entity_resolve"]),
-            WorkflowStageModel(key="l2_analysis", title="L2", stepIds=["l2:financial_metrics_analyzer"]),
-            WorkflowStageModel(key="dimension_composite", title="Composite", stepIds=["dimension:market"]),
+            WorkflowStageModel(key="evidence", title="Evidence", stepIds=["entity_relation_extractor"]),
+            WorkflowStageModel(key="l2_analysis", title="L2", stepIds=["l2:value_traditional_valuation"]),
+            WorkflowStageModel(key="dimension_composite", title="Composite", stepIds=["dimension:value"]),
             WorkflowStageModel(key="decision", title="Decision", stepIds=["decision_synthesizer"]),
             WorkflowStageModel(key="report", title="Report", stepIds=["report_generator"]),
         ],
