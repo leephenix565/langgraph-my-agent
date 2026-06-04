@@ -12,6 +12,10 @@ Phase R4-B adds the fixed DAG runtime binding registry implemented by
 `src/react_agent/fixed_dag_runtime_registry.py` and sourced from
 `config/fixed_dag/runtime_bindings.json`.
 
+Phase R4-C isolates the legacy aNN registry/bootstrap into explicit
+compatibility modules and keeps active graph imports on fixed-DAG contract,
+executor, state, catalog, and binding seams.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal
@@ -30,6 +34,10 @@ R4-B adds runtime binding metadata for executor step results. The registry is
 offline metadata only: it records deterministic seams, disabled external HTTP
 candidates, and pending placeholders without invoking providers or external
 `/v1/agent/invoke` endpoints.
+
+R4-C keeps `legacy_agent_id` as migration metadata in binding/step-result
+contracts but does not use `config/agents/*.json`, `AGENT_METADATA`, or
+`AGENT_TOOLS` as active graph registration sources.
 
 ## fixed_dag_agent_catalog_v1
 
@@ -109,6 +117,9 @@ Validation rejects duplicate ids, ids that do not exactly match the fixed DAG
 catalog, legacy aNN primary ids, `value_financial_analysis`, enabled external
 candidates, live-verified external candidates, mismatched legacy wrapper
 metadata, sentiment-to-risk routing, and contract/route drift from the catalog.
+R4-C validates legacy external mapping through `external_http_config.py`, a
+configuration-only module, so fixed-DAG binding checks do not import HTTP
+wrapper implementation code.
 
 Seams: `load_fixed_dag_runtime_bindings`,
 `validate_fixed_dag_runtime_bindings`, `fixed_dag_runtime_bindings`,
@@ -369,7 +380,7 @@ Endpoint: `GET /api/agents`
 
 Public response model: `AgentCatalogResponse`.
 
-R4-A/R4-B semantics:
+R4-A/R4-B/R4-C semantics:
 
 - `configCount=27`
 - `runtimeCount=27`
@@ -380,7 +391,8 @@ R4-A/R4-B semantics:
 
 The field names remain compatible with the existing public schema. Their R4-A
 meaning is reset catalog projection, not old aNN config file enablement.
-R4-B does not add runtime binding fields to `/api/agents`.
+R4-B/R4-C do not add runtime binding or legacy registry fields to
+`/api/agents`.
 
 ## Public Exclusions
 

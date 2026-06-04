@@ -70,4 +70,5 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert "layer_plan" not in res
     assert "fusion_verdict" not in res
     assert "contract" not in graph_module.__dict__
-    assert "news" not in graph_module.AGENT_METADATA
+    assert "AGENT_METADATA" not in graph_module.__dict__
+    assert "AGENT_TOOLS" not in graph_module.__dict__

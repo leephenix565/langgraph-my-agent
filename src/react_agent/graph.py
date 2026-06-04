@@ -15,7 +15,6 @@ from typing import Any
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 
-from react_agent.agents import AGENT_METADATA, AGENT_TOOLS
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
@@ -31,15 +30,10 @@ from react_agent.fixed_dag_contracts import (
     build_workflow_snapshot_v2,
 )
 from react_agent.fixed_dag_executor import execute_fixed_dag_plan
-from react_agent.graph_bootstrap import bootstrap_agent_runtime, build_node_registry
 from react_agent.graph_entry import compile_graph_variants, select_graph_for_invoke
 from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
-
-
-bootstrap_agent_runtime()
-AGENT_IDS_FOR_NODES, AGENT_NODE_NAMES = build_node_registry(include_disabled=False)
 
 
 def _message_text(message: Any) -> str:
@@ -294,10 +288,6 @@ def get_graph_for_invoke(thread_id: str | None = None) -> Any:
 
 
 __all__ = [
-    "AGENT_IDS_FOR_NODES",
-    "AGENT_METADATA",
-    "AGENT_NODE_NAMES",
-    "AGENT_TOOLS",
     "builder",
     "graph",
     "graph_persistent",

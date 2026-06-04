@@ -1,11 +1,10 @@
-import types
 
 import anyio
 from langchain_core.messages import AIMessage
 
 import react_agent.default_agents as default_agents
-import react_agent.graph as graph_module
-
+from react_agent.graph_bootstrap import bootstrap_legacy_agent_runtime
+from react_agent.legacy_agent_registry import AGENT_METADATA, AGENT_TOOLS
 
 INTERNAL_PLACEHOLDER_IDS = {
     "a07_macro_sentiment",
@@ -21,6 +20,17 @@ INTERNAL_PLACEHOLDER_IDS = {
 }
 
 
+def setup_module() -> None:
+    AGENT_METADATA.clear()
+    AGENT_TOOLS.clear()
+    bootstrap_legacy_agent_runtime()
+
+
+def teardown_module() -> None:
+    AGENT_METADATA.clear()
+    AGENT_TOOLS.clear()
+
+
 def _agent_input(*, allow_search: bool = True) -> dict:
     return {
         "question": "请简要分析公司舆情风险。",
@@ -33,7 +43,7 @@ def _agent_input(*, allow_search: bool = True) -> dict:
 
 def test_internal_placeholder_agents_are_registered_as_llm_search_tools() -> None:
     for agent_id in INTERNAL_PLACEHOLDER_IDS:
-        tool = graph_module.AGENT_TOOLS.get(agent_id)
+        tool = AGENT_TOOLS.get(agent_id)
         assert tool is not None
         assert not getattr(tool, "is_external_http_wrapper", False)
         assert not getattr(tool, "is_external_valuation_wrapper", False)
@@ -44,7 +54,7 @@ def test_internal_placeholder_agents_are_registered_as_llm_search_tools() -> Non
 
 def test_special_agents_are_not_llm_search_placeholders() -> None:
     for agent_id in ["a01_cio_orchestrator", "a25_report_center"]:
-        tool = graph_module.AGENT_TOOLS.get(agent_id)
+        tool = AGENT_TOOLS.get(agent_id)
         assert tool is not None
         assert not getattr(tool, "is_external_http_wrapper", False)
         assert not getattr(tool, "is_llm_search_placeholder", False)
@@ -60,7 +70,7 @@ def test_special_agent_direct_invoke_provider_import_failure_is_fail_soft(monkey
 
     for agent_id in ["a01_cio_orchestrator", "a25_report_center"]:
         result = anyio.run(
-            lambda aid=agent_id: graph_module.AGENT_TOOLS[aid].ainvoke(
+            lambda aid=agent_id: AGENT_TOOLS[aid].ainvoke(
                 _agent_input(allow_search=False)
             )
         )
@@ -81,7 +91,7 @@ def test_placeholder_direct_invoke_provider_import_failure_is_fail_soft(monkeypa
     monkeypatch.setattr(default_agents, "load_chat_model", raise_import_error)
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             _agent_input(allow_search=True)
         )
     )
@@ -139,7 +149,7 @@ def test_placeholder_direct_invoke_with_mock_search_success(monkeypatch) -> None
     monkeypatch.setattr(default_agents, "load_chat_model", lambda _name: FakeModel())
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             _agent_input(allow_search=True)
         )
     )
@@ -171,7 +181,7 @@ def test_placeholder_direct_invoke_with_disabled_search_marks_limitation(monkeyp
     monkeypatch.setattr(default_agents, "load_chat_model", lambda _name: FakeModel())
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             {
                 **_agent_input(allow_search=True),
                 "tools_config": {"allow_search": True, "max_search_results": 3},
@@ -216,7 +226,7 @@ def test_placeholder_direct_invoke_with_search_failure_fails_soft(monkeypatch) -
     monkeypatch.setattr(default_agents, "load_chat_model", lambda _name: FakeModel())
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             _agent_input(allow_search=True)
         )
     )
@@ -250,7 +260,7 @@ def test_placeholder_search_tool_unavailable_does_not_surface_import_error(monke
     monkeypatch.setattr(default_agents, "load_chat_model", lambda _name: FakeModel())
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             {
                 **_agent_input(allow_search=True),
                 "tools_config": {"allow_search": True, "max_search_results": 3},
@@ -279,7 +289,7 @@ def test_placeholder_direct_invoke_with_provider_failure_fails_soft(monkeypatch)
     monkeypatch.setattr(default_agents, "load_chat_model", lambda _name: RaisingModel())
 
     result = anyio.run(
-        lambda: graph_module.AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
+        lambda: AGENT_TOOLS["a09_company_sentiment_radar"].ainvoke(
             _agent_input(allow_search=True)
         )
     )
@@ -295,10 +305,10 @@ def test_placeholder_direct_invoke_with_provider_failure_fails_soft(monkeypatch)
 def test_runtime_registration_invariants_remain_after_placeholder_hardening() -> None:
     external_wrappers = [
         tool
-        for tool in graph_module.AGENT_TOOLS.values()
+        for tool in AGENT_TOOLS.values()
         if getattr(tool, "is_external_http_wrapper", False)
     ]
     assert len(external_wrappers) == 13
-    assert "a05_annual_report_analysis" not in graph_module.AGENT_TOOLS
-    assert "a21_portfolio_manager" not in graph_module.AGENT_TOOLS
-    assert "a02_task_router" not in graph_module.AGENT_TOOLS
+    assert "a05_annual_report_analysis" not in AGENT_TOOLS
+    assert "a21_portfolio_manager" not in AGENT_TOOLS
+    assert "a02_task_router" not in AGENT_TOOLS

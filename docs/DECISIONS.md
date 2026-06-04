@@ -19,7 +19,7 @@ runtime authority in R3.
 ## ADR-002: snake_case Runtime IDs Replace aNN IDs
 
 Status: accepted for reset target; active for backend catalog projection in
-R4-A and runtime binding metadata in R4-B.
+R4-A, runtime binding metadata in R4-B, and legacy boundary isolation in R4-C.
 
 Decision: target formal agents use descriptive `snake_case` ids.
 
@@ -27,8 +27,8 @@ Reason: ids should carry stable role meaning and avoid coupling new architecture
 to old catalog numbering.
 
 Consequence: the fixed DAG catalog uses `snake_case` ids as active reset public
-catalog truth. Legacy aNN config files remain as migration input until later R4
-cleanup.
+catalog truth. Legacy aNN config files remain as explicit migration/readiness
+input but are not active reset graph registration truth.
 
 ## ADR-003: Sentiment Radar Belongs To Market L2
 
@@ -192,3 +192,31 @@ Non-consequence: R4-B does not change active DAG topology, does not invoke
 providers or external `/v1/agent/invoke` endpoints, does not expose binding
 fields through `/api/agents`, does not complete frontend v2, does not rebuild
 mainline/fusion gates, and does not prove production readiness.
+
+## ADR-013: R4-C Isolates Legacy Registry From Active Fixed DAG Runtime
+
+Status: accepted for reset runtime.
+
+Decision: legacy aNN `AGENT_METADATA`, `AGENT_TOOLS`, metadata loading, and
+bootstrap behavior live behind explicit compatibility modules. Active
+`react_agent.graph` imports fixed-DAG contracts, executor, state, graph entry,
+catalog, and binding seams only; it must not import or execute
+`legacy_agent_registry`, `graph_bootstrap`, default LLM/search placeholder
+registration, generic agent registration, or external HTTP wrapper
+implementation modules.
+
+Reason: the reset branch needs a clean runtime authority before frontend DAG UI,
+external handoff docs, and later quality gate rebuilds. Keeping old registry
+globals on the graph import path made legacy config appear to be active runtime
+truth.
+
+Consequence: `config/agents/*.json` is retained as migration/readiness input,
+`legacy_agent_id` remains metadata in runtime bindings and step results, and
+external HTTP wrapper infrastructure remains available but not live verified or
+invoked by the fixed-DAG graph. The old valuation-only facade and unreferenced
+JSON helper were removed after references were migrated or absent.
+
+Non-consequence: R4-C does not implement business agent algorithms, does not
+enable external candidates, does not call providers or external
+`/v1/agent/invoke`, does not rewrite frontend v2, and does not rebuild
+mainline/fusion gates.

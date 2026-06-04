@@ -3,6 +3,51 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R4-C legacy registry boundary cleanup
+
+### Added
+
+- Added `src/react_agent/agent_types.py` as the no-legacy-import home for shared
+  `AgentInput` and `AgentOutput` typing.
+- Added `src/react_agent/legacy_agent_registry.py` as the explicit compatibility
+  home for historical `AGENT_METADATA`, `AGENT_TOOLS`, metadata loading,
+  sorting, and registration helpers.
+- Added `src/react_agent/external_http_config.py` as configuration-only retained
+  external candidate metadata for fixed-DAG binding validation.
+- Added import-boundary coverage proving `react_agent.graph` does not load
+  legacy registry/bootstrap/default/generic/external-wrapper implementation
+  modules.
+
+### Changed
+
+- Changed `src/react_agent/graph.py` to avoid legacy bootstrap and old registry
+  globals on the active fixed-DAG graph import path.
+- Changed `src/react_agent/agents.py` into a shared typing facade with lazy
+  compatibility exports for legacy registry names.
+- Changed legacy catalog, disabled-agent, placeholder, and compatibility tests
+  to target `legacy_agent_registry.py` and `graph_bootstrap.py` explicitly.
+- Changed public workflow title mapping to use the fixed DAG catalog rather
+  than old `config/agents/*.json` metadata.
+- Changed fixed DAG runtime binding validation to read external candidate
+  metadata from the config-only module instead of the HTTP wrapper module.
+
+### Removed
+
+- Removed `src/react_agent/external_valuation_agents.py` after valuation tests
+  migrated to the retained generic `external_http_agents.py` wrapper.
+- Removed unreferenced `src/react_agent/json_utils.py`.
+
+### Not Done
+
+- No real business-agent algorithm implementation.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No external HTTP candidate was enabled or live verified.
+- No deletion of `config/agents/*.json`.
+- No R5 frontend workflow UI rewrite.
+- No R6 mainline/fusion/provider readiness rebuild.
+- No push.
+
 ## 2026-06-04 - Phase R4-B fixed DAG runtime binding registry
 
 ### Added

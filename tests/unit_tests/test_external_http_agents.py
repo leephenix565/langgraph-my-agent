@@ -1,8 +1,7 @@
+import anyio
 import httpx
 import pytest
-import anyio
 
-from react_agent.agents import AgentMetadata
 from react_agent.external_http_agents import (
     EXTERNAL_HTTP_AGENT_CONFIG,
     build_external_http_agent_request,
@@ -10,7 +9,7 @@ from react_agent.external_http_agents import (
     map_external_http_response_to_agent_output,
     register_external_http_agents,
 )
-
+from react_agent.legacy_agent_registry import AgentMetadata
 
 P0_EXTERNAL_HTTP_CONFIG = {
     "a16_ml_valuation": (

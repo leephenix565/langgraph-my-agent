@@ -8,7 +8,7 @@ from langchain_core.messages import AnyMessage
 from langgraph.graph import add_messages
 from typing_extensions import Annotated, TypedDict
 
-from react_agent.agents import AgentOutput
+from react_agent.agent_types import AgentOutput
 
 
 def merge_analyst_results(

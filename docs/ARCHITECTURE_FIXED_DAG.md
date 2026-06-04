@@ -1,10 +1,10 @@
 # Fixed DAG Architecture
 
 This document describes the active reset skeleton, the Phase R4-A fixed DAG
-catalog source, and the Phase R4-B runtime binding registry. The skeleton is
-deterministic, provider-free, plan-driven, and backed by explicit catalog,
-binding, contract, executor, and function seams. It is not a completed business
-analysis engine.
+catalog source, the Phase R4-B runtime binding registry, and the Phase R4-C
+legacy registry boundary cleanup. The skeleton is deterministic, provider-free,
+plan-driven, and backed by explicit catalog, binding, contract, executor, and
+function seams. It is not a completed business analysis engine.
 
 ## Active Skeleton Flow
 
@@ -99,5 +99,10 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - R4-A owns the fixed DAG catalog source and `/api/agents` public projection.
 - R4-B owns the runtime binding registry and offline external endpoint mapping
   metadata.
-- R4-C still owns legacy aNN catalog cleanup, R5 owns frontend workflow UI, and
-  R6 owns mainline/fusion-gate rebuild.
+- R4-C owns active import boundary cleanup: legacy `AGENT_METADATA`,
+  `AGENT_TOOLS`, placeholder bootstrap, and `config/agents` metadata are
+  explicit compatibility/migration inputs, not active fixed-DAG runtime truth.
+- Active `react_agent.graph` imports must not load `legacy_agent_registry`,
+  `graph_bootstrap`, default agents, generic agents, or external HTTP wrapper
+  implementation modules.
+- R5 owns frontend workflow UI, and R6 owns mainline/fusion-gate rebuild.

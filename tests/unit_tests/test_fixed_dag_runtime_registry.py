@@ -1,7 +1,7 @@
 from copy import deepcopy
 from pathlib import Path
 
-from react_agent.external_http_agents import EXTERNAL_HTTP_AGENT_CONFIG
+from react_agent.external_http_config import EXTERNAL_HTTP_AGENT_CONFIG
 from react_agent.fixed_dag_catalog import fixed_dag_agent_by_id, fixed_dag_agent_ids
 from react_agent.fixed_dag_runtime_registry import (
     FIXED_DAG_RUNTIME_BINDINGS_PATH,

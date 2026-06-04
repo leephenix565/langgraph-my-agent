@@ -2,11 +2,11 @@
 
 This document defines safe validation for the reset branch.
 
-R4-B uses the same non-provider validation boundary as R3/R3.6/R4-A. It adds
-runtime binding registry, legacy mapping, and executor annotation coverage, not
-provider, external live, frontend, or business-agent capability.
+R4-C uses the same non-provider validation boundary as R3/R3.6/R4-A/R4-B. It
+adds legacy registry import-boundary coverage and compatibility test migration,
+not provider, external live, frontend, or business-agent capability.
 
-## Safe R4-B Commands
+## Safe R4-C Commands
 
 ```powershell
 git status --short --branch
@@ -19,9 +19,9 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-## Not Safe For R4-B
+## Not Safe For R4-C
 
-Do not run during R3/R4-A/R4-B unless the user explicitly asks:
+Do not run during R3/R4-A/R4-B/R4-C unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -30,8 +30,8 @@ Do not run during R3/R4-A/R4-B unless the user explicitly asks:
 - artifact-writing fusion gates
 - frontend production build if it writes repo artifacts
 
-R4-B also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
-stack, or frontend build/test results as required runtime-binding evidence.
+R4-C also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
+stack, or frontend build/test results as required runtime-boundary evidence.
 
 ## Current Quality Runner Boundary
 
@@ -51,11 +51,13 @@ projects `step_results` and `execution_batches`, preserves public transcript
 safety, and keeps the contract/executor/catalog/runtime-binding seams and
 27-agent roster aligned in reset docs/tests.
 
-R3/R4-A/R4-B-specific tests cover `validate_dag_steps`,
+R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,
 `validate_dag_execution_result`, fixed DAG catalog validation, fixed DAG runtime
 binding validation, legacy external mapping alignment, graph executor
-integration, and public workflow/catalog projection.
+integration, public workflow/catalog projection, active graph import isolation
+from legacy registry/bootstrap modules, and explicit legacy compatibility
+bootstrap tests.
 
 It does not mean:
 

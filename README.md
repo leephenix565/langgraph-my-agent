@@ -8,7 +8,8 @@ Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
 the fixed DAG runtime binding registry for deterministic, external-candidate,
-and pending-placeholder runtime metadata. The runtime
+and pending-placeholder runtime metadata. Phase R4-C isolates the legacy aNN
+registry/bootstrap from the active fixed-DAG graph import path. The runtime
 validates `dag_steps[].depends_on`, computes deterministic `execution_batches`,
 emits per-step `step_results`, and remains a provider-free placeholder skeleton.
 It is not a completed business analysis engine.
@@ -17,7 +18,7 @@ It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R4-B fixed DAG runtime binding registry.
+- Current phase: R4-C legacy registry boundary cleanup.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -105,8 +106,8 @@ It does not include endpoint URLs or env var values in step results.
 
 ## Current Runtime Boundary
 
-R3/R4-B keeps the graph deterministic and routes graph/public fallback construction
-through contract, executor, and public mapping seams:
+R3/R4-C keeps the graph deterministic and routes graph/public fallback
+construction through contract, executor, and public mapping seams:
 
 - `src/react_agent/fixed_dag_contracts.py`
 - `src/react_agent/fixed_dag_executor.py`
@@ -115,6 +116,7 @@ through contract, executor, and public mapping seams:
 - `src/react_agent/prompts.py`
 - `src/react_agent/router_parse.py`
 - `src/react_agent/state.py`
+- `src/react_agent/agent_types.py`
 - `src/react_agent/public_contracts.py`
 - `src/react_agent/public_mapping.py`
 - `src/react_agent/public_runtime.py`
@@ -125,10 +127,23 @@ The graph state now carries `dag_execution`, `dag_step_results`, and
 results include runtime binding metadata for workflow inspection, but this does
 not mean any external service was invoked.
 
-The external HTTP wrapper infrastructure and baseline sidecar module remain in
-the repository, but they are not connected to the active reset graph. Existing
-`config/agents/*.json` remains as legacy migration input until a later R4-C
-cleanup phase. It is no longer the active reset public catalog truth.
+R4-C adds an explicit legacy boundary:
+
+- `src/react_agent/legacy_agent_registry.py` owns historical `AGENT_METADATA`
+  and `AGENT_TOOLS`.
+- `src/react_agent/graph_bootstrap.py` is legacy-only compatibility bootstrap.
+- `src/react_agent/agents.py` keeps shared typing and lazy compatibility
+  exports, but active fixed-DAG state imports types from `agent_types.py`.
+- `config/agents/*.json` remains as migration/readiness input only.
+- `src/react_agent/external_http_config.py` keeps offline external candidate
+  metadata; `src/react_agent/external_http_agents.py` remains retained wrapper
+  infrastructure, not live-verified runtime.
+
+Importing `react_agent.graph` must not import or execute legacy bootstrap,
+`AGENT_TOOLS`, default LLM/search placeholder registration, generic agent
+registration, or HTTP wrapper implementation modules. `config/agents/*.json` is
+still retained, but it is no longer the active reset public catalog or runtime
+registration truth.
 
 ## Previous R3.6 Cleanup Boundary
 
@@ -184,11 +199,14 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3/R4-A/R4-B.
-- No `external /v1/agent/invoke` call is part of R3/R4-A/R4-B validation.
-- No demo stack startup is part of R3/R4-A/R4-B validation.
-- No real business algorithms for individual agents are implemented in R3/R4-A/R4-B.
-- No frontend v2 rewrite is complete in R3/R4-A/R4-B.
-- No mainline or fusion-gate reset quality gate is rebuilt in R3/R4-A/R4-B.
-- No legacy aNN catalog cleanup is complete in R4-B.
+- No provider or live external service was verified by R3/R4-A/R4-B/R4-C.
+- No `external /v1/agent/invoke` call is part of R3/R4-A/R4-B/R4-C validation.
+- No demo stack startup is part of R3/R4-A/R4-B/R4-C validation.
+- No real business algorithms for individual agents are implemented in
+  R3/R4-A/R4-B/R4-C.
+- No frontend v2 rewrite is complete in R3/R4-A/R4-B/R4-C.
+- No mainline or fusion-gate reset quality gate is rebuilt in
+  R3/R4-A/R4-B/R4-C.
+- R4-C isolates legacy registry/bootstrap but does not delete
+  `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

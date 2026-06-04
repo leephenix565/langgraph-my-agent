@@ -8,7 +8,7 @@ from typing import Any, Dict, List
 
 from langchain_core.messages import AIMessage, AnyMessage, HumanMessage
 
-from react_agent.agents import AgentOutput
+from react_agent.agent_types import AgentOutput
 from react_agent.graph_observability import _truncate
 from react_agent.state import State
 from react_agent.utils import get_message_text

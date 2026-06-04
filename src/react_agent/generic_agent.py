@@ -6,7 +6,7 @@ from typing import Any, Dict, List
 
 from langchain_core.tools import tool
 
-from react_agent.agents import AgentOutput
+from react_agent.agent_types import AgentOutput
 
 
 def build_generic_agent_tool(agent_id: str, description: str) -> Any:

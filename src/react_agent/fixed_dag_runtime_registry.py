@@ -120,8 +120,8 @@ def _str_list(value: Any) -> list[str] | None:
 
 
 def _legacy_external_config() -> Mapping[str, Any]:
-    # Imported lazily to keep catalog loading independent from legacy wrappers.
-    from react_agent.external_http_agents import EXTERNAL_HTTP_AGENT_CONFIG
+    # Imported lazily from a config-only module to avoid wrapper side effects.
+    from react_agent.external_http_config import EXTERNAL_HTTP_AGENT_CONFIG
 
     return EXTERNAL_HTTP_AGENT_CONFIG
 

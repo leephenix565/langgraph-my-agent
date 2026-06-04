@@ -5,11 +5,10 @@ from __future__ import annotations
 
 import uuid
 from datetime import datetime
-from pathlib import Path
 from typing import Any, Iterable, List, Sequence
 from urllib.parse import urlparse
 
-from react_agent.agents import AGENT_METADATA, load_metadata_from_dir
+from react_agent.fixed_dag_catalog import fixed_dag_agent_by_id
 from react_agent.fixed_dag_contracts import (
     build_default_fixed_dag_plan,
     build_workflow_snapshot_v2,
@@ -31,7 +30,6 @@ from react_agent.public_contracts import (
     WorkflowStageModel,
 )
 
-CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
 STRUCTURED_INPUT_SECTIONS: Sequence[tuple[str, str]] = (
     ("task", "[Task]"),
     ("context", "[Known context]"),
@@ -51,11 +49,6 @@ def _truncate(text: str, limit: int) -> str:
     if len(value) <= limit:
         return value
     return value[: max(limit - 3, 0)].rstrip() + "..."
-
-
-def _ensure_agent_metadata() -> None:
-    if not AGENT_METADATA:
-        load_metadata_from_dir(CONFIG_AGENT_DIR)
 
 
 def _coerce_str(value: Any) -> str:
@@ -237,9 +230,8 @@ def build_user_turn(text: str, structured_input: StructuredInputModel | None = N
 
 
 def _agent_title(agent_id: str) -> str:
-    _ensure_agent_metadata()
-    meta = AGENT_METADATA.get(agent_id)
-    return meta.name if meta and meta.name else agent_id
+    meta = fixed_dag_agent_by_id().get(agent_id)
+    return str(meta.get("display_name") or meta.get("name") or agent_id) if meta else agent_id
 
 
 def _workflow_snapshot_dict(state: dict[str, Any]) -> dict[str, Any]:

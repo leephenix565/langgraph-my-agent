@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R4-B.
+This file is the reset branch operational map for Phase R4-C.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R4-B fixed DAG runtime binding registry.
+- Current phase: R4-C legacy registry boundary cleanup.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -70,23 +70,31 @@ Active skeleton properties:
   records per-step `step_results`.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
   is registry evidence only and does not trigger provider or external calls.
+- R4-C isolates legacy aNN registry/bootstrap so active `react_agent.graph`
+  imports do not register `AGENT_TOOLS`, default placeholders, generic agents,
+  or external wrapper tools.
 - Invalid plans fail soft to the deterministic default plan and surface degraded
   fallback provenance in the workflow snapshot.
 
 ## Retained But Inactive Infrastructure
 
-R3/R4-B keeps these files and some old helper functions for later phases or
+R3/R4-C keeps these files and some old helper functions for later phases or
 compatibility, but they are not active graph invocation authority:
 
 - `src/react_agent/baseline_sidecar.py`
+- `src/react_agent/legacy_agent_registry.py`
+- `src/react_agent/graph_bootstrap.py`
+- `src/react_agent/external_http_config.py`
 - `src/react_agent/external_http_agents.py`
-- `src/react_agent/external_valuation_agents.py`
 - `config/agents/*.json`
 - `apps/web`
 
-In R4-B, `config/agents/*.json` and the legacy external wrapper table are
+In R4-C, `config/agents/*.json` and the legacy external wrapper table are
 retained as adapter/migration inputs. They are not the active reset public
-catalog truth, and wrapper mapping is not live service verification.
+catalog or runtime registry truth, and wrapper mapping is not live service
+verification. The old valuation-only facade and unused JSON helper were removed
+after tests migrated to the generic external HTTP wrapper and no source/test
+references remained.
 
 ## Target Fixed DAG IDs
 
@@ -140,7 +148,7 @@ R3.6 did not delete or migrate:
 Later phases own:
 
 - real business agent algorithms
-- R4-C legacy aNN catalog cleanup after replacement
+- later replacement/removal policy for `config/agents/*.json`
 - external service readiness and protocol repair
 - R5 frontend DAG workflow inspector rewrite
 - R6 rebuilt mainline and fusion-gate quality gates
@@ -148,7 +156,7 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R4-B validation commands:
+Safe R4-C validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -173,5 +181,6 @@ R3 does not claim:
 - mainline/fusion-gate reset gate completion
 - production deployment readiness
 
-R4-B additionally does not claim that external HTTP candidates are enabled,
-live verified, or ready for production invocation.
+R4-C additionally does not claim that external HTTP candidates are enabled,
+live verified, or ready for production invocation. It only claims the legacy
+registry/bootstrap is isolated from the active fixed-DAG graph import path.

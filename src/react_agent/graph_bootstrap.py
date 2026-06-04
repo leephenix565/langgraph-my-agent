@@ -1,5 +1,10 @@
 # ruff: noqa: D103
-"""Bootstrap helpers for graph agent registration and catalog loading."""
+"""Legacy bootstrap helpers for aNN registry compatibility tests.
+
+The active fixed-DAG graph intentionally does not import or execute this module.
+Use `bootstrap_legacy_agent_runtime()` only for migration/readiness tests that
+need the historical `config/agents` -> `AGENT_TOOLS` registry.
+"""
 
 from __future__ import annotations
 
@@ -7,7 +12,10 @@ import os
 from pathlib import Path
 from typing import Any, Dict, List, Tuple
 
-from react_agent.agents import (
+from react_agent.default_agents import _build_agent_tool, register_builtin_agents
+from react_agent.external_http_agents import register_external_http_agents
+from react_agent.generic_agent import build_generic_agent_tool
+from react_agent.legacy_agent_registry import (
     AGENT_METADATA,
     AGENT_TOOLS,
     agents_by_layer,
@@ -15,15 +23,12 @@ from react_agent.agents import (
     load_metadata_from_dir,
     register_agent,
 )
-from react_agent.default_agents import _build_agent_tool, register_builtin_agents
-from react_agent.external_http_agents import register_external_http_agents
-from react_agent.generic_agent import build_generic_agent_tool
 
 CONFIG_AGENT_DIR = Path(__file__).resolve().parents[2] / "config" / "agents"
 
 
-def bootstrap_agent_runtime() -> None:
-    """Register configured agents and wrappers without changing active DAG flow."""
+def bootstrap_legacy_agent_runtime() -> None:
+    """Register configured legacy agents/wrappers for explicit compatibility use."""
     enable_builtin = os.environ.get("ENABLE_BUILTIN_AGENTS", "0") == "1"
     config_exists = CONFIG_AGENT_DIR.exists()
     if enable_builtin or not config_exists:
@@ -50,7 +55,7 @@ def bootstrap_agent_runtime() -> None:
         register_agent(meta, tool)
 
 
-def build_node_registry(include_disabled: bool) -> Tuple[List[str], Dict[str, str]]:
+def build_legacy_node_registry(include_disabled: bool) -> Tuple[List[str], Dict[str, str]]:
     del include_disabled
     agent_ids_for_nodes: List[str] = [
         aid for aid, meta in AGENT_METADATA.items() if meta.default_enabled
@@ -76,8 +81,14 @@ def _agent_profile_card(meta_id: str) -> Dict[str, Any]:
     }
 
 
-def build_agent_catalog(layer_order: List[str]) -> Dict[str, List[Dict[str, Any]]]:
+def build_legacy_agent_catalog(layer_order: List[str]) -> Dict[str, List[Dict[str, Any]]]:
     return {
         layer: [_agent_profile_card(agent_id) for agent_id in agents_by_layer(layer)]
         for layer in layer_order
     }
+
+
+# Backward-compatible names for migration tests and older helper imports only.
+bootstrap_agent_runtime = bootstrap_legacy_agent_runtime
+build_node_registry = build_legacy_node_registry
+build_agent_catalog = build_legacy_agent_catalog

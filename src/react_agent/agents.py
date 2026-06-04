@@ -1,128 +1,33 @@
-"""Agent protocol, metadata, and registration helpers."""
+"""Agent typing facade plus lazy legacy registry compatibility exports."""
 
 from __future__ import annotations
 
-import json
-from dataclasses import dataclass
-from pathlib import Path
-from typing import Any, Callable, Dict, List, Optional
+from typing import Any
 
-from langchain_core.tools import BaseTool
-from typing_extensions import TypedDict
+from react_agent.agent_types import AgentInput, AgentOutput
 
-
-class AgentInput(Dict[str, Any]):
-    """Lightweight dict-compatible AgentInput schema."""
-
-    question: str
-    subtask: str
-    shared_context: Dict[str, Any]
-    history: List[Dict[str, Any]]
-    tools_config: Dict[str, Any]
+_LEGACY_EXPORTS = (
+    "AgentMetadata",
+    "AGENT_METADATA",
+    "AGENT_TOOLS",
+    "register_agent",
+    "load_metadata_from_dir",
+    "agents_by_layer",
+    "agent_sort_key",
+    "format_agent_profile",
+)
 
 
-class AgentOutput(TypedDict, total=False):
-    """Dict-shaped Agent output surface used by runtime and Studio schema export.
+def __getattr__(name: str) -> Any:
+    if name in _LEGACY_EXPORTS:
+        from react_agent import legacy_agent_registry
 
-    Runtime callers still pass and consume plain dict objects. This type surface
-    only narrows the commonly-used keys so Pydantic / LangGraph can emit a JSON
-    schema for Studio without changing the graph's dict-style behavior.
-    """
-
-    analysis: str
-    key_points: List[str]
-    evidence: List[str]
-    confidence: float
-    parse_ok: bool
-    contract: Dict[str, Any] | str
+        return getattr(legacy_agent_registry, name)
+    raise AttributeError(f"module {__name__!r} has no attribute {name!r}")
 
 
-@dataclass
-class AgentMetadata:
-    """Metadata used by Router / Manager."""
-
-    id: str
-    name: str
-    description: str
-    capabilities: List[str]
-    input_type: str
-    latency_level: str
-    cost_level: str
-    version: str
-    layer: Optional[str] = None
-    team: Optional[str] = None
-    role_type: Optional[str] = None
-    business_order: Optional[int] = None
-    business_role: Optional[str] = None
-    business_status: Optional[str] = None
-    business_layer: Optional[str] = None
-    business_category: Optional[str] = None
-    business_subcategory: Optional[str] = None
-    profile_summary: Optional[str] = None
-    when_to_use: Optional[str] = None
-    when_not_to_use: Optional[str] = None
-    required_inputs: Optional[str] = None
-    missing_input_policy: Optional[str] = None
-    owner: Optional[str] = None
-    profile_source: Optional[str] = None
-    profile_updated_from_excel: Optional[str] = None
-    default_enabled: bool = True
-
-
-def format_agent_profile(meta: AgentMetadata) -> str:
-    """Return the structured profile shown to Router and selected agents."""
-    lines = [
-        f"name: {meta.name}",
-        f"business_layer: {meta.business_layer or ''}",
-        f"business_category: {meta.business_category or ''}",
-        f"profile_summary: {meta.profile_summary or meta.description}",
-        f"when_to_use: {meta.when_to_use or ''}",
-        f"when_not_to_use: {meta.when_not_to_use or ''}",
-        f"required_inputs: {meta.required_inputs or ''}",
-        f"missing_input_policy: {meta.missing_input_policy or ''}",
-    ]
-    return "\n".join(lines)
-
-
-# Runtime registries (includes built-ins + loaded metadata).
-AGENT_METADATA: Dict[str, AgentMetadata] = {}
-AGENT_TOOLS: Dict[str, BaseTool] = {}
-
-
-def register_agent(metadata: AgentMetadata, tool: BaseTool) -> None:
-    """Register a single agent's metadata and tool."""
-    AGENT_METADATA[metadata.id] = metadata
-    AGENT_TOOLS[metadata.id] = tool
-
-
-def load_metadata_from_dir(path: Path) -> None:
-    """Load agent_{id}.json from a directory into AGENT_METADATA."""
-    for file in sorted(path.glob("agent_*.json")):
-        try:
-            data = json.loads(file.read_text(encoding="utf-8"))
-            meta = AgentMetadata(**data)
-            if meta.id not in AGENT_METADATA:
-                AGENT_METADATA[meta.id] = meta
-        except Exception:
-            continue
-
-
-def agents_by_layer(layer: str) -> List[str]:
-    """Return agent ids assigned to a given layer and enabled."""
-    layer_upper = layer.upper()
-    return [
-        meta.id
-        for meta in sorted(AGENT_METADATA.values(), key=agent_sort_key)
-        if (meta.layer or "").upper() == layer_upper and meta.default_enabled
-    ]
-
-
-def agent_sort_key(meta: AgentMetadata) -> tuple[int, int, str]:
-    """Sort formal business agents by business_order before legacy/historical ids."""
-    if meta.business_order is not None:
-        return (0, int(meta.business_order), meta.id)
-    if meta.business_status == "legacy_retained":
-        return (1, 0, meta.id)
-    if not meta.default_enabled or meta.business_status == "disabled_historical":
-        return (2, 0, meta.id)
-    return (1, 1, meta.id)
+__all__ = [
+    "AgentInput",
+    "AgentOutput",
+    *_LEGACY_EXPORTS,
+]

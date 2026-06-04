@@ -1,12 +1,12 @@
 import json
 from pathlib import Path
 
-from react_agent.agents import (
+from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
+from react_agent.legacy_agent_registry import (
     AGENT_METADATA,
     AgentMetadata,
     load_metadata_from_dir,
 )
-from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
 
 REPO_ROOT = Path(__file__).resolve().parents[2]
 CONFIG_DIR = REPO_ROOT / "config" / "agents"

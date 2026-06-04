@@ -9,17 +9,16 @@ import time
 from typing import Any, Dict, List
 
 from langchain_core.messages import AIMessage, ToolMessage
-from langchain_core.tools import BaseTool
-from langchain_core.tools import tool
+from langchain_core.tools import BaseTool, tool
 from langgraph.runtime import get_runtime
 
 from react_agent import prompts
-from react_agent.agents import AgentMetadata, AgentOutput, register_agent
+from react_agent.agent_types import AgentOutput
 from react_agent.context import Context
+from react_agent.legacy_agent_registry import AgentMetadata, register_agent
 from react_agent.run_logger import get_run_logger
 from react_agent.tools import build_tavily_search, tavily_search
 from react_agent.utils import get_message_text, load_chat_model
-
 
 SPECIAL_RUNTIME_AGENT_IDS = {"a01_cio_orchestrator", "a25_report_center"}
 PLACEHOLDER_SOURCE_TYPE = "source_type=llm_search_placeholder"
@@ -271,7 +270,6 @@ def _build_agent_tool(agent_id: str, profile: str, *, default_allow_search: bool
         router_plan_summary: str | None = None,
     ) -> AgentOutput:
         """Handle AgentInput and emit AgentOutput."""
-
         shared_context = shared_context or {}
         history = history or []
         tools_config = tools_config or {}

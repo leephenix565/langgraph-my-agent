@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -38,6 +38,10 @@ source and switches `/api/agents` to the 27-agent `snake_case` reset projection.
 R4-B adds `config/fixed_dag/runtime_bindings.json` and
 `src/react_agent/fixed_dag_runtime_registry.py` as the backend runtime binding
 registry and annotates executor step results with binding metadata.
+R4-C isolates legacy aNN registry/bootstrap into explicit compatibility modules
+and keeps active `react_agent.graph` imports off old `AGENT_TOOLS`,
+placeholder bootstrap, generic agent, and external HTTP wrapper implementation
+paths.
 It does not prove business-agent correctness, frontend v2 completion, provider
 readiness, external service readiness, mainline/fusion-gate rebuilt gates, or
 production deployment readiness.
