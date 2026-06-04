@@ -7,9 +7,9 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven fixed DAG execution, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven fixed DAG execution, R3.6 cleanup boundary, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
-| `docs/SYSTEM_MAP.md` | Active runtime topology, retained inactive files, deletion boundary, quality entrypoints. |
+| `docs/SYSTEM_MAP.md` | Active runtime topology, retained inactive files, R3.6 cleanup boundary, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, batches, step results, and 27 formal agent ids. |
 | `docs/CONTRACTS.md` | Runtime contract/executor seams, execution results, and public/runtime boundary. |
 | `docs/FRONTEND_V2.md` | Frontend and workflow inspector boundary. |
@@ -31,6 +31,8 @@ when historical recovery is required.
 R3 proves deterministic plan-driven execution topology, dependency validation,
 execution batch/result projection, v4 roster alignment, and backend
 contract/executor seam alignment.
+R3.6 adds the v4 Excel workbook as an R4 catalog/runtime registry input and
+cleans only high-confidence dead files.
 It does not prove business-agent correctness, frontend v2 completion, provider
 readiness, external service readiness, mainline/fusion-gate rebuilt gates, or
 production deployment readiness.

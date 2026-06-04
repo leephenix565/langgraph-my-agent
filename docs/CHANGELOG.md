@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R3.6 safe dead-file cleanup and R4 Excel baseline
+
+### Added
+
+- Added `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx` as the R4
+  `snake_case` catalog/runtime registry input workbook.
+
+### Removed
+
+- Removed high-confidence dead local artifacts and legacy fixtures that were not
+  active quality or runtime entry points.
+
+### Changed
+
+- Updated reset docs to record the R3.6 cleanup boundary and non-claims.
+
+### Not Done
+
+- No R4 catalog/runtime registry migration.
+- No R5 frontend DAG workflow UI rewrite.
+- No R6 mainline/fusion/provider readiness rebuild.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No deletion of `config/agents`, external wrappers, baseline/fusion regression
+  inputs, `assets/reference`, or historical `log/tmp/outputs` artifacts.
+- No push.
+
 ## 2026-06-04 - Phase R3 plan-driven fixed DAG execution
 
 ### Added

@@ -13,7 +13,8 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R3 plan-driven fixed DAG execution orchestration.
+- Current phase: R3.6 safe dead-file cleanup and R4 Excel baseline.
+- Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public web shell: retained for later in-place frontend v2 migration.
@@ -78,6 +79,19 @@ The external HTTP wrapper infrastructure and baseline sidecar module remain in
 the repository, but they are not connected to the active reset graph. Existing
 `config/agents/*.json` remains until the R4 catalog/runtime registry phase.
 
+## R3.6 Cleanup Boundary
+
+R3.6 only removes high-confidence dead local artifacts and legacy test fixtures
+that are not active entry points, and adds the v4 feedback workbook to the repo:
+
+- `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`
+
+That workbook is an R4 input for the future `snake_case` catalog/runtime
+registry. R3.6 does not enter R4, R5, or R6. It does not delete the old aNN
+catalog/config files, the existing web workflow implementation, external wrapper
+production code, baseline/fusion regression inputs, or tracked historical
+benchmark/trace artifacts that still need an archive policy.
+
 ## Public Transcript Boundary
 
 The product keeps a single assistant transcript. Internal graph steps, raw graph
@@ -117,10 +131,10 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3.
-- No `external /v1/agent/invoke` call is part of R3 validation.
-- No demo stack startup is part of R3 validation.
-- No real business algorithms for individual agents are implemented in R3.
-- No frontend v2 rewrite is complete in R3.
-- No mainline or fusion-gate reset quality gate is rebuilt in R3.
+- No provider or live external service was verified by R3/R3.6.
+- No `external /v1/agent/invoke` call is part of R3/R3.6 validation.
+- No demo stack startup is part of R3/R3.6 validation.
+- No real business algorithms for individual agents are implemented in R3/R3.6.
+- No frontend v2 rewrite is complete in R3/R3.6.
+- No mainline or fusion-gate reset quality gate is rebuilt in R3/R3.6.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

@@ -1,16 +1,19 @@
 # System Map
 
-This file is the reset branch operational map for Phase R3.
+This file is the reset branch operational map for Phase R3/R3.6.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R3 plan-driven fixed DAG execution orchestration.
+- Current phase: R3.6 safe dead-file cleanup and R4 Excel baseline.
+- Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
   derived from validated `dag_steps[].depends_on` and whose payloads are built
   by explicit constructors, normalizers, validators, and executor seams.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
+- R4 roster baseline input:
+  `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`.
 
 ## Current Runtime Entry
 
@@ -99,6 +102,24 @@ R1-A removed:
 - old external-agent scaffold package
 
 Historical recovery is through the pre-reset tag, not through current docs.
+
+## R3.6 Cleanup Boundary
+
+R3.6 removes only high-confidence dead local artifacts and legacy fixtures that
+are not active entry points. It also commits the v4 feedback workbook as an R4
+input.
+
+R3.6 does not delete or migrate:
+
+- `config/agents/*.json`
+- external HTTP wrapper production code
+- `apps/web` workflow implementation, except explicit legacy local-reference
+  fixtures
+- `src/react_agent/baseline_sidecar.py`
+- `ops/regression/fusion/**`
+- `ops/regression/provider/out/**`
+- `assets/reference/**`
+- `log/**`, `tmp/**`, or `outputs/benchmarks/**`
 
 ## Deferred
 

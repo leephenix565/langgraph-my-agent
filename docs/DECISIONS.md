@@ -124,3 +124,23 @@ provider-free.
 Non-consequence: R3 does not implement real business agents, provider readiness,
 external readiness, R5 frontend rewrite, R6 quality gates, or production
 deployment.
+
+## ADR-010: R3.6 Keeps Cleanup Narrow
+
+Status: accepted for reset hygiene.
+
+Decision: R3.6 may remove only high-confidence dead files, ignored/generated
+local artifacts, and explicitly unreferenced legacy fixtures. It also commits
+the v4 feedback workbook as an R4 input.
+
+Reason: R3.5 inventory identified separate ownership for R4 catalog migration,
+R5 frontend workflow rewrite, R6 quality/mainline/fusion rebuild, external
+readiness, and historical artifact archive policy.
+
+Consequence: R3.6 does not delete `config/agents`, external wrappers,
+`apps/web`, baseline/fusion regression inputs, `assets/reference`, or historical
+`log/tmp/outputs` artifacts.
+
+Non-consequence: adding the workbook does not complete the R4 registry
+migration, and cleanup does not prove provider, external, frontend v2,
+mainline/fusion-gate, or production readiness.

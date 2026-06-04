@@ -2,6 +2,9 @@
 
 This document defines safe validation for the reset branch.
 
+R3.6 uses the same non-provider validation boundary as R3. It is a cleanup and
+Excel-baseline phase, not a runtime capability expansion.
+
 ## Safe R3 Commands
 
 ```powershell
@@ -17,7 +20,7 @@ conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py
 
 ## Not Safe For R3
 
-Do not run during R3 unless the user explicitly asks:
+Do not run during R3/R3.6 unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -25,6 +28,9 @@ Do not run during R3 unless the user explicitly asks:
 - artifact-writing mainline gates
 - artifact-writing fusion gates
 - frontend production build if it writes repo artifacts
+
+R3.6 also does not treat `mainline`, `fusion-gate`, provider live smoke, or
+frontend build/test results as required cleanup evidence.
 
 ## Current Quality Runner Boundary
 
