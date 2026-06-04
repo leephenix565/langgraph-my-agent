@@ -111,6 +111,11 @@ def test_step_result_and_initial_results_validate() -> None:
         valid, reason = validate_step_result(result)
         assert valid, reason
         assert result["status"] == "blocked"
+        assert "runtime_kind" in result
+        assert "implementation_status" in result
+        assert "binding_source" in result
+        assert result["invoke_enabled"] in {True, False}
+        assert result["live_verified"] in {True, False}
 
 
 def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> None:
@@ -126,6 +131,16 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert result["workflow_snapshot"]["executionBatches"] == result["execution_batches"]
     assert result["workflow_snapshot"]["stepResults"] == result["step_results"]
     assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])
+    assert result["step_results"]["route_planner"]["runtime_kind"] == "deterministic_system"
+    assert result["step_results"]["route_planner"]["implementation_status"] == "deterministic_skeleton"
+    assert result["step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
+    assert result["step_results"]["financial_data_service"]["implementation_status"] == "external_candidate_disabled"
+    assert result["step_results"]["financial_data_service"]["invoke_enabled"] is False
+    assert result["step_results"]["financial_data_service"]["live_verified"] is False
+    assert result["step_results"]["dimension:market"]["runtime_kind"] == "deterministic_composite"
+    assert result["step_results"]["dimension:market"]["implementation_status"] == "deterministic_skeleton"
+    assert result["step_results"]["l2:sentiment_company_radar"]["runtime_kind"] == "pending_placeholder"
+    assert "sentiment_company_radar" not in result["step_results"]["dimension:risk"]["depends_on"]
     payload = json.dumps(result)
     for forbidden in ("layerMode", "fusionSteps", "layerPlan", "value_financial_analysis"):
         assert forbidden not in payload

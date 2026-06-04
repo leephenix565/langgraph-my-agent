@@ -21,7 +21,11 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_provider(*args, **kwargs):
         raise AssertionError("provider should not be called by R3 skeleton")
 
+    def fail_external_client(*args, **kwargs):
+        raise AssertionError("external HTTP should not be called by fixed DAG skeleton")
+
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
 
     res = await graph_module.graph.ainvoke(
         {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
@@ -37,6 +41,9 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["dag_execution"]["provenance"]["external_invoked"] is False
     assert res["execution_batches"] == res["dag_execution"]["execution_batches"]
     assert res["dag_step_results"] == res["dag_execution"]["step_results"]
+    assert res["dag_step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
+    assert res["dag_step_results"]["financial_data_service"]["invoke_enabled"] is False
+    assert res["dag_step_results"]["financial_data_service"]["live_verified"] is False
     assert len(res["fixed_dag_plan"]["target_agent_ids"]) == 27
     assert res["workflow_snapshot"]["schema"] == "workflow_snapshot_v2"
     valid, reason = validate_workflow_snapshot_v2(res["workflow_snapshot"])

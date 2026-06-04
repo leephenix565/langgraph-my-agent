@@ -45,6 +45,12 @@ def test_public_workflow_preserves_execution_batches_and_step_results() -> None:
 
     assert payload["executionBatches"] == execution["execution_batches"]
     assert payload["stepResults"] == execution["step_results"]
+    assert payload["stepResults"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
+    assert payload["stepResults"]["financial_data_service"]["implementation_status"] == "external_candidate_disabled"
+    assert payload["stepResults"]["financial_data_service"]["invoke_enabled"] is False
+    assert payload["stepResults"]["financial_data_service"]["live_verified"] is False
+    assert "default_url" not in payload["stepResults"]["financial_data_service"]
+    assert "env_var" not in payload["stepResults"]["financial_data_service"]
     assert payload["provenance"]["executionStatus"] == "complete"
     assert payload["provenance"]["fallbackUsed"] is False
     assert payload["completedSteps"] == list(execution["step_results"])

@@ -3,6 +3,43 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R4-B fixed DAG runtime binding registry
+
+### Added
+
+- Added `config/fixed_dag/runtime_bindings.json` as the backend runtime binding
+  source for the same 27 fixed DAG `snake_case` agents.
+- Added `src/react_agent/fixed_dag_runtime_registry.py` with runtime binding
+  loading, validation, grouping, summary, external-candidate lookup, and step
+  result annotation helpers.
+- Added tests covering runtime binding schema/count/id alignment, forbidden
+  primary ids, disabled external candidates, legacy wrapper mapping alignment,
+  sentiment market-only routing, and executor annotation.
+
+### Changed
+
+- Changed `fixed_dag_step_result_v1` construction to annotate each executed
+  step with runtime binding metadata: `runtime_kind`,
+  `implementation_status`, `binding_source`, `legacy_agent_id`,
+  `external_agent_id`, `invoke_enabled`, and `live_verified`.
+- Changed graph and public workflow tests to prove binding annotation remains
+  metadata-only and does not call providers or external HTTP.
+- Strengthened `/api/agents` tests to confirm the public catalog schema remains
+  unchanged and does not expose runtime binding internals.
+- Updated reset docs to record R4-B runtime binding ownership and later R4-C/R5/R6
+  boundaries.
+
+### Not Done
+
+- No real business-agent algorithm implementation.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No external HTTP candidate was enabled or live verified.
+- No R4-C legacy aNN config cleanup.
+- No R5 frontend workflow UI rewrite.
+- No R6 mainline/fusion/provider readiness rebuild.
+- No push.
+
 ## 2026-06-04 - Phase R4-A fixed DAG catalog source and public projection
 
 ### Added

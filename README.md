@@ -6,7 +6,9 @@ smaller deterministic fixed-DAG runtime skeleton.
 
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
-`/api/agents` projection to the 27 `snake_case` reset agents. The runtime
+`/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
+the fixed DAG runtime binding registry for deterministic, external-candidate,
+and pending-placeholder runtime metadata. The runtime
 validates `dag_steps[].depends_on`, computes deterministic `execution_batches`,
 emits per-step `step_results`, and remains a provider-free placeholder skeleton.
 It is not a completed business analysis engine.
@@ -15,7 +17,7 @@ It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R4-A fixed DAG catalog source and public projection.
+- Current phase: R4-B fixed DAG runtime binding registry.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -77,13 +79,38 @@ compatible with the existing `AgentCatalogResponse`, but in R4-A
 `configCount`, `runtimeCount`, and `disabledIds` describe the fixed DAG reset
 catalog, not the old aNN config catalog.
 
+## Active Runtime Bindings
+
+R4-B adds a backend-only runtime binding source:
+
+- `config/fixed_dag/runtime_bindings.json`
+- `src/react_agent/fixed_dag_runtime_registry.py`
+
+The binding registry covers the same 27 fixed DAG ids as the active catalog and
+records how each id currently maps to one of these runtime categories:
+
+- deterministic skeleton seams
+- external HTTP candidates
+- pending placeholders
+
+External HTTP candidates are disabled by default and are not live verified.
+Legacy aNN ids may appear only as `legacy_agent_id` migration notes, never as
+primary reset ids. Endpoint URLs and env var names are registry metadata for
+later adapter work; R4-B does not call them.
+
+The executor annotates `fixed_dag_step_result_v1` records with binding metadata
+such as `runtime_kind`, `implementation_status`, `binding_source`,
+`legacy_agent_id`, `external_agent_id`, `invoke_enabled`, and `live_verified`.
+It does not include endpoint URLs or env var values in step results.
+
 ## Current Runtime Boundary
 
-R3 keeps the graph deterministic and routes graph/public fallback construction
+R3/R4-B keeps the graph deterministic and routes graph/public fallback construction
 through contract, executor, and public mapping seams:
 
 - `src/react_agent/fixed_dag_contracts.py`
 - `src/react_agent/fixed_dag_executor.py`
+- `src/react_agent/fixed_dag_runtime_registry.py`
 - `src/react_agent/graph.py`
 - `src/react_agent/prompts.py`
 - `src/react_agent/router_parse.py`
@@ -94,11 +121,13 @@ through contract, executor, and public mapping seams:
 - `src/react_agent/public_api.py`
 
 The graph state now carries `dag_execution`, `dag_step_results`, and
-`execution_batches` in addition to the reset result contracts.
+`execution_batches` in addition to the reset result contracts. R4-B step
+results include runtime binding metadata for workflow inspection, but this does
+not mean any external service was invoked.
 
 The external HTTP wrapper infrastructure and baseline sidecar module remain in
 the repository, but they are not connected to the active reset graph. Existing
-`config/agents/*.json` remains as legacy migration input until a later R4
+`config/agents/*.json` remains as legacy migration input until a later R4-C
 cleanup phase. It is no longer the active reset public catalog truth.
 
 ## Previous R3.6 Cleanup Boundary
@@ -124,8 +153,9 @@ be treated as public transcript content.
 The workflow inspector is a diagnostic panel. The Python public adapter projects
 DAG stages, steps, dimensions, provenance, and final source as
 `workflow_snapshot_v2` through reset contract seams. R3 also exposes
-`executionBatches` and `stepResults` for the inspector. The current web UI still
-needs its R5 workflow rewrite.
+`executionBatches` and `stepResults` for the inspector. R4-B adds binding
+metadata to `stepResults`. The current web UI still needs its R5 workflow
+rewrite.
 
 ## Documentation Index
 
@@ -154,11 +184,11 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3/R4-A.
-- No `external /v1/agent/invoke` call is part of R3/R4-A validation.
-- No demo stack startup is part of R3/R4-A validation.
-- No real business algorithms for individual agents are implemented in R3/R4-A.
-- No frontend v2 rewrite is complete in R3/R4-A.
-- No mainline or fusion-gate reset quality gate is rebuilt in R3/R4-A.
-- No external endpoint mapping adapter or legacy aNN cleanup is complete in R4-A.
+- No provider or live external service was verified by R3/R4-A/R4-B.
+- No `external /v1/agent/invoke` call is part of R3/R4-A/R4-B validation.
+- No demo stack startup is part of R3/R4-A/R4-B validation.
+- No real business algorithms for individual agents are implemented in R3/R4-A/R4-B.
+- No frontend v2 rewrite is complete in R3/R4-A/R4-B.
+- No mainline or fusion-gate reset quality gate is rebuilt in R3/R4-A/R4-B.
+- No legacy aNN catalog cleanup is complete in R4-B.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

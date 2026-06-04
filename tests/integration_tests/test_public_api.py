@@ -266,11 +266,24 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert payload["totals"]["configCount"] == 27
     assert payload["totals"]["runtimeCount"] == 27
     assert payload["totals"]["disabledIds"] == []
+    assert set(payload) == {"totals", "layers", "disabledAgents"}
+    assert set(payload["totals"]) == {"configCount", "runtimeCount", "disabledIds"}
     assert [layer["layer"] for layer in payload["layers"]] == ["L1", "L2", "L3", "L4"]
     assert [len(layer["agents"]) for layer in payload["layers"]] == [3, 18, 4, 2]
     agents = [agent for layer in payload["layers"] for agent in layer["agents"]]
     ids = [agent["id"] for agent in agents]
     assert ids == list(RESET_RUNTIME_AGENT_IDS)
+    for agent in agents:
+        assert set(agent) == {
+            "id",
+            "name",
+            "description",
+            "capabilities",
+            "layer",
+            "team",
+            "roleType",
+            "defaultEnabled",
+        }
     assert all(not agent_id.startswith("a") or not agent_id[1:3].isdigit() for agent_id in ids)
     assert "value_financial_analysis" not in ids
     sentiment = next(agent for agent in agents if agent["id"] == "sentiment_company_radar")
@@ -278,7 +291,18 @@ def test_agent_catalog_contract(tmp_path, monkeypatch):
     assert sentiment["team"] == "market"
     assert "pending_implementation" in sentiment["capabilities"]
     assert payload["disabledAgents"] == []
-    for forbidden in ["messages", "analyst_results", "ephemeral_results", "manager_assignment", "tool_call"]:
+    for forbidden in [
+        "messages",
+        "analyst_results",
+        "ephemeral_results",
+        "manager_assignment",
+        "tool_call",
+        "runtimeBinding",
+        "legacyAgentId",
+        "externalAgentId",
+        "endpoint",
+        "envVar",
+    ]:
         assert forbidden not in response.text
 
 

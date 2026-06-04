@@ -8,6 +8,10 @@ Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from
 `config/fixed_dag/agent_catalog.json`.
 
+Phase R4-B adds the fixed DAG runtime binding registry implemented by
+`src/react_agent/fixed_dag_runtime_registry.py` and sourced from
+`config/fixed_dag/runtime_bindings.json`.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal
@@ -21,6 +25,11 @@ business algorithms and do not call providers or external services.
 R4-A makes the fixed DAG catalog the active backend `/api/agents` projection
 source. The old `config/agents/*.json` aNN catalog is retained as legacy
 migration input, not active reset public catalog truth.
+
+R4-B adds runtime binding metadata for executor step results. The registry is
+offline metadata only: it records deterministic seams, disabled external HTTP
+candidates, and pending placeholders without invoking providers or external
+`/v1/agent/invoke` endpoints.
 
 ## fixed_dag_agent_catalog_v1
 
@@ -59,6 +68,53 @@ routing, and `risk_composite` reading `sentiment_company_radar`.
 Seams: `load_fixed_dag_catalog`, `validate_fixed_dag_catalog`,
 `fixed_dag_agents`, `fixed_dag_agent_ids`, `fixed_dag_agents_by_layer`,
 `fixed_dag_agents_by_dimension`, and `fixed_dag_public_agent_catalog`.
+
+## fixed_dag_runtime_bindings_v1
+
+Purpose: define backend runtime binding metadata for the same 27 formal
+`snake_case` agents in `fixed_dag_agent_catalog_v1`.
+
+Registry fields:
+
+- `schema_version`
+- `catalog_schema_version`
+- `catalog_source`
+- `total_count`
+- `default_external_invoke_enabled`
+- `bindings`
+
+Each binding includes:
+
+- `agent_id`
+- `runtime_kind`
+- `implementation_status`
+- `invoke_enabled_by_default`
+- `live_verified`
+- `legacy_agent_id`
+- `external_agent_id`
+- `env_var`
+- `default_url`
+- `input_contract`
+- `output_contract`
+- `routes_to`
+- `notes`
+
+Allowed `runtime_kind` values are deterministic system/composite/decision/report
+seams, disabled external HTTP candidates, and pending placeholders. External
+HTTP candidates must have `invoke_enabled_by_default=false` and
+`live_verified=false` in R4-B. Legacy aNN ids may appear only in
+`legacy_agent_id`; primary `agent_id` values must be fixed DAG `snake_case` ids.
+
+Validation rejects duplicate ids, ids that do not exactly match the fixed DAG
+catalog, legacy aNN primary ids, `value_financial_analysis`, enabled external
+candidates, live-verified external candidates, mismatched legacy wrapper
+metadata, sentiment-to-risk routing, and contract/route drift from the catalog.
+
+Seams: `load_fixed_dag_runtime_bindings`,
+`validate_fixed_dag_runtime_bindings`, `fixed_dag_runtime_bindings`,
+`binding_by_agent_id`, `fixed_dag_runtime_binding_ids`,
+`external_candidate_bindings`, `runtime_binding_summary`, and
+`annotate_step_result_with_binding`.
 
 ## fixed_dag_plan_v1
 
@@ -137,10 +193,18 @@ Runtime fields:
 - `output_ref`
 - `summary`
 - `warnings`
+- `runtime_kind`
+- `implementation_status`
+- `binding_source`
+- `legacy_agent_id`
+- `external_agent_id`
+- `invoke_enabled`
+- `live_verified`
 
 Allowed statuses are `complete`, `pending_implementation`, `skipped`, `blocked`,
 and `failed`. R3 uses `complete` for planning and `pending_implementation` for
-business placeholders.
+business placeholders. R4-B adds binding metadata to each step result but does
+not include endpoint URLs or env var names in step results.
 
 Seams: `build_step_result`, `validate_step_result`,
 `build_initial_step_results`.
@@ -305,7 +369,7 @@ Endpoint: `GET /api/agents`
 
 Public response model: `AgentCatalogResponse`.
 
-R4-A semantics:
+R4-A/R4-B semantics:
 
 - `configCount=27`
 - `runtimeCount=27`
@@ -316,6 +380,7 @@ R4-A semantics:
 
 The field names remain compatible with the existing public schema. Their R4-A
 meaning is reset catalog projection, not old aNN config file enablement.
+R4-B does not add runtime binding fields to `/api/agents`.
 
 ## Public Exclusions
 
@@ -327,3 +392,5 @@ Do not expose the following as transcript content:
 - agent JSON payloads
 - internal traces
 - secrets or environment values
+- provider or external raw responses
+- endpoint URLs or env var values as transcript content

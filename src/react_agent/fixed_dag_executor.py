@@ -38,6 +38,10 @@ from react_agent.fixed_dag_contracts import (
     validate_report_result,
     validate_workflow_snapshot_v2,
 )
+from react_agent.fixed_dag_runtime_registry import (
+    annotate_step_result_with_binding,
+    binding_by_agent_id,
+)
 
 FIXED_DAG_EXECUTION_SCHEMA_VERSION = "fixed_dag_execution_v1"
 FIXED_DAG_STEP_RESULT_SCHEMA_VERSION = "fixed_dag_step_result_v1"
@@ -267,7 +271,7 @@ def build_step_result(
     output_ref: str = "",
     summary: str = "",
 ) -> dict:
-    return {
+    result = {
         "schema_version": FIXED_DAG_STEP_RESULT_SCHEMA_VERSION,
         "step_id": str(step.get("id") or ""),
         "agent_id": str(step.get("agent_id") or ""),
@@ -279,6 +283,7 @@ def build_step_result(
         "summary": summary,
         "warnings": [],
     }
+    return annotate_step_result_with_binding(result)
 
 
 def validate_step_result(result: Mapping[str, Any]) -> tuple[bool, str]:
@@ -298,6 +303,33 @@ def validate_step_result(result: Mapping[str, Any]) -> tuple[bool, str]:
         return False, "invalid_dependencies"
     if not isinstance(result.get("warnings"), list):
         return False, "invalid_warnings"
+    for field in (
+        "runtime_kind",
+        "implementation_status",
+        "binding_source",
+        "legacy_agent_id",
+        "external_agent_id",
+        "invoke_enabled",
+        "live_verified",
+    ):
+        if field not in result:
+            return False, f"missing_{field}"
+    if not isinstance(result.get("invoke_enabled"), bool):
+        return False, "invalid_invoke_enabled"
+    if not isinstance(result.get("live_verified"), bool):
+        return False, "invalid_live_verified"
+    binding = binding_by_agent_id(str(result["agent_id"]))
+    expected = {
+        "runtime_kind": binding["runtime_kind"],
+        "implementation_status": binding["implementation_status"],
+        "legacy_agent_id": binding["legacy_agent_id"],
+        "external_agent_id": binding["external_agent_id"],
+        "invoke_enabled": binding["invoke_enabled_by_default"],
+        "live_verified": binding["live_verified"],
+    }
+    for field, expected_value in expected.items():
+        if result.get(field) != expected_value:
+            return False, f"binding_metadata_mismatch:{field}"
     return True, "ok"
 
 

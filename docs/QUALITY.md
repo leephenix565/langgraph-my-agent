@@ -2,11 +2,11 @@
 
 This document defines safe validation for the reset branch.
 
-R4-A uses the same non-provider validation boundary as R3/R3.6. It adds backend
-catalog/public projection coverage, not provider, external, frontend, or
-business-agent capability.
+R4-B uses the same non-provider validation boundary as R3/R3.6/R4-A. It adds
+runtime binding registry, legacy mapping, and executor annotation coverage, not
+provider, external live, frontend, or business-agent capability.
 
-## Safe R4-A Commands
+## Safe R4-B Commands
 
 ```powershell
 git status --short --branch
@@ -19,9 +19,9 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 ```
 
-## Not Safe For R3
+## Not Safe For R4-B
 
-Do not run during R3/R4-A unless the user explicitly asks:
+Do not run during R3/R4-A/R4-B unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -30,8 +30,8 @@ Do not run during R3/R4-A unless the user explicitly asks:
 - artifact-writing fusion gates
 - frontend production build if it writes repo artifacts
 
-R4-A also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
-stack, or frontend build/test results as required catalog evidence.
+R4-B also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
+stack, or frontend build/test results as required runtime-binding evidence.
 
 ## Current Quality Runner Boundary
 
@@ -48,12 +48,14 @@ Passing safe commands means the deterministic fixed-DAG executor skeleton
 imports, parses, validates plan dependencies, generates topological execution
 batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
 projects `step_results` and `execution_batches`, preserves public transcript
-safety, and keeps the contract/executor/catalog seams and 27-agent roster
-aligned in reset docs/tests.
+safety, and keeps the contract/executor/catalog/runtime-binding seams and
+27-agent roster aligned in reset docs/tests.
 
-R3/R4-A-specific tests cover `validate_dag_steps`, `topological_batches`,
-`execute_fixed_dag_plan`, `validate_dag_execution_result`, fixed DAG catalog
-validation, graph executor integration, and public workflow/catalog projection.
+R3/R4-A/R4-B-specific tests cover `validate_dag_steps`,
+`topological_batches`, `execute_fixed_dag_plan`,
+`validate_dag_execution_result`, fixed DAG catalog validation, fixed DAG runtime
+binding validation, legacy external mapping alignment, graph executor
+integration, and public workflow/catalog projection.
 
 It does not mean:
 

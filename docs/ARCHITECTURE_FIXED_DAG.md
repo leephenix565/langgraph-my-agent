@@ -1,9 +1,10 @@
 # Fixed DAG Architecture
 
-This document describes the active reset skeleton and the Phase R4-A fixed DAG
-catalog source. The skeleton is deterministic, provider-free, plan-driven, and
-backed by explicit catalog, contract, executor, and function seams. It is not a
-completed business analysis engine.
+This document describes the active reset skeleton, the Phase R4-A fixed DAG
+catalog source, and the Phase R4-B runtime binding registry. The skeleton is
+deterministic, provider-free, plan-driven, and backed by explicit catalog,
+binding, contract, executor, and function seams. It is not a completed business
+analysis engine.
 
 ## Active Skeleton Flow
 
@@ -25,6 +26,12 @@ The active catalog source is `config/fixed_dag/agent_catalog.json`, loaded and
 validated by `src/react_agent/fixed_dag_catalog.py`. The source workbook
 `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx` is retained as the
 R4 baseline input.
+
+The active runtime binding source is `config/fixed_dag/runtime_bindings.json`,
+loaded and validated by `src/react_agent/fixed_dag_runtime_registry.py`. It maps
+the same 27 target ids to deterministic seams, disabled external HTTP
+candidates, or pending placeholders. The binding registry does not change the
+DAG topology and does not enable external invocation.
 
 ## Target IDs
 
@@ -67,12 +74,16 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - The DAG executor is infrastructure and is not counted as a target id.
 - `fixed_dag_agent_catalog_v1` is the active roster/catalog source for reset
   backend projection.
+- `fixed_dag_runtime_bindings_v1` is the active backend runtime binding
+  metadata source. Catalog ids, runtime binding ids, and executor step agent ids
+  must match exactly.
 - `fixed_dag_plan_v1.dag_steps[].depends_on` is the executor input.
 - `validate_dag_steps` checks unique ids, dependency existence, acyclicity,
   stage/dimension legality, roster membership, and dimension dependency rules.
 - `topological_batches` groups ready steps into deterministic
   `execution_batches`.
-- Each walked step records a `fixed_dag_step_result_v1` placeholder.
+- Each walked step records a `fixed_dag_step_result_v1` placeholder annotated
+  with binding metadata such as runtime kind and implementation status.
 - The executor output is `fixed_dag_execution_v1` and feeds
   `workflow_snapshot_v2`.
 - L1 prepares the plan, entity/relation bundle, and financial data bundle through
@@ -86,6 +97,7 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.
 - R4-A owns the fixed DAG catalog source and `/api/agents` public projection.
-- R4-B/R4-C still own runtime registry/external endpoint mapping and legacy aNN
-  cleanup, R5 owns frontend workflow UI, and R6 owns mainline/fusion-gate
-  rebuild.
+- R4-B owns the runtime binding registry and offline external endpoint mapping
+  metadata.
+- R4-C still owns legacy aNN catalog cleanup, R5 owns frontend workflow UI, and
+  R6 owns mainline/fusion-gate rebuild.

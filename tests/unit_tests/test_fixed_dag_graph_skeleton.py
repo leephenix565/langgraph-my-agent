@@ -20,7 +20,11 @@ async def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) 
     def fail_load_model(*args, **kwargs):
         raise AssertionError("provider should not be called")
 
+    def fail_external_client(*args, **kwargs):
+        raise AssertionError("external HTTP should not be called")
+
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_load_model)
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
 
     result = await graph_module.graph.ainvoke(
         {"messages": [("user", "Demo question")]},
@@ -33,6 +37,9 @@ async def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) 
     assert result["dag_execution"]["schema_version"] == "fixed_dag_execution_v1"
     assert result["execution_batches"] == result["dag_execution"]["execution_batches"]
     assert result["dag_step_results"] == result["dag_execution"]["step_results"]
+    assert result["dag_step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
+    assert result["dag_step_results"]["financial_data_service"]["invoke_enabled"] is False
+    assert result["dag_step_results"]["financial_data_service"]["live_verified"] is False
     assert result["workflow_snapshot"]["schema"] == "workflow_snapshot_v2"
     assert result["workflow_snapshot"]["executionBatches"] == result["execution_batches"]
     assert result["workflow_snapshot"]["stepResults"] == result["dag_step_results"]

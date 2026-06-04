@@ -8,7 +8,7 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R4-A Backend Boundary
+## Current R4-B Backend Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
 
@@ -31,9 +31,16 @@ enabled `snake_case` agents with L1=3, L2=18, L3=4, and L4=2. Frontend code that
 still carries old aNN mock labels is legacy migration input for R5, not active
 backend truth.
 
-R3 hardens backend workflow payload construction through
-`fixed_dag_contracts.py` and `fixed_dag_executor.py`. It exposes the data needed
-for a richer inspector, but it does not rewrite the frontend workflow UI.
+R4-B adds backend runtime binding metadata to workflow `stepResults`, including
+runtime kind, implementation status, binding source, legacy migration id,
+external agent id, invoke-enabled flag, and live-verified flag. It does not add
+runtime binding fields to `/api/agents`, and it does not expose endpoint URLs,
+env var values, provider raw responses, or external raw responses.
+
+R3/R4-B hardens backend workflow payload construction through
+`fixed_dag_contracts.py`, `fixed_dag_executor.py`, and
+`fixed_dag_runtime_registry.py`. It exposes the data needed for a richer
+inspector, but it does not rewrite the frontend workflow UI.
 
 The workflow inspector target should treat the reset roster as 27 formal agents
 (L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
@@ -61,6 +68,7 @@ The inspector should show:
 - status
 - per-step result summary
 - evidence coverage
+- runtime binding status
 - final report readiness
 
 The inspector may show safe structured summaries. It must not show provider raw

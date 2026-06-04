@@ -19,7 +19,7 @@ runtime authority in R3.
 ## ADR-002: snake_case Runtime IDs Replace aNN IDs
 
 Status: accepted for reset target; active for backend catalog projection in
-R4-A.
+R4-A and runtime binding metadata in R4-B.
 
 Decision: target formal agents use descriptive `snake_case` ids.
 
@@ -168,3 +168,27 @@ catalog truth.
 Non-consequence: R4-A does not implement real business agents, provider/live
 readiness, external endpoint mapping, frontend workflow UI rewrite,
 mainline/fusion-gate rebuild, or production deployment.
+
+## ADR-012: R4-B Uses Runtime Bindings As Metadata, Not Live Invocation
+
+Status: accepted for backend runtime binding registry.
+
+Decision: `config/fixed_dag/runtime_bindings.json` is the active backend
+runtime binding metadata source, and
+`src/react_agent/fixed_dag_runtime_registry.py` validates it against the fixed
+DAG catalog. Executor step results are annotated with binding metadata such as
+runtime kind, implementation status, legacy migration id, external agent id,
+invoke-enabled flag, and live-verified flag.
+
+Reason: R4 needs an explicit bridge from fixed DAG `snake_case` ids to
+deterministic seams, pending placeholders, and legacy external HTTP candidate
+metadata before any later adapter or readiness work can be safely attempted.
+
+Consequence: runtime binding ids must exactly match the 27 fixed DAG catalog
+ids. External HTTP candidates are disabled by default and not live verified.
+Legacy aNN ids are migration notes only and never primary reset ids.
+
+Non-consequence: R4-B does not change active DAG topology, does not invoke
+providers or external `/v1/agent/invoke` endpoints, does not expose binding
+fields through `/api/agents`, does not complete frontend v2, does not rebuild
+mainline/fusion gates, and does not prove production readiness.
