@@ -9,6 +9,7 @@ import { UserBubble } from "../components/chat/UserBubble";
 import { Composer } from "../components/shell/Composer";
 import { agentNameLabel } from "../content/zh-CN";
 import { AGENT_CATALOG } from "../mocks/agents";
+import { TRANSCRIPTS_BY_SESSION } from "../mocks/transcript";
 import { createWorkflowVariant } from "../mocks/workflow";
 import type { PublicTurn, StructuredInputModel } from "../types/chat";
 import { composeStructuredPrompt, parseStructuredUserTurn, toStructuredInputModel } from "../utils/structuredInput";
@@ -144,21 +145,68 @@ function runAgentCatalogContractChecks() {
   assert.equal(agentNameLabel("macro_commodity_pricing"), "Commodity pricing");
 }
 
+const forbiddenSerializedTokens = [
+  "layerPlan",
+  "layerMode",
+  "agentSteps",
+  "fusionSteps",
+  "default_url",
+  "env_var",
+  "secret",
+  "secrets",
+  "api_key",
+  "apiKey",
+  "OPENAI_API_KEY",
+  "TAVILY_API_KEY",
+];
+
+const forbiddenUiTokens = ["layerPlan", "layerMode", "agentSteps", "fusionSteps", "default_url", "env_var", "mainline", "baseline", "fused", "Fusion"];
+
+function assertNoForbiddenSerializedTokens(value: string) {
+  for (const token of forbiddenSerializedTokens) {
+    assert.equal(value.includes(token), false, `Unexpected serialized token: ${token}`);
+  }
+}
+
+function assertNoForbiddenUiTokens(value: string | null | undefined) {
+  const text = value ?? "";
+  for (const token of forbiddenUiTokens) {
+    assert.equal(text.includes(token), false, `Unexpected UI token: ${token}`);
+  }
+}
+
 function runWorkflowFixtureContractChecks() {
   const workflow = createWorkflowVariant("contract");
   const serialized = JSON.stringify(workflow);
   assert.equal(workflow.schema, "workflow_snapshot_v2");
   assert.equal(workflow.finalSource, "reset_skeleton");
-  assert.ok(workflow.dagSteps.length > 0);
-  assert.ok(workflow.executionBatches.length > 0);
-  assert.ok(workflow.dimensionGroups.length > 0);
-  assert.ok(Object.keys(workflow.stepResults).length > 0);
-  assert.equal(serialized.includes("layerPlan"), false);
-  assert.equal(serialized.includes("layerMode"), false);
-  assert.equal(serialized.includes("agentSteps"), false);
-  assert.equal(serialized.includes("fusionSteps"), false);
-  assert.equal(serialized.includes("default_url"), false);
-  assert.equal(serialized.includes("env_var"), false);
+  assert.deepEqual(
+    workflow.stages.map((stage) => stage.key),
+    ["planning", "evidence", "l2_analysis", "dimension_composite", "decision", "report"],
+  );
+  assert.deepEqual(workflow.stages[1].stepIds, ["financial_data_service", "entity_relation_extractor"]);
+  assert.equal(workflow.executionBatches.length, 6);
+  assert.deepEqual(workflow.executionBatches[1], ["financial_data_service", "entity_relation_extractor"]);
+  assert.ok(workflow.executionBatches[2].includes("sentiment_company_radar"));
+  assert.ok(workflow.executionBatches[3].includes("macro_composite"));
+  assert.deepEqual(
+    workflow.dimensionGroups.map((group) => group.id),
+    ["value", "market", "risk", "macro"],
+  );
+  assert.ok(workflow.dimensionGroups.find((group) => group.id === "market")?.stepIds.includes("sentiment_company_radar"));
+  assert.equal(workflow.dimensionGroups.find((group) => group.id === "risk")?.stepIds.includes("sentiment_company_radar"), false);
+  assert.equal(workflow.stepResults.route_planner?.runtime_kind, "deterministic_skeleton");
+  assert.equal(workflow.stepResults.financial_data_service?.runtime_kind, "external_http_candidate");
+  assert.equal(workflow.stepResults.sentiment_company_radar?.runtime_kind, "placeholder");
+  assertNoForbiddenSerializedTokens(serialized);
+}
+
+function runTranscriptBoundaryChecks() {
+  for (const turns of Object.values(TRANSCRIPTS_BY_SESSION)) {
+    for (const turn of turns) {
+      assert.ok(turn.role === "user" || turn.role === "assistant");
+    }
+  }
 }
 
 function runStructuredInputHelperChecks() {
@@ -239,15 +287,36 @@ async function runAssistantRenderChecks() {
   assert.ok(article.querySelector("strong"));
   assert.ok(article.querySelector("em"));
   fireEvent.click(view.getByRole("button", { name: /Workflow/ }));
-  assert.ok(view.getByText("DAG stages"));
-  assert.ok(view.getByText("Route planner"));
-  assert.ok(view.getByText("Dimension groups"));
+  assert.ok(view.getByLabelText("Fixed DAG workflow inspector"));
+  assert.ok(view.getByText("Stage timeline"));
+  assert.ok(view.getAllByText("Route planner").length >= 1);
   assert.ok(view.getByText("Execution batches"));
+  assert.ok(view.getByText("Dimension groups"));
+  assert.ok(view.getByText("DAG step list"));
+  assert.ok(view.getByText("Step result metadata"));
+  assert.ok(view.getByText("Final source and provenance"));
   assert.ok(view.getAllByText("Fixed DAG skeleton").length >= 1);
-  assert.equal(article.textContent?.includes("layerPlan"), false);
-  assert.equal(article.textContent?.includes("fusionSteps"), false);
-  assert.equal(article.textContent?.includes("default_url"), false);
-  assert.equal(article.textContent?.includes("env_var"), false);
+
+  assert.ok(view.getByText("Selected step"));
+  assert.ok(view.getByText("Runtime kind"));
+  assert.ok(view.getAllByText("deterministic_skeleton").length >= 1);
+  assert.ok(view.getByText("Implementation status"));
+  assert.ok(view.getAllByText("No").length >= 2);
+
+  fireEvent.click(view.getByRole("button", { name: /Financial data service/ }));
+  assert.equal(view.getByRole("button", { name: /Financial data service/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(view.getAllByText("financial_data_service").length >= 1);
+  assert.ok(view.getAllByText("external_http_candidate").length >= 1);
+  assert.ok(view.getAllByText("external_candidate_disabled").length >= 1);
+  assert.ok(view.getByText("External candidate is registered but not live verified in the mock path."));
+
+  fireEvent.click(view.getByRole("button", { name: /Company sentiment radar/ }));
+  assert.equal(view.getByRole("button", { name: /Company sentiment radar/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(view.getAllByText("placeholder").length >= 1);
+  assert.ok(view.getAllByText("pending_implementation").length >= 1);
+  assert.ok(view.getByText("Market sentiment path is placeholder-only in the local fixture."));
+
+  assertNoForbiddenUiTokens(article.textContent);
   cleanup();
 }
 
@@ -282,6 +351,7 @@ async function runStreamingSuccessScenario() {
   dom.reconfigure({ url: "http://localhost/" });
   const user = userEvent.setup({ document: dom.window.document });
   const sentPayloads: Array<{ text: string; structuredInput?: StructuredInputModel }> = [];
+  let finalRoles: string[] = [];
 
   const createdThread = {
     thread: threadSummary("New thread", "Awaiting first message."),
@@ -312,6 +382,17 @@ async function runStreamingSuccessScenario() {
         structuredInput: payload.structuredInput,
       });
       const answer = "Short live summary with the conclusion first.";
+      const finalTurns: PublicTurn[] = [
+        {
+          id: "user-live-1",
+          role: "user",
+          text: payload.text ?? "",
+          createdAt: "2026-04-04 18:05",
+          structuredInput: payload.structuredInput,
+        },
+        assistantTurn("assistant-live-1", answer),
+      ];
+      finalRoles = finalTurns.map((turn) => turn.role);
       return ndjsonResponse(
         [
           {
@@ -346,16 +427,7 @@ async function runStreamingSuccessScenario() {
               response: {
                 thread: threadSummary("Market risk summary", answer),
                 assistantTurn: assistantTurn("assistant-live-1", answer),
-                turns: [
-                  {
-                    id: "user-live-1",
-                    role: "user",
-                    text: sentPayloads[0].text,
-                    createdAt: "2026-04-04 18:05",
-                    structuredInput: sentPayloads[0].structuredInput,
-                  },
-                  assistantTurn("assistant-live-1", answer),
-                ],
+                turns: finalTurns,
               },
             },
           },
@@ -390,9 +462,8 @@ async function runStreamingSuccessScenario() {
 
   assert.equal(sentPayloads[0].text, "Summarize the market risk profile.");
   assert.deepEqual(sentPayloads[0].structuredInput, { task: "Summarize the market risk profile." });
-  assert.equal(view.container.textContent?.includes("mainline"), false);
-  assert.equal(view.container.textContent?.includes("baseline"), false);
-  assert.equal(view.container.textContent?.includes("fused"), false);
+  assert.deepEqual(finalRoles, ["user", "assistant"]);
+  assertNoForbiddenUiTokens(view.container.textContent);
   cleanup();
 }
 
@@ -477,6 +548,7 @@ async function runStreamingErrorScenario() {
 async function runSmoke() {
   runAgentCatalogContractChecks();
   runWorkflowFixtureContractChecks();
+  runTranscriptBoundaryChecks();
   runStructuredInputHelperChecks();
   await runUserBubbleStructuredRenderChecks();
   await runAssistantRenderChecks();

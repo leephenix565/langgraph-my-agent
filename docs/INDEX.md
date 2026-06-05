@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -44,9 +44,11 @@ placeholder bootstrap, generic agent, and external HTTP wrapper implementation
 paths.
 R5-B1 migrates `apps/web` workflow/chat types, streaming placeholder state,
 fixed DAG mocks, and frontend smoke fixtures to `workflow_snapshot_v2` and
-`finalSource=reset_skeleton`. The WorkflowPanel is only minimally adapted to
-the fixed DAG payload.
-It does not prove business-agent correctness, full frontend v2 inspector
-completion, provider readiness, external service readiness,
-mainline/fusion-gate rebuilt gates, or production deployment readiness.
+`finalSource=reset_skeleton`.
+R5-B2 rewrites WorkflowPanel as a fixed DAG inspector that renders stage
+timeline, execution batches, dimension groups, selectable step result metadata,
+final source, and provenance from `workflow_snapshot_v2`.
+It does not prove business-agent correctness, provider readiness, external
+service readiness, mainline/fusion-gate rebuilt gates, or production deployment
+readiness.
 Mainline and fusion-gate reset quality gates remain R6 work.

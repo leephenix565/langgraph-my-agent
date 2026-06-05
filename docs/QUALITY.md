@@ -2,12 +2,12 @@
 
 This document defines safe validation for the reset branch.
 
-R5-B1 keeps the same non-provider validation boundary as
-R3/R3.6/R4-A/R4-B/R4-C and adds frontend contract validation for the existing
-`apps/web` shell. It does not add provider, external live, demo-stack,
-production deployment, or business-agent capability validation.
+R5-B2 keeps the same non-provider validation boundary as
+R3/R3.6/R4-A/R4-B/R4-C/R5-B1 and adds frontend workflow inspector validation
+for the existing `apps/web` shell. It does not add provider, external live,
+demo-stack, production deployment, or business-agent capability validation.
 
-## Safe R5-B1 Commands
+## Safe R5-B2 Commands
 
 ```powershell
 git status --short --branch
@@ -22,9 +22,10 @@ npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
 ```
 
-## Not Safe For R5-B1
+## Not Safe For R5-B2
 
-Do not run during R3/R4-A/R4-B/R4-C/R5-B1 unless the user explicitly asks:
+Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2 unless the user explicitly
+asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -34,7 +35,7 @@ Do not run during R3/R4-A/R4-B/R4-C/R5-B1 unless the user explicitly asks:
 - frontend production build if it writes repo artifacts; use a repo-external
   `--outDir` if build validation is explicitly required
 
-R5-B1 treats frontend smoke and TypeScript no-emit checks as frontend contract
+R5-B2 treats frontend smoke and TypeScript no-emit checks as frontend inspector
 evidence only. It does not treat `mainline`, `fusion-gate`, provider live smoke,
 demo stack, or artifact-writing frontend build results as required
 runtime-boundary evidence.
@@ -55,10 +56,12 @@ imports, parses, validates plan dependencies, generates topological execution
 batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
 projects `step_results` and `execution_batches`, preserves public transcript
 safety, and keeps the contract/executor/catalog/runtime-binding seams and
-27-agent roster aligned in reset docs/tests. In R5-B1 it also means the
+27-agent roster aligned in reset docs/tests. In R5-B2 it also means the
 frontend TypeScript contract, mock agent catalog, mock workflow snapshot,
-streaming smoke fixture, and minimal WorkflowPanel summary accept the fixed DAG
-public payload.
+streaming smoke fixture, and WorkflowPanel inspector render the fixed DAG public
+payload's stage timeline, execution batches, dimension groups, selected step
+metadata, final source, and provenance while preserving the single public
+transcript boundary.
 
 R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,
@@ -74,6 +77,7 @@ It does not mean:
 - external service readiness
 - live market-data correctness
 - real business-agent correctness
-- full frontend v2 inspector completion
+- visual dependency graph beyond ordered execution batches
+- evidence-specific frontend drilldown
 - mainline/fusion-gate reset gate completion
 - production deployment readiness

@@ -2,21 +2,22 @@ import { useEffect, useMemo, useState } from "react";
 import { workflowSummaryLabel, zhCN } from "../../content/zh-CN";
 import type { WorkflowModel, WorkflowStageProgress } from "../../types/workflow";
 import { SourceBadge } from "../chat/SourceBadge";
-import { WorkflowExecutionView } from "./WorkflowExecutionView";
-import { WorkflowFinalView } from "./WorkflowFinalView";
-import { WorkflowFusionView } from "./WorkflowFusionView";
-import { WorkflowPlanView } from "./WorkflowPlanView";
-import { WorkflowSection } from "./WorkflowSection";
+import { WorkflowDagStepList } from "./WorkflowDagStepList";
+import { WorkflowDimensionGroups } from "./WorkflowDimensionGroups";
+import { WorkflowExecutionBatches } from "./WorkflowExecutionBatches";
+import { WorkflowProvenanceView } from "./WorkflowProvenanceView";
+import { WorkflowStageTimeline } from "./WorkflowStageTimeline";
+import { WorkflowStepResults } from "./WorkflowStepResults";
 
 interface WorkflowPanelProps {
   workflow: WorkflowModel;
 }
 
 const stageStatusLabel: Record<WorkflowStageProgress["status"], string> = {
-  waiting: "\u7b49\u5f85\u4e2d",
-  running: "\u8fdb\u884c\u4e2d",
-  completed: "\u5df2\u5b8c\u6210",
-  failed: "\u5df2\u5931\u8d25",
+  waiting: "等待中",
+  running: "进行中",
+  completed: "已完成",
+  failed: "已失败",
 };
 
 function liveWorkflowSummary(workflow: WorkflowModel) {
@@ -25,17 +26,17 @@ function liveWorkflowSummary(workflow: WorkflowModel) {
   const failedStage = liveProgress.find((stage) => stage.status === "failed");
   const completedCount = liveProgress.filter((stage) => stage.status === "completed").length;
   if (failedStage) {
-    return `\u534f\u4f5c\u53d7\u963b \u00b7 ${failedStage.title}`;
+    return `协作受阻 · ${failedStage.title}`;
   }
   if (runningStage) {
-    return `\u6b63\u5728\u534f\u4f5c \u00b7 ${runningStage.title}`;
+    return `正在执行固定 DAG · ${runningStage.title}`;
   }
-  return `\u534f\u4f5c\u5df2\u5b8c\u6210 \u00b7 ${completedCount}/${liveProgress.length}`;
+  return `固定 DAG 已完成 · ${completedCount}/${liveProgress.length}`;
 }
 
 function renderLiveProgress(liveProgress: WorkflowStageProgress[]) {
   return (
-    <div className="workflow-panel__live" aria-label="\u5b9e\u65f6\u534f\u4f5c\u8fdb\u5ea6">
+    <div className="workflow-panel__live" aria-label="实时固定 DAG 进度">
       <div className="workflow-panel__live-list">
         {liveProgress.map((stage) => (
           <div className={`workflow-progress workflow-progress--${stage.status}`} key={stage.key}>
@@ -48,16 +49,31 @@ function renderLiveProgress(liveProgress: WorkflowStageProgress[]) {
   );
 }
 
+function defaultSelectedStepId(workflow: WorkflowModel) {
+  const firstResultId = Object.keys(workflow.stepResults)[0];
+  return firstResultId ?? workflow.dagSteps[0]?.id ?? null;
+}
+
 export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
   const liveProgress = workflow.liveProgress ?? null;
   const isLive = Boolean(liveProgress?.length);
   const [expanded, setExpanded] = useState(isLive);
+  const [selectedStepId, setSelectedStepId] = useState<string | null>(() => defaultSelectedStepId(workflow));
 
   useEffect(() => {
     if (isLive) {
       setExpanded(true);
     }
   }, [isLive]);
+
+  useEffect(() => {
+    setSelectedStepId((current) => {
+      if (current && workflow.dagSteps.some((step) => step.id === current)) {
+        return current;
+      }
+      return defaultSelectedStepId(workflow);
+    });
+  }, [workflow]);
 
   const summaryLabel = useMemo(() => {
     if (isLive) {
@@ -76,7 +92,7 @@ export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
       >
         <div className="workflow-panel__summary">
           <span className="workflow-panel__glyph" aria-hidden="true">
-            协
+            DAG
           </span>
           <strong>{summaryLabel}</strong>
         </div>
@@ -89,19 +105,52 @@ export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
       {isLive ? renderLiveProgress(liveProgress ?? []) : null}
 
       {expanded ? (
-        <div className="workflow-panel__content">
-          <WorkflowSection eyebrow={zhCN.workflow.sections.planning} title={zhCN.workflow.sections.planning} icon="策">
-            <WorkflowPlanView workflow={workflow} />
-          </WorkflowSection>
-          <WorkflowSection eyebrow={zhCN.workflow.sections.execution} title={zhCN.workflow.sections.execution} icon="研">
-            <WorkflowExecutionView workflow={workflow} />
-          </WorkflowSection>
-          <WorkflowSection eyebrow={zhCN.workflow.sections.fusion} title={zhCN.workflow.sections.fusion} icon="融">
-            <WorkflowFusionView workflow={workflow} />
-          </WorkflowSection>
-          <WorkflowSection eyebrow={zhCN.workflow.sections.final} title={zhCN.workflow.sections.final} icon="结" isLast>
-            <WorkflowFinalView workflow={workflow} />
-          </WorkflowSection>
+        <div className="workflow-panel__content" aria-label={zhCN.workflow.inspectorLabel}>
+          <div className="workflow-inspector">
+            <section className="workflow-inspector__card workflow-inspector__card--wide">
+              <header className="workflow-inspector__header">
+                <span className="workflow-kicker">{zhCN.workflow.kickers.plan}</span>
+                <h4>{zhCN.workflow.sections.timeline}</h4>
+              </header>
+              <WorkflowStageTimeline workflow={workflow} />
+            </section>
+
+            <section className="workflow-inspector__card">
+              <header className="workflow-inspector__header">
+                <span className="workflow-kicker">{zhCN.workflow.kickers.batches}</span>
+                <h4>{zhCN.workflow.sections.batches}</h4>
+              </header>
+              <WorkflowExecutionBatches workflow={workflow} />
+            </section>
+
+            <section className="workflow-inspector__card">
+              <header className="workflow-inspector__header">
+                <span className="workflow-kicker">{zhCN.workflow.kickers.dimensions}</span>
+                <h4>{zhCN.workflow.sections.dimensions}</h4>
+              </header>
+              <WorkflowDimensionGroups workflow={workflow} />
+            </section>
+
+            <section className="workflow-inspector__card workflow-inspector__card--wide">
+              <header className="workflow-inspector__header">
+                <span className="workflow-kicker">{zhCN.workflow.kickers.steps}</span>
+                <h4>{zhCN.workflow.sections.steps}</h4>
+              </header>
+              <WorkflowDagStepList workflow={workflow} selectedStepId={selectedStepId} onSelectStep={setSelectedStepId} />
+            </section>
+
+            <section className="workflow-inspector__card">
+              <header className="workflow-inspector__header">
+                <span className="workflow-kicker">{zhCN.workflow.kickers.results}</span>
+                <h4>{zhCN.workflow.sections.results}</h4>
+              </header>
+              <WorkflowStepResults workflow={workflow} selectedStepId={selectedStepId} />
+            </section>
+
+            <section className="workflow-inspector__card">
+              <WorkflowProvenanceView workflow={workflow} />
+            </section>
+          </div>
         </div>
       ) : null}
     </section>

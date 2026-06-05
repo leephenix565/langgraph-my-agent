@@ -1,5 +1,5 @@
 import type { ContinuityMode, ErrorCategory, FinalSource, HealthResponse } from "../types/chat";
-import type { DagStepStatus, DimensionStatus, WorkflowModel } from "../types/workflow";
+import type { DagStepStatus, DimensionStatus, WorkflowModel, WorkflowStageKey } from "../types/workflow";
 
 type ConnectionState = "loading" | "live" | "degraded" | "unavailable";
 
@@ -38,14 +38,64 @@ export const zhCN = {
   },
   workflow: {
     title: "Workflow",
-    expand: "Open workflow",
-    collapse: "Collapse",
+    inspectorLabel: "Fixed DAG workflow inspector",
+    expand: "Open DAG inspector",
+    collapse: "Collapse inspector",
     empty: "Waiting for the fixed DAG snapshot",
+    emptySteps: "No DAG steps are available yet.",
+    emptyBatches: "No execution batches are available yet.",
+    emptyDimensions: "No dimension groups are available yet.",
+    emptyResult: "Select a DAG step to inspect its public-safe result metadata.",
+    selectedStep: "Selected step",
+    none: "None",
+    batchLabel: "Batch",
+    units: {
+      steps: "steps",
+    },
+    boolean: {
+      yes: "Yes",
+      no: "No",
+    },
+    kickers: {
+      plan: "Plan",
+      batches: "Batches",
+      dimensions: "Dimensions",
+      steps: "Steps",
+      results: "Result",
+    },
     sections: {
-      planning: "DAG stages",
-      execution: "DAG steps",
-      fusion: "Dimension groups",
-      final: "Final source",
+      timeline: "Stage timeline",
+      steps: "DAG step list",
+      batches: "Execution batches",
+      dimensions: "Dimension groups",
+      results: "Step result metadata",
+      provenance: "Final source and provenance",
+    },
+    stageStatus: {
+      waiting: "Waiting",
+      running: "Running",
+      completed: "Completed",
+      failed: "Failed",
+    },
+    resultFields: {
+      stepId: "Step id",
+      agentId: "Agent id",
+      stage: "Stage",
+      dimension: "Dimension",
+      runtimeKind: "Runtime kind",
+      implementationStatus: "Implementation status",
+      invokeEnabled: "Invoke enabled",
+      liveVerified: "Live verified",
+      warnings: "Warnings",
+    },
+    provenance: {
+      planId: "Plan id",
+      continuity: "Continuity",
+      providerInvoked: "Provider invoked",
+      externalInvoked: "External invoked",
+      fallbackUsed: "Fallback used",
+      executionStatus: "Execution status",
+      limitations: "Limitations",
     },
   },
   composer: {
@@ -190,6 +240,15 @@ const dimensionStatusLabels: Record<DimensionStatus, string> = {
   error: "Error",
 };
 
+const stageLabels: Record<WorkflowStageKey, string> = {
+  planning: "Planning",
+  evidence: "Evidence",
+  l2_analysis: "L2 analysis",
+  dimension_composite: "Dimension composite",
+  decision: "Decision",
+  report: "Report",
+};
+
 const connectionLabels: Record<ConnectionState, string> = {
   loading: "Loading",
   live: "Live",
@@ -292,6 +351,10 @@ export function dagStepStatusLabel(status: DagStepStatus) {
 
 export function dimensionStatusLabel(status: DimensionStatus) {
   return dimensionStatusLabels[status] ?? status;
+}
+
+export function stageLabel(stage: WorkflowStageKey) {
+  return stageLabels[stage] ?? stage;
 }
 
 export function connectionStateLabel(state: ConnectionState) {

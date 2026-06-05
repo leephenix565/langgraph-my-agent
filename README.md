@@ -10,8 +10,11 @@ R4-A adds the fixed DAG catalog source and switches the backend public
 the fixed DAG runtime binding registry for deterministic, external-candidate,
 and pending-placeholder runtime metadata. Phase R4-C isolates the legacy aNN
 registry/bootstrap from the active fixed-DAG graph import path. Phase R5-B1
-migrates the existing web frontend contract to `workflow_snapshot_v2` without
-claiming a full workflow inspector redesign. The runtime validates
+migrates the existing web frontend contract to `workflow_snapshot_v2`. Phase
+R5-B2 rewrites the existing web workflow inspector around that fixed DAG
+snapshot so stages, batches, dimensions, step result metadata, final source,
+and provenance render as inspector data rather than public transcript content.
+The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
 is not a completed business analysis engine.
@@ -20,15 +23,15 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R5-B1 frontend DAG contract migration.
+- Current phase: R5-B2 workflow DAG inspector UI rewrite.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;
-  the current WorkflowPanel is a minimal DAG summary, not the complete R5-B2
-  inspector UI.
+  the current WorkflowPanel renders the R5-B2 fixed DAG inspector from
+  `workflow_snapshot_v2`.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -175,7 +178,9 @@ DAG stages, steps, dimensions, provenance, and final source as
 `executionBatches` and `stepResults` for the inspector. R4-B adds binding
 metadata to `stepResults`. R5-B1 updates the frontend workflow/chat types,
 streaming placeholder, mocks, and smoke fixtures to consume this public shape.
-The full DAG inspector experience remains R5-B2 work.
+R5-B2 renders stage timeline, execution batches, dimension groups, selected
+step result metadata, final source, and provenance in the inspector while
+preserving the single user/assistant transcript boundary.
 
 ## Documentation Index
 
@@ -206,16 +211,18 @@ Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3/R4-A/R4-B/R4-C/R5-B1.
+- No provider or live external service was verified by
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1 validation.
-- No demo stack startup is part of R3/R4-A/R4-B/R4-C/R5-B1 validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2 validation.
+- No demo stack startup is part of R3/R4-A/R4-B/R4-C/R5-B1/R5-B2 validation.
 - No real business algorithms for individual agents are implemented in
-  R3/R4-A/R4-B/R4-C/R5-B1.
-- R5-B1 completes frontend contract migration only; it does not complete the
-  full R5-B2 workflow inspector UI rewrite.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2.
+- R5-B2 completes the frontend inspector UI rewrite only; it does not change
+  backend executor semantics, provider readiness, external readiness, or
+  business-agent correctness.
 - No mainline or fusion-gate reset quality gate is rebuilt in
-  R3/R4-A/R4-B/R4-C/R5-B1.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2.
 - R4-C isolates legacy registry/bootstrap but does not delete
   `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

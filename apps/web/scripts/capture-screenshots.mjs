@@ -36,7 +36,7 @@ async function waitForServer(url, timeoutMs = 20000) {
 function mockHealth() {
   return {
     status: "ok",
-    apiVersion: "phase-f3",
+    apiVersion: "phase-r5",
     overallStatus: "ready",
     checkpointer: {
       enabled: false,
@@ -53,14 +53,241 @@ function mockHealth() {
   };
 }
 
+function mockWorkflow() {
+  return {
+    schema: "workflow_snapshot_v2",
+    planId: "visual-fixed-dag-plan",
+    stages: [
+      { key: "planning", title: "Planning", stepIds: ["route_planner"] },
+      { key: "evidence", title: "Evidence seams", stepIds: ["financial_data_service", "entity_relation_extractor"] },
+      {
+        key: "l2_analysis",
+        title: "L2 analysis",
+        stepIds: ["value_traditional_valuation", "market_stock_technical", "sentiment_company_radar", "risk_identification"],
+      },
+      {
+        key: "dimension_composite",
+        title: "Dimension composites",
+        stepIds: ["value_composite", "market_composite", "risk_composite", "macro_composite"],
+      },
+      { key: "decision", title: "Decision", stepIds: ["decision_synthesizer"] },
+      { key: "report", title: "Report", stepIds: ["report_generator"] },
+    ],
+    dagSteps: [
+      {
+        id: "route_planner",
+        stage: "planning",
+        agentId: "route_planner",
+        dimension: "l1",
+        title: "Route planner",
+        summary: "Builds the deterministic fixed DAG plan for the public request.",
+        status: "complete",
+      },
+      {
+        id: "financial_data_service",
+        stage: "evidence",
+        agentId: "financial_data_service",
+        dimension: "l1",
+        title: "Financial data service",
+        summary: "Prepares the public data seam without live external invocation in this fixture.",
+        status: "complete",
+      },
+      {
+        id: "entity_relation_extractor",
+        stage: "evidence",
+        agentId: "entity_relation_extractor",
+        dimension: "l1",
+        title: "Entity relation extractor",
+        summary: "Prepares entity and relation context for downstream analysis.",
+        status: "complete",
+      },
+      {
+        id: "value_traditional_valuation",
+        stage: "l2_analysis",
+        agentId: "value_traditional_valuation",
+        dimension: "value",
+        title: "Traditional valuation",
+        summary: "Represents the value analysis path in the screenshot fixture.",
+        status: "pending_implementation",
+      },
+      {
+        id: "market_stock_technical",
+        stage: "l2_analysis",
+        agentId: "market_stock_technical",
+        dimension: "market",
+        title: "Stock technical analysis",
+        summary: "Represents the market analysis path in the screenshot fixture.",
+        status: "pending_implementation",
+      },
+      {
+        id: "sentiment_company_radar",
+        stage: "l2_analysis",
+        agentId: "sentiment_company_radar",
+        dimension: "market",
+        title: "Company sentiment radar",
+        summary: "Feeds only the market dimension in the fixed DAG roster.",
+        status: "pending_implementation",
+      },
+      {
+        id: "risk_identification",
+        stage: "l2_analysis",
+        agentId: "risk_identification",
+        dimension: "risk",
+        title: "Risk identification",
+        summary: "Represents the risk analysis path in the screenshot fixture.",
+        status: "pending_implementation",
+      },
+      {
+        id: "value_composite",
+        stage: "dimension_composite",
+        agentId: "value_composite",
+        dimension: "value",
+        title: "Value composite",
+        summary: "Combines value-dimension signals.",
+        status: "pending_implementation",
+      },
+      {
+        id: "market_composite",
+        stage: "dimension_composite",
+        agentId: "market_composite",
+        dimension: "market",
+        title: "Market composite",
+        summary: "Combines market signals including company sentiment.",
+        status: "pending_implementation",
+      },
+      {
+        id: "risk_composite",
+        stage: "dimension_composite",
+        agentId: "risk_composite",
+        dimension: "risk",
+        title: "Risk composite",
+        summary: "Combines risk signals without company sentiment input.",
+        status: "pending_implementation",
+      },
+      {
+        id: "macro_composite",
+        stage: "dimension_composite",
+        agentId: "macro_composite",
+        dimension: "macro",
+        title: "Macro composite",
+        summary: "Combines macro signals.",
+        status: "pending_implementation",
+      },
+      {
+        id: "decision_synthesizer",
+        stage: "decision",
+        agentId: "decision_synthesizer",
+        dimension: "l4",
+        title: "Decision synthesizer",
+        summary: "Synthesizes dimension composites into a decision seam.",
+        status: "pending_implementation",
+      },
+      {
+        id: "report_generator",
+        stage: "report",
+        agentId: "report_generator",
+        dimension: "l4",
+        title: "Report generator",
+        summary: "Projects the final public answer.",
+        status: "pending_implementation",
+      },
+    ],
+    dimensionGroups: [
+      {
+        id: "value",
+        title: "Value dimension",
+        stepIds: ["value_traditional_valuation", "value_composite"],
+        status: "partial",
+        summary: "Value path is represented as public-safe inspector metadata.",
+      },
+      {
+        id: "market",
+        title: "Market dimension",
+        stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
+        status: "partial",
+        summary: "Market path includes company sentiment radar.",
+      },
+      {
+        id: "risk",
+        title: "Risk dimension",
+        stepIds: ["risk_identification", "risk_composite"],
+        status: "partial",
+        summary: "Risk path excludes company sentiment radar.",
+      },
+      {
+        id: "macro",
+        title: "Macro dimension",
+        stepIds: ["macro_composite"],
+        status: "partial",
+        summary: "Macro path is represented as public-safe inspector metadata.",
+      },
+    ],
+    currentStage: "report",
+    completedSteps: ["route_planner", "financial_data_service", "entity_relation_extractor"],
+    executionBatches: [
+      ["route_planner"],
+      ["financial_data_service", "entity_relation_extractor"],
+      ["value_traditional_valuation", "market_stock_technical", "sentiment_company_radar", "risk_identification"],
+      ["value_composite", "market_composite", "risk_composite", "macro_composite"],
+      ["decision_synthesizer"],
+      ["report_generator"],
+    ],
+    stepResults: {
+      route_planner: {
+        status: "complete",
+        runtime_kind: "deterministic_skeleton",
+        implementation_status: "deterministic_skeleton",
+        binding_source: "fixed_dag_runtime_registry",
+        invoke_enabled: false,
+        live_verified: false,
+      },
+      financial_data_service: {
+        status: "complete",
+        runtime_kind: "external_http_candidate",
+        implementation_status: "external_candidate_disabled",
+        binding_source: "fixed_dag_runtime_registry",
+        legacy_agent_id: "a22_financial_data_service",
+        external_agent_id: "financial_data_service",
+        invoke_enabled: false,
+        live_verified: false,
+        warnings: ["External candidate is registered but not live verified in the fixture."],
+      },
+      sentiment_company_radar: {
+        status: "pending_implementation",
+        runtime_kind: "placeholder",
+        implementation_status: "pending_implementation",
+        binding_source: "fixed_dag_runtime_registry",
+        invoke_enabled: false,
+        live_verified: false,
+        warnings: ["Market sentiment path is placeholder-only in the fixture."],
+      },
+    },
+    finalSource: "reset_skeleton",
+    provenanceNote: "Public-safe fixed DAG workflow snapshot. Raw graph messages and raw provider responses are not transcript.",
+    provenance: {
+      source: "reset_skeleton",
+      continuityMode: "replay",
+      providerInvoked: false,
+      externalInvoked: false,
+      executionStatus: "deterministic_skeleton",
+      fallbackUsed: false,
+      limitations: ["Screenshot fixture only; provider and external live readiness are not verified."],
+      summary: "Final answer is projected from the reset skeleton fixed DAG path.",
+    },
+  };
+}
+
 function mockThreadDetail() {
+  const answer =
+    "The fixed DAG skeleton keeps the public answer as a single assistant response. The inspector shows planning, evidence, parallel analysis, dimension composites, decision, and report seams without exposing raw provider or external responses.";
+
   return {
     thread: {
       id: "thread-visual-1",
-      title: "新能源汽车企业财报与风险",
-      updatedAt: "今天 10:18",
-      preview: "保留主线配置方向，同时压低高波动暴露。",
-      finalSource: "fused",
+      title: "Fixed DAG workflow inspection",
+      updatedAt: "Today 10:18",
+      preview: "Public answer with fixed DAG inspector metadata.",
+      finalSource: "reset_skeleton",
       phase: "Live",
       continuityMode: "replay",
     },
@@ -68,115 +295,27 @@ function mockThreadDetail() {
       {
         id: "turn-user-1",
         role: "user",
-        text: "请帮我深度分析一下目前国内新能源汽车行业头部的几家公司财务健康度，以及未来一年的主要政策风险。",
-        createdAt: "今天 10:16",
+        text: "Review a public-safe fixed DAG investment workflow.",
+        createdAt: "Today 10:16",
       },
       {
         id: "turn-assistant-1",
         role: "assistant",
-        text:
-          "基于对国内新能源汽车行业头部企业（如比亚迪、理想、蔚来等）的最新财务数据与宏观政策的综合研判，以下是深度分析结果：\n\n1. 财务健康度分化明显。头部企业已实现规模效应，季度净利润持续为正，自由现金流充裕，具备较强的抗周期能力。部分新势力车企营收增长仍依赖促销与研发投入，现金流和利润率仍处于承压阶段。\n\n2. 未来一年主要政策与宏观风险。补贴退出与价格战会继续压缩行业毛利；海外关税与本地化合规要求也会提升全球化成本，企业需要在规模扩张与利润纪律之间重新平衡。\n\n3. 组合建议。保留主线配置方向，同时压低高波动暴露，把价格战敏感、对外部融资依赖较高的环节控制在可承受范围内。",
-        createdAt: "今天 10:18",
-        runId: "run-ux-1f-001",
+        text: answer,
+        createdAt: "Today 10:18",
+        runId: "run-r5b2-visual-001",
         continuityMode: "replay",
         answerCard: {
-          answer:
-            "基于对国内新能源汽车行业头部企业（如比亚迪、理想、蔚来等）的最新财务数据与宏观政策的综合研判，以下是深度分析结果：\n\n1. 财务健康度分化明显。头部企业已实现规模效应，季度净利润持续为正，自由现金流充裕，具备较强的抗周期能力。部分新势力车企营收增长仍依赖促销与研发投入，现金流和利润率仍处于承压阶段。\n\n2. 未来一年主要政策与宏观风险。补贴退出与价格战会继续压缩行业毛利；海外关税与本地化合规要求也会提升全球化成本，企业需要在规模扩张与利润纪律之间重新平衡。\n\n3. 组合建议。保留主线配置方向，同时压低高波动暴露，把价格战敏感、对外部融资依赖较高的环节控制在可承受范围内。",
-          finalSource: "fused",
-          confidence: "high",
+          answer,
+          finalSource: "reset_skeleton",
           citations: [
-            { label: "主线摘要", note: "最终回答来自安全映射后的公开摘要。" },
-            { label: "协作过程", note: "协作过程被压缩为可展开的检查层，而不是多位聊天角色。" },
+            { label: "Fixed DAG bundle", note: "Final answer came from the public fixed DAG projection." },
+            { label: "Workflow", note: "Workflow details remain in the inspector, not the transcript." },
           ],
-          evidenceCards: [{ title: "宏观背景", note: "流动性压力边际缓和，但价格竞争仍在持续。" }],
+          evidenceCards: [{ title: "Workflow", note: "Structured public-safe output." }],
           evidenceCount: 1,
         },
-        workflow: {
-          layerPlan: [
-            { layer: "L1", mode: "Chain", selected: ["a01_cio_orchestrator"], note: "明确问题边界与对外回答结构。" },
-            {
-              layer: "L2",
-              mode: "Star",
-              selected: ["a03_macro_industry_research", "a06_financial_statement_analysis", "a08_industry_hotspot", "a15_entity_relation_extraction"],
-              note: "并行获取政策、财务与行业背景。",
-            },
-            {
-              layer: "L3",
-              mode: "Star",
-              selected: ["a17_traditional_valuation", "a19_risk_identification", "a21_portfolio_manager"],
-              note: "补足估值、波动与组合约束判断。",
-            },
-            { layer: "L4", mode: "Chain", selected: ["a25_report_center"], note: "整理为最终对外回答。" },
-          ],
-          layerMode: { L1: "Chain", L2: "Star", L3: "Star", L4: "Chain" },
-          currentLayer: "L4",
-          layerDone: ["L1", "L2", "L3", "L4"],
-          agentSteps: [
-            {
-              id: "step-1",
-              layer: "L1",
-              agentId: "a01_cio_orchestrator",
-              title: "首席投资统筹",
-              summary: "识别到深度分析意图，并先约束最终输出结构。",
-              status: "complete",
-            },
-            {
-              id: "step-2",
-              layer: "L2",
-              agentId: "a06_financial_statement_analysis",
-              title: "财务报告分析师",
-              summary: "识别到 Q3 营收超预期，但现金流承压。",
-              status: "complete",
-            },
-            {
-              id: "step-3",
-              layer: "L2",
-              agentId: "a03_macro_industry_research",
-              title: "宏观政策分析师",
-              summary: "行业补贴政策在下季度退坡，存在宏观阻力。",
-              status: "complete",
-            },
-            {
-              id: "step-4",
-              layer: "L3",
-              agentId: "a20_compliance_review",
-              title: "合规风险监控",
-              summary: "暂未发现近期重大诉讼或合规违约风险。",
-              status: "complete",
-            },
-          ],
-          fusionSteps: [
-            {
-              id: "fusion-baseline",
-              kind: "baseline",
-              label: "Baseline sidecar",
-              status: "shadow",
-              summary: "基线侧车补充了更偏风险表达的对照观点。",
-            },
-            {
-              id: "fusion-judge",
-              kind: "judge",
-              label: "Fusion judge",
-              status: "ready",
-              summary: "融合评判选择保留主线结构，并吸收基线的风险表述。",
-            },
-            {
-              id: "fusion-writer",
-              kind: "writer",
-              label: "Fusion writer",
-              status: "selected",
-              summary: "融合写作生成了最终对外可见的回答。",
-            },
-          ],
-          finalSource: "fused",
-          provenanceNote: "最终回答来自融合写作路径，连续性为回放模式。",
-          provenance: {
-            emitPath: "fusion_writer",
-            finalSource: "fused",
-            continuityMode: "replay",
-            summary: "最终回答来自融合写作路径，并保留主线研究框架。",
-          },
-        },
+        workflow: mockWorkflow(),
       },
     ],
   };
@@ -230,7 +369,7 @@ async function main() {
     await page.locator(".assistant-card").waitFor();
     await page.screenshot({ path: resolve(outputDir, "chat-home-desktop.png") });
 
-    const toggle = page.getByRole("button", { name: /协作过程/ });
+    const toggle = page.getByRole("button", { name: /Workflow|DAG inspector|Open DAG inspector/ });
     await toggle.click();
     await page.locator(".workflow-panel__content").waitFor();
     await page.locator(".workflow-panel").scrollIntoViewIfNeeded();

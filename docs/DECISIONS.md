@@ -247,3 +247,29 @@ topology, runtime bindings, `/api/agents` schema, provider readiness, external
 candidate invocation, production deployment, or R6 mainline/fusion gates. It
 also does not complete the richer R5-B2 DAG timeline, dependency graph,
 per-step drilldown, or evidence view.
+
+## ADR-015: R5-B2 Rewrites The Workflow DAG Inspector UI
+
+Status: accepted for frontend inspector UI rewrite.
+
+Decision: R5-B2 keeps the single public user/assistant transcript and rewrites
+the existing `apps/web` WorkflowPanel around `workflow_snapshot_v2`. The
+inspector renders fixed DAG stage timeline, execution batches, dimension
+groups, selectable DAG steps, public-safe step result metadata, final source,
+and provenance. Step result metadata may show runtime kind, implementation
+status, invoke-enabled status, live-verified status, and warnings.
+
+Reason: R5-B1 aligned the frontend contract with the public fixed DAG payload.
+R5-B2 makes that payload inspectable without creating separate public agent chat
+lanes and without changing backend runtime authority.
+
+Consequence: frontend mocks, smoke tests, and screenshot fixtures now validate
+the inspector against `workflow_snapshot_v2` while preserving transcript safety.
+`stepResults`, `executionBatches`, and runtime binding metadata remain
+inspector/debug data, not transcript turns.
+
+Non-consequence: R5-B2 does not change Python backend contracts, executor
+topology, catalog source, runtime bindings, `/api/agents` schema, provider
+readiness, external candidate invocation, production deployment, or R6
+mainline/fusion gates. It does not prove business-agent correctness or live
+service readiness.

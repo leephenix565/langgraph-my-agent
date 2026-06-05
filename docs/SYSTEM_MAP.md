@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R5-B1.
+This file is the reset branch operational map for Phase R5-B2.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R5-B1 frontend DAG contract migration.
+- Current phase: R5-B2 workflow DAG inspector UI rewrite.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -19,8 +19,9 @@ This file is the reset branch operational map for Phase R5-B1.
 - Active backend runtime binding source:
   `config/fixed_dag/runtime_bindings.json`.
 - Active frontend contract:
-  `apps/web` consumes `workflow_snapshot_v2` with fixed DAG stage, step,
-  dimension, batch, result, provenance, and `reset_skeleton` source fields.
+  `apps/web` renders the fixed DAG workflow inspector from
+  `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
+  `reset_skeleton` source fields.
 
 ## Current Runtime Entry
 
@@ -41,8 +42,7 @@ apps/web
 ```
 
 The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
-has R5-B1 contract migration in place and still needs the fuller R5-B2 workflow
-inspector UI rewrite.
+has R5-B1 contract migration and R5-B2 workflow inspector rendering in place.
 
 The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
@@ -91,8 +91,8 @@ compatibility, but they are not active graph invocation authority:
 - `src/react_agent/external_http_config.py`
 - `src/react_agent/external_http_agents.py`
 - `config/agents/*.json`
-- `apps/web` screenshot/demo helper fixtures that still require later visual
-  refresh outside the R5-B1 contract migration
+- `apps/web` screenshot/demo helper infrastructure, now refreshed to use the
+  fixed DAG v2 fixture but not executed as part of reset runtime validation
 
 In R4-C, `config/agents/*.json` and the legacy external wrapper table are
 retained as adapter/migration inputs. They are not the active reset public
@@ -155,13 +155,15 @@ Later phases own:
 - real business agent algorithms
 - later replacement/removal policy for `config/agents/*.json`
 - external service readiness and protocol repair
-- R5-B2 full frontend DAG workflow inspector rewrite
 - R6 rebuilt mainline and fusion-gate quality gates
+- richer visual dependency graph beyond ordered execution batches
+- evidence-specific frontend drilldown once backend public evidence payloads
+  are formalized
 - production deployment, auth, HTTPS, observability, persistence, and rate limits
 
 ## Quality Entry Points
 
-Safe R5-B1 validation commands:
+Safe R5-B2 validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -179,9 +181,8 @@ them.
 
 ## Non-Claims
 
-R3/R4/R5-B1 do not claim:
+R3/R4/R5-B1/R5-B2 do not claim:
 
-- full frontend v2 inspector completion
 - business-agent correctness
 - provider readiness
 - external service readiness
@@ -192,7 +193,7 @@ R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy
 registry/bootstrap is isolated from the active fixed-DAG graph import path.
 
-R5-B1 additionally does not claim a full DAG timeline, dependency graph,
-per-step drilldown, evidence view, production deployment, or live external
-readiness. It only claims frontend contract alignment with the current public
-fixed DAG payload.
+R5-B2 additionally does not claim a visual dependency graph beyond ordered
+execution batches, evidence-specific drilldown, production deployment, or live
+external readiness. It only claims frontend inspector rendering over the
+current public fixed DAG payload.

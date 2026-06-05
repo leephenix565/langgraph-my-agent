@@ -1,4 +1,4 @@
-# Frontend V2 Target
+# Frontend V2 Boundary
 
 This document describes the frontend boundary for the Fixed DAG reset.
 
@@ -8,7 +8,7 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R5-B1 Frontend Contract Boundary
+## Current R5-B2 Workflow Inspector Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
 
@@ -22,21 +22,33 @@ The Python public adapter emits `workflow_snapshot_v2` with:
 - `provenance`
 - `finalSource`
 
-The existing `apps/web` shell is retained and migrated in place for R5-B1. The
-frontend workflow/chat types, streaming placeholder workflow, fixed DAG mocks,
-and smoke fixtures now consume `workflow_snapshot_v2` instead of the old
+The existing `apps/web` shell is retained and migrated in place. R5-B1 moved
+the frontend workflow/chat types, streaming placeholder workflow, fixed DAG
+mocks, and smoke fixtures to `workflow_snapshot_v2` instead of the old
 `layerPlan`, `layerMode`, `agentSteps`, `fusionSteps`, or
 `mainline/baseline/fused` source model.
 
-R5-B1 intentionally keeps the UI work narrow. The current WorkflowPanel renders
-a minimal DAG summary from `stages`, `dagSteps`, `dimensionGroups`,
-`executionBatches`, `completedSteps`, `stepResults`, and `provenance`; it is not
-the complete R5-B2 workflow inspector redesign.
+R5-B2 rewrites the WorkflowPanel around the same public snapshot. The inspector
+now renders:
+
+- stage timeline from `stages`, `currentStage`, and live `workflow.stage`
+  progress
+- execution batches from `executionBatches`
+- selectable DAG step cards from `dagSteps`
+- dimension group panels from `dimensionGroups`
+- public-safe selected step result metadata from `stepResults`
+- final source and provenance from `finalSource` and `provenance`
+
+The inspector may show safe structured summaries and runtime binding metadata
+such as runtime kind, implementation status, invoke-enabled status,
+live-verified status, and warnings. It must not show provider raw responses,
+external raw responses, raw graph messages, manager assignment JSON, endpoint
+URLs, env var values, or secret-bearing metadata.
 
 R4-A changes the backend `/api/agents` projection to the fixed DAG catalog: 27
 enabled `snake_case` agents with L1=3, L2=18, L3=4, and L4=2. Frontend code that
-still carries old aNN mock labels is legacy migration input for R5, not active
-backend truth.
+still carries old aNN mock labels is legacy migration input, not active backend
+truth.
 
 R4-B adds backend runtime binding metadata to workflow `stepResults`, including
 runtime kind, implementation status, binding source, legacy migration id,
@@ -44,15 +56,9 @@ external agent id, invoke-enabled flag, and live-verified flag. It does not add
 runtime binding fields to `/api/agents`, and it does not expose endpoint URLs,
 env var values, provider raw responses, or external raw responses.
 
-R3/R4-B hardens backend workflow payload construction through
-`fixed_dag_contracts.py`, `fixed_dag_executor.py`, and
-`fixed_dag_runtime_registry.py`. It exposes the data needed for a richer
-inspector. R5-B1 adapts the frontend contract to this payload, while R5-B2 still
-owns the richer inspector UI.
-
-The workflow inspector target should treat the reset roster as 27 formal agents
-(L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
-step and should not be shown as a direct risk-composite input.
+The workflow inspector treats the reset roster as 27 formal agents. The
+`sentiment_company_radar` step belongs to the market dimension and should not
+be shown as a direct risk-composite input.
 
 ## Target Composer Flow
 
@@ -65,29 +71,6 @@ composer text
   -> final assistant answer
 ```
 
-## Workflow Inspector Target
-
-The inspector should show:
-
-- DAG stage
-- dimension
-- step
-- dependency batch
-- status
-- per-step result summary
-- evidence coverage
-- runtime binding status
-- final report readiness
-
-The inspector may show safe structured summaries. It must not show provider raw
-responses, raw graph messages, manager assignment JSON, or secret-bearing
-metadata.
-
-## Implementation Preference
-
-Rewrite the existing `apps/web` shell in place unless a later phase explicitly
-approves a separate app. Do not create a second public transcript model.
-
 ## R5-B1 Done
 
 - frontend workflow/chat type update to `workflow_snapshot_v2`
@@ -97,13 +80,23 @@ approves a separate app. Do not create a second public transcript model.
 - mock `/api/agents` catalog aligned to 27 enabled `snake_case` ids
 - frontend smoke fixture and assertions updated for the fixed DAG contract
 
+## R5-B2 Done
+
+- WorkflowPanel rewritten as a fixed DAG inspector instead of a minimal summary
+- stage timeline rendering
+- execution batch rendering
+- dimension group rendering
+- selectable DAG step list
+- selected step result metadata panel
+- final source and provenance panel
+- screenshot fixture script updated to use `workflow_snapshot_v2`
+- frontend smoke assertions expanded for inspector rendering, step metadata,
+  transcript boundary, and public-safe negative checks
+
 ## Deferred Work
 
-- DAG progress timeline using `executionBatches`
-- per-step dependency and result status panels
-- dimension-level status panels
-- report evidence view
-- richer rendering of safe runtime binding metadata
+- visual dependency graph beyond ordered execution batches
+- evidence-specific drilldown once backend public evidence cards are formalized
 - production auth and rate limits
 - persistent run history
 - deployment hardening

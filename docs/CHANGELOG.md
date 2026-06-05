@@ -3,6 +3,39 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R5-B2 workflow DAG inspector UI rewrite
+
+### Changed
+
+- Changed WorkflowPanel from the R5-B1 minimal DAG summary into a fixed DAG
+  inspector over `workflow_snapshot_v2`.
+- Added stage timeline rendering from `stages`, `currentStage`, and live
+  `workflow.stage` progress.
+- Added execution batch rendering from `executionBatches`.
+- Added dimension group rendering from `dimensionGroups`.
+- Added selectable DAG step cards from `dagSteps`.
+- Added public-safe selected step result metadata rendering from `stepResults`.
+- Added final source and provenance rendering from `finalSource` and
+  `provenance`.
+- Updated fixed DAG workflow mocks, screenshot fixture script, and frontend
+  smoke checks for inspector rendering and transcript safety.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+
+### Not Done
+
+- No Python backend contract, executor, catalog, or runtime binding change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No external HTTP candidate was enabled or live verified.
+- No `/api/agents` runtime binding field exposure.
+- No production auth, rate-limit, HTTPS, deployment, persistence, or
+  observability claim.
+- No push.
+
 ## 2026-06-04 - Phase R5-B1 frontend DAG contract migration
 
 ### Changed
