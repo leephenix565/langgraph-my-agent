@@ -36,7 +36,7 @@ function liveWorkflowSummary(workflow: WorkflowModel) {
 
 function renderLiveProgress(liveProgress: WorkflowStageProgress[]) {
   return (
-    <div className="workflow-panel__live" aria-label="实时固定 DAG 进度">
+    <div className="workflow-panel__live" aria-label="实时研判流程进度">
       <div className="workflow-panel__live-list">
         {liveProgress.map((stage) => (
           <div className={`workflow-progress workflow-progress--${stage.status}`} key={stage.key}>
@@ -101,7 +101,7 @@ export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
       >
         <div className="workflow-panel__summary">
           <span className="workflow-panel__glyph" aria-hidden="true">
-            DAG
+            流
           </span>
           <span className="workflow-panel__summary-copy">
             <strong>{summaryLabel}</strong>

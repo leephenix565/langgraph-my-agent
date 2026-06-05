@@ -2,16 +2,17 @@
 
 This document defines safe validation for the reset branch.
 
-R5-B2/R5-B2.6/R5-C keep the same non-provider validation boundary as
+R5-B2/R5-B2.6/R5-C/R5-C1 keep the same non-provider validation boundary as
 R3/R3.6/R4-A/R4-B/R4-C/R5-B1. R5-B2 adds frontend workflow inspector
 validation for the existing `apps/web` shell, and R5-B2.6 adds localized
 visible-copy and visual copy-polish validation over that same inspector. R5-C
 adds normal-UI simplification, advanced diagnostic disclosure, and product-facing
-copy validation over the same public payload. These phases do not add provider,
-external live, demo-stack, production deployment, or business-agent capability
-validation.
+copy validation over the same public payload. R5-C1 adds default-surface
+business-copy professionalization for dimension summaries, step summaries, and
+answer-card evidence labels. These phases do not add provider, external live,
+demo-stack, production deployment, or business-agent capability validation.
 
-## Safe R5-B2/R5-B2.6/R5-C Commands
+## Safe R5-B2/R5-B2.6/R5-C/R5-C1 Commands
 
 ```powershell
 git status --short --branch
@@ -24,13 +25,13 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1
 ```
 
-## Not Safe For R5-B2/R5-B2.6/R5-C
+## Not Safe For R5-B2/R5-B2.6/R5-C/R5-C1
 
-Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C unless the user
-explicitly asks:
+Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 unless the
+user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -40,7 +41,7 @@ explicitly asks:
 - frontend production build if it writes repo artifacts; use a repo-external
   `--outDir` if build validation is explicitly required
 
-R5-B2/R5-B2.6/R5-C treat frontend smoke, TypeScript no-emit checks, and
+R5-B2/R5-B2.6/R5-C/R5-C1 treat frontend smoke, TypeScript no-emit checks, and
 repo-external frontend build output as frontend inspector/copy evidence only.
 They do not treat `mainline`, `fusion-gate`, provider live smoke, demo stack, or
 artifact-writing frontend build results as required runtime-boundary evidence.
@@ -72,7 +73,11 @@ public-safe reset skeleton answer are aligned while raw technical ids and enum
 values remain available in inspector/debug contexts. In R5-C it also means the
 normal chat, answer, Agents, and Settings surfaces are product-facing by
 default while workflow technical details and Settings advanced diagnostics still
-retain true runtime/readiness boundary information.
+retain true runtime/readiness boundary information. In R5-C1 it also means
+dimension summaries, step summaries, and answer-card evidence copy avoid
+fixture/roster/transcript/path-wiring language in default user-visible
+surfaces, while raw protocol values remain available in expanded technical
+details.
 
 R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,

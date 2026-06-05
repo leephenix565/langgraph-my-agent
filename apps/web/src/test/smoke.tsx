@@ -124,9 +124,16 @@ function assistantTurn(id: string, answer: string): PublicTurn {
     answerCard: {
       answer,
       finalSource: "reset_skeleton",
-      citations: [{ label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 投影。" }],
-      evidenceCards: [{ title: "Workflow", note: "结构化可公开输出。" }],
-      evidenceCount: 1,
+      citations: [
+        {
+          label: "Fixed DAG bundle",
+          note: "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
+        },
+        { label: "User question", note: "围绕你提出的问题进行结构化梳理。" },
+        { label: "Workflow", note: "如需查看过程，可展开“流程详情”。" },
+      ],
+      evidenceCards: [{ title: "分析框架", note: "系统按照固定研判流程组织本轮分析。" }],
+      evidenceCount: 3,
     },
     workflow: createWorkflowVariant(id),
   };
@@ -179,6 +186,20 @@ const forbiddenUiTokens = [
   "Fusion",
 ];
 
+const forbiddenDefaultUserCopyTokens = [
+  "fixture",
+  "roster",
+  "transcript",
+  "市场维度包含企业舆情雷达",
+  "风险路径不读取企业舆情雷达",
+  "固定 DAG 数据组",
+  "固定 DAG 数据包",
+  "检查器元数据",
+  "No provider",
+  "external endpoint",
+  "reset_skeleton",
+];
+
 function assertNoForbiddenSerializedTokens(value: string) {
   for (const token of forbiddenSerializedTokens) {
     assert.equal(value.includes(token), false, `Unexpected serialized token: ${token}`);
@@ -189,6 +210,13 @@ function assertNoForbiddenUiTokens(value: string | null | undefined) {
   const text = value ?? "";
   for (const token of forbiddenUiTokens) {
     assert.equal(text.includes(token), false, `Unexpected UI token: ${token}`);
+  }
+}
+
+function assertNoForbiddenDefaultUserCopy(value: string | null | undefined) {
+  const text = value ?? "";
+  for (const token of forbiddenDefaultUserCopyTokens) {
+    assert.equal(text.includes(token), false, `Unexpected default user copy token: ${token}`);
   }
 }
 
@@ -304,9 +332,14 @@ async function runAssistantRenderChecks() {
   assert.ok(article.querySelector("strong"));
   assert.ok(article.querySelector("em"));
   assert.ok(article.textContent?.includes("研判流程"));
+  assert.ok(article.textContent?.includes("研判依据"));
+  assert.ok(article.textContent?.includes("分析框架"));
+  assert.ok(article.textContent?.includes("用户问题"));
+  assert.ok(article.textContent?.includes("流程记录"));
   assert.equal(article.textContent?.includes("external_candidate_disabled"), false);
   assert.equal(article.textContent?.includes("pending_implementation"), false);
   assert.equal(article.textContent?.includes("待实现"), false);
+  assertNoForbiddenDefaultUserCopy(article.textContent);
   fireEvent.click(view.getByRole("button", { name: /研判流程|流程详情/ }));
   assert.ok(view.getByLabelText("固定 DAG 研判流程详情"));
   assert.ok(view.getByText("阶段时间线"));
@@ -314,9 +347,13 @@ async function runAssistantRenderChecks() {
   assert.ok(view.getByText("执行批次"));
   assert.ok(view.getByText("维度分组"));
   assert.ok(view.getByText("流程步骤列表"));
-  assert.ok(view.getByText("步骤结果元数据"));
+  assert.ok(view.getByText("步骤结果详情"));
   assert.ok(view.getByText("最终来源与溯源"));
-  assert.ok(view.getAllByText("固定 DAG 研判流程").length >= 1);
+  assert.ok(view.getAllByText("固定研判流程").length >= 1);
+  assert.ok(view.getAllByText((content) => content.includes("围绕估值水平、研究观点与价值信号")).length >= 1);
+  assert.ok(view.getAllByText((content) => content.includes("结合价格走势、资金行为、投资者结构与市场关注度")).length >= 1);
+  assert.ok(view.getAllByText((content) => content.includes("关注价格波动、财务异常、合规事件")).length >= 1);
+  assert.ok(view.getAllByText((content) => content.includes("从宏观环境、行业景气、商品与指数表现")).length >= 1);
 
   assert.ok(view.getByText("当前步骤"));
   assert.ok(view.getByText("运行方式"));
@@ -343,7 +380,7 @@ async function runAssistantRenderChecks() {
   assert.ok(view.getAllByText("待接入").length >= 1);
   assert.ok(view.getAllByText("pending_implementation").length >= 1);
   assert.ok(article.textContent?.includes("pending_implementation"));
-  assert.ok(view.getByText("市场舆情路径在本地流程中以规划信息展示。"));
+  assert.ok(view.getByText("公司相关公开信息与市场情绪变化已纳入市场维度观察。"));
 
   for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
     assert.equal(article.textContent?.includes(oldCopy), false, `Unexpected old workflow copy: ${oldCopy}`);
@@ -493,10 +530,11 @@ async function runStreamingSuccessScenario() {
   await waitFor(() => {
     assert.ok(view.getByText("简短实时摘要，先给结论。"));
   });
-  assert.ok(view.getAllByText("固定 DAG 研判流程").length >= 1);
+  assert.ok(view.getAllByText("固定研判流程").length >= 1);
   assert.equal(view.container.textContent?.includes("external_candidate_disabled"), false);
   assert.equal(view.container.textContent?.includes("pending_implementation"), false);
   assert.equal(view.container.textContent?.includes("待实现"), false);
+  assertNoForbiddenDefaultUserCopy(view.container.textContent);
 
   assert.equal(sentPayloads[0].text, "Summarize the market risk profile.");
   assert.deepEqual(sentPayloads[0].structuredInput, { task: "Summarize the market risk profile." });

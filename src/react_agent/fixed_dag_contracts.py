@@ -352,7 +352,7 @@ def _build_steps() -> list[FixedDagStep]:
             step_id="route_planner",
             stage="planning",
             title=AGENT_TITLE_LABELS["route_planner"],
-            description="创建确定性的固定 DAG 执行计划。",
+            description="理解问题并组织本轮研判流程。",
             status="complete",
             agent_id="route_planner",
             dimension="l1",
@@ -361,7 +361,7 @@ def _build_steps() -> list[FixedDagStep]:
             step_id="financial_data_service",
             stage="evidence",
             title=AGENT_TITLE_LABELS["financial_data_service"],
-            description="准备数据包占位接口，不调用外部服务。",
+            description="整理分析所需的基础数据与上下文。",
             agent_id="financial_data_service",
             dimension="l1",
             depends_on=("route_planner",),
@@ -370,7 +370,7 @@ def _build_steps() -> list[FixedDagStep]:
             step_id="entity_relation_extractor",
             stage="evidence",
             title=AGENT_TITLE_LABELS["entity_relation_extractor"],
-            description="解析实体并抽取关系，不进行实时查询。",
+            description="识别公司、行业、事件等关键对象及其关系。",
             agent_id="entity_relation_extractor",
             dimension="l1",
             depends_on=("route_planner",),
@@ -382,7 +382,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id=f"l2:{agent_id}",
                 stage="l2_analysis",
                 title=AGENT_TITLE_LABELS.get(agent_id, agent_id),
-                description="保留标准化结论对象位置。",
+                description="围绕本步骤主题整理研判线索。",
                 agent_id=agent_id,
                 dimension=AGENT_DIMENSIONS[agent_id],
                 depends_on=("financial_data_service", "entity_relation_extractor"),
@@ -394,7 +394,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id=f"dimension:{dimension}",
                 stage="dimension_composite",
                 title=DIMENSION_TITLE_LABELS.get(dimension, f"{dimension} 综合"),
-                description="汇总单一维度的 L2 结论，形成固定流程结果。",
+                description="汇总单一维度的分析结论，形成维度判断。",
                 agent_id=DIMENSION_COMPOSITE_AGENT_IDS[dimension],
                 target_ids=agent_ids,
                 dimension=dimension,
@@ -407,7 +407,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id="decision_synthesizer",
                 stage="decision",
                 title=AGENT_TITLE_LABELS["decision_synthesizer"],
-                description="生成固定流程决策结果。",
+                description="综合各维度判断，形成决策线索。",
                 agent_id="decision_synthesizer",
                 dimension="l4",
                 depends_on=tuple(f"dimension:{dimension}" for dimension in DIMENSION_GROUPS),
@@ -416,7 +416,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id="report_generator",
                 stage="report",
                 title=AGENT_TITLE_LABELS["report_generator"],
-                description="生成公开回答。",
+                description="生成面向用户的最终回答。",
                 agent_id="report_generator",
                 dimension="l4",
                 depends_on=("decision_synthesizer",),
@@ -908,33 +908,41 @@ def build_report_result(
 ) -> ReportResult:
     del decision_result
     answer = (
-        "已完成本轮固定 DAG 研判流程。系统按规划、证据接入、并行分析、"
-        "维度综合、决策和报告阶段组织公开回答；可展开流程详情查看本轮执行轨迹。"
+        "已完成本轮研判流程。系统按照固定研判流程组织本轮分析，包括问题理解、"
+        "信息整理、并行分析、维度综合与报告生成；可展开流程详情查看过程记录。"
     )
     if question:
         answer = f"{answer}\n\n收到的问题：{question}"
     return {
         "schema": REPORT_RESULT_SCHEMA_VERSION,
         "schema_version": REPORT_RESULT_SCHEMA_VERSION,
-        "title": "固定 DAG 研判流程",
+        "title": "研判流程",
         "answer": answer,
         "status": "pending_implementation",
         "sections": [
             {
                 "id": "runtime_scope",
-                "title": "研判流程",
-                "content": "本轮回答由固定 DAG 流程组织生成。",
+                "title": "分析框架",
+                "content": "系统按照固定研判流程组织本轮分析。",
             },
             {
                 "id": "implementation_status",
-                "title": "高级连接",
-                "content": "当前为本地固定流程模式，高级连接状态可在设置诊断中查看。",
+                "title": "流程记录",
+                "content": "如需查看过程，可展开流程详情。",
             },
         ],
         "evidence_cards": [
             {
-                "title": "固定 DAG 研判流程",
-                "note": "规划、证据、分析、综合、决策和报告阶段已形成公开轨迹。",
+                "title": "分析框架",
+                "note": "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
+            },
+            {
+                "title": "用户问题",
+                "note": "围绕你提出的问题进行结构化梳理。",
+            },
+            {
+                "title": "流程记录",
+                "note": "如需查看过程，可展开流程详情。",
             }
         ],
         "limitations": [
@@ -952,7 +960,7 @@ def validate_report_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
     answer = str(obj.get("answer") or "")
     if not answer:
         return False, "answer_missing"
-    if "固定 DAG" not in answer or "研判流程" not in answer:
+    if "研判流程" not in answer:
         return False, "reset_scope_missing"
     if not isinstance(obj.get("sections"), list):
         return False, "sections_missing"
@@ -1101,7 +1109,7 @@ def build_workflow_snapshot_v2(
                 )
                 if isinstance(dimension_results.get(dimension), Mapping)
                 else "pending_implementation",
-                "summary": "固定流程综合结果。",
+        "summary": "维度综合结果。",
             }
             for dimension in DIMENSION_GROUPS
         ],
@@ -1173,7 +1181,7 @@ def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
 def build_final_emit_payload(report_result: Mapping[str, Any]) -> dict[str, Any]:
     answer = str(report_result.get("answer") or "").strip()
     if not answer:
-        answer = "固定 DAG 研判流程已完成，但没有报告正文。"
+        answer = "研判流程已完成，但没有报告正文。"
     return {"source": RESET_SOURCE, "status": "complete", "answer": answer}
 
 

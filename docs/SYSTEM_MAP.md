@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R5-C.
+This file is the reset branch operational map for Phase R5-C1.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R5-C frontend product polish and user-facing simplification
+- Current phase: R5-C1 user-facing business copy professionalization
   over the existing R5-B2/R5-B2.6 workflow DAG inspector.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
@@ -23,8 +23,9 @@ This file is the reset branch operational map for Phase R5-C.
   `apps/web` renders the fixed DAG workflow inspector from
   `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
   `reset_skeleton` source fields, with localized Chinese visible copy, reduced
-  default engineering/status noise, and raw technical ids/enum values retained
-  in expanded details where needed for debugging.
+  default engineering/status noise, professional business-facing dimension,
+  step, and answer-card evidence copy, and raw technical ids/enum values
+  retained in expanded details where needed for debugging.
 
 ## Current Runtime Entry
 
@@ -47,7 +48,8 @@ apps/web
 The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
 has R5-B1 contract migration, R5-B2 workflow inspector rendering, and R5-B2.6
 Chinese visible-copy polish in place. R5-C adds user-facing simplification over
-the same public payload.
+the same public payload. R5-C1 removes remaining default-surface implementation
+wording such as fixture/roster/transcript/path-wiring explanations.
 
 The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
@@ -168,7 +170,7 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R5-B2/R5-B2.6 validation commands:
+Safe R5-B2/R5-B2.6/R5-C/R5-C1 validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -178,7 +180,7 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1
 ```
 
 Do not run provider smoke, external live invoke, demo stack commands, or
@@ -187,7 +189,7 @@ them.
 
 ## Non-Claims
 
-R3/R4/R5-B1/R5-B2/R5-B2.6 do not claim:
+R3/R4/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 do not claim:
 
 - business-agent correctness
 - provider readiness
@@ -204,8 +206,9 @@ execution batches, evidence-specific drilldown, production deployment, or live
 external readiness. It only claims frontend inspector rendering over the
 current public fixed DAG payload.
 
-R5-B2.6/R5-C additionally do not claim a runtime locale switch, schema change,
-topology change, roster change, provider/external readiness, or production
-readiness. R5-B2.6 only claims Chinese visible-copy localization and visual
-copy polish; R5-C only claims normal-UI simplification and advanced diagnostic
-disclosure cleanup over the same fixed DAG public payload.
+R5-B2.6/R5-C/R5-C1 additionally do not claim a runtime locale switch, schema
+change, topology change, roster change, provider/external readiness, or
+production readiness. R5-B2.6 only claims Chinese visible-copy localization and
+visual copy polish; R5-C only claims normal-UI simplification and advanced
+diagnostic disclosure cleanup; R5-C1 only claims default user-facing business
+copy professionalization over the same fixed DAG public payload.

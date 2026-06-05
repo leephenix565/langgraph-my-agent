@@ -25,7 +25,7 @@ export const zhCN = {
     confirmClearMessages: "确定清空当前会话消息吗？此操作不可撤销。",
   },
   answer: {
-    references: "参考依据",
+    references: "研判依据",
     details: "技术详情",
     showDetails: "显示技术详情",
     hideDetails: "隐藏技术详情",
@@ -45,7 +45,7 @@ export const zhCN = {
     emptySteps: "暂无流程步骤。",
     emptyBatches: "暂无执行批次。",
     emptyDimensions: "暂无维度分组。",
-    emptyResult: "选择一个流程步骤查看可公开展示的结果元数据。",
+    emptyResult: "选择一个流程步骤查看本轮结果摘要。",
     selectedStep: "当前步骤",
     none: "无",
     batchLabel: "批次",
@@ -65,7 +65,7 @@ export const zhCN = {
       steps: "流程步骤列表",
       batches: "执行批次",
       dimensions: "维度分组",
-      results: "步骤结果元数据",
+      results: "步骤结果详情",
       provenance: "最终来源与溯源",
     },
     stageStatus: {
@@ -125,7 +125,7 @@ export const zhCN = {
     unavailableTitle: "系统不可用",
     unavailableBody: "无法连接公共适配器。请确认 Python adapter 正在运行。",
     degradedTitle: "基础功能可用",
-    degradedBody: "当前使用本地固定 DAG 研判流程；高级连接状态可在设置中查看。",
+    degradedBody: "当前使用本地固定研判流程；高级连接状态可在设置中查看。",
     errorTitle: "请求失败",
     errorBody: "请稍后重试，或调整问题。",
     loadingTitle: "正在加载会话",
@@ -145,7 +145,7 @@ export const zhCN = {
     searchLabel: "搜索能力",
     searchPlaceholder: "按 ID、名称、团队或能力搜索",
     loadingTitle: "正在加载能力结构",
-    loadingBody: "正在读取公共固定 DAG 目录。",
+    loadingBody: "正在读取能力结构。",
     unavailableTitle: "能力结构不可用",
     unavailableBody: "请确认公共适配器可访问，然后刷新。",
     errorTitle: "能力结构暂时不可用",
@@ -222,7 +222,7 @@ export const zhCN = {
 } as const;
 
 const sourceLabels: Record<FinalSource, string> = {
-  reset_skeleton: "固定 DAG 研判流程",
+  reset_skeleton: "固定研判流程",
 };
 
 const continuityLabels: Record<ContinuityMode, string> = {
@@ -322,39 +322,40 @@ const agentNameLabels: Record<string, string> = {
 };
 
 const agentDescriptionLabels: Record<string, string> = {
-  route_planner: "为本轮问题组织固定 DAG 研判路径。",
-  financial_data_service: "整理研判所需的金融数据入口与上下文。",
-  entity_relation_extractor: "梳理公司、行业、事件和关系线索。",
+  route_planner: "理解问题并组织本轮研判流程。",
+  financial_data_service: "整理分析所需的基础数据与上下文。",
+  entity_relation_extractor: "识别公司、行业、事件等关键对象及其关系。",
   value_traditional_valuation: "从传统估值框架观察价值维度。",
   value_ml_valuation: "从机器学习估值框架观察价值维度。",
   value_meta_valuation: "从同类样本与元学习框架观察价值维度。",
   value_research_synthesis: "综合研报观点与价值判断线索。",
-  market_stock_technical: "从个股技术结构观察市场维度。",
+  market_stock_technical: "观察价格走势、成交变化与技术形态。",
   market_fund_manager_behavior: "观察基金经理行为对市场维度的影响。",
   market_ipo_investor_behavior: "观察 IPO 投资者构成与行为。",
   market_capital_flow_chip: "观察资金流与筹码结构。",
-  sentiment_company_radar: "观察企业舆情线索，并汇入市场维度。",
+  sentiment_company_radar: "跟踪公司相关公开信息、媒体关注与市场情绪变化。",
   risk_crash: "识别股价崩盘相关风险线索。",
   risk_financial_fraud: "识别财务欺诈相关风险线索。",
-  risk_identification: "汇集通用风险识别线索。",
+  risk_identification: "识别可能影响判断的风险线索。",
   risk_compliance_review: "观察公告合规审查线索。",
   macro_analysis: "观察宏观环境变化。",
   macro_commodity_pricing: "观察商品定价对研判的影响。",
   macro_index_valuation: "观察指数估值变化。",
   macro_sentiment: "观察宏观情绪线索。",
   macro_industry_hotspot: "发现行业热点变化。",
-  value_composite: "综合价值维度结论。",
-  market_composite: "综合市场维度结论，包含企业舆情雷达。",
-  risk_composite: "综合风险维度结论，企业舆情不进入该维度。",
-  macro_composite: "综合宏观维度结论。",
+  value_composite: "围绕估值水平、研究观点与价值信号形成综合判断。",
+  market_composite: "结合价格走势、资金行为、投资者结构与市场关注度形成综合判断。",
+  risk_composite: "围绕价格波动、财务异常、合规事件与其他潜在风险形成综合判断。",
+  macro_composite: "结合宏观环境、行业景气、商品与指数表现形成综合判断。",
   decision_synthesizer: "综合价值、市场、风险和宏观结果形成决策线索。",
   report_generator: "生成最终公开回答。",
 };
 
 const citationLabels: Record<string, string> = {
-  "Fixed DAG bundle": "固定 DAG 数据包",
-  "Emitted bundle": "输出数据包",
-  Workflow: "工作流",
+  "Fixed DAG bundle": "分析框架",
+  "Emitted bundle": "流程记录",
+  Workflow: "流程记录",
+  "User question": "用户问题",
 };
 
 const readinessStatusLabels: Record<string, string> = {
@@ -420,7 +421,7 @@ const capabilityLabels: Record<string, string> = {
   macro: "宏观",
   composite: "综合",
   l4: "L4 报告",
-  fixed_dag: "固定 DAG",
+  fixed_dag: "固定流程",
   data_bundle: "数据包",
   financial_data: "金融数据",
   entity_relation: "实体关系",

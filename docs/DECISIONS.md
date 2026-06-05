@@ -301,3 +301,29 @@ Non-consequence: R5-C does not change fixed DAG topology, roster, runtime
 bindings, `/api/agents` schema, provider readiness, external candidate
 invocation, production deployment, or R6 mainline/fusion gates. It does not
 prove business-agent correctness or live service readiness.
+
+## ADR-017: R5-C1 Business Copy Avoids Implementation Notes In Default UI
+
+Status: accepted for frontend product copy.
+
+Decision: R5-C1 keeps the same public contracts and disclosure model, but
+removes remaining implementation-note wording from default user-facing copy.
+Dimension summaries should explain value, market, risk, and macro analysis in
+business terms. Step summaries should not mention screenshot fixtures, rosters,
+path wiring, metadata, or transcript boundaries. Answer cards should present
+evidence as "研判依据" with "分析框架", "用户问题", and "流程记录" items.
+
+Reason: R5-C reduced major engineering/status noise, but screenshots showed
+remaining copy still explained internal wiring rather than user value. Business
+users need professional product language by default, while reviewers can still
+inspect raw protocol values in expanded technical details.
+
+Consequence: frontend mocks, screenshot fixtures, smoke tests, public-safe
+answer copy, and docs now validate default-surface business copy and guard
+against fixture/roster/transcript/path-wiring terms reappearing in ordinary
+chat surfaces.
+
+Non-consequence: R5-C1 does not change fixed DAG topology, the 27-agent roster,
+runtime bindings, public schemas, provider readiness, external candidate
+invocation, production deployment, or R6 mainline/fusion gates. It does not
+prove business-agent correctness or live service readiness.

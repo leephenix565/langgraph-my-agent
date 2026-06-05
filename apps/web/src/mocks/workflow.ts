@@ -29,7 +29,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "route_planner",
         dimension: "l1",
         title: "路径规划器",
-        summary: "为公开请求构建确定性的固定 DAG 计划。",
+        summary: "理解问题并组织本轮研判流程。",
         status: "complete",
       },
       {
@@ -38,7 +38,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "financial_data_service",
         dimension: "l1",
         title: "金融数据服务",
-        summary: "整理本轮研判所需的数据入口与上下文。",
+        summary: "整理分析所需的基础数据与上下文。",
         status: "complete",
       },
       {
@@ -47,7 +47,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "entity_relation_extractor",
         dimension: "l1",
         title: "实体关系抽取器",
-        summary: "为下游分析准备实体与关系占位上下文。",
+        summary: "识别公司、行业、事件等关键对象及其关系。",
         status: "complete",
       },
       {
@@ -56,7 +56,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "value_traditional_valuation",
         dimension: "value",
         title: "传统企业估值",
-        summary: "保留价值维度的研判位置。",
+        summary: "围绕估值水平、研究观点与价值信号进行分析。",
         status: "pending_implementation",
       },
       {
@@ -65,7 +65,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "market_stock_technical",
         dimension: "market",
         title: "个股技术分析",
-        summary: "保留市场维度的研判位置。",
+        summary: "观察价格走势、成交变化与技术形态。",
         status: "pending_implementation",
       },
       {
@@ -74,7 +74,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "sentiment_company_radar",
         dimension: "market",
         title: "企业舆情雷达",
-        summary: "在固定 DAG roster 中只汇入市场综合。",
+        summary: "跟踪公司相关公开信息、媒体关注与市场情绪变化。",
         status: "pending_implementation",
       },
       {
@@ -83,7 +83,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "risk_identification",
         dimension: "risk",
         title: "风险识别",
-        summary: "保留风险维度的研判位置。",
+        summary: "识别可能影响判断的风险线索。",
         status: "pending_implementation",
       },
       {
@@ -101,7 +101,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "market_composite",
         dimension: "market",
         title: "市场综合",
-        summary: "汇总市场维度结论，包含企业舆情。",
+        summary: "结合价格走势、资金行为、投资者结构与市场关注度形成综合判断。",
         status: "pending_implementation",
       },
       {
@@ -110,7 +110,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "risk_composite",
         dimension: "risk",
         title: "风险综合",
-        summary: "汇总风险维度结论；企业舆情不是输入。",
+        summary: "围绕价格波动、财务异常、合规事件与其他潜在风险形成综合判断。",
         status: "pending_implementation",
       },
       {
@@ -147,28 +147,28 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         title: "价值维度",
         stepIds: ["value_traditional_valuation", "value_composite"],
         status: "partial",
-        summary: "价值路径以可公开展示的信息呈现。",
+        summary: "围绕估值水平、研究观点与价值信号，辅助判断标的的中长期价值基础。",
       },
       {
         id: "market",
         title: "市场维度",
         stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
         status: "partial",
-        summary: "市场路径包含企业舆情雷达。",
+        summary: "结合价格走势、资金行为、投资者结构与市场关注度，观察短中期交易环境。",
       },
       {
         id: "risk",
         title: "风险维度",
         stepIds: ["risk_identification", "risk_composite"],
         status: "partial",
-        summary: "风险路径不读取企业舆情雷达。",
+        summary: "关注价格波动、财务异常、合规事件与其他潜在风险，识别需要谨慎处理的风险约束。",
       },
       {
         id: "macro",
         title: "宏观维度",
         stepIds: ["macro_composite"],
         status: "partial",
-        summary: "宏观路径以可公开展示的信息呈现。",
+        summary: "从宏观环境、行业景气、商品与指数表现等角度，评估外部环境对判断的影响。",
       },
     ],
     currentStage: "report",
@@ -224,11 +224,11 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["市场舆情路径在本地流程中以规划信息展示。"],
+        warnings: ["公司相关公开信息与市场情绪变化已纳入市场维度观察。"],
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "可公开展示的固定 DAG 研判流程快照；详细执行信息不进入 transcript。",
+    provenanceNote: "本轮研判流程已完成，过程记录可在流程详情中查看。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -236,8 +236,8 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
       externalInvoked: false,
       executionStatus: "deterministic_skeleton",
       fallbackUsed: false,
-      limitations: ["Mock workflow fixture；高级连接未做实时就绪验证。"],
-      summary: "本轮研判流程已完成，详细执行信息可在技术详情中查看。",
+      limitations: ["当前示例使用本地固定流程，高级连接状态可在设置诊断中查看。"],
+      summary: "本轮研判流程已完成，过程记录可在流程详情中查看。",
     },
   };
 }

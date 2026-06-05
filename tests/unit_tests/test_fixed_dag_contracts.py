@@ -207,7 +207,8 @@ def test_report_result_validates_and_has_reset_limitations() -> None:
     assert valid, reason
     assert report["evidence_cards"]
     joined = "\n".join([report["answer"], *report["limitations"]])
-    assert "固定 DAG 研判流程" in joined
+    assert "研判流程" in joined
+    assert "分析框架" in report["evidence_cards"][0]["title"]
     assert "高级连接状态可在设置诊断中查看" in joined
     assert "provider verified" not in joined.lower()
 

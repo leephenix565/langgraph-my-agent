@@ -338,7 +338,7 @@ def build_initial_step_results(plan: Mapping[str, Any]) -> dict[str, dict]:
         str(step["id"]): build_step_result(
             step,
             status="blocked",
-            summary="此步骤尚未由确定性 DAG 执行器执行。",
+            summary="此步骤尚未进入本轮研判流程。",
         )
         for step in _steps(plan)
         if step.get("id")
@@ -371,10 +371,9 @@ def _status_for_step(step: Mapping[str, Any]) -> str:
 
 
 def _summary_for_step(step: Mapping[str, Any]) -> str:
-    agent_id = str(step.get("agent_id") or step.get("id") or "")
     if step.get("agent_id") == "route_planner":
-        return "已选择确定性固定 DAG 计划。"
-    return f"{agent_id} 已按本地固定流程记录执行位置。"
+        return "已组织本轮研判流程。"
+    return "已按本地固定流程记录本轮处理结果。"
 
 
 def _execution_plan_or_fallback(

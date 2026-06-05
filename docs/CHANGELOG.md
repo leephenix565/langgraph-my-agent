@@ -3,6 +3,52 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R5-C1 user-facing business copy professionalization
+
+### Changed
+
+- Replaced remaining default-surface implementation-note copy in the web UI
+  with business-facing Chinese copy.
+- Changed answer-card evidence from "参考依据"/data-bundle style wording to
+  "研判依据" with "分析框架", "用户问题", and "流程记录" items.
+- Rewrote dimension group summaries for value, market, risk, and macro so they
+  describe analysis purpose instead of DAG route wiring.
+- Rewrote frontend mock and screenshot fixture step summaries to avoid fixture,
+  roster, transcript, path-wiring, metadata, and checker wording in default
+  user-visible surfaces.
+- Updated public-safe fixed DAG report/fallback copy without changing schemas,
+  topology, roster, or runtime binding semantics.
+- Updated frontend smoke assertions and Python public copy assertions.
+- Updated reset docs for the R5-C1 business-copy boundary and non-claims.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py src/react_agent/graph.py src/react_agent/public_mapping.py tests/integration_tests/test_public_api.py tests/integration_tests/test_graph.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_graph_skeleton.py tests/unit_tests/test_llm_json_retry_and_summary_filter.py tests/unit_tests/test_manager_summary_a25_output.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `npm --prefix apps/web run screenshots`
+- `git diff --check`
+
+### Visual Check
+
+- Temporary Vite process only, using Playwright API route interception and no
+  provider/external invocation. Screenshots saved outside the repo under
+  `E:/muti-agent/_tmp_r5c1_visual/screenshots`.
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, provider integration,
+  external wrapper, or real business-agent implementation change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No claim that external services, provider readiness, or production deployment
+  are live verified.
+- No push.
+
 ## 2026-06-04 - Phase R5-C frontend product polish and user-facing simplification
 
 ### Changed

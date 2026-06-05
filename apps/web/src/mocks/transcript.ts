@@ -18,10 +18,14 @@ function buildAssistantTurn(id: string, answer: string, prompt: string): PublicT
       finalSource: "reset_skeleton",
       confidence: "medium",
       citations: [
-        { label: "Fixed DAG bundle", note: "公开回答由固定 DAG 研判流程生成。" },
-        { label: "Workflow", note: "流程详情显示在检查器中，不作为额外 transcript 轮次。" },
+        {
+          label: "Fixed DAG bundle",
+          note: "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
+        },
+        { label: "User question", note: "围绕你提出的问题进行结构化梳理。" },
+        { label: "Workflow", note: "如需查看过程，可展开“流程详情”。" },
       ],
-      evidenceCount: 2,
+      evidenceCount: 3,
     },
     workflow: createWorkflowVariant(prompt),
   };
@@ -37,7 +41,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-1",
-      "已完成本轮固定 DAG 研判流程。公开回答保留核心结论，流程详情可在检查器中查看。",
+      "已完成本轮研判流程。系统已按问题理解、信息整理、并行分析、维度综合与报告生成组织本轮回答。",
       "电动车公司风险画像",
     ),
   ],
@@ -50,7 +54,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-2",
-      "公开 transcript 仍是一条助手回答；流程快照记录阶段、批次和步骤结果。",
+      "已完成本轮研判流程。核心结论以一条助手回答呈现，过程记录可在流程详情中查看。",
       "半导体供应链更新",
     ),
   ],
@@ -63,7 +67,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-3",
-      "风险约束在回答中汇总；内部步骤元数据保留在工作流检查器中。",
+      "风险约束已在回答中汇总；如需查看过程，可展开流程详情。",
       "组合风险约束",
     ),
   ],
@@ -80,7 +84,7 @@ export function createUserTurn(input: string): PublicTurn {
 
 export function createMockAssistantTurn(input: string): PublicTurn {
   const answer =
-    "这个 mock 使用固定 DAG 研判流程。用户/助手文本保留在 transcript 中；流程详情保留在检查器中。";
+    "已完成本轮研判流程。系统按固定研判流程组织回答，过程记录可在流程详情中查看。";
 
   return buildAssistantTurn(`assistant-${Math.random().toString(36).slice(2, 10)}`, answer, input);
 }

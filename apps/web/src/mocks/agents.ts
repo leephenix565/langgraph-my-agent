@@ -4,7 +4,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "route_planner",
     name: "Route planner",
-    description: "Creates the deterministic fixed DAG plan.",
+    description: "理解问题并组织本轮研判流程。",
     capabilities: ["planning", "fixed_dag"],
     layer: "L1",
     team: "l1",
@@ -14,7 +14,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "financial_data_service",
     name: "Financial data service",
-    description: "Prepares the financial data context for the fixed DAG path.",
+    description: "整理分析所需的基础数据与上下文。",
     capabilities: ["data_bundle", "financial_data"],
     layer: "L1",
     team: "l1",
@@ -24,7 +24,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "entity_relation_extractor",
     name: "Entity relation extractor",
-    description: "Prepares the entity and relation evidence seam.",
+    description: "识别公司、行业、事件等关键对象及其关系。",
     capabilities: ["entity_relation", "evidence"],
     layer: "L1",
     team: "l1",
@@ -34,7 +34,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "value_traditional_valuation",
     name: "Traditional valuation",
-    description: "Value-dimension placeholder for traditional company valuation.",
+    description: "围绕传统估值框架观察价值维度。",
     capabilities: ["valuation", "dcf"],
     layer: "L2",
     team: "value",
@@ -44,7 +44,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "value_ml_valuation",
     name: "ML valuation",
-    description: "Value-dimension placeholder for machine-learning company valuation.",
+    description: "围绕机器学习估值框架观察价值维度。",
     capabilities: ["valuation", "ml"],
     layer: "L2",
     team: "value",
@@ -54,7 +54,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "value_meta_valuation",
     name: "Meta valuation",
-    description: "Value-dimension placeholder for peer and support-set valuation.",
+    description: "围绕同类样本与支持集观察价值维度。",
     capabilities: ["valuation", "peer"],
     layer: "L2",
     team: "value",
@@ -64,7 +64,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "value_research_synthesis",
     name: "Research synthesis",
-    description: "Value-dimension placeholder for analyst research and opinion synthesis.",
+    description: "综合研报观点与价值判断线索。",
     capabilities: ["research", "synthesis"],
     layer: "L2",
     team: "value",
@@ -74,7 +74,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "market_stock_technical",
     name: "Stock technical analysis",
-    description: "Market-dimension placeholder for single-stock technical analysis.",
+    description: "观察价格走势、成交变化与技术形态。",
     capabilities: ["technical", "market"],
     layer: "L2",
     team: "market",
@@ -84,7 +84,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "market_fund_manager_behavior",
     name: "Fund manager behavior",
-    description: "Market-dimension placeholder for fund manager behavior analysis.",
+    description: "观察基金经理行为对市场维度的影响。",
     capabilities: ["fund_manager", "market"],
     layer: "L2",
     team: "market",
@@ -94,7 +94,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "market_ipo_investor_behavior",
     name: "IPO investor behavior",
-    description: "Market-dimension placeholder for IPO investor composition and behavior analysis.",
+    description: "观察 IPO 投资者构成与行为。",
     capabilities: ["ipo", "market"],
     layer: "L2",
     team: "market",
@@ -104,7 +104,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "market_capital_flow_chip",
     name: "Capital flow and chip analysis",
-    description: "Market-dimension placeholder for capital-flow and chip-structure analysis.",
+    description: "观察资金流与筹码结构。",
     capabilities: ["capital_flow", "chip"],
     layer: "L2",
     team: "market",
@@ -114,7 +114,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "sentiment_company_radar",
     name: "Company sentiment radar",
-    description: "Market-dimension placeholder that routes only to market_composite.",
+    description: "跟踪公司相关公开信息、媒体关注与市场情绪变化。",
     capabilities: ["sentiment", "market"],
     layer: "L2",
     team: "market",
@@ -124,7 +124,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "risk_crash",
     name: "Crash risk",
-    description: "Risk-dimension placeholder for stock-price crash risk.",
+    description: "识别股价崩盘相关风险线索。",
     capabilities: ["risk", "crash"],
     layer: "L2",
     team: "risk",
@@ -134,7 +134,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "risk_financial_fraud",
     name: "Financial fraud risk",
-    description: "Risk-dimension placeholder for financial fraud risk.",
+    description: "识别财务欺诈相关风险线索。",
     capabilities: ["risk", "fraud"],
     layer: "L2",
     team: "risk",
@@ -144,7 +144,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "risk_identification",
     name: "Risk identification",
-    description: "Risk-dimension placeholder for general risk identification.",
+    description: "识别可能影响判断的风险线索。",
     capabilities: ["risk", "identification"],
     layer: "L2",
     team: "risk",
@@ -154,7 +154,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "risk_compliance_review",
     name: "Compliance review",
-    description: "Risk-dimension placeholder for announcement compliance review.",
+    description: "观察公告合规审查线索。",
     capabilities: ["risk", "compliance"],
     layer: "L2",
     team: "risk",
@@ -164,7 +164,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_analysis",
     name: "Macro analysis",
-    description: "Macro-dimension placeholder for macro analysis.",
+    description: "观察宏观环境变化。",
     capabilities: ["macro"],
     layer: "L2",
     team: "macro",
@@ -174,7 +174,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_commodity_pricing",
     name: "Commodity pricing",
-    description: "Macro-dimension placeholder for commodity pricing analysis.",
+    description: "观察商品定价对研判的影响。",
     capabilities: ["commodity", "macro"],
     layer: "L2",
     team: "macro",
@@ -184,7 +184,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_index_valuation",
     name: "Index valuation",
-    description: "Macro-dimension placeholder for stock-index valuation.",
+    description: "观察指数估值变化。",
     capabilities: ["index", "valuation"],
     layer: "L2",
     team: "macro",
@@ -194,7 +194,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_sentiment",
     name: "Macro sentiment",
-    description: "Macro-dimension placeholder for macro sentiment sensing.",
+    description: "观察宏观情绪线索。",
     capabilities: ["macro", "sentiment"],
     layer: "L2",
     team: "macro",
@@ -204,7 +204,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_industry_hotspot",
     name: "Industry hotspot",
-    description: "Macro-dimension placeholder for industry hotspot discovery.",
+    description: "发现行业热点变化。",
     capabilities: ["industry", "macro"],
     layer: "L2",
     team: "macro",
@@ -214,7 +214,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "value_composite",
     name: "Value composite",
-    description: "Combines value-dimension conclusions.",
+    description: "围绕估值水平、研究观点与价值信号形成综合判断。",
     capabilities: ["composite", "value"],
     layer: "L3",
     team: "composite",
@@ -224,7 +224,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "market_composite",
     name: "Market composite",
-    description: "Combines market-dimension conclusions including company sentiment radar.",
+    description: "结合价格走势、资金行为、投资者结构与市场关注度形成综合判断。",
     capabilities: ["composite", "market"],
     layer: "L3",
     team: "composite",
@@ -234,7 +234,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "risk_composite",
     name: "Risk composite",
-    description: "Combines risk-dimension conclusions. Company sentiment radar is not an input.",
+    description: "围绕价格波动、财务异常、合规事件与其他潜在风险形成综合判断。",
     capabilities: ["composite", "risk"],
     layer: "L3",
     team: "composite",
@@ -244,7 +244,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "macro_composite",
     name: "Macro composite",
-    description: "Combines macro-dimension conclusions.",
+    description: "结合宏观环境、行业景气、商品与指数表现形成综合判断。",
     capabilities: ["composite", "macro"],
     layer: "L3",
     team: "composite",
@@ -254,7 +254,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "decision_synthesizer",
     name: "Decision synthesizer",
-    description: "Synthesizes value, market, risk, and macro composites into a decision seam.",
+    description: "综合价值、市场、风险和宏观结果形成决策线索。",
     capabilities: ["decision", "synthesis"],
     layer: "L4",
     team: "l4",
@@ -264,7 +264,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "report_generator",
     name: "Report generator",
-    description: "Generates the final public reset skeleton answer.",
+    description: "生成面向用户的最终回答。",
     capabilities: ["report", "public_answer"],
     layer: "L4",
     team: "l4",

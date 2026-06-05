@@ -310,7 +310,7 @@ def test_thread_lifecycle_and_fixed_workflow_contract(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
     created = client.post("/api/threads", json={}).json()
     thread_id = created["thread"]["id"]
-    assert created["thread"]["phase"] == "R3 阶段 / 计划驱动的固定 DAG 执行"
+    assert created["thread"]["phase"] == "固定研判流程"
     assert created["thread"]["finalSource"] == "reset_skeleton"
 
     response = client.post(

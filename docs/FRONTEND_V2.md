@@ -86,6 +86,25 @@ This is not a full runtime locale switch and does not change backend topology,
 agent roster, provider/search readiness, external service readiness, or
 business-agent correctness.
 
+## Current R5-C1 Business Copy Boundary
+
+R5-C1 keeps the R5-C disclosure model but professionalizes the remaining
+default user-facing copy that still read like implementation notes.
+
+- Dimension group summaries should describe value, market, risk, and macro
+  analysis in business language, not DAG wiring or which agent feeds which
+  composite.
+- Step summaries should describe what the step helps the user understand, not
+  screenshot fixtures, rosters, paths, metadata, or transcript boundaries.
+- Assistant answer-card evidence is labeled as "研判依据" with business items
+  such as "分析框架", "用户问题", and "流程记录".
+- Raw enum values and protocol ids may remain in expanded technical details,
+  but they should not be the primary explanation in the default chat surface.
+
+R5-C1 does not change `workflow_snapshot_v2`, fixed DAG topology, the 27-agent
+roster, runtime bindings, provider/search readiness, external service
+readiness, or business-agent correctness.
+
 ## Target Composer Flow
 
 ```text
@@ -145,6 +164,18 @@ composer text
   detailed agent list behind a disclosure.
 - Settings defaults to runtime, continuity, and storage status; provider/search
   and checkpointer details live under advanced diagnostics.
+
+## R5-C1 Done
+
+- Dimension group copy now uses business descriptions for value, market, risk,
+  and macro dimensions.
+- Step summaries in frontend mocks, screenshot fixtures, and public workflow
+  output no longer use fixture, roster, path-wiring, metadata, or transcript
+  explanations as user-facing copy.
+- Assistant answer cards now show "研判依据" with "分析框架", "用户问题", and
+  "流程记录" evidence items.
+- Frontend smoke assertions guard against those engineering terms reappearing
+  in default user-visible surfaces.
 
 ## Deferred Work
 

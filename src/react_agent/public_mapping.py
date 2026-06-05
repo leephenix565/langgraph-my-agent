@@ -205,7 +205,7 @@ def _derive_citations(cards: Iterable[EvidenceCardModel]) -> List[CitationModel]
         citations.append(
             CitationModel(
                 label=card.title,
-                note=card.note or "证据已通过重置公开适配器传递。",
+                note=card.note or "已纳入本轮研判依据。",
             )
         )
     return citations[:3]
@@ -396,7 +396,7 @@ def build_thread_summary(
         updatedAt=updated_at,
         preview=_truncate(preview_source or "等待第一条消息。", 72) or "等待第一条消息。",
         finalSource="reset_skeleton",
-        phase="R3 阶段 / 计划驱动的固定 DAG 执行",
+        phase="固定研判流程",
         continuityMode=continuity_mode,
     )
 
@@ -409,7 +409,7 @@ def build_new_thread(thread_id: str, continuity_mode: ContinuityMode) -> PublicT
         updatedAt=_now_label(),
         preview="等待第一条消息。",
         finalSource="reset_skeleton",
-        phase="R3 阶段 / 计划驱动的固定 DAG 执行",
+        phase="固定研判流程",
         continuityMode=continuity_mode,
     )
     return PublicThreadDetail(thread=summary, turns=turns)

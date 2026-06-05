@@ -19,7 +19,7 @@ function renderCitations(answerCard: AnswerCardModel) {
       <div className="assistant-card__references-head">
         <span className="assistant-card__meta-label">{zhCN.answer.references}</span>
       </div>
-      <ul className="citation-list" aria-label="参考依据">
+      <ul className="citation-list" aria-label={zhCN.answer.references}>
         {answerCard.citations.map((citation) => (
           <li key={citation.label}>
             <strong>{citationLabel(citation.label)}</strong>

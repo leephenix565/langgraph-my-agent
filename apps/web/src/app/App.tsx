@@ -79,7 +79,7 @@ function createStreamingWorkflow(base?: WorkflowModel, liveProgress?: WorkflowSt
     executionBatches: base?.executionBatches ?? [],
     stepResults: base?.stepResults ?? {},
     finalSource: base?.finalSource ?? "reset_skeleton",
-    provenanceNote: base?.provenanceNote ?? "正在生成可公开展示的固定 DAG 工作流摘要。",
+    provenanceNote: base?.provenanceNote ?? "正在生成本轮研判流程摘要。",
     provenance: base?.provenance ?? null,
     liveProgress: nextProgress,
   };

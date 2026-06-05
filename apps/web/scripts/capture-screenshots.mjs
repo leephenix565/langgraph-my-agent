@@ -8,7 +8,7 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
 const outputDir = process.env.SCREENSHOT_OUTPUT_DIR
   ? resolve(process.env.SCREENSHOT_OUTPUT_DIR)
-  : resolve("E:/muti-agent/_tmp_r5c_visual/screenshots");
+  : resolve("E:/muti-agent/_tmp_r5c1_visual/screenshots");
 const baseUrl = "http://127.0.0.1:4173";
 
 function jsonResponse(route, body, status = 200) {
@@ -118,7 +118,7 @@ function mockAgentCatalog() {
     agents: ids.map((id) => ({
       id,
       name: id,
-      description: "Fixed DAG capability.",
+      description: "固定流程能力。",
       capabilities: [agentTeam(id), layer.toLowerCase()],
       layer,
       team: agentTeam(id),
@@ -174,7 +174,7 @@ function mockWorkflow() {
         agentId: "route_planner",
         dimension: "l1",
         title: "路径规划器",
-        summary: "为公开请求构建确定性的固定 DAG 计划。",
+        summary: "理解问题并组织本轮研判流程。",
         status: "complete",
       },
       {
@@ -183,7 +183,7 @@ function mockWorkflow() {
         agentId: "financial_data_service",
         dimension: "l1",
         title: "金融数据服务",
-        summary: "整理本轮研判所需的数据入口与上下文。",
+        summary: "整理分析所需的基础数据与上下文。",
         status: "complete",
       },
       {
@@ -192,7 +192,7 @@ function mockWorkflow() {
         agentId: "entity_relation_extractor",
         dimension: "l1",
         title: "实体关系抽取器",
-        summary: "为下游分析准备实体与关系上下文。",
+        summary: "识别公司、行业、事件等关键对象及其关系。",
         status: "complete",
       },
       {
@@ -201,7 +201,7 @@ function mockWorkflow() {
         agentId: "value_traditional_valuation",
         dimension: "value",
         title: "传统企业估值",
-        summary: "在截图 fixture 中代表价值分析路径。",
+        summary: "围绕估值水平、研究观点与价值信号进行分析。",
         status: "pending_implementation",
       },
       {
@@ -210,7 +210,7 @@ function mockWorkflow() {
         agentId: "market_stock_technical",
         dimension: "market",
         title: "个股技术分析",
-        summary: "在截图 fixture 中代表市场分析路径。",
+        summary: "观察价格走势、成交变化与技术形态。",
         status: "pending_implementation",
       },
       {
@@ -219,7 +219,7 @@ function mockWorkflow() {
         agentId: "sentiment_company_radar",
         dimension: "market",
         title: "企业舆情雷达",
-        summary: "在固定 DAG roster 中只汇入市场维度。",
+        summary: "跟踪公司相关公开信息、媒体关注与市场情绪变化。",
         status: "pending_implementation",
       },
       {
@@ -228,7 +228,7 @@ function mockWorkflow() {
         agentId: "risk_identification",
         dimension: "risk",
         title: "风险识别",
-        summary: "在截图 fixture 中代表风险分析路径。",
+        summary: "识别可能影响判断的风险线索。",
         status: "pending_implementation",
       },
       {
@@ -246,7 +246,7 @@ function mockWorkflow() {
         agentId: "market_composite",
         dimension: "market",
         title: "市场综合",
-        summary: "汇总市场信号，包含企业舆情。",
+        summary: "结合价格走势、资金行为、投资者结构与市场关注度形成综合判断。",
         status: "pending_implementation",
       },
       {
@@ -255,7 +255,7 @@ function mockWorkflow() {
         agentId: "risk_composite",
         dimension: "risk",
         title: "风险综合",
-        summary: "汇总风险信号，不读取企业舆情。",
+        summary: "围绕价格波动、财务异常、合规事件与其他潜在风险形成综合判断。",
         status: "pending_implementation",
       },
       {
@@ -292,28 +292,28 @@ function mockWorkflow() {
         title: "价值维度",
         stepIds: ["value_traditional_valuation", "value_composite"],
         status: "partial",
-        summary: "价值路径以可公开展示的检查器元数据呈现。",
+        summary: "围绕估值水平、研究观点与价值信号，辅助判断标的的中长期价值基础。",
       },
       {
         id: "market",
         title: "市场维度",
         stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
         status: "partial",
-        summary: "市场路径包含企业舆情雷达。",
+        summary: "结合价格走势、资金行为、投资者结构与市场关注度，观察短中期交易环境。",
       },
       {
         id: "risk",
         title: "风险维度",
         stepIds: ["risk_identification", "risk_composite"],
         status: "partial",
-        summary: "风险路径不读取企业舆情雷达。",
+        summary: "关注价格波动、财务异常、合规事件与其他潜在风险，识别需要谨慎处理的风险约束。",
       },
       {
         id: "macro",
         title: "宏观维度",
         stepIds: ["macro_composite"],
         status: "partial",
-        summary: "宏观路径以可公开展示的检查器元数据呈现。",
+        summary: "从宏观环境、行业景气、商品与指数表现等角度，评估外部环境对判断的影响。",
       },
     ],
     currentStage: "report",
@@ -353,11 +353,11 @@ function mockWorkflow() {
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["市场舆情路径在本地流程中以规划信息展示。"],
+        warnings: ["公司相关公开信息与市场情绪变化已纳入市场维度观察。"],
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "可公开展示的固定 DAG 研判流程快照；详细执行信息不进入 transcript。",
+    provenanceNote: "本轮研判流程已完成，过程记录可在流程详情中查看。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -365,22 +365,22 @@ function mockWorkflow() {
       externalInvoked: false,
       executionStatus: "deterministic_skeleton",
       fallbackUsed: false,
-      limitations: ["仅截图 fixture；高级连接未做实时就绪验证。"],
-      summary: "本轮研判流程已完成，详细执行信息可在技术详情中查看。",
+      limitations: ["当前示例使用本地固定流程，高级连接状态可在设置诊断中查看。"],
+      summary: "本轮研判流程已完成，过程记录可在流程详情中查看。",
     },
   };
 }
 
 function mockThreadDetail() {
   const answer =
-    "已完成本轮固定 DAG 研判流程。公开回答保持为单条助手回复，流程详情展示规划、证据、并行分析、维度综合、决策和报告阶段。";
+    "已完成本轮研判流程。系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。";
 
   return {
     thread: {
       id: "thread-visual-1",
-      title: "固定 DAG 研判流程",
+      title: "研判流程",
       updatedAt: "今天 10:18",
-      preview: "包含固定 DAG 研判流程详情的公开回答。",
+      preview: "包含研判流程详情的公开回答。",
       finalSource: "reset_skeleton",
       phase: "在线",
       continuityMode: "replay",
@@ -389,7 +389,7 @@ function mockThreadDetail() {
       {
         id: "turn-user-1",
         role: "user",
-        text: "复核一个可公开展示的固定 DAG 投资研判流程。",
+        text: "复核一个投资研判流程。",
         createdAt: "今天 10:16",
       },
       {
@@ -403,11 +403,15 @@ function mockThreadDetail() {
           answer,
           finalSource: "reset_skeleton",
           citations: [
-            { label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 研判流程。" },
-            { label: "Workflow", note: "流程详情保留在检查器中，不进入 transcript。" },
+            {
+              label: "Fixed DAG bundle",
+              note: "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
+            },
+            { label: "User question", note: "围绕你提出的问题进行结构化梳理。" },
+            { label: "Workflow", note: "如需查看过程，可展开“流程详情”。" },
           ],
-          evidenceCards: [{ title: "Workflow", note: "结构化可公开输出。" }],
-          evidenceCount: 1,
+          evidenceCards: [{ title: "分析框架", note: "系统按照固定研判流程组织本轮分析。" }],
+          evidenceCount: 3,
         },
         workflow: mockWorkflow(),
       },
@@ -524,11 +528,22 @@ async function main() {
     console.log("[screenshots] chat answer summary");
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.locator(".assistant-card").waitFor({ timeout: 10000 });
-    await assertPageContains(page, "固定 DAG 研判流程");
+    await assertPageContains(page, "研判依据");
+    await assertPageContains(page, "分析框架");
+    await assertPageContains(page, "用户问题");
+    await assertPageContains(page, "流程记录");
     await assertPageContains(page, "查看流程详情");
     await assertPageExcludes(page, "external_candidate_disabled");
     await assertPageExcludes(page, "pending_implementation");
     await assertPageExcludes(page, "待实现");
+    await assertPageExcludes(page, "fixture");
+    await assertPageExcludes(page, "roster");
+    await assertPageExcludes(page, "transcript");
+    await assertPageExcludes(page, "检查器元数据");
+    await assertPageExcludes(page, "固定 DAG 数据组");
+    await assertPageExcludes(page, "固定 DAG 数据包");
+    await assertPageExcludes(page, "No provider");
+    await assertPageExcludes(page, "external endpoint");
     await assertPageExcludes(page, "Fixed DAG workflow inspection");
     await assertPageExcludes(page, "Public answer with fixed DAG inspector metadata");
     await assertNoForbiddenTokens(page);
@@ -538,7 +553,15 @@ async function main() {
     await page.locator(".workflow-panel__toggle").first().waitFor({ timeout: 10000 });
     await page.$eval(".workflow-panel__toggle", (button) => button.click());
     await page.locator(".workflow-panel__content").waitFor({ timeout: 10000 });
-    for (const expected of ["阶段时间线", "执行批次", "维度分组", "步骤结果元数据", "最终来源与溯源"]) {
+    for (const expected of ["阶段时间线", "执行批次", "维度分组", "步骤结果详情", "最终来源与溯源"]) {
+      await assertPageContains(page, expected);
+    }
+    for (const expected of [
+      "围绕估值水平、研究观点与价值信号",
+      "结合价格走势、资金行为、投资者结构与市场关注度",
+      "关注价格波动、财务异常、合规事件",
+      "从宏观环境、行业景气、商品与指数表现",
+    ]) {
       await assertPageContains(page, expected);
     }
     await page.getByRole("button", { name: /金融数据服务/ }).click({ timeout: 10000 });
@@ -546,6 +569,9 @@ async function main() {
       await assertPageContains(page, expectedRaw);
     }
     for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
+      await assertPageExcludes(page, oldCopy);
+    }
+    for (const oldCopy of ["fixture", "roster", "风险路径不读取企业舆情雷达", "市场路径包含企业舆情雷达", "检查器元数据"]) {
       await assertPageExcludes(page, oldCopy);
     }
     await assertNoForbiddenTokens(page);
