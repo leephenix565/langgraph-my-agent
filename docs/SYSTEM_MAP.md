@@ -1,12 +1,12 @@
 # System Map
 
-This file is the reset branch operational map for Phase R6-B.
+This file is the reset branch operational map for Phase R7-B.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R6-B reset quality mainline rebuild over the existing
-  fixed-DAG runtime skeleton and R5 web shell.
+- Current phase: R7-B fixed DAG external developer handoff documentation over
+  the existing fixed-DAG runtime skeleton and R5 web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -19,6 +19,11 @@ This file is the reset branch operational map for Phase R6-B.
   `config/fixed_dag/agent_catalog.json`.
 - Active backend runtime binding source:
   `config/fixed_dag/runtime_bindings.json`.
+- Active external developer handoff docs:
+  `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
+  `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
+  `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`, and
+  `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`.
 - Active frontend contract:
   `apps/web` renders the fixed DAG workflow inspector from
   `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
@@ -108,6 +113,12 @@ verification. The old valuation-only facade and unused JSON helper were removed
 after tests migrated to the generic external HTTP wrapper and no source/test
 references remained.
 
+In R7-B, the external developer docs define how later service submissions
+should be reviewed against fixed DAG ids, runtime bindings, contracts, and
+readiness levels. They do not make the historical scaffold an active package,
+do not register any service into the graph, and do not make wrapper metadata a
+live verification signal.
+
 ## Target Fixed DAG IDs
 
 The reset skeleton has 27 formal agent ids:
@@ -160,6 +171,7 @@ R3.6 did not delete or migrate:
 Later phases own:
 
 - real business agent algorithms
+- conversion of approved external services into runtime adapter code
 - later replacement/removal policy for `config/agents/*.json`
 - external service readiness and protocol repair
 - archived/manual fusion-gate policy and any later fusion acceptance rebuild
@@ -185,6 +197,10 @@ The reset `mainline` runs static, unit, public-api, graph-smoke, and frontend.
 The frontend mode performs TypeScript no-emit, frontend smoke, and Vite build
 with a temporary repo-external `--outDir`; it must not write `apps/web/dist`.
 
+R7-B documentation validation uses the same non-provider `static` and
+`mainline` commands. It does not add provider, external live invoke, demo stack,
+or fusion-gate acceptance to the default reset gate.
+
 Do not run provider smoke, external live invoke, demo stack commands,
 Router-SFT, RARP/route-prior, browser screenshot capture, or archived
 fusion-gate as default reset acceptance.
@@ -202,6 +218,12 @@ R6-B claims only the rebuilt default reset mainline quality gate. It does not
 claim provider readiness, external service readiness, production readiness,
 visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
 `fusion-gate` remains archived/manual.
+
+R7-B claims only external developer handoff documentation, payload mapping
+guidance, readiness ladder guidance, and documentation-only sample payloads. It
+does not change fixed DAG topology, roster, runtime bindings, public schemas,
+frontend product UI, provider readiness, external invocation readiness, or
+production deployment readiness.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

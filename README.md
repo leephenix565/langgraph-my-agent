@@ -28,6 +28,9 @@ Phase R6-B rebuilds the default reset quality mainline so it covers scoped
 static checks, unit tests, public API tests, graph smoke tests, and frontend
 typecheck/smoke/repo-external build validation without running archived
 fusion-gate or live provider/external gates.
+Phase R7-B adds fixed DAG external developer handoff documentation for contract
+mapping, sample payloads, and readiness review. It is documentation-only and
+does not enable or live-verify external candidates.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -37,8 +40,8 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R6-B reset quality mainline rebuild over the fixed DAG web
-  shell and backend skeleton.
+- Current phase: R7-B fixed DAG external developer handoff documentation over
+  the existing fixed DAG web shell and backend skeleton.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -222,6 +225,14 @@ answer cards use "研判依据", "分析框架", "用户问题", and "流程记�
 - `docs/QUALITY.md` - safe quality commands for the reset branch.
 - `docs/DECISIONS.md` - reset architecture decisions.
 - `docs/CHANGELOG.md` - reset branch changelog.
+- `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` - fixed DAG external developer
+  handoff entry point.
+- `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` - mapping from external
+  payload envelopes to fixed DAG contracts.
+- `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` - readiness ladder from
+  docs-only review to explicit live invocation approval.
+- `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
+  sample health, invoke, compute, mapped, partial, and failure payloads.
 
 ## Safe Local Validation
 
@@ -242,14 +253,18 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
+R7-B documentation validation uses the same non-provider static and mainline
+commands. These checks do not call providers, do not call external
+`/v1/agent/invoke`, and do not prove live external readiness.
+
 ## Explicit Non-Claims
 
 - No provider or live external service was verified by
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B validation.
 - No demo stack startup is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B validation.
 - No real business algorithms for individual agents are implemented in
   R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
 - R5-B2 completes the frontend inspector UI rewrite only; it does not change
@@ -267,6 +282,10 @@ Do not use successful tests as production readiness evidence.
   external readiness, or business-agent correctness.
 - R6-B rebuilds the default reset mainline quality gate only. It does not
   restore fusion acceptance, and `fusion-gate` remains archived/manual.
+- R7-B adds external developer handoff docs, payload mapping docs, readiness
+  ladder docs, and sample payload docs only. It does not register a scaffold,
+  enable external candidates, live-verify services, or force one internal
+  implementation mode for external agents.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

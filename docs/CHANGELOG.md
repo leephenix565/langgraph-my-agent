@@ -3,6 +3,52 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R7-B fixed DAG external developer handoff docs
+
+### Added
+
+- Added `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` as the fixed DAG external
+  developer handoff entry point.
+- Added `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` for mapping
+  external response envelopes into fixed DAG runtime contracts.
+- Added `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` for docs-only,
+  mock, health, compute, controlled live, binding, live-verified, and
+  invoke-enabled readiness levels.
+- Added `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` with
+  documentation-only health, invoke, compute, mapped, partial, and failure
+  payload examples.
+
+### Changed
+
+- Updated README, documentation index, contracts, system map, quality, and ADR
+  docs so external developer handoff points at the fixed DAG catalog, runtime
+  binding registry, contract seams, public adapter boundary, and reset quality
+  gate.
+- Documented the historical scaffold v2.1-v2.2.1 lineage as reusable guidance
+  only, not an active runtime package or live-readiness signal.
+- Clarified that fixed DAG integration standardizes boundary contracts and
+  readiness evidence, not a single internal implementation mode for all
+  external agents.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, public schema, frontend
+  product UI, provider integration, external wrapper, or real business-agent
+  implementation change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, Router-SFT,
+  RARP/route-prior, browser screenshot, or archived fusion-gate validation.
+- No scaffold registration, runnable scaffold addition, external candidate
+  enablement, or live verification.
+- No claim that external services, provider readiness, or production deployment
+  are live verified.
+- No push.
+
 ## 2026-06-05 - Phase R6-B reset quality mainline rebuild
 
 ### Changed

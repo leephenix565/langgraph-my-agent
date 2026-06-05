@@ -16,6 +16,11 @@ Phase R4-C isolates the legacy aNN registry/bootstrap into explicit
 compatibility modules and keeps active graph imports on fixed-DAG contract,
 executor, state, catalog, and binding seams.
 
+Phase R7-B adds external developer handoff, payload mapping, readiness ladder,
+and sample payload documentation. These docs explain how a future adapter should
+translate external service envelopes into the fixed DAG contracts below. They do
+not change runtime behavior, register scaffold code, or enable live invocation.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal
@@ -38,6 +43,20 @@ candidates, and pending placeholders without invoking providers or external
 R4-C keeps `legacy_agent_id` as migration metadata in binding/step-result
 contracts but does not use `config/agents/*.json`, `AGENT_METADATA`, or
 `AGENT_TOOLS` as active graph registration sources.
+
+R7-B external handoff docs are contract-facing guidance:
+
+- `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
+- `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`
+- `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`
+- `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`
+
+They may reference historical external envelope names such as
+`external_agent_health_v0`, `external_agent_request_v0`, and
+`external_agent_response_v0` as adapter-side examples. The active fixed DAG
+contract truth remains this document plus `fixed_dag_contracts.py`,
+`fixed_dag_catalog.py`, `fixed_dag_runtime_registry.py`, and the JSON files
+under `config/fixed_dag/`.
 
 ## fixed_dag_agent_catalog_v1
 

@@ -74,3 +74,18 @@ It does not mean:
 The fixed-DAG runtime remains the deterministic provider-free reset skeleton
 until later phases implement and verify real business agents and live external
 service readiness.
+
+## R7-B External Handoff Docs
+
+R7-B external developer handoff work is docs-only. Its validation uses:
+
+```powershell
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
+git diff --check
+```
+
+These commands can confirm that the maintained reset quality surface still
+passes after docs updates. They do not call providers, do not call external
+`/v1/agent/invoke`, do not start the demo stack, do not run fusion-gate, and do
+not prove that any external service is live verified or safe to enable.
