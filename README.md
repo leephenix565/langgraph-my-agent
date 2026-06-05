@@ -9,22 +9,26 @@ R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
 the fixed DAG runtime binding registry for deterministic, external-candidate,
 and pending-placeholder runtime metadata. Phase R4-C isolates the legacy aNN
-registry/bootstrap from the active fixed-DAG graph import path. The runtime
-validates `dag_steps[].depends_on`, computes deterministic `execution_batches`,
-emits per-step `step_results`, and remains a provider-free placeholder skeleton.
-It is not a completed business analysis engine.
+registry/bootstrap from the active fixed-DAG graph import path. Phase R5-B1
+migrates the existing web frontend contract to `workflow_snapshot_v2` without
+claiming a full workflow inspector redesign. The runtime validates
+`dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
+per-step `step_results`, and remains a provider-free placeholder skeleton. It
+is not a completed business analysis engine.
 
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R4-C legacy registry boundary cleanup.
+- Current phase: R5-B1 frontend DAG contract migration.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
-- Public web shell: retained for later in-place frontend v2 migration.
+- Public web shell: migrated in place to consume the fixed DAG public contract;
+  the current WorkflowPanel is a minimal DAG summary, not the complete R5-B2
+  inspector UI.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -169,8 +173,9 @@ The workflow inspector is a diagnostic panel. The Python public adapter projects
 DAG stages, steps, dimensions, provenance, and final source as
 `workflow_snapshot_v2` through reset contract seams. R3 also exposes
 `executionBatches` and `stepResults` for the inspector. R4-B adds binding
-metadata to `stepResults`. The current web UI still needs its R5 workflow
-rewrite.
+metadata to `stepResults`. R5-B1 updates the frontend workflow/chat types,
+streaming placeholder, mocks, and smoke fixtures to consume this public shape.
+The full DAG inspector experience remains R5-B2 work.
 
 ## Documentation Index
 
@@ -193,20 +198,24 @@ conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
 conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
 conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+npm --prefix apps/web run test
+npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
 ```
 
 Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
-- No provider or live external service was verified by R3/R4-A/R4-B/R4-C.
-- No `external /v1/agent/invoke` call is part of R3/R4-A/R4-B/R4-C validation.
-- No demo stack startup is part of R3/R4-A/R4-B/R4-C validation.
+- No provider or live external service was verified by R3/R4-A/R4-B/R4-C/R5-B1.
+- No `external /v1/agent/invoke` call is part of
+  R3/R4-A/R4-B/R4-C/R5-B1 validation.
+- No demo stack startup is part of R3/R4-A/R4-B/R4-C/R5-B1 validation.
 - No real business algorithms for individual agents are implemented in
-  R3/R4-A/R4-B/R4-C.
-- No frontend v2 rewrite is complete in R3/R4-A/R4-B/R4-C.
+  R3/R4-A/R4-B/R4-C/R5-B1.
+- R5-B1 completes frontend contract migration only; it does not complete the
+  full R5-B2 workflow inspector UI rewrite.
 - No mainline or fusion-gate reset quality gate is rebuilt in
-  R3/R4-A/R4-B/R4-C.
+  R3/R4-A/R4-B/R4-C/R5-B1.
 - R4-C isolates legacy registry/bootstrap but does not delete
   `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

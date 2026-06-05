@@ -14,9 +14,7 @@
   --line-soft: #edf1f7;
   --accent: #656de3;
   --accent-soft: rgba(101, 109, 227, 0.1);
-  --mainline: #5b6884;
-  --baseline: #8a7763;
-  --fused: #656de3;
+  --reset-skeleton: #5b6884;
   --success-soft: rgba(48, 140, 91, 0.11);
   --warning-soft: rgba(178, 122, 56, 0.11);
   --danger-soft: rgba(196, 86, 86, 0.1);

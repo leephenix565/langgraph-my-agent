@@ -1,6 +1,6 @@
 import type { WorkflowModel, WorkflowStageKey, WorkflowStageProgress } from "./workflow";
 
-export type FinalSource = "mainline" | "baseline" | "fused";
+export type FinalSource = "reset_skeleton";
 export type ContinuityMode = "persistent" | "replay";
 export type OverallStatus = "ready" | "degraded";
 export type ErrorCategory = "runtime" | "provider_env" | "store" | "contract" | "request";

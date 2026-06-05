@@ -1,42 +1,45 @@
-import { agentNameLabel, agentStepStatusLabel, workflowModeLabel } from "../../content/zh-CN";
-import type { WorkflowModel } from "../../types/workflow";
+import { agentNameLabel, dagStepStatusLabel } from "../../content/zh-CN";
+import type { DagStep, WorkflowModel, WorkflowStageKey } from "../../types/workflow";
 
 interface WorkflowExecutionViewProps {
   workflow: WorkflowModel;
 }
 
-const layerOrder = ["L1", "L2", "L3", "L4"] as const;
+const stageOrder: WorkflowStageKey[] = [
+  "planning",
+  "evidence",
+  "l2_analysis",
+  "dimension_composite",
+  "decision",
+  "report",
+];
+
+function sortByStage(left: DagStep, right: DagStep) {
+  return stageOrder.indexOf(left.stage) - stageOrder.indexOf(right.stage);
+}
 
 export function WorkflowExecutionView({ workflow }: WorkflowExecutionViewProps) {
+  const steps = [...workflow.dagSteps].sort(sortByStage);
+
+  if (!steps.length) {
+    return <p className="workflow-empty">DAG steps are not available yet.</p>;
+  }
+
   return (
     <div className="workflow-execution">
-      {layerOrder.map((layer) => {
-        const steps = workflow.agentSteps.filter((step) => step.layer === layer);
-        if (steps.length === 0) {
-          return null;
-        }
-
-        return (
-          <div className="workflow-execution__layer" key={layer}>
-            <div className="workflow-execution__header">
-              <h5>{layer}</h5>
-              <span>{workflowModeLabel(workflow.layerMode[layer])}</span>
-            </div>
-            <div className="workflow-step-list">
-              {steps.map((step) => (
-                <article className="workflow-step" key={step.id}>
-                  <div className="workflow-step__meta">
-                    <span>{agentNameLabel(step.agentId, step.title)}</span>
-                    <span className={`workflow-status workflow-status--${step.status}`}>{agentStepStatusLabel(step.status)}</span>
-                  </div>
-                  <p>{step.summary}</p>
-                  {step.signal ? <small>{step.signal}</small> : null}
-                </article>
-              ))}
-            </div>
+      {steps.map((step) => (
+        <article className="workflow-step" key={step.id}>
+          <div className="workflow-step__meta">
+            <span>{agentNameLabel(step.agentId ?? step.id, step.title)}</span>
+            <span className={`workflow-status workflow-status--${step.status}`}>{dagStepStatusLabel(step.status)}</span>
           </div>
-        );
-      })}
+          <p>{step.summary}</p>
+          <small>
+            {step.stage}
+            {step.dimension ? ` / ${step.dimension}` : ""}
+          </small>
+        </article>
+      ))}
     </div>
   );
 }

@@ -1,153 +1,218 @@
-import type { FinalSource } from "../types/chat";
-import type { AgentStep, FusionStep, WorkflowModel } from "../types/workflow";
+import type { WorkflowModel } from "../types/workflow";
 
-const layerPlan = [
-  { layer: "L1", mode: "Chain", selected: ["a01_cio_orchestrator"], note: "明确问题边界与分层协作方式。" },
-  {
-    layer: "L2",
-    mode: "Star",
-    selected: [
-      "a03_macro_industry_research",
-      "a07_macro_sentiment",
-      "a12_research_synthesis",
-      "a15_entity_relation_extraction",
-    ],
-    note: "并行获取宏观、情绪、研报与关系网络证据。",
-  },
-  {
-    layer: "L3",
-    mode: "Star",
-    selected: ["a16_ml_valuation", "a17_traditional_valuation", "a18_meta_valuation"],
-    note: "通过外部估值服务形成多模型估值视角。",
-  },
-  { layer: "L4", mode: "Chain", selected: ["a25_report_center"], note: "整理为对外可读的单助手回答。" },
-] as const;
+export function createWorkflowVariant(theme: string): WorkflowModel {
+  const planId = `mock-plan-${theme.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "") || "default"}`;
 
-const layerMode = {
-  L1: "Chain",
-  L2: "Star",
-  L3: "Star",
-  L4: "Chain",
-};
-
-function buildAgentSteps(theme: string): AgentStep[] {
-  return [
-    {
-      id: `${theme}-1`,
-      layer: "L1",
-      agentId: "a01_cio_orchestrator",
-      title: "问题解析与协同编排智能体",
-      summary: "先把问题整理成分层计划，再约束最终输出形式。",
-      status: "complete",
-      signal: "contract-ready",
-    },
-    {
-      id: `${theme}-2`,
-      layer: "L2",
-      agentId: "a03_macro_industry_research",
-      title: "宏观分析智能体",
-      summary: "梳理宏观周期、产业链韧性与行业竞争格局。",
-      status: "complete",
-      signal: "macro and industry evidence",
-    },
-    {
-      id: `${theme}-3`,
-      layer: "L2",
-      agentId: "a12_research_synthesis",
-      title: "分析师研报与观点集成智能体",
-      summary: "汇总卖方研报观点，形成一致预期与分歧度线索。",
-      status: "complete",
-      signal: "consensus forming",
-    },
-    {
-      id: `${theme}-4`,
-      layer: "L3",
-      agentId: "a17_traditional_valuation",
-      title: "传统企业估值智能体",
-      summary: "通过外部传统估值服务约束目标价区间与敏感性。",
-      status: "complete",
-      signal: "external valuation",
-    },
-    {
-      id: `${theme}-5`,
-      layer: "L4",
-      agentId: "a25_report_center",
-      title: "报告生成智能体",
-      summary: "将内部分析整理为单助手可直接展示的回答。",
-      status: "complete",
-      signal: "answer emitted",
-    },
-  ];
-}
-
-function buildFusionSteps(finalSource: FinalSource): FusionStep[] {
-  const baselineSummary =
-    finalSource === "baseline"
-      ? "基线侧车给出了更清晰的风险表达，因此被选为最终来源。"
-      : "基线侧车作为对照路径完成运行，但没有直接改变主线业务语义。";
-
-  const judgeSummary =
-    finalSource === "fused"
-      ? "融合评判选择保留主线结构，并吸收基线中的风险表达。"
-      : finalSource === "baseline"
-        ? "融合评判认为基线版本更适合当前问题。"
-        : "融合评判最终保留主线回答作为默认输出。";
-
-  const writerSummary =
-    finalSource === "fused"
-      ? "融合写作生成了最终对外可见的回答。"
-      : finalSource === "baseline"
-        ? "融合写作采用基线版本作为最终可见输出。"
-        : "融合写作保持影子模式，最终仍沿用主线输出。";
-
-  return [
-    { id: `baseline-${finalSource}`, kind: "baseline", label: "Baseline sidecar", status: "ready", summary: baselineSummary },
-    {
-      id: `judge-${finalSource}`,
-      kind: "judge",
-      label: "Fusion judge",
-      status: finalSource === "mainline" ? "shadow" : "ready",
-      summary: judgeSummary,
-    },
-    {
-      id: `writer-${finalSource}`,
-      kind: "writer",
-      label: "Fusion writer",
-      status: finalSource === "fused" || finalSource === "baseline" ? "selected" : "shadow",
-      summary: writerSummary,
-    },
-  ];
-}
-
-export function createWorkflowVariant(finalSource: FinalSource, theme: string): WorkflowModel {
   return {
-    layerPlan: layerPlan.map((item) => ({
-      ...item,
-      selected: [...item.selected],
-    })),
-    layerMode,
-    currentLayer: "L4",
-    layerDone: ["L1", "L2", "L3", "L4"],
-    agentSteps: buildAgentSteps(theme),
-    fusionSteps: buildFusionSteps(finalSource),
-    finalSource,
-    provenanceNote:
-      finalSource === "fused"
-        ? "最终回答来自融合写作路径，主线 bundle 仍保留为 canonical mainline。"
-        : finalSource === "baseline"
-          ? "最终回答来自隔离的基线路径，而不是原始 graph messages。"
-          : "最终回答来自主线输出路径，基线、评判和写作仍保持 sidecar 语义。",
+    schema: "workflow_snapshot_v2",
+    planId,
+    stages: [
+      { key: "planning", title: "Planning", stepIds: ["route_planner"] },
+      { key: "evidence", title: "Evidence seams", stepIds: ["financial_data_service", "entity_relation_extractor"] },
+      {
+        key: "l2_analysis",
+        title: "L2 analysis",
+        stepIds: ["value_traditional_valuation", "market_stock_technical", "sentiment_company_radar", "risk_identification"],
+      },
+      {
+        key: "dimension_composite",
+        title: "Dimension composites",
+        stepIds: ["value_composite", "market_composite", "risk_composite", "macro_composite"],
+      },
+      { key: "decision", title: "Decision", stepIds: ["decision_synthesizer"] },
+      { key: "report", title: "Report", stepIds: ["report_generator"] },
+    ],
+    dagSteps: [
+      {
+        id: "route_planner",
+        stage: "planning",
+        agentId: "route_planner",
+        dimension: "l1",
+        title: "Route planner",
+        summary: "Builds the deterministic fixed DAG plan for the public request.",
+        status: "complete",
+      },
+      {
+        id: "financial_data_service",
+        stage: "evidence",
+        agentId: "financial_data_service",
+        dimension: "l1",
+        title: "Financial data service",
+        summary: "Prepares the data seam without provider or external live calls in the mock path.",
+        status: "complete",
+      },
+      {
+        id: "entity_relation_extractor",
+        stage: "evidence",
+        agentId: "entity_relation_extractor",
+        dimension: "l1",
+        title: "Entity relation extractor",
+        summary: "Prepares the entity and relation seam for downstream analysis.",
+        status: "complete",
+      },
+      {
+        id: "value_traditional_valuation",
+        stage: "l2_analysis",
+        agentId: "value_traditional_valuation",
+        dimension: "value",
+        title: "Traditional valuation",
+        summary: "Produces a placeholder value-dimension conclusion.",
+        status: "pending_implementation",
+      },
+      {
+        id: "market_stock_technical",
+        stage: "l2_analysis",
+        agentId: "market_stock_technical",
+        dimension: "market",
+        title: "Stock technical analysis",
+        summary: "Produces a placeholder market-dimension conclusion.",
+        status: "pending_implementation",
+      },
+      {
+        id: "sentiment_company_radar",
+        stage: "l2_analysis",
+        agentId: "sentiment_company_radar",
+        dimension: "market",
+        title: "Company sentiment radar",
+        summary: "Feeds only the market composite in the fixed DAG roster.",
+        status: "pending_implementation",
+      },
+      {
+        id: "risk_identification",
+        stage: "l2_analysis",
+        agentId: "risk_identification",
+        dimension: "risk",
+        title: "Risk identification",
+        summary: "Produces a placeholder risk-dimension conclusion.",
+        status: "pending_implementation",
+      },
+      {
+        id: "value_composite",
+        stage: "dimension_composite",
+        agentId: "value_composite",
+        dimension: "value",
+        title: "Value composite",
+        summary: "Combines value conclusions.",
+        status: "pending_implementation",
+      },
+      {
+        id: "market_composite",
+        stage: "dimension_composite",
+        agentId: "market_composite",
+        dimension: "market",
+        title: "Market composite",
+        summary: "Combines market conclusions including company sentiment.",
+        status: "pending_implementation",
+      },
+      {
+        id: "risk_composite",
+        stage: "dimension_composite",
+        agentId: "risk_composite",
+        dimension: "risk",
+        title: "Risk composite",
+        summary: "Combines risk conclusions. Company sentiment is not an input.",
+        status: "pending_implementation",
+      },
+      {
+        id: "macro_composite",
+        stage: "dimension_composite",
+        agentId: "macro_composite",
+        dimension: "macro",
+        title: "Macro composite",
+        summary: "Combines macro conclusions.",
+        status: "pending_implementation",
+      },
+      {
+        id: "decision_synthesizer",
+        stage: "decision",
+        agentId: "decision_synthesizer",
+        dimension: "l4",
+        title: "Decision synthesizer",
+        summary: "Synthesizes dimension composites into a decision seam.",
+        status: "pending_implementation",
+      },
+      {
+        id: "report_generator",
+        stage: "report",
+        agentId: "report_generator",
+        dimension: "l4",
+        title: "Report generator",
+        summary: "Generates the final public reset skeleton answer.",
+        status: "pending_implementation",
+      },
+    ],
+    dimensionGroups: [
+      {
+        id: "value",
+        title: "Value dimension",
+        stepIds: ["value_traditional_valuation", "value_composite"],
+        status: "partial",
+        summary: "Value path is represented as a public-safe placeholder.",
+      },
+      {
+        id: "market",
+        title: "Market dimension",
+        stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
+        status: "partial",
+        summary: "Market path includes company sentiment radar.",
+      },
+      {
+        id: "risk",
+        title: "Risk dimension",
+        stepIds: ["risk_identification", "risk_composite"],
+        status: "partial",
+        summary: "Risk path excludes company sentiment radar.",
+      },
+    ],
+    currentStage: "report",
+    completedSteps: ["route_planner", "financial_data_service", "entity_relation_extractor"],
+    executionBatches: [
+      ["route_planner"],
+      ["financial_data_service", "entity_relation_extractor"],
+      ["value_traditional_valuation", "market_stock_technical", "sentiment_company_radar", "risk_identification"],
+      ["value_composite", "market_composite", "risk_composite", "macro_composite"],
+      ["decision_synthesizer"],
+      ["report_generator"],
+    ],
+    stepResults: {
+      route_planner: {
+        status: "complete",
+        runtime_kind: "deterministic_skeleton",
+        implementation_status: "deterministic_skeleton",
+        binding_source: "fixed_dag_runtime_registry",
+        invoke_enabled: false,
+        live_verified: false,
+      },
+      financial_data_service: {
+        status: "complete",
+        runtime_kind: "external_http_candidate",
+        implementation_status: "external_candidate_disabled",
+        binding_source: "fixed_dag_runtime_registry",
+        legacy_agent_id: "a22_financial_data_service",
+        external_agent_id: "financial_data_service",
+        invoke_enabled: false,
+        live_verified: false,
+      },
+      sentiment_company_radar: {
+        status: "pending_implementation",
+        runtime_kind: "placeholder",
+        implementation_status: "pending_implementation",
+        binding_source: "fixed_dag_runtime_registry",
+        invoke_enabled: false,
+        live_verified: false,
+      },
+    },
+    finalSource: "reset_skeleton",
+    provenanceNote: "Public-safe fixed DAG workflow snapshot. Raw graph messages and raw provider responses are not transcript.",
     provenance: {
-      emitPath:
-        finalSource === "fused" ? "fusion_writer" : finalSource === "baseline" ? "baseline_sidecar" : "mainline_summary",
-      finalSource,
+      source: "reset_skeleton",
       continuityMode: "replay",
-      summary:
-        finalSource === "fused"
-          ? "最终回答来自融合写作路径，并保留主线研究框架。"
-          : finalSource === "baseline"
-            ? "最终回答来自基线侧车路径，用于强调 downside 与风险约束。"
-            : "最终回答直接采用主线摘要路径作为输出来源。",
+      providerInvoked: false,
+      externalInvoked: false,
+      executionStatus: "deterministic_skeleton",
+      fallbackUsed: false,
+      limitations: ["Mock workflow fixture; external and provider live readiness are not verified."],
+      summary: "Final answer is projected from the reset skeleton fixed DAG path.",
     },
   };
 }

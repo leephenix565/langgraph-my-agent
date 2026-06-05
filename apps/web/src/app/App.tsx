@@ -27,11 +27,12 @@ import { AppRoutes } from "./routes";
 
 const STREAMING_PLACEHOLDER_ANSWER = "\u6b63\u5728\u534f\u4f5c\u2026";
 const STREAMING_INITIAL_PROGRESS: WorkflowStageProgress[] = [
-  { key: "routing", title: "\u8def\u7531\u89c4\u5212", status: "running" },
-  { key: "analysis", title: "\u591a\u89d2\u5ea6\u5206\u6790", status: "waiting" },
-  { key: "risk", title: "\u98ce\u9669\u6821\u9a8c", status: "waiting" },
-  { key: "summary", title: "\u6c47\u603b\u7ed3\u8bba", status: "waiting" },
-  { key: "fusion", title: "\u878d\u5408\u5224\u65ad", status: "waiting" },
+  { key: "planning", title: "Planning", status: "running" },
+  { key: "evidence", title: "Evidence seams", status: "waiting" },
+  { key: "l2_analysis", title: "L2 analysis", status: "waiting" },
+  { key: "dimension_composite", title: "Dimension composites", status: "waiting" },
+  { key: "decision", title: "Decision", status: "waiting" },
+  { key: "report", title: "Report", status: "waiting" },
 ];
 
 interface WorkspaceFrameProps {
@@ -63,17 +64,24 @@ function makeClientId(prefix: string) {
 }
 
 function createStreamingWorkflow(base?: WorkflowModel, liveProgress?: WorkflowStageProgress[]): WorkflowModel {
+  const nextProgress = liveProgress ?? base?.liveProgress ?? STREAMING_INITIAL_PROGRESS;
+  const runningStage = nextProgress.find((stage) => stage.status === "running");
   return {
-    layerPlan: base?.layerPlan ?? [],
-    layerMode: base?.layerMode ?? {},
-    currentLayer: base?.currentLayer ?? "",
-    layerDone: base?.layerDone ?? [],
-    agentSteps: base?.agentSteps ?? [],
-    fusionSteps: base?.fusionSteps ?? [],
-    finalSource: base?.finalSource ?? "mainline",
-    provenanceNote: base?.provenanceNote ?? "\u6b63\u5728\u751f\u6210\u5b89\u5168\u7684\u534f\u4f5c\u8fc7\u7a0b\u6458\u8981\u3002",
-    provenance: base?.provenance,
-    liveProgress: liveProgress ?? base?.liveProgress ?? STREAMING_INITIAL_PROGRESS,
+    schema: base?.schema ?? "workflow_snapshot_v2",
+    planId: base?.planId ?? "streaming-placeholder",
+    stages: base?.stages?.length
+      ? base.stages
+      : nextProgress.map((stage) => ({ key: stage.key, title: stage.title, stepIds: [] })),
+    dagSteps: base?.dagSteps ?? [],
+    dimensionGroups: base?.dimensionGroups ?? [],
+    currentStage: base?.currentStage ?? runningStage?.key ?? null,
+    completedSteps: base?.completedSteps ?? [],
+    executionBatches: base?.executionBatches ?? [],
+    stepResults: base?.stepResults ?? {},
+    finalSource: base?.finalSource ?? "reset_skeleton",
+    provenanceNote: base?.provenanceNote ?? "Generating a public-safe fixed DAG workflow summary.",
+    provenance: base?.provenance ?? null,
+    liveProgress: nextProgress,
   };
 }
 
@@ -95,7 +103,7 @@ function buildOptimisticAssistantTurn(): PublicTurn {
     createdAt: nowLabel(),
     answerCard: {
       answer: STREAMING_PLACEHOLDER_ANSWER,
-      finalSource: "mainline",
+      finalSource: "reset_skeleton",
     },
     workflow: createStreamingWorkflow(undefined, STREAMING_INITIAL_PROGRESS),
   };
@@ -111,11 +119,18 @@ function mergeStreamingAssistantTurn(turn: PublicTurn, event: SendMessageStreamE
       return {
         ...turn,
         continuityMode: event.data.continuityMode,
+        workflow: createStreamingWorkflow(turn.workflow, turn.workflow?.liveProgress ?? STREAMING_INITIAL_PROGRESS),
       };
     case "workflow.stage":
       return {
         ...turn,
-        workflow: createStreamingWorkflow(turn.workflow, event.data.stages),
+        workflow: createStreamingWorkflow(
+          {
+            ...turn.workflow,
+            currentStage: event.data.currentStage ?? turn.workflow?.currentStage ?? null,
+          } as WorkflowModel,
+          event.data.stages,
+        ),
       };
     case "workflow.snapshot":
       return {

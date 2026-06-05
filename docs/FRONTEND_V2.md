@@ -8,7 +8,7 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
-## Current R4-B Backend Boundary
+## Current R5-B1 Frontend Contract Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
 
@@ -22,9 +22,16 @@ The Python public adapter emits `workflow_snapshot_v2` with:
 - `provenance`
 - `finalSource`
 
-The existing `apps/web` shell is retained. Its full workflow inspector rewrite
-is deferred to R5, so frontend code may still contain old mock/UI labels until
-that phase.
+The existing `apps/web` shell is retained and migrated in place for R5-B1. The
+frontend workflow/chat types, streaming placeholder workflow, fixed DAG mocks,
+and smoke fixtures now consume `workflow_snapshot_v2` instead of the old
+`layerPlan`, `layerMode`, `agentSteps`, `fusionSteps`, or
+`mainline/baseline/fused` source model.
+
+R5-B1 intentionally keeps the UI work narrow. The current WorkflowPanel renders
+a minimal DAG summary from `stages`, `dagSteps`, `dimensionGroups`,
+`executionBatches`, `completedSteps`, `stepResults`, and `provenance`; it is not
+the complete R5-B2 workflow inspector redesign.
 
 R4-A changes the backend `/api/agents` projection to the fixed DAG catalog: 27
 enabled `snake_case` agents with L1=3, L2=18, L3=4, and L4=2. Frontend code that
@@ -40,7 +47,8 @@ env var values, provider raw responses, or external raw responses.
 R3/R4-B hardens backend workflow payload construction through
 `fixed_dag_contracts.py`, `fixed_dag_executor.py`, and
 `fixed_dag_runtime_registry.py`. It exposes the data needed for a richer
-inspector, but it does not rewrite the frontend workflow UI.
+inspector. R5-B1 adapts the frontend contract to this payload, while R5-B2 still
+owns the richer inspector UI.
 
 The workflow inspector target should treat the reset roster as 27 formal agents
 (L1=3, L2=18, L3=4, L4=2). `sentiment_company_radar` is a market-dimension L2
@@ -80,14 +88,22 @@ metadata.
 Rewrite the existing `apps/web` shell in place unless a later phase explicitly
 approves a separate app. Do not create a second public transcript model.
 
+## R5-B1 Done
+
+- frontend workflow/chat type update to `workflow_snapshot_v2`
+- streaming placeholder and `workflow.stage` merge aligned to fixed DAG stages
+- mock workflow snapshot with `dagSteps`, `dimensionGroups`,
+  `executionBatches`, `stepResults`, and `finalSource=reset_skeleton`
+- mock `/api/agents` catalog aligned to 27 enabled `snake_case` ids
+- frontend smoke fixture and assertions updated for the fixed DAG contract
+
 ## Deferred Work
 
-- frontend workflow type update
 - DAG progress timeline using `executionBatches`
 - per-step dependency and result status panels
 - dimension-level status panels
 - report evidence view
-- alignment of frontend mocks with the full 27-agent DAG snapshot
+- richer rendering of safe runtime binding metadata
 - production auth and rate limits
 - persistent run history
 - deployment hardening

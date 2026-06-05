@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R5-B1 frontend DAG contract migration
+
+### Changed
+
+- Changed frontend workflow/chat types to consume `workflow_snapshot_v2` with
+  `finalSource=reset_skeleton`.
+- Changed the streaming placeholder and `workflow.stage` merge path to use
+  fixed DAG stages: planning, evidence, L2 analysis, dimension composite,
+  decision, and report.
+- Changed the existing WorkflowPanel subviews to render a minimal DAG summary
+  from `stages`, `dagSteps`, `dimensionGroups`, `executionBatches`,
+  `completedSteps`, and public provenance.
+- Changed frontend mocks to use the 27 enabled `snake_case` fixed DAG catalog
+  and v2 workflow snapshot fixtures.
+- Changed frontend smoke tests to assert the fixed DAG contract and transcript
+  boundary instead of the old layer/fusion/source model.
+
+### Validated
+
+- `npm --prefix apps/web run test`
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+
+### Not Done
+
+- No complete R5-B2 WorkflowPanel UI rewrite.
+- No Python backend contract, executor, catalog, or runtime binding change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No external HTTP candidate was enabled or live verified.
+- No `/api/agents` runtime binding field exposure.
+- No production auth, rate-limit, HTTPS, deployment, persistence, or
+  observability claim.
+- No push.
+
 ## 2026-06-04 - Phase R4-C legacy registry boundary cleanup
 
 ### Added

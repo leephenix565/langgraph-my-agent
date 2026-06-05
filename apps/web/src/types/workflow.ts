@@ -1,7 +1,33 @@
 import type { ContinuityMode, FinalSource } from "./chat";
 
-export type WorkflowStageKey = "routing" | "analysis" | "risk" | "summary" | "fusion";
+export type WorkflowStageKey =
+  | "planning"
+  | "evidence"
+  | "l2_analysis"
+  | "dimension_composite"
+  | "decision"
+  | "report";
+
 export type WorkflowStageStatus = "waiting" | "running" | "completed" | "failed";
+
+export type DagStepStatus =
+  | "complete"
+  | "running"
+  | "queued"
+  | "pending_implementation"
+  | "partial"
+  | "error"
+  | "skipped"
+  | "blocked"
+  | "failed";
+
+export type DimensionStatus = "complete" | "running" | "queued" | "pending_implementation" | "partial" | "error";
+
+export interface WorkflowStage {
+  key: WorkflowStageKey;
+  title: string;
+  stepIds: string[];
+}
 
 export interface WorkflowStageProgress {
   key: WorkflowStageKey;
@@ -9,45 +35,52 @@ export interface WorkflowStageProgress {
   status: WorkflowStageStatus;
 }
 
-export interface LayerPlanItem {
-  layer: "L1" | "L2" | "L3" | "L4";
-  mode: string;
-  selected: string[];
-  note?: string;
-}
-
-export interface AgentStep {
+export interface DagStep {
   id: string;
-  layer: "L1" | "L2" | "L3" | "L4";
-  agentId: string;
+  stage: WorkflowStageKey;
+  agentId?: string | null;
+  dimension?: string | null;
   title: string;
   summary: string;
-  status: "complete" | "running" | "queued";
-  signal?: string;
+  status: DagStepStatus;
 }
 
-export interface FusionStep {
+export interface DimensionGroup {
   id: string;
-  kind: "baseline" | "judge" | "writer";
-  label: string;
-  status: "disabled" | "shadow" | "ready" | "selected" | "error";
+  title: string;
+  stepIds: string[];
+  status: DimensionStatus;
   summary: string;
 }
 
-export interface WorkflowModel {
-  layerPlan: LayerPlanItem[];
-  layerMode: Record<string, string>;
-  currentLayer: string;
-  layerDone: string[];
-  agentSteps: AgentStep[];
-  fusionSteps: FusionStep[];
+export type WorkflowStepResult = Record<string, unknown>;
+
+export interface WorkflowProvenance {
+  source: FinalSource;
+  continuityMode: ContinuityMode;
+  providerInvoked: boolean;
+  externalInvoked: boolean;
+  executionStatus?: string | null;
+  fallbackUsed: boolean;
+  limitations: string[];
+  summary: string;
+}
+
+export interface WorkflowSnapshotV2 {
+  schema: "workflow_snapshot_v2";
+  planId: string;
+  stages: WorkflowStage[];
+  dagSteps: DagStep[];
+  dimensionGroups: DimensionGroup[];
+  currentStage?: WorkflowStageKey | null;
+  completedSteps: string[];
+  executionBatches: string[][];
+  stepResults: Record<string, WorkflowStepResult>;
   finalSource: FinalSource;
   provenanceNote: string;
-  provenance?: {
-    emitPath: "mainline_summary" | "baseline_sidecar" | "fusion_writer";
-    finalSource: FinalSource;
-    continuityMode: ContinuityMode;
-    summary: string;
-  };
+  provenance?: WorkflowProvenance | null;
+}
+
+export interface WorkflowModel extends WorkflowSnapshotV2 {
   liveProgress?: WorkflowStageProgress[];
 }

@@ -2,11 +2,12 @@
 
 This document defines safe validation for the reset branch.
 
-R4-C uses the same non-provider validation boundary as R3/R3.6/R4-A/R4-B. It
-adds legacy registry import-boundary coverage and compatibility test migration,
-not provider, external live, frontend, or business-agent capability.
+R5-B1 keeps the same non-provider validation boundary as
+R3/R3.6/R4-A/R4-B/R4-C and adds frontend contract validation for the existing
+`apps/web` shell. It does not add provider, external live, demo-stack,
+production deployment, or business-agent capability validation.
 
-## Safe R4-C Commands
+## Safe R5-B1 Commands
 
 ```powershell
 git status --short --branch
@@ -17,21 +18,26 @@ conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
 conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
 conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+npm --prefix apps/web run test
+npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
 ```
 
-## Not Safe For R4-C
+## Not Safe For R5-B1
 
-Do not run during R3/R4-A/R4-B/R4-C unless the user explicitly asks:
+Do not run during R3/R4-A/R4-B/R4-C/R5-B1 unless the user explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
 - demo stack start or stop
 - artifact-writing mainline gates
 - artifact-writing fusion gates
-- frontend production build if it writes repo artifacts
+- frontend production build if it writes repo artifacts; use a repo-external
+  `--outDir` if build validation is explicitly required
 
-R4-C also does not treat `mainline`, `fusion-gate`, provider live smoke, demo
-stack, or frontend build/test results as required runtime-boundary evidence.
+R5-B1 treats frontend smoke and TypeScript no-emit checks as frontend contract
+evidence only. It does not treat `mainline`, `fusion-gate`, provider live smoke,
+demo stack, or artifact-writing frontend build results as required
+runtime-boundary evidence.
 
 ## Current Quality Runner Boundary
 
@@ -49,7 +55,10 @@ imports, parses, validates plan dependencies, generates topological execution
 batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
 projects `step_results` and `execution_batches`, preserves public transcript
 safety, and keeps the contract/executor/catalog/runtime-binding seams and
-27-agent roster aligned in reset docs/tests.
+27-agent roster aligned in reset docs/tests. In R5-B1 it also means the
+frontend TypeScript contract, mock agent catalog, mock workflow snapshot,
+streaming smoke fixture, and minimal WorkflowPanel summary accept the fixed DAG
+public payload.
 
 R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,
@@ -65,6 +74,6 @@ It does not mean:
 - external service readiness
 - live market-data correctness
 - real business-agent correctness
-- frontend v2 completion
+- full frontend v2 inspector completion
 - mainline/fusion-gate reset gate completion
 - production deployment readiness

@@ -2,7 +2,7 @@ import { useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AnswerCardModel, PublicTurn } from "../../types/chat";
-import { citationLabel, continuityLabel, emitPathLabel, zhCN } from "../../content/zh-CN";
+import { citationLabel, continuityLabel, sourceLabel, zhCN } from "../../content/zh-CN";
 import { WorkflowPanel } from "../workflow/WorkflowPanel";
 
 interface AssistantAnswerCardProps {
@@ -38,7 +38,7 @@ function renderDebugMeta(turn: PublicTurn, answerCard: AnswerCardModel, open: bo
     turn.continuityMode ? { label: zhCN.answer.debug.continuity, value: continuityLabel(turn.continuityMode) } : null,
     turn.runId ? { label: zhCN.answer.debug.runId, value: turn.runId } : null,
     { label: zhCN.answer.debug.evidence, value: String(evidenceCount) },
-    provenance ? { label: zhCN.answer.debug.emit, value: emitPathLabel(provenance.emitPath) } : null,
+    provenance ? { label: zhCN.answer.debug.emit, value: sourceLabel(provenance.source) } : null,
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
   if (!items.length) {

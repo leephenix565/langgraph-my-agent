@@ -1,4 +1,3 @@
-import { agentNameLabel, workflowModeLabel } from "../../content/zh-CN";
 import type { WorkflowModel } from "../../types/workflow";
 
 interface WorkflowPlanViewProps {
@@ -8,21 +7,15 @@ interface WorkflowPlanViewProps {
 export function WorkflowPlanView({ workflow }: WorkflowPlanViewProps) {
   return (
     <div className="workflow-plan">
-      {workflow.layerPlan.map((item) => (
-        <div className="workflow-plan__row" key={item.layer}>
+      {workflow.stages.map((stage) => (
+        <div className="workflow-plan__row" key={stage.key}>
           <div className="workflow-plan__layer">
-            <span className="workflow-plan__layer-id">{item.layer}</span>
-            <span className="workflow-plan__mode">{workflowModeLabel(item.mode)}</span>
+            <span className="workflow-plan__layer-id">{stage.key}</span>
+            <span className="workflow-plan__mode">{stage.stepIds.length} steps</span>
           </div>
           <div className="workflow-plan__content">
-            <div className="workflow-pill-row">
-              {item.selected.map((agentId) => (
-                <span className="workflow-pill" key={agentId}>
-                  {agentNameLabel(agentId)}
-                </span>
-              ))}
-            </div>
-            {item.note ? <p>{item.note}</p> : null}
+            <strong>{stage.title}</strong>
+            {stage.stepIds.length ? <p>{stage.stepIds.join(", ")}</p> : <p>No bound DAG steps yet.</p>}
           </div>
         </div>
       ))}

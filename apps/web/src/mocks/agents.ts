@@ -1,434 +1,293 @@
-import type { AgentCatalogModel } from "../types/agents";
+import type { AgentCatalogModel, AgentDescriptor } from "../types/agents";
+
+const agents: AgentDescriptor[] = [
+  {
+    id: "route_planner",
+    name: "Route planner",
+    description: "Creates the deterministic fixed DAG plan.",
+    capabilities: ["planning", "fixed_dag"],
+    layer: "L1",
+    team: "l1",
+    roleType: "system_planner",
+    defaultEnabled: true,
+  },
+  {
+    id: "financial_data_service",
+    name: "Financial data service",
+    description: "Prepares the financial data seam without live provider or external calls in the mock path.",
+    capabilities: ["data_bundle", "financial_data"],
+    layer: "L1",
+    team: "l1",
+    roleType: "evidence_service",
+    defaultEnabled: true,
+  },
+  {
+    id: "entity_relation_extractor",
+    name: "Entity relation extractor",
+    description: "Prepares the entity and relation evidence seam.",
+    capabilities: ["entity_relation", "evidence"],
+    layer: "L1",
+    team: "l1",
+    roleType: "evidence_service",
+    defaultEnabled: true,
+  },
+  {
+    id: "value_traditional_valuation",
+    name: "Traditional valuation",
+    description: "Value-dimension placeholder for traditional company valuation.",
+    capabilities: ["valuation", "dcf"],
+    layer: "L2",
+    team: "value",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "value_ml_valuation",
+    name: "ML valuation",
+    description: "Value-dimension placeholder for machine-learning company valuation.",
+    capabilities: ["valuation", "ml"],
+    layer: "L2",
+    team: "value",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "value_meta_valuation",
+    name: "Meta valuation",
+    description: "Value-dimension placeholder for peer and support-set valuation.",
+    capabilities: ["valuation", "peer"],
+    layer: "L2",
+    team: "value",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "value_research_synthesis",
+    name: "Research synthesis",
+    description: "Value-dimension placeholder for analyst research and opinion synthesis.",
+    capabilities: ["research", "synthesis"],
+    layer: "L2",
+    team: "value",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "market_stock_technical",
+    name: "Stock technical analysis",
+    description: "Market-dimension placeholder for single-stock technical analysis.",
+    capabilities: ["technical", "market"],
+    layer: "L2",
+    team: "market",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "market_fund_manager_behavior",
+    name: "Fund manager behavior",
+    description: "Market-dimension placeholder for fund manager behavior analysis.",
+    capabilities: ["fund_manager", "market"],
+    layer: "L2",
+    team: "market",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "market_ipo_investor_behavior",
+    name: "IPO investor behavior",
+    description: "Market-dimension placeholder for IPO investor composition and behavior analysis.",
+    capabilities: ["ipo", "market"],
+    layer: "L2",
+    team: "market",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "market_capital_flow_chip",
+    name: "Capital flow and chip analysis",
+    description: "Market-dimension placeholder for capital-flow and chip-structure analysis.",
+    capabilities: ["capital_flow", "chip"],
+    layer: "L2",
+    team: "market",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "sentiment_company_radar",
+    name: "Company sentiment radar",
+    description: "Market-dimension placeholder that routes only to market_composite.",
+    capabilities: ["sentiment", "market"],
+    layer: "L2",
+    team: "market",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "risk_crash",
+    name: "Crash risk",
+    description: "Risk-dimension placeholder for stock-price crash risk.",
+    capabilities: ["risk", "crash"],
+    layer: "L2",
+    team: "risk",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "risk_financial_fraud",
+    name: "Financial fraud risk",
+    description: "Risk-dimension placeholder for financial fraud risk.",
+    capabilities: ["risk", "fraud"],
+    layer: "L2",
+    team: "risk",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "risk_identification",
+    name: "Risk identification",
+    description: "Risk-dimension placeholder for general risk identification.",
+    capabilities: ["risk", "identification"],
+    layer: "L2",
+    team: "risk",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "risk_compliance_review",
+    name: "Compliance review",
+    description: "Risk-dimension placeholder for announcement compliance review.",
+    capabilities: ["risk", "compliance"],
+    layer: "L2",
+    team: "risk",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_analysis",
+    name: "Macro analysis",
+    description: "Macro-dimension placeholder for macro analysis.",
+    capabilities: ["macro"],
+    layer: "L2",
+    team: "macro",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_commodity_pricing",
+    name: "Commodity pricing",
+    description: "Macro-dimension placeholder for commodity pricing analysis.",
+    capabilities: ["commodity", "macro"],
+    layer: "L2",
+    team: "macro",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_index_valuation",
+    name: "Index valuation",
+    description: "Macro-dimension placeholder for stock-index valuation.",
+    capabilities: ["index", "valuation"],
+    layer: "L2",
+    team: "macro",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_sentiment",
+    name: "Macro sentiment",
+    description: "Macro-dimension placeholder for macro sentiment sensing.",
+    capabilities: ["macro", "sentiment"],
+    layer: "L2",
+    team: "macro",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_industry_hotspot",
+    name: "Industry hotspot",
+    description: "Macro-dimension placeholder for industry hotspot discovery.",
+    capabilities: ["industry", "macro"],
+    layer: "L2",
+    team: "macro",
+    roleType: "analysis_agent",
+    defaultEnabled: true,
+  },
+  {
+    id: "value_composite",
+    name: "Value composite",
+    description: "Combines value-dimension conclusions.",
+    capabilities: ["composite", "value"],
+    layer: "L3",
+    team: "composite",
+    roleType: "dimension_composite",
+    defaultEnabled: true,
+  },
+  {
+    id: "market_composite",
+    name: "Market composite",
+    description: "Combines market-dimension conclusions including company sentiment radar.",
+    capabilities: ["composite", "market"],
+    layer: "L3",
+    team: "composite",
+    roleType: "dimension_composite",
+    defaultEnabled: true,
+  },
+  {
+    id: "risk_composite",
+    name: "Risk composite",
+    description: "Combines risk-dimension conclusions. Company sentiment radar is not an input.",
+    capabilities: ["composite", "risk"],
+    layer: "L3",
+    team: "composite",
+    roleType: "dimension_composite",
+    defaultEnabled: true,
+  },
+  {
+    id: "macro_composite",
+    name: "Macro composite",
+    description: "Combines macro-dimension conclusions.",
+    capabilities: ["composite", "macro"],
+    layer: "L3",
+    team: "composite",
+    roleType: "dimension_composite",
+    defaultEnabled: true,
+  },
+  {
+    id: "decision_synthesizer",
+    name: "Decision synthesizer",
+    description: "Synthesizes value, market, risk, and macro composites into a decision seam.",
+    capabilities: ["decision", "synthesis"],
+    layer: "L4",
+    team: "l4",
+    roleType: "decision_synthesizer",
+    defaultEnabled: true,
+  },
+  {
+    id: "report_generator",
+    name: "Report generator",
+    description: "Generates the final public reset skeleton answer.",
+    capabilities: ["report", "public_answer"],
+    layer: "L4",
+    team: "l4",
+    roleType: "report_generator",
+    defaultEnabled: true,
+  },
+];
+
+function byLayer(layer: AgentDescriptor["layer"]) {
+  return agents.filter((agent) => agent.layer === layer);
+}
 
 export const AGENT_CATALOG: AgentCatalogModel = {
-  "totals": {
-    "configCount": 27,
-    "runtimeCount": 25,
-    "disabledIds": [
-      "a05_annual_report_analysis",
-      "a21_portfolio_manager"
-    ]
+  totals: {
+    configCount: 27,
+    runtimeCount: 27,
+    disabledIds: [],
   },
-  "layers": [
-    {
-      "layer": "L1",
-      "agents": [
-        {
-          "id": "a01_cio_orchestrator",
-          "name": "问题解析与协同编排智能体",
-          "description": "功能：基于大语言模型完成复杂金融任务的拆解与路由编排，分层协作组织多类底层专业能力，在执行与汇总阶段引入结构化约束与证据校验，实现稳定可控的多智能体协同。\n适用场景：仅当用户明确要求问题解析与协同编排智能体职责范围内的问题解析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户的复杂自然语言提问/业务指令（如“评估某行业受宏观政策影响及个股投资价值”）；底层各智能体的状态反馈。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "orchestration",
-            "routing",
-            "evidence_control"
-          ],
-          "layer": "L1",
-          "team": "management",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a22_financial_data_service",
-          "name": "金融数据服务智能体",
-          "description": "功能：- 基于 Tushare 数据接口，对股票、指数、基金等全品类数据进行全量或增量转储，自动适配表结构并支持断点续传与重试。 - 按交易日历定时调度行情与基本面数据的增量更新，联动处理除权除息、股票更名等事件，保障数据时效性与一致性。 - 数据库的表结构自动管理、缺失与异常数据检测修复、存储归档优化以及定期备份恢复，确保数据完整与系统高效。\n适用场景：- 用户需要将 Tushare 的行情、财务、宏观等数据自动入库并保持定期更新。 - 用户希望通过自然语言查询金融数据，如历史行情、多标的对比、条件筛选等，而非编写 SQL 或 API 代码。 - 用户需要数据库的自动化维护，包括表结构升级、缺失数据修复、归档备份等\n不适用场景：- 用户不使用 Tushare 作为数据源，或数据源不在支持范围内。 - 用户的需求是实时高频交易、策略回测或因子挖掘，而非数据管理与基础查询。 - 用户只需一次性导出少量数据，无需持续的数据库维护和定时更新。\n输入：- 数据操作意图：从自然语言中提取，例如“转储沪深300日线”、“更新财务数据”、“查询昨日涨停股票”等，智能体据此判断。 - 操作参数：从自然语言中提取，如标的代码或名称、起止日期、数据频率、特定指标等。转储/更新任务可缺省使用默认配置 - 数据库维护指令：从自然语言中提取，如“检查缺失数据”、“备份数据库”、“清理过期数据”等。\n缺输入处理：- 当用户意图不明确时，智能体会提示“无法识别您想执行的操作，请说明是需要转储数据、更新数据、查询数据还是进行数据库维护”，并等待补充。 - 对于查询操作，若缺少标的或日期等关键信息，会询问“请提供股票代码或名称”或“请指定时间范围”，缺失必要信息无法执行查询。 - 对于转储/更新，若未指定日期范围，则默认使用最近交易日或全量范围，并在执行前向用户确认；若未指定数据品类，会提示选择。 - 对于维护操作，缺参数时（E11如备份未指定路径），会使用默认配置并告知用户，或要求确认后执行。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "financial_data",
-            "data_service",
-            "market_data"
-          ],
-          "layer": "L1",
-          "team": "data_support",
-          "roleType": "system",
-          "defaultEnabled": true
-        }
-      ]
-    },
-    {
-      "layer": "L2",
-      "agents": [
-        {
-          "id": "a17_traditional_valuation",
-          "name": "传统企业估值智能体",
-          "description": "功能：基于传统财务估值规则对 A 股企业或股票进行估值。系统根据 ROE、FCFF、PE、PS、市值等指标自动选择 DCF、PE 或 PS 估值路径，输出合理企业价值、市值口径估值区间、每股合理价值、高估/低估/合理判断、置信度、关键财务指标、数据来源，并支持历史时点估值和回测。\n适用场景：- 用户明确要求传统估值、DCF 估值、现金流折现、PE 估值、PS 估值、基本面估值或人工规则估值。 - 用户询问某只 A 股当前是否低估、高估、贵不贵、合理价值是多少。 - 用户要求输出估值区间、合理市值、每股合理价值、估值安全边际或传统估值结论。 - 用户输入包含公司名、股票代码、估值日期、市值、PE、PS、ROE、FCFF、研发投入等财务或行情信息。 - 用户要求按历史日期做时点估值，或指定“某日期 + N年/半年/月后”进行回测验证。\n不适用场景：- 用户只要求新闻摘要。 - 用户只要求财报解读、指标解释或财务分析，不要求估值结论。 - 用户明确要求机器学习估值、元学习估值、同业相似度对标估值或多模型融合估值。 - 用户只要求技术分析、短线交易信号、买卖点、K 线形态或择时建议。 - 用户没有给出任何公司名、股票代码或可识别 A 股标的。 - 用户要求股票指数估值、指数估值百分位或市场情绪分析，而非企业/个股估值时，不适用本智能体。\n输入：- 公司名或股票代码。 - 估值日期可选；缺省使用当前可得最新数据。 - 回测区间可选；如用户要求历史回测，可提供“半年后”“一年后”“6个月后”等区间。 - 如用户指定折现率、永续增长率、安全边际或估值方法，应放入 question/context；否则使用系统默认规则。\n缺输入处理：- 如果缺少公司名或股票代码，返回 needs_clarification，要求用户补充需要估值的 A 股公司或股票代码。 - 如果证券解析存在歧义，返回 needs_clarification，要求用户从候选标的中确认。 - 如果指定日期或标的数据不可用，返回 error 或 partial，并提示用户确认股票代码、日期或稍后重试。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "traditional_valuation",
-            "dcf",
-            "relative_valuation"
-          ],
-          "layer": "L2",
-          "team": "valuation",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a16_ml_valuation",
-          "name": "机器学习企业估值智能体",
-          "description": "功能：-基于 XGBoost 模型，结合 PE-TTM、PB、研发费用等财务与行情特征，预测标的目标日期的合理 PE 中枢。 -通过蒙特卡洛模拟生成未来股价与市值的概率分布，输出中枢值、95% 置信区间及对应市值范围。 -将当前价格与置信区间对比，自动给出估值的诊断结论，并计算预期收益空间。\n适用场景：-用户希望针对企业（代码中特征侧重 PE、营收增长等）进行未来估值预测。 -用户需要基于机器学习与统计模拟的量化估值结果（股价、市值、PE 中枢），而非传统 DCF 或相对估值法。 -用户想了解当前股价相对于目标日期（未来某时点）估值的低估/高估状态。\n不适用场景：-用户要求传统估值方法（如 DCF、剩余收益模型、可比公司法）。 -用户针对重资产、资源类企业，模型特征与训练集可能不匹配。 -用户仅需要实时行情、基本面原始数据或交易信号，不需要估值分析结论。 - 用户要求股票指数估值、指数估值百分位或市场情绪分析，而非企业/个股估值时，不适用本智能体。\n输入：-股票代码：从自然语言中提取，支持股票名称或代码。 -目标日期：从自然语言中提取，支持相对时间如“三年后”、绝对日期如“20261231”或“2026年底”等。 -估值要求: 从自然语言中提取，对目标企业的估值区间、估值合理性判断、特定估值指标等估值要求\n缺输入处理：-当用户输入中缺少股票代码时，智能体会提示“未能识别股票代码，请提供A股代码或明确的中文名称”，并等待用户补充，缺少股票代码无法继续估值。 -当用户未提供估值日期时，系统不会报错，而是自动采用估值当日作为目标日期，并在输出中注明“未指定目标日期，默认使用今日”。 -当用户未提供估值要求时，系统按默认行为输出具体估值\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "ml_valuation",
-            "xgboost",
-            "monte_carlo"
-          ],
-          "layer": "L2",
-          "team": "valuation",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a18_meta_valuation",
-          "name": "元学习企业估值智能体",
-          "description": "功能：基于元学习同业相似度对标方法对 A 股企业进行估值。系统使用本地同业样本库，按行业筛选可比公司，并基于 ROE、研发强度、规模等特征计算余弦相似度，选取 Top 5 支撑集，使用 Similarity^20 加权得到 PE/PS 参考倍数，自动切换传统价值型模型、高成长 PS 模型或龙头溢价 PS 模型，输出建议企业价值、参考 PE/PS、支撑集、置信度、关键证据和数据来源；同时支持历史时点估值、回测偏差分析、流式输出和多标的比较。\n适用场景：- 用户明确要求元学习估值、同业对标估值、相似公司估值、peer valuation、支撑集估值或可比公司倍数估值。 - 用户希望根据同行业相似企业推算某公司合理企业价值。 - 用户要求查看 Top 5 相似同业、PE/PS 参考倍数、支撑集、相似度权重或模型判定。 - 用户询问某只 A 股是否低估/高估，并希望从同业可比倍数角度判断。 - 用户要求历史回测，例如“2024年9月24日某公司一年后的估值偏差”。 - 用户输入包含公司名、股票代码、历史日期、回测区间或多个可比较标的。\n不适用场景：- 用户明确只要求传统 DCF、PE、PS 决策树估值。 - 用户明确只要求机器学习回归、量化模型预测或单一机器学习估值。 - 用户只要求技术分析、短线买卖点、K 线、盘口或择时信号。 - 用户没有给出任何公司名、股票代码或可识别 A 股标的。 - 用户要求股票指数估值、指数估值百分位或市场情绪分析，而非企业/个股估值时，不适用本智能体。\n输入：- 公司名或股票代码。 - 估值日期可选；缺省使用当前本地同业样本库或当前可得数据。 - 回测区间可选；如用户要求历史回测，可提供“半年后”“一年后”“两年后”“6个月后”等。 - 如用户提供多个公司名或股票代码，可进行多标的估值或比较，默认最多处理 3 个标的。\n缺输入处理：- 如果缺少公司名或股票代码，返回 needs_clarification，要求用户补充需要估值的 A 股公司或股票代码。 - 如果证券解析存在歧义，返回 needs_clarification，要求用户确认具体标的。 - 如果本地同业样本库找不到目标公司或行业池样本不足，返回 error；若可用 Tushare 历史数据且适用，则尝试走历史/实时同业估值兜底。 - 如果用户要求历史回测但缺少可解析日期，按实时同业对标估值处理；如果日期存在但数据源不可用，提示配置或补充数据源。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "meta_valuation",
-            "peer_valuation",
-            "support_set"
-          ],
-          "layer": "L2",
-          "team": "valuation",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a11_index_technical_analysis",
-          "name": "股票指数估值智能体",
-          "description": "功能：基于理杏仁估值数据与 Tushare 行情、宏观数据，对 A 股股票指数进行估值百分位与市场情绪的联合分析。 - 拉取指数估值（PE/PB 等）并计算历史估值百分位。 - 实时重建市场情绪指数：宏观（CPI/PPI/PMI）正交化 + 量价代理变量（换手率、RSI、BIAS、AR、VR、融资余额）经双阶段 PCA 合成情绪分位。 - 估值×情绪 5x5 联合分析（20/60 日窗口），统计当前状态下未来收益均值与胜率。 - 输出估值/情绪百分位图、5x5 联合热力图、策略倾向（偏积极/中性/偏谨慎）、动作建议与风险提示，并可生成 PDF 报告。\n适用场景：- 用户想了解某只 A 股指数（如沪深300、中证500、创业板指、上证50）当前估值是高估还是低估、贵不贵。 - 用户希望结合市场情绪判断指数所处状态，以及当前是否适合买入/加仓/减仓。 - 用户要求估值百分位、情绪百分位、5x5 联合分析、历史收益与胜率统计或可视化/PDF 报告。 - 用户输入包含指数名称、指数代码或起始年份。\n不适用场景：- 用户要求对单只个股或企业进行估值，应使用企业估值类智能体。 - 用户要求短线交易信号、择时买卖点、K 线形态或盘口分析。 - 用户针对非 A 股指数（如美股、港股指数），数据源不支持。 - 用户只需要实时行情或原始数据，而非估值与情绪分析结论。\n输入：- 指数名称或代码：支持中文别名（沪深300、中证500、创业板指等）、Tushare 代码（如 000016.SH、399006.SZ）、纯 6 位代码；未命中时按中文名在 Tushare 指数库模糊匹配。 - 起始日期（可选）：默认 2015-01-01。 - 风险偏好（可选）：保守/中性/进取，默认中性。 - 是否需要动作建议（可选）：从自然语言识别“能买吗”“加仓”“减仓”等意图。\n缺输入处理：- 当问题过短或信息不足（如未给出指数名称、问题少于 4 个字）时，返回 needs_clarification，提示补充具体指数名称（沪深300/中证500/创业板指）及是否指定起始年份。 - 缺指数名称时默认沪深300；缺起始日期时默认 2015-01-01；缺风险偏好时默认中性。 - 若指数无法解析或数据源（Tushare/理杏仁 token、网络）不可用，返回 error，提示确认指数名称、token 配置与网络可用性。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "index_valuation",
-            "valuation_percentile",
-            "sentiment_joint_analysis"
-          ],
-          "layer": "L2",
-          "team": "valuation",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a04_commodity_hedging",
-          "name": "商品定价分析智能体",
-          "description": "功能：该智能体用于分析大宗商品期货市场的定价影响力。它基于显著性指标 ln(1+F) 与脉冲响应影响力指标合成综合定价影响力指标，支持比较中国期货市场与境外相关市场之间的影响力变化。当前支持 13 个品种，查询时间范围为2019-12-31至2025-12-31，支持 0.5年窗口 与 3年窗口，并可按 全盘、白盘、夜盘 三个时段查询。\n适用场景：当用户需要查询某个大宗商品期货品种在中国市场与境外市场 之间的定价影响力、影响力变化趋势、双向影响力对比、 指定时间窗口和指定交易时段下的结构变化时\n不适用场景：当用户询问实时行情、现货价格、交易建议、投资预测、宏观新闻解读、非期货品种、超出数据范围的日期，或需要重新抓取外部实时数据时，不应使用该智能体。它不用于生成买卖建议，也不替代投资决策。\n输入：- 品种：如铜、原油、铁矿石、大豆等； - 时间范围：如 2020年12月31日-2025年12月31日； - 时间窗口：0.5年窗口 或 3年窗口； - 交易时段：全盘、白盘 或 夜盘； - 查询意图：如影响力变化、双向比较、中国与境外市场对比等。\n缺输入处理：如果缺少关键信息，应先向用户追问，不要直接调用或默认猜测。 例如： - 缺品种：请用户指定要查询的商品品种； - 缺时间窗口：请用户选择 0.5年窗口 或 3年窗口； - 缺交易时段：请用户选择 全盘、白盘 或 夜盘； - 缺时间范围：请用户提供起止日期，且应在 2019-12-31 至 2025-12-31 范围内。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "commodity_pricing",
-            "pricing_influence",
-            "futures_market"
-          ],
-          "layer": "L2",
-          "team": "fundamental",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a06_financial_statement_analysis",
-          "name": "企业财务分析智能体",
-          "description": "功能：- 基于 Tushare 数据接口，获取上市公司财务报表数据（资产负债表、利润表、现金流量表）及分析师研报数据，实现企业财务状况的全面分析。 - 多维度财务风险分析：涵盖偿债能力风险（流动比率、速动比率、资产负债率）、盈利能力风险（ROE、毛利率、净利率）、现金流风险（经营现金流净额、现金流覆盖率）、营运能力风险（存货周转率、应收账款周转率）及成长性风险（营收增长率、净利润增长率）。 - 研报观点整合：获取分析师研报中的财务观点、风险提示与投资建议，与量化财务指标相互印证，提升分析结论的可解释性。 - 输出财务风险等级（低/中/高）、风险分数、关键风险指标异常清单、风险触发阈值、风险缓释建议，并支持生成结构化财务风险分析报告。\n适用场景：- 用户需要对某家上市公司进行全面的财务状况分析，了解其财务健康程度。 - 用户希望识别企业潜在的财务风险，如偿债风险、盈利下滑风险、现金流断裂风险等。 - 用户需要获取分析师研报中的财务观点与风险提示，辅助判断企业财务质量。 - 用户要求对一批企业进行财务风险排序，筛选重点关注对象。 - 用户需要结合财务指标与研报观点，形成可追溯的财务风险预警结论。\n不适用场景：- 用户只需要普通新闻摘要或舆情分析，不需要财务数据分析。 - 用户明确要求估值分析（如DCF估值、PE估值），而非财务风险判断。 - 用户只关注短期股价涨跌、技术分析或买卖建议，不关心财务基本面。 - 用户要求给出最终行政处罚结论、法律定性或审计意见时，不应单独使用该智能体。 - 企业缺少必要财务数据或可识别证券代码时，模型结论可靠性不足。\n输入：- 公司名称或股票代码（必填）：支持代码（如600519.SH、000001.SZ）或中文名称（如贵州茅台、平安银行）。 - 分析年份或财报期间（可选）：默认使用最新可得年度财报；可指定特定年份或季度。 - 分析维度（可选）：可选择偿债能力、盈利能力、现金流、营运能力、成长性等特定维度，默认全维度分析。 - 研报整合需求（可选）：是否需要整合分析师研报观点，默认整合。 - 风险阈值偏好（可选）：保守/中性/激进，影响风险等级判定标准，默认中性。\n缺输入处理：- 缺少公司名称或股票代码时，返回 needs_clarification，提示用户补充具体上市公司名称或证券代码。 - 缺少分析年份时，默认使用最新可得财报年度，并在结果中说明未指定分析年份默认使用最新年度数据。 - 缺少分析维度时，默认进行全维度财务风险分析，输出综合风险等级与各维度风险详情。 - 缺少研报整合需求时，默认整合研报观点；若研报数据不可用，仍可基于财务指标给出风险判断，但会降低置信度并说明研报数据暂不可用 - 关键财务数据缺失较多时，返回 partial 或 needs_clarification，提示补充财务报表或指定分析区间。 - 若财务指标与研报观点相互冲突，应说明冲突来源，并建议人工复核。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "financial_statement",
-            "financial_risk",
-            "research_report_integration"
-          ],
-          "layer": "L2",
-          "team": "fundamental",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a12_research_synthesis",
-          "name": "分析师研报与观点集成智能体",
-          "description": "功能：-个股投研分析：整合实时的行情、权威分析师评级与目标价，提供可量化的投资参考。 -分析师观点评价：基于排名、得分稳定性与评级数据，评估分析师观点的可信度。 -行业优质标的筛选：定位行业头部分析师及其重点推荐标的，辅助把握行业机会。\n适用场景：用户需要查询单只 A 股的分析师目标价、研报观点、覆盖分析师及排名，或是了解分析师排名、所属机构与历史观点；也可检索行业顶尖 S 级分析师推荐的个股，还能将零散的卖方研报观点整合梳理，生成可追溯的结构化内容与深度分析报告。\n不适用场景：当问题里没有股票、分析师、行业这三类实体，或者与 A 股研报无关时，不要用它；当需要的是下单或投顾式的实时交易决策时不要用它。\n输入：一句中文自然语言问题。它支持三种典型问法：个股类，比如\"平安银行怎么样\"；分析师类，比如\"刘杰分析师怎么样\"；行业S级类，比如\"IT设备行业S级分析师推荐什么股票\"。\n缺输入处理：智能体采用软失败加引导补全的策略，不会直接崩溃。 -如果 question 为空，它返回 status 为 needs_clarification，直接给出三个示例问法引导用户补充； -如果实体无法识别或查不到数据，它返回 status 为 error，提示\"请在问题中包含完整股票名称、分析师姓名或行业名称\"； -如果深度报告生成超时或大模型不可达，它返回 status 为partial，仍然把结构化事实摘要返回出去，不丢失结果。如果查询引擎加载失败，返回 status 为 error。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "research_synthesis",
-            "analyst_rating",
-            "target_price"
-          ],
-          "layer": "L2",
-          "team": "behavior",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a13_fund_manager_behavior",
-          "name": "基金经理投资行为分析智能体",
-          "description": "功能：基金经理投资行为分析智能体属于分析层 / 行为分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求基金经理投资行为分析智能体职责范围内的行为分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "fund_manager_behavior",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "behavior",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a14_ipo_investor_behavior",
-          "name": "IPO投资者构成与行为分析智能体",
-          "description": "功能：基于本地 V.csv / U.csv 计算 IPO 公司的 CRJ 指数（风险投资机构质量与赋能强度），对高 / 低 CRJ 组在抑价率、市值比等指标上的差异进行统计检验（T 检验、曼 - 惠特尼秩和检验、OLS 回归），输出分组结论与投资建议。\n适用场景：用户想了解某只 IPO 公司的投资者结构质量（CRJ 指数）及其对 IPO 表现的影响。 用户需要基于投资者行为数据，判断公司所处 CRJ 高低分组及统计显著性。 用户需要基于 CRJ 指数和回归结果，获取投资建议（增持 / 减持 / 观望）。 用户提供公司 ID，希望得到 CRJ 指数、分组结论与投资建议的结构化输出。\n不适用场景：用户需要对指数、大盘或非 IPO 个股进行估值或择时分析，不属于投资者结构分析场景。 用户需要短线交易信号、买卖点、K 线形态或盘口分析，本智能体不支持。 用户没有 V.csv / U.csv 数据文件，或数据中无 company_id、V/U 等必要字段。 用户只需要原始数据导出，而非 CRJ 指数计算与统计检验结论。\n输入：公司 ID：IPO 公司的唯一标识（如 10567、C0001），必须与 V.csv / U.csv 中的 company_id 字段匹配。（这里后续可能会变股票代码等） （隐含依赖）本地 V.csv 和 U.csv 文件，需包含 company_id、V、U 等必要字段。\n缺输入处理：未提供公司 ID 时，返回 needs_clarification，提示用户补充公司 ID（如示例 10567）。 公司 ID 在数据中不存在时，返回 404 错误，提示 “公司 ID 未找到”。 数据文件缺失 / 读取失败（如无 V.csv/U.csv、编码错误、字段缺失），返回 500 错误，提示检查文件路径、格式和字段。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "ipo",
-            "investor_behavior",
-            "crj_index"
-          ],
-          "layer": "L2",
-          "team": "behavior",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a10_stock_technical_analysis",
-          "name": "个股技术分析智能体",
-          "description": "功能：- 基于 XGBoost、CatBoost、Double Ensemble 三个机器学习分类模型，结合原始 Alpha158量价特征、基础技术指标与日历特征（输入为个股日线行情与资金流数据），预测标的\"下一交易日\"至\"下五交易日\"的涨跌方向。 - 每个模型分别给出方向（涨/跌）、原始概率、校准概率与方向信度；通过多数投票得出综合趋势，并以支持该方向模型的平均信度作为综合信度（0–100%）。 - 输出 8 个关键驱动特征及其取值、各模型预测明细与投票结果（看涨/看跌票数），形成结构化的技术面研判报告\n适用场景：- 用户希望对某只 A 股个股，基于技术面（量价、资金流）做\"下一交易日涨跌方向\"至\"下五交易日\"的量化预测。 - 用户想回看/复盘某一历史交易日当时模型对其后交易日的涨跌预测。\n不适用场景：- 用户需要中长期走势、目标价位或具体价格预测。 - 用户仅需要实时行情、原始数据或买卖交易信号，而非涨跌方向研判。 - 用户针对非 A 股标的（如美股）或非个股标的（指数、基金等），模型与训练数据不支持。\n输入：- 股票代码/名称：从自然语言中提取，支持中文名称、6 位代码或完整代码（如 600519.SH、000001.SZ、.BJ）；模糊名称做相似度匹配。 - 查询/目标日期（可选）：从自然语言或结构化入参 options.target_date 提取，支持 YYYY-MM-DD、YYYY/MM/DD、YYYYMMDD、YYYY年M月D日 及\"昨天/前天/今天\"等相对日期；两者同时出现时以结构化入参优先。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "stock_technical",
-            "short_horizon_direction",
-            "quant_model"
-          ],
-          "layer": "L2",
-          "team": "technical",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a19_risk_identification",
-          "name": "风险识别智能体",
-          "description": "功能：-多维风险前瞻预警： 依托 XGBoost 机器学习核心算法，实现对企业市场风险（波动性）、投机性风险以及信用评级下调风险的高精度前瞻性判定，提供基于最优判定阈值自动输出可视化风险概率、预警触发状态及验证对比。。 -文本特征深度穿透： 融合大模型推理规则，深度挖掘企业年报管理层讨论与分析（MD&A）中的文本特征，通过定量化的二值触发特征（_hit）与阈值偏离特征（_margin）穿透隐藏的经营隐患。 -非线性关联映射： 自动匹配“滞后一期”的财报特征与后端风险标签，构建微观文本语义到宏观市场风险分类的强鲁棒性非线性映射。\n适用场景：-用户需要对年报进行穿透式审查时：即 当企业年度报告集中披露，需要从海量的文本规则命中情况中，深度挖掘企业隐藏的财务与经营隐患时 -用户进行多维风险全面评估时： 即适用于需要同时从“市场波动”、“投机行为”以及“信用资质”三个相互关联却又各自独立的维度，对目标企业进行全方位、立体式的风险画像时。 -用户进行投资决策与风控预警时：即 在资管机构、监管部门或投研团队进行项目尽调、持仓股票跟踪，需要利用特定“最优阈值”进行前瞻性风险排查与分类判定时。\n不适用场景：-进行全盘宏观经济预测时： 本智能体专注于微观企业层面的风险穿透，若需要分析宏观经济走势（如大盘指数波动、利率汇率变动、行业周期更迭等），它无法提供宏观视角的预测支撑。 -追求日内或高频实时风控时： 智能体底层的机器学习特征具有“滞后一期”的年度跨度特征，属于中长期趋势预警工具。对于日内高频交易风控、突发即时舆情爆发等需要秒级、分钟级响应的场景，不宜使用本智能体。\n输入：-风险类型选择： 明确评估的目标维度（1. 市场风险 / 2. 投机性风险 / 3. 信用评级下调风险）。 -企业唯一标识： 目标企业的股票代码或统一识别码（格式：深圳证券交易所后缀为.HSHE；上海证券交易所后缀为.XSHG；北京证券交易所后缀为.XCNY）。 -目标预测年份： 用户希望预测哪一年的风险状态（格式：YYYY）。 -底层特征数据源： 支撑预测的后台数据集\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "risk_identification",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "risk",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a20_compliance_review",
-          "name": "公告合规审查智能体",
-          "description": "功能：公告合规审查智能体属于分析层 / 风险分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求公告合规审查智能体职责范围内的风险分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "compliance_review",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "compliance",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a23_crash_risk",
-          "name": "股价崩盘风险智能体",
-          "description": "功能：- 面向 A 股上市公司，基于 Tushare 行情与财务数据 + 已训练的随机森林回归模型，对企业进行前瞻性（下一年度）股价崩盘风险评分与全市场排名。 - 崩盘风险真值由个股周收益经市场模型回归得到的特异性收益等指标 - 输出风险等级（高/偏高/中等/低）、风险评分、全市场排名与分位、关键驱动特征及其分位、历史 NCSKEW/DUVOL/CRASH 走势，并由大模型严格依据真实数据生成结构化崩盘风险分析报告。 - 训练态使用全市场权重，推理态按公司代码实时从 Tushare 拉取该股数据并预测\n适用场景：- 用户希望评估某只 A 股未来一年发生股价崩盘（极端暴跌）的相对风险高低。 - 用户需要 NCSKEW、DUVOL、CRASH 等崩盘风险指标的测算结果及历史走势。 - 用户要求对企业进行全市场崩盘风险排名、分位定位，或筛选高风险标的。 - 用户希望了解驱动该公司崩盘风险的关键市场面与财务面特征。 - 用户需要可追溯、不编造数字的结构化崩盘风险预警报告。\n不适用场景：- 用户要求预测具体股价、目标价或未来涨跌幅；本智能体只给横截面相对风险排名，不做价格预测。 - 用户只要求短线交易信号、买卖点、K 线形态或择时建议。 - 用户要求传统估值（DCF/PE/PS）、财务造假认定、公告合规审查等其他专项结论。 - 用户针对非 A 股标的（美股、港股）或指数、基金等非个股标的，模型与训练数据不支持。 - 用户未给出任何公司名或股票代码，且不需要全市场风险榜单。\n输入：- 公司名称或股票代码：支持 6 位代码、完整代码（如 600519.SH、000001.SZ）或中文名称，从自然语言中提取，模糊名称做匹配；默认最多处理 3 个标的。 - 查询意图（可选）：从自然语言识别，如“崩盘风险高不高”“排第几”“有没有暴跌风险”等。 - 风险榜单需求（可选）：未指定具体公司时，可输出全市场高风险榜单 Top N（默认 15）。 -（隐含依赖）已训练的全市场模型权重与特征数据；推理时按代码实时从 Tushare 拉取该公司行情与财务数据。\n缺输入处理：- 缺少公司名或股票代码时不报错，转而给出全市场高风险榜单 Top15，并提示可补充具体公司代码做单股预测。 - 证券解析无法命中或存在歧义时，提示用户补充准确的 A 股代码或中文名称。 - 实时取数失败或该公司数据不足（如上市过短、周收益不足 30 周）时，直接说明“暂时无法给出预测”及原因，不编造数字。 - 大模型不可用时，回退为纯结构化结果（风险等级、评分、排名、关键特征），任何一级都不编造数字。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "crash_risk",
-            "ncskew",
-            "duvol"
-          ],
-          "layer": "L2",
-          "team": "risk",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a24_financial_fraud_risk",
-          "name": "财务欺诈（造假）风险智能体",
-          "description": "功能：- 面向 A 股上市公司，结合财务指标、年报 MD&A 文本、监管违规记录和负面新闻线索，识别企业是否存在财务造假、信息披露异常或财务违规风险。 - 对企业输出财务欺诈风险等级、风险分数、置信度和主要风险依据，便于监管部门进行重点企业筛查和持续跟踪。 - 支持从年报文本中提取主营业务、经营表述、语气变化等信息，并与财务数据异常相互印证，提高风险判断的可解释性。\n适用场景：- 用户需要判断某家上市公司是否存在财务造假、虚增收入、重大遗漏、信息披露违规等风险。 - 用户希望对一批企业进行财务违规风险排序，筛选重点关注对象。 - 用户需要结合财务指标、年报文本、历史违规记录和新闻舆情，形成可追溯的风险预警结论。 - 用于监管辅助、风险排查、上市公司持续监管、投研风控等场景。\n不适用场景：- 用户只需要普通财报解读、指标解释或经营情况摘要，不需要风险判断。 - 用户要求给出最终行政处罚结论、法律定性或审计意见时，不应单独使用该智能体。 - 用户只关注短期股价涨跌、技术分析或买卖建议时，不适用。 - 企业缺少必要财务数据、年报文本或可识别证券代码时，模型结论可靠性不足。\n输入：- 公司名称或股票代码。 - 分析年份或财报期间，可选；未提供时默认使用最新可得年度。 - 财务数据，如偿债能力、盈利能力、现金流、营运能力、成长性等指标。 - 年报 MD&A 文本或主营业务描述，可选但建议提供。 - 历史违规记录、监管处罚、问询函、负面新闻等外部线索，可选，用于增强证据链。\n缺输入处理：- 缺少公司名称或股票代码时，提示用户补充具体上市公司或证券代码。 - 缺少分析年份时，默认使用最新可得财报年度，并在结果中说明。 - 缺少 MD&A 文本或新闻线索时，仍可基于财务指标给出初步风险判断，但会降低置信度。 - 关键财务数据缺失较多时，返回 partial 或 needs_clarification，提示补充财务报表、年报文本或指定分析区间。 - 若风险信号相互冲突，应说明冲突来源，并建议人工复核。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "financial_fraud",
-            "disclosure_anomaly",
-            "risk_warning"
-          ],
-          "layer": "L2",
-          "team": "risk",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a15_entity_relation_extraction",
-          "name": "实体关系抽取智能体",
-          "description": "功能：实体关系抽取智能体属于分析层 / 舆情分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求实体关系抽取智能体职责范围内的舆情分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "entity_relation",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "sentiment",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a07_macro_sentiment",
-          "name": "宏观情绪感知智能体",
-          "description": "功能：宏观情绪感知智能体属于分析层 / 舆情分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求宏观情绪感知智能体职责范围内的舆情分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "macro_sentiment",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "sentiment",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a08_industry_hotspot",
-          "name": "行业热点洞悉智能体",
-          "description": "功能：行业热点洞悉智能体属于分析层 / 舆情分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求行业热点洞悉智能体职责范围内的舆情分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "industry_hotspot",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "sentiment",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a09_company_sentiment_radar",
-          "name": "企业舆情雷达智能体",
-          "description": "功能：企业舆情雷达智能体属于分析层 / 舆情分析；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求企业舆情雷达智能体职责范围内的舆情分析任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "company_sentiment",
-            "needs_owner_description"
-          ],
-          "layer": "L2",
-          "team": "sentiment",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a03_macro_industry_research",
-          "name": "宏观分析智能体",
-          "description": "功能：- 整合货币-信用周期框架与美林时钟双视角，识别当前宏观经济阶段。 - 基于周期象限动态判断大类资产、股票板块与大宗商品的配置方向，给出多维度观点与逻辑支撑。 - 对比泽平宏观公开观点，输出观点一致性与置信度说明，辅助投资决策参考。\n适用场景：- 用户希望获得当前宏观经济周期的综合判断，而非单一指标解读。 - 用户希望基于货币-信用周期和美林时钟双视角，判断大类资产与股票板块的配置方向。 - 用户需要对比主流宏观观点（如泽平宏观），了解观点一致性与置信度。\n不适用场景：- 用户仅要求单一宏观指标的数值或短期数据，不需要周期框架分析。 - 用户仅需要个股技术分析、短期交易信号，而非宏观层面的长期配置建议。\n输入：宏观环境信息：支持自然语言描述或结构化参数，用于周期阶段判定。 - 分析基准日期：默认使用当前时点；若用户指定历史日期，将按该日期进行回测分析。 - 资产或市场方向：如大类资产、股票板块、大宗商品等，用于针对性的配置观点输出。\n缺输入处理：- 缺少宏观环境信息：系统提示“请提供当前宏观经济阶段或货币、信用、增长、通胀等关键特征”，无法继续分析，直至用户补充。 - 缺少分析基准日期：系统自动采用当前时点作为分析基准。 - 若用户未指定分析标的（如资产、板块），默认输出全市场大类资产配置观点。 - 若输入信息不足以判定周期阶段，返回needs_clarification，要求用户补充关键宏观指标或场景信息。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "macro_cycle",
-            "asset_allocation",
-            "merrill_clock"
-          ],
-          "layer": "L2",
-          "team": "fundamental",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a05_annual_report_analysis",
-          "name": "公司年报分析智能体",
-          "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n适用场景：仅当用户明确要求公司年报分析智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "annual_report",
-            "mdna",
-            "text_sentiment"
-          ],
-          "layer": "L2",
-          "team": "fundamental",
-          "roleType": "system",
-          "defaultEnabled": false
-        }
-      ]
-    },
-    {
-      "layer": "L3",
-      "agents": [
-        {
-          "id": "a26_composite_valuation",
-          "name": "综合估值智能体",
-          "description": "功能：-整合机器学习估值智能体、传统估值智能体、元学习估值智能体以及分析师智能体然后给出估值结果。 -根据历史回测经验以及每个算法对目标企业的适配性，动态计算各子智能体的加权权重，最终输出一个综合的、更稳健的估值结论。\n适用场景：-用户要求对某只股票或企业进行全面、多角度、融合式的估值，而非仅依赖单一估值方法。 -用户希望比较不同估值方法的结果并获得一个综合决策依据。 -用户对单一估值模型（如纯机器学习或纯DCF）的结果存疑，希望引入模型融合与动态加权来提高可信度。 -用户提供了足够的历史数据或市场环境信息，以便元学习智能体评估各子模型的适配性。 -用户需要可解释的估值结果，即了解每个子模型对最终结论的贡献程度及原因。\n不适用场景：-用户只要求某一种特定估值方法的结果。 -用户对估值速度要求极高，无法接受多模型串行/并行调用的延迟。 -用户要求对非上市公司且缺乏充足财务披露的企业进行估值。 -用户仅需要实时行情、技术分析或短期交易信号，而非长期估值。 - 用户要求股票指数估值、指数估值百分位或市场情绪分析，而非企业/个股估值时，不适用本智能体。\n输入：-股票代码或企业名称（必填）：支持A股代码或中文名称，用于获取财务数据与行情。 -估值基准日期（可选）：默认使用当前最新财报日期。若用户指定未来时点，智能体会按该日期进行预测。 -估值要求（可选）：包括希望输出的具体内容（如综合股价区间、各子模型权重、适配性分析、风险提示等）。若未提供，默认输出综合估值中枢、95%置信区间及低估/高估判断。\n缺输入处理：-缺少股票代码或企业名称：系统提示“请提供股票代码或企业名称”，无法继续估值，直至用户补充。 -缺少估值基准日期：系统自动采用当前最新财报日期作为估值基准。 -缺少估值要求：按默认行为输出综合估值结果。 -子模型所需数据不完整：系统会动态剔除该子模型，并基于剩余子模型重新计算加权权重，同时在输出中说明“XX估值模型因数据不足被排除”。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "composite_valuation",
-            "model_fusion",
-            "dynamic_weighting"
-          ],
-          "layer": "L3",
-          "team": "valuation",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a27_risk_constraint",
-          "name": "风险约束智能体",
-          "description": "功能：-整合风险识别、公告合规审查、股价崩盘风险、财务欺诈/造假风险等上游智能体结果， -对企业、股票或投资标的形成统一的风险约束结论，输出风险等级、风险红线、约束条件\n适用场景：-用户要求综合判断某家公司、股票或投资标的的整体风险约束。 - 用户提供了多个风险来源或上游风险智能体结果。 - 用户要求汇总风险等级、风险红线、投资限制、负面清单或风控建议。 - 用户询问相关风险是否影响估值、投资、授信、交易或研究结论。 - 输入中包含公司名、股票代码、公告内容、财务指标、风险评分或风险识别结果\n不适用场景：- 用户只要求单项风险判断，如公告合规、财务造假或股价崩盘风险。 - 用户只是要求新闻摘要、公告摘要或财报解读，不需要形成风险约束。 - 用户要求传统估值、DCF、相对估值或量化估值，而不是风险约束。 - 用户没有提供公司名、股票代码或任何可识别标的。 - 用户只是询问通用风险管理概念，不涉及具体企业或投资决策。\n输入：- 公司名或股票代码。- 风险评估日期或数据区间可选；缺省使用当前可得最新信息。 - 至少一个上游风险结果,例如风险识别、公告合规、股价崩盘风险或财务欺诈风险结果。 - 决策场景,例如估值、投资、授信、交易、持仓、风控审查或研究报告。 - 风险约束目标,例如风险等级、风险红线、投资限制、估值折价或缓释建议。\n缺输入处理：-如果缺少公司名或股票代码，返回 needs_clarification，要求用户补充标的。 -如果没有上游风险结果，返回 needs_clarification，要求用户提供相关风险来源或先调用对应风险智能体。 -如果用户没有说明决策场景，默认按“投资研究/风险控制”场景输出。 -如果多个风险结果相互冲突，应说明冲突点，并要求用户确认以哪个数据源、日期或智能体结果为准。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "risk_constraint",
-            "risk_control",
-            "red_line"
-          ],
-          "layer": "L3",
-          "team": "risk",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a28_composite_sentiment",
-          "name": "综合舆情智能体",
-          "description": "功能：综合舆情智能体属于应用层 / 舆情判断；Excel 描述表未提供完整 profile，当前仅保留为受限 catalog profile，等待负责人补齐正式能力摘要。\n适用场景：仅当用户明确要求综合舆情智能体职责范围内的舆情判断任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：用户原始问题、明确的分析对象、时间范围或上下文材料；如涉及公司/股票/指数/行业/事件，应提供可识别名称、代码或范围。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "composite_sentiment",
-            "needs_owner_description"
-          ],
-          "layer": "L3",
-          "team": "sentiment",
-          "roleType": "system",
-          "defaultEnabled": true
-        },
-        {
-          "id": "a21_portfolio_manager",
-          "name": "投资组合经理智能体",
-          "description": "功能：整合多维预测信号，结合用户风险偏好，运用组合优化算法动态生成并调整大类资产配置及股票持仓权重。\n适用场景：仅当用户明确要求投资组合经理智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：资产池标的预期收益率及协方差矩阵（由底层智能体提供）、用户设定的风险容忍度/最大回撤约束条件。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "portfolio",
-            "asset_allocation",
-            "rebalancing"
-          ],
-          "layer": "L3",
-          "team": "investment",
-          "roleType": "system",
-          "defaultEnabled": false
-        }
-      ]
-    },
-    {
-      "layer": "L4",
-      "agents": [
-        {
-          "id": "a25_report_center",
-          "name": "报告生成智能体",
-          "description": "功能：归集底层所有智能体的图谱、数据与文字推论，按照投研逻辑自动生成结构化、可视化、可交互的多模态研报（日报/周报/复盘）。\n适用场景：仅当用户明确要求报告生成智能体职责范围内的报告生成任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：各底层智能体产出的分析结论、指标数值、情感得分、K线图/事件图谱截图；用户设定的报告时间区间。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-          "capabilities": [
-            "report",
-            "synthesis",
-            "multimodal_research_report"
-          ],
-          "layer": "L4",
-          "team": "reporting",
-          "roleType": "system",
-          "defaultEnabled": true
-        }
-      ]
-    }
+  layers: [
+    { layer: "L1", agents: byLayer("L1") },
+    { layer: "L2", agents: byLayer("L2") },
+    { layer: "L3", agents: byLayer("L3") },
+    { layer: "L4", agents: byLayer("L4") },
   ],
-  "disabledAgents": [
-    {
-      "id": "a05_annual_report_analysis",
-      "name": "公司年报分析智能体",
-      "description": "功能：运用深度学习从长文本年报（尤其是MD&A管理层讨论）中提取关键经营数据并进行情感倾向分析，发掘企业隐性价值及战略转向。\n适用场景：仅当用户明确要求公司年报分析智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：上市公司年度财务报告（PDF/长文本格式）、公司日常重大公告、同行业企业可比年报。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-      "capabilities": [
-        "annual_report",
-        "mdna",
-        "text_sentiment"
-      ],
-      "layer": "L2",
-      "team": "fundamental",
-      "roleType": "system",
-      "defaultEnabled": false
-    },
-    {
-      "id": "a21_portfolio_manager",
-      "name": "投资组合经理智能体",
-      "description": "功能：整合多维预测信号，结合用户风险偏好，运用组合优化算法动态生成并调整大类资产配置及股票持仓权重。\n适用场景：仅当用户明确要求投资组合经理智能体职责范围内的未列入最新表任务，且 catalog 中没有更具体的 agent profile 匹配时使用。\n不适用场景：当用户请求落入其他明确专项 agent 的 when_to_use、只是泛泛提到名称相关词、或缺少可识别分析目标且无法先澄清时，不要选择该智能体。\n输入：资产池标的预期收益率及协方差矩阵（由底层智能体提供）、用户设定的风险容忍度/最大回撤约束条件。\n缺输入处理：缺少关键输入时先返回澄清需求，不要猜测关键标的、日期、范围或约束；可交由解析/编排层澄清后再路由到业务智能体。\n输出：依据 profile 的能力摘要、适用场景、边界条件和输入要求形成结构化分析结论；外部服务响应字段以后续 wrapper contract 为准。",
-      "capabilities": [
-        "portfolio",
-        "asset_allocation",
-        "rebalancing"
-      ],
-      "layer": "L3",
-      "team": "investment",
-      "roleType": "system",
-      "defaultEnabled": false
-    }
-  ]
+  disabledAgents: [],
 };

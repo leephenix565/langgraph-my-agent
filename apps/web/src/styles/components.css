@@ -398,16 +398,8 @@
   background: currentColor;
 }
 
-.source-badge--mainline {
-  color: var(--mainline);
-}
-
-.source-badge--baseline {
-  color: var(--baseline);
-}
-
-.source-badge--fused {
-  color: var(--fused);
+.source-badge--reset_skeleton {
+  color: var(--reset-skeleton);
 }
 
 .turn {

@@ -220,3 +220,30 @@ Non-consequence: R4-C does not implement business agent algorithms, does not
 enable external candidates, does not call providers or external
 `/v1/agent/invoke`, does not rewrite frontend v2, and does not rebuild
 mainline/fusion gates.
+
+## ADR-014: R5-B1 Migrates The Web Contract Before The Full Inspector Rewrite
+
+Status: accepted for frontend contract migration.
+
+Decision: R5-B1 updates the existing `apps/web` shell in place so frontend
+workflow/chat types, streaming placeholder state, fixed DAG mocks, and smoke
+fixtures consume `workflow_snapshot_v2` with `finalSource=reset_skeleton`.
+The current WorkflowPanel is only minimally adapted to render DAG stages,
+steps, dimension groups, execution batches, completed steps, and public
+provenance.
+
+Reason: the public adapter already emits the fixed DAG payload. Keeping the web
+app on `layerPlan`, `layerMode`, `agentSteps`, `fusionSteps`, and
+`mainline/baseline/fused` would make frontend tests and demos validate the old
+contract instead of the active reset contract.
+
+Consequence: frontend mocks now use the 27 enabled `snake_case` fixed DAG
+catalog and v2 workflow snapshots. Public transcript remains user/assistant
+text only; workflow, step results, execution batches, and runtime binding
+metadata remain inspector/debug data, not transcript turns.
+
+Non-consequence: R5-B1 does not change Python backend contracts, executor
+topology, runtime bindings, `/api/agents` schema, provider readiness, external
+candidate invocation, production deployment, or R6 mainline/fusion gates. It
+also does not complete the richer R5-B2 DAG timeline, dependency graph,
+per-step drilldown, or evidence view.
