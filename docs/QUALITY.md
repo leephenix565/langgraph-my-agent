@@ -2,12 +2,14 @@
 
 This document defines safe validation for the reset branch.
 
-R5-B2 keeps the same non-provider validation boundary as
-R3/R3.6/R4-A/R4-B/R4-C/R5-B1 and adds frontend workflow inspector validation
-for the existing `apps/web` shell. It does not add provider, external live,
-demo-stack, production deployment, or business-agent capability validation.
+R5-B2/R5-B2.6 keep the same non-provider validation boundary as
+R3/R3.6/R4-A/R4-B/R4-C/R5-B1. R5-B2 adds frontend workflow inspector
+validation for the existing `apps/web` shell, and R5-B2.6 adds localized
+visible-copy and visual copy-polish validation over that same inspector. These
+phases do not add provider, external live, demo-stack, production deployment,
+or business-agent capability validation.
 
-## Safe R5-B2 Commands
+## Safe R5-B2/R5-B2.6 Commands
 
 ```powershell
 git status --short --branch
@@ -20,12 +22,13 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26
 ```
 
-## Not Safe For R5-B2
+## Not Safe For R5-B2/R5-B2.6
 
-Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2 unless the user explicitly
-asks:
+Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6 unless the user
+explicitly asks:
 
 - provider live smoke
 - external `/v1/agent/invoke`
@@ -35,10 +38,10 @@ asks:
 - frontend production build if it writes repo artifacts; use a repo-external
   `--outDir` if build validation is explicitly required
 
-R5-B2 treats frontend smoke and TypeScript no-emit checks as frontend inspector
-evidence only. It does not treat `mainline`, `fusion-gate`, provider live smoke,
-demo stack, or artifact-writing frontend build results as required
-runtime-boundary evidence.
+R5-B2/R5-B2.6 treat frontend smoke, TypeScript no-emit checks, and
+repo-external frontend build output as frontend inspector/copy evidence only.
+They do not treat `mainline`, `fusion-gate`, provider live smoke, demo stack, or
+artifact-writing frontend build results as required runtime-boundary evidence.
 
 ## Current Quality Runner Boundary
 
@@ -61,7 +64,10 @@ frontend TypeScript contract, mock agent catalog, mock workflow snapshot,
 streaming smoke fixture, and WorkflowPanel inspector render the fixed DAG public
 payload's stage timeline, execution batches, dimension groups, selected step
 metadata, final source, and provenance while preserving the single public
-transcript boundary.
+transcript boundary. In R5-B2.6 it also means the relevant visible Chinese copy,
+status labels, metadata labels, screenshot/mock fixture copy, and deterministic
+public-safe reset skeleton answer are aligned while raw technical ids and enum
+values remain available in inspector/debug contexts.
 
 R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,
@@ -81,3 +87,4 @@ It does not mean:
 - evidence-specific frontend drilldown
 - mainline/fusion-gate reset gate completion
 - production deployment readiness
+- full runtime locale switching

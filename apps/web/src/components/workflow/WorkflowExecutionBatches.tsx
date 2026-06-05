@@ -1,4 +1,4 @@
-import { agentNameLabel, zhCN } from "../../content/zh-CN";
+import { agentNameLabel, stepCountLabel, zhCN } from "../../content/zh-CN";
 import type { WorkflowModel } from "../../types/workflow";
 
 interface WorkflowExecutionBatchesProps {
@@ -19,7 +19,7 @@ export function WorkflowExecutionBatches({ workflow }: WorkflowExecutionBatchesP
               {zhCN.workflow.batchLabel} {index + 1}
             </strong>
             <span className="workflow-status workflow-status--queued">
-              {batch.length} {zhCN.workflow.units.steps}
+              {stepCountLabel(batch.length)}
             </span>
           </div>
           <div className="workflow-chip-row">

@@ -56,7 +56,7 @@ async def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) 
     assert set(DIMENSION_GROUPS) == {
         item["id"] for item in result["workflow_snapshot"]["dimensionGroups"]
     }
-    assert "Fixed DAG reset skeleton is active" in result["messages"][-1].content
+    assert "固定 DAG 重置骨架已启用" in result["messages"][-1].content
     for legacy_field in (
         "layer_plan",
         "layer_mode",

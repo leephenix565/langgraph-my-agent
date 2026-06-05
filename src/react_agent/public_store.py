@@ -87,7 +87,7 @@ class PublicThreadStore:
             cleared_thread = detail.thread.model_copy(
                 update={
                     "updatedAt": _now_label(),
-                    "preview": "Awaiting first message.",
+                    "preview": "等待第一条消息。",
                     "finalSource": "reset_skeleton",
                 }
             )

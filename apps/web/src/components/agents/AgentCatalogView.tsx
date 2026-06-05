@@ -1,4 +1,4 @@
-import { teamLabel, zhCN } from "../../content/zh-CN";
+import { agentDescriptionLabel, agentNameLabel, capabilityLabel, teamLabel, zhCN } from "../../content/zh-CN";
 import type { AgentCatalogModel, AgentLayerGroup } from "../../types/agents";
 
 interface AgentCatalogViewProps {
@@ -25,7 +25,7 @@ function renderCapabilities(capabilities: string[]) {
     <div className="agent-row__capabilities" aria-label={zhCN.agents.capabilitiesLabel}>
       {capabilities.map((capability) => (
         <span className="workflow-pill" key={capability}>
-          {capability}
+          {capabilityLabel(capability)}
         </span>
       ))}
     </div>
@@ -45,9 +45,15 @@ export function AgentCatalogView({ catalog, query }: AgentCatalogViewProps) {
         return (
           agent.id.toLowerCase().includes(normalizedQuery) ||
           agent.name.toLowerCase().includes(normalizedQuery) ||
+          agentNameLabel(agent.id, agent.name).toLowerCase().includes(normalizedQuery) ||
           agent.team.toLowerCase().includes(normalizedQuery) ||
           agent.description.toLowerCase().includes(normalizedQuery) ||
-          agent.capabilities.some((capability) => capability.toLowerCase().includes(normalizedQuery))
+          agentDescriptionLabel(agent.id, agent.description).toLowerCase().includes(normalizedQuery) ||
+          agent.capabilities.some(
+            (capability) =>
+              capability.toLowerCase().includes(normalizedQuery) ||
+              capabilityLabel(capability).toLowerCase().includes(normalizedQuery),
+          )
         );
       }),
     }))
@@ -79,10 +85,10 @@ export function AgentCatalogView({ catalog, query }: AgentCatalogViewProps) {
           {catalog.disabledAgents.map((agent) => (
             <div className="agent-row agent-row--disabled" key={agent.id}>
               <div className="agent-row__title">
-                <strong>{agent.name}</strong>
+                <strong>{agentNameLabel(agent.id, agent.name)}</strong>
                 <span>{agent.id}</span>
               </div>
-              <p>{agent.description}</p>
+              <p>{agentDescriptionLabel(agent.id, agent.description)}</p>
               {renderCapabilities(agent.capabilities)}
               <div className="agent-row__meta">
                 <span>{teamLabel(agent.team)}</span>
@@ -110,10 +116,10 @@ export function AgentCatalogView({ catalog, query }: AgentCatalogViewProps) {
                 {layer.agents.map((agent) => (
                   <article className="agent-row" key={agent.id}>
                     <div className="agent-row__title">
-                      <strong>{agent.name}</strong>
+                      <strong>{agentNameLabel(agent.id, agent.name)}</strong>
                       <span>{agent.id}</span>
                     </div>
-                    <p>{agent.description}</p>
+                    <p>{agentDescriptionLabel(agent.id, agent.description)}</p>
                     {renderCapabilities(agent.capabilities)}
                     <div className="agent-row__meta">
                       <span>{teamLabel(agent.team)}</span>

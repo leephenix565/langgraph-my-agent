@@ -205,7 +205,7 @@ def _derive_citations(cards: Iterable[EvidenceCardModel]) -> List[CitationModel]
         citations.append(
             CitationModel(
                 label=card.title,
-                note=card.note or "Evidence carried through the reset public adapter.",
+                note=card.note or "证据已通过重置公开适配器传递。",
             )
         )
     return citations[:3]
@@ -286,8 +286,7 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         if isinstance(provenance_raw.get("limitations", []), list)
         else [],
         summary=(
-            "Fixed DAG reset skeleton emitted the public answer. No provider or "
-            "external agent endpoint was invoked."
+            "固定 DAG 重置骨架已输出公开回答；未调用 provider 或外部智能体端点。"
         ),
     )
     return WorkflowModel(
@@ -384,20 +383,20 @@ def build_thread_summary(
     assistant_turns = [turn for turn in turns if turn.role == "assistant" and turn.answerCard]
     latest_turn = turns[-1] if turns else None
     latest_assistant = assistant_turns[-1] if assistant_turns else None
-    title_source = user_turns[0].text if user_turns else "New thread"
+    title_source = user_turns[0].text if user_turns else "新会话"
     preview_source = (
         latest_assistant.answerCard.answer
         if latest_assistant and latest_assistant.answerCard
-        else latest_turn.text if latest_turn else "Awaiting first message."
+        else latest_turn.text if latest_turn else "等待第一条消息。"
     )
     updated_at = latest_turn.createdAt if latest_turn else _now_label()
     return ChatSessionSummary(
         id=thread_id,
-        title=_truncate(title_source or "New thread", 24) or "New thread",
+        title=_truncate(title_source or "新会话", 24) or "新会话",
         updatedAt=updated_at,
-        preview=_truncate(preview_source or "Awaiting first message.", 72) or "Awaiting first message.",
+        preview=_truncate(preview_source or "等待第一条消息。", 72) or "等待第一条消息。",
         finalSource="reset_skeleton",
-        phase="Phase R3 / plan-driven fixed DAG execution",
+        phase="R3 阶段 / 计划驱动的固定 DAG 执行",
         continuityMode=continuity_mode,
     )
 
@@ -406,11 +405,11 @@ def build_new_thread(thread_id: str, continuity_mode: ContinuityMode) -> PublicT
     turns: List[PublicTurn] = []
     summary = ChatSessionSummary(
         id=thread_id,
-        title="New thread",
+        title="新会话",
         updatedAt=_now_label(),
-        preview="Awaiting first message.",
+        preview="等待第一条消息。",
         finalSource="reset_skeleton",
-        phase="Phase R3 / plan-driven fixed DAG execution",
+        phase="R3 阶段 / 计划驱动的固定 DAG 执行",
         continuityMode=continuity_mode,
     )
     return PublicThreadDetail(thread=summary, turns=turns)

@@ -1,4 +1,12 @@
-import { agentNameLabel, dagStepStatusLabel, stageLabel, zhCN } from "../../content/zh-CN";
+import {
+  agentNameLabel,
+  dagStepStatusLabel,
+  dimensionLabel,
+  implementationStatusLabel,
+  runtimeKindLabel,
+  stageLabel,
+  zhCN,
+} from "../../content/zh-CN";
 import type { DagStep, WorkflowModel, WorkflowStepResult } from "../../types/workflow";
 
 interface WorkflowStepResultsProps {
@@ -79,18 +87,18 @@ export function WorkflowStepResults({ workflow, selectedStepId }: WorkflowStepRe
         </div>
         <div>
           <dt>{zhCN.workflow.resultFields.dimension}</dt>
-          <dd>{step.dimension ?? zhCN.workflow.none}</dd>
+          <dd>{step.dimension ? dimensionLabel(step.dimension) : zhCN.workflow.none}</dd>
         </div>
         {runtimeKind ? (
           <div>
             <dt>{zhCN.workflow.resultFields.runtimeKind}</dt>
-            <dd>{runtimeKind}</dd>
+            <dd>{runtimeKindLabel(runtimeKind)}</dd>
           </div>
         ) : null}
         {implementationStatus ? (
           <div>
             <dt>{zhCN.workflow.resultFields.implementationStatus}</dt>
-            <dd>{implementationStatus}</dd>
+            <dd>{implementationStatusLabel(implementationStatus)}</dd>
           </div>
         ) : null}
         {invokeEnabled ? (

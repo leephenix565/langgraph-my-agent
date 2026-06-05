@@ -1,4 +1,4 @@
-import { continuityLabel, zhCN } from "../../content/zh-CN";
+import { continuityLabel, executionStatusLabel, zhCN } from "../../content/zh-CN";
 import type { WorkflowModel } from "../../types/workflow";
 import { SourceBadge } from "../chat/SourceBadge";
 
@@ -44,7 +44,7 @@ export function WorkflowProvenanceView({ workflow }: WorkflowProvenanceViewProps
         {provenance?.executionStatus ? (
           <div>
             <dt>{zhCN.workflow.provenance.executionStatus}</dt>
-            <dd>{provenance.executionStatus}</dd>
+            <dd>{executionStatusLabel(provenance.executionStatus)}</dd>
           </div>
         ) : null}
       </dl>

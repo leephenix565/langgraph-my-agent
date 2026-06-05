@@ -310,7 +310,7 @@ def test_thread_lifecycle_and_fixed_workflow_contract(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
     created = client.post("/api/threads", json={}).json()
     thread_id = created["thread"]["id"]
-    assert created["thread"]["phase"] == "Phase R3 / plan-driven fixed DAG execution"
+    assert created["thread"]["phase"] == "R3 阶段 / 计划驱动的固定 DAG 执行"
     assert created["thread"]["finalSource"] == "reset_skeleton"
 
     response = client.post(
@@ -491,7 +491,7 @@ def test_send_message_stream_emits_error_and_does_not_persist_failed_turn(tmp_pa
             data=RunStartedEventData(threadId=thread_id, continuityMode="replay"),
         )
         raise PublicRuntimeUnavailable(
-            "LangGraph runtime invocation failed before a public answer could be produced.",
+            "LangGraph 运行时在生成公开回答前调用失败。",
             code="runtime_invoke_unavailable",
             category="runtime",
         )

@@ -43,7 +43,7 @@ function mockHealth() {
       mode: "none",
       status: "disabled",
       code: "checkpointer_disabled",
-      hint: "Set REACT_AGENT_CHECKPOINTER=memory or sqlite for persistent continuity.",
+      hint: "设置 REACT_AGENT_CHECKPOINTER=memory 或 sqlite 可启用持久连续性。",
     },
     continuityDefault: "replay",
     runtime: { status: "ready", code: "runtime_ready" },
@@ -58,20 +58,20 @@ function mockWorkflow() {
     schema: "workflow_snapshot_v2",
     planId: "visual-fixed-dag-plan",
     stages: [
-      { key: "planning", title: "Planning", stepIds: ["route_planner"] },
-      { key: "evidence", title: "Evidence seams", stepIds: ["financial_data_service", "entity_relation_extractor"] },
+      { key: "planning", title: "规划", stepIds: ["route_planner"] },
+      { key: "evidence", title: "证据接入", stepIds: ["financial_data_service", "entity_relation_extractor"] },
       {
         key: "l2_analysis",
-        title: "L2 analysis",
+        title: "L2 分析",
         stepIds: ["value_traditional_valuation", "market_stock_technical", "sentiment_company_radar", "risk_identification"],
       },
       {
         key: "dimension_composite",
-        title: "Dimension composites",
+        title: "维度综合",
         stepIds: ["value_composite", "market_composite", "risk_composite", "macro_composite"],
       },
-      { key: "decision", title: "Decision", stepIds: ["decision_synthesizer"] },
-      { key: "report", title: "Report", stepIds: ["report_generator"] },
+      { key: "decision", title: "决策", stepIds: ["decision_synthesizer"] },
+      { key: "report", title: "报告", stepIds: ["report_generator"] },
     ],
     dagSteps: [
       {
@@ -79,8 +79,8 @@ function mockWorkflow() {
         stage: "planning",
         agentId: "route_planner",
         dimension: "l1",
-        title: "Route planner",
-        summary: "Builds the deterministic fixed DAG plan for the public request.",
+        title: "路径规划器",
+        summary: "为公开请求构建确定性的固定 DAG 计划。",
         status: "complete",
       },
       {
@@ -88,8 +88,8 @@ function mockWorkflow() {
         stage: "evidence",
         agentId: "financial_data_service",
         dimension: "l1",
-        title: "Financial data service",
-        summary: "Prepares the public data seam without live external invocation in this fixture.",
+        title: "金融数据服务",
+        summary: "在 fixture 中准备公开数据占位接口，不进行实时外部调用。",
         status: "complete",
       },
       {
@@ -97,8 +97,8 @@ function mockWorkflow() {
         stage: "evidence",
         agentId: "entity_relation_extractor",
         dimension: "l1",
-        title: "Entity relation extractor",
-        summary: "Prepares entity and relation context for downstream analysis.",
+        title: "实体关系抽取器",
+        summary: "为下游分析准备实体与关系上下文。",
         status: "complete",
       },
       {
@@ -106,8 +106,8 @@ function mockWorkflow() {
         stage: "l2_analysis",
         agentId: "value_traditional_valuation",
         dimension: "value",
-        title: "Traditional valuation",
-        summary: "Represents the value analysis path in the screenshot fixture.",
+        title: "传统企业估值",
+        summary: "在截图 fixture 中代表价值分析路径。",
         status: "pending_implementation",
       },
       {
@@ -115,8 +115,8 @@ function mockWorkflow() {
         stage: "l2_analysis",
         agentId: "market_stock_technical",
         dimension: "market",
-        title: "Stock technical analysis",
-        summary: "Represents the market analysis path in the screenshot fixture.",
+        title: "个股技术分析",
+        summary: "在截图 fixture 中代表市场分析路径。",
         status: "pending_implementation",
       },
       {
@@ -124,8 +124,8 @@ function mockWorkflow() {
         stage: "l2_analysis",
         agentId: "sentiment_company_radar",
         dimension: "market",
-        title: "Company sentiment radar",
-        summary: "Feeds only the market dimension in the fixed DAG roster.",
+        title: "企业舆情雷达",
+        summary: "在固定 DAG roster 中只汇入市场维度。",
         status: "pending_implementation",
       },
       {
@@ -133,8 +133,8 @@ function mockWorkflow() {
         stage: "l2_analysis",
         agentId: "risk_identification",
         dimension: "risk",
-        title: "Risk identification",
-        summary: "Represents the risk analysis path in the screenshot fixture.",
+        title: "风险识别",
+        summary: "在截图 fixture 中代表风险分析路径。",
         status: "pending_implementation",
       },
       {
@@ -142,8 +142,8 @@ function mockWorkflow() {
         stage: "dimension_composite",
         agentId: "value_composite",
         dimension: "value",
-        title: "Value composite",
-        summary: "Combines value-dimension signals.",
+        title: "价值综合",
+        summary: "汇总价值维度信号。",
         status: "pending_implementation",
       },
       {
@@ -151,8 +151,8 @@ function mockWorkflow() {
         stage: "dimension_composite",
         agentId: "market_composite",
         dimension: "market",
-        title: "Market composite",
-        summary: "Combines market signals including company sentiment.",
+        title: "市场综合",
+        summary: "汇总市场信号，包含企业舆情。",
         status: "pending_implementation",
       },
       {
@@ -160,8 +160,8 @@ function mockWorkflow() {
         stage: "dimension_composite",
         agentId: "risk_composite",
         dimension: "risk",
-        title: "Risk composite",
-        summary: "Combines risk signals without company sentiment input.",
+        title: "风险综合",
+        summary: "汇总风险信号，不读取企业舆情。",
         status: "pending_implementation",
       },
       {
@@ -169,8 +169,8 @@ function mockWorkflow() {
         stage: "dimension_composite",
         agentId: "macro_composite",
         dimension: "macro",
-        title: "Macro composite",
-        summary: "Combines macro signals.",
+        title: "宏观综合",
+        summary: "汇总宏观信号。",
         status: "pending_implementation",
       },
       {
@@ -178,8 +178,8 @@ function mockWorkflow() {
         stage: "decision",
         agentId: "decision_synthesizer",
         dimension: "l4",
-        title: "Decision synthesizer",
-        summary: "Synthesizes dimension composites into a decision seam.",
+        title: "决策综合器",
+        summary: "将维度综合结果汇入决策占位接口。",
         status: "pending_implementation",
       },
       {
@@ -187,39 +187,39 @@ function mockWorkflow() {
         stage: "report",
         agentId: "report_generator",
         dimension: "l4",
-        title: "Report generator",
-        summary: "Projects the final public answer.",
+        title: "报告生成器",
+        summary: "投影生成最终公开回答。",
         status: "pending_implementation",
       },
     ],
     dimensionGroups: [
       {
         id: "value",
-        title: "Value dimension",
+        title: "价值维度",
         stepIds: ["value_traditional_valuation", "value_composite"],
         status: "partial",
-        summary: "Value path is represented as public-safe inspector metadata.",
+        summary: "价值路径以可公开展示的检查器元数据呈现。",
       },
       {
         id: "market",
-        title: "Market dimension",
+        title: "市场维度",
         stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
         status: "partial",
-        summary: "Market path includes company sentiment radar.",
+        summary: "市场路径包含企业舆情雷达。",
       },
       {
         id: "risk",
-        title: "Risk dimension",
+        title: "风险维度",
         stepIds: ["risk_identification", "risk_composite"],
         status: "partial",
-        summary: "Risk path excludes company sentiment radar.",
+        summary: "风险路径不读取企业舆情雷达。",
       },
       {
         id: "macro",
-        title: "Macro dimension",
+        title: "宏观维度",
         stepIds: ["macro_composite"],
         status: "partial",
-        summary: "Macro path is represented as public-safe inspector metadata.",
+        summary: "宏观路径以可公开展示的检查器元数据呈现。",
       },
     ],
     currentStage: "report",
@@ -250,7 +250,7 @@ function mockWorkflow() {
         external_agent_id: "financial_data_service",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["External candidate is registered but not live verified in the fixture."],
+        warnings: ["外部候选已注册，但 fixture 没有实时验证。"],
       },
       sentiment_company_radar: {
         status: "pending_implementation",
@@ -259,11 +259,11 @@ function mockWorkflow() {
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["Market sentiment path is placeholder-only in the fixture."],
+        warnings: ["fixture 中市场舆情路径仍是占位实现。"],
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "Public-safe fixed DAG workflow snapshot. Raw graph messages and raw provider responses are not transcript.",
+    provenanceNote: "可公开展示的固定 DAG 工作流快照；raw graph messages 和 raw provider responses 不进入 transcript。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -271,48 +271,48 @@ function mockWorkflow() {
       externalInvoked: false,
       executionStatus: "deterministic_skeleton",
       fallbackUsed: false,
-      limitations: ["Screenshot fixture only; provider and external live readiness are not verified."],
-      summary: "Final answer is projected from the reset skeleton fixed DAG path.",
+      limitations: ["仅截图 fixture；未验证 provider 或外部服务实时就绪状态。"],
+      summary: "最终回答由重置骨架固定 DAG 路径投影生成。",
     },
   };
 }
 
 function mockThreadDetail() {
   const answer =
-    "The fixed DAG skeleton keeps the public answer as a single assistant response. The inspector shows planning, evidence, parallel analysis, dimension composites, decision, and report seams without exposing raw provider or external responses.";
+    "固定 DAG 骨架将公开回答保持为单条助手回复。检查器展示规划、证据、并行分析、维度综合、决策和报告阶段，不暴露 raw provider 或外部响应。";
 
   return {
     thread: {
       id: "thread-visual-1",
-      title: "Fixed DAG workflow inspection",
-      updatedAt: "Today 10:18",
-      preview: "Public answer with fixed DAG inspector metadata.",
+      title: "固定 DAG 工作流检查",
+      updatedAt: "今天 10:18",
+      preview: "包含固定 DAG 检查器元数据的公开回答。",
       finalSource: "reset_skeleton",
-      phase: "Live",
+      phase: "在线",
       continuityMode: "replay",
     },
     turns: [
       {
         id: "turn-user-1",
         role: "user",
-        text: "Review a public-safe fixed DAG investment workflow.",
-        createdAt: "Today 10:16",
+        text: "复核一个可公开展示的固定 DAG 投资工作流。",
+        createdAt: "今天 10:16",
       },
       {
         id: "turn-assistant-1",
         role: "assistant",
         text: answer,
-        createdAt: "Today 10:18",
+        createdAt: "今天 10:18",
         runId: "run-r5b2-visual-001",
         continuityMode: "replay",
         answerCard: {
           answer,
           finalSource: "reset_skeleton",
           citations: [
-            { label: "Fixed DAG bundle", note: "Final answer came from the public fixed DAG projection." },
-            { label: "Workflow", note: "Workflow details remain in the inspector, not the transcript." },
+            { label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 投影。" },
+            { label: "Workflow", note: "工作流细节保留在检查器中，不进入 transcript。" },
           ],
-          evidenceCards: [{ title: "Workflow", note: "Structured public-safe output." }],
+          evidenceCards: [{ title: "Workflow", note: "结构化可公开输出。" }],
           evidenceCount: 1,
         },
         workflow: mockWorkflow(),
@@ -341,6 +341,30 @@ async function installApiRoutes(page) {
   });
 }
 
+async function pageText(page) {
+  return (await page.locator("body").textContent()) ?? "";
+}
+
+async function assertPageContains(page, expected) {
+  const text = await pageText(page);
+  if (!text.includes(expected)) {
+    throw new Error(`Expected page text to include: ${expected}`);
+  }
+}
+
+async function assertPageExcludes(page, forbidden) {
+  const text = await pageText(page);
+  if (text.includes(forbidden)) {
+    throw new Error(`Unexpected page text: ${forbidden}`);
+  }
+}
+
+async function assertNoForbiddenTokens(page) {
+  for (const token of ["secret", "secrets", "default_url", "env_var", "api_key", "apiKey", "OPENAI_API_KEY", "TAVILY_API_KEY"]) {
+    await assertPageExcludes(page, token);
+  }
+}
+
 async function main() {
   await mkdir(outputDir, { recursive: true });
 
@@ -367,11 +391,25 @@ async function main() {
     await installApiRoutes(page);
     await page.goto(baseUrl, { waitUntil: "networkidle" });
     await page.locator(".assistant-card").waitFor();
+    await assertPageContains(page, "固定 DAG 工作流检查");
+    await assertPageExcludes(page, "Fixed DAG workflow inspection");
+    await assertPageExcludes(page, "Public answer with fixed DAG inspector metadata");
+    await assertNoForbiddenTokens(page);
     await page.screenshot({ path: resolve(outputDir, "chat-home-desktop.png") });
 
-    const toggle = page.getByRole("button", { name: /Workflow|DAG inspector|Open DAG inspector/ });
+    const toggle = page.getByRole("button", { name: /工作流|DAG 检查器|打开 DAG 检查器/ });
     await toggle.click();
     await page.locator(".workflow-panel__content").waitFor();
+    for (const expected of ["阶段时间线", "执行批次", "维度分组", "步骤结果元数据", "最终来源与溯源"]) {
+      await assertPageContains(page, expected);
+    }
+    for (const expectedRaw of ["financial_data_service", "external_http_candidate", "external_candidate_disabled"]) {
+      await assertPageContains(page, expectedRaw);
+    }
+    for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
+      await assertPageExcludes(page, oldCopy);
+    }
+    await assertNoForbiddenTokens(page);
     await page.locator(".workflow-panel").scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, -84));
     await page.screenshot({ path: resolve(outputDir, "workflow-expanded-desktop.png") });

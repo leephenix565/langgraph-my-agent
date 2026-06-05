@@ -1,4 +1,4 @@
-import { zhCN } from "../../content/zh-CN";
+import { stepCountLabel, zhCN } from "../../content/zh-CN";
 import type { DagStep, WorkflowModel, WorkflowStage, WorkflowStageKey, WorkflowStageStatus } from "../../types/workflow";
 
 interface WorkflowStageTimelineProps {
@@ -56,9 +56,7 @@ export function WorkflowStageTimeline({ workflow }: WorkflowStageTimelineProps) 
             <span className="workflow-stage__index">{index + 1}</span>
             <span className="workflow-stage__body">
               <strong>{stage.title}</strong>
-              <span>
-                {stage.stepIds.length} {zhCN.workflow.units.steps}
-              </span>
+              <span>{stepCountLabel(stage.stepIds.length)}</span>
             </span>
             <span className={`workflow-status workflow-status--${status}`}>{zhCN.workflow.stageStatus[status]}</span>
           </li>

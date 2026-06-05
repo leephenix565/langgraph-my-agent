@@ -1,11 +1,12 @@
 # System Map
 
-This file is the reset branch operational map for Phase R5-B2.
+This file is the reset branch operational map for Phase R5-B2.6.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R5-B2 workflow DAG inspector UI rewrite.
+- Current phase: R5-B2.6 Chinese localization and visual copy polish over the
+  existing R5-B2 workflow DAG inspector.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -21,7 +22,8 @@ This file is the reset branch operational map for Phase R5-B2.
 - Active frontend contract:
   `apps/web` renders the fixed DAG workflow inspector from
   `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
-  `reset_skeleton` source fields.
+  `reset_skeleton` source fields, with localized Chinese visible copy and raw
+  technical ids/enum values retained where needed for debugging.
 
 ## Current Runtime Entry
 
@@ -42,7 +44,8 @@ apps/web
 ```
 
 The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
-has R5-B1 contract migration and R5-B2 workflow inspector rendering in place.
+has R5-B1 contract migration, R5-B2 workflow inspector rendering, and R5-B2.6
+Chinese visible-copy polish in place.
 
 The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
@@ -163,7 +166,7 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R5-B2 validation commands:
+Safe R5-B2/R5-B2.6 validation commands:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
@@ -173,6 +176,7 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26
 ```
 
 Do not run provider smoke, external live invoke, demo stack commands, or
@@ -181,7 +185,7 @@ them.
 
 ## Non-Claims
 
-R3/R4/R5-B1/R5-B2 do not claim:
+R3/R4/R5-B1/R5-B2/R5-B2.6 do not claim:
 
 - business-agent correctness
 - provider readiness
@@ -197,3 +201,8 @@ R5-B2 additionally does not claim a visual dependency graph beyond ordered
 execution batches, evidence-specific drilldown, production deployment, or live
 external readiness. It only claims frontend inspector rendering over the
 current public fixed DAG payload.
+
+R5-B2.6 additionally does not claim a runtime locale switch, schema change,
+topology change, roster change, provider/external readiness, or production
+readiness. It only claims Chinese visible-copy localization and visual copy
+polish over the same fixed DAG public payload.

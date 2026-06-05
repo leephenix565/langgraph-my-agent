@@ -3,6 +3,50 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R5-B2.6 Chinese localization and visual copy polish
+
+### Changed
+
+- Localized visible `apps/web` copy for sidebar, thread, assistant answer,
+  composer, workflow inspector, Agents page, and Settings page.
+- Polished WorkflowPanel labels, status labels, empty states, selected step
+  metadata, provenance, and raw enum display around `workflow_snapshot_v2`.
+- Localized deterministic fixed DAG public-safe skeleton answer, workflow step
+  summaries, executor limitations, public runtime hints, and public adapter
+  error copy while preserving the `No provider` and
+  `external /v1/agent/invoke` sentinel phrases required by current validation.
+- Updated frontend mocks, screenshot fixture script, and smoke assertions to
+  check localized UI copy while keeping technical ids and enum values visible
+  where needed for debugging.
+- Updated reset docs for the R5-B2.6 localization boundary and non-claims.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py src/react_agent/fixed_dag_catalog.py src/react_agent/public_runtime.py src/react_agent/public_mapping.py src/react_agent/public_store.py tests/integration_tests/test_public_api.py tests/integration_tests/test_graph.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_graph_skeleton.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Visual Check
+
+- Temporary local API and Vite processes only, with screenshots saved outside
+  the repo under `E:/muti-agent/_tmp_r5b26_visual/screenshots`.
+
+### Not Done
+
+- No fixed DAG topology, roster, provider integration, external wrapper, or
+  real business-agent implementation change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No full runtime locale switch or multilingual framework claim.
+- No production auth, rate-limit, HTTPS, deployment, persistence, or
+  observability claim.
+- No push.
+
 ## 2026-06-04 - Phase R5-B2 workflow DAG inspector UI rewrite
 
 ### Changed

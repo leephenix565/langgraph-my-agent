@@ -85,12 +85,12 @@ class StreamPublicTurnCompleted:
 
 
 _WORKFLOW_STAGE_TITLES: Dict[WorkflowStageKey, str] = {
-    "planning": "Planning",
-    "evidence": "Evidence seams",
-    "l2_analysis": "L2 conclusions",
-    "dimension_composite": "Dimension composites",
-    "decision": "Decision",
-    "report": "Report",
+    "planning": "规划",
+    "evidence": "证据接入",
+    "l2_analysis": "L2 结论",
+    "dimension_composite": "维度综合",
+    "decision": "决策",
+    "report": "报告",
 }
 _WORKFLOW_STAGE_ORDER: tuple[WorkflowStageKey, ...] = FIXED_DAG_STAGE_ORDER
 
@@ -145,7 +145,7 @@ def _provider_env_surface() -> ReadinessSurface:
     return ReadinessSurface(
         status="missing",
         code="provider_env_missing_optional_for_reset",
-        hint="R3 reset skeleton can invoke without provider credentials.",
+        hint="R3 重置骨架无需 provider 凭据即可调用。",
     )
 
 
@@ -154,14 +154,14 @@ def _search_env_surface() -> ReadinessSurface:
         return ReadinessSurface(
             status="disabled",
             code="search_env_disabled",
-            hint="Search is disabled; R3 reset skeleton does not require search.",
+            hint="搜索已禁用；R3 重置骨架不需要搜索。",
         )
     if _is_env_present("TAVILY_API_KEY"):
         return ReadinessSurface(status="configured", code="search_env_available")
     return ReadinessSurface(
         status="missing",
         code="search_env_missing_optional_for_reset",
-        hint="R3 reset skeleton can invoke without Tavily search.",
+        hint="R3 重置骨架无需 Tavily 搜索即可调用。",
     )
 
 
@@ -174,7 +174,7 @@ def _checkpointer_surface() -> CheckpointerStatus:
             mode=mode,
             status="disabled",
             code="checkpointer_disabled",
-            hint="Set REACT_AGENT_CHECKPOINTER=memory or sqlite for persistent continuity.",
+            hint="设置 REACT_AGENT_CHECKPOINTER=memory 或 sqlite 可启用持久连续性。",
         )
 
     saver = maybe_make_checkpointer()
@@ -184,7 +184,7 @@ def _checkpointer_surface() -> CheckpointerStatus:
             mode=mode,
             status="unavailable",
             code="checkpointer_unavailable",
-            hint="The requested checkpointer could not be initialized in this environment.",
+            hint="当前环境无法初始化请求的 checkpointer。",
         )
 
     return CheckpointerStatus(
@@ -212,7 +212,7 @@ def probe_public_runtime() -> RuntimeReadinessProbe:
         runtime = ReadinessSurface(
             status="import_unavailable",
             code="runtime_import_unavailable",
-            hint="LangGraph runtime could not be imported.",
+            hint="无法导入 LangGraph 运行时。",
         )
     else:
         if getattr(graph_module, "graph_persistent", None) is not None:
@@ -243,7 +243,7 @@ def prepare_public_turn_invoke(
     probe = probe_public_runtime()
     if probe.runtime.status != "ready" or probe.graph_module is None:
         raise PublicRuntimeUnavailable(
-            "LangGraph runtime is unavailable for public invocation.",
+            "LangGraph 运行时不可用于公开调用。",
             code=probe.runtime.code,
             category="runtime",
         )
@@ -449,14 +449,14 @@ async def stream_public_turn(
         if failed_stage_payload != last_stage_payload:
             yield failed_stage_event
         raise PublicRuntimeUnavailable(
-            "LangGraph runtime invocation failed before a public answer could be produced.",
+            "LangGraph 运行时在生成公开回答前调用失败。",
             code="runtime_invoke_unavailable",
             category="runtime",
         ) from None
 
     if not isinstance(last_state, dict):
         raise PublicRuntimeError(
-            "LangGraph runtime returned an invalid completed state.",
+            "LangGraph 运行时返回了无效的完成状态。",
             code="runtime_state_invalid",
             category="contract",
         )
@@ -479,7 +479,7 @@ async def stream_public_turn(
         if failed_stage_payload != last_stage_payload:
             yield failed_stage_event
         raise PublicRuntimeError(
-            "Completed state could not be mapped into the public contract.",
+            "完成状态无法映射到 public contract。",
             code="public_mapping_failed",
             category="contract",
         ) from None
@@ -514,14 +514,14 @@ async def invoke_public_turn(
             user_text=user_text,
         )
         raise PublicRuntimeUnavailable(
-            "LangGraph runtime invocation failed before a public answer could be produced.",
+            "LangGraph 运行时在生成公开回答前调用失败。",
             code="runtime_invoke_unavailable",
             category="runtime",
         ) from None
 
     if not isinstance(state, dict):
         raise PublicRuntimeError(
-            "LangGraph runtime returned an invalid completed state.",
+            "LangGraph 运行时返回了无效的完成状态。",
             code="runtime_state_invalid",
             category="contract",
         )
@@ -537,7 +537,7 @@ async def invoke_public_turn(
             user_text=user_text,
         )
         raise PublicRuntimeError(
-            "Completed state could not be mapped into the public contract.",
+            "完成状态无法映射到 public contract。",
             code="public_mapping_failed",
             category="contract",
         ) from None

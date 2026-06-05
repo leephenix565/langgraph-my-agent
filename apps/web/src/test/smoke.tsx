@@ -87,7 +87,7 @@ function degradedHealthPayload() {
       mode: "none",
       status: "disabled",
       code: "checkpointer_disabled",
-      hint: "Set REACT_AGENT_CHECKPOINTER=memory or sqlite for persistent continuity.",
+      hint: "设置 REACT_AGENT_CHECKPOINTER=memory 或 sqlite 可启用持久连续性。",
     },
     continuityDefault: "replay",
     runtime: { status: "ready", code: "runtime_ready" },
@@ -95,7 +95,7 @@ function degradedHealthPayload() {
     searchEnv: {
       status: "missing",
       code: "search_env_missing",
-      hint: "Set TAVILY_API_KEY before importing react_agent.graph.",
+      hint: "导入 react_agent.graph 前设置 TAVILY_API_KEY。",
     },
     store: "json-file",
   };
@@ -108,7 +108,7 @@ function threadSummary(title: string, preview: string) {
     updatedAt: "2026-04-04 18:06",
     preview,
     finalSource: "reset_skeleton",
-    phase: "Live",
+    phase: "在线",
     continuityMode: "replay",
   };
 }
@@ -124,8 +124,8 @@ function assistantTurn(id: string, answer: string): PublicTurn {
     answerCard: {
       answer,
       finalSource: "reset_skeleton",
-      citations: [{ label: "Fixed DAG bundle", note: "Final answer came from the public fixed DAG projection." }],
-      evidenceCards: [{ title: "Workflow", note: "Structured public-safe output." }],
+      citations: [{ label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 投影。" }],
+      evidenceCards: [{ title: "Workflow", note: "结构化可公开输出。" }],
       evidenceCount: 1,
     },
     workflow: createWorkflowVariant(id),
@@ -142,7 +142,7 @@ function runAgentCatalogContractChecks() {
   assert.equal(allAgents.some((agent) => /^a\d{2}_/.test(agent.id)), false);
   assert.ok(allAgents.find((agent) => agent.id === "sentiment_company_radar"));
   assert.equal(allAgents.some((agent) => agent.id === "value_financial_analysis"), false);
-  assert.equal(agentNameLabel("macro_commodity_pricing"), "Commodity pricing");
+  assert.equal(agentNameLabel("macro_commodity_pricing"), "商品定价分析");
 }
 
 const forbiddenSerializedTokens = [
@@ -160,7 +160,24 @@ const forbiddenSerializedTokens = [
   "TAVILY_API_KEY",
 ];
 
-const forbiddenUiTokens = ["layerPlan", "layerMode", "agentSteps", "fusionSteps", "default_url", "env_var", "mainline", "baseline", "fused", "Fusion"];
+const forbiddenUiTokens = [
+  "layerPlan",
+  "layerMode",
+  "agentSteps",
+  "fusionSteps",
+  "default_url",
+  "env_var",
+  "secret",
+  "secrets",
+  "api_key",
+  "apiKey",
+  "OPENAI_API_KEY",
+  "TAVILY_API_KEY",
+  "mainline",
+  "baseline",
+  "fused",
+  "Fusion",
+];
 
 function assertNoForbiddenSerializedTokens(value: string) {
   for (const token of forbiddenSerializedTokens) {
@@ -270,51 +287,59 @@ async function runUserBubbleStructuredRenderChecks() {
 
 async function runAssistantRenderChecks() {
   const markdownAnswer = [
-    "### Market Summary",
+    "### 市场摘要",
     "",
-    "This paragraph contains **strong emphasis** and *supporting nuance*.",
+    "这段内容包含 **重点判断** 和 *补充说明*。",
     "",
-    "- First point",
-    "- Second point",
+    "- 第一项",
+    "- 第二项",
     "",
-    "Watch the `run_id` field.",
+    "保留 `run_id` 字段用于调试。",
   ].join("\n");
 
   const view = render(<AssistantAnswerCard turn={assistantTurn("assistant-markdown-1", markdownAnswer)} />);
   const article = view.getByRole("article");
-  assert.equal(view.queryByText("### Market Summary"), null);
-  assert.ok(view.getByRole("heading", { level: 3, name: "Market Summary" }));
+  assert.equal(view.queryByText("### 市场摘要"), null);
+  assert.ok(view.getByRole("heading", { level: 3, name: "市场摘要" }));
   assert.ok(article.querySelector("strong"));
   assert.ok(article.querySelector("em"));
-  fireEvent.click(view.getByRole("button", { name: /Workflow/ }));
-  assert.ok(view.getByLabelText("Fixed DAG workflow inspector"));
-  assert.ok(view.getByText("Stage timeline"));
-  assert.ok(view.getAllByText("Route planner").length >= 1);
-  assert.ok(view.getByText("Execution batches"));
-  assert.ok(view.getByText("Dimension groups"));
-  assert.ok(view.getByText("DAG step list"));
-  assert.ok(view.getByText("Step result metadata"));
-  assert.ok(view.getByText("Final source and provenance"));
-  assert.ok(view.getAllByText("Fixed DAG skeleton").length >= 1);
+  fireEvent.click(view.getByRole("button", { name: /工作流|DAG 检查器/ }));
+  assert.ok(view.getByLabelText("固定 DAG 工作流检查器"));
+  assert.ok(view.getByText("阶段时间线"));
+  assert.ok(view.getAllByText("路径规划器").length >= 1);
+  assert.ok(view.getByText("执行批次"));
+  assert.ok(view.getByText("维度分组"));
+  assert.ok(view.getByText("DAG 步骤列表"));
+  assert.ok(view.getByText("步骤结果元数据"));
+  assert.ok(view.getByText("最终来源与溯源"));
+  assert.ok(view.getAllByText("固定 DAG 骨架").length >= 1);
 
-  assert.ok(view.getByText("Selected step"));
-  assert.ok(view.getByText("Runtime kind"));
-  assert.ok(view.getAllByText("deterministic_skeleton").length >= 1);
-  assert.ok(view.getByText("Implementation status"));
-  assert.ok(view.getAllByText("No").length >= 2);
+  assert.ok(view.getByText("当前步骤"));
+  assert.ok(view.getByText("运行时类型"));
+  assert.ok(view.getAllByText("确定性骨架 (deterministic_skeleton)").length >= 1);
+  assert.ok(article.textContent?.includes("deterministic_skeleton"));
+  assert.ok(view.getByText("实现状态"));
+  assert.ok(view.getAllByText("否").length >= 2);
 
-  fireEvent.click(view.getByRole("button", { name: /Financial data service/ }));
-  assert.equal(view.getByRole("button", { name: /Financial data service/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(view.getAllByText("financial_data_service").length >= 1);
-  assert.ok(view.getAllByText("external_http_candidate").length >= 1);
-  assert.ok(view.getAllByText("external_candidate_disabled").length >= 1);
-  assert.ok(view.getByText("External candidate is registered but not live verified in the mock path."));
+  fireEvent.click(view.getByRole("button", { name: /金融数据服务/ }));
+  assert.equal(view.getByRole("button", { name: /金融数据服务/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(article.textContent?.includes("financial_data_service"));
+  assert.ok(view.getByText("外部 HTTP 候选 (external_http_candidate)"));
+  assert.ok(article.textContent?.includes("external_http_candidate"));
+  assert.ok(view.getByText("外部候选未启用 (external_candidate_disabled)"));
+  assert.ok(article.textContent?.includes("external_candidate_disabled"));
+  assert.ok(view.getByText("外部候选已注册，但 mock 路径没有实时验证。"));
 
-  fireEvent.click(view.getByRole("button", { name: /Company sentiment radar/ }));
-  assert.equal(view.getByRole("button", { name: /Company sentiment radar/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(view.getAllByText("placeholder").length >= 1);
-  assert.ok(view.getAllByText("pending_implementation").length >= 1);
-  assert.ok(view.getByText("Market sentiment path is placeholder-only in the local fixture."));
+  fireEvent.click(view.getByRole("button", { name: /企业舆情雷达/ }));
+  assert.equal(view.getByRole("button", { name: /企业舆情雷达/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(article.textContent?.includes("placeholder"));
+  assert.ok(view.getAllByText("待实现 (pending_implementation)").length >= 1);
+  assert.ok(article.textContent?.includes("pending_implementation"));
+  assert.ok(view.getByText("本地 fixture 中市场舆情路径仍是占位实现。"));
+
+  for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
+    assert.equal(article.textContent?.includes(oldCopy), false, `Unexpected old workflow copy: ${oldCopy}`);
+  }
 
   assertNoForbiddenUiTokens(article.textContent);
   cleanup();
@@ -332,7 +357,7 @@ async function runComposerLengthLimitChecks() {
   await user.type(taskInput, "exceeds-limit");
   await waitFor(() => {
     assert.equal(sendButton.disabled, true);
-    assert.ok(view.getByText("Input is too long. Please shorten it and try again."));
+    assert.ok(view.getByText("输入过长，请缩短后再试。"));
   });
   form.dispatchEvent(new dom.window.Event("submit", { bubbles: true, cancelable: true }));
   assert.equal(submitCount, 0);
@@ -354,7 +379,7 @@ async function runStreamingSuccessScenario() {
   let finalRoles: string[] = [];
 
   const createdThread = {
-    thread: threadSummary("New thread", "Awaiting first message."),
+    thread: threadSummary("新会话", "等待第一条消息。"),
     turns: [],
   };
 
@@ -381,7 +406,7 @@ async function runStreamingSuccessScenario() {
         text: payload.text ?? "",
         structuredInput: payload.structuredInput,
       });
-      const answer = "Short live summary with the conclusion first.";
+      const answer = "简短实时摘要，先给结论。";
       const finalTurns: PublicTurn[] = [
         {
           id: "user-live-1",
@@ -404,12 +429,12 @@ async function runStreamingSuccessScenario() {
             data: {
               currentStage: "l2_analysis",
               stages: [
-                { key: "planning", title: "Planning", status: "completed" },
-                { key: "evidence", title: "Evidence seams", status: "completed" },
-                { key: "l2_analysis", title: "L2 analysis", status: "running" },
-                { key: "dimension_composite", title: "Dimension composites", status: "waiting" },
-                { key: "decision", title: "Decision", status: "waiting" },
-                { key: "report", title: "Report", status: "waiting" },
+                { key: "planning", title: "规划", status: "completed" },
+                { key: "evidence", title: "证据接入", status: "completed" },
+                { key: "l2_analysis", title: "L2 分析", status: "running" },
+                { key: "dimension_composite", title: "维度综合", status: "waiting" },
+                { key: "decision", title: "决策", status: "waiting" },
+                { key: "report", title: "报告", status: "waiting" },
               ],
             },
           },
@@ -425,7 +450,7 @@ async function runStreamingSuccessScenario() {
             type: "answer.final",
             data: {
               response: {
-                thread: threadSummary("Market risk summary", answer),
+                thread: threadSummary("市场风险摘要", answer),
                 assistantTurn: assistantTurn("assistant-live-1", answer),
                 turns: finalTurns,
               },
@@ -456,9 +481,9 @@ async function runStreamingSuccessScenario() {
   await user.click(view.container.querySelector(".composer__submit") as HTMLButtonElement);
 
   await waitFor(() => {
-    assert.ok(view.getByText("Short live summary with the conclusion first."));
+    assert.ok(view.getByText("简短实时摘要，先给结论。"));
   });
-  assert.ok(view.getAllByText("Fixed DAG skeleton").length >= 1);
+  assert.ok(view.getAllByText("固定 DAG 骨架").length >= 1);
 
   assert.equal(sentPayloads[0].text, "Summarize the market risk profile.");
   assert.deepEqual(sentPayloads[0].structuredInput, { task: "Summarize the market risk profile." });
@@ -481,7 +506,7 @@ async function runStreamingErrorScenario() {
     }
     if (url.endsWith("/api/threads") && method === "POST") {
       return jsonResponse({
-        thread: threadSummary("New thread", "Awaiting first message."),
+        thread: threadSummary("新会话", "等待第一条消息。"),
         turns: [],
       });
     }
@@ -499,12 +524,12 @@ async function runStreamingErrorScenario() {
           data: {
             currentStage: "evidence",
             stages: [
-              { key: "planning", title: "Planning", status: "completed" },
-              { key: "evidence", title: "Evidence seams", status: "running" },
-              { key: "l2_analysis", title: "L2 analysis", status: "waiting" },
-              { key: "dimension_composite", title: "Dimension composites", status: "waiting" },
-              { key: "decision", title: "Decision", status: "waiting" },
-              { key: "report", title: "Report", status: "waiting" },
+              { key: "planning", title: "规划", status: "completed" },
+              { key: "evidence", title: "证据接入", status: "running" },
+              { key: "l2_analysis", title: "L2 分析", status: "waiting" },
+              { key: "dimension_composite", title: "维度综合", status: "waiting" },
+              { key: "decision", title: "决策", status: "waiting" },
+              { key: "report", title: "报告", status: "waiting" },
             ],
           },
         },
@@ -512,7 +537,7 @@ async function runStreamingErrorScenario() {
           type: "error",
           data: {
             code: "runtime_invoke_unavailable",
-            message: "LangGraph runtime invocation failed before a public answer could be produced.",
+            message: "LangGraph 运行时在生成公开回答前调用失败。",
             category: "runtime",
           },
         },
@@ -536,7 +561,7 @@ async function runStreamingErrorScenario() {
   await user.click(view.container.querySelector(".composer__submit") as HTMLButtonElement);
 
   await waitFor(() => {
-    assert.ok(view.getByText((content) => content.includes("LangGraph runtime invocation failed before a public answer could be produced.")));
+    assert.ok(view.getByText((content) => content.includes("LangGraph 运行时在生成公开回答前调用失败。")));
   });
   await waitFor(() => {
     assert.equal(view.queryByText(failingPrompt), null);

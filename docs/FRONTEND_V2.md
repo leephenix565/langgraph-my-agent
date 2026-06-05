@@ -60,6 +60,25 @@ The workflow inspector treats the reset roster as 27 formal agents. The
 `sentiment_company_radar` step belongs to the market dimension and should not
 be shown as a direct risk-composite input.
 
+## Current R5-B2.6 Localization Boundary
+
+R5-B2.6 is a presentation-layer follow-up to R5-B2. It localizes and polishes
+visible Chinese copy across the existing `apps/web` shell and deterministic
+fixed DAG skeleton output while keeping the same public contracts:
+
+- `workflow_snapshot_v2` remains the frontend workflow payload.
+- The public transcript remains a single user/assistant transcript.
+- Technical ids, schema names, and runtime enum values remain raw where needed
+  for debugging, for example `route_planner`, `financial_data_service`,
+  `workflow_snapshot_v2`, `external_http_candidate`, and
+  `external_candidate_disabled`.
+- The UI adds Chinese explanations around those technical values instead of
+  replacing protocol values.
+
+This is not a full runtime locale switch and does not change backend topology,
+agent roster, provider/search readiness, external service readiness, or
+business-agent correctness.
+
 ## Target Composer Flow
 
 ```text
@@ -92,6 +111,19 @@ composer text
 - screenshot fixture script updated to use `workflow_snapshot_v2`
 - frontend smoke assertions expanded for inspector rendering, step metadata,
   transcript boundary, and public-safe negative checks
+
+## R5-B2.6 Done
+
+- visible sidebar, thread, assistant, composer, workflow, Agents, and Settings
+  copy localized to Chinese
+- WorkflowPanel labels, status labels, empty states, result metadata labels,
+  and provenance copy polished over the same `workflow_snapshot_v2` payload
+- fixed DAG deterministic public answer and workflow summaries localized while
+  preserving the `No provider` and `external /v1/agent/invoke` safety sentinel
+  phrases required by current validation
+- frontend smoke expectations, mocks, and screenshot fixture copy aligned to
+  the localized public UI
+- raw technical ids and enum values kept visible in inspector/debug contexts
 
 ## Deferred Work
 

@@ -209,7 +209,7 @@ def test_report_result_validates_and_has_reset_limitations() -> None:
     joined = "\n".join([report["answer"], *report["limitations"]])
     assert "No provider" in joined
     assert "external /v1/agent/invoke" in joined
-    assert "not implemented" in joined
+    assert "尚未实现业务智能体算法" in joined
 
 
 def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:

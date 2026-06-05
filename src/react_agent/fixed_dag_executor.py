@@ -338,7 +338,7 @@ def build_initial_step_results(plan: Mapping[str, Any]) -> dict[str, dict]:
         str(step["id"]): build_step_result(
             step,
             status="blocked",
-            summary="Step has not been executed by the deterministic DAG executor.",
+            summary="此步骤尚未由确定性 DAG 执行器执行。",
         )
         for step in _steps(plan)
         if step.get("id")
@@ -373,8 +373,8 @@ def _status_for_step(step: Mapping[str, Any]) -> str:
 def _summary_for_step(step: Mapping[str, Any]) -> str:
     agent_id = str(step.get("agent_id") or step.get("id") or "")
     if step.get("agent_id") == "route_planner":
-        return "Deterministic fixed DAG plan selected."
-    return f"{agent_id} executed as a deterministic placeholder; business logic is pending."
+        return "已选择确定性固定 DAG 计划。"
+    return f"{agent_id} 已作为确定性占位执行；业务逻辑仍待实现。"
 
 
 def _execution_plan_or_fallback(
@@ -438,12 +438,12 @@ def execute_fixed_dag_plan(
     decision_result = build_decision_result(dimension_results, as_of=as_of)
     report_result = build_report_result(decision_result, question=question)
     limitations = [
-        "Business agent algorithms remain pending.",
-        "Provider readiness was not verified.",
-        "External service readiness was not verified.",
+        "业务智能体算法仍待实现。",
+        "未验证 provider 就绪状态。",
+        "未验证外部服务就绪状态。",
     ]
     if fallback_used:
-        limitations.append(f"Invalid plan fell back to deterministic default: {fallback_reason}.")
+        limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")
 
     execution_core = {
         "schema_version": FIXED_DAG_EXECUTION_SCHEMA_VERSION,

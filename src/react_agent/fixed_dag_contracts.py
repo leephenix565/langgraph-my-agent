@@ -111,6 +111,52 @@ LEGACY_CONTRACT_KEYS = {
 }
 EXECUTED_STEP_STATUSES = {"complete", "pending_implementation"}
 
+STAGE_TITLE_LABELS: dict[str, str] = {
+    "planning": "规划",
+    "evidence": "证据接入",
+    "l2_analysis": "L2 分析",
+    "dimension_composite": "维度综合",
+    "decision": "决策",
+    "report": "报告",
+}
+
+AGENT_TITLE_LABELS: dict[str, str] = {
+    "route_planner": "路径规划器",
+    "financial_data_service": "金融数据服务",
+    "entity_relation_extractor": "实体关系抽取器",
+    "value_traditional_valuation": "传统企业估值",
+    "value_ml_valuation": "机器学习企业估值",
+    "value_meta_valuation": "元学习企业估值",
+    "value_research_synthesis": "研报观点综合",
+    "market_stock_technical": "个股技术分析",
+    "market_fund_manager_behavior": "基金经理行为分析",
+    "market_ipo_investor_behavior": "IPO 投资者行为分析",
+    "market_capital_flow_chip": "资金流与筹码分析",
+    "sentiment_company_radar": "企业舆情雷达",
+    "risk_crash": "股价崩盘风险",
+    "risk_financial_fraud": "财务欺诈风险",
+    "risk_identification": "风险识别",
+    "risk_compliance_review": "公告合规审查",
+    "macro_analysis": "宏观分析",
+    "macro_commodity_pricing": "商品定价分析",
+    "macro_index_valuation": "股票指数估值",
+    "macro_sentiment": "宏观情绪感知",
+    "macro_industry_hotspot": "行业热点洞察",
+    "value_composite": "价值综合",
+    "market_composite": "市场综合",
+    "risk_composite": "风险综合",
+    "macro_composite": "宏观综合",
+    "decision_synthesizer": "决策综合器",
+    "report_generator": "报告生成器",
+}
+
+DIMENSION_TITLE_LABELS: dict[str, str] = {
+    "value": "价值综合",
+    "market": "市场综合",
+    "risk": "风险综合",
+    "macro": "宏观综合",
+}
+
 
 class FixedDagStep(TypedDict):
     id: str
@@ -305,8 +351,8 @@ def _build_steps() -> list[FixedDagStep]:
         _step(
             step_id="route_planner",
             stage="planning",
-            title="Route planner",
-            description="Create the deterministic fixed DAG execution plan.",
+            title=AGENT_TITLE_LABELS["route_planner"],
+            description="创建确定性的固定 DAG 执行计划。",
             status="complete",
             agent_id="route_planner",
             dimension="l1",
@@ -314,8 +360,8 @@ def _build_steps() -> list[FixedDagStep]:
         _step(
             step_id="financial_data_service",
             stage="evidence",
-            title="Financial data service",
-            description="Prepare a data bundle seam without external service calls.",
+            title=AGENT_TITLE_LABELS["financial_data_service"],
+            description="准备数据包占位接口，不调用外部服务。",
             agent_id="financial_data_service",
             dimension="l1",
             depends_on=("route_planner",),
@@ -323,8 +369,8 @@ def _build_steps() -> list[FixedDagStep]:
         _step(
             step_id="entity_relation_extractor",
             stage="evidence",
-            title="Entity relation extractor",
-            description="Resolve entities and extract relations without live lookup.",
+            title=AGENT_TITLE_LABELS["entity_relation_extractor"],
+            description="解析实体并抽取关系，不进行实时查询。",
             agent_id="entity_relation_extractor",
             dimension="l1",
             depends_on=("route_planner",),
@@ -335,8 +381,8 @@ def _build_steps() -> list[FixedDagStep]:
             _step(
                 step_id=f"l2:{agent_id}",
                 stage="l2_analysis",
-                title=agent_id.replace("_", " ").title(),
-                description="Produce a normalized pending conclusion object.",
+                title=AGENT_TITLE_LABELS.get(agent_id, agent_id),
+                description="生成标准化的待实现结论对象。",
                 agent_id=agent_id,
                 dimension=AGENT_DIMENSIONS[agent_id],
                 depends_on=("financial_data_service", "entity_relation_extractor"),
@@ -347,8 +393,8 @@ def _build_steps() -> list[FixedDagStep]:
             _step(
                 step_id=f"dimension:{dimension}",
                 stage="dimension_composite",
-                title=f"{dimension.title()} composite",
-                description="Combine L2 conclusions for one deterministic dimension seam.",
+                title=DIMENSION_TITLE_LABELS.get(dimension, f"{dimension} 综合"),
+                description="汇总单一维度的 L2 结论，形成确定性占位结果。",
                 agent_id=DIMENSION_COMPOSITE_AGENT_IDS[dimension],
                 target_ids=agent_ids,
                 dimension=dimension,
@@ -360,8 +406,8 @@ def _build_steps() -> list[FixedDagStep]:
             _step(
                 step_id="decision_synthesizer",
                 stage="decision",
-                title="Decision synthesizer",
-                description="Create a deterministic decision placeholder.",
+                title=AGENT_TITLE_LABELS["decision_synthesizer"],
+                description="生成确定性决策占位结果。",
                 agent_id="decision_synthesizer",
                 dimension="l4",
                 depends_on=tuple(f"dimension:{dimension}" for dimension in DIMENSION_GROUPS),
@@ -369,8 +415,8 @@ def _build_steps() -> list[FixedDagStep]:
             _step(
                 step_id="report_generator",
                 stage="report",
-                title="Report generator",
-                description="Generate the public reset skeleton answer.",
+                title=AGENT_TITLE_LABELS["report_generator"],
+                description="生成公开的重置骨架回答。",
                 agent_id="report_generator",
                 dimension="l4",
                 depends_on=("decision_synthesizer",),
@@ -395,7 +441,7 @@ def build_default_fixed_dag_plan(
         "stages": [
             {
                 "id": stage,
-                "title": stage.replace("_", " ").title(),
+                "title": STAGE_TITLE_LABELS.get(stage, stage),
                 "step_ids": [step["id"] for step in steps if step["stage"] == stage],
             }
             for stage in FIXED_DAG_STAGE_ORDER
@@ -493,8 +539,8 @@ def build_data_bundle(plan: Mapping[str, Any]) -> DataBundle:
         "data_as_of": _data_as_of_for(as_of),
         "sources": [],
         "notes": [
-            "Financial data service is a deterministic seam in Phase R3.",
-            "No provider, search, or external service was invoked.",
+            "金融数据服务是 R3 阶段的确定性占位接口。",
+            "No provider、搜索或外部服务被调用。",
         ],
     }
 
@@ -527,9 +573,9 @@ def build_entity_relation_bundle(plan: Mapping[str, Any]) -> EntityRelationBundl
         "entities": [],
         "relations": [],
         "notes": [
-            "Entity and relation extraction is a deterministic Phase R3 seam.",
-            "No provider or external service was invoked.",
-            f"Original question length: {len(normalized['user_text'])}",
+            "实体与关系抽取是 R3 阶段的确定性占位接口。",
+            "No provider 或外部服务被调用。",
+            f"原始问题长度：{len(normalized['user_text'])}",
         ],
     }
 
@@ -634,7 +680,7 @@ def build_l2_conclusions(
             agent_id,
             AGENT_DIMENSIONS[agent_id],
             as_of=normalized_as_of,
-            reason="Business agent implementation is pending in Phase R3.",
+            reason="业务智能体实现仍处于 R3 阶段待完成状态。",
         )
         for agent_id in L2_CONCLUSION_AGENT_IDS
     }
@@ -798,15 +844,15 @@ def build_decision_result(
         "reasoning_trace": [
             {
                 "stage": "dimension_induction",
-                "summary": "Dimension composites remain deterministic placeholders.",
+                "summary": "维度综合结果仍为确定性占位。",
             },
             {
                 "stage": "macro_risk_adjustment",
-                "summary": "Macro and risk seams can adjust later business decisions.",
+                "summary": "宏观与风险占位接口可在后续影响业务决策。",
             },
             {
                 "stage": "conflict_resolution",
-                "summary": "No live business conflict resolution is implemented in Phase R3.",
+                "summary": "R3 阶段尚未实现实时业务冲突消解。",
             },
         ],
         "confidence": 0.0,
@@ -862,42 +908,41 @@ def build_report_result(
 ) -> ReportResult:
     del decision_result
     answer = (
-        "Fixed DAG reset skeleton is active. This Phase R3 response is produced "
-        "from deterministic contract, executor, and function seams, not from live business "
-        "agent algorithms. No provider, search service, or external "
-        "/v1/agent/invoke endpoint was called."
+        "固定 DAG 重置骨架已启用。本次 R3 阶段响应来自确定性的 contract、"
+        "executor 和 function seam，不来自实时业务智能体算法。No provider、"
+        "搜索服务或 external /v1/agent/invoke 端点被调用。"
     )
     if question:
-        answer = f"{answer}\n\nReceived question: {question}"
+        answer = f"{answer}\n\n收到的问题：{question}"
     return {
         "schema": REPORT_RESULT_SCHEMA_VERSION,
         "schema_version": REPORT_RESULT_SCHEMA_VERSION,
-        "title": "Fixed DAG Reset Skeleton",
+        "title": "固定 DAG 重置骨架",
         "answer": answer,
         "status": "pending_implementation",
         "sections": [
             {
                 "id": "runtime_scope",
-                "title": "Runtime scope",
-                "content": "Reset skeleton only; no live external execution.",
+                "title": "运行时范围",
+                "content": "仅执行重置骨架；未执行实时外部调用。",
             },
             {
                 "id": "implementation_status",
-                "title": "Implementation status",
-                "content": "Business agent algorithms remain pending.",
+                "title": "实现状态",
+                "content": "业务智能体算法仍待实现。",
             },
         ],
         "evidence_cards": [
             {
-                "title": "Reset runtime scope",
-                "note": "Deterministic fixed DAG skeleton; business agents are placeholders.",
+                "title": "重置运行时范围",
+                "note": "确定性固定 DAG 骨架；业务 Agent 仍为占位实现。",
             }
         ],
         "limitations": [
-            "Business agent algorithms are not implemented in Phase R3.",
-            "Provider readiness was not verified.",
-            "External service readiness was not verified.",
-            "Frontend workflow v2 polish remains a later reset phase.",
+            "R3 阶段尚未实现业务智能体算法。",
+            "未验证 provider 就绪状态。",
+            "未验证外部服务就绪状态。",
+            "前端 workflow v2 的后续视觉增强仍属于后续重置阶段。",
         ],
     }
 
@@ -1045,14 +1090,14 @@ def build_workflow_snapshot_v2(
         "dimensionGroups": [
             {
                 "id": dimension,
-                "title": f"{dimension.title()} composite",
+                "title": DIMENSION_TITLE_LABELS.get(dimension, f"{dimension} 综合"),
                 "stepIds": [f"dimension:{dimension}"],
                 "status": dimension_results.get(dimension, {}).get(
                     "status", "pending_implementation"
                 )
                 if isinstance(dimension_results.get(dimension), Mapping)
                 else "pending_implementation",
-                "summary": "Deterministic reset skeleton composite.",
+                "summary": "确定性重置骨架综合结果。",
             }
             for dimension in DIMENSION_GROUPS
         ],
@@ -1124,7 +1169,7 @@ def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
 def build_final_emit_payload(report_result: Mapping[str, Any]) -> dict[str, Any]:
     answer = str(report_result.get("answer") or "").strip()
     if not answer:
-        answer = "Fixed DAG reset skeleton completed without a report body."
+        answer = "固定 DAG 重置骨架已完成，但没有报告正文。"
     return {"source": RESET_SOURCE, "status": "complete", "answer": answer}
 
 

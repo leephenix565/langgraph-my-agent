@@ -82,13 +82,13 @@ export async function apiRequest<T>(path: string, init?: RequestInit): Promise<T
       },
     });
   } catch (error) {
-    throw new ApiError("Public API unavailable", { unavailable: true, detail: error });
+    throw new ApiError("公共 API 不可用", { unavailable: true, detail: error });
   }
 
   const body = await parseResponseBody(response);
   if (!response.ok) {
     const detail = extractDetail(body);
-    throw new ApiError(detail?.message || `API request failed with status ${response.status}`, {
+    throw new ApiError(detail?.message || `API 请求失败，状态码 ${response.status}`, {
       status: response.status,
       detail: body,
       code: detail?.code,
@@ -114,13 +114,13 @@ export async function streamNdjson<T>(
       },
     });
   } catch (error) {
-    throw new ApiError("Public API unavailable", { unavailable: true, detail: error });
+    throw new ApiError("公共 API 不可用", { unavailable: true, detail: error });
   }
 
   if (!response.ok) {
     const body = await parseResponseBody(response);
     const detail = extractDetail(body);
-    throw new ApiError(detail?.message || `API request failed with status ${response.status}`, {
+    throw new ApiError(detail?.message || `API 请求失败，状态码 ${response.status}`, {
       status: response.status,
       detail: body,
       code: detail?.code,
@@ -160,7 +160,7 @@ export function isApiUnavailableError(error: unknown): error is ApiError {
   return error instanceof ApiError && error.unavailable;
 }
 
-export function getApiErrorMessage(error: unknown, fallback = "Unexpected API error"): string {
+export function getApiErrorMessage(error: unknown, fallback = "未知 API 错误"): string {
   if (error instanceof ApiError) {
     return error.message;
   }

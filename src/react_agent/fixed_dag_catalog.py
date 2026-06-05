@@ -247,7 +247,7 @@ def fixed_dag_public_agent_catalog(
             "name": agent["display_name"],
             "description": (
                 f"{agent['description']} "
-                f"Implementation status: {agent['implementation_status']}."
+                f"实现状态：{agent['implementation_status']}。"
             ),
             "capabilities": [
                 agent["stage"],

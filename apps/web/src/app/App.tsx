@@ -27,12 +27,12 @@ import { AppRoutes } from "./routes";
 
 const STREAMING_PLACEHOLDER_ANSWER = "\u6b63\u5728\u534f\u4f5c\u2026";
 const STREAMING_INITIAL_PROGRESS: WorkflowStageProgress[] = [
-  { key: "planning", title: "Planning", status: "running" },
-  { key: "evidence", title: "Evidence seams", status: "waiting" },
-  { key: "l2_analysis", title: "L2 analysis", status: "waiting" },
-  { key: "dimension_composite", title: "Dimension composites", status: "waiting" },
-  { key: "decision", title: "Decision", status: "waiting" },
-  { key: "report", title: "Report", status: "waiting" },
+  { key: "planning", title: "规划", status: "running" },
+  { key: "evidence", title: "证据接入", status: "waiting" },
+  { key: "l2_analysis", title: "L2 分析", status: "waiting" },
+  { key: "dimension_composite", title: "维度综合", status: "waiting" },
+  { key: "decision", title: "决策", status: "waiting" },
+  { key: "report", title: "报告", status: "waiting" },
 ];
 
 interface WorkspaceFrameProps {
@@ -79,7 +79,7 @@ function createStreamingWorkflow(base?: WorkflowModel, liveProgress?: WorkflowSt
     executionBatches: base?.executionBatches ?? [],
     stepResults: base?.stepResults ?? {},
     finalSource: base?.finalSource ?? "reset_skeleton",
-    provenanceNote: base?.provenanceNote ?? "Generating a public-safe fixed DAG workflow summary.",
+    provenanceNote: base?.provenanceNote ?? "正在生成可公开展示的固定 DAG 工作流摘要。",
     provenance: base?.provenance ?? null,
     liveProgress: nextProgress,
   };
@@ -284,7 +284,7 @@ export default function App() {
       try {
         await hydrateFirstThread();
       } catch (error) {
-        setRequestError(error, "Failed to bootstrap public thread list.");
+        setRequestError(error, "初始化公开会话列表失败。");
       } finally {
         setIsLoading(false);
       }
@@ -312,7 +312,7 @@ export default function App() {
         );
       });
     } catch (error) {
-      setRequestError(error, "Failed to load thread detail.");
+      setRequestError(error, "加载会话详情失败。");
       if (!isApiUnavailableError(error)) {
         try {
           await refreshHealthState();
@@ -425,7 +425,7 @@ export default function App() {
           ),
         }));
       });
-      setRequestError(error, "Failed to send message.");
+      setRequestError(error, "发送消息失败。");
       if (!isApiUnavailableError(error)) {
         try {
           await refreshHealthState();
@@ -454,7 +454,7 @@ export default function App() {
         });
       });
     } catch (error) {
-      setRequestError(error, "Failed to create a new public thread.");
+      setRequestError(error, "创建新公开会话失败。");
       if (!isApiUnavailableError(error)) {
         try {
           await refreshHealthState();

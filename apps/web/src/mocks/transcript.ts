@@ -18,8 +18,8 @@ function buildAssistantTurn(id: string, answer: string, prompt: string): PublicT
       finalSource: "reset_skeleton",
       confidence: "medium",
       citations: [
-        { label: "Fixed DAG bundle", note: "Public answer projected from the reset skeleton fixed DAG path." },
-        { label: "Workflow", note: "DAG details are rendered in the inspector, not as extra transcript turns." },
+        { label: "Fixed DAG bundle", note: "公开回答由重置骨架固定 DAG 路径投影生成。" },
+        { label: "Workflow", note: "DAG 细节显示在检查器中，不作为额外 transcript 轮次。" },
       ],
       evidenceCount: 2,
     },
@@ -32,39 +32,39 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     {
       id: "fixed-dag-user-1",
       role: "user",
-      text: "Summarize the EV company risk profile.",
+      text: "总结电动车公司的风险画像。",
       createdAt: nowStamp("08:48"),
     },
     buildAssistantTurn(
       "fixed-dag-assistant-1",
-      "The reset skeleton answer keeps the conclusion visible while the DAG workflow stays in the inspector.",
-      "EV company risk profile",
+      "重置骨架回答保留公开结论，DAG 工作流细节保留在检查器中。",
+      "电动车公司风险画像",
     ),
   ],
   "session-fixed-dag-2": [
     {
       id: "fixed-dag-user-2",
       role: "user",
-      text: "Give me a semiconductor supply-chain update.",
+      text: "给我一份半导体供应链更新。",
       createdAt: nowStamp("09:01"),
     },
     buildAssistantTurn(
       "fixed-dag-assistant-2",
-      "The public transcript remains a single assistant answer. The workflow snapshot records stages, batches, and step results.",
-      "Semiconductor supply-chain update",
+      "公开 transcript 仍是一条助手回答；工作流快照记录阶段、批次和步骤结果。",
+      "半导体供应链更新",
     ),
   ],
   "session-fixed-dag-3": [
     {
       id: "fixed-dag-user-3",
       role: "user",
-      text: "Review the portfolio with risk constraints.",
+      text: "按风险约束复盘组合。",
       createdAt: nowStamp("09:12"),
     },
     buildAssistantTurn(
       "fixed-dag-assistant-3",
-      "Risk constraints are summarized in the answer; internal step metadata is kept in the workflow inspector.",
-      "Portfolio risk constraints",
+      "风险约束在回答中汇总；内部步骤元数据保留在工作流检查器中。",
+      "组合风险约束",
     ),
   ],
 };
@@ -80,7 +80,7 @@ export function createUserTurn(input: string): PublicTurn {
 
 export function createMockAssistantTurn(input: string): PublicTurn {
   const answer =
-    "This mock uses the fixed DAG reset skeleton. User/assistant text stays in the transcript; DAG details stay in the inspector.";
+    "这个 mock 使用固定 DAG 重置骨架。用户/助手文本保留在 transcript 中；DAG 细节保留在检查器中。";
 
   return buildAssistantTurn(`assistant-${Math.random().toString(36).slice(2, 10)}`, answer, input);
 }
