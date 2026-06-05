@@ -1,12 +1,12 @@
 # System Map
 
-This file is the reset branch operational map for Phase R5-C1.
+This file is the reset branch operational map for Phase R6-B.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R5-C1 user-facing business copy professionalization
-  over the existing R5-B2/R5-B2.6 workflow DAG inspector.
+- Current phase: R6-B reset quality mainline rebuild over the existing
+  fixed-DAG runtime skeleton and R5 web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -162,7 +162,7 @@ Later phases own:
 - real business agent algorithms
 - later replacement/removal policy for `config/agents/*.json`
 - external service readiness and protocol repair
-- R6 rebuilt mainline and fusion-gate quality gates
+- archived/manual fusion-gate policy and any later fusion acceptance rebuild
 - richer visual dependency graph beyond ordered execution batches
 - evidence-specific frontend drilldown once backend public evidence payloads
   are formalized
@@ -170,22 +170,24 @@ Later phases own:
 
 ## Quality Entry Points
 
-Safe R5-B2/R5-B2.6/R5-C/R5-C1 validation commands:
+R6-B rebuilds the default reset mainline quality gate:
 
 ```powershell
-conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
-conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
-npm --prefix apps/web run test
-npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode unit
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode public-api
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode graph-smoke
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode frontend
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
 ```
 
-Do not run provider smoke, external live invoke, demo stack commands, or
-artifact-writing mainline/fusion gates unless a later phase explicitly owns
-them.
+The reset `mainline` runs static, unit, public-api, graph-smoke, and frontend.
+The frontend mode performs TypeScript no-emit, frontend smoke, and Vite build
+with a temporary repo-external `--outDir`; it must not write `apps/web/dist`.
+
+Do not run provider smoke, external live invoke, demo stack commands,
+Router-SFT, RARP/route-prior, browser screenshot capture, or archived
+fusion-gate as default reset acceptance.
 
 ## Non-Claims
 
@@ -194,8 +196,12 @@ R3/R4/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 do not claim:
 - business-agent correctness
 - provider readiness
 - external service readiness
-- mainline/fusion-gate reset gate completion
 - production deployment readiness
+
+R6-B claims only the rebuilt default reset mainline quality gate. It does not
+claim provider readiness, external service readiness, production readiness,
+visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
+`fusion-gate` remains archived/manual.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-"""Repo-level quality runner for QS-2."""
+"""Repo-level quality runner for the fixed-DAG reset branch."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ import shutil
 import subprocess
 import sys
 import sysconfig
+import tempfile
 from pathlib import Path
 from typing import Iterable, Mapping
 
@@ -53,8 +54,31 @@ REPO_ROOT = _find_repo_root(Path(__file__).resolve().parent)
 FUSION_OUT_DIR = REPO_ROOT / "ops" / "regression" / "fusion" / "out"
 STATIC_RUFF_TARGETS = (
     "scripts/quality",
+    "src/react_agent/agent_types.py",
+    "src/react_agent/context.py",
+    "src/react_agent/fixed_dag_catalog.py",
+    "src/react_agent/fixed_dag_contracts.py",
+    "src/react_agent/fixed_dag_executor.py",
+    "src/react_agent/fixed_dag_runtime_registry.py",
+    "src/react_agent/graph.py",
+    "src/react_agent/public_api.py",
+    "src/react_agent/public_contracts.py",
+    "src/react_agent/public_mapping.py",
+    "src/react_agent/public_runtime.py",
+    "src/react_agent/public_store.py",
+    "src/react_agent/state.py",
     "tests/integration_tests/test_public_api.py",
     "tests/integration_tests/test_graph.py",
+    "tests/unit_tests/test_fixed_dag_catalog.py",
+    "tests/unit_tests/test_fixed_dag_contracts.py",
+    "tests/unit_tests/test_fixed_dag_executor.py",
+    "tests/unit_tests/test_fixed_dag_graph_skeleton.py",
+    "tests/unit_tests/test_fixed_dag_runtime_registry.py",
+    "tests/unit_tests/test_no_route_prior_runtime_contract.py",
+    "tests/unit_tests/test_public_mapping_fixed_dag.py",
+    "tests/unit_tests/test_public_runtime_streaming.py",
+    "tests/unit_tests/test_quality_runner_codespell.py",
+    "tests/unit_tests/test_quality_runner_dispatch.py",
 )
 STATIC_MYPY_TARGETS = (
     "scripts/quality/run_quality.py",
@@ -163,6 +187,19 @@ def _python_module(*args: str, extra_env: Mapping[str, str] | None = None) -> No
     _run((sys.executable, *args), extra_env=extra_env)
 
 
+def _is_relative_to(path: Path, parent: Path) -> bool:
+    try:
+        path.resolve().relative_to(parent.resolve())
+    except ValueError:
+        return False
+    return True
+
+
+def _assert_repo_external_build_dir(path: Path) -> None:
+    if _is_relative_to(path, REPO_ROOT):
+        raise RuntimeError(f"Frontend build outDir must be outside the repo: {path}")
+
+
 def run_static() -> None:
     """Run the blocking static checks for the maintained quality surface."""
     _python_module("-m", "ruff", "check", *STATIC_RUFF_TARGETS)
@@ -172,28 +209,57 @@ def run_static() -> None:
 
 def run_unit() -> None:
     """Run focused Python unit tests."""
-    _python_module("-m", "pytest", "tests/unit_tests")
+    _python_module("-m", "pytest", "tests/unit_tests", "-q")
 
 
 def run_public_api() -> None:
     """Run the public adapter integration contract tests."""
-    _python_module("-m", "pytest", "tests/integration_tests/test_public_api.py")
+    _python_module("-m", "pytest", "tests/integration_tests/test_public_api.py", "-q")
 
 
 def run_graph_smoke() -> None:
     """Run the blocking runtime graph smoke test."""
-    _python_module("-m", "pytest", "tests/integration_tests/test_graph.py")
+    _python_module("-m", "pytest", "tests/integration_tests/test_graph.py", "-q")
 
 
 def run_frontend() -> None:
-    """Run the active frontend build and smoke gate."""
+    """Run the active frontend typecheck, smoke, and repo-external build gate."""
     npm = _npm_executable()
-    _run((npm, "--prefix", "apps/web", "run", "build"))
+    _run(
+        (
+            npm,
+            "--prefix",
+            "apps/web",
+            "exec",
+            "--",
+            "tsc",
+            "--noEmit",
+            "--project",
+            "apps/web/tsconfig.json",
+        )
+    )
     _run((npm, "--prefix", "apps/web", "run", "test"))
+    with tempfile.TemporaryDirectory(prefix="lma-web-build-") as out_dir_name:
+        out_dir = Path(out_dir_name)
+        _assert_repo_external_build_dir(out_dir)
+        print(f"[quality] frontend build outDir: {out_dir}", flush=True)
+        _run(
+            (
+                npm,
+                "--prefix",
+                "apps/web",
+                "run",
+                "build",
+                "--",
+                "--outDir",
+                str(out_dir),
+            )
+        )
 
 
 def run_fusion_gate() -> None:
-    """Run the deterministic fusion regression, eval, and gate chain."""
+    """Run the archived/manual deterministic fusion regression chain."""
+    print("[quality] archived/manual fusion-gate mode; not part of reset mainline", flush=True)
     fusion_env = {
         "OPENAI_API_KEY": os.environ.get("OPENAI_API_KEY", "test"),
         "TAVILY_API_KEY": os.environ.get("TAVILY_API_KEY", "ff5b-dummy-key"),
@@ -226,23 +292,33 @@ def run_fusion_gate() -> None:
 
 
 def run_mainline() -> None:
-    """Run the default blocking quality closure entrypoint."""
+    """Run the default fixed-DAG reset quality gate."""
     run_static()
     run_unit()
     run_public_api()
     run_graph_smoke()
     run_frontend()
-    run_fusion_gate()
 
 
 def parse_args() -> argparse.Namespace:
     """Parse CLI arguments for the repo-level quality runner."""
-    parser = argparse.ArgumentParser(description="Run repo-level quality checks.")
+    parser = argparse.ArgumentParser(
+        description="Run fixed-DAG reset quality checks.",
+        epilog=(
+            "Reset mainline runs static, unit, public-api, graph-smoke, and "
+            "frontend. fusion-gate is archived/manual only; provider/live, "
+            "external invoke, demo stack, Router-SFT, and RARP checks are not "
+            "default mainline gates."
+        ),
+    )
     parser.add_argument(
         "--mode",
         choices=("static", "unit", "public-api", "graph-smoke", "frontend", "fusion-gate", "mainline"),
         default="mainline",
-        help="Quality mode to execute.",
+        help=(
+            "Quality mode to execute. mainline is the reset default gate; "
+            "fusion-gate is archived/manual only."
+        ),
     )
     return parser.parse_args()
 

@@ -1,91 +1,64 @@
 # Quality
 
-This document defines safe validation for the reset branch.
+This document defines the safe validation boundary for the fixed-DAG reset
+branch after Phase R6-B.
 
-R5-B2/R5-B2.6/R5-C/R5-C1 keep the same non-provider validation boundary as
-R3/R3.6/R4-A/R4-B/R4-C/R5-B1. R5-B2 adds frontend workflow inspector
-validation for the existing `apps/web` shell, and R5-B2.6 adds localized
-visible-copy and visual copy-polish validation over that same inspector. R5-C
-adds normal-UI simplification, advanced diagnostic disclosure, and product-facing
-copy validation over the same public payload. R5-C1 adds default-surface
-business-copy professionalization for dimension summaries, step summaries, and
-answer-card evidence labels. These phases do not add provider, external live,
-demo-stack, production deployment, or business-agent capability validation.
+## Default Reset Mainline
 
-## Safe R5-B2/R5-B2.6/R5-C/R5-C1 Commands
+R6-B rebuilds `scripts/quality/run_quality.py --mode mainline` as the default
+fixed-DAG reset quality gate. The mainline runs:
+
+1. `static`
+2. `unit`
+3. `public-api`
+4. `graph-smoke`
+5. `frontend`
+
+It does not run fusion-gate, provider live smoke, external
+`/v1/agent/invoke`, demo stack commands, Router-SFT, RARP/route-prior, or
+browser screenshot capture.
+
+## Quality Runner Modes
 
 ```powershell
-git status --short --branch
-git diff --name-status
-git diff --check
-conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
-conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
-npm --prefix apps/web run test
-npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode unit
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode public-api
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode graph-smoke
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode frontend
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
 ```
 
-## Not Safe For R5-B2/R5-B2.6/R5-C/R5-C1
+`static` is intentionally scoped to active reset source, reset tests, quality
+scripts, and maintained docs. It is not a full-tree legacy/offline lint gate.
 
-Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 unless the
-user explicitly asks:
+`frontend` runs:
 
-- provider live smoke
-- external `/v1/agent/invoke`
-- demo stack start or stop
-- artifact-writing mainline gates
-- artifact-writing fusion gates
-- frontend production build if it writes repo artifacts; use a repo-external
-  `--outDir` if build validation is explicitly required
+```powershell
+npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
+npm --prefix apps/web run test
+npm --prefix apps/web run build -- --outDir <repo-external-temp-dir>
+```
 
-R5-B2/R5-B2.6/R5-C/R5-C1 treat frontend smoke, TypeScript no-emit checks, and
-repo-external frontend build output as frontend inspector/copy evidence only.
-They do not treat `mainline`, `fusion-gate`, provider live smoke, demo stack, or
-artifact-writing frontend build results as required runtime-boundary evidence.
+The runner creates a temporary repo-external frontend build directory and
+cleans it up after the build. It must not write `apps/web/dist`.
 
-## Current Quality Runner Boundary
+## Manual, Live, And Archived Gates
 
-`scripts/quality/run_quality.py --mode static` checks maintained reset docs and
-selected static code surfaces. Old Router-SFT docs are no longer quality targets.
+These checks are not default reset mainline gates:
 
-The previous mainline and fusion-gate modes still exist in code but are not
-reset acceptance evidence. They must be rebuilt in later phases before being
-used as Fixed DAG gate claims.
+- `fusion-gate`: archived/manual deterministic regression lineage only.
+- provider live smoke: optional live/manual or scheduled workflow only.
+- external `/v1/agent/invoke`: manual/live readiness work only.
+- demo stack start/stop: manual demo/deployment acceptance only.
+- Router-SFT and RARP/route-prior: archived lineage only.
+- browser screenshot visual capture: manual frontend visual acceptance only.
 
 ## Validation Meaning
 
-Passing safe commands means the deterministic fixed-DAG executor skeleton
-imports, parses, validates plan dependencies, generates topological execution
-batches, invokes without provider/external calls, exposes `workflow_snapshot_v2`,
-projects `step_results` and `execution_batches`, preserves public transcript
-safety, and keeps the contract/executor/catalog/runtime-binding seams and
-27-agent roster aligned in reset docs/tests. In R5-B2 it also means the
-frontend TypeScript contract, mock agent catalog, mock workflow snapshot,
-streaming smoke fixture, and WorkflowPanel inspector render the fixed DAG public
-payload's stage timeline, execution batches, dimension groups, selected step
-metadata, final source, and provenance while preserving the single public
-transcript boundary. In R5-B2.6 it also means the relevant visible Chinese copy,
-status labels, metadata labels, screenshot/mock fixture copy, and deterministic
-public-safe reset skeleton answer are aligned while raw technical ids and enum
-values remain available in inspector/debug contexts. In R5-C it also means the
-normal chat, answer, Agents, and Settings surfaces are product-facing by
-default while workflow technical details and Settings advanced diagnostics still
-retain true runtime/readiness boundary information. In R5-C1 it also means
-dimension summaries, step summaries, and answer-card evidence copy avoid
-fixture/roster/transcript/path-wiring language in default user-visible
-surfaces, while raw protocol values remain available in expanded technical
-details.
-
-R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
-`topological_batches`, `execute_fixed_dag_plan`,
-`validate_dag_execution_result`, fixed DAG catalog validation, fixed DAG runtime
-binding validation, legacy external mapping alignment, graph executor
-integration, public workflow/catalog projection, active graph import isolation
-from legacy registry/bootstrap modules, and explicit legacy compatibility
-bootstrap tests.
+Passing the R6-B reset mainline means the maintained static surface passes,
+unit tests pass, public adapter integration tests pass, the runtime graph smoke
+test passes, and the frontend typecheck/smoke/repo-external build gate passes.
 
 It does not mean:
 
@@ -93,8 +66,11 @@ It does not mean:
 - external service readiness
 - live market-data correctness
 - real business-agent correctness
-- visual dependency graph beyond ordered execution batches
-- evidence-specific frontend drilldown
-- mainline/fusion-gate reset gate completion
+- fusion acceptance restored
+- visual screenshot acceptance
 - production deployment readiness
-- full runtime locale switching
+- full-tree lint enforcement
+
+The fixed-DAG runtime remains the deterministic provider-free reset skeleton
+until later phases implement and verify real business agents and live external
+service readiness.

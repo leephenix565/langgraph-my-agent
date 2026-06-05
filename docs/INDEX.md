@@ -7,13 +7,13 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
 | `docs/CONTRACTS.md` | Runtime contract/executor/catalog/binding seams, execution results, and public/runtime boundary. |
 | `docs/FRONTEND_V2.md` | Frontend and workflow inspector boundary. |
-| `docs/QUALITY.md` | Safe validation commands for reset phases. |
+| `docs/QUALITY.md` | R6-B reset mainline, frontend repo-external build gate, and manual/live/archived quality boundaries. |
 | `docs/DECISIONS.md` | Reset architecture decisions. |
 | `docs/CHANGELOG.md` | Reset branch changelog. |
 
@@ -58,7 +58,9 @@ contracts and fixed DAG topology.
 R5-C1 further professionalizes default user-facing copy for dimension summaries,
 step descriptions, and answer-card evidence labels without changing public
 contracts or fixed DAG topology.
+R6-B rebuilds the default reset mainline quality gate so it runs static, unit,
+public-api, graph-smoke, and frontend while keeping fusion-gate archived/manual
+and provider/live/external/demo/SFT/RARP paths outside default acceptance.
 It does not prove business-agent correctness, provider readiness, external
-service readiness, mainline/fusion-gate rebuilt gates, or production deployment
+service readiness, restored fusion acceptance, or production deployment
 readiness.
-Mainline and fusion-gate reset quality gates remain R6 work.

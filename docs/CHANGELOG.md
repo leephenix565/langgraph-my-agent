@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R6-B reset quality mainline rebuild
+
+### Changed
+
+- Rebuilt `scripts/quality/run_quality.py --mode mainline` as the default
+  fixed-DAG reset quality gate: static, unit, public-api, graph-smoke, and
+  frontend.
+- Removed `fusion-gate` from default mainline dispatch and kept it as an
+  explicit archived/manual mode.
+- Changed frontend quality mode to run TypeScript no-emit, frontend smoke, and
+  Vite build with a temporary repo-external `--outDir` instead of writing
+  `apps/web/dist`.
+- Expanded quality runner unit coverage for mainline dispatch, frontend command
+  sequencing, repo-external build output, and static target path existence.
+- Updated Makefile help and GitHub Actions so PR/push default quality no longer
+  blocks on fusion-gate; provider live smoke remains optional manual/scheduled.
+- Updated reset docs for R6-B quality boundaries and non-claims.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check scripts/quality/run_quality.py tests/unit_tests/test_quality_runner_codespell.py tests/unit_tests/test_quality_runner_dispatch.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_quality_runner_codespell.py tests/unit_tests/test_quality_runner_dispatch.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --help`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode frontend`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, provider integration,
+  external wrapper, frontend product UI, or real business-agent implementation
+  change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, Router-SFT,
+  RARP/route-prior, browser screenshot, or archived fusion-gate validation.
+- No claim that external services, provider readiness, fusion acceptance,
+  visual screenshots, or production deployment are live verified.
+- No full-tree lint gate.
+- No push.
+
 ## 2026-06-05 - Phase R5-C1 user-facing business copy professionalization
 
 ### Changed

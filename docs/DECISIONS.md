@@ -244,8 +244,8 @@ metadata remain inspector/debug data, not transcript turns.
 
 Non-consequence: R5-B1 does not change Python backend contracts, executor
 topology, runtime bindings, `/api/agents` schema, provider readiness, external
-candidate invocation, production deployment, or R6 mainline/fusion gates. It
-also does not complete the richer R5-B2 DAG timeline, dependency graph,
+candidate invocation, production deployment, or later quality gates. It also
+does not complete the richer R5-B2 DAG timeline, dependency graph,
 per-step drilldown, or evidence view.
 
 ## ADR-015: R5-B2 Rewrites The Workflow DAG Inspector UI
@@ -270,9 +270,9 @@ inspector/debug data, not transcript turns.
 
 Non-consequence: R5-B2 does not change Python backend contracts, executor
 topology, catalog source, runtime bindings, `/api/agents` schema, provider
-readiness, external candidate invocation, production deployment, or R6
-mainline/fusion gates. It does not prove business-agent correctness or live
-service readiness.
+readiness, external candidate invocation, production deployment, or later
+quality gates. It does not prove business-agent correctness or live service
+readiness.
 
 ## ADR-016: R5-C Keeps Normal UI Product-Facing And Moves Diagnostics Behind Disclosure
 
@@ -299,7 +299,7 @@ authority.
 
 Non-consequence: R5-C does not change fixed DAG topology, roster, runtime
 bindings, `/api/agents` schema, provider readiness, external candidate
-invocation, production deployment, or R6 mainline/fusion gates. It does not
+invocation, production deployment, or later quality gates. It does not
 prove business-agent correctness or live service readiness.
 
 ## ADR-017: R5-C1 Business Copy Avoids Implementation Notes In Default UI
@@ -325,5 +325,29 @@ chat surfaces.
 
 Non-consequence: R5-C1 does not change fixed DAG topology, the 27-agent roster,
 runtime bindings, public schemas, provider readiness, external candidate
-invocation, production deployment, or R6 mainline/fusion gates. It does not
+invocation, production deployment, or later quality gates. It does not
 prove business-agent correctness or live service readiness.
+
+## ADR-018: R6-B Rebuilds Reset Mainline And Archives Fusion Gate
+
+Status: accepted for reset quality.
+
+Decision: `scripts/quality/run_quality.py --mode mainline` is the default
+fixed-DAG reset quality gate and runs static, unit, public-api, graph-smoke,
+and frontend. It does not run `fusion-gate`.
+
+Reason: the reset branch needs a non-provider, non-live, non-artifact default
+quality closure that matches the active fixed-DAG runtime and frontend shell.
+The old mainline mixed in the historical fusion regression gate, and the old
+frontend mode could write `apps/web/dist`.
+
+Consequence: the frontend mode performs TypeScript no-emit, frontend smoke,
+and Vite build with a temporary repo-external `--outDir`. PR/push CI no longer
+blocks on fusion-gate. `fusion-gate` remains explicit archived/manual lineage.
+Provider live smoke remains optional live/manual or scheduled.
+
+Non-consequence: R6-B does not change fixed DAG topology, the 27-agent roster,
+runtime bindings, public schemas, frontend product UI, provider readiness,
+external `/v1/agent/invoke` readiness, production deployment, Router-SFT, or
+RARP/route-prior lineage. Passing reset mainline does not prove live services
+or restored fusion acceptance.

@@ -30,9 +30,11 @@ quality_graph_smoke:
 quality_frontend:
 	python scripts/quality/run_quality.py --mode frontend
 
+# Archived/manual only; not part of reset mainline acceptance.
 quality_fusion_gate:
 	python scripts/quality/run_quality.py --mode fusion-gate
 
+# Optional live/manual smoke; requires provider/search readiness.
 quality_provider_smoke:
 	python scripts/quality/run_provider_live_smoke.py --out-dir ops/regression/provider/out
 
@@ -88,12 +90,12 @@ help:
 	@echo 'tests                        - run unit tests'
 	@echo 'test TEST_FILE=<test_file>   - run all tests in file'
 	@echo 'test_watch                   - run unit tests in watch mode'
-	@echo 'quality                      - run the repo-level quality closure entrypoint'
-	@echo 'quality_static               - run blocking static checks via the quality runner'
+	@echo 'quality                      - run the fixed-DAG reset mainline gate'
+	@echo 'quality_static               - run reset scoped static checks via the quality runner'
 	@echo 'quality_unit                 - run Python unit tests via the quality runner'
 	@echo 'quality_public_api           - run public adapter integration tests via the quality runner'
 	@echo 'quality_graph_smoke          - run the runtime graph smoke test via the quality runner'
-	@echo 'quality_frontend             - run frontend build/test via the quality runner'
-	@echo 'quality_fusion_gate          - run deterministic fusion regression/eval/gate via the quality runner'
-	@echo 'quality_provider_smoke       - run optional provider/live smoke and write an artifact'
+	@echo 'quality_frontend             - run frontend typecheck/smoke/repo-external build via the quality runner'
+	@echo 'quality_fusion_gate          - archived/manual fusion regression/eval/gate; not reset mainline'
+	@echo 'quality_provider_smoke       - optional live/manual provider smoke and artifact; not reset mainline'
 

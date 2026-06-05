@@ -105,31 +105,5 @@ jobs:
           cache-dependency-path: apps/web/package-lock.json
       - name: Install frontend dependencies
         run: npm --prefix apps/web ci
-      - name: Run frontend build/test
+      - name: Run frontend reset gate
         run: python scripts/quality/run_quality.py --mode frontend
-
-  fusion-gate:
-    name: Fusion Gate
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Set up Python 3.11
-        uses: actions/setup-python@v5
-        with:
-          python-version: "3.11"
-      - name: Install dependencies
-        run: |
-          curl -LsSf https://astral.sh/uv/install.sh | sh
-          uv venv
-          uv pip install .
-      - name: Run deterministic fusion gate
-        run: uv run python scripts/quality/run_quality.py --mode fusion-gate
-      - name: Upload fusion gate artifacts
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fusion-gate-artifacts
-          path: |
-            ops/regression/fusion/out/fusion_runs.jsonl
-            ops/regression/fusion/out/fusion_metrics.json
-            ops/regression/fusion/out/fusion_gate.json

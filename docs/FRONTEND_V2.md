@@ -105,6 +105,20 @@ R5-C1 does not change `workflow_snapshot_v2`, fixed DAG topology, the 27-agent
 roster, runtime bindings, provider/search readiness, external service
 readiness, or business-agent correctness.
 
+## Current R6-B Frontend Quality Boundary
+
+R6-B does not redesign the frontend UI. It changes the default reset quality
+gate so frontend validation runs through `scripts/quality/run_quality.py
+--mode frontend`:
+
+- TypeScript no-emit check:
+  `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- Frontend smoke test: `npm --prefix apps/web run test`
+- Vite build with a temporary repo-external `--outDir`
+
+The default reset mainline must not write `apps/web/dist`, must not run browser
+screenshot capture, and must not imply provider/live/external/demo readiness.
+
 ## Target Composer Flow
 
 ```text
@@ -176,6 +190,16 @@ composer text
   "流程记录" evidence items.
 - Frontend smoke assertions guard against those engineering terms reappearing
   in default user-visible surfaces.
+
+## R6-B Done
+
+- The default reset quality mainline now includes the frontend gate after
+  static, unit, public API, and graph smoke checks.
+- The frontend gate runs TypeScript no-emit, smoke tests, and a repo-external
+  temporary build output directory.
+- `fusion-gate`, provider live smoke, external invoke checks, demo stack, and
+  screenshot capture remain manual/live/archived paths outside the default
+  frontend quality gate.
 
 ## Deferred Work
 

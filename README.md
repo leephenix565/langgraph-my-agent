@@ -24,6 +24,10 @@ Agents, and Settings views.
 Phase R5-C1 professionalizes the remaining business-facing Chinese copy so
 dimension summaries, step descriptions, and answer-card evidence read as
 product language rather than implementation notes.
+Phase R6-B rebuilds the default reset quality mainline so it covers scoped
+static checks, unit tests, public API tests, graph smoke tests, and frontend
+typecheck/smoke/repo-external build validation without running archived
+fusion-gate or live provider/external gates.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -33,8 +37,8 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R5-C1 user-facing business copy professionalization
-  over the R5-B2/R5-B2.6 fixed DAG web shell.
+- Current phase: R6-B reset quality mainline rebuild over the fixed DAG web
+  shell and backend skeleton.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -221,29 +225,31 @@ answer cards use "研判依据", "分析框架", "用户问题", and "流程记�
 
 ## Safe Local Validation
 
-Use the project conda environment when available:
+Use the project conda environment when available. R6-B makes `mainline` the
+default reset quality gate:
 
 ```powershell
-conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
-conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py
-conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
-npm --prefix apps/web run test
-npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c1
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode unit
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode public-api
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode graph-smoke
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode frontend
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
 ```
+
+`frontend` uses TypeScript no-emit, the frontend smoke test, and a temporary
+repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
 ## Explicit Non-Claims
 
 - No provider or live external service was verified by
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B validation.
 - No demo stack startup is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1 validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B validation.
 - No real business algorithms for individual agents are implemented in
   R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
 - R5-B2 completes the frontend inspector UI rewrite only; it does not change
@@ -259,8 +265,11 @@ Do not use successful tests as production readiness evidence.
 - R5-C1 completes user-facing business copy professionalization only; it does
   not change public schemas, fixed DAG topology, roster, provider readiness,
   external readiness, or business-agent correctness.
-- No mainline or fusion-gate reset quality gate is rebuilt in
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
+- R6-B rebuilds the default reset mainline quality gate only. It does not
+  restore fusion acceptance, and `fusion-gate` remains archived/manual.
+- Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
+  demo stack acceptance, and browser screenshot visual capture remain outside
+  the default reset mainline.
 - R4-C isolates legacy registry/bootstrap but does not delete
   `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.
