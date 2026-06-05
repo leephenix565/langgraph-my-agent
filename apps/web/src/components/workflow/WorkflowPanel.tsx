@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { workflowSummaryLabel, zhCN } from "../../content/zh-CN";
+import { stepCountLabel, workflowSummaryLabel, zhCN } from "../../content/zh-CN";
 import type { WorkflowModel, WorkflowStageProgress } from "../../types/workflow";
 import { SourceBadge } from "../chat/SourceBadge";
 import { WorkflowDagStepList } from "./WorkflowDagStepList";
@@ -26,12 +26,12 @@ function liveWorkflowSummary(workflow: WorkflowModel) {
   const failedStage = liveProgress.find((stage) => stage.status === "failed");
   const completedCount = liveProgress.filter((stage) => stage.status === "completed").length;
   if (failedStage) {
-    return `协作受阻 · ${failedStage.title}`;
+    return `研判流程受阻 · ${failedStage.title}`;
   }
   if (runningStage) {
-    return `正在执行固定 DAG · ${runningStage.title}`;
+    return `正在执行研判流程 · ${runningStage.title}`;
   }
-  return `固定 DAG 已完成 · ${completedCount}/${liveProgress.length}`;
+  return `研判流程已完成 · ${completedCount}/${liveProgress.length}`;
 }
 
 function renderLiveProgress(liveProgress: WorkflowStageProgress[]) {
@@ -52,6 +52,14 @@ function renderLiveProgress(liveProgress: WorkflowStageProgress[]) {
 function defaultSelectedStepId(workflow: WorkflowModel) {
   const firstResultId = Object.keys(workflow.stepResults)[0];
   return firstResultId ?? workflow.dagSteps[0]?.id ?? null;
+}
+
+function workflowSummaryStats(workflow: WorkflowModel) {
+  return [
+    `${workflow.stages.length || 0} 个阶段`,
+    stepCountLabel(workflow.dagSteps.length || 0),
+    `${workflow.dimensionGroups.length || 0} 个维度综合`,
+  ];
 }
 
 export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
@@ -81,6 +89,7 @@ export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
     }
     return workflowSummaryLabel(workflow);
   }, [isLive, workflow]);
+  const stats = useMemo(() => workflowSummaryStats(workflow), [workflow]);
 
   return (
     <section className="workflow-panel">
@@ -94,7 +103,14 @@ export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
           <span className="workflow-panel__glyph" aria-hidden="true">
             DAG
           </span>
-          <strong>{summaryLabel}</strong>
+          <span className="workflow-panel__summary-copy">
+            <strong>{summaryLabel}</strong>
+            <span className="workflow-panel__stat-row">
+              {stats.map((item) => (
+                <span key={item}>{item}</span>
+              ))}
+            </span>
+          </span>
         </div>
         <div className="workflow-panel__summary-meta">
           {isLive ? null : <SourceBadge source={workflow.finalSource} />}

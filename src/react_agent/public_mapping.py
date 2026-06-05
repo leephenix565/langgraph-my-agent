@@ -286,7 +286,7 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         if isinstance(provenance_raw.get("limitations", []), list)
         else [],
         summary=(
-            "固定 DAG 重置骨架已输出公开回答；未调用 provider 或外部智能体端点。"
+            "本轮研判流程已完成，详细执行信息可在技术详情中查看。"
         ),
     )
     return WorkflowModel(

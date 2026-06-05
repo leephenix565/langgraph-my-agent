@@ -14,7 +14,7 @@ const agents: AgentDescriptor[] = [
   {
     id: "financial_data_service",
     name: "Financial data service",
-    description: "Prepares the financial data seam without live provider or external calls in the mock path.",
+    description: "Prepares the financial data context for the fixed DAG path.",
     capabilities: ["data_bundle", "financial_data"],
     layer: "L1",
     team: "l1",

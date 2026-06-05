@@ -125,7 +125,7 @@ def test_l1_bundles_are_deterministic_and_keep_as_of_boundary() -> None:
         assert bundle["status"] == "pending_implementation"
         assert bundle["as_of"] == "2026-06-04"
         assert bundle["data_as_of"] <= bundle["as_of"]
-        assert "no provider" in " ".join(bundle["notes"]).lower()
+        assert "本地固定流程模式" in " ".join(bundle["notes"])
     valid, reason = validate_data_bundle(data_bundle)
     assert valid, reason
     valid, reason = validate_entity_relation_bundle(entity_bundle)
@@ -207,9 +207,9 @@ def test_report_result_validates_and_has_reset_limitations() -> None:
     assert valid, reason
     assert report["evidence_cards"]
     joined = "\n".join([report["answer"], *report["limitations"]])
-    assert "No provider" in joined
-    assert "external /v1/agent/invoke" in joined
-    assert "尚未实现业务智能体算法" in joined
+    assert "固定 DAG 研判流程" in joined
+    assert "高级连接状态可在设置诊断中查看" in joined
+    assert "provider verified" not in joined.lower()
 
 
 def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:

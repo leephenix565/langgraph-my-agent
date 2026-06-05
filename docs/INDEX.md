@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -51,6 +51,10 @@ final source, and provenance from `workflow_snapshot_v2`.
 R5-B2.6 localizes and polishes visible Chinese copy for the same fixed DAG
 inspector, Agents page, Settings page, frontend fixtures, and deterministic
 public-safe skeleton answer without changing backend/runtime/public contracts.
+R5-C further reduces normal user-facing engineering/status noise by moving
+provider/search/readiness and raw enum details into workflow technical details,
+Settings advanced diagnostics, docs, and tests while keeping the same public
+contracts and fixed DAG topology.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, mainline/fusion-gate rebuilt gates, or production deployment
 readiness.

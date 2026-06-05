@@ -374,7 +374,7 @@ def _summary_for_step(step: Mapping[str, Any]) -> str:
     agent_id = str(step.get("agent_id") or step.get("id") or "")
     if step.get("agent_id") == "route_planner":
         return "已选择确定性固定 DAG 计划。"
-    return f"{agent_id} 已作为确定性占位执行；业务逻辑仍待实现。"
+    return f"{agent_id} 已按本地固定流程记录执行位置。"
 
 
 def _execution_plan_or_fallback(
@@ -438,9 +438,8 @@ def execute_fixed_dag_plan(
     decision_result = build_decision_result(dimension_results, as_of=as_of)
     report_result = build_report_result(decision_result, question=question)
     limitations = [
-        "业务智能体算法仍待实现。",
-        "未验证 provider 就绪状态。",
-        "未验证外部服务就绪状态。",
+        "当前为本地固定流程模式。",
+        "高级连接状态可在设置诊断中查看。",
     ]
     if fallback_used:
         limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")

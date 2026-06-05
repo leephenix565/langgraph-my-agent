@@ -60,11 +60,12 @@ The workflow inspector treats the reset roster as 27 formal agents. The
 `sentiment_company_radar` step belongs to the market dimension and should not
 be shown as a direct risk-composite input.
 
-## Current R5-B2.6 Localization Boundary
+## Current R5-C Product Polish Boundary
 
-R5-B2.6 is a presentation-layer follow-up to R5-B2. It localizes and polishes
-visible Chinese copy across the existing `apps/web` shell and deterministic
-fixed DAG skeleton output while keeping the same public contracts:
+R5-B2.6 localized visible Chinese copy across the existing `apps/web` shell and
+deterministic fixed DAG skeleton output. R5-C is the next presentation-layer
+follow-up: it keeps the same public contracts and reduces engineering/status
+noise in normal user-facing views.
 
 - `workflow_snapshot_v2` remains the frontend workflow payload.
 - The public transcript remains a single user/assistant transcript.
@@ -72,8 +73,14 @@ fixed DAG skeleton output while keeping the same public contracts:
   for debugging, for example `route_planner`, `financial_data_service`,
   `workflow_snapshot_v2`, `external_http_candidate`, and
   `external_candidate_disabled`.
-- The UI adds Chinese explanations around those technical values instead of
-  replacing protocol values.
+- The UI adds Chinese primary labels around those technical values and keeps
+  raw protocol values in small technical labels inside expanded details.
+- Chat, answer cards, workflow collapsed summaries, Agents overview, and
+  Settings default view should not prominently display backlog/readiness wording
+  such as pending implementation, provider missing, external not ready, or live
+  verification status.
+- Workflow technical details, Settings advanced diagnostics, docs, and tests
+  retain the true provider/external/readiness boundary.
 
 This is not a full runtime locale switch and does not change backend topology,
 agent roster, provider/search readiness, external service readiness, or
@@ -118,12 +125,26 @@ composer text
   copy localized to Chinese
 - WorkflowPanel labels, status labels, empty states, result metadata labels,
   and provenance copy polished over the same `workflow_snapshot_v2` payload
-- fixed DAG deterministic public answer and workflow summaries localized while
-  preserving the `No provider` and `external /v1/agent/invoke` safety sentinel
-  phrases required by current validation
+- fixed DAG deterministic public answer and workflow summaries localized over
+  the then-current validation boundary
 - frontend smoke expectations, mocks, and screenshot fixture copy aligned to
   the localized public UI
 - raw technical ids and enum values kept visible in inspector/debug contexts
+
+## R5-C Done
+
+- Chat empty state now reads as a Chinese capital-market research entry point
+  and offers example questions.
+- The degraded/local-mode notice is softened and no longer lists provider/search
+  diagnostics in the main chat surface.
+- Assistant answers and workflow collapsed summaries use product-facing fixed
+  DAG研判流程 copy.
+- Workflow raw enum values remain available only after expanding details and are
+  rendered as small technical labels.
+- Agents page defaults to layer and dimension capability summaries, with the
+  detailed agent list behind a disclosure.
+- Settings defaults to runtime, continuity, and storage status; provider/search
+  and checkpointer details live under advanced diagnostics.
 
 ## Deferred Work
 

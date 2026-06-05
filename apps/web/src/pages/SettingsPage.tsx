@@ -26,24 +26,24 @@ function statusTone(status: string) {
 
 function describeRuntime(health: HealthResponse) {
   return health.runtime.status === "ready"
-    ? "LangGraph 运行时已就绪，当前可以继续处理聊天请求。"
-    : "运行时尚未就绪，系统暂时无法保证完整的对话处理能力。";
+    ? "运行时可用，当前可以继续处理聊天请求。"
+    : "运行时正在检查中，系统暂时无法保证完整的对话处理能力。";
 }
 
 function describeProvider(health: HealthResponse) {
   if (health.providerEnv.status === "configured") {
-    return "模型凭据已就绪，系统可以向主模型发起请求。";
+    return "高级模型连接已配置，可用于后续需要模型服务的路径。";
   }
   if (health.providerEnv.status === "unknown") {
-    return "当前尚未确认模型环境状态，请结合运行时状态一并查看。";
+    return "当前尚未确认高级模型连接状态，请结合运行时状态一并查看。";
   }
-  return "模型环境未配置，系统将无法完成正常生成。";
+  return "高级模型连接未启用；当前本地固定流程仍可使用。";
 }
 
 function describeSearch(health: HealthResponse) {
   return health.searchEnv.status === "configured"
-    ? "外部搜索能力已就绪，可用于补充公开信息。"
-    : "外部搜索能力未就绪，涉及检索的能力会受限。";
+    ? "资料检索连接已配置，可用于后续补充公开信息。"
+    : "资料检索连接未启用；当前本地固定流程仍可使用。";
 }
 
 function describeCheckpointer(health: HealthResponse) {
@@ -51,9 +51,9 @@ function describeCheckpointer(health: HealthResponse) {
     return "持久化连续性已启用，系统可以优先使用持久线程路径。";
   }
   if (health.checkpointer.status === "disabled") {
-    return "当前未启用持久化，系统会在需要时回退到回放连续性。";
+    return "当前使用回放连续性，适合本地演示和只读审计。";
   }
-  return "已请求持久化，但当前未能成功启用。";
+  return "已请求持久化连续性，但当前未能成功启用。";
 }
 
 function continuityDescription(health: HealthResponse) {
@@ -149,7 +149,7 @@ export function SettingsPage({ health, isLoading, unavailable }: SettingsPagePro
           <p>
             {health.overallStatus === "ready"
               ? "当前公共适配器已连接，核心运行能力处于可用状态。"
-              : "当前系统仍可访问，但部分运行时或外部能力尚未达到首选基线。"}
+              : "当前基础功能可用，高级连接状态可在下方诊断中查看。"}
           </p>
         </div>
 
@@ -174,29 +174,36 @@ export function SettingsPage({ health, isLoading, unavailable }: SettingsPagePro
           statusTone(health.runtime.status),
           describeRuntime(health),
         )}
-        {renderSurfaceCard(
-          zhCN.settings.providerTitle,
-          readinessStatusLabel(health.providerEnv.status),
-          statusTone(health.providerEnv.status),
-          describeProvider(health),
-        )}
-        {renderSurfaceCard(
-          zhCN.settings.searchTitle,
-          readinessStatusLabel(health.searchEnv.status),
-          statusTone(health.searchEnv.status),
-          describeSearch(health),
-        )}
-        {renderSurfaceCard(
-          zhCN.settings.checkpointerTitle,
-          checkpointerStatusLabel(health.checkpointer.status),
-          statusTone(health.checkpointer.status),
-          describeCheckpointer(health),
-          <>
-            <span>{zhCN.settings.modeLabel}</span>
-            <strong>{health.checkpointer.mode}</strong>
-          </>,
-        )}
       </div>
+
+      <details className="settings-advanced">
+        <summary>{zhCN.settings.advancedDiagnostics}</summary>
+        <p>{zhCN.settings.advancedDiagnosticsBody}</p>
+        <div className="settings-grid">
+          {renderSurfaceCard(
+            zhCN.settings.providerTitle,
+            readinessStatusLabel(health.providerEnv.status),
+            statusTone(health.providerEnv.status),
+            describeProvider(health),
+          )}
+          {renderSurfaceCard(
+            zhCN.settings.searchTitle,
+            readinessStatusLabel(health.searchEnv.status),
+            statusTone(health.searchEnv.status),
+            describeSearch(health),
+          )}
+          {renderSurfaceCard(
+            zhCN.settings.checkpointerTitle,
+            checkpointerStatusLabel(health.checkpointer.status),
+            statusTone(health.checkpointer.status),
+            describeCheckpointer(health),
+            <>
+              <span>{zhCN.settings.modeLabel}</span>
+              <strong>{health.checkpointer.mode}</strong>
+            </>,
+          )}
+        </div>
+      </details>
     </div>
   );
 }

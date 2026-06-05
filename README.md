@@ -17,7 +17,10 @@ and provenance render as inspector data rather than public transcript content.
 Phase R5-B2.6 localizes and polishes visible Chinese copy for the existing
 fixed DAG inspector, Agents page, Settings page, public-safe skeleton answer,
 and supporting frontend fixtures without changing the `workflow_snapshot_v2`
-contract.
+contract. Phase R5-C further simplifies the normal user-facing web surface:
+engineering/backlog/readiness details move into workflow technical details,
+Settings advanced diagnostics, docs, and tests instead of the default chat,
+Agents, and Settings views.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -27,8 +30,8 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R5-B2.6 Chinese localization and visual copy polish over the
-  R5-B2 workflow DAG inspector.
+- Current phase: R5-C frontend product polish and user-facing simplification
+  over the R5-B2/R5-B2.6 fixed DAG web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -36,8 +39,8 @@ is not a completed business analysis engine.
   `config/fixed_dag/agent_catalog.json`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;
   the current WorkflowPanel renders the R5-B2 fixed DAG inspector from
-  `workflow_snapshot_v2`, with R5-B2.6 Chinese visible copy polish on the same
-  payload.
+  `workflow_snapshot_v2`, with R5-B2.6 Chinese localization and R5-C
+  user-facing simplification on the same payload.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -191,6 +194,11 @@ R5-B2.6 keeps that boundary and localizes the visible web copy, inspector
 labels, status labels, mock/screenshot fixture copy, and deterministic
 public-safe reset skeleton answer. It keeps technical ids, schema names, and
 runtime enum values available where needed for debugging.
+R5-C keeps the same public contracts but reduces engineering/status noise in
+normal UI. Chat empty state, answer cards, workflow collapsed summaries, Agents
+overview, and Settings default view are product-facing. Provider/search/live
+readiness, raw runtime enums, and execution provenance remain available in
+technical details, advanced diagnostics, docs, and tests.
 
 ## Documentation Index
 
@@ -215,7 +223,7 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c
 ```
 
 Do not use successful tests as production readiness evidence.
@@ -223,13 +231,13 @@ Do not use successful tests as production readiness evidence.
 ## Explicit Non-Claims
 
 - No provider or live external service was verified by
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6 validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C validation.
 - No demo stack startup is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6 validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C validation.
 - No real business algorithms for individual agents are implemented in
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C.
 - R5-B2 completes the frontend inspector UI rewrite only; it does not change
   backend executor semantics, provider readiness, external readiness, or
   business-agent correctness.
@@ -237,8 +245,11 @@ Do not use successful tests as production readiness evidence.
   only; it does not add a runtime locale switch, change public schemas, or
   change fixed DAG topology, roster, provider readiness, external readiness, or
   business-agent correctness.
+- R5-C completes user-facing simplification and diagnostic disclosure cleanup
+  only; it does not change public schemas, fixed DAG topology, roster, provider
+  readiness, external readiness, or business-agent correctness.
 - No mainline or fusion-gate reset quality gate is rebuilt in
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C.
 - R4-C isolates legacy registry/bootstrap but does not delete
   `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.

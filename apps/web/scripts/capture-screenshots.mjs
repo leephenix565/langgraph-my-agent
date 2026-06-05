@@ -6,7 +6,9 @@ import { chromium } from "playwright";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const rootDir = resolve(__dirname, "..");
-const outputDir = resolve(rootDir, "artifacts");
+const outputDir = process.env.SCREENSHOT_OUTPUT_DIR
+  ? resolve(process.env.SCREENSHOT_OUTPUT_DIR)
+  : resolve("E:/muti-agent/_tmp_r5c_visual/screenshots");
 const baseUrl = "http://127.0.0.1:4173";
 
 function jsonResponse(route, body, status = 200) {
@@ -33,6 +35,27 @@ async function waitForServer(url, timeoutMs = 20000) {
   throw new Error(`Timed out waiting for preview server at ${url}`);
 }
 
+async function terminateProcessTree(pid) {
+  if (!pid) {
+    return;
+  }
+  const killer =
+    process.platform === "win32"
+      ? spawn("taskkill", ["/pid", String(pid), "/T", "/F"], { stdio: "ignore" })
+      : null;
+  if (!killer) {
+    return;
+  }
+  await new Promise((resolveKill) => {
+    killer.once("exit", resolveKill);
+    killer.once("error", resolveKill);
+  });
+}
+
+function delay(ms) {
+  return new Promise((resolveDelay) => setTimeout(resolveDelay, ms));
+}
+
 function mockHealth() {
   return {
     status: "ok",
@@ -50,6 +73,77 @@ function mockHealth() {
     providerEnv: { status: "configured", code: "provider_env_configured" },
     searchEnv: { status: "configured", code: "search_env_configured" },
     store: "json-file",
+  };
+}
+
+const layerIds = {
+  L1: ["route_planner", "financial_data_service", "entity_relation_extractor"],
+  L2: [
+    "value_traditional_valuation",
+    "value_ml_valuation",
+    "value_meta_valuation",
+    "value_research_synthesis",
+    "market_stock_technical",
+    "market_fund_manager_behavior",
+    "market_ipo_investor_behavior",
+    "market_capital_flow_chip",
+    "sentiment_company_radar",
+    "risk_crash",
+    "risk_financial_fraud",
+    "risk_identification",
+    "risk_compliance_review",
+    "macro_analysis",
+    "macro_commodity_pricing",
+    "macro_index_valuation",
+    "macro_sentiment",
+    "macro_industry_hotspot",
+  ],
+  L3: ["value_composite", "market_composite", "risk_composite", "macro_composite"],
+  L4: ["decision_synthesizer", "report_generator"],
+};
+
+function agentTeam(id) {
+  if (id.startsWith("value_")) return "value";
+  if (id.startsWith("market_") || id === "sentiment_company_radar") return "market";
+  if (id.startsWith("risk_")) return "risk";
+  if (id.startsWith("macro_")) return "macro";
+  if (id.includes("composite")) return "composite";
+  if (id === "decision_synthesizer" || id === "report_generator") return "l4";
+  return "l1";
+}
+
+function mockAgentCatalog() {
+  const layers = Object.entries(layerIds).map(([layer, ids]) => ({
+    layer,
+    agents: ids.map((id) => ({
+      id,
+      name: id,
+      description: "Fixed DAG capability.",
+      capabilities: [agentTeam(id), layer.toLowerCase()],
+      layer,
+      team: agentTeam(id),
+      roleType:
+        layer === "L1"
+          ? "evidence_service"
+          : layer === "L2"
+            ? "analysis_agent"
+            : layer === "L3"
+              ? "dimension_composite"
+              : id === "decision_synthesizer"
+                ? "decision_synthesizer"
+                : "report_generator",
+      defaultEnabled: true,
+    })),
+  }));
+
+  return {
+    totals: {
+      configCount: 27,
+      runtimeCount: 27,
+      disabledIds: [],
+    },
+    layers,
+    disabledAgents: [],
   };
 }
 
@@ -89,7 +183,7 @@ function mockWorkflow() {
         agentId: "financial_data_service",
         dimension: "l1",
         title: "金融数据服务",
-        summary: "在 fixture 中准备公开数据占位接口，不进行实时外部调用。",
+        summary: "整理本轮研判所需的数据入口与上下文。",
         status: "complete",
       },
       {
@@ -179,7 +273,7 @@ function mockWorkflow() {
         agentId: "decision_synthesizer",
         dimension: "l4",
         title: "决策综合器",
-        summary: "将维度综合结果汇入决策占位接口。",
+        summary: "将维度综合结果汇入决策线索。",
         status: "pending_implementation",
       },
       {
@@ -250,7 +344,7 @@ function mockWorkflow() {
         external_agent_id: "financial_data_service",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["外部候选已注册，但 fixture 没有实时验证。"],
+        warnings: ["高级连接处于关闭状态，本轮使用本地流程。"],
       },
       sentiment_company_radar: {
         status: "pending_implementation",
@@ -259,11 +353,11 @@ function mockWorkflow() {
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["fixture 中市场舆情路径仍是占位实现。"],
+        warnings: ["市场舆情路径在本地流程中以规划信息展示。"],
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "可公开展示的固定 DAG 工作流快照；raw graph messages 和 raw provider responses 不进入 transcript。",
+    provenanceNote: "可公开展示的固定 DAG 研判流程快照；详细执行信息不进入 transcript。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -271,22 +365,22 @@ function mockWorkflow() {
       externalInvoked: false,
       executionStatus: "deterministic_skeleton",
       fallbackUsed: false,
-      limitations: ["仅截图 fixture；未验证 provider 或外部服务实时就绪状态。"],
-      summary: "最终回答由重置骨架固定 DAG 路径投影生成。",
+      limitations: ["仅截图 fixture；高级连接未做实时就绪验证。"],
+      summary: "本轮研判流程已完成，详细执行信息可在技术详情中查看。",
     },
   };
 }
 
 function mockThreadDetail() {
   const answer =
-    "固定 DAG 骨架将公开回答保持为单条助手回复。检查器展示规划、证据、并行分析、维度综合、决策和报告阶段，不暴露 raw provider 或外部响应。";
+    "已完成本轮固定 DAG 研判流程。公开回答保持为单条助手回复，流程详情展示规划、证据、并行分析、维度综合、决策和报告阶段。";
 
   return {
     thread: {
       id: "thread-visual-1",
-      title: "固定 DAG 工作流检查",
+      title: "固定 DAG 研判流程",
       updatedAt: "今天 10:18",
-      preview: "包含固定 DAG 检查器元数据的公开回答。",
+      preview: "包含固定 DAG 研判流程详情的公开回答。",
       finalSource: "reset_skeleton",
       phase: "在线",
       continuityMode: "replay",
@@ -295,7 +389,7 @@ function mockThreadDetail() {
       {
         id: "turn-user-1",
         role: "user",
-        text: "复核一个可公开展示的固定 DAG 投资工作流。",
+        text: "复核一个可公开展示的固定 DAG 投资研判流程。",
         createdAt: "今天 10:16",
       },
       {
@@ -309,8 +403,8 @@ function mockThreadDetail() {
           answer,
           finalSource: "reset_skeleton",
           citations: [
-            { label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 投影。" },
-            { label: "Workflow", note: "工作流细节保留在检查器中，不进入 transcript。" },
+            { label: "Fixed DAG bundle", note: "最终回答来自公开固定 DAG 研判流程。" },
+            { label: "Workflow", note: "流程详情保留在检查器中，不进入 transcript。" },
           ],
           evidenceCards: [{ title: "Workflow", note: "结构化可公开输出。" }],
           evidenceCount: 1,
@@ -321,10 +415,26 @@ function mockThreadDetail() {
   };
 }
 
-async function installApiRoutes(page) {
-  const threadDetail = mockThreadDetail();
+function mockEmptyThreadDetail() {
+  return {
+    thread: {
+      id: "thread-empty-1",
+      title: "新会话",
+      updatedAt: "今天 10:12",
+      preview: "等待第一条消息。",
+      finalSource: "reset_skeleton",
+      phase: "在线",
+      continuityMode: "replay",
+    },
+    turns: [],
+  };
+}
+
+async function installApiRoutes(page, options = {}) {
+  const threadDetail = options.empty ? mockEmptyThreadDetail() : mockThreadDetail();
 
   await page.route("**/api/health", (route) => jsonResponse(route, mockHealth()));
+  await page.route("**/api/agents", (route) => jsonResponse(route, mockAgentCatalog()));
   await page.route("**/api/threads/thread-visual-1/messages", (route) =>
     jsonResponse(route, {
       thread: threadDetail.thread,
@@ -333,11 +443,12 @@ async function installApiRoutes(page) {
     }),
   );
   await page.route("**/api/threads/thread-visual-1", (route) => jsonResponse(route, threadDetail));
+  await page.route("**/api/threads/thread-empty-1", (route) => jsonResponse(route, threadDetail));
   await page.route("**/api/threads", async (route, request) => {
     if (request.method() === "POST") {
       return jsonResponse(route, threadDetail);
     }
-    return jsonResponse(route, { threads: [threadDetail.thread] });
+    return jsonResponse(route, { threads: options.empty ? [] : [threadDetail.thread] });
   });
 }
 
@@ -370,39 +481,67 @@ async function main() {
 
   const preview =
     process.platform === "win32"
-      ? spawn("cmd.exe", ["/c", "npm", "run", "preview", "--", "--host", "127.0.0.1", "--port", "4173"], {
+      ? spawn("cmd.exe", ["/c", "npm", "run", "dev", "--", "--host", "127.0.0.1", "--port", "4173"], {
           cwd: rootDir,
-          stdio: "pipe",
+          stdio: "ignore",
         })
-      : spawn("npm", ["run", "preview", "--", "--host", "127.0.0.1", "--port", "4173"], {
+      : spawn("npm", ["run", "dev", "--", "--host", "127.0.0.1", "--port", "4173"], {
           cwd: rootDir,
-          stdio: "pipe",
+          stdio: "ignore",
         });
 
+  let browser = null;
   try {
     await waitForServer(baseUrl);
 
-    const browser = await chromium.launch({ headless: true });
+    browser = await chromium.launch({ headless: true });
+    console.log(`[screenshots] writing to ${outputDir}`);
+
+    const emptyPage = await browser.newPage({
+      viewport: { width: 1400, height: 1024 },
+      deviceScaleFactor: 1,
+    });
+    emptyPage.setDefaultTimeout(10000);
+    console.log("[screenshots] chat empty");
+    await installApiRoutes(emptyPage, { empty: true });
+    await emptyPage.goto(baseUrl, { waitUntil: "networkidle" });
+    await emptyPage.locator(".thread-empty").waitFor({ timeout: 10000 });
+    await assertPageContains(emptyPage, "开始一次资本市场研判");
+    await assertPageContains(emptyPage, "总结电动车公司的风险画像");
+    await assertPageExcludes(emptyPage, "Provider 环境未配置");
+    await assertPageExcludes(emptyPage, "待实现");
+    await assertNoForbiddenTokens(emptyPage);
+    await emptyPage.screenshot({ path: resolve(outputDir, "chat-empty-desktop.png"), timeout: 10000 });
+    await emptyPage.close();
+
     const page = await browser.newPage({
       viewport: { width: 1400, height: 1024 },
       deviceScaleFactor: 1,
     });
+    page.setDefaultTimeout(10000);
 
     await installApiRoutes(page);
+    console.log("[screenshots] chat answer summary");
     await page.goto(baseUrl, { waitUntil: "networkidle" });
-    await page.locator(".assistant-card").waitFor();
-    await assertPageContains(page, "固定 DAG 工作流检查");
+    await page.locator(".assistant-card").waitFor({ timeout: 10000 });
+    await assertPageContains(page, "固定 DAG 研判流程");
+    await assertPageContains(page, "查看流程详情");
+    await assertPageExcludes(page, "external_candidate_disabled");
+    await assertPageExcludes(page, "pending_implementation");
+    await assertPageExcludes(page, "待实现");
     await assertPageExcludes(page, "Fixed DAG workflow inspection");
     await assertPageExcludes(page, "Public answer with fixed DAG inspector metadata");
     await assertNoForbiddenTokens(page);
-    await page.screenshot({ path: resolve(outputDir, "chat-home-desktop.png") });
+    await page.screenshot({ path: resolve(outputDir, "chat-answer-summary-desktop.png"), timeout: 10000 });
 
-    const toggle = page.getByRole("button", { name: /工作流|DAG 检查器|打开 DAG 检查器/ });
-    await toggle.click();
-    await page.locator(".workflow-panel__content").waitFor();
+    console.log("[screenshots] workflow expanded");
+    await page.locator(".workflow-panel__toggle").first().waitFor({ timeout: 10000 });
+    await page.$eval(".workflow-panel__toggle", (button) => button.click());
+    await page.locator(".workflow-panel__content").waitFor({ timeout: 10000 });
     for (const expected of ["阶段时间线", "执行批次", "维度分组", "步骤结果元数据", "最终来源与溯源"]) {
       await assertPageContains(page, expected);
     }
+    await page.getByRole("button", { name: /金融数据服务/ }).click({ timeout: 10000 });
     for (const expectedRaw of ["financial_data_service", "external_http_candidate", "external_candidate_disabled"]) {
       await assertPageContains(page, expectedRaw);
     }
@@ -410,14 +549,38 @@ async function main() {
       await assertPageExcludes(page, oldCopy);
     }
     await assertNoForbiddenTokens(page);
-    await page.locator(".workflow-panel").scrollIntoViewIfNeeded();
+    await page.locator(".workflow-result-card").scrollIntoViewIfNeeded();
     await page.evaluate(() => window.scrollBy(0, -84));
-    await page.screenshot({ path: resolve(outputDir, "workflow-expanded-desktop.png") });
+    await page.screenshot({ path: resolve(outputDir, "workflow-expanded-desktop.png"), timeout: 10000 });
 
-    await browser.close();
+    console.log("[screenshots] agents");
+    await page.goto(`${baseUrl}/agents`, { waitUntil: "networkidle" });
+    await page.locator(".agent-catalog").waitFor({ timeout: 10000 });
+    await assertPageContains(page, "智能体能力结构");
+    await assertPageContains(page, "解析与证据");
+    await assertPageContains(page, "价值维");
+    await assertPageExcludes(page, "外部候选未启用");
+    await assertPageExcludes(page, "待实现");
+    await assertNoForbiddenTokens(page);
+    await page.screenshot({ path: resolve(outputDir, "agents-desktop.png"), timeout: 10000 });
+
+    console.log("[screenshots] settings");
+    await page.goto(`${baseUrl}/settings`, { waitUntil: "networkidle" });
+    await page.locator(".settings-summary").waitFor({ timeout: 10000 });
+    await assertPageContains(page, "设置与状态诊断");
+    await assertPageContains(page, "高级诊断");
+    await assertPageExcludes(page, "Provider 环境");
+    await assertPageExcludes(page, "降级");
+    await assertNoForbiddenTokens(page);
+    await page.screenshot({ path: resolve(outputDir, "settings-desktop.png"), timeout: 10000 });
+
+    console.log("[screenshots] complete");
   } finally {
+    if (browser) {
+      await Promise.race([browser.close(), delay(3000)]).catch(() => undefined);
+    }
     if (process.platform === "win32") {
-      spawn("taskkill", ["/pid", String(preview.pid), "/T", "/F"], { stdio: "ignore" });
+      await terminateProcessTree(preview.pid);
     } else {
       preview.kill("SIGTERM");
     }

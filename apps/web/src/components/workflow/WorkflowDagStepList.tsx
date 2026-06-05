@@ -1,4 +1,4 @@
-import { agentNameLabel, dagStepStatusLabel, stageLabel, zhCN } from "../../content/zh-CN";
+import { agentNameLabel, dagStepStatusLabel, dimensionLabel, stageLabel, zhCN } from "../../content/zh-CN";
 import type { DagStep, WorkflowModel } from "../../types/workflow";
 
 interface WorkflowDagStepListProps {
@@ -41,7 +41,7 @@ export function WorkflowDagStepList({ workflow, selectedStepId, onSelectStep }: 
           <span className="workflow-step-card__summary">{step.summary}</span>
           <span className="workflow-chip-row">
             <span className="workflow-chip">{stageLabel(step.stage)}</span>
-            {step.dimension ? <span className="workflow-chip">{step.dimension}</span> : null}
+            {step.dimension ? <span className="workflow-chip">{dimensionLabel(step.dimension)}</span> : null}
             <span className="workflow-chip">{step.id}</span>
           </span>
         </button>

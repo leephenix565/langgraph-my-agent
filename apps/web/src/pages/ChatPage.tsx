@@ -2,7 +2,7 @@ import type { ApiError } from "../services/api";
 import { Composer } from "../components/shell/Composer";
 import { MessageList } from "../components/shell/MessageList";
 import { ThreadHeader } from "../components/shell/ThreadHeader";
-import { degradedSignalLabels, errorCategoryLabel, zhCN } from "../content/zh-CN";
+import { errorCategoryLabel, zhCN } from "../content/zh-CN";
 import type { ChatSessionSummary, HealthResponse, PublicTurn, StructuredInputModel } from "../types/chat";
 
 interface ChatPageProps {
@@ -42,10 +42,12 @@ export function ChatPage({
   errorMeta,
   health,
 }: ChatPageProps) {
-  const degradedSignals = degradedSignalLabels(health);
+  function sendExamplePrompt(prompt: string) {
+    onSendMessage(prompt, { task: prompt });
+  }
 
   return (
-    <div className="page page--chat">
+    <div className={`page page--chat${!turns.length ? " page--chat-empty" : ""}`}>
       <ThreadHeader
         session={session}
         health={health}
@@ -63,18 +65,9 @@ export function ChatPage({
       ) : null}
 
       {!unavailable && degraded ? (
-        <section className="thread-notice thread-notice--degraded" aria-label="服务降级提示">
+        <section className="thread-notice thread-notice--soft" aria-label="本地模式提示">
           <strong>{zhCN.states.degradedTitle}</strong>
           <p>{zhCN.states.degradedBody}</p>
-          {degradedSignals.length ? (
-            <div className="thread-notice__signals">
-              {degradedSignals.map((signal) => (
-                <span className="workflow-pill" key={signal}>
-                  {signal}
-                </span>
-              ))}
-            </div>
-          ) : null}
         </section>
       ) : null}
 
@@ -99,6 +92,18 @@ export function ChatPage({
         <section className="thread-empty" aria-label="空会话状态">
           <strong>{zhCN.states.emptyTitle}</strong>
           <p>{zhCN.states.emptyBody}</p>
+          <div className="thread-empty__examples" aria-label="示例问题">
+            {zhCN.states.examplePrompts.map((prompt) => (
+              <button
+                type="button"
+                key={prompt}
+                onClick={() => sendExamplePrompt(prompt)}
+                disabled={!session || isSending}
+              >
+                {prompt}
+              </button>
+            ))}
+          </div>
         </section>
       ) : null}
 

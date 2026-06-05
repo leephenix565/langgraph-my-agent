@@ -17,7 +17,7 @@ def test_report_generator_placeholder_is_public_safe() -> None:
     )
     assert report["report_result"]["schema"] == "report_result_v1"
     assert report["report_result"]["status"] == "pending_implementation"
-    assert "external /v1/agent/invoke" in report["report_result"]["answer"]
+    assert "固定 DAG 研判流程" in report["report_result"]["answer"]
 
 
 def test_final_emit_uses_report_result_not_a25_manager_output() -> None:

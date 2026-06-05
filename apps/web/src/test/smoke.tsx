@@ -303,39 +303,47 @@ async function runAssistantRenderChecks() {
   assert.ok(view.getByRole("heading", { level: 3, name: "市场摘要" }));
   assert.ok(article.querySelector("strong"));
   assert.ok(article.querySelector("em"));
-  fireEvent.click(view.getByRole("button", { name: /工作流|DAG 检查器/ }));
-  assert.ok(view.getByLabelText("固定 DAG 工作流检查器"));
+  assert.ok(article.textContent?.includes("研判流程"));
+  assert.equal(article.textContent?.includes("external_candidate_disabled"), false);
+  assert.equal(article.textContent?.includes("pending_implementation"), false);
+  assert.equal(article.textContent?.includes("待实现"), false);
+  fireEvent.click(view.getByRole("button", { name: /研判流程|流程详情/ }));
+  assert.ok(view.getByLabelText("固定 DAG 研判流程详情"));
   assert.ok(view.getByText("阶段时间线"));
   assert.ok(view.getAllByText("路径规划器").length >= 1);
   assert.ok(view.getByText("执行批次"));
   assert.ok(view.getByText("维度分组"));
-  assert.ok(view.getByText("DAG 步骤列表"));
+  assert.ok(view.getByText("流程步骤列表"));
   assert.ok(view.getByText("步骤结果元数据"));
   assert.ok(view.getByText("最终来源与溯源"));
-  assert.ok(view.getAllByText("固定 DAG 骨架").length >= 1);
+  assert.ok(view.getAllByText("固定 DAG 研判流程").length >= 1);
 
   assert.ok(view.getByText("当前步骤"));
-  assert.ok(view.getByText("运行时类型"));
-  assert.ok(view.getAllByText("确定性骨架 (deterministic_skeleton)").length >= 1);
+  assert.ok(view.getByText("运行方式"));
+  assert.ok(view.getAllByText("固定流程").length >= 1);
+  assert.ok(view.getAllByText("deterministic_skeleton").length >= 1);
   assert.ok(article.textContent?.includes("deterministic_skeleton"));
-  assert.ok(view.getByText("实现状态"));
+  assert.ok(view.getByText("接入状态"));
   assert.ok(view.getAllByText("否").length >= 2);
 
   fireEvent.click(view.getByRole("button", { name: /金融数据服务/ }));
   assert.equal(view.getByRole("button", { name: /金融数据服务/ }).getAttribute("aria-pressed"), "true");
   assert.ok(article.textContent?.includes("financial_data_service"));
-  assert.ok(view.getByText("外部 HTTP 候选 (external_http_candidate)"));
+  assert.ok(view.getByText("可接入连接"));
+  assert.ok(view.getByText("external_http_candidate"));
   assert.ok(article.textContent?.includes("external_http_candidate"));
-  assert.ok(view.getByText("外部候选未启用 (external_candidate_disabled)"));
+  assert.ok(view.getByText("高级连接未启用"));
+  assert.ok(view.getByText("external_candidate_disabled"));
   assert.ok(article.textContent?.includes("external_candidate_disabled"));
-  assert.ok(view.getByText("外部候选已注册，但 mock 路径没有实时验证。"));
+  assert.ok(view.getByText("高级连接处于关闭状态，本轮使用本地流程。"));
 
   fireEvent.click(view.getByRole("button", { name: /企业舆情雷达/ }));
   assert.equal(view.getByRole("button", { name: /企业舆情雷达/ }).getAttribute("aria-pressed"), "true");
   assert.ok(article.textContent?.includes("placeholder"));
-  assert.ok(view.getAllByText("待实现 (pending_implementation)").length >= 1);
+  assert.ok(view.getAllByText("待接入").length >= 1);
+  assert.ok(view.getAllByText("pending_implementation").length >= 1);
   assert.ok(article.textContent?.includes("pending_implementation"));
-  assert.ok(view.getByText("本地 fixture 中市场舆情路径仍是占位实现。"));
+  assert.ok(view.getByText("市场舆情路径在本地流程中以规划信息展示。"));
 
   for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
     assert.equal(article.textContent?.includes(oldCopy), false, `Unexpected old workflow copy: ${oldCopy}`);
@@ -472,6 +480,8 @@ async function runStreamingSuccessScenario() {
   await waitFor(() => {
     assert.equal((view.container.querySelector("#chat-composer") as HTMLTextAreaElement).disabled, false);
   });
+  assert.ok(view.getByText("开始一次资本市场研判"));
+  assert.ok(view.getByRole("button", { name: "总结电动车公司的风险画像" }));
 
   const taskInput = view.container.querySelector("#chat-composer") as HTMLTextAreaElement;
   await user.type(taskInput, "Summarize the market risk profile.");
@@ -483,7 +493,10 @@ async function runStreamingSuccessScenario() {
   await waitFor(() => {
     assert.ok(view.getByText("简短实时摘要，先给结论。"));
   });
-  assert.ok(view.getAllByText("固定 DAG 骨架").length >= 1);
+  assert.ok(view.getAllByText("固定 DAG 研判流程").length >= 1);
+  assert.equal(view.container.textContent?.includes("external_candidate_disabled"), false);
+  assert.equal(view.container.textContent?.includes("pending_implementation"), false);
+  assert.equal(view.container.textContent?.includes("待实现"), false);
 
   assert.equal(sentPayloads[0].text, "Summarize the market risk profile.");
   assert.deepEqual(sentPayloads[0].structuredInput, { task: "Summarize the market risk profile." });

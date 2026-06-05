@@ -28,6 +28,15 @@ function asBooleanLabel(value: unknown) {
   return null;
 }
 
+function renderTechnicalValue(label: string, raw: string) {
+  return (
+    <span className="workflow-technical-value">
+      <span>{label}</span>
+      <code>{raw}</code>
+    </span>
+  );
+}
+
 function warningList(result: WorkflowStepResult | undefined) {
   const warnings = result?.warnings;
   if (Array.isArray(warnings)) {
@@ -87,18 +96,18 @@ export function WorkflowStepResults({ workflow, selectedStepId }: WorkflowStepRe
         </div>
         <div>
           <dt>{zhCN.workflow.resultFields.dimension}</dt>
-          <dd>{step.dimension ? dimensionLabel(step.dimension) : zhCN.workflow.none}</dd>
+          <dd>{step.dimension ? renderTechnicalValue(dimensionLabel(step.dimension), step.dimension) : zhCN.workflow.none}</dd>
         </div>
         {runtimeKind ? (
           <div>
             <dt>{zhCN.workflow.resultFields.runtimeKind}</dt>
-            <dd>{runtimeKindLabel(runtimeKind)}</dd>
+            <dd>{renderTechnicalValue(runtimeKindLabel(runtimeKind), runtimeKind)}</dd>
           </div>
         ) : null}
         {implementationStatus ? (
           <div>
             <dt>{zhCN.workflow.resultFields.implementationStatus}</dt>
-            <dd>{implementationStatusLabel(implementationStatus)}</dd>
+            <dd>{renderTechnicalValue(implementationStatusLabel(implementationStatus), implementationStatus)}</dd>
           </div>
         ) : null}
         {invokeEnabled ? (

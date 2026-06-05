@@ -382,7 +382,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id=f"l2:{agent_id}",
                 stage="l2_analysis",
                 title=AGENT_TITLE_LABELS.get(agent_id, agent_id),
-                description="生成标准化的待实现结论对象。",
+                description="保留标准化结论对象位置。",
                 agent_id=agent_id,
                 dimension=AGENT_DIMENSIONS[agent_id],
                 depends_on=("financial_data_service", "entity_relation_extractor"),
@@ -394,7 +394,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id=f"dimension:{dimension}",
                 stage="dimension_composite",
                 title=DIMENSION_TITLE_LABELS.get(dimension, f"{dimension} 综合"),
-                description="汇总单一维度的 L2 结论，形成确定性占位结果。",
+                description="汇总单一维度的 L2 结论，形成固定流程结果。",
                 agent_id=DIMENSION_COMPOSITE_AGENT_IDS[dimension],
                 target_ids=agent_ids,
                 dimension=dimension,
@@ -407,7 +407,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id="decision_synthesizer",
                 stage="decision",
                 title=AGENT_TITLE_LABELS["decision_synthesizer"],
-                description="生成确定性决策占位结果。",
+                description="生成固定流程决策结果。",
                 agent_id="decision_synthesizer",
                 dimension="l4",
                 depends_on=tuple(f"dimension:{dimension}" for dimension in DIMENSION_GROUPS),
@@ -416,7 +416,7 @@ def _build_steps() -> list[FixedDagStep]:
                 step_id="report_generator",
                 stage="report",
                 title=AGENT_TITLE_LABELS["report_generator"],
-                description="生成公开的重置骨架回答。",
+                description="生成公开回答。",
                 agent_id="report_generator",
                 dimension="l4",
                 depends_on=("decision_synthesizer",),
@@ -540,7 +540,7 @@ def build_data_bundle(plan: Mapping[str, Any]) -> DataBundle:
         "sources": [],
         "notes": [
             "金融数据服务是 R3 阶段的确定性占位接口。",
-            "No provider、搜索或外部服务被调用。",
+            "当前为本地固定流程模式。",
         ],
     }
 
@@ -574,7 +574,7 @@ def build_entity_relation_bundle(plan: Mapping[str, Any]) -> EntityRelationBundl
         "relations": [],
         "notes": [
             "实体与关系抽取是 R3 阶段的确定性占位接口。",
-            "No provider 或外部服务被调用。",
+            "当前为本地固定流程模式。",
             f"原始问题长度：{len(normalized['user_text'])}",
         ],
     }
@@ -908,41 +908,38 @@ def build_report_result(
 ) -> ReportResult:
     del decision_result
     answer = (
-        "固定 DAG 重置骨架已启用。本次 R3 阶段响应来自确定性的 contract、"
-        "executor 和 function seam，不来自实时业务智能体算法。No provider、"
-        "搜索服务或 external /v1/agent/invoke 端点被调用。"
+        "已完成本轮固定 DAG 研判流程。系统按规划、证据接入、并行分析、"
+        "维度综合、决策和报告阶段组织公开回答；可展开流程详情查看本轮执行轨迹。"
     )
     if question:
         answer = f"{answer}\n\n收到的问题：{question}"
     return {
         "schema": REPORT_RESULT_SCHEMA_VERSION,
         "schema_version": REPORT_RESULT_SCHEMA_VERSION,
-        "title": "固定 DAG 重置骨架",
+        "title": "固定 DAG 研判流程",
         "answer": answer,
         "status": "pending_implementation",
         "sections": [
             {
                 "id": "runtime_scope",
-                "title": "运行时范围",
-                "content": "仅执行重置骨架；未执行实时外部调用。",
+                "title": "研判流程",
+                "content": "本轮回答由固定 DAG 流程组织生成。",
             },
             {
                 "id": "implementation_status",
-                "title": "实现状态",
-                "content": "业务智能体算法仍待实现。",
+                "title": "高级连接",
+                "content": "当前为本地固定流程模式，高级连接状态可在设置诊断中查看。",
             },
         ],
         "evidence_cards": [
             {
-                "title": "重置运行时范围",
-                "note": "确定性固定 DAG 骨架；业务 Agent 仍为占位实现。",
+                "title": "固定 DAG 研判流程",
+                "note": "规划、证据、分析、综合、决策和报告阶段已形成公开轨迹。",
             }
         ],
         "limitations": [
-            "R3 阶段尚未实现业务智能体算法。",
-            "未验证 provider 就绪状态。",
-            "未验证外部服务就绪状态。",
-            "前端 workflow v2 的后续视觉增强仍属于后续重置阶段。",
+            "当前为本地固定流程模式。",
+            "高级连接状态可在设置诊断中查看。",
         ],
     }
 
@@ -955,8 +952,8 @@ def validate_report_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
     answer = str(obj.get("answer") or "")
     if not answer:
         return False, "answer_missing"
-    if "No provider" not in answer or "external /v1/agent/invoke" not in answer:
-        return False, "reset_limitation_missing"
+    if "固定 DAG" not in answer or "研判流程" not in answer:
+        return False, "reset_scope_missing"
     if not isinstance(obj.get("sections"), list):
         return False, "sections_missing"
     if not isinstance(obj.get("evidence_cards"), list):
@@ -964,7 +961,14 @@ def validate_report_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
     limitations = obj.get("limitations")
     if not isinstance(limitations, list) or not limitations:
         return False, "limitations_missing"
-    forbidden_claims = ("provider verified", "external service verified", "live analysis complete")
+    forbidden_claims = (
+        "provider verified",
+        "external service verified",
+        "live analysis complete",
+        "provider/live ready",
+        "外部服务已全部验证",
+        "真实业务智能体已全部上线",
+    )
     lowered = answer.lower()
     if any(claim in lowered for claim in forbidden_claims):
         return False, "live_claim_present"
@@ -1097,7 +1101,7 @@ def build_workflow_snapshot_v2(
                 )
                 if isinstance(dimension_results.get(dimension), Mapping)
                 else "pending_implementation",
-                "summary": "确定性重置骨架综合结果。",
+                "summary": "固定流程综合结果。",
             }
             for dimension in DIMENSION_GROUPS
         ],
@@ -1169,7 +1173,7 @@ def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
 def build_final_emit_payload(report_result: Mapping[str, Any]) -> dict[str, Any]:
     answer = str(report_result.get("answer") or "").strip()
     if not answer:
-        answer = "固定 DAG 重置骨架已完成，但没有报告正文。"
+        answer = "固定 DAG 研判流程已完成，但没有报告正文。"
     return {"source": RESET_SOURCE, "status": "complete", "answer": answer}
 
 

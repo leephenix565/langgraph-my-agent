@@ -2,14 +2,16 @@
 
 This document defines safe validation for the reset branch.
 
-R5-B2/R5-B2.6 keep the same non-provider validation boundary as
+R5-B2/R5-B2.6/R5-C keep the same non-provider validation boundary as
 R3/R3.6/R4-A/R4-B/R4-C/R5-B1. R5-B2 adds frontend workflow inspector
 validation for the existing `apps/web` shell, and R5-B2.6 adds localized
-visible-copy and visual copy-polish validation over that same inspector. These
-phases do not add provider, external live, demo-stack, production deployment,
-or business-agent capability validation.
+visible-copy and visual copy-polish validation over that same inspector. R5-C
+adds normal-UI simplification, advanced diagnostic disclosure, and product-facing
+copy validation over the same public payload. These phases do not add provider,
+external live, demo-stack, production deployment, or business-agent capability
+validation.
 
-## Safe R5-B2/R5-B2.6 Commands
+## Safe R5-B2/R5-B2.6/R5-C Commands
 
 ```powershell
 git status --short --branch
@@ -22,12 +24,12 @@ conda run --no-capture-output -n cline_env python -m pytest tests/integration_te
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 npm --prefix apps/web run test
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5b26
+npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c
 ```
 
-## Not Safe For R5-B2/R5-B2.6
+## Not Safe For R5-B2/R5-B2.6/R5-C
 
-Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6 unless the user
+Do not run during R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C unless the user
 explicitly asks:
 
 - provider live smoke
@@ -38,7 +40,7 @@ explicitly asks:
 - frontend production build if it writes repo artifacts; use a repo-external
   `--outDir` if build validation is explicitly required
 
-R5-B2/R5-B2.6 treat frontend smoke, TypeScript no-emit checks, and
+R5-B2/R5-B2.6/R5-C treat frontend smoke, TypeScript no-emit checks, and
 repo-external frontend build output as frontend inspector/copy evidence only.
 They do not treat `mainline`, `fusion-gate`, provider live smoke, demo stack, or
 artifact-writing frontend build results as required runtime-boundary evidence.
@@ -67,7 +69,10 @@ metadata, final source, and provenance while preserving the single public
 transcript boundary. In R5-B2.6 it also means the relevant visible Chinese copy,
 status labels, metadata labels, screenshot/mock fixture copy, and deterministic
 public-safe reset skeleton answer are aligned while raw technical ids and enum
-values remain available in inspector/debug contexts.
+values remain available in inspector/debug contexts. In R5-C it also means the
+normal chat, answer, Agents, and Settings surfaces are product-facing by
+default while workflow technical details and Settings advanced diagnostics still
+retain true runtime/readiness boundary information.
 
 R3/R4-A/R4-B/R4-C-specific tests cover `validate_dag_steps`,
 `topological_batches`, `execute_fixed_dag_plan`,

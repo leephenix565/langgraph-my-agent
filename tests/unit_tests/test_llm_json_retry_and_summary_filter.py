@@ -60,4 +60,4 @@ def test_reset_report_and_final_emit_do_not_need_manager_summary() -> None:
     final_update = final_emit_node({**state, **report_update})  # type: ignore[arg-type]
     assert final_update["is_last_step"] is True
     assert final_update["final_answer_source"] == "reset_skeleton"
-    assert "No provider" in final_update["emitted_bundle"]["answer"]
+    assert "固定 DAG 研判流程" in final_update["emitted_bundle"]["answer"]

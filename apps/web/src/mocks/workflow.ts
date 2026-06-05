@@ -38,7 +38,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "financial_data_service",
         dimension: "l1",
         title: "金融数据服务",
-        summary: "在 mock 路径中准备数据占位接口，不调用 provider 或外部实时服务。",
+        summary: "整理本轮研判所需的数据入口与上下文。",
         status: "complete",
       },
       {
@@ -56,7 +56,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "value_traditional_valuation",
         dimension: "value",
         title: "传统企业估值",
-        summary: "生成价值维度的占位结论。",
+        summary: "保留价值维度的研判位置。",
         status: "pending_implementation",
       },
       {
@@ -65,7 +65,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "market_stock_technical",
         dimension: "market",
         title: "个股技术分析",
-        summary: "生成市场维度的占位结论。",
+        summary: "保留市场维度的研判位置。",
         status: "pending_implementation",
       },
       {
@@ -83,7 +83,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "risk_identification",
         dimension: "risk",
         title: "风险识别",
-        summary: "生成风险维度的占位结论。",
+        summary: "保留风险维度的研判位置。",
         status: "pending_implementation",
       },
       {
@@ -137,7 +137,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         agentId: "report_generator",
         dimension: "l4",
         title: "报告生成器",
-        summary: "生成最终公开的重置骨架回答。",
+        summary: "生成最终公开回答。",
         status: "pending_implementation",
       },
     ],
@@ -147,7 +147,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         title: "价值维度",
         stepIds: ["value_traditional_valuation", "value_composite"],
         status: "partial",
-        summary: "价值路径以可公开展示的占位信息呈现。",
+        summary: "价值路径以可公开展示的信息呈现。",
       },
       {
         id: "market",
@@ -168,7 +168,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         title: "宏观维度",
         stepIds: ["macro_composite"],
         status: "partial",
-        summary: "宏观路径以可公开展示的占位信息呈现。",
+        summary: "宏观路径以可公开展示的信息呈现。",
       },
     ],
     currentStage: "report",
@@ -199,7 +199,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         external_agent_id: "financial_data_service",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["外部候选已注册，但 mock 路径没有实时验证。"],
+        warnings: ["高级连接处于关闭状态，本轮使用本地流程。"],
       },
       entity_relation_extractor: {
         status: "complete",
@@ -224,11 +224,11 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["本地 fixture 中市场舆情路径仍是占位实现。"],
+        warnings: ["市场舆情路径在本地流程中以规划信息展示。"],
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "可公开展示的固定 DAG 工作流快照；raw graph messages 和 raw provider responses 不进入 transcript。",
+    provenanceNote: "可公开展示的固定 DAG 研判流程快照；详细执行信息不进入 transcript。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -236,8 +236,8 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
       externalInvoked: false,
       executionStatus: "deterministic_skeleton",
       fallbackUsed: false,
-      limitations: ["Mock workflow fixture；未验证 provider 或外部服务实时就绪状态。"],
-      summary: "最终回答由重置骨架固定 DAG 路径投影生成。",
+      limitations: ["Mock workflow fixture；高级连接未做实时就绪验证。"],
+      summary: "本轮研判流程已完成，详细执行信息可在技术详情中查看。",
     },
   };
 }

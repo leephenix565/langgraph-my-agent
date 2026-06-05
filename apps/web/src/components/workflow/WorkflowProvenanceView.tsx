@@ -10,6 +10,15 @@ function boolLabel(value: boolean | undefined) {
   return value ? zhCN.workflow.boolean.yes : zhCN.workflow.boolean.no;
 }
 
+function renderTechnicalValue(label: string, raw: string) {
+  return (
+    <span className="workflow-technical-value">
+      <span>{label}</span>
+      <code>{raw}</code>
+    </span>
+  );
+}
+
 export function WorkflowProvenanceView({ workflow }: WorkflowProvenanceViewProps) {
   const provenance = workflow.provenance;
 
@@ -44,7 +53,7 @@ export function WorkflowProvenanceView({ workflow }: WorkflowProvenanceViewProps
         {provenance?.executionStatus ? (
           <div>
             <dt>{zhCN.workflow.provenance.executionStatus}</dt>
-            <dd>{executionStatusLabel(provenance.executionStatus)}</dd>
+            <dd>{renderTechnicalValue(executionStatusLabel(provenance.executionStatus), provenance.executionStatus)}</dd>
           </div>
         ) : null}
       </dl>

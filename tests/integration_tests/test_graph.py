@@ -66,7 +66,7 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["multi_agent_bundle"]["schema"] == "fixed_dag_reset_bundle_v1"
     assert res["multi_agent_bundle"]["dag_execution"]["schema_version"] == "fixed_dag_execution_v1"
     assert res.get("messages")
-    assert "固定 DAG 重置骨架已启用" in res["messages"][-1].content
+    assert "固定 DAG 研判流程" in res["messages"][-1].content
     assert "layer_plan" not in res
     assert "fusion_verdict" not in res
     assert "contract" not in graph_module.__dict__

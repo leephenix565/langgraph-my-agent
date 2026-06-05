@@ -273,3 +273,31 @@ topology, catalog source, runtime bindings, `/api/agents` schema, provider
 readiness, external candidate invocation, production deployment, or R6
 mainline/fusion gates. It does not prove business-agent correctness or live
 service readiness.
+
+## ADR-016: R5-C Keeps Normal UI Product-Facing And Moves Diagnostics Behind Disclosure
+
+Status: accepted for frontend product polish.
+
+Decision: R5-C keeps the single public user/assistant transcript and the
+`workflow_snapshot_v2` contract, but changes the normal `apps/web` experience
+to product-facing Chinese copy. Chat empty state, assistant answer cards,
+workflow collapsed summaries, Agents overview, and Settings default view should
+not prominently display backlog/readiness language such as pending
+implementation, provider missing, external not ready, or live verification
+status. Runtime enum values, provenance, provider/search/readiness flags, and
+limitations remain available in expanded workflow technical details, Settings
+advanced diagnostics, docs, and tests.
+
+Reason: R5-B2/R5-B2.6 made the fixed DAG payload visible and localized, but the
+normal UI still read like an engineering checklist. Product users need a calmer
+research surface while reviewers still need exact technical boundaries.
+
+Consequence: frontend mocks, smoke tests, screenshot fixture copy, public-safe
+answer copy, and related assertions now validate user-facing simplification and
+advanced diagnostic disclosure without changing schema, topology, or runtime
+authority.
+
+Non-consequence: R5-C does not change fixed DAG topology, roster, runtime
+bindings, `/api/agents` schema, provider readiness, external candidate
+invocation, production deployment, or R6 mainline/fusion gates. It does not
+prove business-agent correctness or live service readiness.

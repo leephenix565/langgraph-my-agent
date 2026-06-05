@@ -848,6 +848,12 @@
   text-align: left;
 }
 
+.workflow-panel__summary-copy {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
 .workflow-panel__glyph {
   display: inline-flex;
   align-items: center;
@@ -864,6 +870,15 @@
 .workflow-panel__summary strong {
   font-size: 12px;
   font-weight: 500;
+}
+
+.workflow-panel__stat-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 7px;
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1.3;
 }
 
 .workflow-panel__summary-meta {
@@ -1142,7 +1157,7 @@
 
 .workflow-metadata-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(128px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(170px, 1fr));
   gap: 7px;
   margin: 0;
 }
@@ -1170,6 +1185,27 @@
   color: var(--ink-soft);
   font-size: 11px;
   overflow-wrap: anywhere;
+}
+
+.workflow-technical-value {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+  max-width: 100%;
+}
+
+.workflow-technical-value code {
+  max-width: 100%;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(22, 32, 51, 0.055);
+  color: var(--ink-faint);
+  font-size: 10px;
+  line-height: 1.35;
+  overflow-x: auto;
+  overflow-wrap: normal;
+  white-space: nowrap;
 }
 
 .workflow-warning-list {
@@ -1264,10 +1300,43 @@
   background: rgba(255, 250, 243, 0.92);
 }
 
+.thread-notice--soft {
+  border-color: rgba(101, 109, 227, 0.09);
+  background: rgba(248, 249, 255, 0.72);
+}
+
 .thread-notice--error,
 .thread-notice--unavailable {
   border-color: rgba(196, 86, 86, 0.16);
   background: rgba(255, 247, 247, 0.9);
+}
+
+.thread-empty__examples {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+  margin-top: 4px;
+}
+
+.thread-empty__examples button {
+  padding: 6px 9px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.78);
+  color: var(--ink-muted);
+  cursor: pointer;
+  font-size: 12px;
+  line-height: 1.35;
+}
+
+.thread-empty__examples button:hover:not(:disabled) {
+  border-color: rgba(101, 109, 227, 0.16);
+  color: var(--ink);
+}
+
+.thread-empty__examples button:disabled {
+  cursor: not-allowed;
+  opacity: 0.52;
 }
 
 .settings-header {
@@ -1350,6 +1419,30 @@
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 14px;
   margin-top: 18px;
+}
+
+.settings-advanced {
+  display: grid;
+  gap: 12px;
+  margin-top: 18px;
+  padding: 14px 16px;
+  border: 1px solid var(--line-soft);
+  border-radius: 18px;
+  background: rgba(255, 255, 255, 0.72);
+}
+
+.settings-advanced summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.settings-advanced > p {
+  margin: 10px 0 0;
+  color: var(--ink-muted);
+  font-size: 12px;
+  line-height: 1.7;
 }
 
 .settings-card {
@@ -1605,23 +1698,53 @@
   margin-top: 22px;
 }
 
-.agent-catalog__stats {
+.agent-catalog__stats,
+.agent-catalog__dimensions {
   display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 12px;
 }
 
-.agent-catalog__stats strong {
+.agent-catalog__stats strong,
+.agent-catalog__dimensions strong {
   display: block;
   margin-top: 8px;
   font-size: 1.15rem;
   color: var(--ink);
 }
 
+.agent-catalog__dimensions > div,
 .agent-catalog__disabled,
 .agent-layer {
   display: grid;
   gap: 14px;
+}
+
+.agent-catalog__dimensions > div {
+  padding: 9px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.74);
+}
+
+.agent-catalog__details {
+  display: grid;
+  gap: 14px;
+  padding: 12px 14px;
+  border: 1px solid var(--line-soft);
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.66);
+}
+
+.agent-catalog__details summary {
+  cursor: pointer;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.agent-catalog__details[open] summary {
+  margin-bottom: 14px;
 }
 
 .agent-layer {
@@ -1660,11 +1783,9 @@
   }
 
   .settings-summary,
-  .settings-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .agent-catalog__stats {
+  .settings-grid,
+  .agent-catalog__stats,
+  .agent-catalog__dimensions {
     grid-template-columns: 1fr;
   }
 }

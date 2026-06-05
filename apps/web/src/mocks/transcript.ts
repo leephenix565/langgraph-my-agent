@@ -18,8 +18,8 @@ function buildAssistantTurn(id: string, answer: string, prompt: string): PublicT
       finalSource: "reset_skeleton",
       confidence: "medium",
       citations: [
-        { label: "Fixed DAG bundle", note: "公开回答由重置骨架固定 DAG 路径投影生成。" },
-        { label: "Workflow", note: "DAG 细节显示在检查器中，不作为额外 transcript 轮次。" },
+        { label: "Fixed DAG bundle", note: "公开回答由固定 DAG 研判流程生成。" },
+        { label: "Workflow", note: "流程详情显示在检查器中，不作为额外 transcript 轮次。" },
       ],
       evidenceCount: 2,
     },
@@ -37,7 +37,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-1",
-      "重置骨架回答保留公开结论，DAG 工作流细节保留在检查器中。",
+      "已完成本轮固定 DAG 研判流程。公开回答保留核心结论，流程详情可在检查器中查看。",
       "电动车公司风险画像",
     ),
   ],
@@ -50,7 +50,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-2",
-      "公开 transcript 仍是一条助手回答；工作流快照记录阶段、批次和步骤结果。",
+      "公开 transcript 仍是一条助手回答；流程快照记录阶段、批次和步骤结果。",
       "半导体供应链更新",
     ),
   ],
@@ -80,7 +80,7 @@ export function createUserTurn(input: string): PublicTurn {
 
 export function createMockAssistantTurn(input: string): PublicTurn {
   const answer =
-    "这个 mock 使用固定 DAG 重置骨架。用户/助手文本保留在 transcript 中；DAG 细节保留在检查器中。";
+    "这个 mock 使用固定 DAG 研判流程。用户/助手文本保留在 transcript 中；流程详情保留在检查器中。";
 
   return buildAssistantTurn(`assistant-${Math.random().toString(36).slice(2, 10)}`, answer, input);
 }

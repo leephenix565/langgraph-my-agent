@@ -3,6 +3,58 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-04 - Phase R5-C frontend product polish and user-facing simplification
+
+### Changed
+
+- Simplified the normal Chinese chat surface so degraded/provider/search/live
+  readiness details are not prominent in the main user flow.
+- Added example question buttons to the empty chat state and softened the local
+  fixed-DAG mode notice.
+- Changed the assistant answer and workflow summary copy to product-facing
+  fixed DAG研判流程 language while keeping workflow details out of the public
+  transcript.
+- Kept workflow `stepResults`, provenance, and raw enum values available only
+  after users expand the workflow technical details, with Chinese primary labels
+  and smaller raw enum chips.
+- Changed the Agents page from a registry-style page into a lighter capability
+  structure page with layer and dimension summaries and collapsible details.
+- Moved provider/search/checkpointer readiness from the default Settings view
+  into an advanced diagnostics disclosure.
+- Updated frontend mocks, screenshot fixture copy, smoke assertions, Python
+  public-safe answer copy, and related unit/integration assertions.
+- Updated reset docs to record that R5-C is user-facing noise reduction and
+  product polish, not a runtime/topology/readiness change.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `npm --prefix apps/web run build -- --outDir E:/muti-agent/_tmp_web_build_r5c`
+- `npm --prefix apps/web run screenshots`
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py src/react_agent/graph.py src/react_agent/public_mapping.py tests/integration_tests/test_graph.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_graph_skeleton.py tests/unit_tests/test_llm_json_retry_and_summary_filter.py tests/unit_tests/test_manager_summary_a25_output.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests -q`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_public_api.py -q`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/integration_tests/test_graph.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Visual Check
+
+- Temporary Vite process only, using Playwright API route interception and no
+  provider/external invocation. Screenshots saved outside the repo under
+  `E:/muti-agent/_tmp_r5c_visual/screenshots`.
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, provider integration,
+  external wrapper, or real business-agent implementation change.
+- No provider, search, external `/v1/agent/invoke`, demo stack, mainline, or
+  fusion-gate validation.
+- No claim that external services, provider readiness, or production deployment
+  are live verified.
+- No push.
+
 ## 2026-06-05 - Phase R5-B2.6 Chinese localization and visual copy polish
 
 ### Changed
@@ -13,8 +65,7 @@ Historical changelog entries before this reset branch are preserved by tag
   metadata, provenance, and raw enum display around `workflow_snapshot_v2`.
 - Localized deterministic fixed DAG public-safe skeleton answer, workflow step
   summaries, executor limitations, public runtime hints, and public adapter
-  error copy while preserving the `No provider` and
-  `external /v1/agent/invoke` sentinel phrases required by current validation.
+  error copy while preserving then-current validation sentinel phrases.
 - Updated frontend mocks, screenshot fixture script, and smoke assertions to
   check localized UI copy while keeping technical ids and enum values visible
   where needed for debugging.

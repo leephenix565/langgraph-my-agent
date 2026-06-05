@@ -49,6 +49,18 @@ body {
   min-width: 0;
 }
 
+.page--chat-empty .message-list {
+  display: none;
+}
+
+.page--chat-empty .thread-empty {
+  margin-top: min(22vh, 210px);
+}
+
+.page--chat-empty .composer {
+  margin-top: auto;
+}
+
 .composer {
   padding: 0 34px 12px;
 }

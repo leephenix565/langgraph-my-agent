@@ -234,10 +234,7 @@ def final_emit_node(state: State) -> dict[str, Any]:
     report = state.get("report_result", {})
     answer = str(report.get("answer", "") or "").strip()
     if not answer:
-        answer = (
-            "Fixed DAG reset skeleton completed without a report body. No provider "
-            "or external agent endpoint was invoked."
-        )
+        answer = "固定 DAG 研判流程已完成，但没有报告正文。"
     report = {**report, "answer": answer}
     return {
         "final_emit_payload": build_final_emit_payload(report),
