@@ -165,6 +165,9 @@ def map_response_to_conclusion_object(
     tool_result = response_dict.get("tool_result") or {}
     if hasattr(tool_result, "model_dump"):
         tool_result = tool_result.model_dump(mode="json")
+    legacy_agent_id = str(
+        response_dict.get("legacy_agent_id") or tool_result.get("legacy_agent_id") or ""
+    )
 
     agent_id = str(tool_result.get("agent_id") or response_dict.get("agent_id") or "")
     mapped = {
@@ -182,7 +185,7 @@ def map_response_to_conclusion_object(
         "provenance": {
             "source": "fixed_dag_external_agent_scaffold",
             "external_agent_id": response_dict.get("external_agent_id", ""),
-            "legacy_agent_id": LEGACY_AGENT_ID,
+            "legacy_agent_id": legacy_agent_id,
             "provider_invoked": False,
             "external_invoked": False,
         },

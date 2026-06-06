@@ -25,6 +25,7 @@ Do not use:
 - `AGENT_TOOLS`
 - `config/agents`
 - old Agent Catalog v2 counts
+- old 25-agent, 28-agent, or `L2=19` catalog counts
 - `value_financial_analysis`
 
 The sample target is:
@@ -122,15 +123,22 @@ Use typed errors from `errors.py`.
 
 Before submitting a service, provide:
 
+- selected fixed DAG `agent_id`
+- service-owned `external_agent_id`
+- optional migration-only `legacy_agent_id`
+- `implementation_notes`
 - health sample response
 - compute sample request and response
 - invoke sample request and response
 - error sample response
-- local test commands and results
-- implementation notes
-- timestamp policy
-- evidence policy
-- known limitations
+- local test command output
+- timestamp policy for `as_of` and `data_as_of`
+- evidence policy and source boundaries
+- confidence policy, including when confidence is reduced
+- known limitations and degraded/partial behavior
+- performance note for `/v1/agent/compute` and `/v1/agent/invoke`
+- dependency list, including runtime, model, data, and package dependencies
+- explicit no-secrets confirmation
 
 ## 8. Main-System Maintainer Responsibilities
 

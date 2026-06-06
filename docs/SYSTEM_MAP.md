@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R7-C.
+This file is the reset branch operational map for Phase R7-D.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R7-C fixed DAG external scaffold source package rewrite over
+- Current phase: R7-D external handoff documentation consistency pass over
   the existing fixed-DAG runtime skeleton and R5 web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
@@ -117,12 +117,13 @@ verification. The old valuation-only facade and unused JSON helper were removed
 after tests migrated to the generic external HTTP wrapper and no source/test
 references remained.
 
-In R7-C, the original repo-external scaffold source package is upgraded to the
-fixed DAG protocol and mirrored into the repo example directory. The package
-defines how later service submissions should be reviewed against fixed DAG
-ids, runtime bindings, contracts, and readiness levels. It does not register
-any service into the graph, does not modify runtime bindings, and does not make
-wrapper metadata a live verification signal.
+In R7-D, the original repo-external scaffold source package and repo mirror
+stay aligned while documentation clarifies status mapping, wrapper
+compatibility, package/mirror/zip distribution roles, and handoff evidence. The
+package defines how later service submissions should be reviewed against fixed
+DAG ids, runtime bindings, contracts, and readiness levels. It does not
+register any service into the graph, does not modify runtime bindings, and does
+not make wrapper metadata a live verification signal.
 
 ## Target Fixed DAG IDs
 
@@ -202,7 +203,7 @@ The reset `mainline` runs static, unit, public-api, graph-smoke, and frontend.
 The frontend mode performs TypeScript no-emit, frontend smoke, and Vite build
 with a temporary repo-external `--outDir`; it must not write `apps/web/dist`.
 
-R7-C validation adds repo-external scaffold tests and ruff for
+R7-D validation adds repo-external scaffold tests and ruff for
 `E:\muti-agent\external_agent_scaffold`, repo mirror tests and ruff for
 `examples/fixed_dag_external_agent_scaffold/`, and then uses the same
 non-provider `static` and `mainline` commands. It does not add provider,
@@ -227,11 +228,11 @@ claim provider readiness, external service readiness, production readiness,
 visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
 `fusion-gate` remains archived/manual.
 
-R7-C claims only that the external scaffold source package and tracked repo
-mirror now use fixed DAG ids, schemas, samples, tests, and handoff wording. It
-does not change fixed DAG topology, roster, runtime bindings, public schemas,
-frontend product UI, provider readiness, external invocation readiness, or
-production deployment readiness.
+R7-D claims only external handoff documentation consistency across the source
+package, repo mirror, fixed DAG docs, and changelog. It does not change fixed
+DAG topology, roster, runtime bindings, public schemas, frontend product UI,
+provider readiness, external invocation readiness, or production deployment
+readiness.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

@@ -12,6 +12,20 @@ The package is a sample-only delivery scaffold for external developers. It is
 not registered into the `langgraph-my-agent` active graph, does not modify
 `config/fixed_dag/runtime_bindings.json`, and does not prove live readiness.
 
+## Source And Distribution Relationship
+
+There are three package locations in the current workflow:
+
+| Location | Role |
+| --- | --- |
+| `examples/fixed_dag_external_agent_scaffold/` | Canonical tracked repo mirror and audit baseline. Review diffs here. |
+| `E:\muti-agent\external_agent_scaffold` | Local distribution working copy edited before zip output. |
+| `E:\muti-agent\external_agent_scaffold_fixed_dag_<timestamp>.zip` | Distribution artifact generated from the local working copy. |
+
+Future scaffold changes should update the tracked repo mirror and the local
+distribution working copy together, then regenerate the zip. None of these
+locations is active runtime registration or live-readiness evidence.
+
 ## Fixed DAG Truth
 
 Current integration authority lives in the main repo:
@@ -119,12 +133,16 @@ The response samples include `as_of`, `data_as_of`, evidence, event flags,
 confidence in `[0, 1]`, typed errors where applicable, and no secret or raw
 traceback fields.
 
+`error.response.json` is a negative rejection example. Do not copy its legacy
+`agent_id` into a valid request.
+
 ## Non-Claims
 
 This package does not:
 
 - register an external service into the main graph
 - change the 27-agent fixed DAG roster
+- rely on old 25-agent, 28-agent, or `L2=19` catalog counts
 - restore `value_financial_analysis`
 - restore a 28-agent roster
 - route `sentiment_company_radar` into `risk_composite`

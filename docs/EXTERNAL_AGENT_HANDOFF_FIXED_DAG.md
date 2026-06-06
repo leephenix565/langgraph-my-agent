@@ -126,6 +126,20 @@ The service should support:
 - `event_flags` where relevant
 - a structured `tool_result`
 
+## Current Wrapper Compatibility Boundary
+
+This scaffold defines the target fixed DAG handoff contract for new external
+services. Existing repo compatibility wrappers may still construct compact
+legacy-shaped payloads, including `main_agent_id` in context, until a later R8
+adapter implementation replaces or bridges that path.
+
+External developers should implement the fixed DAG scaffold contract documented
+here and in `examples/fixed_dag_external_agent_scaffold/`. They should not
+infer the target handoff contract from legacy wrapper files and should not add
+`main_agent_id` to the new request schema. Main-system maintainers own any
+adapter bridge between legacy wrapper compatibility payloads and this fixed DAG
+scaffold contract.
+
 ## R7-C Source Package And Repo Mirror
 
 R7-C upgrades the original repo-external source package in place:

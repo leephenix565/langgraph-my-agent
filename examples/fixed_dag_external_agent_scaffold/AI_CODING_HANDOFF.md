@@ -13,7 +13,7 @@ Do not:
 - change the fixed DAG 27-agent roster
 - restore `value_financial_analysis`
 - restore a 28-agent roster
-- route `sentiment_company_radar` into risk
+- route `sentiment_company_radar` directly into `risk_composite` or the risk dimension
 - start a demo stack
 - call providers
 - call external `/v1/agent/invoke`
@@ -54,6 +54,14 @@ only. Do not reintroduce `main_agent_id` as a request field.
 For an L2 service, `tool_result.schema_version` should be
 `agent_conclusion_v1`, which a future main-system adapter can map to
 `conclusion_object_v1`.
+
+Do not infer the current target handoff contract from legacy wrapper files.
+The main repo may still contain compatibility code such as
+`src/react_agent/external_http_agents.py` that emits compact legacy-shaped
+payloads or keeps `main_agent_id` inside context. That compatibility shape is
+not the new scaffold request schema. The fixed DAG scaffold contract in this
+package is authoritative for new external services, and a later R8 adapter
+implementation will bridge legacy wrapper payloads where needed.
 
 Required safety checks:
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## 2026-06-06 - Documentation consistency pass
+
+### Changed
+
+- Clarified status mapping across external service status, adapter decision,
+  and fixed DAG validator status.
+- Clarified that legacy repo wrapper compatibility code may still emit compact
+  legacy-shaped payloads until R8 adapter work, but new external services
+  should implement this fixed DAG scaffold contract.
+- Clarified the relationship between the tracked repo mirror, the local
+  distribution working copy, and generated zip artifacts.
+- Tightened the developer handoff checklist to include ids, samples, test
+  output, timestamp/evidence/confidence policies, performance notes,
+  dependencies, known limitations, and no-secrets confirmation.
+
+### Not Done
+
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+
 ## 2026-06-05 - Fixed DAG scaffold migration
 
 ### Changed

@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-06 - Phase R7-D external handoff documentation consistency fix
+
+### Changed
+
+- Clarified external scaffold status mapping across external service status,
+  adapter decision, and fixed DAG validator-facing status.
+- Clarified that existing legacy wrapper compatibility code may still carry
+  `main_agent_id` inside compact context shapes until R8 adapter work, but new
+  external services must implement the fixed DAG scaffold contract.
+- Clarified the relationship between the tracked repo mirror, local
+  distribution working copy, and generated zip artifact.
+- Tightened the external developer handoff checklist with ids, samples, test
+  output, timestamp/evidence/confidence policies, performance notes,
+  dependency list, known limitations, and no-secrets confirmation.
+- Updated scaffold mapper provenance so `legacy_agent_id` is read from the
+  response being mapped rather than a global sample constant.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+- No push.
+
 ## 2026-06-05 - Phase R7-C external scaffold source package rewrite
 
 ### Added

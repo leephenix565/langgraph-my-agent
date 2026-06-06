@@ -26,14 +26,30 @@ External `agent_conclusion_v1` maps to fixed DAG `conclusion_object_v1`.
 
 ## Status Mapping
 
-| External status | Fixed DAG status |
-| --- | --- |
-| `ok` | `complete` |
-| `partial` | `partial` |
-| `needs_clarification` | `partial` or adapter error |
-| `error` | `error` |
+Status has three separate layers:
+
+- external service status: the status returned by this scaffold envelope
+- adapter decision: whether the main-system adapter can map the payload
+- fixed DAG internal status: the validator-facing status after mapping
+
+The current fixed DAG conclusion-family contract status vocabulary is
+`pending_implementation`, `partial`, `complete`, and `error`.
+`conclusion_object_v1` enforces that enum directly. Other conclusion-family
+contracts use the same intended vocabulary in builders and typed contracts, but
+their validators may not enforce status with the same strictness yet. Step
+execution status is a different internal enum and is not emitted by external
+services.
+
+| External status | Adapter decision | Fixed DAG conclusion status |
+| --- | --- | --- |
+| `ok` | accept if required fields validate | `complete` |
+| `partial` | accept with warnings and reduced confidence | `partial` |
+| `needs_clarification` | map to a bounded partial result with warning unless required fields are missing | `partial` |
+| `error` | reject as adapter failure or map to a validator-legal failed conclusion when the adapter needs an explicit failure record | `error` |
 
 External services must not use `pending_implementation` as a success state.
+`pending_implementation` is reserved for the fixed DAG reset skeleton and
+runtime placeholders.
 
 ## Dimension Mapping
 

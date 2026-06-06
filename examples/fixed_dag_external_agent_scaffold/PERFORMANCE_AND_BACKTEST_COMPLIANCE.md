@@ -70,6 +70,15 @@ Avoid unnecessary total failure when a bounded partial result is possible.
 These are readiness targets for local and controlled validation. They are not
 production deployment claims.
 
+## Readiness Evidence Boundary
+
+Package-level performance and backtest checks are readiness evidence only. They
+are not graph invocation, adapter acceptance, live verification, or production
+readiness. Adapter work, controlled live tests, `live_verified=true`, and
+`invoke_enabled_by_default=true` remain separate R8/R9 gates owned by
+main-system maintainers. Those flags must remain false for this scaffold until
+a later approved readiness phase changes them.
+
 ## Non-Claims
 
 Passing this package's local tests does not prove:

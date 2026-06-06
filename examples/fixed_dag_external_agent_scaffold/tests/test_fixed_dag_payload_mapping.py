@@ -56,7 +56,10 @@ def test_dimension_mapping_uses_english_contract_enums() -> None:
 
 def test_compute_response_maps_to_valid_conclusion_object() -> None:
     """Sample compute output maps to a valid conclusion_object_v1."""
-    response = client.post("/v1/agent/compute", json=_compute_payload()).json()
+    response = client.post(
+        "/v1/agent/compute",
+        json=_compute_payload(legacy_agent_id="a16_ml_valuation"),
+    ).json()
     mapped = service.map_response_to_conclusion_object(response)
     valid, reason = validate_conclusion_object(mapped)
 
@@ -67,6 +70,7 @@ def test_compute_response_maps_to_valid_conclusion_object() -> None:
     assert mapped["status"] == "complete"
     assert mapped["evidence"]
     assert mapped["event_flags"]
+    assert mapped["provenance"]["legacy_agent_id"] == "a16_ml_valuation"
     assert mapped["provenance"]["provider_invoked"] is False
     assert mapped["provenance"]["external_invoked"] is False
 
@@ -103,6 +107,7 @@ def test_sentiment_company_radar_maps_only_to_market_route() -> None:
     assert valid, reason
     assert mapped["dimension"] == "market"
     assert mapped["output_routes"] == ["market_composite"]
+    assert mapped["provenance"]["legacy_agent_id"] == ""
 
 
 def test_sample_requests_do_not_use_main_agent_id() -> None:

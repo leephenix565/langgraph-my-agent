@@ -64,6 +64,16 @@ under `config/fixed_dag/`.
 The sample scaffold's `map_response_to_conclusion_object` helper is local
 example code. It is not a runtime adapter and does not write graph state.
 
+R7-D clarifies that external service status, adapter decision, and fixed DAG
+internal status are separate. External envelopes use `ok`, `partial`,
+`needs_clarification`, and `error`; adapter policy maps them into
+validator-legal conclusion statuses. Fixed DAG conclusion-family validators
+use the intended vocabulary `pending_implementation`, `partial`, `complete`,
+and `error`, while step execution status uses a separate enum.
+`conclusion_object_v1` enforces the conclusion status enum directly; other
+conclusion-family validators currently rely more on builders/typed contracts
+than direct status rejection.
+
 ## fixed_dag_agent_catalog_v1
 
 Purpose: define the active reset backend catalog of 27 formal `snake_case`

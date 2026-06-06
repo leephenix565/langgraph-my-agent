@@ -36,12 +36,24 @@ not graph state and not runtime registration truth.
 
 ## Status Mapping
 
-| External status | Fixed DAG status | Notes |
+Status has three separate layers:
+
+- external service status: `ok`, `partial`, `needs_clarification`, or `error`
+- adapter decision: accept, downgrade, reject, or record a failure result
+- fixed DAG conclusion-family status vocabulary: `pending_implementation`,
+  `partial`, `complete`, or `error`
+
+`conclusion_object_v1` enforces this enum directly. Other conclusion-family
+contracts use the same intended status vocabulary in builders and typed
+contracts, but their current validators may not enforce status with the same
+strictness yet.
+
+| External status | Adapter decision | Fixed DAG conclusion status |
 | --- | --- | --- |
-| `ok` | `complete` | Only after the adapter validates required fields and timestamps. |
-| `partial` | `partial` | Must carry warnings and reduced confidence where appropriate. |
-| `needs_clarification` | `partial` or `error` | The adapter chooses based on whether a usable partial finding exists. |
-| `error` | `error` | Do not treat as a valid analytical conclusion. |
+| `ok` | accept if required fields validate | `complete` |
+| `partial` | accept with warnings and reduced confidence | `partial` |
+| `needs_clarification` | map to a bounded partial result with warning unless required fields are missing | `partial` |
+| `error` | reject as adapter failure or record a validator-legal failed conclusion when an explicit failure record is needed | `error` |
 
 `pending_implementation` remains a fixed DAG reset skeleton status. External
 services should not claim it as their own success state.

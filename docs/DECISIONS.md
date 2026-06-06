@@ -410,3 +410,33 @@ RARP/route-prior lineage. It does not register the scaffold into the graph,
 enable a wrapper, live-verify an external service, restore
 `value_financial_analysis`, restore a 28-agent roster, or route
 `sentiment_company_radar` into risk.
+
+## ADR-021: R7-D Separates Scaffold Contract From Legacy Wrapper Compatibility
+
+Status: accepted for external handoff documentation consistency.
+
+Decision: R7-D keeps the fixed DAG scaffold contract authoritative for new
+external services and documents legacy wrapper compatibility as a maintainer
+bridge concern. External developers should implement `agent_id`,
+`external_agent_id`, `legacy_agent_id`, `/health`, `/v1/agent/compute`, and
+`/v1/agent/invoke` as shown in the scaffold package, not the older
+`main_agent_id` wrapper context shape.
+
+Reason: the repo still retains legacy external wrapper compatibility code for
+old aNN services, but the fixed DAG reset branch must not let that compatibility
+shape become the current handoff contract. R7-D also clarifies status mapping
+across external service status, adapter decision, and fixed DAG validator
+status.
+
+Consequence: source package docs, repo mirror docs, payload mapping docs,
+quality docs, and changelog now describe the same handoff boundary. The sample
+mapper reads `legacy_agent_id` from the response being mapped instead of a
+global sample constant.
+
+Non-consequence: R7-D does not change active runtime behavior, fixed DAG
+topology, the 27-agent roster, runtime bindings, public schemas, frontend
+product UI, provider readiness, external `/v1/agent/invoke` readiness,
+production deployment, Router-SFT, or RARP/route-prior lineage. It does not
+enable wrappers, set `live_verified=true`, set `invoke_enabled_by_default=true`,
+restore `value_financial_analysis`, restore a 28-agent roster, or route
+`sentiment_company_radar` into risk.

@@ -67,12 +67,29 @@ Allowed external statuses:
 
 Mapping to fixed DAG:
 
-| External status | Fixed DAG status |
-| --- | --- |
-| `ok` | `complete` |
-| `partial` | `partial` |
-| `needs_clarification` | `partial` or adapter error |
-| `error` | `error` |
+| External status | Adapter decision | Fixed DAG conclusion status |
+| --- | --- | --- |
+| `ok` | accept if required fields validate | `complete` |
+| `partial` | accept with warnings and reduced confidence | `partial` |
+| `needs_clarification` | map to partial with warning unless required fields are missing | `partial` |
+| `error` | reject or record a validator-legal failure result according to adapter policy | `error` |
+
+Fixed DAG conclusion-family validators allow `pending_implementation`,
+`partial`, `complete`, and `error`. External services should never return
+`pending_implementation` as their own success status.
+
+## Current Wrapper Compatibility Boundary
+
+This scaffold defines the target fixed DAG handoff contract for new external
+services. Existing repo compatibility wrappers may still construct compact
+legacy-shaped payloads, including `main_agent_id` in context, until a later R8
+adapter implementation replaces or bridges that path.
+
+External developers should implement the fixed DAG scaffold contract shown in
+this package. They should not infer the current target handoff contract from
+legacy wrapper files and should not add `main_agent_id` to the new request
+schema. Main-system maintainers own any adapter bridge between legacy wrapper
+compatibility payloads and this fixed DAG scaffold contract.
 
 ## Tool Result
 
