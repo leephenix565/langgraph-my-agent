@@ -1,5 +1,32 @@
 # Changelog
 
+## 2026-06-06 - AI coding handoff expansion
+
+### Changed
+
+- Expanded `AI_CODING_HANDOFF.md` into a full Codex / Claude Code operating
+  manual for adapting a developer-owned agent project into a fixed DAG external
+  service.
+- Added audit-first procedure, implementation-mode neutrality, adaptation
+  patterns, service contract rules, payload rules, mapping target, developer
+  project file strategy, tests, validation commands, handoff bundle checklist,
+  final response format, and copy-paste prompt template.
+- Clarified that coding agents must preserve the developer's business core and
+  must not modify main-system runtime, `AGENT_TOOLS`, `config/agents`, or
+  runtime binding enablement.
+
+### Not Done
+
+- No service runtime behavior change.
+- No schema or sample payload change.
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+
 ## 2026-06-06 - Documentation consistency pass
 
 ### Changed

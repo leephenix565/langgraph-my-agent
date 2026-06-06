@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-06 - Phase R7-E expand AI coding handoff
+
+### Changed
+
+- Expanded `examples/fixed_dag_external_agent_scaffold/AI_CODING_HANDOFF.md`
+  into a full Codex / Claude Code operating manual for adapting a
+  developer-owned agent project into a fixed DAG external service.
+- Added guidance for inputs, hard rules, fixed DAG id usage, implementation
+  mode neutrality, audit-first workflow, adaptation patterns, required
+  endpoints, payload rules, mapping targets, developer project file strategy,
+  local tests, validation commands, handoff bundle, final response format, and
+  copy-paste prompt.
+- Updated README, documentation index, fixed DAG external handoff docs, quality
+  docs, ADRs, and package changelog to point to the expanded AI coding handoff.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No service runtime behavior change.
+- No schema, sample payload, or test behavior change.
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+- No push.
+
 ## 2026-06-06 - Phase R7-D external handoff documentation consistency fix
 
 ### Changed

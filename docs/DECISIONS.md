@@ -440,3 +440,31 @@ production deployment, Router-SFT, or RARP/route-prior lineage. It does not
 enable wrappers, set `live_verified=true`, set `invoke_enabled_by_default=true`,
 restore `value_financial_analysis`, restore a 28-agent roster, or route
 `sentiment_company_radar` into risk.
+
+## ADR-022: R7-E Expands Developer-Side AI Coding Handoff
+
+Status: accepted for external scaffold developer workflow.
+
+Decision: R7-E expands `AI_CODING_HANDOFF.md` in the fixed DAG external
+scaffold package into a full Codex / Claude Code operating manual. The manual
+targets developer-side adaptation work: audit an existing agent project,
+preserve its business core, add a minimal fixed DAG external service wrapper,
+implement `/health`, `/v1/agent/compute`, and `/v1/agent/invoke`, add local
+contract tests, run local validation, and return a maintainer handoff bundle.
+
+Reason: external developers may hand this scaffold zip and their own agent
+project to coding tools. The tool needs enough instructions to adapt the
+developer project without drifting into main-system runtime edits,
+`AGENT_TOOLS`, `config/agents`, runtime binding enablement, provider calls, or
+live external invocation.
+
+Consequence: the scaffold package and repo mirror now contain a copy-paste
+prompt, adaptation patterns, implementation-mode-neutral guidance, test
+requirements, validation commands, and final response format for coding agents.
+
+Non-consequence: R7-E does not change service runtime behavior, fixed DAG
+topology, the 27-agent roster, runtime bindings, public schemas, frontend
+product UI, provider readiness, external `/v1/agent/invoke` readiness, or
+production deployment. It does not enable wrappers, set `live_verified=true`,
+set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
+restore a 28-agent roster, or route `sentiment_company_radar` into risk.

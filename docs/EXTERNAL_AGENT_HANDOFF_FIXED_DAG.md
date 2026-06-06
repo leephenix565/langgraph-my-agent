@@ -179,6 +179,25 @@ Developers may copy the scaffold shape, but they must replace the deterministic
 sample business logic with their own service implementation and pass the
 readiness ladder before any live integration can be considered.
 
+## AI Coding Handoff For Developer Projects
+
+R7-E expands the scaffold package's `AI_CODING_HANDOFF.md` for Codex, Claude
+Code, or another coding agent adapting a developer-owned agent project.
+
+Use it when a developer provides:
+
+- the scaffold package
+- an existing agent project
+- a target fixed DAG `agent_id`
+- optional `external_agent_id` and `legacy_agent_id`
+- sample inputs, outputs, model files, data files, or owner notes
+
+The AI coding handoff tells the coding agent to audit first, preserve the
+business core, add a minimal fixed DAG service wrapper, implement `/health`,
+`/v1/agent/compute`, and `/v1/agent/invoke`, add local contract tests, and
+return a maintainer handoff bundle. It does not authorize runtime binding
+changes, live invocation, or main-system runtime edits.
+
 ## What To Submit
 
 Submit a handoff bundle with:

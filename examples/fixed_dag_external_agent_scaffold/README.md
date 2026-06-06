@@ -118,6 +118,11 @@ conda run --no-capture-output -n cline_env python -m uvicorn service:app --host 
 The tests use in-process FastAPI `TestClient`. They do not start a network
 service and do not call external `/v1/agent/invoke`.
 
+For Codex, Claude Code, or another coding agent adapting an existing developer
+project, start with `AI_CODING_HANDOFF.md`. It defines the audit-first
+workflow, adaptation patterns, validation commands, and maintainer handoff
+bundle.
+
 ## Sample Files
 
 `sample_requests/` contains:

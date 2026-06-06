@@ -36,6 +36,9 @@ enable wrappers, modify runtime bindings, or live-verify external candidates.
 Phase R7-D tightens external handoff documentation consistency around status
 mapping, wrapper compatibility, package/mirror/zip distribution roles, and
 developer handoff evidence without changing runtime behavior.
+Phase R7-E expands the scaffold `AI_CODING_HANDOFF.md` into a developer-side
+Codex / Claude Code operating manual for adapting an existing agent project
+into a fixed DAG external service wrapper.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -45,7 +48,7 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R7-D external handoff documentation consistency pass over
+- Current phase: R7-E AI coding handoff expansion over
   the existing fixed DAG web shell and backend skeleton.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
@@ -304,6 +307,9 @@ readiness.
 - R7-D only tightens external handoff wording and consistency. It does not
   change active runtime behavior, enable bindings, bridge legacy wrappers, or
   prove live readiness.
+- R7-E only expands developer-side AI coding instructions for adapting
+  external agent projects. It does not change service runtime behavior,
+  schemas, samples, active runtime, runtime bindings, or live readiness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

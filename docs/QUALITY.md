@@ -77,8 +77,9 @@ service readiness.
 
 ## R7-C External Scaffold Source Package
 
-R7-C external developer handoff work upgrades the repo-external scaffold source
-package and syncs a tracked repo mirror. Its validation uses:
+R7-C/R7-D/R7-E external developer handoff work upgrades the repo-external
+scaffold source package, keeps the tracked repo mirror in sync, and expands the
+AI coding handoff documentation. Its validation uses:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q
