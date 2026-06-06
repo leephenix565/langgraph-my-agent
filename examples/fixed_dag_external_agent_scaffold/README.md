@@ -1,138 +1,136 @@
 # Fixed DAG External Agent Scaffold
 
-This directory is a sample-only external agent scaffold for the fixed DAG reset
-branch. It is runnable for local contract tests, but it is not registered into
-the active graph and it does not change `config/fixed_dag/runtime_bindings.json`.
+Package version: `fixed-dag-scaffold-v0.1`.
 
-The scaffold demonstrates the boundary other developers should implement when
-they want a business service to be reviewed for later fixed DAG integration.
-It standardizes protocol shape, ids, evidence, confidence, status, and
-readiness evidence. It does not force every agent to use an LLM with function
-calling.
+This package is the fixed DAG version of the historical external-agent scaffold
+protocol package / v2.1-v2.2.1 lineage. It keeps the useful transport,
+endpoint, safety, timestamp, confidence, evidence, idempotency, and degradation
+ideas, but replaces the old `AGENT_TOOLS`, `config/agents`, aNN primary id, and
+`main_agent_id` handoff model.
 
-## Scope
+The package is a sample-only delivery scaffold for external developers. It is
+not registered into the `langgraph-my-agent` active graph, does not modify
+`config/fixed_dag/runtime_bindings.json`, and does not prove live readiness.
 
-This sample provides:
+## Fixed DAG Truth
 
-- `GET /health`
-- `POST /v1/agent/compute`
-- `POST /v1/agent/invoke`
-- `external_agent_health_v0`
-- `external_agent_request_v0`
-- `external_agent_response_v0`
-- typed errors
-- one deterministic `compute_core` shared by `/compute` and `/invoke`
-- `as_of` and `data_as_of` point-in-time fields
-- evidence, `event_flags`, confidence, warnings, and fail-soft behavior
-- local tests that do not call providers or external services
+Current integration authority lives in the main repo:
 
-This sample does not provide:
+- `config/fixed_dag/agent_catalog.json`
+- `config/fixed_dag/runtime_bindings.json`
+- `src/react_agent/fixed_dag_catalog.py`
+- `src/react_agent/fixed_dag_runtime_registry.py`
+- `src/react_agent/fixed_dag_contracts.py`
+- `src/react_agent/fixed_dag_executor.py`
+- `scripts/quality/run_quality.py`
 
-- active fixed DAG runtime registration
-- live service readiness
-- provider calls
-- external `/v1/agent/invoke` calls
-- production deployment hardening
-- investment advice
+Do not treat `AGENT_TOOLS`, `config/agents`, old Agent Catalog v2, old
+router/manager graph paths, old aNN ids, or `main_agent_id` as current fixed
+DAG handoff truth.
 
-## ID Boundary
+## ID Model
 
-Use three separate ids:
+Use three ids:
 
 | Field | Meaning | Example |
 | --- | --- | --- |
-| `agent_id` | Current fixed DAG `snake_case` id. | `value_ml_valuation` |
+| `agent_id` | Current fixed DAG `snake_case` primary id. | `value_ml_valuation` |
 | `external_agent_id` | External service-owned id. | `valuation_ml` |
 | `legacy_agent_id` | Optional migration note only. | `a16_ml_valuation` |
 
-Do not use an old `aNN` id as the primary `agent_id`. This scaffold rejects
-requests such as `agent_id="a16_ml_valuation"` to make the boundary explicit.
-If a legacy id is useful for migration notes, document it outside the request
-primary id.
+New samples use all three fields. The old `main_agent_id` field is not a
+primary request field in this package.
 
 ## Implementation Modes
 
-Developers may implement the internals as:
+The platform does not require every agent to be `LLM + function call`.
+Developers may implement:
 
-- `model_compute_agent`
-- `llm_structured_agent`
-- `data_service_agent`
-- `composite_or_decision_agent`
-- a rule or statistics service
-- a hybrid service
+- machine-learning model plus optional LLM explainer
+- rule or statistical model
+- data service
+- NLP or LLM structured agent
+- deterministic `compute_core`
+- LLM plus function call
+- hybrid systems
 
-The optional `implementation_notes` object is documentation metadata. It is not
-a current hard validator and it does not require an LLM:
+The standardized object is the boundary: input protocol, output protocol, ID
+mapping, evidence, timestamps, confidence, status, and readiness ladder.
+
+Optional metadata:
 
 ```json
 {
-  "implementation_type": "model_compute_agent",
-  "uses_llm": false,
-  "llm_role": "",
-  "compute_core": "deterministic_sample_v1",
-  "explanation_layer": "deterministic_template"
+  "implementation_notes": {
+    "implementation_type": "model_compute_agent",
+    "uses_llm": false,
+    "llm_role": "",
+    "compute_core": "sample_deterministic_core",
+    "explanation_layer": "optional"
+  }
 }
 ```
 
-## Endpoint Semantics
+## Endpoints
 
-`/health` returns safe readiness metadata. It must not expose secrets,
-credentials, raw provider responses, private config, or raw traceback.
+The sample service exposes:
 
-`/v1/agent/compute` runs deterministic structured computation. In this sample it
-calls only local Python code. It is intended for local contract, point-in-time,
-idempotency, and backtest-style checks.
-
-`/v1/agent/invoke` is an explanation shell over the same `compute_core`. In this
-sample it remains deterministic and does not call an LLM. A real service may use
-an LLM explanation layer later, but the structured `tool_result` should remain
-compatible with the fixed DAG mapping.
-
-## Fixed DAG Mapping
-
-The sample `tool_result` uses `agent_conclusion_v1`. A future repo-side adapter
-can map it to `conclusion_object_v1`:
-
-| External field | Fixed DAG field |
-| --- | --- |
-| `tool_result.agent_id` | `agent_id` |
-| `tool_result.dimension` | `dimension` |
-| `tool_result.stance` | `stance` |
-| `tool_result.confidence` | `confidence` |
-| `tool_result.evidence` | `evidence` |
-| `tool_result.event_flags` | `event_flags` |
-| `tool_result.as_of` | `as_of` |
-| `tool_result.data_as_of` | `data_as_of` |
-
-Status mapping:
-
-| External status | Fixed DAG status |
-| --- | --- |
-| `ok` | `complete` |
-| `partial` | `partial` |
-| `needs_clarification` | `partial` with warning |
-| `error` | `error` or adapter-level skip/fail |
-
-Dimension enum values remain English in the contract:
-
-| Enum | Chinese display label |
-| --- | --- |
-| `value` | 价值维 |
-| `market` | 市场面维 |
-| `risk` | 风险维 |
-| `macro` | 宏观维 |
-
-`sentiment_company_radar` belongs to `market` and must not route directly into
-`risk_composite`.
-
-## Local Validation
-
-From the repo root:
-
-```powershell
-conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q
-conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold
+```text
+GET  /health
+POST /v1/agent/compute
+POST /v1/agent/invoke
 ```
 
-These commands are local-only. They do not call providers, do not call any
-external service, and do not enable the sample in the active fixed DAG runtime.
+`/compute` calls deterministic local `compute_core` and returns structured
+payloads. `/invoke` calls the same core and only adds answer/key points. The
+sample does not call LLMs, providers, external HTTP services, or `.env`
+secrets.
+
+## Quick Start
+
+From the package directory:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m pytest tests -q
+conda run --no-capture-output -n cline_env python -m ruff check .
+```
+
+Optional local manual server:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m uvicorn service:app --host 127.0.0.1 --port 8100
+```
+
+The tests use in-process FastAPI `TestClient`. They do not start a network
+service and do not call external `/v1/agent/invoke`.
+
+## Sample Files
+
+`sample_requests/` contains:
+
+- `health.expected.json`
+- `compute.request.json`
+- `compute.response.json`
+- `invoke.request.json`
+- `invoke.response.json`
+- `error.response.json`
+
+The response samples include `as_of`, `data_as_of`, evidence, event flags,
+confidence in `[0, 1]`, typed errors where applicable, and no secret or raw
+traceback fields.
+
+## Non-Claims
+
+This package does not:
+
+- register an external service into the main graph
+- change the 27-agent fixed DAG roster
+- restore `value_financial_analysis`
+- restore a 28-agent roster
+- route `sentiment_company_radar` into `risk_composite`
+- modify `runtime_bindings`
+- set `live_verified=true`
+- set `invoke_enabled_by_default=true`
+- prove live service readiness
+- prove provider readiness
+- provide production auth, rate limits, TLS, observability, or persistence

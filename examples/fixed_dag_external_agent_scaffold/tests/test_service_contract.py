@@ -24,6 +24,7 @@ def _compute_payload(**overrides: object) -> dict[str, object]:
         "request_id": "test-compute-001",
         "agent_id": service.FIXED_DAG_AGENT_ID,
         "external_agent_id": service.EXTERNAL_AGENT_ID,
+        "legacy_agent_id": service.LEGACY_AGENT_ID,
         "target": "600519.SH",
         "as_of": "2026-06-05",
         "language": "zh-CN",
@@ -52,7 +53,6 @@ def test_health_schema_is_safe_and_sample_only() -> None:
     assert body["status"] == "ok"
     assert body["agent_id"] == "value_ml_valuation"
     assert body["external_agent_id"] == "valuation_ml"
-    assert body["fixed_dag_agent_id"] == "value_ml_valuation"
     assert body["legacy_agent_id"] == "a16_ml_valuation"
     assert body["llm_configured"] is False
     assert body["tools_configured"] is False
@@ -69,6 +69,7 @@ def test_compute_success_returns_mappable_conclusion() -> None:
     assert response.status_code == 200
     assert body["schema_version"] == "external_agent_response_v0"
     assert body["request_id"] == "test-compute-001"
+    assert body["legacy_agent_id"] == "a16_ml_valuation"
     assert body["status"] == "ok"
     assert body["confidence"] == tool_result["confidence"]
     assert 0.0 <= body["confidence"] <= 1.0

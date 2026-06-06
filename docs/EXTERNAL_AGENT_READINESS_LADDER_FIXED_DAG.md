@@ -24,7 +24,7 @@ not imply live service readiness. `live_verified=true` does not imply
 
 Required:
 
-- `fixed_dag_agent_id`
+- fixed DAG `agent_id`
 - `external_agent_id`
 - health sample response
 - invoke sample request and response
@@ -49,12 +49,13 @@ Required:
 - No secrets, raw traceback, raw provider response, or chain-of-thought.
 - Adapter mapping can convert the external response to the expected fixed DAG
   contract family.
-- If using the checked-in R7-B scaffold, the local
-  `examples/fixed_dag_external_agent_scaffold/tests` suite passes.
+- If using the R7-C scaffold package, both the repo-external
+  `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
+  mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
 
 Mock tests do not prove live service readiness.
 
-The R7-B sample scaffold can satisfy L1 for its own deterministic example
+The R7-C sample scaffold can satisfy L1 for its own deterministic example
 service only. It does not advance any real external candidate to live
 readiness.
 

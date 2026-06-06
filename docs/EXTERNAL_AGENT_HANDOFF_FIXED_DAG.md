@@ -65,15 +65,17 @@ Main-system maintainers own:
 
 ## ID Namespaces
 
-Use three separate id namespaces:
+Use three separate id namespaces in service schemas and samples:
 
 | Field | Owner | Meaning |
 | --- | --- | --- |
-| `fixed_dag_agent_id` | main system | Primary current id from `config/fixed_dag/agent_catalog.json`, such as `value_ml_valuation`. |
-| `external_agent_id` | external service | Service id returned by `/health` and `/v1/agent/invoke`, such as `valuation_ml_service`. |
+| `agent_id` | main system | Primary current fixed DAG id from `config/fixed_dag/agent_catalog.json`, such as `value_ml_valuation`. |
+| `external_agent_id` | external service | Service id returned by `/health`, `/v1/agent/compute`, and `/v1/agent/invoke`, such as `valuation_ml`. |
 | `legacy_agent_id` | main system | Optional migration note in `runtime_bindings.json`, such as `a16_ml_valuation`; never a primary current id. |
 
-Do not use an aNN id as the active fixed DAG primary id.
+Do not use an aNN id as the active fixed DAG primary id. If `main_agent_id` is
+mentioned, it must appear only in migration notes, not in the new request
+schema or sample primary path.
 
 ## Choosing A Target Agent
 
@@ -124,15 +126,23 @@ The service should support:
 - `event_flags` where relevant
 - a structured `tool_result`
 
-## R7-B Sample-Only Scaffold
+## R7-C Source Package And Repo Mirror
 
-R7-B adds a runnable local sample scaffold under:
+R7-C upgrades the original repo-external source package in place:
+
+```text
+E:\muti-agent\external_agent_scaffold
+```
+
+The upgraded package is mirrored into the repo for review and versioned docs:
 
 ```text
 examples/fixed_dag_external_agent_scaffold/
 ```
 
-The scaffold is for developer handoff and local contract tests only. It is not
+Use the repo path as the tracked canonical copy when reviewing changes. Use the
+repo-external path as the distribution/source package for zip handoff. The
+scaffold is for developer handoff and local contract tests only. It is not
 registered in `react_agent.graph`, not listed as an active runtime package, and
 not connected to `config/fixed_dag/runtime_bindings.json`.
 
@@ -159,8 +169,9 @@ readiness ladder before any live integration can be considered.
 
 Submit a handoff bundle with:
 
-- Target `fixed_dag_agent_id`.
+- Target fixed DAG `agent_id`.
 - External `external_agent_id`.
+- Optional migration-only `legacy_agent_id`.
 - Health sample response.
 - Invoke sample request and response.
 - Compute sample request and response when applicable.
@@ -198,16 +209,12 @@ It also does not restore:
 
 ## Historical Scaffold Lineage
 
-The historical `external_agent_scaffold_v2.2.1.zip` package is useful for
+The historical `external_agent_scaffold_v2.2.1.zip` package was useful for
 transport, endpoint, safety, `as_of`/`data_as_of`, evidence, event flag,
 confidence, idempotency, graceful-degradation, and performance ideas.
 
-It must not be copied into the active runtime or treated as current fixed DAG
-truth. Its README lineage may still say v2.1 while later files describe v2.2 or
-v2.2.1 additions, so refer to it as the historical scaffold protocol package
-from the v2.1-v2.2.1 lineage.
-
-The checked-in R7-B scaffold is a fixed DAG adaptation of those reusable ideas,
-not a verbatim copy of the old package. It replaces `main_agent_id` and old aNN
-primary ids with fixed DAG `snake_case` ids and keeps old aNN ids only as
-migration notes.
+R7-C migrates that lineage into the current fixed DAG scaffold package. The
+current package replaces `main_agent_id` and old aNN primary ids with fixed DAG
+`agent_id` values and keeps old aNN ids only as `legacy_agent_id` migration
+notes. The package must not be copied into the active runtime or treated as
+live-readiness evidence.

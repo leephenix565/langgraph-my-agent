@@ -3,6 +3,58 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R7-C external scaffold source package rewrite
+
+### Added
+
+- Added the upgraded external scaffold source package contents to the tracked
+  repo mirror `examples/fixed_dag_external_agent_scaffold/`, including package
+  docs, `.env.example`, sample requests/responses, typed-error samples, service
+  code, schemas, and tests.
+- Added scaffold docs for fixed DAG developer onboarding, integration standard,
+  domain payload mapping, performance/backtest compliance, AI coding handoff,
+  and package-local changelog.
+- Added `sample_requests/error.response.json` to show safe rejection of a
+  legacy aNN id used as the primary `agent_id`.
+
+### Changed
+
+- Upgraded the repo-external source package
+  `E:\muti-agent\external_agent_scaffold` from the old v2.1-v2.2.1 lineage into
+  a fixed DAG package using `agent_id`, `external_agent_id`, and
+  migration-only `legacy_agent_id`.
+- Synced the upgraded external package into
+  `examples/fixed_dag_external_agent_scaffold/` using the Strategy A mirror
+  policy so repo review and external distribution do not drift.
+- Updated README, documentation index, contracts, system map, quality, ADR,
+  handoff, payload mapping, and readiness ladder docs to describe R7-C as a
+  source-package rewrite, not a runtime binding or live-readiness change.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, public schema, frontend
+  product UI, provider integration, external wrapper, or real business-agent
+  implementation change.
+- No scaffold registration into `react_agent.graph`, legacy registry,
+  `AGENT_TOOLS`, runtime binding registry, or wrapper table.
+- No `runtime_bindings` change, no `invoke_enabled_by_default=true`, and no
+  `live_verified=true`.
+- No provider, search, external `/v1/agent/invoke`, demo stack, Router-SFT,
+  RARP/route-prior, browser screenshot, or archived fusion-gate validation.
+- No claim that the scaffold package is a live service, live verified external
+  candidate, production service, or active fixed DAG runtime component.
+- No push.
+
 ## 2026-06-05 - Phase R7-B fixed DAG external agent handoff scaffold
 
 ### Added

@@ -75,12 +75,14 @@ The fixed-DAG runtime remains the deterministic provider-free reset skeleton
 until later phases implement and verify real business agents and live external
 service readiness.
 
-## R7-B External Handoff Scaffold
+## R7-C External Scaffold Source Package
 
-R7-B external developer handoff work includes docs and a sample-only local
-scaffold. Its validation uses:
+R7-C external developer handoff work upgrades the repo-external scaffold source
+package and syncs a tracked repo mirror. Its validation uses:
 
 ```powershell
+conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q
+conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold
 conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q
 conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
@@ -94,6 +96,6 @@ not call external `/v1/agent/invoke`, do not start the demo stack, do not run
 fusion-gate, and do not prove that any external service is live verified or
 safe to enable.
 
-The scaffold tests are example-local validation. They are not part of the
+The scaffold tests are package-local validation. They are not part of the
 default reset mainline unless a later phase explicitly changes the quality
 policy.

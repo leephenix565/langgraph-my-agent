@@ -28,10 +28,11 @@ Phase R6-B rebuilds the default reset quality mainline so it covers scoped
 static checks, unit tests, public API tests, graph smoke tests, and frontend
 typecheck/smoke/repo-external build validation without running archived
 fusion-gate or live provider/external gates.
-Phase R7-B adds fixed DAG external developer handoff documentation and a
-sample-only runnable scaffold for contract mapping, sample payloads, and
-readiness review. It does not register the scaffold, enable wrappers, or
-live-verify external candidates.
+Phase R7-C upgrades the original repo-external scaffold source package at
+`E:\muti-agent\external_agent_scaffold` into the fixed DAG handoff package and
+syncs the tracked mirror under `examples/fixed_dag_external_agent_scaffold/`.
+It remains sample-only contract material: it does not register the scaffold,
+enable wrappers, modify runtime bindings, or live-verify external candidates.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -41,8 +42,8 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R7-B fixed DAG external developer handoff scaffold over the
-  existing fixed DAG web shell and backend skeleton.
+- Current phase: R7-C fixed DAG external scaffold source package rewrite over
+  the existing fixed DAG web shell and backend skeleton.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -234,8 +235,8 @@ answer cards use "研判依据", "分析框架", "用户问题", and "流程记�
   docs-only review to explicit live invocation approval.
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
   sample health, invoke, compute, mapped, partial, and failure payloads.
-- `examples/fixed_dag_external_agent_scaffold/` - sample-only runnable FastAPI
-  scaffold and local tests for fixed DAG external developer handoff.
+- `examples/fixed_dag_external_agent_scaffold/` - tracked repo mirror of the
+  upgraded fixed DAG external scaffold package and its local tests.
 
 ## Safe Local Validation
 
@@ -256,19 +257,21 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
-R7-B scaffold validation adds local example tests and ruff for
-`examples/fixed_dag_external_agent_scaffold/`, then uses the same non-provider
-static and mainline commands. These checks do not call providers, do not call
-external `/v1/agent/invoke`, and do not prove live external readiness.
+R7-C scaffold validation runs the repo-external package tests and ruff for
+`E:\muti-agent\external_agent_scaffold`, the tracked repo mirror tests and ruff
+for `examples/fixed_dag_external_agent_scaffold/`, then uses the same
+non-provider static and mainline commands. These checks do not call providers,
+do not call external `/v1/agent/invoke`, and do not prove live external
+readiness.
 
 ## Explicit Non-Claims
 
 - No provider or live external service was verified by
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C validation.
 - No demo stack startup is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C validation.
 - No real business algorithms for individual agents are implemented in
   R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
 - R5-B2 completes the frontend inspector UI rewrite only; it does not change
@@ -291,6 +294,10 @@ external `/v1/agent/invoke`, and do not prove live external readiness.
   not register the scaffold into the graph, modify runtime bindings, enable
   external candidates, live-verify services, or force one internal
   implementation mode for external agents.
+- R7-C upgrades the original repo-external scaffold source package and syncs a
+  tracked repo mirror. It does not turn the scaffold into active runtime code,
+  enable `runtime_bindings`, register wrappers, or prove live service
+  readiness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

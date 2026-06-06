@@ -16,11 +16,11 @@ Phase R4-C isolates the legacy aNN registry/bootstrap into explicit
 compatibility modules and keeps active graph imports on fixed-DAG contract,
 executor, state, catalog, and binding seams.
 
-Phase R7-B adds external developer handoff, payload mapping, readiness ladder,
-sample payload documentation, and a sample-only runnable scaffold. These docs
-and examples explain how a future adapter should translate external service
-envelopes into the fixed DAG contracts below. They do not change runtime
-behavior, register scaffold code into the graph, or enable live invocation.
+Phase R7-C upgrades the original repo-external scaffold source package and
+syncs a tracked repo mirror. These docs and examples explain how a future
+adapter should translate external service envelopes into the fixed DAG
+contracts below. They do not change runtime behavior, register scaffold code
+into the graph, modify runtime bindings, or enable live invocation.
 
 ## Contract Boundary
 
@@ -45,13 +45,14 @@ R4-C keeps `legacy_agent_id` as migration metadata in binding/step-result
 contracts but does not use `config/agents/*.json`, `AGENT_METADATA`, or
 `AGENT_TOOLS` as active graph registration sources.
 
-R7-B external handoff docs are contract-facing guidance:
+R7-C external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`
 - `examples/fixed_dag_external_agent_scaffold/`
+- `E:\muti-agent\external_agent_scaffold`
 
 They may reference historical external envelope names such as
 `external_agent_health_v0`, `external_agent_request_v0`, and

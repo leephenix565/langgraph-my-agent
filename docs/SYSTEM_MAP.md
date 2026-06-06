@@ -1,12 +1,12 @@
 # System Map
 
-This file is the reset branch operational map for Phase R7-B.
+This file is the reset branch operational map for Phase R7-C.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R7-B fixed DAG external developer handoff scaffold over the
-  existing fixed-DAG runtime skeleton and R5 web shell.
+- Current phase: R7-C fixed DAG external scaffold source package rewrite over
+  the existing fixed-DAG runtime skeleton and R5 web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -24,7 +24,9 @@ This file is the reset branch operational map for Phase R7-B.
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`, and
   `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`.
-- Sample-only external developer scaffold:
+- External scaffold source package:
+  `E:\muti-agent\external_agent_scaffold`.
+- Tracked repo mirror of that source package:
   `examples/fixed_dag_external_agent_scaffold/`.
 - Active frontend contract:
   `apps/web` renders the fixed DAG workflow inspector from
@@ -115,11 +117,12 @@ verification. The old valuation-only facade and unused JSON helper were removed
 after tests migrated to the generic external HTTP wrapper and no source/test
 references remained.
 
-In R7-B, the external developer docs and sample-only scaffold define how later
-service submissions should be reviewed against fixed DAG ids, runtime bindings,
-contracts, and readiness levels. They do not make the historical scaffold an
-active package, do not register any service into the graph, do not modify
-runtime bindings, and do not make wrapper metadata a live verification signal.
+In R7-C, the original repo-external scaffold source package is upgraded to the
+fixed DAG protocol and mirrored into the repo example directory. The package
+defines how later service submissions should be reviewed against fixed DAG
+ids, runtime bindings, contracts, and readiness levels. It does not register
+any service into the graph, does not modify runtime bindings, and does not make
+wrapper metadata a live verification signal.
 
 ## Target Fixed DAG IDs
 
@@ -199,9 +202,12 @@ The reset `mainline` runs static, unit, public-api, graph-smoke, and frontend.
 The frontend mode performs TypeScript no-emit, frontend smoke, and Vite build
 with a temporary repo-external `--outDir`; it must not write `apps/web/dist`.
 
-R7-B documentation validation uses the same non-provider `static` and
-`mainline` commands. It does not add provider, external live invoke, demo stack,
-or fusion-gate acceptance to the default reset gate.
+R7-C validation adds repo-external scaffold tests and ruff for
+`E:\muti-agent\external_agent_scaffold`, repo mirror tests and ruff for
+`examples/fixed_dag_external_agent_scaffold/`, and then uses the same
+non-provider `static` and `mainline` commands. It does not add provider,
+external live invoke, demo stack, or fusion-gate acceptance to the default
+reset gate.
 
 Do not run provider smoke, external live invoke, demo stack commands,
 Router-SFT, RARP/route-prior, browser screenshot capture, or archived
@@ -221,11 +227,11 @@ claim provider readiness, external service readiness, production readiness,
 visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
 `fusion-gate` remains archived/manual.
 
-R7-B claims only external developer handoff documentation, payload mapping
-guidance, readiness ladder guidance, sample payloads, and a sample-only local
-scaffold. It does not change fixed DAG topology, roster, runtime bindings,
-public schemas, frontend product UI, provider readiness, external invocation
-readiness, or production deployment readiness.
+R7-C claims only that the external scaffold source package and tracked repo
+mirror now use fixed DAG ids, schemas, samples, tests, and handoff wording. It
+does not change fixed DAG topology, roster, runtime bindings, public schemas,
+frontend product UI, provider readiness, external invocation readiness, or
+production deployment readiness.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

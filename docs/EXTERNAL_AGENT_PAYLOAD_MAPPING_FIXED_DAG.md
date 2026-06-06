@@ -20,16 +20,16 @@ Current fixed DAG authority:
 Legacy `AGENT_TOOLS`, `config/agents/*.json`, and aNN ids may appear as
 migration references only. They are not current fixed DAG integration truth.
 
-The R7-B sample scaffold under
-`examples/fixed_dag_external_agent_scaffold/` contains local example mapping
-code and tests. It is an adapter-side sample, not graph state and not runtime
-registration truth.
+The R7-C scaffold source package at `E:\muti-agent\external_agent_scaffold` and
+its tracked repo mirror under `examples/fixed_dag_external_agent_scaffold/`
+contain local example mapping code and tests. They are adapter-side samples,
+not graph state and not runtime registration truth.
 
 ## Identity Mapping
 
 | External or legacy concept | Fixed DAG target | Rule |
 | --- | --- | --- |
-| old `main_agent_id` or aNN id | `fixed_dag_agent_id` | Replace with the `snake_case` id from `config/fixed_dag/agent_catalog.json`. |
+| old `main_agent_id` or aNN id | `agent_id` | Replace with the fixed DAG `snake_case` id from `config/fixed_dag/agent_catalog.json`. |
 | `external_agent_id` | `runtime_bindings.external_agent_id` | Keep as the external service id. It is not the fixed DAG primary id. |
 | `legacy_agent_id` | `runtime_bindings.legacy_agent_id` | Keep only as a migration note. |
 | endpoint URL | runtime binding metadata or deployment config | Do not expose endpoint URLs in public transcript. |
@@ -119,16 +119,16 @@ For `/v1/agent/compute`, the historical scaffold lineage passes point-in-time
 input as `as_of_date`. The fixed DAG adapter maps that to contract `as_of` and
 expects output timestamps to satisfy the anti-lookahead rule.
 
-The R7-B sample scaffold uses `as_of` directly in its request schema and
-sample files. Future adapters may support legacy `as_of_date` as a compatibility
-input, but new fixed DAG samples should prefer `as_of`.
+The R7-C scaffold uses `as_of` directly in its request schema and sample files.
+Future adapters may support legacy `as_of_date` as a compatibility input, but
+new fixed DAG samples should prefer `as_of`.
 
 ## Provenance Mapping
 
 Fixed DAG provenance should distinguish service facts from runtime claims:
 
 - `external_agent_id`: the external service id
-- `fixed_dag_agent_id`: the fixed DAG target id
+- `agent_id`: the fixed DAG target id
 - `legacy_agent_id`: optional migration note
 - `provider_invoked`: whether the service invoked a provider, if known
 - `external_invoked`: true only in a live integration context, never in docs-only
@@ -143,7 +143,7 @@ workflow authority.
 
 Before a mapped object is accepted:
 
-- Target `fixed_dag_agent_id` exists in the 27-agent catalog.
+- Target `agent_id` exists in the 27-agent catalog.
 - The id is not a legacy aNN primary id.
 - The id is not `value_financial_analysis`.
 - The output contract matches the selected target agent.

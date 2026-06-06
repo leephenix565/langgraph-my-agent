@@ -69,7 +69,6 @@ class ExternalAgentHealth(BaseModel):
     external_agent_id: str
     agent_name: str
     version: str
-    fixed_dag_agent_id: str
     legacy_agent_id: str = ""
     capabilities: list[str] = Field(default_factory=list)
     input_modes: list[str] = Field(default_factory=list)
@@ -91,6 +90,7 @@ class ExternalAgentRequest(BaseModel):
     request_id: str
     agent_id: str
     external_agent_id: str
+    legacy_agent_id: str = ""
     target: str
     question: str
     as_of: str
@@ -106,6 +106,7 @@ class ComputeRequest(BaseModel):
     request_id: str
     agent_id: str
     external_agent_id: str
+    legacy_agent_id: str = ""
     target: str
     as_of: str
     language: str = "zh-CN"
@@ -140,6 +141,7 @@ class ExternalAgentResponse(BaseModel):
     request_id: str
     agent_id: str
     external_agent_id: str
+    legacy_agent_id: str = ""
     status: ExternalStatus
     answer: str = ""
     key_points: list[str] = Field(default_factory=list)

@@ -5,7 +5,6 @@
   "external_agent_id": "valuation_ml",
   "agent_name": "Fixed DAG sample valuation agent",
   "version": "0.1.0",
-  "fixed_dag_agent_id": "value_ml_valuation",
   "legacy_agent_id": "a16_ml_valuation",
   "capabilities": [
     "fixed_dag_external_scaffold",

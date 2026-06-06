@@ -379,3 +379,34 @@ RARP/route-prior lineage. It does not register the sample scaffold into the
 graph, enable a wrapper, live-verify an external service, restore old `aNN`
 catalog authority, restore `value_financial_analysis`, or route
 `sentiment_company_radar` into risk.
+
+## ADR-020: R7-C Keeps External Scaffold Source And Repo Mirror Aligned
+
+Status: accepted for external developer package governance.
+
+Decision: R7-C upgrades the original repo-external scaffold source package at
+`E:\muti-agent\external_agent_scaffold` and syncs its contents into the tracked
+repo mirror `examples/fixed_dag_external_agent_scaffold/`. The package uses
+fixed DAG `agent_id`, `external_agent_id`, and migration-only `legacy_agent_id`
+fields; it does not use old `main_agent_id` or aNN primary ids in the current
+schema path.
+
+Reason: external developers receive the repo-external package, while reviewers
+need a tracked copy for diffs, docs, tests, and changelog history. Maintaining
+one package shape in both locations prevents the old v2.1-v2.2.1 scaffold
+lineage, `AGENT_TOOLS`, `config/agents`, and aNN id assumptions from drifting
+back into handoff instructions.
+
+Consequence: scaffold docs, schemas, service code, samples, and tests must stay
+aligned between the external source package and the repo mirror. Local tests
+may prove endpoint shape, schema mapping, typed errors, anti-lookahead,
+confidence bounds, evidence, event flags, and no-provider/no-external-call
+sample behavior.
+
+Non-consequence: R7-C does not change fixed DAG topology, the 27-agent roster,
+runtime bindings, public schemas, frontend product UI, provider readiness,
+external `/v1/agent/invoke` readiness, production deployment, Router-SFT, or
+RARP/route-prior lineage. It does not register the scaffold into the graph,
+enable a wrapper, live-verify an external service, restore
+`value_financial_analysis`, restore a 28-agent roster, or route
+`sentiment_company_radar` into risk.

@@ -197,6 +197,7 @@ def _error_response(
     request_id: str,
     agent_id: str,
     external_agent_id: str,
+    legacy_agent_id: str,
     error: TypedError,
     answer: str,
 ) -> ExternalAgentResponse:
@@ -204,6 +205,7 @@ def _error_response(
         request_id=request_id,
         agent_id=agent_id,
         external_agent_id=external_agent_id,
+        legacy_agent_id=legacy_agent_id,
         status="error",
         answer=answer,
         key_points=[],
@@ -219,6 +221,7 @@ def _validate_request_ids(
     request_id: str,
     agent_id: str,
     external_agent_id: str,
+    legacy_agent_id: str,
     target: str,
     question: str = "structured compute",
 ) -> ExternalAgentResponse | None:
@@ -227,6 +230,7 @@ def _validate_request_ids(
             request_id=request_id,
             agent_id=agent_id,
             external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
             error=legacy_agent_id_error(agent_id),
             answer="Use the fixed DAG snake_case agent_id as the primary id.",
         )
@@ -235,6 +239,7 @@ def _validate_request_ids(
             request_id=request_id,
             agent_id=agent_id,
             external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
             error=target_required_error(),
             answer="Provide a target before running the sample service.",
         )
@@ -243,6 +248,7 @@ def _validate_request_ids(
             request_id=request_id,
             agent_id=agent_id,
             external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
             error=empty_question_error(),
             answer="Provide a non-empty question before invoking the sample service.",
         )
@@ -257,7 +263,6 @@ async def health() -> ExternalAgentHealth:
         external_agent_id=EXTERNAL_AGENT_ID,
         agent_name=AGENT_NAME,
         version=VERSION,
-        fixed_dag_agent_id=FIXED_DAG_AGENT_ID,
         legacy_agent_id=LEGACY_AGENT_ID,
         capabilities=[
             "fixed_dag_external_scaffold",
@@ -292,6 +297,7 @@ async def compute(req: ComputeRequest) -> ExternalAgentResponse:
         request_id=req.request_id,
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         target=req.target,
     )
     if validation_error is not None:
@@ -312,6 +318,7 @@ async def compute(req: ComputeRequest) -> ExternalAgentResponse:
         request_id=req.request_id,
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         status=tool_result.status,
         answer="",
         key_points=[],
@@ -329,6 +336,7 @@ async def invoke(req: ExternalAgentRequest) -> ExternalAgentResponse:
         request_id=req.request_id,
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         target=req.target,
         question=req.question,
     )
@@ -350,6 +358,7 @@ async def invoke(req: ExternalAgentRequest) -> ExternalAgentResponse:
         request_id=req.request_id,
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         status=tool_result.status,
         answer=(
             f"Sample-only deterministic explanation for {tool_result.target}: "

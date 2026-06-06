@@ -1,0 +1,24 @@
+{
+  "schema_version": "external_agent_response_v0",
+  "request_id": "sample-error-001",
+  "agent_id": "a16_ml_valuation",
+  "external_agent_id": "valuation_ml",
+  "legacy_agent_id": "a16_ml_valuation",
+  "status": "error",
+  "answer": "Use the fixed DAG snake_case agent_id as the primary id.",
+  "key_points": [],
+  "tool_result": {},
+  "confidence": 0.0,
+  "warnings": [],
+  "errors": [
+    {
+      "error_code": "LEGACY_AGENT_ID_AS_PRIMARY",
+      "error_message": "a16_ml_valuation is a legacy migration id, not a fixed DAG primary agent_id",
+      "stage": "id_validation",
+      "recoverable": true,
+      "retryable": false,
+      "user_action_required": true,
+      "suggested_user_action": "Use a fixed DAG snake_case agent_id such as value_ml_valuation."
+    }
+  ]
+}

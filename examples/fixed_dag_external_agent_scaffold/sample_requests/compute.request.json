@@ -3,6 +3,7 @@
   "request_id": "sample-compute-001",
   "agent_id": "value_ml_valuation",
   "external_agent_id": "valuation_ml",
+  "legacy_agent_id": "a16_ml_valuation",
   "target": "600519.SH",
   "as_of": "2026-06-05",
   "language": "zh-CN",
