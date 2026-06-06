@@ -4,10 +4,11 @@
   "agent_id": "value_ml_valuation",
   "external_agent_id": "valuation_ml",
   "agent_name": "Fixed DAG sample valuation agent",
-  "version": "0.1.0",
+  "version": "2.3.0",
   "legacy_agent_id": "a16_ml_valuation",
   "capabilities": [
     "fixed_dag_external_scaffold",
+    "v2_3_payload_superset",
     "structured_response",
     "fail_soft",
     "compute_endpoint",
@@ -17,7 +18,17 @@
     "graceful_degradation"
   ],
   "input_modes": ["structured", "question"],
-  "output_modes": ["external_agent_response_v0", "agent_conclusion_v1"],
+  "output_modes": [
+    "external_agent_response_v0",
+    "agent_conclusion_v1",
+    "dimension_conclusion_v1",
+    "risk_conclusion_v1",
+    "macro_conclusion_v1",
+    "decision_conclusion_v1",
+    "eval_record_v1",
+    "fixed_dag_plan_v1",
+    "data_bundle_v1"
+  ],
   "supported_dimensions": ["value"],
   "llm_configured": false,
   "tools_configured": false,
@@ -28,11 +39,12 @@
     "implementation_type": "model_compute_agent",
     "uses_llm": false,
     "llm_role": "",
-    "compute_core": "deterministic_sample_v1",
+    "compute_core": "deterministic_sample_v2_3",
     "explanation_layer": "deterministic_template"
   },
   "warnings": [
     "sample-only; not registered in the active fixed DAG graph",
-    "runtime_bindings remain disabled and not live verified"
+    "runtime_bindings remain disabled and not live verified",
+    "v2.3 payload family is contract coverage, not live service readiness"
   ]
 }

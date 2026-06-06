@@ -1,7 +1,7 @@
 # Fixed DAG External Payload Mapping
 
-This document defines how an external-agent payload should be mapped into the
-current fixed DAG contract family.
+This document defines how v2.3 external-agent payloads should be mapped into
+the current fixed DAG contract family.
 
 External services do not write directly into graph state. They return an
 external response. A main-system adapter maps and validates that response before
@@ -20,10 +20,11 @@ Current fixed DAG authority:
 Legacy `AGENT_TOOLS`, `config/agents/*.json`, and aNN ids may appear as
 migration references only. They are not current fixed DAG integration truth.
 
-The R7-C scaffold source package at `E:\muti-agent\external_agent_scaffold` and
+The R7-F scaffold source package at `E:\muti-agent\external_agent_scaffold` and
 its tracked repo mirror under `examples/fixed_dag_external_agent_scaffold/`
-contain local example mapping code and tests. They are adapter-side samples,
-not graph state and not runtime registration truth.
+contain local example mapping code, v2.3 payload samples, semantic validators,
+and tests. They are adapter-side samples, not graph state and not runtime
+registration truth.
 
 ## Identity Mapping
 
@@ -43,11 +44,6 @@ Status has three separate layers:
 - fixed DAG conclusion-family status vocabulary: `pending_implementation`,
   `partial`, `complete`, or `error`
 
-`conclusion_object_v1` enforces this enum directly. Other conclusion-family
-contracts use the same intended status vocabulary in builders and typed
-contracts, but their current validators may not enforce status with the same
-strictness yet.
-
 | External status | Adapter decision | Fixed DAG conclusion status |
 | --- | --- | --- |
 | `ok` | accept if required fields validate | `complete` |
@@ -64,23 +60,27 @@ services should not claim it as their own success state.
 | --- | --- | --- |
 | `external_agent_response_v0` | adapter input | The external response envelope is not graph state. |
 | `agent_conclusion_v1` | `conclusion_object_v1` | Map `agent_id`, dimension, normalized stance, confidence, evidence, `as_of`, `data_as_of`, event flags, status, and provenance. |
-| `dimension_conclusion_v1` | `dimension_composite_result_v1` | Use for value/market composites. Map members to `contributing_agents` and evidence references. |
-| `risk_conclusion_v1` | `dimension_composite_result_v1` risk fields | Map `gate`, `veto`, `penalty`, and `risk_score`. Risk must not consume `sentiment_company_radar`. |
-| `macro_conclusion_v1` | `dimension_composite_result_v1` macro fields | Map `regime`, `dimension_weights`, and `risk_sensitivity`. |
-| `decision_conclusion_v1` | `decision_result_v1` | Map decision, score, target price range, dimension views, reasoning trace, confidence, status, and `as_of`. |
-| `data_packet_v1` | `data_bundle_v1` or `entity_relation_bundle_v1` | Choose based on the target fixed DAG L1 seam and payload content. |
+| `dimension_conclusion_v1` | `dimension_composite_result_v1` | Use for value/market composites. Map members and weights to contributing agents and evidence refs. |
+| `risk_conclusion_v1` | `dimension_composite_result_v1` risk fields | Map `gate`, `penalty`, `risk_score`, triggered flags, and red lines. Risk must not consume `sentiment_company_radar`. |
+| `macro_conclusion_v1` | `dimension_composite_result_v1` macro fields | Map `regime`, `dimension_weights`, `risk_sensitivity`, and style bias. |
+| `decision_conclusion_v1` | `decision_result_v1` | Map decision, score, target price range, dimension views, reasoning trace, calculation trace, confidence, status, and `as_of`. |
+| `eval_record_v1` | evaluation/replay evidence | Use for routing F1, reasoning F1, backtest, and replay metrics. It is not graph state. |
+| `fixed_dag_plan_v1` | route/plan payload | Map task, targets, selected dimensions, selected agents, route prior, fallback, and `as_of`. |
+| `data_bundle_v1` | `data_bundle_v1` | Map target, timestamps, `publish_time`, `snapshot_id`, sources, features, missing fields, and status. |
 
 ## Dimension Mapping
 
-| External label | Fixed DAG dimension id |
+| External label or alias | Fixed DAG dimension id |
 | --- | --- |
-| `价值` | `value` |
-| `市场面` | `market` |
-| `风险` | `risk` |
-| `宏观` | `macro` |
+| `value`, `价值` | `value` |
+| `market`, `市场面` | `market` |
+| `risk`, `风险` | `risk` |
+| `macro`, `宏观` | `macro` |
 
-Do not create a fifth composite dimension for sentiment. Company sentiment is a
-market signal in the current roster.
+English values are canonical. Chinese aliases are migration compatibility
+inputs accepted before validation; sample outputs should use English. Do not
+create a fifth composite dimension for sentiment. Company sentiment is a market
+signal in the current roster.
 
 ## Evidence Mapping
 
@@ -89,7 +89,9 @@ external fields:
 
 - `fact`
 - `source`
+- `as_of`
 - `data_as_of`
+- optional `publish_time`
 - optional `value`
 - optional `unit`
 
@@ -124,16 +126,33 @@ External services should report:
 
 - `as_of`: the analysis time requested by the caller
 - `data_as_of`: the newest data time actually used
+- `publish_time`: the publication time of data or evidence, when available
 
-The adapter must reject or downgrade payloads where `data_as_of > as_of`.
+The adapter must reject or downgrade payloads where `data_as_of > as_of` or
+`publish_time > as_of`.
 
-For `/v1/agent/compute`, the historical scaffold lineage passes point-in-time
-input as `as_of_date`. The fixed DAG adapter maps that to contract `as_of` and
-expects output timestamps to satisfy the anti-lookahead rule.
+For `/v1/agent/compute`, the historical scaffold lineage passed point-in-time
+input as `as_of_date`. The fixed DAG scaffold uses `as_of` directly. Future
+adapters may support legacy `as_of_date` as a compatibility input, but new
+fixed DAG samples should prefer `as_of`.
 
-The R7-C scaffold uses `as_of` directly in its request schema and sample files.
-Future adapters may support legacy `as_of_date` as a compatibility input, but
-new fixed DAG samples should prefer `as_of`.
+## Semantic Validator Checklist
+
+The scaffold-level `validate_tool_result` checks target handoff payloads before
+R8 adapter work:
+
+- old aNN ids are rejected as primary `agent_id`
+- `data_as_of <= as_of`
+- `publish_time <= as_of`
+- success payloads with evidence-bearing schemas include evidence
+- confidence values are in `[0, 1]`
+- `dimension_conclusion_v1` members and weights are explainable and normalized
+- `risk_conclusion_v1` has `role=gate` and no `stance`
+- `macro_conclusion_v1` has `role=regulator`, valid `dimension_weights`, and no
+  `stance`
+- `decision_conclusion_v1` has at least three reasoning stages and a score that
+  matches `calculation_trace.final_score`
+- `data_bundle_v1` includes a replayable `snapshot_id`
 
 ## Provenance Mapping
 
@@ -162,6 +181,7 @@ Before a mapped object is accepted:
 - Status is mapped to a legal fixed DAG status.
 - `confidence` is numeric and 0..1.
 - `data_as_of <= as_of`.
+- `publish_time <= as_of` where present.
 - Evidence is safe and bounded.
 - `sentiment_company_radar` routes only to `market_composite`.
 - No endpoint URL, env var value, secret, raw external JSON, raw graph message,

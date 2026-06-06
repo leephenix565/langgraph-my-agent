@@ -11,8 +11,8 @@ not imply live service readiness. `live_verified=true` does not imply
 
 | Level | Name | DoD | Result |
 | --- | --- | --- | --- |
-| L0 | Docs and samples exist | Handoff bundle includes target fixed DAG id, external service id, health sample, invoke sample, optional compute sample, limits, and implementation notes. | Ready for protocol review. |
-| L1 | Local mock contract passes | Mocked request/response tests or sample-only scaffold tests prove envelope shape, status handling, no secrets, no traceback, and bounded payloads. | Ready for adapter mapping review. |
+| L0 | Docs and samples exist | Handoff bundle includes target fixed DAG id, external service id, chosen v2.3 payload schema, health sample, invoke sample, optional compute sample, domain payload sample, limits, and implementation notes. | Ready for protocol review. |
+| L1 | Local mock contract passes | Mocked request/response tests or sample-only scaffold tests prove envelope shape, status handling, semantic payload validation, no secrets, no traceback, and bounded payloads. | Ready for adapter mapping review. |
 | L2 | Health passes | `GET /health` returns safe structured readiness metadata for the external service. | Service self-report is inspectable. |
 | L3 | Compute passes | `/v1/agent/compute` passes anti-lookahead, idempotency, performance, confidence, and graceful-degradation checks where applicable. | Ready for controlled non-LLM/backtest validation. |
 | L4 | Invoke controlled live passes | `/v1/agent/invoke` passes a controlled live test with safe response mapping and fail-soft behavior. | Candidate may be marked live verified after review. |
@@ -29,6 +29,7 @@ Required:
 - health sample response
 - invoke sample request and response
 - optional compute sample request and response
+- chosen v2.3 payload schema and domain payload sample
 - output mapping notes
 - evidence policy
 - `as_of` and `data_as_of` policy
@@ -49,15 +50,15 @@ Required:
 - No secrets, raw traceback, raw provider response, or chain-of-thought.
 - Adapter mapping can convert the external response to the expected fixed DAG
   contract family.
-- If using the R7-C scaffold package, both the repo-external
+- If using the R7-F scaffold package, both the repo-external
   `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
   mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
 
 Mock tests do not prove live service readiness.
 
-The R7-C sample scaffold can satisfy L1 for its own deterministic example
-service only. It does not advance any real external candidate to live
-readiness.
+The R7-F sample scaffold can satisfy L1 for its own deterministic example
+service and v2.3 payload samples only. It does not advance any real external
+candidate to live readiness.
 
 ## L2: Health Passes
 

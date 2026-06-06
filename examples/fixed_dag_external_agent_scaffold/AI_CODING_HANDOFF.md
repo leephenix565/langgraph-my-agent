@@ -1,5 +1,7 @@
 # AI Coding Handoff For Fixed DAG External Agent Adaptation
 
+Package version: `external-agent-scaffold-v2.3-fixed-dag`.
+
 ## 1. Purpose
 
 This document is for Codex, Claude Code, or another coding agent that receives
@@ -14,6 +16,11 @@ This document is not permission to modify the `langgraph-my-agent` active
 runtime. It is not runtime binding approval. It is not live readiness evidence.
 It is a sample/local contract handoff package.
 
+v2.3 restores the broader domain payload family from the historical scaffold
+lineage while keeping the fixed DAG id model, readiness boundaries, and
+Non-Claims. Do not assume every external service is an L2
+`agent_conclusion_v1` agent.
+
 ## 2. Inputs You May Receive
 
 You may receive:
@@ -24,6 +31,7 @@ You may receive:
 - `EXTERNAL_AGENT_ID`: the external service id.
 - `LEGACY_AGENT_ID`: optional old aNN migration id.
 - `DIMENSION`: one of `value`, `market`, `risk`, or `macro`.
+- target payload family, if already known.
 - sample input/output from the developer.
 - model files, data files, prompts, rules, or notebooks.
 - owner notes describing intended behavior and limitations.
@@ -195,6 +203,9 @@ Contract intent:
 - `/compute` and `/invoke` must share `compute_core`.
 - both endpoints must be safe under local tests.
 
+The sample service returns `agent_conclusion_v1` by default. A real adapted
+project may emit another v2.3 payload if its fixed DAG role requires it.
+
 ## 9. Required Payload Rules
 
 Requests and responses should handle:
@@ -219,12 +230,27 @@ Requests and responses should handle:
 Rules:
 
 - `data_as_of <= as_of`
+- `publish_time <= as_of` when present
 - `confidence` must be in `[0, 1]`
 - successful results need evidence
 - `event_flags` must not encode hidden routing instructions
 - typed errors must not leak secrets, raw traceback, provider raw response, or
   chain-of-thought
 - old aNN primary ids must be rejected
+
+Choose the payload family that matches the role:
+
+- L2 analysis: `agent_conclusion_v1`
+- L3 value or market composite: `dimension_conclusion_v1`
+- L3 risk composite: `risk_conclusion_v1`
+- L3 macro composite: `macro_conclusion_v1`
+- L4 decision synthesis: `decision_conclusion_v1`
+- evaluation or replay: `eval_record_v1`
+- routing or planning: `fixed_dag_plan_v1`
+- L1 data packet: `data_bundle_v1`
+
+Do not force risk or macro payloads into directional `stance` output. Risk uses
+`role=gate`; macro uses `role=regulator`.
 
 ## 10. Mapping Target
 
@@ -237,6 +263,18 @@ tool_result.schema_version = agent_conclusion_v1
 A future main-system adapter maps `agent_conclusion_v1` to
 `conclusion_object_v1`.
 
+For other roles, use:
+
+| External schema | Future mapping target |
+| --- | --- |
+| `dimension_conclusion_v1` | value/market dimension composite |
+| `risk_conclusion_v1` | risk composite gate fields |
+| `macro_conclusion_v1` | macro composite regulator fields |
+| `decision_conclusion_v1` | decision result |
+| `eval_record_v1` | evaluation/replay evidence |
+| `fixed_dag_plan_v1` | route/plan payload |
+| `data_bundle_v1` | L1 data bundle |
+
 The external envelope is not graph state. Do not write directly into fixed DAG
 runtime state. Do not emit step results. Do not mark runtime bindings as live
 or enabled.
@@ -245,6 +283,7 @@ Read:
 
 - `DOMAIN_PAYLOAD_CONTRACT_v1.md`
 - `EXTERNAL_AGENT_INTEGRATION_STANDARD.md`
+- `schemas.py` and `validate_tool_result`
 
 ## 11. File Modification Strategy In Developer Project
 
@@ -295,9 +334,11 @@ Add tests for:
 - invoke success
 - `request_id` roundtrip
 - `data_as_of <= as_of`
+- `publish_time <= as_of` when present
 - confidence bounds
 - evidence present for successful output
 - `event_flags` shape
+- selected v2.3 payload family semantic checks
 - typed errors are safe
 - old aNN primary `agent_id` rejected
 - no secrets or raw traceback
@@ -334,11 +375,13 @@ Return:
 - selected `agent_id`
 - `external_agent_id`
 - optional `legacy_agent_id`
+- selected payload schema version
 - `implementation_notes`
 - health sample
 - compute request/response
 - invoke request/response
 - error response
+- domain payload sample
 - local test output
 - timestamp policy
 - evidence policy
@@ -393,6 +436,7 @@ Inputs:
 - EXTERNAL_AGENT_ID=<service id>
 - LEGACY_AGENT_ID=<optional old id or empty>
 - DIMENSION=<value|market|risk|macro>
+- PAYLOAD_SCHEMA=<agent_conclusion_v1|dimension_conclusion_v1|risk_conclusion_v1|macro_conclusion_v1|decision_conclusion_v1|eval_record_v1|fixed_dag_plan_v1|data_bundle_v1>
 
 Rules:
 - First read SCAFFOLD_ROOT/AI_CODING_HANDOFF.md.
@@ -405,12 +449,14 @@ Rules:
   snake_case id from the catalog.
 - Preserve the existing business compute core.
 - Do not force LLM + function call.
+- Choose the v2.3 payload schema that matches the fixed DAG role.
 - Implement a minimal wrapper or adapter.
 - Expose GET /health, POST /v1/agent/compute, and POST /v1/agent/invoke.
 - Make /compute and /invoke share compute_core.
 - Add schemas, typed errors, sample_requests, and local contract tests.
-- Validate data_as_of <= as_of, confidence in [0,1], evidence, event_flags,
-  request_id roundtrip, and safe typed errors.
+- Validate data_as_of <= as_of, publish_time <= as_of when present,
+  confidence in [0,1], evidence, event_flags, request_id roundtrip,
+  selected v2.3 payload semantics, and safe typed errors.
 - Reject old aNN primary agent_id values.
 - Do not modify any main-system runtime files.
 - Do not edit AGENT_TOOLS, config/agents, or runtime_bindings.

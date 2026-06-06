@@ -1,0 +1,21 @@
+{
+  "schema_version": "data_bundle_v1",
+  "target": "600519.SH",
+  "as_of": "2026-06-05",
+  "data_as_of": "2026-06-05",
+  "publish_time": "2026-06-05",
+  "snapshot_id": "sample-snapshot-600519-20260605",
+  "sources": [
+    {
+      "name": "sample_local_snapshot",
+      "publish_time": "2026-06-05"
+    }
+  ],
+  "feature_bundle": {
+    "close": 1700.0,
+    "turnover_rate": 0.018,
+    "sample_only": true
+  },
+  "missing_fields": [],
+  "status": "ok"
+}

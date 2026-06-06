@@ -37,7 +37,7 @@ def _compute_payload(**overrides: object) -> dict[str, object]:
 
 
 def test_status_mapping_to_fixed_dag_status() -> None:
-    """External statuses map to fixed DAG statuses."""
+    """External statuses map to fixed DAG internal statuses."""
     assert service.external_status_to_fixed_dag_status("ok") == "complete"
     assert service.external_status_to_fixed_dag_status("partial") == "partial"
     assert service.external_status_to_fixed_dag_status("needs_clarification") == "partial"
@@ -45,12 +45,12 @@ def test_status_mapping_to_fixed_dag_status() -> None:
 
 
 def test_dimension_mapping_uses_english_contract_enums() -> None:
-    """Contract dimensions remain English while labels may be Chinese."""
+    """Contract dimensions remain English canonical values."""
     assert service.DIMENSION_LABELS == {
-        "value": "价值维",
-        "market": "市场面维",
-        "risk": "风险维",
-        "macro": "宏观维",
+        "value": "value dimension",
+        "market": "market dimension",
+        "risk": "risk dimension",
+        "macro": "macro dimension",
     }
 
 

@@ -1,7 +1,8 @@
 # Fixed DAG External Agent Integration Standard
 
-This document defines the fixed DAG external-agent service protocol. It is an
-adapter-side delivery standard, not active graph registration.
+This document defines the `external-agent-scaffold-v2.3-fixed-dag` service
+protocol. It is an adapter-side delivery standard, not active graph
+registration.
 
 ## Endpoints
 
@@ -78,6 +79,61 @@ Fixed DAG conclusion-family validators allow `pending_implementation`,
 `partial`, `complete`, and `error`. External services should never return
 `pending_implementation` as their own success status.
 
+## Tool Result Payload Family
+
+`external_agent_response_v0.tool_result` may use one of these v2.3 schemas:
+
+| Schema | Layer / role | Key semantics |
+| --- | --- | --- |
+| `agent_conclusion_v1` | L2 analysis | `role=direction`, includes `stance`, evidence, event flags. |
+| `dimension_conclusion_v1` | L3 value/market composite | `dimension` is `value` or `market`, members and weights sum to one. |
+| `risk_conclusion_v1` | L3 risk composite | `role=gate`, includes `gate`, `risk_score`, `penalty`; no `stance`. |
+| `macro_conclusion_v1` | L3 macro composite | `role=regulator`, includes `dimension_weights`; no `stance`. |
+| `decision_conclusion_v1` | L4 decision synthesis | Requires at least three reasoning stages and recomputable score. |
+| `eval_record_v1` | eval/replay | Routing F1, reasoning F1, backtest, replay metrics. |
+| `fixed_dag_plan_v1` | route/plan | Task, targets, selected dimensions, selected agents, route prior, fallback. |
+| `data_bundle_v1` | L1 data packet | Point-in-time data bundle with `publish_time` and `snapshot_id`. |
+
+The default sample service returns `agent_conclusion_v1`. The wider family is
+validated through `schemas.py`, tests, and sample payload files.
+
+## Dimension Values
+
+Contract enums stay English:
+
+| Enum | Meaning |
+| --- | --- |
+| `value` | value dimension |
+| `market` | market dimension |
+| `risk` | risk dimension |
+| `macro` | macro dimension |
+
+Migration aliases such as `价值`, `市场面`, `风险`, and `宏观` are normalized by
+`validate_tool_result`. Samples use English canonical values. A later phase may
+remove Chinese alias acceptance.
+
+`sentiment_company_radar` is a market signal only. It must not route directly
+to `risk_composite`.
+
+## Semantic Validation
+
+Use `validate_tool_result(payload)` from `schemas.py` for local contract
+evidence. It checks:
+
+- `agent_id` is not an old aNN primary id
+- `data_as_of <= as_of`
+- `publish_time <= as_of`
+- evidence timestamps do not exceed the payload `as_of`
+- evidence-bearing success payloads include evidence
+- confidence is in `[0, 1]`
+- `dimension_conclusion_v1` weights are explainable and sum to one
+- risk gate placement is correct and has no `stance`
+- macro regulator placement is correct and has no `stance`
+- macro `dimension_weights` use allowed dimension keys and sum to one
+- L4 decision reasoning trace depth is at least three
+- L4 `score` matches `calculation_trace.final_score`
+- data bundles include replayable `snapshot_id`
+
 ## Current Wrapper Compatibility Boundary
 
 This scaffold defines the target fixed DAG handoff contract for new external
@@ -90,41 +146,6 @@ this package. They should not infer the current target handoff contract from
 legacy wrapper files and should not add `main_agent_id` to the new request
 schema. Main-system maintainers own any adapter bridge between legacy wrapper
 compatibility payloads and this fixed DAG scaffold contract.
-
-## Tool Result
-
-For L2 agents, the sample uses `agent_conclusion_v1`. It maps to fixed DAG
-`conclusion_object_v1`.
-
-Required fields:
-
-- `schema_version`
-- `agent_id`
-- `external_agent_id`
-- `dimension`
-- `target`
-- `stance`
-- `confidence`
-- `label`
-- `evidence`
-- `event_flags`
-- `as_of`
-- `data_as_of`
-- `status`
-
-## Dimension Values
-
-Contract enums stay English:
-
-| Enum | Chinese display |
-| --- | --- |
-| `value` | 价值维 |
-| `market` | 市场面维 |
-| `risk` | 风险维 |
-| `macro` | 宏观维 |
-
-`sentiment_company_radar` is a market signal only. It must not route directly
-to `risk_composite`.
 
 ## Error Standard
 

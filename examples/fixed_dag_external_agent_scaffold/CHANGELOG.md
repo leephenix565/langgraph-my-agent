@@ -1,5 +1,35 @@
 # Changelog
 
+## 2026-06-06 - Phase R7-F v2.3 domain payload superset and semantic validators
+
+### Changed
+
+- Upgraded package wording from `fixed-dag-scaffold-v0.1` to
+  `external-agent-scaffold-v2.3-fixed-dag`.
+- Restored the v2.3 domain payload family while keeping fixed DAG three-id
+  rules, canonical English dimensions, readiness boundaries, and Non-Claims.
+- Added `validate_tool_result` semantic validation for anti-lookahead,
+  publish-time boundaries, evidence shape, confidence bounds, risk gate
+  placement, macro regulator placement, value/market weights, decision
+  reasoning depth, decision score trace, data bundle replay ids, and aNN
+  primary-id rejection.
+- Added domain sample payloads for `agent_conclusion_v1`,
+  `dimension_conclusion_v1`, `risk_conclusion_v1`, `macro_conclusion_v1`,
+  `decision_conclusion_v1`, `eval_record_v1`, `fixed_dag_plan_v1`, and
+  `data_bundle_v1`.
+- Clarified that the default service remains a deterministic L2 sample, while
+  the wider payload family is covered by schemas, samples, and tests.
+
+### Not Done
+
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+
 ## 2026-06-06 - AI coding handoff expansion
 
 ### Changed

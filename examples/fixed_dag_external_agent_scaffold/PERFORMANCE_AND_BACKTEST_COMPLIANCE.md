@@ -1,7 +1,8 @@
 # Performance And Backtest Compliance
 
-This scaffold keeps the historical performance and backtest ideas, but aligns
-them to fixed DAG external-agent handoff.
+This scaffold keeps the historical performance and backtest ideas, restores
+the v2.3 domain payload family, and aligns both to fixed DAG external-agent
+handoff.
 
 ## One Core, Two Shells
 
@@ -21,9 +22,11 @@ Required invariant:
 
 ```text
 data_as_of <= as_of
+publish_time <= as_of
 ```
 
-This protects backtests from future-data leakage.
+This protects backtests from future-data leakage. `data_bundle_v1` also needs a
+stable `snapshot_id` for replay.
 
 ## Cache Key Rule
 
@@ -48,8 +51,23 @@ compare naturally variable metadata such as elapsed time.
 `confidence` must be numeric in `[0, 1]`. It should reflect uncertainty and
 must not be treated as an old fixed `0.75` authority sample.
 
-The sample lowers confidence when `options.missing_fields` simulates partial
-data.
+The sample uses multiple confidence values across payloads and lowers
+confidence when `options.missing_fields` simulates partial data.
+
+## Semantic Validation Evidence
+
+Local readiness evidence should include `validate_tool_result` coverage for the
+payload family the service emits. At minimum, tests should cover:
+
+- anti-lookahead
+- evidence shape
+- confidence bounds
+- risk gate placement
+- macro regulator placement
+- weights sum for value/market composites
+- L4 reasoning trace depth and score trace
+- no aNN primary ids
+- no secrets or raw traceback
 
 ## Graceful Degradation
 

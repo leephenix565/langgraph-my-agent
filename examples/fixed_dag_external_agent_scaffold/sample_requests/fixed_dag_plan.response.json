@@ -1,0 +1,25 @@
+{
+  "schema_version": "fixed_dag_plan_v1",
+  "task": "evaluate equity target with fixed DAG",
+  "targets": ["600519.SH"],
+  "selected_dimensions": ["value", "market", "risk", "macro"],
+  "selected_agents": [
+    "financial_data_service",
+    "entity_relation_extractor",
+    "value_ml_valuation",
+    "value_composite",
+    "risk_composite",
+    "macro_composite",
+    "decision_synthesizer"
+  ],
+  "route_prior": {
+    "source": "sample_plan",
+    "confidence": 0.64
+  },
+  "fallback": {
+    "enabled": true,
+    "reason": "sample-only deterministic plan"
+  },
+  "as_of": "2026-06-05",
+  "status": "ok"
+}

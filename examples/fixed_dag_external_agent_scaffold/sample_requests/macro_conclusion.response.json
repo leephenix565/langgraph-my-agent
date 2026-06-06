@@ -1,0 +1,43 @@
+{
+  "schema_version": "macro_conclusion_v1",
+  "agent_id": "macro_composite",
+  "external_agent_id": "macro_composite_service",
+  "legacy_agent_id": "",
+  "dimension": "macro",
+  "role": "regulator",
+  "target": "A-share consumer sector",
+  "scope": "china_equity_macro",
+  "regime": "neutral_liquidity",
+  "dimension_weights": {
+    "value": 0.35,
+    "market": 0.25,
+    "risk": 0.25,
+    "macro": 0.15
+  },
+  "risk_sensitivity": 0.58,
+  "style_bias": {
+    "quality": 0.55,
+    "growth": 0.2,
+    "defensive": 0.25
+  },
+  "evidence": [
+    {
+      "fact": "Macro regulator supplies dimension weights for downstream decision synthesis.",
+      "source": "sample_macro_regulator",
+      "as_of": "2026-06-05",
+      "data_as_of": "2026-06-05",
+      "publish_time": "2026-06-05"
+    }
+  ],
+  "event_flags": [
+    {
+      "type": "macro_weight_update",
+      "severity": 0.3,
+      "direction": "macro",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "as_of": "2026-06-05",
+  "data_as_of": "2026-06-05",
+  "status": "ok"
+}

@@ -21,29 +21,30 @@ from schemas import (
     FixedDagDimension,
     ImplementationNotes,
     TypedError,
+    normalize_dimension,
 )
 
 FIXED_DAG_AGENT_ID = "value_ml_valuation"
 EXTERNAL_AGENT_ID = "valuation_ml"
 LEGACY_AGENT_ID = "a16_ml_valuation"
 AGENT_NAME = "Fixed DAG sample valuation agent"
-VERSION = "0.1.0"
+VERSION = "2.3.0"
 
 PROVIDER_CALL_COUNT = 0
 EXTERNAL_CALL_COUNT = 0
 
 DIMENSION_LABELS = {
-    "value": "价值维",
-    "market": "市场面维",
-    "risk": "风险维",
-    "macro": "宏观维",
+    "value": "value dimension",
+    "market": "market dimension",
+    "risk": "risk dimension",
+    "macro": "macro dimension",
 }
 
 IMPLEMENTATION_NOTES = ImplementationNotes(
     implementation_type="model_compute_agent",
     uses_llm=False,
     llm_role="",
-    compute_core="deterministic_sample_v1",
+    compute_core="deterministic_sample_v2_3",
     explanation_layer="deterministic_template",
 )
 
@@ -73,7 +74,7 @@ def make_cache_key(
         "target": target.strip().upper(),
         "as_of": as_of,
         "missing_fields": sorted(str(item) for item in options.get("missing_fields", [])),
-        "model_version": str(options.get("model_version", "sample_v1")),
+        "model_version": str(options.get("model_version", "sample_v2_3")),
     }
     raw = json.dumps(payload, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
@@ -83,6 +84,7 @@ def compute_core(
     *,
     agent_id: str,
     external_agent_id: str,
+    legacy_agent_id: str = "",
     target: str,
     as_of: str,
     dimension: FixedDagDimension = "value",
@@ -111,7 +113,9 @@ def compute_core(
     result = AgentConclusionToolResult(
         agent_id=agent_id,
         external_agent_id=external_agent_id,
+        legacy_agent_id=legacy_agent_id,
         dimension=dimension,
+        role="direction",
         target=target.strip().upper(),
         stance=stance,
         confidence=confidence,
@@ -122,6 +126,7 @@ def compute_core(
                 source="sample_local_snapshot",
                 as_of=as_of,
                 data_as_of=as_of,
+                publish_time=as_of,
                 value=float(len(target.strip())),
                 unit="sample_score",
             )
@@ -156,7 +161,7 @@ def external_status_to_fixed_dag_status(status: str) -> str:
 def map_response_to_conclusion_object(
     response: ExternalAgentResponse | Mapping[str, Any],
 ) -> dict[str, Any]:
-    """Map an external response into a fixed DAG conclusion_object_v1 shape."""
+    """Map an external L2 response into a fixed DAG conclusion_object_v1 shape."""
     response_dict = (
         response.model_dump(mode="json")
         if hasattr(response, "model_dump")
@@ -258,6 +263,14 @@ def _validate_request_ids(
     return None
 
 
+def _request_dimension(context: Mapping[str, Any]) -> FixedDagDimension:
+    try:
+        normalized = normalize_dimension(context.get("dimension", "value"))
+    except ValueError:
+        normalized = "value"
+    return normalized  # type: ignore[return-value]
+
+
 @app.get("/health", response_model=ExternalAgentHealth)
 async def health() -> ExternalAgentHealth:
     """Return safe health metadata for local readiness review."""
@@ -269,6 +282,7 @@ async def health() -> ExternalAgentHealth:
         legacy_agent_id=LEGACY_AGENT_ID,
         capabilities=[
             "fixed_dag_external_scaffold",
+            "v2_3_payload_superset",
             "structured_response",
             "fail_soft",
             "compute_endpoint",
@@ -278,7 +292,17 @@ async def health() -> ExternalAgentHealth:
             "graceful_degradation",
         ],
         input_modes=["structured", "question"],
-        output_modes=["external_agent_response_v0", "agent_conclusion_v1"],
+        output_modes=[
+            "external_agent_response_v0",
+            "agent_conclusion_v1",
+            "dimension_conclusion_v1",
+            "risk_conclusion_v1",
+            "macro_conclusion_v1",
+            "decision_conclusion_v1",
+            "eval_record_v1",
+            "fixed_dag_plan_v1",
+            "data_bundle_v1",
+        ],
         supported_dimensions=["value"],
         llm_configured=False,
         tools_configured=False,
@@ -289,6 +313,7 @@ async def health() -> ExternalAgentHealth:
         warnings=[
             "sample-only; not registered in the active fixed DAG graph",
             "runtime_bindings remain disabled and not live verified",
+            "v2.3 payload family is contract coverage, not live service readiness",
         ],
     )
 
@@ -306,15 +331,13 @@ async def compute(req: ComputeRequest) -> ExternalAgentResponse:
     if validation_error is not None:
         return validation_error
 
-    dimension = str(req.context.get("dimension", "value"))
-    if dimension not in DIMENSION_LABELS:
-        dimension = "value"
     tool_result = compute_core(
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         target=req.target,
         as_of=req.as_of,
-        dimension=dimension,  # type: ignore[arg-type]
+        dimension=_request_dimension(req.context),
         options=req.options,
     )
     return ExternalAgentResponse(
@@ -346,15 +369,13 @@ async def invoke(req: ExternalAgentRequest) -> ExternalAgentResponse:
     if validation_error is not None:
         return validation_error
 
-    dimension = str(req.context.get("dimension", "value"))
-    if dimension not in DIMENSION_LABELS:
-        dimension = "value"
     tool_result = compute_core(
         agent_id=req.agent_id,
         external_agent_id=req.external_agent_id,
+        legacy_agent_id=req.legacy_agent_id,
         target=req.target,
         as_of=req.as_of,
-        dimension=dimension,  # type: ignore[arg-type]
+        dimension=_request_dimension(req.context),
         options=req.options,
     )
     return ExternalAgentResponse(

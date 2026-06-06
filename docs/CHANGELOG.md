@@ -3,6 +3,49 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-06 - Phase R7-F v2.3 domain payload superset and semantic validators
+
+### Changed
+
+- Upgraded the external scaffold package and repo mirror to
+  `external-agent-scaffold-v2.3-fixed-dag`.
+- Restored the v2.3 domain payload family:
+  `agent_conclusion_v1`, `dimension_conclusion_v1`, `risk_conclusion_v1`,
+  `macro_conclusion_v1`, `decision_conclusion_v1`, `eval_record_v1`,
+  `fixed_dag_plan_v1`, and `data_bundle_v1`.
+- Added scaffold-local semantic validation for anti-lookahead,
+  `publish_time`, evidence, confidence, dimension aliases, value/market
+  weights, risk gate placement, macro regulator placement, L4 reasoning depth,
+  L4 score trace, data bundle replay ids, and aNN primary-id rejection.
+- Added v2.3 domain sample payloads under
+  `examples/fixed_dag_external_agent_scaffold/sample_requests/`.
+- Updated README, docs index, external handoff docs, payload mapping, readiness
+  ladder, sample payload docs, contracts, system map, quality docs, ADRs, and
+  external package docs/changelog for the v2.3 compatibility superset.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production deployment claim.
+- No push.
+
 ## 2026-06-06 - Phase R7-E expand AI coding handoff
 
 ### Changed

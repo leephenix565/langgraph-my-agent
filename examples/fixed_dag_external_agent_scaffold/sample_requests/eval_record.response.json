@@ -1,0 +1,13 @@
+{
+  "schema_version": "eval_record_v1",
+  "metric": "routing_f1",
+  "gold": {"selected_dimensions": ["value", "market"]},
+  "pred": {"selected_dimensions": ["value", "market", "macro"]},
+  "tp": 2,
+  "fp": 1,
+  "fn": 0,
+  "replay_id": "sample-replay-20260605",
+  "trace_id": "trace-sample-001",
+  "as_of": "2026-06-05",
+  "status": "ok"
+}

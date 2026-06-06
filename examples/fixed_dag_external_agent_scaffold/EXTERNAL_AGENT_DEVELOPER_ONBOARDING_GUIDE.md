@@ -3,9 +3,11 @@
 This guide is for developers building an external business agent that may later
 be reviewed for fixed DAG integration.
 
-The current package is sample-only. Passing these local tests means the service
-boundary is coherent. It does not mean the service is registered, live verified,
-or enabled by default.
+Package version: `external-agent-scaffold-v2.3-fixed-dag`.
+
+Passing local tests means the service boundary is coherent. It does not mean
+the service is registered, live verified, enabled by default, or accepted by a
+main-system adapter.
 
 ## 1. Choose The Fixed DAG Agent
 
@@ -40,7 +42,23 @@ The sample target is:
 
 `legacy_agent_id` is only a migration note.
 
-## 2. Implement The Required Endpoints
+## 2. Select The Payload Shape
+
+Choose the payload matching your role:
+
+- L2 analysis: `agent_conclusion_v1`
+- L3 value or market composite: `dimension_conclusion_v1`
+- L3 risk composite: `risk_conclusion_v1`
+- L3 macro composite: `macro_conclusion_v1`
+- L4 decision synthesis: `decision_conclusion_v1`
+- evaluation or replay: `eval_record_v1`
+- routing or planning: `fixed_dag_plan_v1`
+- L1 data packet: `data_bundle_v1`
+
+Do not force a risk gate or macro regulator into a directional stance payload.
+Risk uses `role=gate`; macro uses `role=regulator`.
+
+## 3. Implement The Required Endpoints
 
 Required endpoints:
 
@@ -58,7 +76,7 @@ and returns structured output. It should not require LLM credentials.
 `/invoke` may parse or explain a natural-language request, but it should call
 the same `compute_core` and keep the structured `tool_result` stable.
 
-## 3. Do Not Force One Implementation Mode
+## 4. Do Not Force One Implementation Mode
 
 You may implement the internals as:
 
@@ -72,35 +90,19 @@ You may implement the internals as:
 
 Use optional `implementation_notes` to describe the internals. The fixed DAG
 gate standardizes protocol and readiness evidence, not your internal approach.
+Missing `implementation_notes` should not fail an otherwise valid payload.
 
-## 4. Output A Mappable Tool Result
-
-For L2 analysis agents, return `tool_result.schema_version =
-"agent_conclusion_v1"` with:
-
-- `agent_id`
-- `external_agent_id`
-- `dimension`
-- `target`
-- `stance`
-- `confidence`
-- `label`
-- `evidence`
-- `event_flags`
-- `as_of`
-- `data_as_of`
-- `status`
-- optional `implementation_notes`
-
-A future main-system adapter maps this to `conclusion_object_v1`.
-
-## 5. Point-In-Time Rule
+## 5. Point-In-Time And Evidence Rules
 
 Every response must keep:
 
 ```text
 data_as_of <= as_of
+publish_time <= as_of
 ```
+
+Evidence-bearing successful payloads must include bounded evidence with
+`fact`, `source`, and `as_of` or `data_as_of`. Do not fabricate evidence.
 
 If data is missing, return `partial` with warnings and reduced confidence
 instead of fabricating a complete result.
@@ -126,13 +128,15 @@ Before submitting a service, provide:
 - selected fixed DAG `agent_id`
 - service-owned `external_agent_id`
 - optional migration-only `legacy_agent_id`
-- `implementation_notes`
+- chosen payload schema version
+- `implementation_notes` if available
 - health sample response
 - compute sample request and response
 - invoke sample request and response
 - error sample response
+- domain payload sample
 - local test command output
-- timestamp policy for `as_of` and `data_as_of`
+- timestamp policy for `as_of`, `data_as_of`, and `publish_time`
 - evidence policy and source boundaries
 - confidence policy, including when confidence is reduced
 - known limitations and degraded/partial behavior
@@ -145,7 +149,7 @@ Before submitting a service, provide:
 Maintainers, not external developers, own:
 
 - selecting or approving the fixed DAG target id
-- writing adapter code
+- writing R8 adapter code
 - reviewing readiness evidence
 - updating runtime binding metadata in a later phase
 - keeping `invoke_enabled_by_default=false` until explicit approval

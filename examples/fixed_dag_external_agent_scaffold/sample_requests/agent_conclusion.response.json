@@ -1,0 +1,35 @@
+{
+  "schema_version": "agent_conclusion_v1",
+  "agent_id": "value_ml_valuation",
+  "external_agent_id": "valuation_ml",
+  "legacy_agent_id": "a16_ml_valuation",
+  "dimension": "value",
+  "role": "direction",
+  "target": "600519.SH",
+  "stance": 0.18,
+  "confidence": 0.68,
+  "label": "moderately_positive",
+  "evidence": [
+    {
+      "fact": "Point-in-time valuation feature snapshot is available.",
+      "source": "sample_feature_snapshot",
+      "as_of": "2026-06-05",
+      "data_as_of": "2026-06-05",
+      "publish_time": "2026-06-05",
+      "value": 0.18,
+      "unit": "stance"
+    }
+  ],
+  "event_flags": [
+    {
+      "type": "valuation_signal_available",
+      "severity": 0.2,
+      "direction": "value",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "as_of": "2026-06-05",
+  "data_as_of": "2026-06-05",
+  "status": "ok",
+  "warnings": []
+}

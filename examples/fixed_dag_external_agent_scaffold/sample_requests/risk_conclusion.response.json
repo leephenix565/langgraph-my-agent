@@ -1,0 +1,34 @@
+{
+  "schema_version": "risk_conclusion_v1",
+  "agent_id": "risk_composite",
+  "external_agent_id": "risk_composite_service",
+  "legacy_agent_id": "",
+  "dimension": "risk",
+  "role": "gate",
+  "target": "600519.SH",
+  "gate": "penalty",
+  "risk_score": 0.42,
+  "penalty": 0.12,
+  "triggered_flags": ["valuation_drawdown_watch"],
+  "red_lines": [],
+  "evidence": [
+    {
+      "fact": "Risk penalty is below veto threshold.",
+      "source": "sample_risk_gate",
+      "as_of": "2026-06-05",
+      "data_as_of": "2026-06-05",
+      "publish_time": "2026-06-05"
+    }
+  ],
+  "event_flags": [
+    {
+      "type": "risk_penalty",
+      "severity": 0.42,
+      "direction": "risk",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "as_of": "2026-06-05",
+  "data_as_of": "2026-06-05",
+  "status": "ok"
+}

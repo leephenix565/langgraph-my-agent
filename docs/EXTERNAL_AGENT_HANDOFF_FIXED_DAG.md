@@ -126,6 +126,31 @@ The service should support:
 - `event_flags` where relevant
 - a structured `tool_result`
 
+## v2.3 Payload Family
+
+R7-F upgrades the scaffold package to
+`external-agent-scaffold-v2.3-fixed-dag`. The default sample service still
+returns L2 `agent_conclusion_v1`, but the scaffold now includes schemas,
+samples, tests, and `validate_tool_result` coverage for:
+
+- `agent_conclusion_v1` for L2 analysis agents
+- `dimension_conclusion_v1` for L3 value/market composites
+- `risk_conclusion_v1` for L3 risk gates
+- `macro_conclusion_v1` for L3 macro regulators
+- `decision_conclusion_v1` for L4 decision synthesis
+- `eval_record_v1` for routing/reasoning/backtest/replay evaluation
+- `fixed_dag_plan_v1` for route/plan payloads
+- `data_bundle_v1` for L1 point-in-time data bundles
+
+Canonical dimensions are English: `value`, `market`, `risk`, and `macro`.
+Chinese aliases such as `价值`, `市场面`, `风险`, and `宏观` are migration
+compatibility inputs only and normalize to English before validation.
+
+The validator checks anti-lookahead, evidence shape, confidence bounds,
+value/market weights, risk gate placement, macro regulator placement, L4
+reasoning depth, score trace, data bundle replay id, and aNN primary-id
+rejection.
+
 ## Current Wrapper Compatibility Boundary
 
 This scaffold defines the target fixed DAG handoff contract for new external
@@ -140,9 +165,10 @@ infer the target handoff contract from legacy wrapper files and should not add
 adapter bridge between legacy wrapper compatibility payloads and this fixed DAG
 scaffold contract.
 
-## R7-C Source Package And Repo Mirror
+## R7-F Source Package And Repo Mirror
 
-R7-C upgrades the original repo-external source package in place:
+R7-C upgrades the original repo-external source package in place, and R7-F
+upgrades it again to the v2.3 fixed DAG compatibility superset:
 
 ```text
 E:\muti-agent\external_agent_scaffold
@@ -171,6 +197,7 @@ The scaffold demonstrates:
 - a deterministic `compute_core` shared by compute and invoke
 - `as_of`/`data_as_of`, evidence, confidence, event flags, typed errors, and
   fail-soft behavior
+- v2.3 payload family schemas, samples, and semantic validators
 
 The sample rejects old aNN ids when they are used as the primary `agent_id`.
 It does not use the old `main_agent_id` request field.

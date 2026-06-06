@@ -468,3 +468,32 @@ product UI, provider readiness, external `/v1/agent/invoke` readiness, or
 production deployment. It does not enable wrappers, set `live_verified=true`,
 set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
 restore a 28-agent roster, or route `sentiment_company_radar` into risk.
+
+## ADR-023: R7-F Restores v2.3 Domain Payload Superset
+
+Status: accepted for external scaffold contract coverage.
+
+Decision: R7-F upgrades the external scaffold package to
+`external-agent-scaffold-v2.3-fixed-dag`. It restores the v2.3 domain payload
+family (`agent_conclusion_v1`, `dimension_conclusion_v1`,
+`risk_conclusion_v1`, `macro_conclusion_v1`, `decision_conclusion_v1`,
+`eval_record_v1`, `fixed_dag_plan_v1`, and `data_bundle_v1`) and adds
+scaffold-local semantic validators while preserving fixed DAG three-id rules,
+canonical dimensions, readiness boundaries, and Non-Claims.
+
+Reason: the R7-C/R7-D/R7-E scaffold had the correct fixed DAG handoff shape but
+was too thin for L3 composites, L4 decision synthesis, evaluation/replay,
+planning, and L1 data bundle handoff. External developers need role-specific
+payload contracts before R8 adapter work can safely bridge real services.
+
+Consequence: the repo-external package, repo mirror, package docs, sample
+payloads, tests, README, index, payload mapping, readiness ladder, contracts,
+system map, quality docs, ADRs, and changelog now describe the same v2.3
+compatibility superset.
+
+Non-consequence: R7-F does not change active runtime behavior, fixed DAG
+topology, the 27-agent roster, runtime bindings, public schemas, frontend
+product UI, provider readiness, external `/v1/agent/invoke` readiness, or
+production deployment. It does not enable wrappers, set `live_verified=true`,
+set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
+restore a 28-agent roster, or route `sentiment_company_radar` into risk.

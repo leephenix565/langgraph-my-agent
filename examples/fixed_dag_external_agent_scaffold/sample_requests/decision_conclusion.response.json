@@ -1,0 +1,54 @@
+{
+  "schema_version": "decision_conclusion_v1",
+  "agent_id": "decision_synthesizer",
+  "external_agent_id": "decision_synthesizer_service",
+  "legacy_agent_id": "",
+  "target": "600519.SH",
+  "decision": "watchlist_positive",
+  "score": 0.31,
+  "target_price_range": {
+    "low": 1550.0,
+    "mid": 1720.0,
+    "high": 1880.0
+  },
+  "dimension_views": {
+    "value": {"stance": 0.22, "confidence": 0.66, "status": "ok"},
+    "market": {"stance": 0.08, "confidence": 0.59, "status": "ok"},
+    "risk": {"gate": "penalty", "risk_score": 0.42, "status": "ok"},
+    "macro": {"regime": "neutral_liquidity", "status": "ok"}
+  },
+  "calculation_trace": {
+    "value_component": 0.22,
+    "market_component": 0.08,
+    "risk_penalty": 0.12,
+    "macro_adjustment": 0.05,
+    "final_score": 0.31
+  },
+  "reasoning_trace": [
+    {"stage": "dimension_induction", "summary": "Value signal is positive."},
+    {"stage": "macro_risk_adjustment", "summary": "Risk penalty is applied."},
+    {"stage": "conflict_resolution", "summary": "No veto-level conflict is present."}
+  ],
+  "conflicts": [],
+  "evidence": [
+    {
+      "fact": "Final score equals calculation_trace.final_score.",
+      "source": "sample_decision_trace",
+      "as_of": "2026-06-05",
+      "data_as_of": "2026-06-05",
+      "publish_time": "2026-06-05"
+    }
+  ],
+  "event_flags": [
+    {
+      "type": "decision_trace_available",
+      "severity": 0.2,
+      "direction": "neutral",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "as_of": "2026-06-05",
+  "data_as_of": "2026-06-05",
+  "status": "ok",
+  "confidence": 0.61
+}

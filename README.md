@@ -39,6 +39,9 @@ developer handoff evidence without changing runtime behavior.
 Phase R7-E expands the scaffold `AI_CODING_HANDOFF.md` into a developer-side
 Codex / Claude Code operating manual for adapting an existing agent project
 into a fixed DAG external service wrapper.
+Phase R7-F upgrades that package to `external-agent-scaffold-v2.3-fixed-dag`,
+restoring the broader domain payload family and semantic validators while
+keeping fixed DAG ids, readiness boundaries, and Non-Claims.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -48,7 +51,7 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R7-E AI coding handoff expansion over
+- Current phase: R7-F v2.3 external scaffold payload superset over
   the existing fixed DAG web shell and backend skeleton.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
@@ -240,9 +243,9 @@ answer cards use "研判依据", "分析框架", "用户问题", and "流程记�
 - `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` - readiness ladder from
   docs-only review to explicit live invocation approval.
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
-  sample health, invoke, compute, mapped, partial, and failure payloads.
+  endpoint and v2.3 domain payload samples.
 - `examples/fixed_dag_external_agent_scaffold/` - tracked repo mirror of the
-  upgraded fixed DAG external scaffold package and its local tests.
+  upgraded v2.3 fixed DAG external scaffold package and its local tests.
 
 ## Safe Local Validation
 
@@ -263,7 +266,7 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
-R7-D scaffold validation runs the repo-external package tests and ruff for
+R7-F scaffold validation runs the repo-external package tests and ruff for
 `E:\muti-agent\external_agent_scaffold`, the tracked repo mirror tests and ruff
 for `examples/fixed_dag_external_agent_scaffold/`, then uses the same
 non-provider static and mainline commands. These checks do not call providers,
@@ -310,6 +313,10 @@ readiness.
 - R7-E only expands developer-side AI coding instructions for adapting
   external agent projects. It does not change service runtime behavior,
   schemas, samples, active runtime, runtime bindings, or live readiness.
+- R7-F restores the scaffold v2.3 domain payload family and semantic
+  validators. It does not change active runtime behavior, enable bindings,
+  bridge legacy wrappers, call providers, call external live invoke, or prove
+  live readiness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

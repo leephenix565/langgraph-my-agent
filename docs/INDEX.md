@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-E AI coding handoff expansion, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-F v2.3 external scaffold payload superset, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -16,11 +16,11 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/QUALITY.md` | R6-B reset mainline, frontend repo-external build gate, and manual/live/archived quality boundaries. |
 | `docs/DECISIONS.md` | Reset architecture decisions. |
 | `docs/CHANGELOG.md` | Reset branch changelog. |
-| `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-D fixed DAG external developer handoff entry point, source package boundary, wrapper compatibility note, and submission checklist. |
-| `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-D mapping rules from external response envelopes to fixed DAG contracts. |
+| `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-F fixed DAG external developer handoff entry point, v2.3 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
+| `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-F mapping rules from v2.3 external response payloads to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-C readiness ladder from docs-only review to explicit live invocation approval. |
-| `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-B/R7-C documentation-only sample health, invoke, compute, mapped, partial, and failure payloads. |
-| `examples/fixed_dag_external_agent_scaffold/` | R7-E tracked repo mirror of the upgraded `E:\muti-agent\external_agent_scaffold` fixed DAG source package, including the expanded `AI_CODING_HANDOFF.md` for Codex / Claude Code adaptation workflows. |
+| `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-F documentation-only endpoint and v2.3 domain payload samples. |
+| `examples/fixed_dag_external_agent_scaffold/` | R7-F tracked repo mirror of the upgraded `E:\muti-agent\external_agent_scaffold` v2.3 fixed DAG source package, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage
 
@@ -78,6 +78,10 @@ audit an existing agent project, preserve its business core, wrap it as a fixed
 DAG external service, add local contract tests, and return a maintainer handoff
 bundle. It remains documentation only and does not change active runtime or
 readiness state.
+R7-F upgrades the scaffold to `external-agent-scaffold-v2.3-fixed-dag`,
+restores the domain payload family, adds semantic validators, and updates the
+repo mirror/docs/CHANGELOG. It remains sample-only and does not enable runtime
+bindings or prove live readiness.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.
