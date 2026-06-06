@@ -20,6 +20,11 @@ Current fixed DAG authority:
 Legacy `AGENT_TOOLS`, `config/agents/*.json`, and aNN ids may appear as
 migration references only. They are not current fixed DAG integration truth.
 
+The R7-B sample scaffold under
+`examples/fixed_dag_external_agent_scaffold/` contains local example mapping
+code and tests. It is an adapter-side sample, not graph state and not runtime
+registration truth.
+
 ## Identity Mapping
 
 | External or legacy concept | Fixed DAG target | Rule |
@@ -113,6 +118,10 @@ The adapter must reject or downgrade payloads where `data_as_of > as_of`.
 For `/v1/agent/compute`, the historical scaffold lineage passes point-in-time
 input as `as_of_date`. The fixed DAG adapter maps that to contract `as_of` and
 expects output timestamps to satisfy the anti-lookahead rule.
+
+The R7-B sample scaffold uses `as_of` directly in its request schema and
+sample files. Future adapters may support legacy `as_of_date` as a compatibility
+input, but new fixed DAG samples should prefer `as_of`.
 
 ## Provenance Mapping
 

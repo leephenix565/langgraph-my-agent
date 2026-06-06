@@ -357,24 +357,25 @@ or restored fusion acceptance.
 Status: accepted for external developer documentation.
 
 Decision: R7-B external developer onboarding is standardized through fixed DAG
-ids, runtime binding metadata, contract mapping, sample payloads, and an
-explicit readiness ladder. The handoff does not require every external agent to
-use the same internal implementation mode.
+ids, runtime binding metadata, contract mapping, sample payloads, a sample-only
+local scaffold, and an explicit readiness ladder. The handoff does not require
+every external agent to use the same internal implementation mode.
 
 Reason: later external services may be implemented as deterministic services,
 machine-learning services, data services, LLM services, LLM-with-tools services,
 or hybrids. The reset architecture needs stable boundary contracts and review
 evidence without coupling the platform to one implementation style.
 
-Consequence: new docs define how external envelopes should map to
-`conclusion_object_v1`, `dimension_composite_result_v1`, `decision_result_v1`,
-`report_result_v1`, `data_bundle_v1`, and `entity_relation_bundle_v1`; how
-readiness moves from docs-only review to controlled live verification; and what
-cannot be treated as runtime truth.
+Consequence: new docs and the sample scaffold define how external envelopes
+should map to `conclusion_object_v1`, `dimension_composite_result_v1`,
+`decision_result_v1`, `report_result_v1`, `data_bundle_v1`, and
+`entity_relation_bundle_v1`; how readiness moves from docs-only review to
+controlled live verification; and what cannot be treated as runtime truth.
 
 Non-consequence: R7-B does not change fixed DAG topology, the 27-agent roster,
 runtime bindings, public schemas, frontend product UI, provider readiness,
 external `/v1/agent/invoke` readiness, production deployment, Router-SFT, or
-RARP/route-prior lineage. It does not register a scaffold, enable a wrapper,
-live-verify an external service, restore old `aNN` catalog authority, restore
-`value_financial_analysis`, or route `sentiment_company_radar` into risk.
+RARP/route-prior lineage. It does not register the sample scaffold into the
+graph, enable a wrapper, live-verify an external service, restore old `aNN`
+catalog authority, restore `value_financial_analysis`, or route
+`sentiment_company_radar` into risk.

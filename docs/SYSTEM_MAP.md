@@ -5,8 +5,8 @@ This file is the reset branch operational map for Phase R7-B.
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R7-B fixed DAG external developer handoff documentation over
-  the existing fixed-DAG runtime skeleton and R5 web shell.
+- Current phase: R7-B fixed DAG external developer handoff scaffold over the
+  existing fixed-DAG runtime skeleton and R5 web shell.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -24,6 +24,8 @@ This file is the reset branch operational map for Phase R7-B.
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`, and
   `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`.
+- Sample-only external developer scaffold:
+  `examples/fixed_dag_external_agent_scaffold/`.
 - Active frontend contract:
   `apps/web` renders the fixed DAG workflow inspector from
   `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
@@ -113,11 +115,11 @@ verification. The old valuation-only facade and unused JSON helper were removed
 after tests migrated to the generic external HTTP wrapper and no source/test
 references remained.
 
-In R7-B, the external developer docs define how later service submissions
-should be reviewed against fixed DAG ids, runtime bindings, contracts, and
-readiness levels. They do not make the historical scaffold an active package,
-do not register any service into the graph, and do not make wrapper metadata a
-live verification signal.
+In R7-B, the external developer docs and sample-only scaffold define how later
+service submissions should be reviewed against fixed DAG ids, runtime bindings,
+contracts, and readiness levels. They do not make the historical scaffold an
+active package, do not register any service into the graph, do not modify
+runtime bindings, and do not make wrapper metadata a live verification signal.
 
 ## Target Fixed DAG IDs
 
@@ -220,10 +222,10 @@ visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
 `fusion-gate` remains archived/manual.
 
 R7-B claims only external developer handoff documentation, payload mapping
-guidance, readiness ladder guidance, and documentation-only sample payloads. It
-does not change fixed DAG topology, roster, runtime bindings, public schemas,
-frontend product UI, provider readiness, external invocation readiness, or
-production deployment readiness.
+guidance, readiness ladder guidance, sample payloads, and a sample-only local
+scaffold. It does not change fixed DAG topology, roster, runtime bindings,
+public schemas, frontend product UI, provider readiness, external invocation
+readiness, or production deployment readiness.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

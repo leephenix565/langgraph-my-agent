@@ -3,6 +3,59 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-05 - Phase R7-B fixed DAG external agent handoff scaffold
+
+### Added
+
+- Added `examples/fixed_dag_external_agent_scaffold/` as a sample-only runnable
+  FastAPI scaffold for fixed DAG external developer handoff.
+- Added scaffold schemas for `external_agent_health_v0`,
+  `external_agent_request_v0`, `external_agent_response_v0`, typed errors,
+  evidence, event flags, implementation notes, and `agent_conclusion_v1`
+  tool results.
+- Added deterministic scaffold endpoints for `GET /health`,
+  `POST /v1/agent/compute`, and `POST /v1/agent/invoke`.
+- Added sample request and response JSON files for health, compute, and invoke.
+- Added example-local tests for health schema, compute success, invoke success,
+  request id roundtrip, `as_of`/`data_as_of` anti-lookahead, confidence range,
+  evidence, event flags, no secret or traceback leakage, aNN primary id
+  rejection, fixed DAG payload mapping, and no provider/external calls.
+
+### Changed
+
+- Updated README, documentation index, contracts, system map, quality, ADR, and
+  external handoff docs to describe the sample scaffold as local handoff
+  guidance, not active runtime.
+- Clarified that the sample scaffold adapts reusable ideas from the historical
+  scaffold protocol package / v2.1-v2.2.1 lineage while replacing
+  `main_agent_id` and aNN primary ids with fixed DAG `snake_case` ids.
+- Clarified that external agent internals may be ML, rules, data service, LLM,
+  LLM with tools, deterministic compute, or hybrid; the standardized object is
+  the boundary contract and readiness evidence.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+- `git diff --check`
+
+### Not Done
+
+- No fixed DAG topology, roster, runtime binding, public schema, frontend
+  product UI, provider integration, external wrapper, or real business-agent
+  implementation change.
+- No scaffold registration into `react_agent.graph`, legacy registry,
+  `AGENT_TOOLS`, runtime binding registry, or wrapper table.
+- No `runtime_bindings` change, no `invoke_enabled_by_default=true`, and no
+  `live_verified=true`.
+- No provider, search, external `/v1/agent/invoke`, demo stack, Router-SFT,
+  RARP/route-prior, browser screenshot, or archived fusion-gate validation.
+- No claim that the sample scaffold is a live service, live verified external
+  candidate, production service, or active fixed DAG runtime component.
+- No push.
+
 ## 2026-06-05 - Phase R7-B fixed DAG external developer handoff docs
 
 ### Added

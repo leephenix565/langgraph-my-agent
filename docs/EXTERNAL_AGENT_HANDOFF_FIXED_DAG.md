@@ -124,6 +124,37 @@ The service should support:
 - `event_flags` where relevant
 - a structured `tool_result`
 
+## R7-B Sample-Only Scaffold
+
+R7-B adds a runnable local sample scaffold under:
+
+```text
+examples/fixed_dag_external_agent_scaffold/
+```
+
+The scaffold is for developer handoff and local contract tests only. It is not
+registered in `react_agent.graph`, not listed as an active runtime package, and
+not connected to `config/fixed_dag/runtime_bindings.json`.
+
+The scaffold demonstrates:
+
+- fixed DAG primary `agent_id`, such as `value_ml_valuation`
+- external service `external_agent_id`, such as `valuation_ml`
+- optional `legacy_agent_id` as a migration note only
+- `GET /health`
+- `POST /v1/agent/compute`
+- `POST /v1/agent/invoke`
+- a deterministic `compute_core` shared by compute and invoke
+- `as_of`/`data_as_of`, evidence, confidence, event flags, typed errors, and
+  fail-soft behavior
+
+The sample rejects old aNN ids when they are used as the primary `agent_id`.
+It does not use the old `main_agent_id` request field.
+
+Developers may copy the scaffold shape, but they must replace the deterministic
+sample business logic with their own service implementation and pass the
+readiness ladder before any live integration can be considered.
+
 ## What To Submit
 
 Submit a handoff bundle with:
@@ -175,3 +206,8 @@ It must not be copied into the active runtime or treated as current fixed DAG
 truth. Its README lineage may still say v2.1 while later files describe v2.2 or
 v2.2.1 additions, so refer to it as the historical scaffold protocol package
 from the v2.1-v2.2.1 lineage.
+
+The checked-in R7-B scaffold is a fixed DAG adaptation of those reusable ideas,
+not a verbatim copy of the old package. It replaces `main_agent_id` and old aNN
+primary ids with fixed DAG `snake_case` ids and keeps old aNN ids only as
+migration notes.

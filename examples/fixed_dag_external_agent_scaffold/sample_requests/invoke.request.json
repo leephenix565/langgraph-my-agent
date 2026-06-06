@@ -1,0 +1,20 @@
+{
+  "schema_version": "external_agent_request_v0",
+  "request_id": "sample-invoke-001",
+  "agent_id": "value_ml_valuation",
+  "external_agent_id": "valuation_ml",
+  "target": "600519.SH",
+  "question": "Evaluate the target using the sample fixed DAG valuation agent.",
+  "as_of": "2026-06-05",
+  "language": "zh-CN",
+  "context": {
+    "dimension": "value",
+    "task": "valuation",
+    "materials": [],
+    "shared_context_summary": ""
+  },
+  "options": {
+    "return_explanation": true,
+    "timeout_seconds": 30
+  }
+}

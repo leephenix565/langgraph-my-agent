@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-B external developer handoff docs, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-B external developer handoff scaffold, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -20,6 +20,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-B mapping rules from external response envelopes to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-B readiness ladder from docs-only review to explicit live invocation approval. |
 | `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-B documentation-only sample health, invoke, compute, mapped, partial, and failure payloads. |
+| `examples/fixed_dag_external_agent_scaffold/` | R7-B sample-only runnable scaffold and local tests for developer handoff. |
 
 ## Removed Lineage
 
@@ -66,9 +67,10 @@ R6-B rebuilds the default reset mainline quality gate so it runs static, unit,
 public-api, graph-smoke, and frontend while keeping fusion-gate archived/manual
 and provider/live/external/demo/SFT/RARP paths outside default acceptance.
 R7-B adds fixed DAG external developer handoff, payload mapping, readiness
-ladder, and sample payload docs for later external-agent onboarding. It does
-not change runtime topology, enable wrappers, register a scaffold, or prove live
-readiness.
+ladder, sample payload docs, and a sample-only runnable scaffold for later
+external-agent onboarding. It does not change runtime topology, enable
+wrappers, register the scaffold into the graph, modify runtime bindings, or
+prove live readiness.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

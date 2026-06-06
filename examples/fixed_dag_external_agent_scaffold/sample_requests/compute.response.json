@@ -1,0 +1,51 @@
+{
+  "schema_version": "external_agent_response_v0",
+  "request_id": "sample-compute-001",
+  "agent_id": "value_ml_valuation",
+  "external_agent_id": "valuation_ml",
+  "status": "ok",
+  "answer": "",
+  "key_points": [],
+  "tool_result": {
+    "schema_version": "agent_conclusion_v1",
+    "agent_id": "value_ml_valuation",
+    "external_agent_id": "valuation_ml",
+    "dimension": "value",
+    "target": "600519.SH",
+    "stance": -0.4,
+    "confidence": 0.72,
+    "label": "slightly_negative",
+    "evidence": [
+      {
+        "fact": "Deterministic sample feature set is bounded by as_of.",
+        "source": "sample_local_snapshot",
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "value": 9.0,
+        "unit": "sample_score"
+      }
+    ],
+    "event_flags": [
+      {
+        "type": "sample_point_in_time_check",
+        "severity": 0.1,
+        "direction": "neutral",
+        "as_of": "2026-06-05"
+      }
+    ],
+    "as_of": "2026-06-05",
+    "data_as_of": "2026-06-05",
+    "status": "ok",
+    "warnings": [],
+    "implementation_notes": {
+      "implementation_type": "model_compute_agent",
+      "uses_llm": false,
+      "llm_role": "",
+      "compute_core": "deterministic_sample_v1",
+      "explanation_layer": "deterministic_template"
+    }
+  },
+  "confidence": 0.72,
+  "warnings": [],
+  "errors": []
+}

@@ -1,0 +1,39 @@
+{
+  "schema_version": "external_agent_health_v0",
+  "status": "ok",
+  "agent_id": "value_ml_valuation",
+  "external_agent_id": "valuation_ml",
+  "agent_name": "Fixed DAG sample valuation agent",
+  "version": "0.1.0",
+  "fixed_dag_agent_id": "value_ml_valuation",
+  "legacy_agent_id": "a16_ml_valuation",
+  "capabilities": [
+    "fixed_dag_external_scaffold",
+    "structured_response",
+    "fail_soft",
+    "compute_endpoint",
+    "point_in_time",
+    "idempotent",
+    "deterministic",
+    "graceful_degradation"
+  ],
+  "input_modes": ["structured", "question"],
+  "output_modes": ["external_agent_response_v0", "agent_conclusion_v1"],
+  "supported_dimensions": ["value"],
+  "llm_configured": false,
+  "tools_configured": false,
+  "data_ready": true,
+  "max_concurrency": 1,
+  "timeout_seconds": 30.0,
+  "implementation_notes": {
+    "implementation_type": "model_compute_agent",
+    "uses_llm": false,
+    "llm_role": "",
+    "compute_core": "deterministic_sample_v1",
+    "explanation_layer": "deterministic_template"
+  },
+  "warnings": [
+    "sample-only; not registered in the active fixed DAG graph",
+    "runtime_bindings remain disabled and not live verified"
+  ]
+}

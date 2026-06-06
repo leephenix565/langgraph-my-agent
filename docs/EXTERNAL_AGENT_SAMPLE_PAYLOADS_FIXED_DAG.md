@@ -1,7 +1,9 @@
 # Fixed DAG External Agent Sample Payloads
 
-These samples are documentation examples only. They are not a runnable
-scaffold, not active graph state, and not live service evidence.
+These samples are documentation examples only. R7-B also includes runnable
+sample files under `examples/fixed_dag_external_agent_scaffold/sample_requests/`
+for local scaffold tests. Neither the documentation snippets nor the runnable
+sample files are active graph state or live service evidence.
 
 Samples use fixed DAG `snake_case` ids. `legacy_agent_id` appears only as an
 optional migration note. No sample includes secrets, real endpoints, env var
