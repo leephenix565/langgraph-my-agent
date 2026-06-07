@@ -1,11 +1,12 @@
-# External Agent Scaffold v2.3 Fixed DAG
+# External Agent Scaffold v2.3.1 Fixed DAG
 
-Package version: `external-agent-scaffold-v2.3-fixed-dag`.
+Package version: `external-agent-scaffold-v2.3.1-fixed-dag`.
 
 This package inherits the historical external-agent scaffold v2.1-v2.2.1
-lineage, restores the broader v2.3 domain payload family and semantic
-validators, and adds the fixed DAG id, dimension, readiness, and Non-Claims
-rules.
+lineage, restores the broader v2.3 domain payload family, and applies the
+v2.3.1 contract patch for risk members, manual review gates, structured
+dimension members, normalized dates, macro directional weights, and L4 trace
+semantics.
 
 It is still a sample-only delivery scaffold. It is not registered into the
 `langgraph-my-agent` active graph, does not modify
@@ -19,7 +20,7 @@ There are three package locations in the current workflow:
 | --- | --- |
 | `examples/fixed_dag_external_agent_scaffold/` | Canonical tracked repo mirror and audit baseline. Review diffs here. |
 | `E:\muti-agent\external_agent_scaffold` | Local distribution working copy edited before zip output. |
-| `E:\muti-agent\external_agent_scaffold_v2.3_fixed_dag_<timestamp>.zip` | Distribution artifact generated from the local working copy. |
+| `E:\muti-agent\external_agent_scaffold_v2.3.1_fixed_dag_<timestamp>.zip` | Distribution artifact generated from the local working copy. |
 
 Future scaffold changes should update the tracked repo mirror and the local
 distribution working copy together, then regenerate the zip. None of these
@@ -56,15 +57,15 @@ new request-schema field.
 
 ## Payload Family
 
-v2.3 restores a family of domain payloads:
+v2.3.1 uses the v2.3 payload family with patched semantics:
 
 | Schema | Intended role |
 | --- | --- |
-| `agent_conclusion_v1` | L2 analysis agent conclusion. |
-| `dimension_conclusion_v1` | L3 value or market composite. |
-| `risk_conclusion_v1` | L3 risk gate. |
-| `macro_conclusion_v1` | L3 macro regulator. |
-| `decision_conclusion_v1` | L4 decision synthesis. |
+| `agent_conclusion_v1` | L2 analysis agent conclusion. `direction` members use `stance`; `gate_member` risk members use `risk_score`. |
+| `dimension_conclusion_v1` | L3 value or market composite with `DimensionMember[]`. |
+| `risk_conclusion_v1` | L3 risk gate, including `manual_review`. |
+| `macro_conclusion_v1` | L3 macro regulator. `dimension_weights` only contains `value` and `market`. |
+| `decision_conclusion_v1` | L4 decision synthesis with distinct reasoning stages and score tolerance. |
 | `eval_record_v1` | Routing, reasoning, backtest, or replay evaluation record. |
 | `fixed_dag_plan_v1` | Route or plan payload. |
 | `data_bundle_v1` | L1 point-in-time data bundle. |
@@ -104,12 +105,18 @@ to `risk_composite`.
 - evidence timestamps do not exceed `as_of`
 - success payloads with evidence-bearing schemas include evidence
 - confidence is in `[0, 1]`
-- `dimension_conclusion_v1` weights explain members and sum to one
-- `risk_conclusion_v1` has `role=gate` and no `stance`
+- `agent_conclusion_v1` supports `direction` and `gate_member`; `raw_output`
+  and `quality` must be safe dictionaries
+- `dimension_conclusion_v1` uses structured members, checks member weights sum
+  to one within `0.01`, and checks weighted stance within `0.02`
+- `risk_conclusion_v1` has `role=gate`, supports `manual_review`, and has no
+  `stance`
 - `macro_conclusion_v1` has `role=regulator`, no `stance`, and normalized
-  `dimension_weights`
-- `decision_conclusion_v1` has at least three reasoning stages and a
-  `calculation_trace.final_score` that matches `score`
+  `dimension_weights` containing only `value` and `market`
+- `decision_conclusion_v1` has at least three distinct `reasoning_trace.stage`
+  values and a displayed `score` within `0.01` of
+  `calculation_trace.final_score`; document `score` as
+  `round(final_score, 2)`
 - `data_bundle_v1` includes replayable `snapshot_id`
 
 `implementation_notes` remains optional. Existing agents that do not provide
@@ -178,6 +185,7 @@ project, start with `AI_CODING_HANDOFF.md`.
 - `invoke.response.json`
 - `error.response.json`
 - `agent_conclusion.response.json`
+- `agent_conclusion.risk_member.response.json`
 - `dimension_conclusion.response.json`
 - `risk_conclusion.response.json`
 - `macro_conclusion.response.json`

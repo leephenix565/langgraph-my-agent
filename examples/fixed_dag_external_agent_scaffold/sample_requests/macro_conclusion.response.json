@@ -9,10 +9,8 @@
   "scope": "china_equity_macro",
   "regime": "neutral_liquidity",
   "dimension_weights": {
-    "value": 0.35,
-    "market": 0.25,
-    "risk": 0.25,
-    "macro": 0.15
+    "value": 0.58,
+    "market": 0.42
   },
   "risk_sensitivity": 0.58,
   "style_bias": {
@@ -22,7 +20,7 @@
   },
   "evidence": [
     {
-      "fact": "Macro regulator supplies dimension weights for downstream decision synthesis.",
+      "fact": "Macro regulator supplies directional value/market weights; risk remains a separate gate.",
       "source": "sample_macro_regulator",
       "as_of": "2026-06-05",
       "data_as_of": "2026-06-05",

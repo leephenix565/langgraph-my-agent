@@ -1,0 +1,45 @@
+{
+  "schema_version": "agent_conclusion_v1",
+  "agent_id": "risk_event_monitor",
+  "external_agent_id": "risk_event_monitor_service",
+  "legacy_agent_id": "a17_event_risk_agent",
+  "dimension": "risk",
+  "role": "gate_member",
+  "target": "600519.SH",
+  "risk_score": 0.64,
+  "confidence": 0.57,
+  "label": "manual_review_recommended",
+  "raw_output": {
+    "model_signal": "earnings_event_uncertainty",
+    "redacted": true
+  },
+  "quality": {
+    "data_completeness": 0.82,
+    "model_trust": 0.61,
+    "calibrated": true,
+    "anti_lookahead_passed": true
+  },
+  "evidence": [
+    {
+      "fact": "Event-risk model detects elevated uncertainty before the as_of date.",
+      "source": "sample_event_risk_snapshot",
+      "as_of": "2026-06-05",
+      "data_as_of": "20260605",
+      "publish_time": "2026-06-05T15:00:00",
+      "value": 0.64,
+      "unit": "risk_score"
+    }
+  ],
+  "event_flags": [
+    {
+      "type": "risk_manual_review_recommended",
+      "severity": 0.64,
+      "direction": "risk",
+      "as_of": "2026-06-05"
+    }
+  ],
+  "as_of": "2026-06-06",
+  "data_as_of": "20260605",
+  "status": "ok",
+  "warnings": []
+}

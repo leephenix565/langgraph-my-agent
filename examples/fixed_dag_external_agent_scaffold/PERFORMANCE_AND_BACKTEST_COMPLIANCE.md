@@ -1,8 +1,8 @@
 # Performance And Backtest Compliance
 
 This scaffold keeps the historical performance and backtest ideas, restores
-the v2.3 domain payload family, and aligns both to fixed DAG external-agent
-handoff.
+the v2.3 domain payload family, applies the v2.3.1 contract patch, and aligns
+both to fixed DAG external-agent handoff.
 
 ## One Core, Two Shells
 
@@ -27,6 +27,16 @@ publish_time <= as_of
 
 This protects backtests from future-data leakage. `data_bundle_v1` also needs a
 stable `snapshot_id` for replay.
+
+v2.3.1 normalizes supported date inputs before comparison:
+
+- `YYYY-MM-DD`
+- `YYYYMMDD`
+- `YYYY-MM-DDTHH:MM:SS`
+- `YYYYMMDDHHMMSS`
+
+Invalid, empty, or unsupported dates fail validation rather than falling back
+to lexical string comparison.
 
 ## Cache Key Rule
 
@@ -63,9 +73,12 @@ payload family the service emits. At minimum, tests should cover:
 - evidence shape
 - confidence bounds
 - risk gate placement
+- `manual_review` risk gate behavior
 - macro regulator placement
-- weights sum for value/market composites
-- L4 reasoning trace depth and score trace
+- `DimensionMember` object arrays, member weights, and weighted stance checks
+- macro `dimension_weights` restricted to `value` and `market`
+- L4 distinct reasoning stages and score trace tolerance `0.01`
+- safe `raw_output` and `quality` dictionaries for L2 audit metadata
 - no aNN primary ids
 - no secrets or raw traceback
 

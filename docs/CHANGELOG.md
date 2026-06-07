@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-07 - Phase R7-G v2.3.1 scaffold contract patch
+
+### Changed
+
+- Upgraded the external scaffold package and repo mirror to
+  `external-agent-scaffold-v2.3.1-fixed-dag`.
+- Patched L2 `agent_conclusion_v1` so `direction` results require `stance`
+  and risk `gate_member` results require `risk_score`.
+- Added safe `raw_output` and `quality` dictionaries for L2 handoff audit
+  metadata; these are not graph state.
+- Added `manual_review` as a risk gate.
+- Changed `dimension_conclusion_v1.members` to canonical `DimensionMember[]`
+  with member weight and weighted stance validation.
+- Normalized supported date formats before anti-lookahead comparison.
+- Restricted macro `dimension_weights` to directional `value` and `market`.
+- Relaxed L4 score/final-score tolerance to `0.01` and validated distinct
+  reasoning stages.
+- Updated samples, tests, package docs, repo docs, ADRs, and quality docs for
+  the v2.3.1 contract patch.
+
+### Not Done
+
+- No active graph registration.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+
 ## 2026-06-06 - Phase R7-F v2.3 domain payload superset and semantic validators
 
 ### Changed

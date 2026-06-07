@@ -1,4 +1,4 @@
-# Fixed DAG Adapter-Oriented Payload Contract v2.3
+# Fixed DAG Adapter-Oriented Payload Contract v2.3.1
 
 This document defines the payload inside `external_agent_response_v0.tool_result`
 and how it maps to future fixed DAG adapter contracts.
@@ -22,6 +22,15 @@ map and validate it before any fixed DAG runtime can consume it.
 ## L2 Agent Conclusion
 
 External `agent_conclusion_v1` maps to fixed DAG `conclusion_object_v1`.
+v2.3.1 supports two L2 roles:
+
+- `direction`: must include `stance` and must not include `risk_score`.
+- `gate_member`: risk-member output; must include `risk_score` and does not
+  require `stance`.
+
+`raw_output` and `quality` are optional safe dictionaries for audit and
+readiness review. They must not contain secrets, private data, raw provider
+responses, raw traceback, or chain-of-thought, and they are not graph state.
 
 | External field | Fixed DAG field |
 | --- | --- |
@@ -40,16 +49,34 @@ External `agent_conclusion_v1` maps to fixed DAG `conclusion_object_v1`.
 ## L3 Dimension Payloads
 
 `dimension_conclusion_v1` is only for value and market composites. It must
-include members, weights, and dispersion. Weights must be explainable by
-members and sum to one.
+include `members` as an array of `DimensionMember` objects:
+
+```json
+{
+  "agent_id": "value_ml_valuation",
+  "stance": 0.24,
+  "confidence": 0.71,
+  "weight": 0.3,
+  "status": "ok"
+}
+```
+
+Member weights must sum to one within `0.01`. The weighted member stance must
+reproduce the top-level composite `stance` within `0.02`. The old
+`members: string[]` plus separate `weights` shape is legacy migration input
+for future adapters, not the canonical v2.3.1 sample contract.
 
 `risk_conclusion_v1` is a gate payload. It must use `role=gate`, include
 `gate`, `risk_score`, `penalty`, `triggered_flags`, and `red_lines`, and must
-not include `stance`.
+not include `stance`. `gate` may be `pass`, `penalty`, `veto`, or
+`manual_review`. `manual_review` is a risk gate value, not an external envelope
+status.
 
 `macro_conclusion_v1` is a regulator payload. It must use `role=regulator`,
 include `regime`, `dimension_weights`, `risk_sensitivity`, and `style_bias`,
-and must not include `stance`.
+and must not include `stance`. In v2.3.1, `dimension_weights` only contains
+the directional dimensions `value` and `market`. Risk remains a gate and does
+not appear in the macro weight table.
 
 ## L4 Decision Payload
 
@@ -57,8 +84,9 @@ and must not include `stance`.
 `dimension_views`, `calculation_trace`, `reasoning_trace`, `conflicts`,
 evidence, `as_of`, `status`, and `confidence`.
 
-`reasoning_trace` must have at least three stages. `score` must match
-`calculation_trace.final_score` or the adapter must reject the payload.
+`reasoning_trace` must contain at least three distinct `stage` values.
+`score` is the displayed score and should be `round(final_score, 2)`;
+`abs(score - calculation_trace.final_score)` must be no more than `0.01`.
 
 ## Evaluation, Plan, And Data Payloads
 
@@ -142,6 +170,15 @@ publish_time <= as_of
 
 If evidence or source snapshots contain `publish_time`, that publish time must
 also be no later than `as_of`.
+
+v2.3.1 normalizes supported date formats before comparison:
+
+- `YYYY-MM-DD`
+- `YYYYMMDD`
+- `YYYY-MM-DDTHH:MM:SS`
+- `YYYYMMDDHHMMSS`, using the first eight digits
+
+Invalid, empty, or unsupported date strings are rejected by validation.
 
 ## Implementation Notes
 

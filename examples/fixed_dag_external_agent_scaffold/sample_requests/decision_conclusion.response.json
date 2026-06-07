@@ -14,7 +14,7 @@
   "dimension_views": {
     "value": {"stance": 0.22, "confidence": 0.66, "status": "ok"},
     "market": {"stance": 0.08, "confidence": 0.59, "status": "ok"},
-    "risk": {"gate": "penalty", "risk_score": 0.42, "status": "ok"},
+    "risk": {"gate": "manual_review", "risk_score": 0.64, "status": "ok"},
     "macro": {"regime": "neutral_liquidity", "status": "ok"}
   },
   "calculation_trace": {
@@ -22,17 +22,32 @@
     "market_component": 0.08,
     "risk_penalty": 0.12,
     "macro_adjustment": 0.05,
-    "final_score": 0.31
+    "final_score": 0.314
   },
   "reasoning_trace": [
-    {"stage": "dimension_induction", "summary": "Value signal is positive."},
-    {"stage": "macro_risk_adjustment", "summary": "Risk penalty is applied."},
-    {"stage": "conflict_resolution", "summary": "No veto-level conflict is present."}
+    {
+      "stage": 1,
+      "type": "dimension_induction",
+      "claim": "Value signal is positive.",
+      "inputs": ["value", "market"]
+    },
+    {
+      "stage": 2,
+      "type": "macro_risk_adjustment",
+      "claim": "Risk requires manual review but not veto.",
+      "inputs": ["risk", "macro"]
+    },
+    {
+      "stage": 3,
+      "type": "conflict_resolution",
+      "claim": "Manual review is surfaced without changing score arithmetic.",
+      "inputs": ["decision_trace"]
+    }
   ],
   "conflicts": [],
   "evidence": [
     {
-      "fact": "Final score equals calculation_trace.final_score.",
+      "fact": "Displayed score is rounded from calculation_trace.final_score within the 0.01 tolerance.",
       "source": "sample_decision_trace",
       "as_of": "2026-06-05",
       "data_as_of": "2026-06-05",

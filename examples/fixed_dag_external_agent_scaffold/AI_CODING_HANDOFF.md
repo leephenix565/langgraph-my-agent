@@ -1,6 +1,6 @@
 # AI Coding Handoff For Fixed DAG External Agent Adaptation
 
-Package version: `external-agent-scaffold-v2.3-fixed-dag`.
+Package version: `external-agent-scaffold-v2.3.1-fixed-dag`.
 
 ## 1. Purpose
 
@@ -16,10 +16,11 @@ This document is not permission to modify the `langgraph-my-agent` active
 runtime. It is not runtime binding approval. It is not live readiness evidence.
 It is a sample/local contract handoff package.
 
-v2.3 restores the broader domain payload family from the historical scaffold
-lineage while keeping the fixed DAG id model, readiness boundaries, and
-Non-Claims. Do not assume every external service is an L2
-`agent_conclusion_v1` agent.
+v2.3.1 keeps the broader v2.3 domain payload family and applies a contract
+patch for risk L2 gate members, `manual_review` risk gates, structured
+`DimensionMember` composites, normalized date comparison, macro value/market
+weights, L4 score tolerance, and distinct reasoning stages. Do not assume every
+external service is an L2 `agent_conclusion_v1` agent.
 
 ## 2. Inputs You May Receive
 
@@ -104,6 +105,32 @@ An ML model can be the `compute_core`. An LLM can be only an explanation layer.
 An LLM must not rewrite the numerical or structured conclusions produced by the
 business core, including `stance`, `confidence`, `target`, `evidence`, and
 `data_as_of`. All modes must output a mappable `tool_result`.
+
+## 5.1 v2.3.1 Payload Patch Rules
+
+When selecting or generating a payload, follow these v2.3.1 rules:
+
+- L2 `agent_conclusion_v1` can be `role=direction` or `role=gate_member`.
+- Direction L2 outputs must include `stance` and must not include
+  `risk_score`.
+- Risk gate-member L2 outputs must include `risk_score`; `stance` is optional
+  auxiliary data and is not required.
+- `raw_output` and `quality` must be dictionaries if present. They must not
+  contain secrets, raw provider responses, raw traceback, private data, or
+  chain-of-thought.
+- L3 `dimension_conclusion_v1.members` is a `DimensionMember[]` object array
+  with `agent_id`, `stance`, `confidence`, `weight`, and `status`.
+- L3 risk `gate` may be `pass`, `penalty`, `veto`, or `manual_review`.
+- L3 macro `dimension_weights` only contains `value` and `market`; risk remains
+  a separate gate and macro is the regulator, not a weighted child.
+- Date comparison normalizes `YYYY-MM-DD`, `YYYYMMDD`,
+  `YYYY-MM-DDTHH:MM:SS`, and `YYYYMMDDHHMMSS` before checking lookahead.
+- L4 `score` should be `round(calculation_trace.final_score, 2)` and stay
+  within `0.01`.
+- L4 reasoning trace depth is counted by distinct `stage` values, not by raw
+  list length.
+- Single-payload validation checks confidence bounds only. Cross-call constant
+  confidence is a monitoring/deep-check concern.
 
 ## 6. Audit First Procedure
 
@@ -204,7 +231,7 @@ Contract intent:
 - both endpoints must be safe under local tests.
 
 The sample service returns `agent_conclusion_v1` by default. A real adapted
-project may emit another v2.3 payload if its fixed DAG role requires it.
+project may emit another v2.3.1 payload if its fixed DAG role requires it.
 
 ## 9. Required Payload Rules
 
@@ -338,7 +365,7 @@ Add tests for:
 - confidence bounds
 - evidence present for successful output
 - `event_flags` shape
-- selected v2.3 payload family semantic checks
+- selected v2.3.1 payload family semantic checks
 - typed errors are safe
 - old aNN primary `agent_id` rejected
 - no secrets or raw traceback
@@ -449,14 +476,14 @@ Rules:
   snake_case id from the catalog.
 - Preserve the existing business compute core.
 - Do not force LLM + function call.
-- Choose the v2.3 payload schema that matches the fixed DAG role.
+- Choose the v2.3.1 payload schema that matches the fixed DAG role.
 - Implement a minimal wrapper or adapter.
 - Expose GET /health, POST /v1/agent/compute, and POST /v1/agent/invoke.
 - Make /compute and /invoke share compute_core.
 - Add schemas, typed errors, sample_requests, and local contract tests.
 - Validate data_as_of <= as_of, publish_time <= as_of when present,
   confidence in [0,1], evidence, event_flags, request_id roundtrip,
-  selected v2.3 payload semantics, and safe typed errors.
+  selected v2.3.1 payload semantics, and safe typed errors.
 - Reject old aNN primary agent_id values.
 - Do not modify any main-system runtime files.
 - Do not edit AGENT_TOOLS, config/agents, or runtime_bindings.

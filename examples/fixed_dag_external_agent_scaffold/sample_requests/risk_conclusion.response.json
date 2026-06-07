@@ -6,14 +6,14 @@
   "dimension": "risk",
   "role": "gate",
   "target": "600519.SH",
-  "gate": "penalty",
-  "risk_score": 0.42,
-  "penalty": 0.12,
-  "triggered_flags": ["valuation_drawdown_watch"],
+  "gate": "manual_review",
+  "risk_score": 0.64,
+  "penalty": 0.0,
+  "triggered_flags": ["valuation_drawdown_watch", "manual_review_recommended"],
   "red_lines": [],
   "evidence": [
     {
-      "fact": "Risk penalty is below veto threshold.",
+      "fact": "Risk gate requires manual review because uncertainty is elevated but no veto line is breached.",
       "source": "sample_risk_gate",
       "as_of": "2026-06-05",
       "data_as_of": "2026-06-05",
@@ -22,8 +22,8 @@
   ],
   "event_flags": [
     {
-      "type": "risk_penalty",
-      "severity": 0.42,
+      "type": "risk_manual_review",
+      "severity": 0.64,
       "direction": "risk",
       "as_of": "2026-06-05"
     }

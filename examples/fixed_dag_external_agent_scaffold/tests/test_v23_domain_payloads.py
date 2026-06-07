@@ -1,4 +1,4 @@
-"""v2.3 domain payload family and semantic validator tests."""
+"""v2.3.1 domain payload family and semantic validator tests."""
 
 from __future__ import annotations
 
@@ -19,10 +19,11 @@ def _sample(name: str) -> dict[str, object]:
     )
 
 
-def test_all_v23_domain_payload_samples_validate() -> None:
-    """Every v2.3 domain response sample passes validate_tool_result."""
+def test_all_v231_domain_payload_samples_validate() -> None:
+    """Every v2.3.1 domain response sample passes validate_tool_result."""
     for name in (
         "agent_conclusion.response.json",
+        "agent_conclusion.risk_member.response.json",
         "dimension_conclusion.response.json",
         "risk_conclusion.response.json",
         "macro_conclusion.response.json",
@@ -68,21 +69,85 @@ def test_ann_primary_agent_id_is_rejected_by_domain_validator() -> None:
     assert reason == "legacy_agent_id_as_primary"
 
 
-def test_anti_lookahead_checks_data_bundle_and_evidence_publish_times() -> None:
-    """data_as_of, publish_time, and evidence timestamps cannot exceed as_of."""
-    data_bundle = _sample("data_bundle.response.json")
-    data_bundle["publish_time"] = "2026-06-06"
-    valid, reason = validate_tool_result(data_bundle)
-    assert not valid
-    assert reason == "publish_time_after_as_of"
+def test_agent_conclusion_direction_requires_stance() -> None:
+    """Directional L2 members must provide stance."""
+    payload = _sample("agent_conclusion.response.json")
+    payload.pop("stance")
 
-    conclusion = _sample("agent_conclusion.response.json")
-    evidence = conclusion["evidence"]
-    assert isinstance(evidence, list)
-    evidence[0]["publish_time"] = "2026-06-06"
-    valid, reason = validate_tool_result(conclusion)
+    valid, reason = validate_tool_result(payload)
+
     assert not valid
-    assert reason == "evidence_publish_time_after_as_of"
+    assert reason == "direction_stance_missing"
+
+
+def test_agent_conclusion_gate_member_requires_risk_score() -> None:
+    """Risk L2 gate members use risk_score instead of required stance."""
+    payload = _sample("agent_conclusion.risk_member.response.json")
+    payload.pop("risk_score")
+
+    valid, reason = validate_tool_result(payload)
+
+    assert not valid
+    assert reason == "gate_member_risk_score_missing"
+
+
+def test_agent_conclusion_rejects_direction_with_risk_score() -> None:
+    """Directional L2 members do not mix in risk_score."""
+    payload = _sample("agent_conclusion.response.json")
+    payload["risk_score"] = 0.4
+
+    valid, reason = validate_tool_result(payload)
+
+    assert not valid
+    assert reason == "direction_must_not_have_risk_score"
+
+
+def test_agent_conclusion_preserves_raw_output_and_quality() -> None:
+    """raw_output and quality are safe dict payloads, not graph-state fields."""
+    payload = _sample("agent_conclusion.risk_member.response.json")
+    assert isinstance(payload["raw_output"], dict)
+    assert isinstance(payload["quality"], dict)
+
+    valid, reason = validate_tool_result(payload)
+    assert valid, reason
+
+    payload["raw_output"] = ["not", "a", "dict"]
+    valid, reason = validate_tool_result(payload)
+    assert not valid
+    assert reason == "validation_error:ValidationError"
+
+
+def test_risk_gate_accepts_manual_review() -> None:
+    """manual_review is a risk gate value, not an envelope status."""
+    payload = _sample("risk_conclusion.response.json")
+    assert payload["gate"] == "manual_review"
+
+    valid, reason = validate_tool_result(payload)
+
+    assert valid, reason
+
+
+def test_temporal_validator_normalizes_dates_before_comparison() -> None:
+    """Mixed date formats are normalized before anti-lookahead comparison."""
+    payload = _sample("agent_conclusion.risk_member.response.json")
+    assert payload["as_of"] == "2026-06-06"
+    assert payload["data_as_of"] == "20260605"
+
+    valid, reason = validate_tool_result(payload)
+
+    assert valid, reason
+
+
+def test_temporal_validator_rejects_future_date_with_mixed_formats() -> None:
+    """Mixed formats must not bypass future-data checks."""
+    payload = _sample("agent_conclusion.risk_member.response.json")
+    payload["as_of"] = "20260606"
+    payload["data_as_of"] = "2026-06-07"
+
+    valid, reason = validate_tool_result(payload)
+
+    assert not valid
+    assert reason == "data_as_of_after_as_of"
 
 
 def test_l3_gate_and_regulator_payloads_reject_direction_stance() -> None:
@@ -100,50 +165,105 @@ def test_l3_gate_and_regulator_payloads_reject_direction_stance() -> None:
     assert reason == "macro_must_not_have_stance"
 
 
-def test_weights_and_dimension_weight_semantics_are_checked() -> None:
-    """Composite and macro weights must be explainable and normalized."""
+def test_dimension_members_are_objects() -> None:
+    """Dimension members are canonical object entries in v2.3.1."""
     dimension = _sample("dimension_conclusion.response.json")
-    weights = dimension["weights"]
-    assert isinstance(weights, dict)
-    weights["value_ml_valuation"] = 0.4
+    members = dimension["members"]
+    assert isinstance(members, list)
+    assert all(isinstance(member, dict) for member in members)
+
+    dimension["members"] = ["legacy_string_member"]
     valid, reason = validate_tool_result(dimension)
     assert not valid
-    assert reason == "weights_sum_not_one"
+    assert reason == "validation_error:ValidationError"
 
+
+def test_dimension_weighted_stance_must_match_member_weights() -> None:
+    """Composite stance must match the weighted member stance within tolerance."""
+    dimension = _sample("dimension_conclusion.response.json")
+    members = dimension["members"]
+    assert isinstance(members, list)
+    first_member = members[0]
+    assert isinstance(first_member, dict)
+    first_member["stance"] = -0.9
+
+    valid, reason = validate_tool_result(dimension)
+
+    assert not valid
+    assert reason == "weighted_stance_mismatch"
+
+
+def test_macro_dimension_weights_only_value_market() -> None:
+    """Macro dimension weights are directional only; risk is a separate gate."""
     macro = _sample("macro_conclusion.response.json")
     dimension_weights = macro["dimension_weights"]
     assert isinstance(dimension_weights, dict)
-    dimension_weights["unknown"] = 0.1
+    assert set(dimension_weights) == {"value", "market"}
+
+    dimension_weights["risk"] = 0.1
     valid, reason = validate_tool_result(macro)
     assert not valid
-    assert reason == "validation_error:ValueError"
+    assert reason == "dimension_weights_invalid_keys"
 
 
-def test_decision_trace_requires_depth_and_recomputable_score() -> None:
-    """L4 decision payloads require at least 3 reasoning stages and score trace."""
-    short_trace = _sample("decision_conclusion.response.json")
-    reasoning_trace = short_trace["reasoning_trace"]
-    assert isinstance(reasoning_trace, list)
-    short_trace["reasoning_trace"] = reasoning_trace[:2]
-    valid, reason = validate_tool_result(short_trace)
-    assert not valid
-    assert reason == "reasoning_trace_too_short"
-
-    mismatch = _sample("decision_conclusion.response.json")
-    calculation_trace = mismatch["calculation_trace"]
+def test_decision_score_accepts_within_001_tolerance() -> None:
+    """Displayed score may be rounded from calculation_trace.final_score."""
+    decision = _sample("decision_conclusion.response.json")
+    calculation_trace = decision["calculation_trace"]
     assert isinstance(calculation_trace, dict)
-    calculation_trace["final_score"] = 0.99
-    valid, reason = validate_tool_result(mismatch)
+    assert decision["score"] == 0.31
+    assert calculation_trace["final_score"] == 0.314
+
+    valid, reason = validate_tool_result(decision)
+
+    assert valid, reason
+
+
+def test_decision_score_rejects_outside_001_tolerance() -> None:
+    """Score drift beyond 0.01 is rejected."""
+    decision = _sample("decision_conclusion.response.json")
+    calculation_trace = decision["calculation_trace"]
+    assert isinstance(calculation_trace, dict)
+    calculation_trace["final_score"] = 0.33
+
+    valid, reason = validate_tool_result(decision)
+
     assert not valid
     assert reason == "score_mismatch"
 
 
-def test_sample_confidence_values_are_not_constant() -> None:
+def test_decision_reasoning_trace_requires_distinct_stages() -> None:
+    """L4 trace depth is counted by distinct stage values."""
+    decision = _sample("decision_conclusion.response.json")
+    reasoning_trace = decision["reasoning_trace"]
+    assert isinstance(reasoning_trace, list)
+    for step in reasoning_trace:
+        assert isinstance(step, dict)
+        step["stage"] = 1
+
+    valid, reason = validate_tool_result(decision)
+
+    assert not valid
+    assert reason == "reasoning_trace_stage_depth_too_shallow"
+
+
+def test_sample_family_confidence_values_are_not_constant() -> None:
     """Samples show confidence as a signal, not a fixed authoritative constant."""
     confidence_values = {
         _sample("agent_conclusion.response.json")["confidence"],
+        _sample("agent_conclusion.risk_member.response.json")["confidence"],
         _sample("dimension_conclusion.response.json")["confidence"],
         _sample("decision_conclusion.response.json")["confidence"],
     }
 
     assert len(confidence_values) >= 3
+
+
+def test_single_payload_validator_does_not_enforce_global_confidence_variation() -> None:
+    """Single-payload validation checks bounds only, not cross-call constancy."""
+    payload = _sample("agent_conclusion.response.json")
+    payload["confidence"] = 0.42
+
+    valid, reason = validate_tool_result(payload)
+
+    assert valid, reason

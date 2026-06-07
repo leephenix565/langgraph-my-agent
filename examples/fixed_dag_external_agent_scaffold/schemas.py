@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import re
 from collections.abc import Mapping, Sequence
+from datetime import date
 from typing import Any, Literal, TypeAlias
 
 from pydantic import BaseModel, Field
@@ -16,6 +17,7 @@ from pydantic import BaseModel, Field
 ExternalStatus = Literal["ok", "partial", "needs_clarification", "error"]
 FixedDagDimension = Literal["value", "market", "risk", "macro"]
 DirectionRole = Literal["direction"]
+AgentConclusionRole = Literal["direction", "gate_member"]
 GateRole = Literal["gate"]
 RegulatorRole = Literal["regulator"]
 ImplementationType = Literal[
@@ -39,6 +41,7 @@ DIM_ALIAS = {
     "宏觀": "macro",
 }
 CANONICAL_DIMENSIONS = {"value", "market", "risk", "macro"}
+DIRECTION_DIMENSIONS = {"value", "market"}
 _ANN_ID_PATTERN = re.compile(r"^a\d{2}_")
 
 
@@ -85,6 +88,25 @@ class ImplementationNotes(BaseModel):
     llm_role: str = ""
     compute_core: str = ""
     explanation_layer: str = ""
+
+
+class DimensionMember(BaseModel):
+    """Structured L3 member contribution used by dimension composites."""
+
+    agent_id: str
+    stance: float = Field(ge=-1.0, le=1.0)
+    confidence: float = Field(ge=0.0, le=1.0)
+    weight: float = Field(ge=0.0, le=1.0)
+    status: ExternalStatus = "ok"
+
+
+class ReasoningStep(BaseModel):
+    """Minimal typed reasoning step for L4 decision trace depth checks."""
+
+    stage: int | str
+    type: str = ""
+    claim: str = ""
+    inputs: list[str] | dict[str, Any] | list[Any] | None = None
 
 
 class ExternalAgentHealth(BaseModel):
@@ -149,11 +171,14 @@ class AgentConclusionToolResult(BaseModel):
     external_agent_id: str
     legacy_agent_id: str = ""
     dimension: FixedDagDimension
-    role: DirectionRole = "direction"
+    role: AgentConclusionRole = "direction"
     target: str
-    stance: float = Field(ge=-1.0, le=1.0)
+    stance: float | None = Field(None, ge=-1.0, le=1.0)
+    risk_score: float | None = Field(None, ge=0.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
     label: str
+    raw_output: dict[str, Any] = Field(default_factory=dict)
+    quality: dict[str, Any] = Field(default_factory=dict)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     event_flags: list[EventFlag] = Field(default_factory=list)
     as_of: str
@@ -175,8 +200,7 @@ class DimensionConclusionToolResult(BaseModel):
     target: str
     stance: float = Field(ge=-1.0, le=1.0)
     confidence: float = Field(ge=0.0, le=1.0)
-    members: list[str]
-    weights: dict[str, float]
+    members: list[DimensionMember]
     dispersion: float = Field(ge=0.0)
     fair_value_range: dict[str, float | None] | None = None
     timing_signal: str | None = None
@@ -198,7 +222,7 @@ class RiskConclusionToolResult(BaseModel):
     dimension: Literal["risk"] = "risk"
     role: GateRole = "gate"
     target: str
-    gate: Literal["pass", "penalty", "veto"]
+    gate: Literal["pass", "penalty", "veto", "manual_review"]
     risk_score: float = Field(ge=0.0, le=1.0)
     penalty: float = Field(ge=0.0, le=1.0)
     triggered_flags: list[str] = Field(default_factory=list)
@@ -247,7 +271,7 @@ class DecisionConclusionToolResult(BaseModel):
     target_price_range: dict[str, float | None]
     dimension_views: dict[str, dict[str, Any]]
     calculation_trace: dict[str, Any]
-    reasoning_trace: list[dict[str, Any]]
+    reasoning_trace: list[ReasoningStep]
     conflicts: list[dict[str, Any]] = Field(default_factory=list)
     evidence: list[EvidenceItem] = Field(default_factory=list)
     event_flags: list[EventFlag] = Field(default_factory=list)
@@ -379,9 +403,27 @@ def _normalize_payload(payload: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def _not_after(left: Any, right: Any) -> bool:
-    left_text = str(left or "")
-    right_text = str(right or "")
-    return bool(left_text and right_text and left_text <= right_text)
+    return _norm_date(left) <= _norm_date(right)
+
+
+def _norm_date(value: Any) -> str:
+    """Normalize date-like inputs to YYYYMMDD for point-in-time comparisons."""
+    text = str(value or "").strip()
+    if not text:
+        raise ValueError("empty_date")
+    if re.fullmatch(r"\d{8}(\d{6})?", text):
+        date_text = text[:8]
+        year = int(date_text[0:4])
+        month = int(date_text[4:6])
+        day = int(date_text[6:8])
+        date(year, month, day)
+        return date_text
+    match = re.match(r"^(\d{4})-(\d{2})-(\d{2})(?:$|[T\s].*)", text)
+    if match:
+        year, month, day = (int(part) for part in match.groups())
+        date(year, month, day)
+        return f"{year:04d}{month:02d}{day:02d}"
+    raise ValueError("unsupported_date_format")
 
 
 def _weights_sum_to_one(weights: Mapping[str, Any], tolerance: float = 0.001) -> bool:
@@ -390,6 +432,14 @@ def _weights_sum_to_one(weights: Mapping[str, Any], tolerance: float = 0.001) ->
     except (TypeError, ValueError):
         return False
     return abs(total - 1.0) <= tolerance
+
+
+def _dimension_member_weight_sum(members: Sequence[Mapping[str, Any]]) -> float:
+    return sum(float(member["weight"]) for member in members)
+
+
+def _dimension_member_weighted_stance(members: Sequence[Mapping[str, Any]]) -> float:
+    return sum(float(member["weight"]) * float(member["stance"]) for member in members)
 
 
 def _validate_primary_agent_id(payload: Mapping[str, Any]) -> tuple[bool, str]:
@@ -449,7 +499,7 @@ def _model_validate(model: type[BaseModel], payload: Mapping[str, Any]) -> BaseM
 
 
 def validate_tool_result(payload: Any) -> tuple[bool, str]:
-    """Validate a v2.3 domain payload by schema_version and semantic rules."""
+    """Validate a v2.3.1 domain payload by schema_version and semantic rules."""
     try:
         raw = _as_mapping(payload)
         schema_version = str(raw.get("schema_version") or "")
@@ -464,8 +514,21 @@ def validate_tool_result(payload: Any) -> tuple[bool, str]:
         normalized = _normalize_payload(raw)
         if schema_version == "agent_conclusion_v1":
             _model_validate(AgentConclusionToolResult, normalized)
-            if normalized.get("role") != "direction":
+            role = normalized.get("role", "direction")
+            if role == "direction":
+                if normalized.get("stance") is None:
+                    return False, "direction_stance_missing"
+                if normalized.get("risk_score") is not None:
+                    return False, "direction_must_not_have_risk_score"
+            elif role == "gate_member":
+                if normalized.get("risk_score") is None:
+                    return False, "gate_member_risk_score_missing"
+            else:
                 return False, "invalid_role"
+            if not isinstance(normalized.get("raw_output", {}), Mapping):
+                return False, "raw_output_must_be_dict"
+            if not isinstance(normalized.get("quality", {}), Mapping):
+                return False, "quality_must_be_dict"
             return _validate_common(normalized)
 
         if schema_version == "dimension_conclusion_v1":
@@ -475,13 +538,14 @@ def validate_tool_result(payload: Any) -> tuple[bool, str]:
             if normalized.get("role") != "direction":
                 return False, "invalid_role"
             members = normalized.get("members")
-            weights = normalized.get("weights")
-            if not isinstance(members, list) or not isinstance(weights, Mapping):
-                return False, "members_or_weights_missing"
-            if not set(weights) <= set(members):
-                return False, "weights_not_explained_by_members"
-            if not _weights_sum_to_one(weights):
-                return False, "weights_sum_not_one"
+            if not isinstance(members, list) or not members:
+                return False, "dimension_members_missing"
+            if not all(isinstance(member, Mapping) for member in members):
+                return False, "dimension_members_must_be_objects"
+            if abs(_dimension_member_weight_sum(members) - 1.0) > 0.01:
+                return False, "member_weights_sum_not_one"
+            if abs(_dimension_member_weighted_stance(members) - float(normalized["stance"])) > 0.02:
+                return False, "weighted_stance_mismatch"
             return _validate_common(normalized)
 
         if schema_version == "risk_conclusion_v1":
@@ -501,7 +565,7 @@ def validate_tool_result(payload: Any) -> tuple[bool, str]:
             weights = normalized.get("dimension_weights")
             if not isinstance(weights, Mapping):
                 return False, "dimension_weights_missing"
-            if set(weights) - CANONICAL_DIMENSIONS:
+            if set(weights) - DIRECTION_DIMENSIONS:
                 return False, "dimension_weights_invalid_keys"
             if not _weights_sum_to_one(weights):
                 return False, "dimension_weights_sum_not_one"
@@ -509,14 +573,17 @@ def validate_tool_result(payload: Any) -> tuple[bool, str]:
 
         if schema_version == "decision_conclusion_v1":
             _model_validate(DecisionConclusionToolResult, normalized)
-            if len(normalized.get("reasoning_trace") or []) < 3:
-                return False, "reasoning_trace_too_short"
+            reasoning_trace = normalized.get("reasoning_trace") or []
+            if not all(isinstance(step, Mapping) and step.get("stage") is not None for step in reasoning_trace):
+                return False, "reasoning_trace_stage_missing"
+            if len({str(step["stage"]) for step in reasoning_trace}) < 3:
+                return False, "reasoning_trace_stage_depth_too_shallow"
             calculation_trace = normalized.get("calculation_trace")
             if not isinstance(calculation_trace, Mapping):
                 return False, "calculation_trace_missing"
             if "final_score" not in calculation_trace:
                 return False, "calculation_trace_final_score_missing"
-            if abs(float(calculation_trace["final_score"]) - float(normalized["score"])) > 0.0001:
+            if abs(float(calculation_trace["final_score"]) - float(normalized["score"])) > 0.01:
                 return False, "score_mismatch"
             return _validate_common(normalized)
 

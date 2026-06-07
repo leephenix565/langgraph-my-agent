@@ -1,6 +1,6 @@
 # Fixed DAG External Payload Mapping
 
-This document defines how v2.3 external-agent payloads should be mapped into
+This document defines how v2.3.1 external-agent payloads should be mapped into
 the current fixed DAG contract family.
 
 External services do not write directly into graph state. They return an
@@ -20,9 +20,9 @@ Current fixed DAG authority:
 Legacy `AGENT_TOOLS`, `config/agents/*.json`, and aNN ids may appear as
 migration references only. They are not current fixed DAG integration truth.
 
-The R7-F scaffold source package at `E:\muti-agent\external_agent_scaffold` and
+The R7-G scaffold source package at `E:\muti-agent\external_agent_scaffold` and
 its tracked repo mirror under `examples/fixed_dag_external_agent_scaffold/`
-contain local example mapping code, v2.3 payload samples, semantic validators,
+contain local example mapping code, v2.3.1 payload samples, semantic validators,
 and tests. They are adapter-side samples, not graph state and not runtime
 registration truth.
 
@@ -59,11 +59,11 @@ services should not claim it as their own success state.
 | External payload | Fixed DAG contract | Mapping notes |
 | --- | --- | --- |
 | `external_agent_response_v0` | adapter input | The external response envelope is not graph state. |
-| `agent_conclusion_v1` | `conclusion_object_v1` | Map `agent_id`, dimension, normalized stance, confidence, evidence, `as_of`, `data_as_of`, event flags, status, and provenance. |
-| `dimension_conclusion_v1` | `dimension_composite_result_v1` | Use for value/market composites. Map members and weights to contributing agents and evidence refs. |
-| `risk_conclusion_v1` | `dimension_composite_result_v1` risk fields | Map `gate`, `penalty`, `risk_score`, triggered flags, and red lines. Risk must not consume `sentiment_company_radar`. |
-| `macro_conclusion_v1` | `dimension_composite_result_v1` macro fields | Map `regime`, `dimension_weights`, `risk_sensitivity`, and style bias. |
-| `decision_conclusion_v1` | `decision_result_v1` | Map decision, score, target price range, dimension views, reasoning trace, calculation trace, confidence, status, and `as_of`. |
+| `agent_conclusion_v1` | `conclusion_object_v1` | Map direction outputs with `stance`; map `gate_member` risk outputs as adapter-side risk member evidence. `raw_output` and `quality` are audit metadata, not graph state. |
+| `dimension_conclusion_v1` | `dimension_composite_result_v1` | Use for value/market composites. Map `DimensionMember[]` to contributing agents, weights, member confidence, and evidence refs. |
+| `risk_conclusion_v1` | `dimension_composite_result_v1` risk fields | Map `gate`, including `manual_review`, `penalty`, `risk_score`, triggered flags, and red lines. Risk must not consume `sentiment_company_radar`. |
+| `macro_conclusion_v1` | `dimension_composite_result_v1` macro fields | Map `regime`, directional `dimension_weights` for `value`/`market`, `risk_sensitivity`, and style bias. |
+| `decision_conclusion_v1` | `decision_result_v1` | Map decision, score, target price range, dimension views, reasoning trace, calculation trace, confidence, status, and `as_of`; the adapter must preserve the score tolerance evidence. |
 | `eval_record_v1` | evaluation/replay evidence | Use for routing F1, reasoning F1, backtest, and replay metrics. It is not graph state. |
 | `fixed_dag_plan_v1` | route/plan payload | Map task, targets, selected dimensions, selected agents, route prior, fallback, and `as_of`. |
 | `data_bundle_v1` | `data_bundle_v1` | Map target, timestamps, `publish_time`, `snapshot_id`, sources, features, missing fields, and status. |
@@ -142,16 +142,19 @@ The scaffold-level `validate_tool_result` checks target handoff payloads before
 R8 adapter work:
 
 - old aNN ids are rejected as primary `agent_id`
-- `data_as_of <= as_of`
-- `publish_time <= as_of`
+- `data_as_of <= as_of` after supported date normalization
+- `publish_time <= as_of` after supported date normalization
 - success payloads with evidence-bearing schemas include evidence
 - confidence values are in `[0, 1]`
-- `dimension_conclusion_v1` members and weights are explainable and normalized
-- `risk_conclusion_v1` has `role=gate` and no `stance`
-- `macro_conclusion_v1` has `role=regulator`, valid `dimension_weights`, and no
+- `agent_conclusion_v1` separates direction and `gate_member` role semantics
+- `dimension_conclusion_v1` has `DimensionMember[]`, member weights sum to one,
+  and weighted stance matches top-level stance
+- `risk_conclusion_v1` has `role=gate`, supports `manual_review`, and has no
   `stance`
-- `decision_conclusion_v1` has at least three reasoning stages and a score that
-  matches `calculation_trace.final_score`
+- `macro_conclusion_v1` has `role=regulator`, `dimension_weights` containing
+  only `value` and `market`, and no `stance`
+- `decision_conclusion_v1` has at least three distinct reasoning stages and a
+  displayed score within `0.01` of `calculation_trace.final_score`
 - `data_bundle_v1` includes a replayable `snapshot_id`
 
 ## Provenance Mapping

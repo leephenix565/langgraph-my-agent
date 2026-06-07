@@ -75,12 +75,14 @@ The fixed-DAG runtime remains the deterministic provider-free reset skeleton
 until later phases implement and verify real business agents and live external
 service readiness.
 
-## R7-F External Scaffold Source Package
+## R7-G External Scaffold Source Package
 
-R7-C/R7-D/R7-E/R7-F external developer handoff work upgrades the repo-external
+R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
 scaffold source package, keeps the tracked repo mirror in sync, expands the AI
-coding handoff documentation, and restores the v2.3 domain payload family with
-semantic validators. Its validation uses:
+coding handoff documentation, restores the v2.3 domain payload family, and
+patches v2.3.1 semantic validators for risk members, manual review gates,
+structured dimension members, normalized dates, macro directional weights, L4
+score tolerance, and distinct reasoning stages. Its validation uses:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q

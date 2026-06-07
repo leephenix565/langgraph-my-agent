@@ -1,6 +1,6 @@
 # Fixed DAG External Agent Sample Payloads
 
-These samples are documentation examples only. R7-F keeps runnable sample files
+These samples are documentation examples only. R7-G keeps runnable sample files
 under `examples/fixed_dag_external_agent_scaffold/sample_requests/` for local
 scaffold tests. Neither the documentation snippets nor the runnable sample
 files are active graph state or live service evidence.
@@ -20,9 +20,10 @@ The repo mirror contains endpoint samples:
 - `invoke.response.json`
 - `error.response.json`
 
-It also contains v2.3 domain payload samples:
+It also contains v2.3.1 domain payload samples:
 
 - `agent_conclusion.response.json`
+- `agent_conclusion.risk_member.response.json`
 - `dimension_conclusion.response.json`
 - `risk_conclusion.response.json`
 - `macro_conclusion.response.json`
@@ -73,8 +74,11 @@ The response envelope shape is:
     "role": "direction",
     "target": "600519.SH",
     "stance": -0.4,
+    "risk_score": null,
     "confidence": 0.72,
     "label": "slightly_negative",
+    "raw_output": {},
+    "quality": {},
     "evidence": [
       {
         "fact": "Deterministic sample feature set is bounded by as_of.",
@@ -109,11 +113,12 @@ intent is:
 
 | File | Schema | Purpose |
 | --- | --- | --- |
-| `agent_conclusion.response.json` | `agent_conclusion_v1` | L2 analysis result. |
-| `dimension_conclusion.response.json` | `dimension_conclusion_v1` | L3 value/market composite with members and weights. |
-| `risk_conclusion.response.json` | `risk_conclusion_v1` | L3 risk gate with no `stance`. |
-| `macro_conclusion.response.json` | `macro_conclusion_v1` | L3 macro regulator with `dimension_weights` and no `stance`. |
-| `decision_conclusion.response.json` | `decision_conclusion_v1` | L4 decision with reasoning trace and calculation trace. |
+| `agent_conclusion.response.json` | `agent_conclusion_v1` | L2 direction result with `stance`. |
+| `agent_conclusion.risk_member.response.json` | `agent_conclusion_v1` | L2 risk gate-member result with `risk_score`, `raw_output`, and `quality`. |
+| `dimension_conclusion.response.json` | `dimension_conclusion_v1` | L3 value/market composite with `DimensionMember[]`. |
+| `risk_conclusion.response.json` | `risk_conclusion_v1` | L3 risk gate with `manual_review` and no `stance`. |
+| `macro_conclusion.response.json` | `macro_conclusion_v1` | L3 macro regulator with value/market `dimension_weights` and no `stance`. |
+| `decision_conclusion.response.json` | `decision_conclusion_v1` | L4 decision with distinct reasoning stages and calculation trace. |
 | `eval_record.response.json` | `eval_record_v1` | Evaluation or replay metric record. |
 | `data_bundle.response.json` | `data_bundle_v1` | L1 point-in-time data bundle with `snapshot_id`. |
 | `fixed_dag_plan.response.json` | `fixed_dag_plan_v1` | Route or plan payload. |
@@ -124,15 +129,18 @@ Samples should satisfy:
 
 - canonical English dimensions in checked-in outputs
 - migration alias normalization for Chinese dimension inputs
-- `data_as_of <= as_of`
-- `publish_time <= as_of`
+- `data_as_of <= as_of` after supported date normalization
+- `publish_time <= as_of` after supported date normalization
 - confidence in `[0, 1]`
 - evidence present for successful evidence-bearing payloads
-- risk uses `role=gate` and has no `stance`
+- L2 direction uses `stance`; L2 gate-member uses `risk_score`
+- `raw_output` and `quality` are safe dictionaries
+- risk uses `role=gate`, supports `manual_review`, and has no `stance`
 - macro uses `role=regulator` and has no `stance`
-- value/market weights sum to one
-- decision reasoning trace has at least three stages
-- decision `score` matches `calculation_trace.final_score`
+- macro `dimension_weights` contains only `value` and `market`
+- `DimensionMember` weights sum to one and reproduce composite stance
+- decision reasoning trace has at least three distinct `stage` values
+- decision `score` is within `0.01` of `calculation_trace.final_score`
 - data bundle includes `snapshot_id`
 
 ## Failure Response

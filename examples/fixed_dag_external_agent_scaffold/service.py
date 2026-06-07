@@ -28,7 +28,7 @@ FIXED_DAG_AGENT_ID = "value_ml_valuation"
 EXTERNAL_AGENT_ID = "valuation_ml"
 LEGACY_AGENT_ID = "a16_ml_valuation"
 AGENT_NAME = "Fixed DAG sample valuation agent"
-VERSION = "2.3.0"
+VERSION = "2.3.1"
 
 PROVIDER_CALL_COUNT = 0
 EXTERNAL_CALL_COUNT = 0
@@ -44,7 +44,7 @@ IMPLEMENTATION_NOTES = ImplementationNotes(
     implementation_type="model_compute_agent",
     uses_llm=False,
     llm_role="",
-    compute_core="deterministic_sample_v2_3",
+    compute_core="deterministic_sample_v2_3_1",
     explanation_layer="deterministic_template",
 )
 
@@ -74,7 +74,7 @@ def make_cache_key(
         "target": target.strip().upper(),
         "as_of": as_of,
         "missing_fields": sorted(str(item) for item in options.get("missing_fields", [])),
-        "model_version": str(options.get("model_version", "sample_v2_3")),
+        "model_version": str(options.get("model_version", "sample_v2_3_1")),
     }
     raw = json.dumps(payload, sort_keys=True, ensure_ascii=False)
     return hashlib.sha256(raw.encode("utf-8")).hexdigest()[:24]
@@ -282,7 +282,7 @@ async def health() -> ExternalAgentHealth:
         legacy_agent_id=LEGACY_AGENT_ID,
         capabilities=[
             "fixed_dag_external_scaffold",
-            "v2_3_payload_superset",
+            "v2_3_1_contract_patch",
             "structured_response",
             "fail_soft",
             "compute_endpoint",
@@ -313,7 +313,7 @@ async def health() -> ExternalAgentHealth:
         warnings=[
             "sample-only; not registered in the active fixed DAG graph",
             "runtime_bindings remain disabled and not live verified",
-            "v2.3 payload family is contract coverage, not live service readiness",
+            "v2.3.1 payload family is contract coverage, not live service readiness",
         ],
     )
 

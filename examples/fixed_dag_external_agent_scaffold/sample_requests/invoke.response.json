@@ -20,8 +20,11 @@
     "role": "direction",
     "target": "600519.SH",
     "stance": -0.4,
+    "risk_score": null,
     "confidence": 0.72,
     "label": "slightly_negative",
+    "raw_output": {},
+    "quality": {},
     "evidence": [
       {
         "fact": "Deterministic sample feature set is bounded by as_of.",
@@ -49,7 +52,7 @@
       "implementation_type": "model_compute_agent",
       "uses_llm": false,
       "llm_role": "",
-      "compute_core": "deterministic_sample_v2_3",
+      "compute_core": "deterministic_sample_v2_3_1",
       "explanation_layer": "deterministic_template"
     }
   },

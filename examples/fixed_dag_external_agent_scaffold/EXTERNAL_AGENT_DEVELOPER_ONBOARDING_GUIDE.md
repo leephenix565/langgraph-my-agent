@@ -3,7 +3,7 @@
 This guide is for developers building an external business agent that may later
 be reviewed for fixed DAG integration.
 
-Package version: `external-agent-scaffold-v2.3-fixed-dag`.
+Package version: `external-agent-scaffold-v2.3.1-fixed-dag`.
 
 Passing local tests means the service boundary is coherent. It does not mean
 the service is registered, live verified, enabled by default, or accepted by a
@@ -58,6 +58,19 @@ Choose the payload matching your role:
 Do not force a risk gate or macro regulator into a directional stance payload.
 Risk uses `role=gate`; macro uses `role=regulator`.
 
+v2.3.1 details:
+
+- L2 `agent_conclusion_v1` supports `role=direction` and `role=gate_member`.
+  Direction outputs need `stance`; risk gate-member outputs need `risk_score`.
+- L2 `raw_output` and `quality` are optional safe dictionaries for audit.
+- L3 `dimension_conclusion_v1` uses `DimensionMember[]`, not legacy
+  `members: string[]` plus a separate `weights` map.
+- L3 risk gates may return `manual_review`.
+- L3 macro `dimension_weights` only contains `value` and `market`; risk is a
+  separate gate.
+- L4 decision score should be `round(calculation_trace.final_score, 2)` and
+  remain within `0.01` of the full calculation trace.
+
 ## 3. Implement The Required Endpoints
 
 Required endpoints:
@@ -103,6 +116,10 @@ publish_time <= as_of
 
 Evidence-bearing successful payloads must include bounded evidence with
 `fact`, `source`, and `as_of` or `data_as_of`. Do not fabricate evidence.
+
+Supported date inputs are normalized before comparison: `YYYY-MM-DD`,
+`YYYYMMDD`, `YYYY-MM-DDTHH:MM:SS`, and `YYYYMMDDHHMMSS`. Invalid or empty date
+strings should fail local contract validation.
 
 If data is missing, return `partial` with warnings and reduced confidence
 instead of fabricating a complete result.

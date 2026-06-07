@@ -497,3 +497,31 @@ product UI, provider readiness, external `/v1/agent/invoke` readiness, or
 production deployment. It does not enable wrappers, set `live_verified=true`,
 set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
 restore a 28-agent roster, or route `sentiment_company_radar` into risk.
+
+## ADR-024: R7-G Patches v2.3.1 External Scaffold Contracts
+
+Status: accepted for external scaffold contract patch.
+
+Decision: R7-G upgrades the external scaffold package to
+`external-agent-scaffold-v2.3.1-fixed-dag`. It patches the R7-F v2.3 payload
+family by adding L2 `gate_member` semantics, safe L2 `raw_output` and
+`quality` dictionaries, `manual_review` risk gates, canonical
+`DimensionMember[]` composites, normalized point-in-time date comparison,
+macro `dimension_weights` restricted to `value` and `market`, L4 score
+tolerance `0.01`, and distinct reasoning-stage validation.
+
+Reason: R7-F restored the right payload family, but review showed that several
+contracts were too thin for risk-member L2 agents, risk fusion, value/market
+composite recomputation, mixed date formats, and L4 score/trace review.
+
+Consequence: the repo-external package, tracked repo mirror, package docs,
+sample payloads, tests, README, index, payload mapping, readiness ladder,
+sample docs, contracts, system map, quality docs, ADRs, and changelog now
+describe the v2.3.1 contract patch.
+
+Non-consequence: R7-G does not change active runtime behavior, fixed DAG
+topology, the 27-agent roster, runtime bindings, public schemas, frontend
+product UI, provider readiness, external `/v1/agent/invoke` readiness, or
+production deployment. It does not enable wrappers, set `live_verified=true`,
+set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
+restore a 28-agent roster, or route `sentiment_company_radar` into risk.

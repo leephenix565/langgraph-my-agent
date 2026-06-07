@@ -1,6 +1,6 @@
 # Fixed DAG External Agent Integration Standard
 
-This document defines the `external-agent-scaffold-v2.3-fixed-dag` service
+This document defines the `external-agent-scaffold-v2.3.1-fixed-dag` service
 protocol. It is an adapter-side delivery standard, not active graph
 registration.
 
@@ -81,15 +81,15 @@ Fixed DAG conclusion-family validators allow `pending_implementation`,
 
 ## Tool Result Payload Family
 
-`external_agent_response_v0.tool_result` may use one of these v2.3 schemas:
+`external_agent_response_v0.tool_result` may use one of these v2.3.1 schemas:
 
 | Schema | Layer / role | Key semantics |
 | --- | --- | --- |
-| `agent_conclusion_v1` | L2 analysis | `role=direction`, includes `stance`, evidence, event flags. |
-| `dimension_conclusion_v1` | L3 value/market composite | `dimension` is `value` or `market`, members and weights sum to one. |
-| `risk_conclusion_v1` | L3 risk composite | `role=gate`, includes `gate`, `risk_score`, `penalty`; no `stance`. |
-| `macro_conclusion_v1` | L3 macro composite | `role=regulator`, includes `dimension_weights`; no `stance`. |
-| `decision_conclusion_v1` | L4 decision synthesis | Requires at least three reasoning stages and recomputable score. |
+| `agent_conclusion_v1` | L2 analysis | `role=direction` uses `stance`; `role=gate_member` uses `risk_score`; `raw_output` and `quality` are safe dicts. |
+| `dimension_conclusion_v1` | L3 value/market composite | `members` is `DimensionMember[]`; weights sum to one and reproduce stance. |
+| `risk_conclusion_v1` | L3 risk composite | `role=gate`, includes `manual_review`, `risk_score`, `penalty`; no `stance`. |
+| `macro_conclusion_v1` | L3 macro composite | `role=regulator`, `dimension_weights` only contains `value`/`market`; no `stance`. |
+| `decision_conclusion_v1` | L4 decision synthesis | Requires at least three distinct stages and score/final_score tolerance `0.01`. |
 | `eval_record_v1` | eval/replay | Routing F1, reasoning F1, backtest, replay metrics. |
 | `fixed_dag_plan_v1` | route/plan | Task, targets, selected dimensions, selected agents, route prior, fallback. |
 | `data_bundle_v1` | L1 data packet | Point-in-time data bundle with `publish_time` and `snapshot_id`. |
@@ -126,13 +126,24 @@ evidence. It checks:
 - evidence timestamps do not exceed the payload `as_of`
 - evidence-bearing success payloads include evidence
 - confidence is in `[0, 1]`
-- `dimension_conclusion_v1` weights are explainable and sum to one
+- single-payload validation checks confidence bounds only; cross-call constant
+  confidence is monitored outside this validator
+- `agent_conclusion_v1` direction results require `stance` and reject
+  `risk_score`; gate-member results require `risk_score`
+- `raw_output` and `quality` must be dictionaries and must be safe for handoff
+  review
+- `dimension_conclusion_v1` members are objects; member weights sum to one
+  within `0.01` and reproduce top-level stance within `0.02`
 - risk gate placement is correct and has no `stance`
+- risk gate accepts `manual_review`
 - macro regulator placement is correct and has no `stance`
-- macro `dimension_weights` use allowed dimension keys and sum to one
-- L4 decision reasoning trace depth is at least three
-- L4 `score` matches `calculation_trace.final_score`
+- macro `dimension_weights` use only `value` and `market` and sum to one
+- L4 decision reasoning trace has at least three distinct `stage` values
+- L4 `score` is within `0.01` of `calculation_trace.final_score`
 - data bundles include replayable `snapshot_id`
+
+Dates are normalized before comparison. Supported inputs are `YYYY-MM-DD`,
+`YYYYMMDD`, `YYYY-MM-DDTHH:MM:SS`, and `YYYYMMDDHHMMSS`.
 
 ## Current Wrapper Compatibility Boundary
 

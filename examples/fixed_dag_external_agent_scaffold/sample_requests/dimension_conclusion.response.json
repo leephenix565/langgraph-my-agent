@@ -6,20 +6,38 @@
   "dimension": "value",
   "role": "direction",
   "target": "600519.SH",
-  "stance": 0.22,
+  "stance": 0.21,
   "confidence": 0.66,
   "members": [
-    "value_traditional_valuation",
-    "value_ml_valuation",
-    "value_meta_valuation",
-    "value_research_synthesis"
+    {
+      "agent_id": "value_traditional_valuation",
+      "stance": 0.18,
+      "confidence": 0.67,
+      "weight": 0.25,
+      "status": "ok"
+    },
+    {
+      "agent_id": "value_ml_valuation",
+      "stance": 0.24,
+      "confidence": 0.71,
+      "weight": 0.3,
+      "status": "ok"
+    },
+    {
+      "agent_id": "value_meta_valuation",
+      "stance": 0.2,
+      "confidence": 0.62,
+      "weight": 0.2,
+      "status": "ok"
+    },
+    {
+      "agent_id": "value_research_synthesis",
+      "stance": 0.21,
+      "confidence": 0.65,
+      "weight": 0.25,
+      "status": "ok"
+    }
   ],
-  "weights": {
-    "value_traditional_valuation": 0.25,
-    "value_ml_valuation": 0.3,
-    "value_meta_valuation": 0.2,
-    "value_research_synthesis": 0.25
-  },
   "dispersion": 0.14,
   "fair_value_range": {
     "low": 1550.0,
@@ -29,7 +47,7 @@
   "timing_signal": null,
   "evidence": [
     {
-      "fact": "Weighted value member signals sum to one.",
+      "fact": "Structured value members have weights that sum to one and reproduce the composite stance.",
       "source": "sample_value_composite",
       "as_of": "2026-06-05",
       "data_as_of": "2026-06-05",

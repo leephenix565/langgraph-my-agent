@@ -17,12 +17,15 @@ compatibility modules and keeps active graph imports on fixed-DAG contract,
 executor, state, catalog, and binding seams.
 
 Phase R7-C upgrades the original repo-external scaffold source package and
-syncs a tracked repo mirror. Phase R7-F upgrades that package to
-`external-agent-scaffold-v2.3-fixed-dag`, restoring the domain payload family
-and semantic validators. These docs and examples explain how a future adapter
-should translate external service envelopes into the fixed DAG contracts below.
-They do not change runtime behavior, register scaffold code into the graph,
-modify runtime bindings, or enable live invocation.
+syncs a tracked repo mirror. Phase R7-F restores the domain payload family.
+Phase R7-G upgrades that package to
+`external-agent-scaffold-v2.3.1-fixed-dag`, patching contract semantics for
+L2 risk members, manual review gates, structured dimension members, normalized
+date comparison, macro directional weights, L4 score tolerance, and distinct
+reasoning stages. These docs and examples explain how a future adapter should
+translate external service envelopes into the fixed DAG contracts below. They
+do not change runtime behavior, register scaffold code into the graph, modify
+runtime bindings, or enable live invocation.
 
 ## Contract Boundary
 
@@ -47,7 +50,7 @@ R4-C keeps `legacy_agent_id` as migration metadata in binding/step-result
 contracts but does not use `config/agents/*.json`, `AGENT_METADATA`, or
 `AGENT_TOOLS` as active graph registration sources.
 
-R7-F external handoff docs and scaffold package are contract-facing guidance:
+R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`
@@ -76,11 +79,16 @@ and `error`, while step execution status uses a separate enum.
 conclusion-family validators currently rely more on builders/typed contracts
 than direct status rejection.
 
-R7-F adds scaffold-local v2.3 payload schemas and `validate_tool_result` for
+R7-G maintains scaffold-local v2.3.1 payload schemas and `validate_tool_result` for
 `agent_conclusion_v1`, `dimension_conclusion_v1`, `risk_conclusion_v1`,
 `macro_conclusion_v1`, `decision_conclusion_v1`, `eval_record_v1`,
 `fixed_dag_plan_v1`, and `data_bundle_v1`. These are adapter-side handoff
 schemas, not active graph state schemas.
+
+External v2.3.1 fields such as `DimensionMember[]`, `raw_output`, `quality`,
+`calculation_trace`, and risk `manual_review` are adapter inputs. Future R8
+adapter code must explicitly decide how to map or discard them; they do not
+automatically become fixed DAG runtime state.
 
 ## fixed_dag_agent_catalog_v1
 
