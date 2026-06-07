@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-07 - Legacy artifact cleanup
+
+### Changed
+
+- Removed tracked historical run logs under `log/**`.
+- Removed tracked historical benchmark outputs under `outputs/benchmarks/**`.
+- Removed tracked temporary trace, metric, screenshot, and provider-output
+  artifacts under `tmp/**`.
+- Removed obsolete root-level scripts `bench_e2e_qwen35.py` and
+  `demo_layered_run.py`; they were not current fixed DAG runtime or quality
+  entrypoints.
+- Cleaned local Python, mypy, pytest, and ruff cache directories from the repo
+  and external scaffold working copy.
+- Updated `.gitignore` so generated `log/`, `tmp/`, `outputs/benchmarks/`, and
+  `.ruff_cache/` content stays out of the tracked reset branch.
+
+### Not Done
+
+- No active runtime change.
+- No fixed DAG roster change.
+- No provider call.
+- No external live invoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No push.
+
 ## 2026-06-07 - Phase R7-G v2.3.1 scaffold contract patch
 
 ### Changed

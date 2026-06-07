@@ -170,7 +170,8 @@ R3.6 did not delete or migrate:
 - `ops/regression/fusion/**`
 - `ops/regression/provider/out/**`
 - `assets/reference/**`
-- `log/**`, `tmp/**`, or `outputs/benchmarks/**`
+- generated `log/**`, `tmp/**`, or `outputs/benchmarks/**` artifacts; these
+  have been removed from the reset branch and should stay untracked
 
 ## Deferred
 

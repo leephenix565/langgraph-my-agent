@@ -1,3 +1,0 @@
-{"ts": "2026-05-14T12:59:11.324307+00:00", "run_id": "f9d27311", "event": "route_prior_disabled", "reason": "disabled_flag_off", "ordinary_pool_size": 19, "question_preview": "帮我用传统估值看看中国能建现在是不是低估"}
-{"ts": "2026-05-14T12:59:11.324307+00:00", "run_id": "f9d27311", "event": "router_ctx", "window_enabled": 0, "window_size": 0, "ctx_messages_len": 1, "full_messages_len": 1}
-{"ts": "2026-05-14T12:59:11.324307+00:00", "run_id": "f9d27311", "event": "stable_consume", "node": "router", "enabled": 0, "stable_len": 0, "stable_summary_len": 0}

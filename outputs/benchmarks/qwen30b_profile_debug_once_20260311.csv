@@ -1,2 +1,0 @@
-model_id,provider_model,runs,raw_success_runs,e2e_success_runs,raw_tokens_per_sec,raw_tokens_per_sec_p90,raw_tokens_per_sec_p95,temperature,max_completion_tokens,stream,thinking_type,disable_search,e2e_search_tool_calls_total,raw_latency_ms_p50,raw_latency_ms_p90,raw_latency_ms_p95,e2e_latency_ms_p50,e2e_latency_ms_p90,e2e_latency_ms_p95
-qwen,Qwen3-30B-A3B-Instruct-2507-int8,1,1,1,129.77509255485194,129.77509255485194,129.77509255485194,0.0,512,True,disabled,1,0,277.40300000004936,277.40300000004936,277.40300000004936,571139.8071000003,571139.8071000003,571139.8071000003

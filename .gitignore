@@ -171,12 +171,15 @@ apps/web/dist/
 apps/web/coverage/
 apps/web/.vite/
 apps/web/artifacts/
+.ruff_cache/
+log/
+outputs/benchmarks/
 ops/regression/fusion/out/
 ops/regression/provider/out/
 ops/regression/route_prior/out/
+tmp/
 tmp/pytest-*/
 tmp/rp1a_local_backups/
 tmp_rp1a_public_api_check/
 _pytest_*/
 langgraph-my-agenttmppytest-run-quality-public/
-tore .
