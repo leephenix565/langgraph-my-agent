@@ -105,6 +105,53 @@ R5-C1 does not change `workflow_snapshot_v2`, fixed DAG topology, the 27-agent
 roster, runtime bindings, provider/search readiness, external service
 readiness, or business-agent correctness.
 
+## Current R7-I Report-First Thought Chain Boundary
+
+R7-I adds a report-first presentation surface for user A style demos. The
+assistant answer still renders the natural-language report in the main answer
+body, and the new "研判思维链" disclosure sits below that answer as a
+public-safe process summary.
+
+R7-I.4 aligns that surface with the reference HTML dynamic stage model: while
+the workflow is still progressing and the assistant answer is still the
+streaming placeholder, the main answer body shows a public-safe pending answer
+state. Once the final answer exists, the primary Markdown body shows the final
+natural-language report and the thought chain remains only for traceability.
+
+- The disclosure is derived only from the existing `workflow_snapshot_v2`
+  payload: `stages`, `currentStage`, `completedSteps`, `dagSteps`,
+  `dimensionGroups`, `stepResults`, `provenance`, and `finalSource`.
+- The six public stages are product labels over existing fixed DAG stages:
+  "问题理解", "证据接入", "并行分析", "维度综合", "决策生成", and
+  "文字报告输出".
+- The report output remains in the assistant answer body. The thought-chain
+  disclosure explains the process and does not add a side report card,
+  document export action, or extra public agent lane.
+- The expanded thought chain is a stage-driven answer-formation display:
+  progress band, stage rail, current-stage detail, evidence strip, and
+  "四维流程信号" row are derived from the current workflow stage and snapshot
+  content.
+- The four-dimension row is a workflow-stage-derived process/presentation
+  signal. It is not a value/market/risk/macro business-agent conclusion, live
+  market data, investment advice, real confidence score, or external service
+  result.
+- In a report-complete snapshot, earlier stages are shown as included/complete
+  by stage order; placeholder implementation state remains confined to the
+  technical WorkflowPanel rather than the default user-facing thought chain.
+- The expanded thought-chain state includes a derived stage progress band and
+  a larger report-first process panel; it does not introduce new backend fields
+  or claim token/provider/external-service progress.
+- The existing WorkflowPanel remains the technical inspector for raw ids,
+  runtime enum values, execution batches, selected step metadata, and
+  provenance details.
+- The disclosure must not expose hidden chain-of-thought, provider raw
+  responses, external raw responses, raw graph messages, manager assignment
+  JSON, endpoint URLs, env var values, secrets, traceback, or raw agent JSON.
+
+R7-I does not change `workflow_snapshot_v2`, backend topology, fixed DAG roster,
+runtime bindings, provider/search readiness, external service readiness,
+external invocation, demo stack acceptance, or business-agent correctness.
+
 ## Current R6-B Frontend Quality Boundary
 
 R6-B does not redesign the frontend UI. It changes the default reset quality
@@ -200,6 +247,25 @@ composer text
 - `fusion-gate`, provider live smoke, external invoke checks, demo stack, and
   screenshot capture remain manual/live/archived paths outside the default
   frontend quality gate.
+
+## R7-I Done
+
+- Assistant answer cards now keep the report text as the primary answer and add
+  a collapsed "研判思维链" disclosure below it.
+- The disclosure maps the existing workflow snapshot to six public-safe stages,
+  current-stage detail, four dimension summaries, and provenance copy.
+- Report-complete UX now points users back to the main assistant answer for the
+  report body and avoids waiting-state labels on intermediate stages.
+- Expanded thought-chain UX now uses a larger process panel with a derived
+  stage progress band and full-width dimension summary area.
+- R7-I.4 aligns the panel with the demo's dynamic answer-formation model:
+  streaming placeholders render as "正在组织研判答案", current stages drive the
+  process detail/evidence strip, early stages keep dimension signals in a
+  waiting state, and final answers stay in the main assistant Markdown body.
+- The existing WorkflowPanel remains available as the technical fixed DAG
+  inspector.
+- Frontend smoke covers the report-first answer, collapsed/expanded thought
+  chain, six stage labels, and default-surface leakage guards.
 
 ## Deferred Work
 

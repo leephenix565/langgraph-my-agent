@@ -3,6 +3,110 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-08 - Phase R7-I demo presentation mode - user A report-first thought chain
+
+### Changed
+
+- Added a report-first `apps/web` assistant answer disclosure named
+  "研判思维链". The assistant report remains the primary Markdown answer, while
+  the disclosure maps the existing `workflow_snapshot_v2` payload to six
+  public-safe stages, current-stage summary, four dimension summaries, and safe
+  provenance copy.
+- Kept the existing WorkflowPanel as the technical fixed DAG inspector for raw
+  ids, runtime enum values, execution batches, selected step metadata, and
+  provenance details.
+- Updated frontend smoke coverage for the collapsed/expanded thought-chain
+  disclosure and six product stage labels.
+- Polished report-complete thought-chain semantics so prior stages render as
+  included/complete, report output explains that the report body is above the
+  disclosure, and dimension summaries use concise user-facing copy.
+- Visually validated the report-first thought-chain surface with fresh desktop
+  and mobile screenshots; report-complete prior stages no longer appear pending
+  after report output.
+- Polished the expanded thought-chain layout for R7-I.3: the disclosure now
+  opens into a larger process panel with a derived stage progress band, wider
+  stage/detail columns, and a full-width dimension summary area.
+- Aligned the User A thought-chain with the reference HTML dynamic stage model
+  for R7-I.4: streaming placeholder answers now show a stage-driven pending
+  answer, the process panel uses current-stage detail plus evidence and
+  dimension signal rows, and the final "文字报告输出" step remains a process node
+  while the report stays in the main assistant Markdown body.
+- Polished dimension signal authenticity for R7-I.5: the User A thought-chain now
+  presents four-dimension content as workflow-stage-derived process signals with
+  waiting/forming/synthesizing/summarized/included states, not as real
+  business-agent conclusions, live market data, investment advice, confidence
+  scores, or external-service results.
+- Aligned the screenshot helper's public mock runtime literals with backend
+  runtime binding truth without running browser screenshot capture.
+- Updated frontend boundary docs and reset map for R7-I as a presentation-layer
+  change over the existing public contract.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `npm --prefix apps/web run screenshots`
+- `git diff --check`
+
+### Not Done
+
+- No Python backend runtime change.
+- No `src/react_agent/graph.py` change.
+- No fixed DAG catalog change.
+- No runtime binding change.
+- No runtime registry change.
+- No provider call.
+- No search call.
+- No external `/v1/agent/invoke` call.
+- No external candidate enablement.
+- No demo stack startup.
+- No fusion-gate run.
+- No public schema change.
+- No business-agent correctness claim.
+
+## 2026-06-07 - Phase R7-H reset consistency repair
+
+### Changed
+
+- Repaired frontend workflow fixture runtime metadata so `runtime_kind` values
+  match backend runtime binding truth, including `deterministic_system` for
+  `route_planner` and `pending_placeholder` for
+  `sentiment_company_radar`.
+- Completed frontend `WorkflowRuntimeKind` coverage for backend legal runtime
+  literals by adding `deterministic_l1_bundle`.
+- Restored the missing local repo-external scaffold distribution working copy
+  from the tracked repo mirror at `examples/fixed_dag_external_agent_scaffold/`.
+- Updated current docs so `E:\muti-agent\external_agent_scaffold` is described
+  as a restored local distribution working copy and the tracked mirror remains
+  the auditable repo truth.
+- Aligned R7-C/R7-D/R7-G wording: R7-C is source package rewrite and mirror
+  sync, R7-D is documentation/wrapper-compatibility consistency, and R7-G is
+  the v2.3.1 scaffold contract patch.
+
+### Validated
+
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_graph_skeleton.py tests/unit_tests/test_quality_runner_dispatch.py -q`
+- `conda run --no-capture-output -n cline_env python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check examples/fixed_dag_external_agent_scaffold`
+- `conda run --no-capture-output -n cline_env python -m pytest E:\muti-agent\external_agent_scaffold\tests -q`
+- `conda run --no-capture-output -n cline_env python -m ruff check E:\muti-agent\external_agent_scaffold`
+- `git diff --check`
+
+### Not Done
+
+- No active runtime topology change.
+- No fixed DAG roster change.
+- No runtime binding change.
+- No provider call.
+- No external live invoke.
+- No external candidate enablement.
+- No `live_verified=true` or `invoke_enabled_by_default=true` change.
+- No demo stack startup.
+- No fusion-gate run.
+
 ## 2026-06-07 - Legacy artifact cleanup
 
 ### Changed

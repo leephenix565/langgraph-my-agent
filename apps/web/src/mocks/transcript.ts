@@ -16,14 +16,13 @@ function buildAssistantTurn(id: string, answer: string, prompt: string): PublicT
     answerCard: {
       answer,
       finalSource: "reset_skeleton",
-      confidence: "medium",
       citations: [
         {
           label: "Fixed DAG bundle",
           note: "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
         },
         { label: "User question", note: "围绕你提出的问题进行结构化梳理。" },
-        { label: "Workflow", note: "如需查看过程，可展开“流程详情”。" },
+        { label: "Workflow", note: "如需查看过程，可展开“研判思维链”。" },
       ],
       evidenceCount: 3,
     },
@@ -54,7 +53,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-2",
-      "已完成本轮研判流程。核心结论以一条助手回答呈现，过程记录可在流程详情中查看。",
+      "已完成本轮研判流程。核心结论以一条助手回答呈现，过程记录可在研判思维链中查看。",
       "半导体供应链更新",
     ),
   ],
@@ -67,7 +66,7 @@ export const TRANSCRIPTS_BY_SESSION: Record<string, PublicTurn[]> = {
     },
     buildAssistantTurn(
       "fixed-dag-assistant-3",
-      "风险约束已在回答中汇总；如需查看过程，可展开流程详情。",
+      "风险约束已在回答中汇总；如需查看过程，可展开研判思维链。",
       "组合风险约束",
     ),
   ],
@@ -84,7 +83,7 @@ export function createUserTurn(input: string): PublicTurn {
 
 export function createMockAssistantTurn(input: string): PublicTurn {
   const answer =
-    "已完成本轮研判流程。系统按固定研判流程组织回答，过程记录可在流程详情中查看。";
+    "已完成本轮研判流程。系统按固定研判流程组织回答，过程记录可在研判思维链中查看。";
 
   return buildAssistantTurn(`assistant-${Math.random().toString(36).slice(2, 10)}`, answer, input);
 }

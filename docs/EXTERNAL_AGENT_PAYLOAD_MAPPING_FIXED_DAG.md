@@ -7,6 +7,10 @@ External services do not write directly into graph state. They return an
 external response. A main-system adapter maps and validates that response before
 the fixed DAG executor or later readiness workflow may consume it.
 
+Real external results are not public workflow facts until a future adapter maps
+them into fixed DAG contracts, validates them, and the corresponding invocation
+and readiness path is explicitly enabled.
+
 ## Mapping Authority
 
 Current fixed DAG authority:

@@ -1,12 +1,13 @@
 # System Map
 
-This file is the reset branch operational map for Phase R7-G.
+This file is the reset branch operational map for Phase R7-I.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R7-G v2.3.1 external scaffold contract patch over
-  the existing fixed-DAG runtime skeleton and R5 web shell.
+- Current phase: R7-I report-first thought-chain presentation mode over the
+  existing fixed-DAG runtime skeleton, R5 web shell, and R7-G v2.3.1 scaffold
+  package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -24,9 +25,10 @@ This file is the reset branch operational map for Phase R7-G.
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`, and
   `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`.
-- External scaffold source package:
+- Repo-external scaffold distribution working copy restored from the tracked
+  mirror when missing:
   `E:\muti-agent\external_agent_scaffold`.
-- Tracked repo mirror of that source package:
+- Tracked repo mirror and audit truth for that package:
   `examples/fixed_dag_external_agent_scaffold/`.
 - Active frontend contract:
   `apps/web` renders the fixed DAG workflow inspector from
@@ -34,7 +36,10 @@ This file is the reset branch operational map for Phase R7-G.
   `reset_skeleton` source fields, with localized Chinese visible copy, reduced
   default engineering/status noise, professional business-facing dimension,
   step, and answer-card evidence copy, and raw technical ids/enum values
-  retained in expanded details where needed for debugging.
+  retained in expanded details where needed for debugging. R7-I adds a
+  report-first "研判思维链" disclosure derived from the same public workflow
+  snapshot; it is a public-safe process summary below the assistant report, not
+  a backend runtime change or extra public agent lane.
 
 ## Current Runtime Entry
 
@@ -58,7 +63,9 @@ The Python public adapter now projects `workflow_snapshot_v2`. The web UI shell
 has R5-B1 contract migration, R5-B2 workflow inspector rendering, and R5-B2.6
 Chinese visible-copy polish in place. R5-C adds user-facing simplification over
 the same public payload. R5-C1 removes remaining default-surface implementation
-wording such as fixture/roster/transcript/path-wiring explanations.
+wording such as fixture/roster/transcript/path-wiring explanations. R7-I adds a
+collapsed report-first thought-chain disclosure above the technical
+WorkflowPanel, still consuming the same public payload.
 
 The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
@@ -117,13 +124,22 @@ verification. The old valuation-only facade and unused JSON helper were removed
 after tests migrated to the generic external HTTP wrapper and no source/test
 references remained.
 
-In R7-G, the original repo-external scaffold source package and repo mirror
-stay aligned while the package patches the v2.3.1 payload semantics and
-validators. The package defines how later service submissions should
-be reviewed against fixed DAG ids, runtime bindings, contracts, and readiness
-levels. It does not register any service into the graph, does not modify
-runtime bindings, and does not make wrapper metadata a live verification
-signal.
+In R7-G, the scaffold package patches the v2.3.1 payload semantics and
+validators. In R7-H, the local repo-external distribution working copy is
+restored from the tracked mirror when missing, and frontend fixtures are
+realigned with backend runtime binding literals. The package defines how later
+service submissions should be reviewed against fixed DAG ids, runtime bindings,
+contracts, and readiness levels. It does not register any service into the
+graph, does not modify runtime bindings, and does not make wrapper metadata a
+live verification signal.
+
+In R7-I, the web shell adds the "研判思维链" presentation disclosure. It maps
+`workflow_snapshot_v2` to six user-facing stages, current-stage summary,
+four-dimension process signals, and safe provenance text. These dimension
+signals are workflow-stage-derived presentation signals, not business-agent
+conclusions, live market data, investment advice, confidence scores, or external
+service results. It does not register agents, change runtime bindings, invoke
+providers/search/external services, or expose hidden chain-of-thought.
 
 ## Target Fixed DAG IDs
 
@@ -204,9 +220,11 @@ The reset `mainline` runs static, unit, public-api, graph-smoke, and frontend.
 The frontend mode performs TypeScript no-emit, frontend smoke, and Vite build
 with a temporary repo-external `--outDir`; it must not write `apps/web/dist`.
 
-R7-G validation adds repo-external scaffold tests and ruff for
-`E:\muti-agent\external_agent_scaffold`, repo mirror tests and ruff for
-`examples/fixed_dag_external_agent_scaffold/`, and then uses the same
+R7-H restores `E:\muti-agent\external_agent_scaffold` from
+`examples/fixed_dag_external_agent_scaffold/` when the local distribution
+working copy is missing. Validation can then run repo-external scaffold tests
+and ruff for `E:\muti-agent\external_agent_scaffold`, repo mirror tests and
+ruff for `examples/fixed_dag_external_agent_scaffold/`, and the same
 non-provider `static` and `mainline` commands. It does not add provider,
 external live invoke, demo stack, or fusion-gate acceptance to the default
 reset gate.
@@ -229,11 +247,14 @@ claim provider readiness, external service readiness, production readiness,
 visual screenshot acceptance, full-tree lint, or restored fusion acceptance.
 `fusion-gate` remains archived/manual.
 
-R7-G claims only external scaffold contract-package coverage across the source
-package, repo mirror, fixed DAG docs, and changelog. It does not change fixed
-DAG topology, roster, runtime bindings, active runtime behavior, public
-schemas, frontend product UI, provider readiness, external invocation
-readiness, or production deployment readiness.
+R7-G claims only external scaffold contract-package coverage across the repo
+mirror, distribution working copy, fixed DAG docs, and changelog. R7-H claims
+only consistency repair for frontend fixture metadata, documentation wording,
+and local scaffold working-copy restoration. R7-I claims only a frontend
+report-first thought-chain presentation disclosure. These phases do not change
+fixed DAG topology, roster, runtime bindings, active runtime behavior, public
+schemas, provider readiness, external invocation readiness, demo stack
+acceptance, business-agent correctness, or production deployment readiness.
 
 R4-C additionally does not claim that external HTTP candidates are enabled,
 live verified, or ready for production invocation. It only claims the legacy

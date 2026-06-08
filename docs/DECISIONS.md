@@ -525,3 +525,28 @@ product UI, provider readiness, external `/v1/agent/invoke` readiness, or
 production deployment. It does not enable wrappers, set `live_verified=true`,
 set `invoke_enabled_by_default=true`, restore `value_financial_analysis`,
 restore a 28-agent roster, or route `sentiment_company_radar` into risk.
+
+## ADR-025: R7-H Repairs Reset Consistency Drift Without Runtime Change
+
+Status: accepted for minimal consistency repair.
+
+Decision: R7-H aligns frontend workflow fixtures and smoke assertions with the
+backend runtime binding `runtime_kind` literals, restores the local
+repo-external scaffold distribution working copy from the tracked mirror when
+it is missing, and updates current documentation wording around R7-C/R7-D/R7-G
+phase boundaries.
+
+Reason: Phase 1 audit found small drift between frontend mock metadata and
+backend binding truth, plus documentation that treated
+`E:\muti-agent\external_agent_scaffold` as an always-present source package
+even when the current filesystem only had the tracked mirror.
+
+Consequence: the frontend fixture now uses backend runtime metadata literals,
+the tracked mirror remains the audit truth for scaffold content, and the local
+repo-external path is documented as a restored distribution working copy.
+
+Non-consequence: R7-H does not change active runtime behavior, fixed DAG
+topology, the 27-agent roster, runtime bindings, public schemas, provider
+readiness, external `/v1/agent/invoke` readiness, or production deployment. It
+does not enable wrappers, set `live_verified=true`, set
+`invoke_enabled_by_default=true`, or register the scaffold into the graph.

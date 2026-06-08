@@ -10,6 +10,20 @@ export type WorkflowStageKey =
 
 export type WorkflowStageStatus = "waiting" | "running" | "completed" | "failed";
 
+export type WorkflowRuntimeKind =
+  | "deterministic_system"
+  | "deterministic_l1_bundle"
+  | "external_http_candidate"
+  | "pending_placeholder"
+  | "deterministic_composite"
+  | "deterministic_decision"
+  | "deterministic_report";
+
+export type WorkflowImplementationStatus =
+  | "deterministic_skeleton"
+  | "external_candidate_disabled"
+  | "pending_implementation";
+
 export type DagStepStatus =
   | "complete"
   | "running"
@@ -53,7 +67,17 @@ export interface DimensionGroup {
   summary: string;
 }
 
-export type WorkflowStepResult = Record<string, unknown>;
+export interface WorkflowStepResult extends Record<string, unknown> {
+  status?: DagStepStatus | string;
+  runtime_kind?: WorkflowRuntimeKind;
+  implementation_status?: WorkflowImplementationStatus;
+  binding_source?: string;
+  legacy_agent_id?: string;
+  external_agent_id?: string;
+  invoke_enabled?: boolean;
+  live_verified?: boolean;
+  warnings?: string[] | string;
+}
 
 export interface WorkflowProvenance {
   source: FinalSource;

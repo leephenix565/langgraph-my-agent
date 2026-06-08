@@ -201,7 +201,7 @@ function mockWorkflow() {
         agentId: "value_traditional_valuation",
         dimension: "value",
         title: "传统企业估值",
-        summary: "围绕估值水平、研究观点与价值信号进行分析。",
+        summary: "整理价值维度流程线索。",
         status: "pending_implementation",
       },
       {
@@ -246,7 +246,7 @@ function mockWorkflow() {
         agentId: "market_composite",
         dimension: "market",
         title: "市场综合",
-        summary: "结合价格走势、资金行为、投资者结构与市场关注度形成综合判断。",
+        summary: "汇总市场维度流程线索与差异。",
         status: "pending_implementation",
       },
       {
@@ -255,7 +255,7 @@ function mockWorkflow() {
         agentId: "risk_composite",
         dimension: "risk",
         title: "风险综合",
-        summary: "围绕价格波动、财务异常、合规事件与其他潜在风险形成综合判断。",
+        summary: "汇总风险维度流程线索与差异。",
         status: "pending_implementation",
       },
       {
@@ -273,7 +273,7 @@ function mockWorkflow() {
         agentId: "decision_synthesizer",
         dimension: "l4",
         title: "决策综合器",
-        summary: "将维度综合结果汇入决策线索。",
+        summary: "将维度流程信号汇入回答组织。",
         status: "pending_implementation",
       },
       {
@@ -282,7 +282,7 @@ function mockWorkflow() {
         agentId: "report_generator",
         dimension: "l4",
         title: "报告生成器",
-        summary: "投影生成最终公开回答。",
+        summary: "生成最终公开回答。",
         status: "pending_implementation",
       },
     ],
@@ -292,32 +292,46 @@ function mockWorkflow() {
         title: "价值维度",
         stepIds: ["value_traditional_valuation", "value_composite"],
         status: "partial",
-        summary: "围绕估值水平、研究观点与价值信号，辅助判断标的的中长期价值基础。",
+        summary: "价值维度已纳入上方回答组织。",
       },
       {
         id: "market",
         title: "市场维度",
         stepIds: ["market_stock_technical", "sentiment_company_radar", "market_composite"],
         status: "partial",
-        summary: "结合价格走势、资金行为、投资者结构与市场关注度，观察短中期交易环境。",
+        summary: "市场维度已纳入上方回答组织。",
       },
       {
         id: "risk",
         title: "风险维度",
         stepIds: ["risk_identification", "risk_composite"],
         status: "partial",
-        summary: "关注价格波动、财务异常、合规事件与其他潜在风险，识别需要谨慎处理的风险约束。",
+        summary: "风险维度已纳入上方回答组织。",
       },
       {
         id: "macro",
         title: "宏观维度",
         stepIds: ["macro_composite"],
         status: "partial",
-        summary: "从宏观环境、行业景气、商品与指数表现等角度，评估外部环境对判断的影响。",
+        summary: "宏观维度已纳入上方回答组织。",
       },
     ],
     currentStage: "report",
-    completedSteps: ["route_planner", "financial_data_service", "entity_relation_extractor"],
+    completedSteps: [
+      "route_planner",
+      "financial_data_service",
+      "entity_relation_extractor",
+      "value_traditional_valuation",
+      "market_stock_technical",
+      "sentiment_company_radar",
+      "risk_identification",
+      "value_composite",
+      "market_composite",
+      "risk_composite",
+      "macro_composite",
+      "decision_synthesizer",
+      "report_generator",
+    ],
     executionBatches: [
       ["route_planner"],
       ["financial_data_service", "entity_relation_extractor"],
@@ -329,11 +343,11 @@ function mockWorkflow() {
     stepResults: {
       route_planner: {
         status: "complete",
-        runtime_kind: "deterministic_skeleton",
+        runtime_kind: "deterministic_system",
         implementation_status: "deterministic_skeleton",
         binding_source: "fixed_dag_runtime_registry",
-        invoke_enabled: false,
-        live_verified: false,
+        invoke_enabled: true,
+        live_verified: true,
       },
       financial_data_service: {
         status: "complete",
@@ -348,12 +362,12 @@ function mockWorkflow() {
       },
       sentiment_company_radar: {
         status: "pending_implementation",
-        runtime_kind: "placeholder",
+        runtime_kind: "pending_placeholder",
         implementation_status: "pending_implementation",
         binding_source: "fixed_dag_runtime_registry",
         invoke_enabled: false,
         live_verified: false,
-        warnings: ["公司相关公开信息与市场情绪变化已纳入市场维度观察。"],
+        warnings: ["企业舆情雷达仍是待接入流程节点，默认用户面仅展示流程线索。"],
       },
     },
     finalSource: "reset_skeleton",
@@ -389,7 +403,7 @@ function mockThreadDetail() {
       {
         id: "turn-user-1",
         role: "user",
-        text: "复核一个投资研判流程。",
+        text: "复核一个公开研判流程。",
         createdAt: "今天 10:16",
       },
       {
@@ -475,7 +489,22 @@ async function assertPageExcludes(page, forbidden) {
 }
 
 async function assertNoForbiddenTokens(page) {
-  for (const token of ["secret", "secrets", "default_url", "env_var", "api_key", "apiKey", "OPENAI_API_KEY", "TAVILY_API_KEY"]) {
+  for (const token of [
+    "secret",
+    "secrets",
+    "default_url",
+    "env_var",
+    "api_key",
+    "apiKey",
+    "OPENAI_API_KEY",
+    "TAVILY_API_KEY",
+    "fake confidence",
+    "置信度 72%",
+    "目标价",
+    "买入",
+    "卖出建议",
+    "真实分析完成",
+  ]) {
     await assertPageExcludes(page, token);
   }
 }
@@ -532,6 +561,7 @@ async function main() {
     await assertPageContains(page, "分析框架");
     await assertPageContains(page, "用户问题");
     await assertPageContains(page, "流程记录");
+    await assertPageContains(page, "研判思维链");
     await assertPageContains(page, "查看流程详情");
     await assertPageExcludes(page, "external_candidate_disabled");
     await assertPageExcludes(page, "pending_implementation");
@@ -557,10 +587,10 @@ async function main() {
       await assertPageContains(page, expected);
     }
     for (const expected of [
-      "围绕估值水平、研究观点与价值信号",
-      "结合价格走势、资金行为、投资者结构与市场关注度",
-      "关注价格波动、财务异常、合规事件",
-      "从宏观环境、行业景气、商品与指数表现",
+      "价值维度已纳入上方回答组织",
+      "市场维度已纳入上方回答组织",
+      "风险维度已纳入上方回答组织",
+      "宏观维度已纳入上方回答组织",
     ]) {
       await assertPageContains(page, expected);
     }

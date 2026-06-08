@@ -19,12 +19,13 @@ There are three package locations in the current workflow:
 | Location | Role |
 | --- | --- |
 | `examples/fixed_dag_external_agent_scaffold/` | Canonical tracked repo mirror and audit baseline. Review diffs here. |
-| `E:\muti-agent\external_agent_scaffold` | Local distribution working copy edited before zip output. |
+| `E:\muti-agent\external_agent_scaffold` | Local distribution working copy restored from the tracked mirror when missing, then used before zip output. |
 | `E:\muti-agent\external_agent_scaffold_v2.3.1_fixed_dag_<timestamp>.zip` | Distribution artifact generated from the local working copy. |
 
-Future scaffold changes should update the tracked repo mirror and the local
-distribution working copy together, then regenerate the zip. None of these
-locations is active runtime registration or live-readiness evidence.
+Future scaffold changes should update the tracked repo mirror first, sync or
+restore the local distribution working copy from that mirror, then regenerate
+the zip. None of these locations is active runtime registration or
+live-readiness evidence.
 
 ## Fixed DAG Truth
 

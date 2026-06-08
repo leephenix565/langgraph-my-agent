@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-G v2.3.1 external scaffold contract patch, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-G v2.3.1 external scaffold contract patch, R7-H consistency repair, R7-I report-first thought-chain presentation mode, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -20,7 +20,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-C readiness ladder from docs-only review to explicit live invocation approval. |
 | `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-G documentation-only endpoint and v2.3.1 domain payload samples. |
-| `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror of the upgraded `E:\muti-agent\external_agent_scaffold` v2.3.1 fixed DAG source package, including schemas, samples, tests, and AI coding handoff. |
+| `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror and R7-H restore source for the local `E:\muti-agent\external_agent_scaffold` distribution working copy, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage
 
@@ -66,13 +66,13 @@ contracts or fixed DAG topology.
 R6-B rebuilds the default reset mainline quality gate so it runs static, unit,
 public-api, graph-smoke, and frontend while keeping fusion-gate archived/manual
 and provider/live/external/demo/SFT/RARP paths outside default acceptance.
-R7-D keeps the original repo-external scaffold source package at
-`E:\muti-agent\external_agent_scaffold` into the fixed DAG handoff package and
-syncs the tracked mirror under `examples/fixed_dag_external_agent_scaffold/`
-while tightening status mapping, wrapper compatibility, distribution, and
-handoff checklist wording. It does not change runtime topology, enable
-wrappers, register the scaffold into the graph, modify runtime bindings, or
-prove live readiness.
+R7-C rewrites the original repo-external scaffold source package into the
+fixed DAG handoff package and syncs the tracked mirror under
+`examples/fixed_dag_external_agent_scaffold/`.
+R7-D tightens status mapping, wrapper compatibility, distribution, and handoff
+checklist wording. It does not change runtime topology, enable wrappers,
+register the scaffold into the graph, modify runtime bindings, or prove live
+readiness.
 R7-E expands the scaffold AI coding handoff so developer-side coding agents can
 audit an existing agent project, preserve its business core, wrap it as a fixed
 DAG external service, add local contract tests, and return a maintainer handoff
@@ -87,6 +87,13 @@ patches risk-member L2 outputs, manual-review risk gates, structured dimension
 members, normalized date comparison, macro directional weights, L4 score
 tolerance, and distinct reasoning stages. It remains sample-only and does not
 enable runtime bindings or prove live readiness.
+R7-H repairs small consistency drift by aligning frontend workflow fixture
+runtime metadata with backend runtime binding literals, restoring the missing
+local repo-external scaffold working copy from the tracked mirror, and keeping
+current docs aligned with the R7-C/R7-D/R7-G phase boundaries.
+R7-I adds an `apps/web` report-first "研判思维链" disclosure derived from the
+existing `workflow_snapshot_v2` payload while retaining the main assistant
+report body and the technical WorkflowPanel.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

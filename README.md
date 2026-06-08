@@ -45,6 +45,13 @@ manual-review risk gates, structured dimension members, normalized date
 comparison, macro directional weights, L4 score tolerance, and distinct
 reasoning stages while keeping fixed DAG ids, readiness boundaries, and
 Non-Claims.
+Phase R7-H repairs small consistency drift: frontend workflow fixtures now use
+backend runtime binding `runtime_kind` literals, and the repo-external scaffold
+working copy is restored from the tracked mirror when it is missing.
+Phase R7-I adds a report-first web presentation mode for the existing assistant
+answer card: the natural-language report remains the primary answer, while a
+collapsed "研判思维链" disclosure summarizes the public-safe fixed DAG process
+from `workflow_snapshot_v2`.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -54,8 +61,8 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R7-G v2.3.1 external scaffold contract patch over
-  the existing fixed DAG web shell and backend skeleton.
+- Current phase: R7-I demo presentation mode over the existing fixed DAG web
+  shell, backend skeleton, and v2.3.1 scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -65,7 +72,8 @@ is not a completed business analysis engine.
   the current WorkflowPanel renders the R5-B2 fixed DAG inspector from
   `workflow_snapshot_v2`, with R5-B2.6 Chinese localization, R5-C
   user-facing simplification, and R5-C1 business-copy professionalization on
-  the same payload.
+  the same payload. R7-I adds a collapsed report-first "研判思维链" disclosure
+  above that technical inspector without changing the public contract.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -228,6 +236,10 @@ R5-C1 keeps the same public contracts and further professionalizes business
 copy in the default user surface: dimension summaries avoid route-wiring
 explanations, step summaries avoid fixture/roster/transcript language, and
 answer cards use "研判依据", "分析框架", "用户问题", and "流程记录" labels.
+R7-I keeps the single user/assistant transcript and adds a public-safe
+"研判思维链" disclosure below the assistant report. It is a structured process
+summary derived from `workflow_snapshot_v2`, not hidden chain-of-thought or raw
+runtime/provider/external output.
 
 ## Documentation Index
 
@@ -269,9 +281,11 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
-R7-G scaffold validation runs the repo-external package tests and ruff for
+R7-H restores `E:\muti-agent\external_agent_scaffold` from the tracked repo
+mirror when that local distribution working copy is missing. Scaffold
+validation can then run the restored repo-external package tests and ruff for
 `E:\muti-agent\external_agent_scaffold`, the tracked repo mirror tests and ruff
-for `examples/fixed_dag_external_agent_scaffold/`, then uses the same
+for `examples/fixed_dag_external_agent_scaffold/`, then use the same
 non-provider static and mainline commands. These checks do not call providers,
 do not call external `/v1/agent/invoke`, and do not prove live external
 readiness.
@@ -279,11 +293,11 @@ readiness.
 ## Explicit Non-Claims
 
 - No provider or live external service was verified by
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C/R7-D/R7-E/R7-F/R7-G/R7-H/R7-I.
 - No `external /v1/agent/invoke` call is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C/R7-D/R7-E/R7-F/R7-G/R7-H/R7-I validation.
 - No demo stack startup is part of
-  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C validation.
+  R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1/R6-B/R7-B/R7-C/R7-D/R7-E/R7-F/R7-G/R7-H/R7-I validation.
 - No real business algorithms for individual agents are implemented in
   R3/R4-A/R4-B/R4-C/R5-B1/R5-B2/R5-B2.6/R5-C/R5-C1.
 - R5-B2 completes the frontend inspector UI rewrite only; it does not change
@@ -319,6 +333,14 @@ readiness.
 - R7-G patches the scaffold v2.3.1 contract semantics and validators. It does
   not change active runtime behavior, enable bindings, bridge legacy wrappers,
   call providers, call external live invoke, or prove live readiness.
+- R7-H only repairs frontend fixture metadata, documentation wording, and the
+  local scaffold distribution working copy. It does not change active runtime
+  behavior, runtime bindings, fixed DAG topology, provider readiness, or
+  external live readiness.
+- R7-I only adds a frontend report-first "研判思维链" presentation disclosure.
+  It does not change public schemas, backend runtime behavior, runtime
+  bindings, fixed DAG topology, provider/search readiness, external invocation,
+  demo stack acceptance, or business-agent correctness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

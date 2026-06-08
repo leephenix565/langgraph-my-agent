@@ -35,13 +35,14 @@ body {
 
 .message-list {
   flex: 1;
-  padding: 8px 24px 6px;
+  padding: 8px 24px 24px;
   box-sizing: border-box;
   min-width: 0;
   display: grid;
   gap: 14px;
   align-content: start;
   overflow-y: auto;
+  scroll-padding-bottom: 36px;
   content-visibility: auto;
 }
 
@@ -112,5 +113,7 @@ body {
   .message-list {
     padding-left: 18px;
     padding-right: 18px;
+    padding-bottom: 32px;
+    scroll-padding-bottom: 44px;
   }
 }
