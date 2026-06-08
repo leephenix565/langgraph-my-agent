@@ -38,8 +38,9 @@ This file is the reset branch operational map for Phase R7-I.
   step, and answer-card evidence copy, and raw technical ids/enum values
   retained in expanded details where needed for debugging. R7-I adds a
   report-first "研判思维链" disclosure derived from the same public workflow
-  snapshot; it is a public-safe process summary below the assistant report, not
-  a backend runtime change or extra public agent lane.
+  snapshot; it is the normal user-facing workflow surface below the assistant
+  report, not a backend runtime change or extra public agent lane. The full
+  WorkflowPanel remains available as a technical inspector behind "技术流程详情".
 
 ## Current Runtime Entry
 
@@ -64,8 +65,9 @@ has R5-B1 contract migration, R5-B2 workflow inspector rendering, and R5-B2.6
 Chinese visible-copy polish in place. R5-C adds user-facing simplification over
 the same public payload. R5-C1 removes remaining default-surface implementation
 wording such as fixture/roster/transcript/path-wiring explanations. R7-I adds a
-collapsed report-first thought-chain disclosure above the technical
-WorkflowPanel, still consuming the same public payload.
+collapsed report-first thought-chain disclosure as the default workflow surface,
+with the technical WorkflowPanel kept behind a secondary disclosure and still
+consuming the same public payload.
 
 The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.

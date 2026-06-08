@@ -562,7 +562,12 @@ async function main() {
     await assertPageContains(page, "用户问题");
     await assertPageContains(page, "流程记录");
     await assertPageContains(page, "研判思维链");
-    await assertPageContains(page, "查看流程详情");
+    await assertPageContains(page, "技术流程详情");
+    await assertPageContains(page, "展开技术详情");
+    await assertPageExcludes(page, "执行批次");
+    await assertPageExcludes(page, "步骤结果详情");
+    await assertPageExcludes(page, "运行方式");
+    await assertPageExcludes(page, "external_http_candidate");
     await assertPageExcludes(page, "external_candidate_disabled");
     await assertPageExcludes(page, "pending_implementation");
     await assertPageExcludes(page, "待实现");
@@ -580,8 +585,8 @@ async function main() {
     await page.screenshot({ path: resolve(outputDir, "chat-answer-summary-desktop.png"), timeout: 10000 });
 
     console.log("[screenshots] workflow expanded");
-    await page.locator(".workflow-panel__toggle").first().waitFor({ timeout: 10000 });
-    await page.$eval(".workflow-panel__toggle", (button) => button.click());
+    await page.locator(".technical-workflow__toggle").waitFor({ timeout: 10000 });
+    await page.$eval(".technical-workflow__toggle", (button) => button.click());
     await page.locator(".workflow-panel__content").waitFor({ timeout: 10000 });
     for (const expected of ["阶段时间线", "执行批次", "维度分组", "步骤结果详情", "最终来源与溯源"]) {
       await assertPageContains(page, expected);

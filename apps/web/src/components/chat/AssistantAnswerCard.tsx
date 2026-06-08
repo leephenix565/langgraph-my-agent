@@ -5,7 +5,7 @@ import type { AnswerCardModel, PublicTurn } from "../../types/chat";
 import type { WorkflowModel, WorkflowStageKey } from "../../types/workflow";
 import { citationLabel, continuityLabel, sourceLabel, zhCN } from "../../content/zh-CN";
 import { ResearchThoughtChain } from "../workflow/ResearchThoughtChain";
-import { WorkflowPanel } from "../workflow/WorkflowPanel";
+import { TechnicalWorkflowDisclosure } from "../workflow/TechnicalWorkflowDisclosure";
 
 interface AssistantAnswerCardProps {
   turn: PublicTurn;
@@ -164,7 +164,7 @@ export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
         {renderAnswerBody(turn, answerCard)}
         {renderCitations(answerCard)}
         {turn.workflow ? <ResearchThoughtChain workflow={turn.workflow} /> : null}
-        {turn.workflow ? <WorkflowPanel workflow={turn.workflow} /> : null}
+        {turn.workflow ? <TechnicalWorkflowDisclosure workflow={turn.workflow} /> : null}
         {renderDebugMeta(turn, answerCard, detailsOpen, () => setDetailsOpen((current) => !current))}
       </div>
     </article>

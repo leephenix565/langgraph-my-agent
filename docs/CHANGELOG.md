@@ -36,6 +36,9 @@ Historical changelog entries before this reset branch are preserved by tag
   waiting/forming/synthesizing/summarized/included states, not as real
   business-agent conclusions, live market data, investment advice, confidence
   scores, or external-service results.
+- Replaced the default WorkflowPanel surface for R7-I.7 normal users: the
+  report-first thought chain is now the default process display, while the full
+  WorkflowPanel is retained behind a collapsed "技术流程详情" technical disclosure.
 - Aligned the screenshot helper's public mock runtime literals with backend
   runtime binding truth without running browser screenshot capture.
 - Updated frontend boundary docs and reset map for R7-I as a presentation-layer

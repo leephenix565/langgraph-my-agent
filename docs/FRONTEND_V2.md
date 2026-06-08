@@ -141,9 +141,10 @@ natural-language report and the thought chain remains only for traceability.
 - The expanded thought-chain state includes a derived stage progress band and
   a larger report-first process panel; it does not introduce new backend fields
   or claim token/provider/external-service progress.
-- The existing WorkflowPanel remains the technical inspector for raw ids,
-  runtime enum values, execution batches, selected step metadata, and
-  provenance details.
+- R7-I.7 makes the thought chain the default workflow surface for normal users.
+  The existing WorkflowPanel remains available behind a secondary "技术流程详情"
+  disclosure for raw ids, runtime enum values, execution batches, selected step
+  metadata, and provenance details.
 - The disclosure must not expose hidden chain-of-thought, provider raw
   responses, external raw responses, raw graph messages, manager assignment
   JSON, endpoint URLs, env var values, secrets, traceback, or raw agent JSON.

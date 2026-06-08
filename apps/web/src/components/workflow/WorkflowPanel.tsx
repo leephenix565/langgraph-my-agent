@@ -11,6 +11,7 @@ import { WorkflowStepResults } from "./WorkflowStepResults";
 
 interface WorkflowPanelProps {
   workflow: WorkflowModel;
+  defaultExpanded?: boolean;
 }
 
 const stageStatusLabel: Record<WorkflowStageProgress["status"], string> = {
@@ -62,10 +63,10 @@ function workflowSummaryStats(workflow: WorkflowModel) {
   ];
 }
 
-export function WorkflowPanel({ workflow }: WorkflowPanelProps) {
+export function WorkflowPanel({ workflow, defaultExpanded = false }: WorkflowPanelProps) {
   const liveProgress = workflow.liveProgress ?? null;
   const isLive = Boolean(liveProgress?.length);
-  const [expanded, setExpanded] = useState(isLive);
+  const [expanded, setExpanded] = useState(defaultExpanded || isLive);
   const [selectedStepId, setSelectedStepId] = useState<string | null>(() => defaultSelectedStepId(workflow));
 
   useEffect(() => {

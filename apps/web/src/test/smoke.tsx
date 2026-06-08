@@ -381,10 +381,16 @@ async function runAssistantRenderChecks() {
   assert.ok(article.textContent?.includes("研判流程"));
   assert.ok(article.textContent?.includes("研判思维链"));
   assert.ok(article.textContent?.includes("系统按固定研判流程组织本轮回答"));
+  assert.ok(article.textContent?.includes("技术流程详情"));
+  assert.ok(article.textContent?.includes("展开技术详情"));
   assert.ok(article.textContent?.includes("研判依据"));
   assert.ok(article.textContent?.includes("分析框架"));
   assert.ok(article.textContent?.includes("用户问题"));
   assert.ok(article.textContent?.includes("流程记录"));
+  assert.equal(article.textContent?.includes("执行批次"), false);
+  assert.equal(article.textContent?.includes("步骤结果详情"), false);
+  assert.equal(article.textContent?.includes("运行方式"), false);
+  assert.equal(article.textContent?.includes("external_http_candidate"), false);
   assert.equal(article.textContent?.includes("external_candidate_disabled"), false);
   assert.equal(article.textContent?.includes("pending_implementation"), false);
   assert.equal(article.textContent?.includes("待实现"), false);
@@ -455,10 +461,11 @@ async function runAssistantRenderChecks() {
   assert.equal(thoughtChainDetail.textContent?.includes("endpoint"), false);
   assertNoForbiddenUiTokens(thoughtChainDetail.textContent);
 
-  const workflowToggle = view.getByRole("button", { name: /查看流程详情/ });
-  assert.equal(workflowToggle.getAttribute("aria-expanded"), "false");
-  fireEvent.click(workflowToggle);
-  assert.equal(workflowToggle.getAttribute("aria-expanded"), "true");
+  const technicalToggle = view.getByRole("button", { name: /技术流程详情/ });
+  assert.equal(technicalToggle.getAttribute("aria-expanded"), "false");
+  assert.equal(view.queryByLabelText("固定 DAG 研判流程详情"), null);
+  fireEvent.click(technicalToggle);
+  assert.equal(technicalToggle.getAttribute("aria-expanded"), "true");
   assert.ok(view.getByLabelText("固定 DAG 研判流程详情"));
   assert.ok(view.getByText("阶段时间线"));
   assert.ok(view.getAllByText("路径规划器").length >= 1);
@@ -731,7 +738,13 @@ async function runStreamingSuccessScenario() {
   await waitFor(() => {
     assert.ok(view.getByText("简短实时摘要，先给结论。"));
   });
-  assert.ok(view.getAllByText("固定研判流程").length >= 1);
+  assert.ok(view.container.textContent?.includes("研判思维链"));
+  assert.ok(view.container.textContent?.includes("技术流程详情"));
+  assert.ok(view.container.textContent?.includes("展开技术详情"));
+  assert.equal(view.container.textContent?.includes("执行批次"), false);
+  assert.equal(view.container.textContent?.includes("步骤结果详情"), false);
+  assert.equal(view.container.textContent?.includes("运行方式"), false);
+  assert.equal(view.queryByLabelText("固定 DAG 研判流程详情"), null);
   assert.equal(view.container.textContent?.includes("external_candidate_disabled"), false);
   assert.equal(view.container.textContent?.includes("pending_implementation"), false);
   assert.equal(view.container.textContent?.includes("待实现"), false);
