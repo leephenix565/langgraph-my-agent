@@ -14,12 +14,14 @@ from typing import Any
 
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
+from langgraph.runtime import Runtime
 
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_decision_result,
     build_default_fixed_dag_plan,
+    build_default_route_intent,
     build_dimension_results,
     build_emitted_bundle,
     build_entity_relation_bundle,
@@ -28,6 +30,7 @@ from react_agent.fixed_dag_contracts import (
     build_report_result,
     build_reset_multi_agent_bundle,
     build_workflow_snapshot_v2,
+    compile_selected_fixed_dag_plan,
 )
 from react_agent.fixed_dag_executor import execute_fixed_dag_plan
 from react_agent.graph_entry import compile_graph_variants, select_graph_for_invoke
@@ -82,9 +85,46 @@ def _completed_from_stage(plan: dict[str, Any], stage_key: str) -> list[str]:
     ]
 
 
-def route_planner_node(state: State) -> dict[str, Any]:
-    question = _latest_user_question(state)
+def _full_plan_with_selected_fallback_provenance(question: str, reason: str) -> dict[str, Any]:
     plan = build_default_fixed_dag_plan(question)
+    plan["provenance"] = {
+        **plan["provenance"],
+        "selected_routing_requested": True,
+        "selected_routing_fallback": True,
+        "fallback_reason": reason,
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    return plan
+
+
+def _route_plan_for_context(question: str, context: Context | None) -> dict[str, Any]:
+    if context is None or not context.enable_selected_routing:
+        return build_default_fixed_dag_plan(question)
+    try:
+        route_intent = build_default_route_intent(question)
+        plan = compile_selected_fixed_dag_plan(route_intent, user_text=question)
+    except Exception as exc:
+        return _full_plan_with_selected_fallback_provenance(
+            question,
+            f"selected_routing_compile_failed:{type(exc).__name__}",
+        )
+    plan["provenance"] = {
+        **plan["provenance"],
+        "selected_routing_requested": True,
+        "selected_routing_fallback": False,
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    return plan
+
+
+def route_planner_node(
+    state: State,
+    runtime: Runtime[Context] | None = None,
+) -> dict[str, Any]:
+    question = _latest_user_question(state)
+    plan = _route_plan_for_context(question, runtime.context if runtime is not None else None)
     completed = _completed_from_stage(plan, "planning")
     return {
         "run_id": str(state.get("run_id") or uuid.uuid4()),

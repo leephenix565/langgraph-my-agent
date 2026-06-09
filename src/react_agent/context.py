@@ -91,6 +91,13 @@ class Context:
             "Defaults off so the visible answer stays on the mainline path."
         },
     )
+    enable_selected_routing: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable provider-free selected fixed DAG routing. "
+            "Defaults off so the active graph keeps the full DAG path."
+        },
+    )
     run_id: str = field(
         default="",
         metadata={"description": "Optional run identifier for tracing/logging."},
@@ -131,6 +138,7 @@ class Context:
             "enable_fair_fusion": "ENABLE_FAIR_FUSION",
             "baseline_force_search": "BASELINE_FORCE_SEARCH",
             "enable_fair_fusion_source_switch": "ENABLE_FAIR_FUSION_SOURCE_SWITCH",
+            "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
         }
         for field_name, env_name in bool_envs.items():
             field_obj = next((f for f in fields(self) if f.name == field_name), None)

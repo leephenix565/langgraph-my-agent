@@ -1388,6 +1388,13 @@ def build_l2_conclusions(
         as_of
         or (str(plan.get("as_of")) if isinstance(plan, Mapping) and plan.get("as_of") else None)
     )
+    selected_l2_agent_ids = set(L2_CONCLUSION_AGENT_IDS)
+    if isinstance(plan, Mapping) and plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        selected_l2_agent_ids = {
+            str(agent_id)
+            for agent_id in plan.get("target_agent_ids", [])
+            if str(agent_id) in L2_CONCLUSION_AGENT_IDS
+        }
     return {
         agent_id: build_pending_conclusion(
             agent_id,
@@ -1396,6 +1403,7 @@ def build_l2_conclusions(
             reason="业务智能体实现仍处于 R3 阶段待完成状态。",
         )
         for agent_id in L2_CONCLUSION_AGENT_IDS
+        if agent_id in selected_l2_agent_ids
     }
 
 
@@ -1491,9 +1499,12 @@ def validate_dimension_composite_result(obj: Mapping[str, Any]) -> tuple[bool, s
         return False, "invalid_dimension"
     if obj.get("agent_id") != DIMENSION_COMPOSITE_AGENT_IDS[dimension]:
         return False, "agent_dimension_mismatch"
-    if list(obj.get("contributing_agents", [])) != list(DIMENSION_GROUPS[dimension]):
+    contributing_agents = list(obj.get("contributing_agents", []))
+    if not contributing_agents:
+        return False, "contributing_agents_missing"
+    if not set(contributing_agents) <= set(DIMENSION_GROUPS[dimension]):
         return False, "contributing_agents_mismatch"
-    if dimension == "risk" and "sentiment_company_radar" in obj.get("contributing_agents", []):
+    if dimension == "risk" and "sentiment_company_radar" in contributing_agents:
         return False, "risk_reads_sentiment"
     try:
         confidence = float(obj.get("confidence"))
@@ -1520,11 +1531,24 @@ def build_dimension_results(
     as_of: str | None = None,
 ) -> dict[str, DimensionCompositeResult]:
     normalized_as_of = _as_of(as_of)
+    selected_by_dimension = {
+        dimension: tuple(agent_id for agent_id in agent_ids if agent_id in l2_conclusions)
+        for dimension, agent_ids in DIMENSION_GROUPS.items()
+    }
+    if not l2_conclusions:
+        selected_by_dimension = {
+            dimension: tuple(agent_ids)
+            for dimension, agent_ids in DIMENSION_GROUPS.items()
+        }
     return {
-        "value": build_value_composite(l2_conclusions, as_of=normalized_as_of),
-        "market": build_market_composite(l2_conclusions, as_of=normalized_as_of),
-        "risk": build_risk_composite(l2_conclusions, as_of=normalized_as_of),
-        "macro": build_macro_composite(l2_conclusions, as_of=normalized_as_of),
+        cast(str, dimension): _build_dimension_composite(
+            cast(DimensionName, dimension),
+            cast(tuple[str, ...], agent_ids),
+            l2_conclusions,
+            as_of=normalized_as_of,
+        )
+        for dimension, agent_ids in selected_by_dimension.items()
+        if agent_ids
     }
 
 
@@ -1769,7 +1793,12 @@ def build_workflow_snapshot_v2(
     completed_steps: list[str] | None = None,
 ) -> dict[str, Any]:
     plan_valid, _plan_reason = validate_fixed_dag_plan(plan)
-    normalized_plan = cast(FixedDagPlan, plan) if plan_valid else normalize_fixed_dag_plan(plan)
+    selected_plan_valid, _selected_plan_reason = validate_selected_fixed_dag_plan(plan)
+    normalized_plan = (
+        cast(FixedDagPlan, plan)
+        if plan_valid or selected_plan_valid
+        else normalize_fixed_dag_plan(plan)
+    )
     dimension_results = dimension_results or {}
     if isinstance(dag_execution, Mapping):
         if step_results is None and isinstance(dag_execution.get("step_results"), Mapping):
@@ -1788,6 +1817,11 @@ def build_workflow_snapshot_v2(
         )
     )
     stage = current_stage or ("report" if report_result else "planning")
+    dimension_group_ids = [
+        dimension
+        for dimension in DIMENSION_GROUPS
+        if dimension in normalized_plan.get("dimension_groups", {})
+    ]
     return {
         "schema": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
         "schemaVersion": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
@@ -1824,7 +1858,7 @@ def build_workflow_snapshot_v2(
                 else "pending_implementation",
         "summary": "维度综合结果。",
             }
-            for dimension in DIMENSION_GROUPS
+            for dimension in dimension_group_ids
         ],
         "currentStage": stage,
         "completedSteps": completed,

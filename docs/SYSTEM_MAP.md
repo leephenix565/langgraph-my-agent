@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-4.
+This file is the reset branch operational map for Phase R8-5.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-4 route intent evaluation baseline over the existing
+- Current phase: R8-5 default-off selected routing graph integration over the existing
   fixed-DAG runtime skeleton, R7-I web presentation surface, and R7-G v2.3.1
   scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
@@ -30,7 +30,9 @@ This file is the reset branch operational map for Phase R8-4.
   `build_route_intent_prompt`, `parse_route_intent_json`, and
   `normalize_route_intent` as provider-free planner seam pieces. R8-4 adds
   `src/react_agent/route_eval.py` and `tests/fixtures/route_eval_gold.jsonl`
-  as the provider-free RouteEval baseline for route intent selections.
+  as the provider-free RouteEval baseline for route intent selections. R8-5
+  adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` as the
+  default-off graph integration boundary.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -84,7 +86,18 @@ The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
 R4-B does not add binding fields to `/api/agents`.
 
-R8-4 does not change public workflow projection or frontend rendering. The
+R8-5 does not change frontend rendering. The default public path still receives
+the full default `workflow_snapshot_v2` produced from the active fixed DAG
+skeleton. When selected routing is explicitly enabled, the same public workflow
+contract can project selected DAG steps and selected dimension groups; no new
+public contract fields are added.
+
+R8-5 does not call providers/search or external services. Selected
+route-intent planning and selected plan compilation remain provider-free and
+deterministic; compile/validation failure falls back to the full DAG with
+public-safe provenance.
+
+R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from
 the active fixed DAG skeleton. Selected route-intent planning and selected plan
 compilation remain internal contract/compiler seams until a later runtime phase
@@ -113,8 +126,9 @@ Active skeleton properties:
 - Final public source is `reset_skeleton`.
 - Plan, bundle, conclusion, composite, decision, report, workflow, and final
   emit payloads are generated from `fixed_dag_contracts.py` seams.
-- `route_planner` still builds the default full `fixed_dag_plan_v1`; R8-4 does
-  not make selected routing active.
+- `route_planner` still builds the default full `fixed_dag_plan_v1` unless
+  `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` is explicitly
+  enabled.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
@@ -201,6 +215,17 @@ not evaluate Star/Chain/Debate/Tree modes, does not call providers/search or
 external `/v1/agent/invoke`, and does not change `graph.py`, public workflow
 mapping, frontend rendering, runtime bindings, or external adapter readiness.
 
+In R8-5, selected routing is connected to `route_planner_node` behind an
+explicit default-off graph boundary. The selected path uses
+`build_default_route_intent` and `compile_selected_fixed_dag_plan`, then runs
+through selected executor validation and selected topological batches. Selected
+execution emits selected step results, selected L2 conclusions, selected
+dimension composites, and a selected-subset `workflow_snapshot_v2`. The default
+graph path remains the full DAG. Selected compile/validation failures fall back
+to the full DAG with public-safe provenance. R8-5 still does not call an
+LLM/provider, search backend, external `/v1/agent/invoke`, runtime binding
+adapter, or real business agent.
+
 ## Target Fixed DAG IDs
 
 The reset skeleton has 27 formal agent ids:
@@ -258,7 +283,6 @@ Later phases own:
 - later replacement/removal policy for `config/agents/*.json`
 - external service readiness and protocol repair
 - archived/manual fusion-gate policy and any later fusion acceptance rebuild
-- active selected-routing graph flag integration after RouteEval review
 - larger RouteEval gold set and formal route-quality threshold
 - richer visual dependency graph beyond ordered execution batches
 - evidence-specific frontend drilldown once backend public evidence payloads

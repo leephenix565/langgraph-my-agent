@@ -497,7 +497,10 @@ def _execution_plan_or_fallback(
     question: str,
     as_of: str,
 ) -> tuple[Mapping[str, Any], bool, str]:
-    valid, reason = validate_dag_steps(plan)
+    if plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        valid, reason = validate_selected_dag_steps(plan)
+    else:
+        valid, reason = validate_dag_steps(plan)
     if valid:
         return plan, False, "ok"
     fallback = normalize_fixed_dag_plan(
@@ -512,8 +515,22 @@ def _execution_plan_or_fallback(
         **fallback["provenance"],
         "source": "fallback_deterministic_fixed_dag_plan",
         "fallback_reason": reason,
+        "selected_routing_requested": plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION,
+        "selected_routing_fallback": plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION,
     }
     return fallback, True, reason
+
+
+def _execution_plan_valid(plan: Mapping[str, Any]) -> tuple[bool, str]:
+    if plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        return validate_selected_dag_steps(plan)
+    return validate_dag_steps(plan)
+
+
+def _execution_batches(plan: Mapping[str, Any]) -> list[list[str]]:
+    if plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        return topological_batches_for_selected_plan(plan)
+    return topological_batches(plan)
 
 
 def execute_fixed_dag_plan(
@@ -528,13 +545,13 @@ def execute_fixed_dag_plan(
         question=question,
         as_of=as_of,
     )
-    valid, reason = validate_dag_steps(execution_plan)
+    valid, reason = _execution_plan_valid(execution_plan)
     if not valid:
         execution_plan = build_default_fixed_dag_plan(question, as_of=as_of)
         fallback_used = True
         fallback_reason = reason
 
-    batches = topological_batches(execution_plan)
+    batches = _execution_batches(execution_plan)
     step_index = build_dag_step_index(execution_plan)
     step_results: dict[str, dict] = {}
     for batch in batches:
@@ -611,8 +628,16 @@ def validate_dag_execution_result(result: Mapping[str, Any]) -> tuple[bool, str]
         if not valid:
             return False, reason
 
+    workflow = result.get("workflow_snapshot")
+    expected_dimensions = set(DIMENSION_GROUPS)
+    if isinstance(workflow, Mapping) and isinstance(workflow.get("dimensionGroups"), list):
+        expected_dimensions = {
+            str(item.get("id"))
+            for item in workflow["dimensionGroups"]
+            if isinstance(item, Mapping) and item.get("id")
+        }
     dimension_results = result.get("dimension_results")
-    if not isinstance(dimension_results, Mapping) or set(dimension_results) != set(DIMENSION_GROUPS):
+    if not isinstance(dimension_results, Mapping) or set(dimension_results) != expected_dimensions:
         return False, "dimension_results_missing"
     for item in dimension_results.values():
         if not isinstance(item, Mapping):
@@ -632,7 +657,6 @@ def validate_dag_execution_result(result: Mapping[str, Any]) -> tuple[bool, str]
     valid, reason = validate_report_result(cast(Mapping[str, Any], report))
     if not valid:
         return False, reason
-    workflow = result.get("workflow_snapshot")
     if not isinstance(workflow, Mapping):
         return False, "workflow_snapshot_missing"
     valid, reason = validate_workflow_snapshot_v2(workflow)

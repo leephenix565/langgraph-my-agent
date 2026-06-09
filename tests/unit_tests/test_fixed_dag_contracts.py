@@ -816,3 +816,26 @@ def test_workflow_snapshot_v2_uses_execution_results_when_available() -> None:
     assert snapshot["provenance"]["executionStatus"] == "degraded"
     assert snapshot["provenance"]["fallbackUsed"] is True
     assert snapshot["provenance"]["limitations"] == ["fallback test"]
+
+
+def test_workflow_snapshot_v2_preserves_selected_plan_shape() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+    snapshot = build_workflow_snapshot_v2(
+        plan=plan,
+        completed_steps=["route_planner", "financial_data_service"],
+        current_stage="evidence",
+    )
+    valid, reason = validate_workflow_snapshot_v2(snapshot)
+
+    assert valid, reason
+    assert snapshot["planId"] == plan["plan_id"]
+    assert len(snapshot["dagSteps"]) == len(plan["steps"])
+    assert {item["id"] for item in snapshot["dimensionGroups"]} == {"value"}
+    assert snapshot["completedSteps"] == ["route_planner", "financial_data_service"]

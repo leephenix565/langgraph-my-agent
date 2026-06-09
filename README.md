@@ -69,6 +69,11 @@ selection quality. It evaluates task type, targets, selected dimensions,
 selected agents, clarification, and fallback behavior against a small local
 gold set, but it does not call an LLM/provider/external service and does not
 enable selected routing.
+Phase R8-5 wires selected routing into the graph behind
+`Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`. The default
+active behavior remains full DAG; the selected path uses only the provider-free
+route-intent seam and deterministic compiler, and compile/validation failure
+falls back to the full DAG.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -78,7 +83,7 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-4 route intent evaluation baseline over the existing
+- Current phase: R8-5 default-off selected routing graph integration over the existing
   full fixed DAG backend skeleton, R7-I web presentation surface, and v2.3.1
   scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
@@ -103,8 +108,10 @@ is not a completed business analysis engine.
   `build_route_intent_prompt`, `parse_route_intent_json`, and
   `normalize_route_intent` as provider-free planner seam pieces. R8-4 adds
   `src/react_agent/route_eval.py` and `tests/fixtures/route_eval_gold.jsonl`
-  as a small deterministic RouteEval baseline for route intent selections. The
-  active `route_planner` node still builds the full default fixed DAG.
+  as a small deterministic RouteEval baseline for route intent selections.
+  R8-5 adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`
+  as a default-off graph boundary. Without that flag, the active
+  `route_planner` node still builds the full default fixed DAG.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -174,6 +181,17 @@ future formal Route F1 gate should use a larger gold set.
 R8-4 does not modify `src/react_agent/graph.py`, public workflow mapping,
 frontend rendering, runtime bindings, provider/search readiness, or external
 adapter readiness.
+
+R8-5 wires the selected route intent and compiler pipeline into
+`route_planner_node` behind an explicit default-off flag. With
+`Context(enable_selected_routing=True)` or `ENABLE_SELECTED_ROUTING=1`, the
+graph builds `route_intent_v1` through `build_default_route_intent`, compiles
+it into `selected_fixed_dag_plan_v1`, and executes selected DAG steps through
+the selected executor validation path. Compile or selected validation failure
+falls back to the full `fixed_dag_plan_v1` with public-safe provenance
+(`selected_routing_requested`, `selected_routing_fallback`, and a safe fallback
+reason). R8-5 still does not call an LLM/provider, search backend, external
+`/v1/agent/invoke`, or runtime binding adapter.
 
 The reset target has 27 formal agent ids:
 
@@ -448,6 +466,10 @@ readiness.
   and unit coverage. It does not change active graph behavior, enable selected
   routing, add a provider-backed LLM planner, call external services, or create
   a formal >=80% Route F1 acceptance gate.
+- R8-5 only adds default-off selected routing graph integration. It does not
+  change the default full DAG behavior, call LLMs/providers/search, invoke
+  external services, modify runtime bindings, change frontend behavior, or
+  implement real business agents/external adapter readiness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

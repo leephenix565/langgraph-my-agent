@@ -3,6 +3,49 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-5 default-off selected routing graph integration
+
+### Changed
+
+- Added `Context.enable_selected_routing` with `ENABLE_SELECTED_ROUTING=1`
+  env support through the existing boolean parser.
+- Wired `route_planner_node` to use provider-free `build_default_route_intent`
+  and deterministic `compile_selected_fixed_dag_plan` only when selected
+  routing is explicitly enabled.
+- Kept default graph behavior on the full `fixed_dag_plan_v1` path.
+- Added selected executor dispatch so `selected_fixed_dag_plan_v1` uses
+  `validate_selected_dag_steps` and `topological_batches_for_selected_plan`
+  instead of the full DAG validator.
+- Made selected execution emit selected L2 conclusions, selected dimension
+  composites, selected step results, and selected-subset
+  `workflow_snapshot_v2`.
+- Added safe full-DAG fallback provenance for selected compile/validation
+  failures.
+- Added graph and executor tests for default-off behavior, env/context flag
+  enablement, selected execution, and selected fallback.
+- Updated README, architecture, contracts, system map, quality, changelog, and
+  decision docs for R8-5 boundaries.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/context.py src/react_agent/graph.py src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No default active behavior change; selected routing remains default-off.
+- No provider/search call.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding enable/live change.
+- No frontend change.
+- No provider-backed LLM planner, external adapter readiness, final Route F1
+  gate, or real business-agent implementation.
+
 ## 2026-06-09 - Phase R8-4 route intent evaluation baseline
 
 ### Changed

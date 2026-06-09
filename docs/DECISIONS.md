@@ -676,3 +676,35 @@ frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
 or production deployment. It does not add active selected routing, a live LLM
 planner, external adapter readiness, live selected execution, or a final >=80%
 Route F1 gate.
+
+## ADR-030: R8-5 Wires Selected Routing Behind A Default-Off Graph Boundary
+
+Status: accepted for default-off graph integration.
+
+Decision: R8-5 wires provider-free selected routing into `route_planner_node`
+behind `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`. The
+default graph path remains the full `fixed_dag_plan_v1`. When explicitly
+enabled, the graph builds `route_intent_v1` through the deterministic/mock
+planner seam, compiles it into `selected_fixed_dag_plan_v1`, executes it through
+selected executor validation, and falls back to the full DAG on compile or
+selected validation failure.
+
+Reason: R8-1 through R8-4 established contracts, deterministic compilation,
+planner/parser seams, and offline RouteEval. The next safe step is to connect
+the selected pipeline under an explicit runtime boundary while keeping the
+full DAG default as the regression baseline.
+
+Consequence: selected routing can now be exercised in graph smoke tests without
+provider, search, external invocation, runtime binding changes, frontend
+changes, or direct LLM-generated DAG dependencies. Selected executions produce
+selected step results and selected-subset workflow snapshots. Fallbacks record
+public-safe provenance with `selected_routing_requested`,
+`selected_routing_fallback`, provider/external false flags, and safe fallback
+codes.
+
+Non-consequence: R8-5 does not change default active behavior, fixed DAG
+topology, the 27-agent roster, catalog, runtime bindings, runtime registry,
+frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
+or production deployment. It does not add a provider-backed LLM planner,
+external adapter readiness, final Route F1 acceptance threshold, or real
+business-agent implementation.

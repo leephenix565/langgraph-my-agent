@@ -223,8 +223,10 @@ R8-1 adds this contract as an additive seam. R8-2 compiles valid route intent
 deterministically into `selected_fixed_dag_plan_v1`. R8-3 adds provider-free
 planner seam helpers and a future prompt/parser boundary for generating and
 normalizing route intent. R8-4 adds provider-free RouteEval over this contract.
-The active graph still does not call an LLM planner and does not use selected
-routing by default.
+R8-5 wires the provider-free planner seam into the graph behind
+`Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`. The active
+graph still does not call an LLM planner and selected routing remains
+default-off.
 
 Fields:
 
@@ -334,6 +336,35 @@ Non-claims:
 - The first gold set is a small baseline, not the future >=80% Route F1 gate.
 - R8-4 does not enable selected routing in `src/react_agent/graph.py`.
 
+## selected routing graph flag
+
+Purpose: connect the selected-routing pipeline to the graph only behind an
+explicit default-off boundary.
+
+R8-5 adds `Context.enable_selected_routing` with env support through
+`ENABLE_SELECTED_ROUTING=1`. When the flag is false, `route_planner_node` still
+returns the full `fixed_dag_plan_v1` baseline. When the flag is true, the graph
+uses `build_default_route_intent`, compiles the intent with
+`compile_selected_fixed_dag_plan`, and passes the resulting
+`selected_fixed_dag_plan_v1` to the existing execution path.
+
+Failure policy:
+
+- invalid route intent, compiler failure, or selected validation failure falls
+  back to the full DAG;
+- fallback provenance records `selected_routing_requested=true`,
+  `selected_routing_fallback=true`, and a public-safe fallback code;
+- fallback provenance keeps `provider_invoked=false` and
+  `external_invoked=false`;
+- the LLM/provider must never generate executable `depends_on` or `dag_steps`.
+
+Non-claims:
+
+- the selected flag does not enable provider, search, or external invocation;
+- the selected flag does not modify runtime bindings or external readiness;
+- the selected flag does not make RouteEval a formal >=80% acceptance gate;
+- the selected flag does not implement real business-agent logic.
+
 ## selected_fixed_dag_plan_v1
 
 Purpose: define the deterministic compiler/validator target for a selected
@@ -392,7 +423,7 @@ Non-claims:
 
 - `route_intent_v1` is not executable.
 - `selected_fixed_dag_plan_v1` is not the active runtime default.
-- R8-4 does not add an active LLM planner, active graph selected execution,
+- R8-5 does not add an active LLM planner,
   external adapter, public workflow field, web UI change, provider call, search
   call, external `/v1/agent/invoke` call, or runtime binding change.
 
@@ -417,7 +448,9 @@ Runtime fields:
 - `provenance`
 
 `status` is `complete`, `partial`, or `degraded`. Invalid plans fail soft to the
-deterministic default plan and set `fallback_used=true`.
+deterministic default plan and set `fallback_used=true`. R8-5 allows selected
+plans to flow through selected executor validation; selected execution emits
+step results and workflow snapshot entries for the selected step subset only.
 
 Seams: `execute_fixed_dag_plan`, `validate_dag_execution_result`.
 

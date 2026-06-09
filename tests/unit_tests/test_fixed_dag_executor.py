@@ -249,6 +249,32 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
         assert forbidden not in payload
 
 
+def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+
+    result = execute_fixed_dag_plan(plan, question="q", as_of="2026-06-09")
+    valid, reason = validate_dag_execution_result(result)
+
+    assert valid, reason
+    assert result["status"] == "complete"
+    assert result["fallback_used"] is False
+    assert result["execution_batches"] == topological_batches_for_selected_plan(plan)
+    assert set(result["step_results"]) == {step["id"] for step in plan["steps"]}
+    assert len(result["step_results"]) < len(RESET_RUNTIME_AGENT_IDS)
+    assert set(result["l2_conclusions"]) == {"value_ml_valuation"}
+    assert set(result["dimension_results"]) == {"value"}
+    assert {item["id"] for item in result["workflow_snapshot"]["dimensionGroups"]} == {"value"}
+    assert len(result["workflow_snapshot"]["dagSteps"]) == len(plan["steps"])
+    assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])
+
+
 def test_invalid_plan_falls_back_to_deterministic_default_without_raising() -> None:
     bad = copy.deepcopy(_plan())
     bad["steps"][0]["agent_id"] = "bad_agent"

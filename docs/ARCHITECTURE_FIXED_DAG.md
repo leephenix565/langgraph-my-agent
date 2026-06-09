@@ -6,7 +6,7 @@ registry boundary cleanup, the Phase R5-B1 frontend contract migration, and the
 Phase R5-B2 workflow DAG inspector UI rewrite, the Phase R8-1 selected routing
 contract foundation, the Phase R8-2 deterministic selected DAG compiler, and
 the Phase R8-3 route-intent planner seam, and the Phase R8-4 RouteEval
-baseline.
+baseline, and the Phase R8-5 default-off selected routing graph integration.
 The skeleton is deterministic, provider-free, plan-driven, and backed by
 explicit catalog, binding, contract, executor, and function seams. It is not a
 completed business analysis engine.
@@ -125,6 +125,8 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   default.
 - R8-4 owns provider-free RouteEval baseline coverage for `route_intent_v1`
   selection quality without changing the active graph default.
+- R8-5 owns default-off selected routing graph integration through explicit
+  context/env flagging while preserving the full DAG default.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -190,7 +192,8 @@ dependencies, and the sentiment market-only boundary without requiring the full
 The active graph still uses the full `fixed_dag_plan_v1` path. R8-2 does not
 modify `src/react_agent/graph.py`, public workflow mapping, frontend rendering,
 the fixed DAG catalog, runtime bindings, or the runtime registry. R8-4 owns
-RouteEval. R8-5 remains external adapter readiness.
+RouteEval. R8-5 owns the default-off graph boundary for selected routing;
+external adapter readiness remains later work.
 
 ## R8-3 Route Intent Planner Seam
 
@@ -239,7 +242,7 @@ RouteEval behavior:
 - treats `acceptable_extra_agents` as non-penalized extras;
 - treats `must_not_agents` as false positives when predicted;
 - penalizes sentiment-to-risk mistakes through the market-only gold cases;
-- does not evaluate Star/Chain/Debate/Tree mode accuracy;
+- does not evaluate legacy route-mode dispatch accuracy;
 - does not call an LLM, provider, search backend, external service, demo stack,
   or fusion-gate.
 
@@ -248,3 +251,30 @@ future formal Route F1 acceptance suite and does not imply an 80% routing
 quality threshold. The active graph still uses the full `fixed_dag_plan_v1`
 path until a later phase explicitly connects selected routing behind a
 validated runtime boundary.
+
+## R8-5 Default-Off Selected Routing Graph Integration
+
+R8-5 wires the selected route-intent and deterministic compiler pipeline into
+`src/react_agent/graph.py` without changing default behavior.
+
+Runtime behavior:
+
+- `Context.enable_selected_routing` defaults to `False`;
+- `ENABLE_SELECTED_ROUTING=1` can enable the same flag through the existing
+  boolean env parser;
+- default graph invocations still build and execute the full
+  `fixed_dag_plan_v1`;
+- selected graph invocations use provider-free `build_default_route_intent`;
+- the route intent is compiled by `compile_selected_fixed_dag_plan`;
+- selected plans execute through `validate_selected_dag_steps` and
+  `topological_batches_for_selected_plan`;
+- selected L2 conclusions, dimension composites, step results, and
+  `workflow_snapshot_v2` are projected as selected subsets;
+- compile or selected validation failure falls back to the full DAG with
+  public-safe fallback provenance.
+
+R8-5 does not call an LLM/provider, search backend, external
+`/v1/agent/invoke`, or runtime binding adapter. It does not change the fixed
+DAG roster, runtime bindings, public API contracts, frontend, RouteEval
+threshold policy, external adapter readiness, or real business-agent
+implementation status.

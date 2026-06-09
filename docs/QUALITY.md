@@ -168,6 +168,29 @@ gold set is a formal >=80% Route F1 acceptance suite, or that external adapter,
 runtime binding enablement, public workflow selected-plan projection, or real
 business-agent result mapping is implemented.
 
+## R8-5 Selected Routing Graph Flag Gate
+
+R8-5 wires selected routing into the graph behind a default-off context/env
+flag. Its narrow validation gate is:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/context.py src/react_agent/graph.py src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode mainline
+```
+
+This gate confirms that default graph behavior remains the full DAG, that
+`Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` can explicitly
+enable provider-free selected routing, and that selected compile/validation
+failure falls back to the full DAG with safe provenance.
+
+Passing R8-5 validation does not mean that a provider-backed LLM planner,
+external adapter, runtime binding enablement, final Route F1 acceptance gate,
+frontend selected-routing UI, or real business-agent result mapping is
+implemented.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
