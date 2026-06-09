@@ -3,6 +3,47 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-7B provider-free external adapter mapping
+
+### Changed
+
+- Added `src/react_agent/fixed_dag_external_adapter.py` as a provider-free pure
+  mapping layer for already-available fixed-DAG external payload dictionaries.
+- Added first-slice mappings for `agent_conclusion_v1 -> conclusion_object_v1`
+  and `data_bundle_v1 -> data_bundle_v1`.
+- Added controlled adapter failure records for unsupported schemas, invalid
+  identity, status errors, anti-lookahead failures, and unsafe mapping cases.
+- Added unit tests for direction L2 conclusions, risk gate-member handling,
+  status mapping, identity rejection, sentiment-to-risk rejection, unsafe raw
+  payload sanitization, data bundle compression, scaffold sample smoke, and no
+  HTTP import path.
+- Updated README, system map, contracts, quality, external payload mapping,
+  readiness ladder, and decisions docs for the R8-7B adapter boundary.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q`
+- `.venv/bin/python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No HTTP call.
+- No provider call.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No fixed DAG roster change.
+- No active graph or executor live integration.
+- No L3/L4 active executor mapping.
+- Passing adapter tests does not imply live readiness.
+
 ## 2026-06-09 - Phase R8-6B-QA static quality closure
 
 ### Changed

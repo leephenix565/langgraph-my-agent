@@ -11,6 +11,12 @@ Real external results are not public workflow facts until a future adapter maps
 them into fixed DAG contracts, validates them, and the corresponding invocation
 and readiness path is explicitly enabled.
 
+R8-7B adds the first provider-free main-system adapter implementation at
+`src/react_agent/fixed_dag_external_adapter.py`. It is a pure mapping layer for
+already-available payload dictionaries. It does not call HTTP, providers,
+`/health`, `/v1/agent/compute`, `/v1/agent/invoke`, or deployed services, and it
+does not modify runtime bindings or live flags.
+
 ## Mapping Authority
 
 Current fixed DAG authority:
@@ -71,6 +77,21 @@ services should not claim it as their own success state.
 | `eval_record_v1` | evaluation/replay evidence | Use for routing F1, reasoning F1, backtest, and replay metrics. It is not graph state. |
 | `fixed_dag_plan_v1` | route/plan payload | Map task, targets, selected dimensions, selected agents, route prior, fallback, and `as_of`. |
 | `data_bundle_v1` | `data_bundle_v1` | Map target, timestamps, `publish_time`, `snapshot_id`, sources, features, missing fields, and status. |
+
+## R8-7B Implemented Adapter Slice
+
+R8-7B implements only these provider-free mappings:
+
+| Input | Output | Implementation behavior |
+| --- | --- | --- |
+| `external_agent_response_v0.tool_result.agent_conclusion_v1` | `conclusion_object_v1` | Validates the envelope, maps status `ok -> complete`, `partial/needs_clarification -> partial`, `error -> error`, normalizes dates, checks fixed DAG identity, preserves bounded evidence/event flags, and records safe provenance with provider/external invocation flags set to false. |
+| direct `agent_conclusion_v1` | `conclusion_object_v1` | Same mapping without requiring an envelope. Direction payloads require `stance`; risk `gate_member` payloads require a current fixed-DAG risk L2 `agent_id` and preserve `risk_score` in provenance. |
+| direct `data_bundle_v1` or envelope tool result | `data_bundle_v1` | Compresses the external data payload into the current internal narrow shape: status, `as_of`, `data_as_of`, source names, and bounded notes for `snapshot_id`, `publish_time`, feature keys, and missing fields. |
+
+Unsupported payload families return controlled adapter failure records or remain
+future work. R8-7B does not actively map `dimension_conclusion_v1`,
+`risk_conclusion_v1`, `macro_conclusion_v1`, `decision_conclusion_v1`,
+`eval_record_v1`, or `fixed_dag_plan_v1` into executor state.
 
 ## Dimension Mapping
 
@@ -173,6 +194,12 @@ Fixed DAG provenance should distinguish service facts from runtime claims:
   examples
 - `live_verified`: read from the readiness record or runtime binding, not from
   a sample payload alone
+
+R8-7B adapter provenance additionally records
+`adapter_source=fixed_dag_external_adapter`. It sets `provider_invoked=false` and
+`external_invoked=false` because the pure mapper itself performs no live call.
+Future live wrappers must record actual invocation evidence outside this pure
+mapping layer.
 
 Do not let the external service self-declare cross-dimension routes or public
 workflow authority.

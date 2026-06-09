@@ -12,6 +12,11 @@ server directory, implementation, or listening process has been observed, but th
 service has not completed this ladder and is not invoked by the fixed DAG reset
 runtime.
 
+R8-7B adds provider-free pure adapter mapping tests for already-available
+payload dictionaries. Passing those tests can support L1 adapter mapping review,
+but it does not call or verify `/health`, `/v1/agent/compute`,
+`/v1/agent/invoke`, any provider, or any deployed service.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -55,6 +60,9 @@ Required:
 - No secrets, raw traceback, raw provider response, or chain-of-thought.
 - Adapter mapping can convert the external response to the expected fixed DAG
   contract family.
+- For R8-7B, the implemented mapping surface is limited to
+  `agent_conclusion_v1 -> conclusion_object_v1` and
+  `data_bundle_v1 -> data_bundle_v1`.
 - If using the R7-G scaffold package, both the repo-external
   `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
   mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
@@ -64,6 +72,11 @@ Mock tests do not prove live service readiness.
 The R7-G sample scaffold can satisfy L1 for its own deterministic example
 service and v2.3.1 payload samples only. It does not advance any real external
 candidate to live readiness.
+
+The R8-7B adapter module also does not advance any real external candidate to
+live readiness. It does not change `config/fixed_dag/runtime_bindings.json`, set
+`live_verified=true`, set `invoke_enabled_by_default=true`, or enable runtime
+invocation.
 
 For v2.3.1 samples, L1 evidence should cover direction versus gate-member L2
 roles, `manual_review` risk gates, structured `DimensionMember[]`, normalized
@@ -182,5 +195,7 @@ The readiness ladder does not claim:
 - public Web end-to-end live proof
 - deployed-but-deferred inventory implies live verification
 - internal LLM placeholder output is a real external business-agent result
+- R8-7B adapter mapping tests imply health, compute, invoke, live verification,
+  runtime binding enablement, or production deployment
 
 Default reset mainline remains no-provider and no-external-invoke.

@@ -216,6 +216,30 @@ Passing R8-6B validation does not mean external adapter readiness,
 business-agent correctness. Deployed server processes remain deferred until
 later live verification and runtime binding enablement work.
 
+## R8-7B External Adapter Mapping Gate
+
+R8-7B adds provider-free pure mapping functions for external fixed-DAG payloads.
+Its narrow validation gate is:
+
+```powershell
+python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py
+python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q
+python -m pytest examples/fixed_dag_external_agent_scaffold/tests -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+This gate confirms that already-available `agent_conclusion_v1` and
+`data_bundle_v1` payload dictionaries can be mapped or rejected safely by a pure
+adapter and validated against current fixed-DAG internal contracts.
+
+Passing R8-7B validation does not mean HTTP integration, provider readiness,
+`GET /health` readiness, `/v1/agent/compute` readiness,
+`/v1/agent/invoke` readiness, runtime binding enablement, `live_verified=true`,
+`invoke_enabled_by_default=true`, L3/L4 active executor mapping, or real
+business-agent correctness. Deployed server agents remain deferred.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

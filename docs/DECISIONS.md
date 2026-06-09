@@ -740,3 +740,35 @@ fixed DAG roster changes, `value_financial_analysis`, sentiment-to-risk routing,
 legacy `AGENT_TOOLS`/`config/agents`/aNN authority, frontend rewrite, or
 production deployment. Deployed-but-deferred inventory remains documentation
 evidence, not runtime authority.
+
+## ADR-032: R8-7B Adds Provider-Free External Payload Adapter Mapping
+
+Status: accepted for pure adapter mapping first slice.
+
+Decision: R8-7B adds `src/react_agent/fixed_dag_external_adapter.py` as a
+provider-free, HTTP-free mapping layer from already-available external fixed-DAG
+payload dictionaries into current internal contracts. The first supported
+families are `agent_conclusion_v1 -> conclusion_object_v1` and
+`data_bundle_v1 -> data_bundle_v1`. Unsupported payload families return
+controlled adapter failure records or remain future work.
+
+Reason: R8-7A found that the v2.3.1 scaffold payload family is available and
+well-tested, but the active main system had no fixed-DAG contract adapter. The
+next safe step is pure mapping and safety validation before any health, compute,
+invoke, wrapper bridge, executor integration, or runtime binding enablement
+work.
+
+Consequence: external L2 direction payloads can be normalized into
+validator-legal `conclusion_object_v1`; risk `gate_member` payloads can map only
+when the primary id is a current fixed-DAG risk L2 id, with `risk_score`
+preserved in provenance; external data bundles can be compressed into the
+current narrow internal `DataBundle` shape. Adapter output sets
+`provider_invoked=false` and `external_invoked=false` because the mapper itself
+performs no live call.
+
+Non-consequence: R8-7B does not call HTTP, providers, `/health`,
+`/v1/agent/compute`, `/v1/agent/invoke`, or deployed server agents. It does not
+change `graph.py`, `fixed_dag_executor.py`, public API/runtime/mapping modules,
+runtime bindings, live flags, the fixed DAG roster, frontend code, L3/L4 active
+mapping, external readiness levels, or production deployment. Passing adapter
+tests does not imply `live_verified=true` or `invoke_enabled_by_default=true`.

@@ -1,13 +1,14 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-6B.
+This file is the reset branch operational map for Phase R8-7B.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-6B default-off internal LLM placeholders over the existing
-  fixed-DAG runtime skeleton, selected-routing boundary, R7-I web presentation
-  surface, and R7-G v2.3.1 scaffold package.
+- Current phase: R8-7B provider-free external payload adapter mapping over the
+  existing fixed-DAG runtime skeleton, selected-routing boundary, R8-6B internal
+  LLM placeholder boundary, R7-I web presentation surface, and R7-G v2.3.1
+  scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -30,12 +31,14 @@ This file is the reset branch operational map for Phase R8-6B.
   `build_route_intent_prompt`, `parse_route_intent_json`, and
   `normalize_route_intent` as provider-free planner seam pieces. R8-4 adds
   `src/react_agent/route_eval.py` and `tests/fixtures/route_eval_gold.jsonl`
-	  as the provider-free RouteEval baseline for route intent selections. R8-5
-	  adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` as the
-	  default-off graph integration boundary. R8-6B adds
-	  `Context.enable_internal_llm_placeholders` /
-	  `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` as an independent default-off L2
-	  placeholder boundary.
+  as the provider-free RouteEval baseline for route intent selections. R8-5
+  adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` as the
+  default-off graph integration boundary. R8-6B adds
+  `Context.enable_internal_llm_placeholders` /
+  `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` as an independent default-off L2
+  placeholder boundary. R8-7B adds
+  `src/react_agent/fixed_dag_external_adapter.py` as a provider-free pure
+  mapping seam for already-available external payload dictionaries.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -89,8 +92,8 @@ The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
 R4-B does not add binding fields to `/api/agents`.
 
-R8-6B does not change frontend rendering or the public workflow schema. The
-default public path still receives
+R8-7B does not change frontend rendering, active graph execution, or the public
+workflow schema. The default public path still receives
 the full default `workflow_snapshot_v2` produced from the active fixed DAG
 skeleton. When selected routing is explicitly enabled, the same public workflow
 contract can project selected DAG steps and selected dimension groups; no new
@@ -102,6 +105,13 @@ may use the main-system model for bounded internal placeholder text. Provider
 missing, provider configuration errors, parse failures, or unsafe content fall
 back to deterministic pending conclusions. The graph still does not call any
 external `/v1/agent/invoke` service.
+
+R8-7B keeps that runtime boundary. The new external adapter module maps
+`agent_conclusion_v1` to `conclusion_object_v1` and `data_bundle_v1` to the
+current internal `data_bundle_v1` in provider-free unit tests only. It does not
+perform HTTP, does not call `/health`, `/v1/agent/compute`, or
+`/v1/agent/invoke`, does not change `runtime_bindings.json`, and does not set
+`live_verified` or `invoke_enabled_by_default`.
 
 R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from
@@ -141,6 +151,8 @@ Active skeleton properties:
   when `Context.enable_internal_llm_placeholders` /
   `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` is explicitly enabled. Provider failures
   fail soft to deterministic pending conclusions.
+- `fixed_dag_external_adapter.py` is not in the active graph path. It is an
+  offline pure mapping seam for later controlled external readiness work.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
   is registry evidence only and does not trigger provider or external calls.
 - R4-C isolates legacy aNN registry/bootstrap so active `react_agent.graph`
@@ -247,6 +259,15 @@ pending conclusion on provider or parser failure. This is an internal placeholde
 only: L3 composites, L4 decision synthesis, and report generation remain
 deterministic, no external agent is invoked, and no runtime binding is enabled.
 
+In R8-7B, `src/react_agent/fixed_dag_external_adapter.py` maps supported
+external payload dictionaries into current internal fixed-DAG contracts without
+calling HTTP, providers, or server agents. The first implementation slice covers
+`agent_conclusion_v1 -> conclusion_object_v1` and
+`data_bundle_v1 -> data_bundle_v1`; unsupported payload families return
+controlled adapter failures or remain future work. This does not wire external
+payloads into `execute_fixed_dag_plan`, does not modify runtime bindings, and
+does not imply live readiness for deployed services.
+
 ## Deployed But Deferred Inventory
 
 R8-6B records server-deployed-but-deferred agent evidence in
@@ -257,7 +278,7 @@ compute/invoke verification does not equal `live_verified=true`; and
 `live_verified=true` does not equal `invoke_enabled_by_default=true`.
 
 Runtime authority remains in `config/fixed_dag/agent_catalog.json`,
-`config/fixed_dag/runtime_bindings.json`, and the fixed-DAG validators. R8-6B
+`config/fixed_dag/runtime_bindings.json`, and the fixed-DAG validators. R8-7B
 does not modify runtime bindings, set `live_verified=true`, set
 `invoke_enabled_by_default=true`, or enable external service invocation.
 

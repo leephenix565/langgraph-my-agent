@@ -81,6 +81,13 @@ main-system model for bounded, public-safe placeholder observations for selected
 or full L2 slots; provider failures, parse failures, or unsafe payloads fall
 back to deterministic pending conclusions. L3/L4/report remain deterministic in
 this first slice, and no external agent is invoked.
+Phase R8-7B adds provider-free external payload adapter mapping in
+`src/react_agent/fixed_dag_external_adapter.py`. The adapter is a pure function
+layer for already-available payload dictionaries: first-slice support maps
+`agent_conclusion_v1` into `conclusion_object_v1` and `data_bundle_v1` into the
+current internal `data_bundle_v1`. It does not call HTTP, providers, `/health`,
+`/v1/agent/invoke`, or any server-deployed agent; it does not change the active
+graph, executor, runtime bindings, live flags, or fixed DAG roster.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -90,9 +97,10 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-6B default-off internal LLM placeholders over the existing
-  full/selected fixed DAG backend skeleton, R7-I web presentation surface, and
-  v2.3.1 scaffold package.
+- Current phase: R8-7B provider-free external payload adapter mapping over the
+  existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
+  LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
+  package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -125,6 +133,14 @@ placeholder skeleton. It is not a completed business analysis engine.
   boundary for L2 conclusion slots only. This is not external adapter
   readiness, live integration, provider readiness, or a real business-agent
   output claim. Runtime bindings remain unchanged.
+- External adapter mapping: R8-7B adds
+  `src/react_agent/fixed_dag_external_adapter.py` as a provider-free pure mapping
+  module. It accepts external scaffold payload dictionaries and returns
+  validator-legal internal objects or controlled adapter failure records for the
+  first supported families: `agent_conclusion_v1 -> conclusion_object_v1` and
+  `data_bundle_v1 -> data_bundle_v1`. It is not an HTTP wrapper, does not load a
+  provider, does not call deployed services, and is not wired into active graph
+  execution.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
