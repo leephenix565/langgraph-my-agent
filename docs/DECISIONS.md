@@ -550,3 +550,36 @@ topology, the 27-agent roster, runtime bindings, public schemas, provider
 readiness, external `/v1/agent/invoke` readiness, or production deployment. It
 does not enable wrappers, set `live_verified=true`, set
 `invoke_enabled_by_default=true`, or register the scaffold into the graph.
+
+## ADR-026: R8-1 Adds Selected Plan Contracts Without Changing Active Runtime
+
+Status: accepted for selected routing contract foundation.
+
+Decision: R8-1 adds `route_intent_v1` and `selected_fixed_dag_plan_v1` to
+`src/react_agent/fixed_dag_contracts.py` as additive contracts and validators.
+The default graph still uses `build_default_fixed_dag_plan`,
+`validate_fixed_dag_plan`, and the full 27-agent `fixed_dag_plan_v1` path.
+
+Reason: controlled dynamic routing needs a safe boundary before any LLM or
+semantic planner is connected. The planner should produce intent, not raw DAG
+dependencies or runtime binding changes. A later deterministic compiler can
+translate that intent into a validator-legal selected plan while preserving
+full-DAG fallback.
+
+Consequence: `route_intent_v1` records task type, targets, selected dimensions,
+selected agents, per-agent briefs, confidence, clarification/fallback metadata,
+and provenance. `selected_fixed_dag_plan_v1` records selected dimensions,
+selected agents, omitted dimensions, omitted agents, selected stages/steps/DAG
+steps, route intent, and fallback metadata. Validators allow explicit dimension
+and agent omission, require `report_generator` for selected plans, require risk
+and `decision_synthesizer` for investment-judgment task types, keep
+`sentiment_company_radar` market-only, reject `value_financial_analysis`, reject
+legacy aNN ids and Star/Chain/Debate/Tree dispatch, and reject provider,
+external, runtime binding, and unsafe fallback claims.
+
+Non-consequence: R8-1 does not change active runtime behavior, `graph.py`, the
+executor default path, fixed DAG topology, the 27-agent roster, catalog,
+runtime bindings, runtime registry, public workflow contracts, frontend UI,
+provider/search readiness, external `/v1/agent/invoke` readiness, or production
+deployment. It does not add an LLM planner, selected DAG compiler, selected
+execution, RouteEval suite, or external adapter.

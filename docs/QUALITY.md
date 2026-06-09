@@ -75,6 +75,28 @@ The fixed-DAG runtime remains the deterministic provider-free reset skeleton
 until later phases implement and verify real business agents and live external
 service readiness.
 
+## R8-1 Selected Contract Gate
+
+R8-1 adds `route_intent_v1` and `selected_fixed_dag_plan_v1` contract validators
+without changing active graph behavior. Its narrow validation gate is:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_contracts.py
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py -q
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_executor.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+This gate confirms that the additive selected contract seam and the full default
+fixed DAG regression baseline still validate. It does not run selected DAG
+execution, provider live smoke, search, external `/v1/agent/invoke`, demo stack,
+fusion-gate, Router-SFT, RARP/route-prior, or frontend build.
+
+Passing R8-1 validation does not mean that an LLM planner, deterministic
+selected compiler, RouteEval suite, external adapter, or real business-agent
+result mapping is implemented.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

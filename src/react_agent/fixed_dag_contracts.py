@@ -20,6 +20,8 @@ from react_agent.fixed_dag_catalog import (
 )
 
 FIXED_DAG_SCHEMA_VERSION = "fixed_dag_plan_v1"
+ROUTE_INTENT_SCHEMA_VERSION = "route_intent_v1"
+SELECTED_FIXED_DAG_SCHEMA_VERSION = "selected_fixed_dag_plan_v1"
 DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
 ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
 CONCLUSION_OBJECT_SCHEMA_VERSION = "conclusion_object_v1"
@@ -41,6 +43,7 @@ FixedDagStage = Literal[
 ConclusionStatus = Literal["pending_implementation", "partial", "complete", "error"]
 DimensionName = Literal["value", "market", "risk", "macro"]
 FixedDagDimension = Literal["l1", "value", "market", "risk", "macro", "l4"]
+RouteTaskType = Literal["single", "compare", "screen", "macro", "sentiment", "industry", "event", "general"]
 FixedDagStepStatus = Literal[
     "complete",
     "pending_implementation",
@@ -86,6 +89,18 @@ DIMENSION_GROUPS: dict[str, tuple[str, ...]] = {
     "risk": RISK_AGENT_IDS,
     "macro": MACRO_AGENT_IDS,
 }
+ROUTE_TASK_TYPES: tuple[RouteTaskType, ...] = (
+    "single",
+    "compare",
+    "screen",
+    "macro",
+    "sentiment",
+    "industry",
+    "event",
+    "general",
+)
+INVESTMENT_JUDGMENT_TASK_TYPES = {"single", "compare", "screen", "industry", "event"}
+SELECTED_PLAN_FALLBACK_TARGETS = {"full_dag", "none"}
 DIMENSION_COMPOSITE_AGENT_IDS: dict[str, str] = {
     "value": "value_composite",
     "market": "market_composite",
@@ -109,6 +124,33 @@ LEGACY_CONTRACT_KEYS = {
     "fusion_verdict",
     "baseline_bundle",
 }
+SELECTED_PLAN_FORBIDDEN_KEYS = {
+    "runtime_kind",
+    "implementation_status",
+    "binding_source",
+    "legacy_agent_id",
+    "external_agent_id",
+    "invoke_enabled",
+    "live_verified",
+    "env_var",
+    "default_url",
+    "endpoint",
+    "provider_response",
+    "external_response",
+}
+SELECTED_PLAN_PUBLIC_UNSAFE_TEXT_TOKENS = (
+    "provider",
+    "external endpoint",
+    "env_var",
+    "secret",
+    "chain-of-thought",
+    "pending_implementation",
+    "placeholder",
+    "runtime binding",
+    "default_url",
+    "traceback",
+)
+LEGACY_DISPATCH_VALUES = {"Star", "Chain", "Debate", "Tree"}
 EXECUTED_STEP_STATUSES = {"complete", "pending_implementation"}
 
 STAGE_TITLE_LABELS: dict[str, str] = {
@@ -183,6 +225,31 @@ class FixedDagPlan(TypedDict):
     target: list[str]
     dimension_groups: dict[str, list[str]]
     provenance: dict[str, Any]
+
+
+class RouteIntent(TypedDict):
+    schema: str
+    schema_version: str
+    task_type: RouteTaskType
+    targets: list[str]
+    selected_dimensions: list[DimensionName]
+    selected_agents: list[str]
+    task_brief_by_agent: dict[str, str]
+    route_confidence: float
+    needs_clarification: bool
+    clarification_question: str
+    fallback_reason: str
+    provenance: dict[str, Any]
+
+
+class SelectedFixedDagPlan(FixedDagPlan):
+    selected_dimensions: list[DimensionName]
+    selected_agents: list[str]
+    omitted_dimensions: list[DimensionName]
+    omitted_agents: list[str]
+    route_intent: RouteIntent
+    fallback_to: str
+    fallback_reason: str
 
 
 class EntityRelationBundle(TypedDict):
@@ -294,6 +361,34 @@ def _contains_legacy_key(value: Any) -> bool:
     if isinstance(value, list):
         return any(_contains_legacy_key(item) for item in value)
     return False
+
+
+def _contains_selected_plan_forbidden_key(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return any(
+            key in SELECTED_PLAN_FORBIDDEN_KEYS or _contains_selected_plan_forbidden_key(item)
+            for key, item in value.items()
+        )
+    if isinstance(value, list):
+        return any(_contains_selected_plan_forbidden_key(item) for item in value)
+    return False
+
+
+def _contains_legacy_dispatch_value(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return any(_contains_legacy_dispatch_value(item) for item in value.values())
+    if isinstance(value, list):
+        return any(_contains_legacy_dispatch_value(item) for item in value)
+    return isinstance(value, str) and value.strip() in LEGACY_DISPATCH_VALUES
+
+
+def _contains_public_unsafe_text(value: str) -> bool:
+    lowered = str(value or "").lower()
+    return any(token in lowered for token in SELECTED_PLAN_PUBLIC_UNSAFE_TEXT_TOKENS)
+
+
+def _looks_like_legacy_agent_id(agent_id: str) -> bool:
+    return agent_id.startswith("a") and len(agent_id) >= 3 and agent_id[1:3].isdigit()
 
 
 def _status_for_expected(
@@ -466,6 +561,93 @@ def build_deterministic_fixed_dag_plan(user_text: str = "") -> FixedDagPlan:
     return build_default_fixed_dag_plan(user_text)
 
 
+def _unique_known_dimensions(values: list[str] | tuple[str, ...] | None) -> list[DimensionName]:
+    selected: list[DimensionName] = []
+    seen: set[str] = set()
+    for value in values or []:
+        dimension = str(value or "").strip()
+        if dimension in DIMENSION_GROUPS and dimension not in seen:
+            selected.append(cast(DimensionName, dimension))
+            seen.add(dimension)
+    return selected
+
+
+def _unique_known_agents(values: list[str] | tuple[str, ...] | None) -> list[str]:
+    selected: list[str] = []
+    seen: set[str] = set()
+    known = set(RESET_RUNTIME_AGENT_IDS)
+    for value in values or []:
+        agent_id = str(value or "").strip()
+        if agent_id in known and agent_id not in seen:
+            selected.append(agent_id)
+            seen.add(agent_id)
+    return selected
+
+
+def _unique_text_values(values: list[str] | tuple[str, ...] | None) -> list[str]:
+    selected: list[str] = []
+    seen: set[str] = set()
+    for value in values or []:
+        text = str(value or "").strip()
+        if text and text not in seen:
+            selected.append(text)
+            seen.add(text)
+    return selected
+
+
+def _agent_dimension(agent_id: str) -> str:
+    if agent_id in AGENT_DIMENSIONS:
+        return AGENT_DIMENSIONS[agent_id]
+    if agent_id in L1_AGENT_IDS:
+        return "l1"
+    if agent_id in L4_AGENT_IDS:
+        return "l4"
+    for dimension, composite_agent_id in DIMENSION_COMPOSITE_AGENT_IDS.items():
+        if agent_id == composite_agent_id:
+            return dimension
+    return ""
+
+
+def build_route_intent(
+    *,
+    task_type: RouteTaskType = "general",
+    targets: list[str] | None = None,
+    selected_dimensions: list[DimensionName] | None = None,
+    selected_agents: list[str] | None = None,
+    task_brief_by_agent: dict[str, str] | None = None,
+    route_confidence: float = 0.0,
+    needs_clarification: bool = False,
+    clarification_question: str = "",
+    fallback_reason: str = "",
+    provenance: dict[str, Any] | None = None,
+) -> RouteIntent:
+    selected_dimension_values = _unique_text_values(cast(list[str] | None, selected_dimensions))
+    selected_agents = _unique_text_values(selected_agents)
+    return {
+        "schema": ROUTE_INTENT_SCHEMA_VERSION,
+        "schema_version": ROUTE_INTENT_SCHEMA_VERSION,
+        "task_type": task_type,
+        "targets": [str(item).strip() for item in targets or [] if str(item).strip()],
+        "selected_dimensions": cast(list[DimensionName], selected_dimension_values),
+        "selected_agents": selected_agents,
+        "task_brief_by_agent": {
+            str(agent_id): str(brief)
+            for agent_id, brief in (task_brief_by_agent or {}).items()
+            if str(agent_id) in selected_agents
+        },
+        "route_confidence": route_confidence,
+        "needs_clarification": bool(needs_clarification),
+        "clarification_question": str(clarification_question or "").strip(),
+        "fallback_reason": str(fallback_reason or "").strip(),
+        "provenance": {
+            "source": "deterministic_route_intent",
+            "provider_invoked": False,
+            "external_invoked": False,
+            **dict(provenance or {}),
+        },
+    }
+
+
 def validate_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
     if not isinstance(plan, Mapping):
         return False, "plan_not_mapping"
@@ -512,6 +694,326 @@ def validate_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
             return False, "unknown_stage"
         if item.get("step_ids") != step_ids_by_stage[stage_id]:
             return False, "stage_step_ids_mismatch"
+    return True, "ok"
+
+
+def validate_route_intent(intent: Mapping[str, Any]) -> tuple[bool, str]:
+    if not isinstance(intent, Mapping):
+        return False, "intent_not_mapping"
+    if intent.get("schema") != ROUTE_INTENT_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if intent.get("schema_version", ROUTE_INTENT_SCHEMA_VERSION) != ROUTE_INTENT_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if _contains_legacy_key(intent):
+        return False, "legacy_dispatch_field_present"
+    if _contains_legacy_dispatch_value(intent):
+        return False, "legacy_dispatch_value_present"
+    if intent.get("task_type") not in ROUTE_TASK_TYPES:
+        return False, "invalid_task_type"
+    try:
+        confidence = float(intent.get("route_confidence"))
+    except (TypeError, ValueError):
+        return False, "invalid_route_confidence"
+    if not 0.0 <= confidence <= 1.0:
+        return False, "route_confidence_out_of_range"
+    selected_dimensions = intent.get("selected_dimensions")
+    if not isinstance(selected_dimensions, list):
+        return False, "invalid_selected_dimensions"
+    if len(selected_dimensions) != len(set(selected_dimensions)):
+        return False, "duplicate_selected_dimensions"
+    if any(dimension not in DIMENSION_GROUPS for dimension in selected_dimensions):
+        return False, "unknown_selected_dimension"
+    selected_agents = intent.get("selected_agents")
+    if not isinstance(selected_agents, list):
+        return False, "invalid_selected_agents"
+    if len(selected_agents) != len(set(selected_agents)):
+        return False, "duplicate_selected_agents"
+    if any(_looks_like_legacy_agent_id(str(agent_id)) for agent_id in selected_agents):
+        return False, "legacy_agent_id_present"
+    if "value_financial_analysis" in selected_agents:
+        return False, "removed_agent_present"
+    if any(agent_id not in RESET_RUNTIME_AGENT_IDS for agent_id in selected_agents):
+        return False, "unknown_selected_agent"
+    selected_dimension_set = set(selected_dimensions)
+    for agent_id in selected_agents:
+        dimension = _agent_dimension(str(agent_id))
+        if dimension in DIMENSION_GROUPS and dimension not in selected_dimension_set:
+            return False, "agent_dimension_mismatch"
+        if agent_id == "sentiment_company_radar" and dimension != "market":
+            return False, "sentiment_dimension_mismatch"
+    briefs = intent.get("task_brief_by_agent")
+    if not isinstance(briefs, Mapping):
+        return False, "invalid_task_brief_by_agent"
+    if not set(briefs) <= set(selected_agents):
+        return False, "task_brief_agent_not_selected"
+    needs_clarification = bool(intent.get("needs_clarification"))
+    clarification_question = str(intent.get("clarification_question") or "").strip()
+    fallback_reason = str(intent.get("fallback_reason") or "").strip()
+    if needs_clarification and not clarification_question:
+        return False, "clarification_question_missing"
+    if not selected_agents and not needs_clarification and not fallback_reason:
+        return False, "fallback_reason_missing"
+    if fallback_reason and _contains_public_unsafe_text(fallback_reason):
+        return False, "fallback_reason_not_public_safe"
+    task_type = str(intent.get("task_type") or "")
+    if selected_agents and not needs_clarification:
+        if "report_generator" not in selected_agents:
+            return False, "report_generator_required"
+        if task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
+            if "risk" not in selected_dimension_set:
+                return False, "risk_dimension_required"
+            if "decision_synthesizer" not in selected_agents:
+                return False, "decision_synthesizer_required"
+    provenance = intent.get("provenance", {})
+    if not isinstance(provenance, Mapping):
+        return False, "invalid_provenance"
+    if provenance.get("provider_invoked") or provenance.get("external_invoked"):
+        return False, "live_invocation_claim_present"
+    return True, "ok"
+
+
+def _steps_for_selected_agents(selected_agents: list[str]) -> list[FixedDagStep]:
+    selected = set(selected_agents)
+    steps: list[FixedDagStep] = []
+    for step in _build_steps():
+        agent_id = step.get("agent_id")
+        if agent_id and agent_id in selected:
+            filtered_step = dict(step)
+            filtered_step["depends_on"] = [
+                dep_id for dep_id in filtered_step.get("depends_on", []) if dep_id in {item["id"] for item in steps}
+            ]
+            if "target_ids" in filtered_step:
+                filtered_step["target_ids"] = [
+                    target_id for target_id in filtered_step["target_ids"] if target_id in selected
+                ]
+            steps.append(cast(FixedDagStep, filtered_step))
+    return steps
+
+
+def _stage_items_for_steps(steps: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    return [
+        {
+            "id": stage,
+            "title": STAGE_TITLE_LABELS.get(stage, stage),
+            "step_ids": [
+                str(step["id"])
+                for step in steps
+                if isinstance(step, Mapping) and step.get("stage") == stage and step.get("id")
+            ],
+        }
+        for stage in FIXED_DAG_STAGE_ORDER
+    ]
+
+
+def build_selected_fixed_dag_plan(
+    *,
+    route_intent: Mapping[str, Any],
+    user_text: str = "",
+    as_of: str | None = None,
+    plan_id: str = "selected-fixed-dag-plan-v1",
+    selected_steps: list[FixedDagStep] | None = None,
+    fallback_to: str = "full_dag",
+    fallback_reason: str = "",
+    provenance: dict[str, Any] | None = None,
+) -> SelectedFixedDagPlan:
+    intent = dict(route_intent)
+    selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
+    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
+    steps = list(selected_steps or _steps_for_selected_agents(selected_agents))
+    step_agent_ids = [
+        str(step.get("agent_id"))
+        for step in steps
+        if isinstance(step, Mapping) and step.get("agent_id")
+    ]
+    target_agent_ids = list(dict.fromkeys(step_agent_ids or selected_agents))
+    selected_dimension_set = set(selected_dimensions)
+    omitted_dimensions = [
+        cast(DimensionName, dimension)
+        for dimension in DIMENSION_GROUPS
+        if dimension not in selected_dimension_set
+    ]
+    omitted_agents = [
+        agent_id for agent_id in RESET_RUNTIME_AGENT_IDS if agent_id not in set(target_agent_ids)
+    ]
+    return {
+        "schema": SELECTED_FIXED_DAG_SCHEMA_VERSION,
+        "schema_version": SELECTED_FIXED_DAG_SCHEMA_VERSION,
+        "plan_id": str(plan_id or "selected-fixed-dag-plan-v1"),
+        "user_text": str(user_text or intent.get("user_text") or ""),
+        "as_of": _as_of(as_of),
+        "stages": _stage_items_for_steps(cast(list[Mapping[str, Any]], steps)),
+        "steps": steps,
+        "dag_steps": steps,
+        "target_agent_ids": target_agent_ids,
+        "target": target_agent_ids,
+        "dimension_groups": {
+            dimension: [
+                agent_id
+                for agent_id in DIMENSION_GROUPS[dimension]
+                if agent_id in target_agent_ids
+            ]
+            for dimension in selected_dimensions
+        },
+        "selected_dimensions": selected_dimensions,
+        "selected_agents": selected_agents,
+        "omitted_dimensions": omitted_dimensions,
+        "omitted_agents": omitted_agents,
+        "route_intent": cast(RouteIntent, intent),
+        "fallback_to": fallback_to,
+        "fallback_reason": str(fallback_reason or intent.get("fallback_reason") or "").strip(),
+        "provenance": {
+            "source": "selected_fixed_dag_contract",
+            "provider_invoked": False,
+            "external_invoked": False,
+            **dict(provenance or {}),
+        },
+    }
+
+
+def validate_selected_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
+    if not isinstance(plan, Mapping):
+        return False, "plan_not_mapping"
+    if plan.get("schema") != SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if plan.get("schema_version", SELECTED_FIXED_DAG_SCHEMA_VERSION) != SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if _contains_legacy_key(plan):
+        return False, "legacy_dispatch_field_present"
+    if _contains_legacy_dispatch_value(plan):
+        return False, "legacy_dispatch_value_present"
+    if _contains_selected_plan_forbidden_key(plan):
+        return False, "runtime_binding_field_present"
+    route_intent = plan.get("route_intent")
+    if not isinstance(route_intent, Mapping):
+        return False, "route_intent_missing"
+    valid, reason = validate_route_intent(route_intent)
+    if not valid:
+        return False, f"route_intent:{reason}"
+    selected_dimensions = plan.get("selected_dimensions")
+    if not isinstance(selected_dimensions, list):
+        return False, "invalid_selected_dimensions"
+    if set(selected_dimensions) != set(route_intent.get("selected_dimensions", [])):
+        return False, "route_intent_dimensions_mismatch"
+    if len(selected_dimensions) != len(set(selected_dimensions)):
+        return False, "duplicate_selected_dimensions"
+    if any(dimension not in DIMENSION_GROUPS for dimension in selected_dimensions):
+        return False, "unknown_selected_dimension"
+    selected_agents = plan.get("selected_agents")
+    target_agent_ids = plan.get("target_agent_ids")
+    target = plan.get("target")
+    if not isinstance(selected_agents, list) or not isinstance(target_agent_ids, list) or not isinstance(target, list):
+        return False, "invalid_targets"
+    if set(selected_agents) != set(route_intent.get("selected_agents", [])):
+        return False, "route_intent_agents_mismatch"
+    if any(_looks_like_legacy_agent_id(str(agent_id)) for agent_id in selected_agents):
+        return False, "legacy_agent_id_present"
+    if "value_financial_analysis" in selected_agents:
+        return False, "removed_agent_present"
+    if any(agent_id not in RESET_RUNTIME_AGENT_IDS for agent_id in selected_agents):
+        return False, "unknown_selected_agent"
+    if set(target_agent_ids) != set(target):
+        return False, "target_mismatch"
+    if set(target_agent_ids) != set(selected_agents):
+        return False, "target_selected_agents_mismatch"
+    route_task_type = str(route_intent.get("task_type") or "")
+    if "report_generator" not in target_agent_ids:
+        return False, "report_generator_required"
+    if route_task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
+        if "risk" not in set(selected_dimensions):
+            return False, "risk_dimension_required"
+        if "decision_synthesizer" not in target_agent_ids:
+            return False, "decision_synthesizer_required"
+    dimension_groups = plan.get("dimension_groups")
+    if not isinstance(dimension_groups, Mapping):
+        return False, "invalid_dimension_groups"
+    if set(dimension_groups) != set(selected_dimensions):
+        return False, "dimension_groups_mismatch"
+    for dimension, agent_ids in dimension_groups.items():
+        if dimension not in DIMENSION_GROUPS:
+            return False, "unknown_dimension_group"
+        if not isinstance(agent_ids, list):
+            return False, "invalid_dimension_group_agents"
+        if not set(agent_ids) <= set(DIMENSION_GROUPS[str(dimension)]):
+            return False, "dimension_group_agent_mismatch"
+        if not set(agent_ids) <= set(target_agent_ids):
+            return False, "dimension_group_agent_not_targeted"
+    steps = plan.get("steps")
+    if not isinstance(steps, list) or not steps:
+        return False, "steps_missing"
+    dag_steps = plan.get("dag_steps")
+    if not isinstance(dag_steps, list):
+        return False, "dag_steps_missing"
+    step_ids = [step.get("id") for step in steps if isinstance(step, Mapping)]
+    dag_step_ids = [step.get("id") for step in dag_steps if isinstance(step, Mapping)]
+    if set(dag_step_ids) != set(step_ids):
+        return False, "dag_steps_mismatch"
+    if len(step_ids) != len(set(step_ids)):
+        return False, "duplicate_step_id"
+    step_agent_ids = {
+        step.get("agent_id")
+        for step in steps
+        if isinstance(step, Mapping) and step.get("agent_id")
+    }
+    if any(agent_id not in RESET_RUNTIME_AGENT_IDS for agent_id in step_agent_ids):
+        return False, "invalid_agent_id"
+    if set(step_agent_ids) != set(target_agent_ids):
+        return False, "step_agent_ids_mismatch"
+    known_step_ids = set(str(step_id) for step_id in step_ids)
+    for step in steps:
+        if not isinstance(step, Mapping):
+            return False, "invalid_step"
+        stage = str(step.get("stage") or "")
+        dimension = str(step.get("dimension") or "")
+        if stage not in FIXED_DAG_STAGE_ORDER:
+            return False, "invalid_stage"
+        if dimension not in {"l1", "l4", *DIMENSION_GROUPS}:
+            return False, "invalid_dimension"
+        agent_id = str(step.get("agent_id") or "")
+        expected_dimension = _agent_dimension(agent_id)
+        if agent_id and expected_dimension and dimension != expected_dimension:
+            return False, "agent_dimension_mismatch"
+        if agent_id == "sentiment_company_radar" and dimension != "market":
+            return False, "sentiment_dimension_mismatch"
+        if agent_id == DIMENSION_COMPOSITE_AGENT_IDS["risk"] and "l2:sentiment_company_radar" in step.get("depends_on", []):
+            return False, "risk_reads_sentiment"
+        if any(dep_id not in known_step_ids for dep_id in step.get("depends_on", [])):
+            return False, "dependency_not_selected"
+    step_ids_by_stage = {
+        stage: [step["id"] for step in steps if isinstance(step, Mapping) and step.get("stage") == stage]
+        for stage in FIXED_DAG_STAGE_ORDER
+    }
+    stage_items = plan.get("stages")
+    if not isinstance(stage_items, list) or len(stage_items) != len(FIXED_DAG_STAGE_ORDER):
+        return False, "stages_mismatch"
+    for item in stage_items:
+        if not isinstance(item, Mapping):
+            return False, "invalid_stage_item"
+        stage_id = item.get("id")
+        if stage_id not in step_ids_by_stage:
+            return False, "unknown_stage"
+        if item.get("step_ids") != step_ids_by_stage[stage_id]:
+            return False, "stage_step_ids_mismatch"
+    omitted_dimensions = plan.get("omitted_dimensions")
+    omitted_agents = plan.get("omitted_agents")
+    if not isinstance(omitted_dimensions, list) or not isinstance(omitted_agents, list):
+        return False, "invalid_omitted_fields"
+    if set(omitted_dimensions) != (set(DIMENSION_GROUPS) - set(selected_dimensions)):
+        return False, "omitted_dimensions_mismatch"
+    if set(omitted_agents) != (set(RESET_RUNTIME_AGENT_IDS) - set(target_agent_ids)):
+        return False, "omitted_agents_mismatch"
+    fallback_to = str(plan.get("fallback_to") or "")
+    if fallback_to not in SELECTED_PLAN_FALLBACK_TARGETS:
+        return False, "invalid_fallback_to"
+    fallback_reason = str(plan.get("fallback_reason") or "").strip()
+    if fallback_to == "full_dag" and not fallback_reason:
+        return False, "fallback_reason_missing"
+    if fallback_reason and _contains_public_unsafe_text(fallback_reason):
+        return False, "fallback_reason_not_public_safe"
+    provenance = plan.get("provenance", {})
+    if not isinstance(provenance, Mapping):
+        return False, "invalid_provenance"
+    if provenance.get("provider_invoked") or provenance.get("external_invoked"):
+        return False, "live_invocation_claim_present"
     return True, "ok"
 
 

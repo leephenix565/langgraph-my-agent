@@ -22,6 +22,8 @@ from react_agent.fixed_dag_contracts import (
     build_pending_conclusion,
     build_report_result,
     build_risk_composite,
+    build_route_intent,
+    build_selected_fixed_dag_plan,
     build_workflow_snapshot_v2,
     normalize_fixed_dag_plan,
     validate_conclusion_object,
@@ -31,6 +33,8 @@ from react_agent.fixed_dag_contracts import (
     validate_entity_relation_bundle,
     validate_fixed_dag_plan,
     validate_report_result,
+    validate_route_intent,
+    validate_selected_fixed_dag_plan,
     validate_workflow_snapshot_v2,
 )
 
@@ -114,6 +118,372 @@ def test_normalize_fixed_dag_plan_fail_soft_restores_deterministic_shape() -> No
     assert normalized["plan_id"] == "custom"
     assert normalized["target_agent_ids"] == list(RESET_RUNTIME_AGENT_IDS)
     assert not _contains_key(normalized, "mode")
+
+
+def _selected_value_risk_steps():
+    full = build_default_fixed_dag_plan("selected q", as_of="2026-06-09")
+    keep = {
+        "route_planner",
+        "financial_data_service",
+        "entity_relation_extractor",
+        "l2:value_traditional_valuation",
+        "l2:risk_identification",
+        "dimension:value",
+        "dimension:risk",
+        "decision_synthesizer",
+        "report_generator",
+    }
+    return [
+        {
+            **step,
+            "depends_on": [dep for dep in step.get("depends_on", []) if dep in keep],
+            **(
+                {
+                    "target_ids": [
+                        target_id
+                        for target_id in step.get("target_ids", [])
+                        if target_id in {"value_traditional_valuation", "risk_identification"}
+                    ]
+                }
+                if step.get("target_ids")
+                else {}
+            ),
+        }
+        for step in full["steps"]
+        if step["id"] in keep
+    ]
+
+
+def _valid_selected_value_risk_intent():
+    return build_route_intent(
+        task_type="single",
+        targets=["示例公司"],
+        selected_dimensions=["value", "risk"],
+        selected_agents=[
+            "route_planner",
+            "financial_data_service",
+            "entity_relation_extractor",
+            "value_traditional_valuation",
+            "risk_identification",
+            "value_composite",
+            "risk_composite",
+            "decision_synthesizer",
+            "report_generator",
+        ],
+        task_brief_by_agent={
+            "value_traditional_valuation": "整理估值相关线索。",
+            "risk_identification": "识别需要保留的风险约束。",
+            "report_generator": "输出公开回答。",
+        },
+        route_confidence=0.82,
+        fallback_reason="selected routing can fall back to full DAG if validation fails.",
+    )
+
+
+def _selected_value_only_steps():
+    full = build_default_fixed_dag_plan("selected q", as_of="2026-06-09")
+    keep = {
+        "route_planner",
+        "l2:value_traditional_valuation",
+        "dimension:value",
+        "report_generator",
+    }
+    return [
+        {
+            **step,
+            "depends_on": [dep for dep in step.get("depends_on", []) if dep in keep],
+            **(
+                {
+                    "target_ids": [
+                        target_id
+                        for target_id in step.get("target_ids", [])
+                        if target_id == "value_traditional_valuation"
+                    ]
+                }
+                if step.get("target_ids")
+                else {}
+            ),
+        }
+        for step in full["steps"]
+        if step["id"] in keep
+    ]
+
+
+def test_route_intent_validates_selected_dimensions_and_agents() -> None:
+    intent = _valid_selected_value_risk_intent()
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert intent["schema"] == "route_intent_v1"
+    assert intent["selected_dimensions"] == ["value", "risk"]
+    assert "report_generator" in intent["selected_agents"]
+    assert "decision_synthesizer" in intent["selected_agents"]
+    assert "risk" in intent["selected_dimensions"]
+    assert intent["route_confidence"] == 0.82
+    assert not _contains_key(intent, "layerMode")
+
+
+def test_route_intent_allows_general_value_only_selection() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["估值方法说明"],
+        selected_dimensions=["value"],
+        selected_agents=["route_planner", "value_traditional_valuation", "value_composite", "report_generator"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert intent["selected_dimensions"] == ["value"]
+    assert "risk" not in intent["selected_dimensions"]
+    assert "decision_synthesizer" not in intent["selected_agents"]
+
+
+def test_route_intent_rejects_invalid_agents_and_legacy_dispatch() -> None:
+    unknown = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["not_a_reset_agent"],
+        fallback_reason="fallback to full DAG",
+    )
+    unknown["selected_agents"] = ["not_a_reset_agent"]
+    valid, reason = validate_route_intent(unknown)
+    assert not valid
+    assert reason == "unknown_selected_agent"
+
+    legacy = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["a16_ml_valuation"],
+        fallback_reason="fallback to full DAG",
+    )
+    legacy["selected_agents"] = ["a16_ml_valuation"]
+    valid, reason = validate_route_intent(legacy)
+    assert not valid
+    assert reason == "legacy_agent_id_present"
+
+    removed = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_financial_analysis"],
+        fallback_reason="fallback to full DAG",
+    )
+    removed["selected_agents"] = ["value_financial_analysis"]
+    valid, reason = validate_route_intent(removed)
+    assert not valid
+    assert reason == "removed_agent_present"
+
+    dispatch = _valid_selected_value_risk_intent()
+    dispatch["provenance"]["mode"] = "Star"
+    valid, reason = validate_route_intent(dispatch)
+    assert not valid
+    assert reason == "legacy_dispatch_field_present"
+
+    legacy_value = _valid_selected_value_risk_intent()
+    legacy_value["fallback_reason"] = "Tree"
+    valid, reason = validate_route_intent(legacy_value)
+    assert not valid
+    assert reason == "legacy_dispatch_value_present"
+
+
+def test_route_intent_enforces_clarification_and_policy_gates() -> None:
+    clarify = build_route_intent(
+        task_type="general",
+        selected_dimensions=[],
+        selected_agents=[],
+        route_confidence=0.1,
+        needs_clarification=True,
+    )
+    valid, reason = validate_route_intent(clarify)
+    assert not valid
+    assert reason == "clarification_question_missing"
+
+    missing_reason = build_route_intent(
+        task_type="general",
+        selected_dimensions=[],
+        selected_agents=[],
+    )
+    valid, reason = validate_route_intent(missing_reason)
+    assert not valid
+    assert reason == "fallback_reason_missing"
+
+    missing_risk = build_route_intent(
+        task_type="single",
+        selected_dimensions=["value"],
+        selected_agents=["value_traditional_valuation", "value_composite", "decision_synthesizer", "report_generator"],
+        fallback_reason="fallback to full DAG",
+    )
+    valid, reason = validate_route_intent(missing_risk)
+    assert not valid
+    assert reason == "risk_dimension_required"
+
+    unsafe_reason = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["route_planner", "value_traditional_valuation", "value_composite", "report_generator"],
+        fallback_reason="provider default_url",
+    )
+    valid, reason = validate_route_intent(unsafe_reason)
+    assert not valid
+    assert reason == "fallback_reason_not_public_safe"
+
+
+def test_route_intent_preserves_sentiment_market_boundary() -> None:
+    intent = build_route_intent(
+        task_type="sentiment",
+        selected_dimensions=["risk"],
+        selected_agents=["sentiment_company_radar", "report_generator"],
+        fallback_reason="fallback to full DAG",
+    )
+    intent["selected_agents"] = ["sentiment_company_radar", "report_generator"]
+    valid, reason = validate_route_intent(intent)
+
+    assert not valid
+    assert reason == "agent_dimension_mismatch"
+
+
+def test_selected_fixed_dag_plan_allows_general_value_only_subset() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["估值方法说明"],
+        selected_dimensions=["value"],
+        selected_agents=["route_planner", "value_traditional_valuation", "value_composite", "report_generator"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        user_text="selected q",
+        selected_steps=_selected_value_only_steps(),
+        fallback_reason="fallback to full DAG",
+    )
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+
+    assert valid, reason
+    assert len(plan["steps"]) < len(RESET_RUNTIME_AGENT_IDS)
+    assert plan["selected_dimensions"] == ["value"]
+    assert set(plan["omitted_dimensions"]) == {"market", "risk", "macro"}
+    assert "risk_identification" in plan["omitted_agents"]
+    assert "macro_analysis" in plan["omitted_agents"]
+
+
+def test_selected_fixed_dag_plan_validates_subset_and_omissions() -> None:
+    intent = _valid_selected_value_risk_intent()
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        user_text="selected q",
+        as_of="2026-06-09",
+        selected_steps=_selected_value_risk_steps(),
+        fallback_reason="fallback to full DAG",
+    )
+    selected_valid, selected_reason = validate_selected_fixed_dag_plan(plan)
+    full_valid, full_reason = validate_fixed_dag_plan(plan)
+
+    assert selected_valid, selected_reason
+    assert not full_valid
+    assert full_reason == "invalid_schema"
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert len(plan["steps"]) < len(RESET_RUNTIME_AGENT_IDS)
+    assert set(plan["selected_dimensions"]) == {"value", "risk"}
+    assert set(plan["omitted_dimensions"]) == {"market", "macro"}
+    assert "market_stock_technical" in plan["omitted_agents"]
+    assert "macro_analysis" in plan["omitted_agents"]
+    assert "report_generator" in plan["target_agent_ids"]
+    assert "decision_synthesizer" in plan["target_agent_ids"]
+    assert plan["fallback_to"] == "full_dag"
+    assert plan["fallback_reason"] == "fallback to full DAG"
+    assert not _contains_key(plan, "layerMode")
+    assert not _contains_key(plan, "fusionSteps")
+
+
+def test_selected_fixed_dag_plan_rejects_runtime_fields_and_bad_omissions() -> None:
+    intent = _valid_selected_value_risk_intent()
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        user_text="selected q",
+        selected_steps=_selected_value_risk_steps(),
+        fallback_reason="fallback to full DAG",
+    )
+    plan["steps"][0]["runtime_kind"] = "external_http_candidate"
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    assert not valid
+    assert reason == "runtime_binding_field_present"
+
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        user_text="selected q",
+        selected_steps=_selected_value_risk_steps(),
+        fallback_reason="fallback to full DAG",
+    )
+    plan["omitted_dimensions"] = ["market"]
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    assert not valid
+    assert reason == "omitted_dimensions_mismatch"
+
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        user_text="selected q",
+        selected_steps=_selected_value_risk_steps(),
+        fallback_reason="provider default_url",
+    )
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    assert not valid
+    assert reason == "fallback_reason_not_public_safe"
+
+
+def test_selected_fixed_dag_plan_rejects_sentiment_to_risk_dependency() -> None:
+    intent = build_route_intent(
+        task_type="single",
+        targets=["示例公司"],
+        selected_dimensions=["market", "risk"],
+        selected_agents=[
+            "route_planner",
+            "financial_data_service",
+            "entity_relation_extractor",
+            "sentiment_company_radar",
+            "risk_identification",
+            "market_composite",
+            "risk_composite",
+            "decision_synthesizer",
+            "report_generator",
+        ],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    full = build_default_fixed_dag_plan("selected q")
+    keep = {
+        "route_planner",
+        "financial_data_service",
+        "entity_relation_extractor",
+        "l2:sentiment_company_radar",
+        "l2:risk_identification",
+        "dimension:market",
+        "dimension:risk",
+        "decision_synthesizer",
+        "report_generator",
+    }
+    steps = []
+    for step in full["steps"]:
+        if step["id"] not in keep:
+            continue
+        item = {**step, "depends_on": [dep for dep in step.get("depends_on", []) if dep in keep]}
+        if item["id"] == "dimension:risk":
+            item["depends_on"].append("l2:sentiment_company_radar")
+        if item.get("target_ids"):
+            item["target_ids"] = [
+                target for target in item["target_ids"] if target in {"sentiment_company_radar", "risk_identification"}
+            ]
+        steps.append(item)
+    plan = build_selected_fixed_dag_plan(
+        route_intent=intent,
+        selected_steps=steps,
+        fallback_reason="fallback to full DAG",
+    )
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+
+    assert not valid
+    assert reason == "risk_reads_sentiment"
 
 
 def test_l1_bundles_are_deterministic_and_keep_as_of_boundary() -> None:

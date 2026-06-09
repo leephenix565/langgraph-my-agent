@@ -52,6 +52,10 @@ Phase R7-I adds a report-first web presentation mode for the existing assistant
 answer card: the natural-language report remains the primary answer, while a
 collapsed "研判思维链" disclosure summarizes the public-safe fixed DAG process
 from `workflow_snapshot_v2`.
+Phase R8-1 adds the selected routing contract foundation: `route_intent_v1`
+and `selected_fixed_dag_plan_v1` validators are available for future controlled
+dynamic routing, but the active graph still builds and validates the full
+default fixed DAG.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -61,8 +65,9 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R7-I demo presentation mode over the existing fixed DAG web
-  shell, backend skeleton, and v2.3.1 scaffold package.
+- Current phase: R8-1 selected routing contract foundation over the existing
+  full fixed DAG backend skeleton, R7-I web presentation surface, and v2.3.1
+  scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -74,6 +79,10 @@ is not a completed business analysis engine.
   user-facing simplification, and R5-C1 business-copy professionalization on
   the same payload. R7-I adds a collapsed report-first "研判思维链" disclosure
   above that technical inspector without changing the public contract.
+- Selected routing contracts: R8-1 adds `route_intent_v1` and
+  `selected_fixed_dag_plan_v1` in `fixed_dag_contracts.py`. They are additive
+  planner/compiler targets for later R8 work and are not active runtime
+  defaults.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -97,6 +106,17 @@ user input
 `execute_fixed_dag` walks the 27-agent `fixed_dag_plan_v1` by validated
 dependencies, produces topological batches, records per-step execution results,
 and fills the L2/L3/L4 placeholder result contracts.
+
+R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
+`route_intent_v1` as a planner-output contract and
+`selected_fixed_dag_plan_v1` as the future deterministic compiler/validator
+target. `route_intent_v1` is not executable; the selected plan contract allows
+omitted dimensions and agents only when they are explicitly recorded, keeps
+`report_generator` always on for selected plans, requires risk and
+`decision_synthesizer` for investment-judgment task types, and rejects legacy
+route-mode fields, runtime binding fields, provider/external invocation claims,
+and unsafe fallback text. R8-1 does not connect an LLM planner, does not change
+`graph.py`, and does not enable selected execution.
 
 The reset target has 27 formal agent ids:
 
@@ -281,6 +301,19 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
+For R8-1 selected contract changes, use the narrow additive gate:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_contracts.py
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py -q
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_executor.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+These commands do not run provider live smoke, external live invoke, demo
+stack, fusion-gate, frontend build, or selected DAG execution.
+
 R7-H restores `E:\muti-agent\external_agent_scaffold` from the tracked repo
 mirror when that local distribution working copy is missing. Scaffold
 validation can then run the restored repo-external package tests and ruff for
@@ -341,6 +374,10 @@ readiness.
   It does not change public schemas, backend runtime behavior, runtime
   bindings, fixed DAG topology, provider/search readiness, external invocation,
   demo stack acceptance, or business-agent correctness.
+- R8-1 only adds selected routing contracts and validators. It does not change
+  active graph behavior, default full DAG fallback, runtime bindings, fixed DAG
+  roster, provider/search readiness, external invocation, LLM planning,
+  deterministic selected compilation, RouteEval, or external adapter readiness.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

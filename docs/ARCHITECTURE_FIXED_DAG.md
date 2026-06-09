@@ -3,9 +3,10 @@
 This document describes the active reset skeleton, the Phase R4-A fixed DAG
 catalog source, the Phase R4-B runtime binding registry, the Phase R4-C legacy
 registry boundary cleanup, the Phase R5-B1 frontend contract migration, and the
-Phase R5-B2 workflow DAG inspector UI rewrite. The skeleton is deterministic,
-provider-free, plan-driven, and backed by explicit catalog, binding, contract,
-executor, and function seams. It is not a completed business analysis engine.
+Phase R5-B2 workflow DAG inspector UI rewrite, and the Phase R8-1 selected
+routing contract foundation. The skeleton is deterministic, provider-free,
+plan-driven, and backed by explicit catalog, binding, contract, executor, and
+function seams. It is not a completed business analysis engine.
 
 ## Active Skeleton Flow
 
@@ -110,3 +111,40 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - R5-B2 owns frontend workflow inspector rendering over the same public
   snapshot.
 - R6 owns mainline/fusion-gate rebuild.
+- R8-1 owns selected routing contracts only: `route_intent_v1` and
+  `selected_fixed_dag_plan_v1` are additive validator seams for future
+  controlled dynamic routing.
+
+## R8-1 Selected Routing Contract Boundary
+
+The active graph still uses `build_default_fixed_dag_plan`,
+`validate_fixed_dag_plan`, and the full 27-agent `fixed_dag_plan_v1` path. R8-1
+does not change `src/react_agent/graph.py`, the executor default behavior, the
+fixed DAG catalog, runtime bindings, public workflow mapping, or the web UI.
+
+R8-1 adds two contract-level shapes in `fixed_dag_contracts.py`:
+
+- `route_intent_v1`: a planner intent contract. It records `task_type`,
+  `targets`, `selected_dimensions`, `selected_agents`, `task_brief_by_agent`,
+  `route_confidence`, clarification/fallback fields, and provenance. It is not
+  executable DAG state.
+- `selected_fixed_dag_plan_v1`: a future compiler output target. It can contain
+  fewer than 27 steps and a subset of dimensions, but selected dimensions,
+  selected agents, omitted dimensions, omitted agents, targets, stages, steps,
+  and DAG steps must reconcile.
+
+Policy gates are deliberately conservative:
+
+- selected plans may omit dimensions, but omissions must be explicit;
+- `report_generator` is always required for selected plans;
+- investment-judgment task types require the risk dimension and
+  `decision_synthesizer`;
+- pure general, macro, or sentiment tasks may omit risk and decision;
+- invalid selected contracts fall back to the full DAG path in later compiler
+  work;
+- the LLM, if added later, must not generate raw dependencies, runtime binding
+  changes, external invocation flags, or legacy Star/Chain/Debate/Tree dispatch.
+
+R8-2 is expected to add the deterministic selected DAG compiler. R8-3 is the
+LLM or semantic planner seam. R8-4 is RouteEval. R8-5 is external adapter
+readiness. None of those are implemented by R8-1.

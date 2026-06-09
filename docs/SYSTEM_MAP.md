@@ -1,13 +1,13 @@
 # System Map
 
-This file is the reset branch operational map for Phase R7-I.
+This file is the reset branch operational map for Phase R8-1.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R7-I report-first thought-chain presentation mode over the
-  existing fixed-DAG runtime skeleton, R5 web shell, and R7-G v2.3.1 scaffold
-  package.
+- Current phase: R8-1 selected routing contract foundation over the existing
+  fixed-DAG runtime skeleton, R7-I web presentation surface, and R7-G v2.3.1
+  scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -20,6 +20,10 @@ This file is the reset branch operational map for Phase R7-I.
   `config/fixed_dag/agent_catalog.json`.
 - Active backend runtime binding source:
   `config/fixed_dag/runtime_bindings.json`.
+- Selected routing contract seams:
+  `route_intent_v1` and `selected_fixed_dag_plan_v1` in
+  `src/react_agent/fixed_dag_contracts.py`. These are additive future planner
+  and compiler targets, not active runtime defaults.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -73,6 +77,12 @@ The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
 R4-B does not add binding fields to `/api/agents`.
 
+R8-1 does not change public workflow projection or frontend rendering. The
+public path still receives the full default `workflow_snapshot_v2` produced from
+the active fixed DAG skeleton. Selected plan contracts remain internal
+validator seams until a later compiler/runtime phase intentionally connects
+them.
+
 ## Active Fixed DAG Skeleton
 
 ```mermaid
@@ -95,6 +105,8 @@ Active skeleton properties:
 - Final public source is `reset_skeleton`.
 - Plan, bundle, conclusion, composite, decision, report, workflow, and final
   emit payloads are generated from `fixed_dag_contracts.py` seams.
+- `route_planner` still builds the default full `fixed_dag_plan_v1`; R8-1 does
+  not make selected routing active.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
@@ -142,6 +154,14 @@ signals are workflow-stage-derived presentation signals, not business-agent
 conclusions, live market data, investment advice, confidence scores, or external
 service results. It does not register agents, change runtime bindings, invoke
 providers/search/external services, or expose hidden chain-of-thought.
+
+In R8-1, `route_intent_v1` and `selected_fixed_dag_plan_v1` are added as
+contract-only preparation for controlled dynamic routing. A route intent is
+planner intent, not an executable DAG. A selected plan is a future deterministic
+compiler output target that can explicitly omit dimensions and agents while
+keeping full-DAG fallback metadata. R8-1 does not add an LLM planner, selected
+DAG compiler, RouteEval, external adapter, public contract field, or runtime
+binding change.
 
 ## Target Fixed DAG IDs
 

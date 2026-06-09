@@ -3,6 +3,47 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-1 selected fixed DAG plan contract
+
+### Changed
+
+- Added additive `route_intent_v1` and `selected_fixed_dag_plan_v1` contract
+  seams in `fixed_dag_contracts.py` for future controlled dynamic routing.
+- Added selected-routing validators for task type, route confidence, selected
+  dimensions, selected agents, explicit omitted dimensions/agents, fallback
+  metadata, investment-judgment risk/decision policy gates, report-generator
+  inclusion, sentiment market-only routing, and public-safe fallback text.
+- Kept `build_default_fixed_dag_plan` and `validate_fixed_dag_plan` as the full
+  27-agent regression baseline; selected plans do not pass the full-plan
+  validator and are not active graph defaults.
+- Added unit coverage for valid selected intents, general value-only selected
+  plans, omitted-field reconciliation, removed/legacy agent rejection, legacy
+  mode rejection, unsafe fallback text rejection, and sentiment-to-risk
+  dependency rejection.
+- Updated reset architecture, contracts, system map, quality, README, and
+  decision docs to mark R8-1 as contract foundation only.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_contracts.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py -q`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_executor.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Not Done
+
+- No active runtime default behavior change.
+- No `src/react_agent/graph.py` change.
+- No selected DAG compiler or selected execution enablement.
+- No LLM planner, RouteEval, or external adapter implementation.
+- No fixed DAG roster, catalog, runtime binding, runtime registry, public
+  workflow, or frontend change.
+- No provider/search call.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+
 ## 2026-06-08 - Phase R7-I demo presentation mode - user A report-first thought chain
 
 ### Changed

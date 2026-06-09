@@ -214,6 +214,103 @@ Seams:
 - `validate_dag_steps`
 - `topological_batches`
 
+## route_intent_v1
+
+Purpose: record a future controlled-routing planner intent without making it
+an executable DAG.
+
+R8-1 adds this contract as an additive seam only. The active graph does not call
+an LLM planner and does not use selected routing by default.
+
+Fields:
+
+- `schema`
+- `schema_version`
+- `task_type`
+- `targets`
+- `selected_dimensions`
+- `selected_agents`
+- `task_brief_by_agent`
+- `route_confidence`
+- `needs_clarification`
+- `clarification_question`
+- `fallback_reason`
+- `provenance`
+
+Allowed `task_type` values are `single`, `compare`, `screen`, `macro`,
+`sentiment`, `industry`, `event`, and `general`. Allowed dimensions are
+`value`, `market`, `risk`, and `macro`.
+
+Validation requires confidence in `[0, 1]`, selected agents from the fixed DAG
+27-agent roster, no legacy aNN ids, no `value_financial_analysis`, no legacy
+Star/Chain/Debate/Tree dispatch fields or values, and no provider/external
+invocation claim. L2 agents must match their selected dimension; in particular
+`sentiment_company_radar` remains market-only. `task_brief_by_agent` keys must
+be a subset of `selected_agents`. Clarification requests require a non-empty
+question. Empty selected-agent intents require a fallback reason unless they
+need clarification.
+
+Policy gates:
+
+- `report_generator` is required whenever selected agents are present.
+- Investment-judgment task types (`single`, `compare`, `screen`, `industry`,
+  `event`) require the risk dimension and `decision_synthesizer`.
+- `general`, `macro`, and `sentiment` intents may omit risk and decision.
+- Fallback text must stay public-safe; it must not expose provider, endpoint,
+  env var, secret, traceback, runtime binding, placeholder, or similar raw
+  implementation language.
+
+Seams:
+
+- `build_route_intent`
+- `validate_route_intent`
+
+## selected_fixed_dag_plan_v1
+
+Purpose: define the future deterministic compiler/validator target for a
+selected sub-DAG while keeping `fixed_dag_plan_v1` as the full default
+regression baseline.
+
+R8-1 adds validation only. It does not execute selected plans and does not call
+`validate_fixed_dag_plan` from the selected validator.
+
+Fields include the base plan fields plus:
+
+- `selected_dimensions`
+- `selected_agents`
+- `omitted_dimensions`
+- `omitted_agents`
+- `route_intent`
+- `fallback_to`
+- `fallback_reason`
+
+Selected plans may contain fewer than 27 steps, and `dimension_groups` may be a
+selected subset. Validation still requires all selected steps, DAG steps, stage
+step ids, targets, selected agents, selected dimensions, omitted agents, and
+omitted dimensions to reconcile. Step agent ids must be fixed DAG roster ids
+and must match the selected target set. Step dimensions must match the catalog
+dimension for the selected agent. Dependencies must point only to selected
+steps in R8-1; full dependency closure and deterministic selected compilation
+are deferred to R8-2.
+
+Validation rejects runtime binding fields, external/provider/raw response
+fields, legacy dispatch keys, legacy dispatch values, sentiment-to-risk
+dependencies, enabled external invocation claims, unsafe fallback text, bad
+fallback targets, and missing full-DAG fallback reason.
+
+Seams:
+
+- `build_selected_fixed_dag_plan`
+- `validate_selected_fixed_dag_plan`
+
+Non-claims:
+
+- `route_intent_v1` is not executable.
+- `selected_fixed_dag_plan_v1` is not the active runtime default.
+- R8-1 does not add an LLM planner, deterministic selected compiler, RouteEval,
+  external adapter, public workflow field, web UI change, provider call, search
+  call, external `/v1/agent/invoke` call, or runtime binding change.
+
 ## fixed_dag_execution_v1
 
 Purpose: record deterministic execution of a fixed DAG plan.
