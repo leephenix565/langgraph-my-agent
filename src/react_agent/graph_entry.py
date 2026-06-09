@@ -55,6 +55,7 @@ def maybe_make_checkpointer():
 
 
 def compile_graph_variants(builder: Any, graph_name: str) -> Tuple[Any, Any]:
+    """Compile replay and optional persistent graph variants."""
     graph = builder.compile(name=graph_name)
     checkpointer = maybe_make_checkpointer()
     graph_persistent = (
@@ -66,6 +67,7 @@ def compile_graph_variants(builder: Any, graph_name: str) -> Tuple[Any, Any]:
 
 
 def select_graph_for_invoke(thread_id: Optional[str], graph: Any, graph_persistent: Any) -> Any:
+    """Select the persistent graph only when continuity has a thread id."""
     if thread_id and graph_persistent is not None:
         return graph_persistent
     return graph

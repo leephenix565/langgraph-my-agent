@@ -222,8 +222,9 @@ executable DAG.
 R8-1 adds this contract as an additive seam. R8-2 compiles valid route intent
 deterministically into `selected_fixed_dag_plan_v1`. R8-3 adds provider-free
 planner seam helpers and a future prompt/parser boundary for generating and
-normalizing route intent. The active graph still does not call an LLM planner
-and does not use selected routing by default.
+normalizing route intent. R8-4 adds provider-free RouteEval over this contract.
+The active graph still does not call an LLM planner and does not use selected
+routing by default.
 
 Fields:
 
@@ -275,6 +276,9 @@ Seams:
 - `parse_route_intent_json`
 - `normalize_route_intent`
 - `compile_selected_fixed_dag_plan`
+- `load_route_eval_cases`
+- `evaluate_route_intents`
+- `route_eval_report_to_dict`
 
 R8-3 prompt/parser boundary:
 
@@ -288,6 +292,47 @@ R8-3 prompt/parser boundary:
 - removed ids, legacy numbered ids, selected sentiment-to-risk misuse,
   investment intents without risk, and provider/external invocation claims are
   rejected or normalized to fallback.
+
+## RouteEval baseline
+
+Purpose: evaluate `route_intent_v1` selection quality before selected routing
+is enabled in the active graph.
+
+R8-4 adds `src/react_agent/route_eval.py` and
+`tests/fixtures/route_eval_gold.jsonl`. The evaluator is provider-free and
+deterministic. It accepts a planner function that returns a route-intent-shaped
+mapping, so it can score `build_default_route_intent`, parser-normalizer
+fixtures, or later provider-free planner stubs without executing a DAG.
+
+Metrics:
+
+- `task_type_accuracy`
+- `target_exact_or_partial_match`
+- `dimension_precision`
+- `dimension_recall`
+- `dimension_f1`
+- `agent_precision`
+- `agent_recall`
+- `agent_f1`
+- `over_selection_count`
+- `under_selection_count`
+- `clarification_accuracy`
+- `fallback_rate`
+
+Gold case fields include `id`, `query`, `gold_task_type`, `gold_targets`,
+`gold_dimensions`, `gold_agents`, `gold_needs_clarification`,
+`acceptable_extra_agents`, `must_not_agents`, and `notes`.
+`acceptable_extra_agents` are not counted as false positives.
+`must_not_agents` are counted as false positives when predicted.
+
+Non-claims:
+
+- RouteEval does not evaluate Star/Chain/Debate/Tree mode accuracy.
+- RouteEval does not produce executable DAGs.
+- RouteEval does not call an LLM, provider, search backend, or external
+  `/v1/agent/invoke`.
+- The first gold set is a small baseline, not the future >=80% Route F1 gate.
+- R8-4 does not enable selected routing in `src/react_agent/graph.py`.
 
 ## selected_fixed_dag_plan_v1
 
@@ -347,7 +392,7 @@ Non-claims:
 
 - `route_intent_v1` is not executable.
 - `selected_fixed_dag_plan_v1` is not the active runtime default.
-- R8-3 does not add an active LLM planner, active graph selected execution, RouteEval,
+- R8-4 does not add an active LLM planner, active graph selected execution,
   external adapter, public workflow field, web UI change, provider call, search
   call, external `/v1/agent/invoke` call, or runtime binding change.
 

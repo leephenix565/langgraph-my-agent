@@ -1,7 +1,5 @@
 import types
 
-import pytest
-
 import anyio
 
 from react_agent.default_agents import _build_agent_tool

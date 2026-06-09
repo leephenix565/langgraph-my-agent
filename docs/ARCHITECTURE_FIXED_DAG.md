@@ -5,7 +5,8 @@ catalog source, the Phase R4-B runtime binding registry, the Phase R4-C legacy
 registry boundary cleanup, the Phase R5-B1 frontend contract migration, and the
 Phase R5-B2 workflow DAG inspector UI rewrite, the Phase R8-1 selected routing
 contract foundation, the Phase R8-2 deterministic selected DAG compiler, and
-the Phase R8-3 route-intent planner seam.
+the Phase R8-3 route-intent planner seam, and the Phase R8-4 RouteEval
+baseline.
 The skeleton is deterministic, provider-free, plan-driven, and backed by
 explicit catalog, binding, contract, executor, and function seams. It is not a
 completed business analysis engine.
@@ -122,6 +123,8 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   intent construction, a future route-intent prompt contract, and parser
   normalization into `route_intent_v1` without changing the active graph
   default.
+- R8-4 owns provider-free RouteEval baseline coverage for `route_intent_v1`
+  selection quality without changing the active graph default.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -186,7 +189,7 @@ dependencies, and the sentiment market-only boundary without requiring the full
 
 The active graph still uses the full `fixed_dag_plan_v1` path. R8-2 does not
 modify `src/react_agent/graph.py`, public workflow mapping, frontend rendering,
-the fixed DAG catalog, runtime bindings, or the runtime registry. R8-4 remains
+the fixed DAG catalog, runtime bindings, or the runtime registry. R8-4 owns
 RouteEval. R8-5 remains external adapter readiness.
 
 ## R8-3 Route Intent Planner Seam
@@ -219,3 +222,29 @@ R8-3 does not modify `src/react_agent/graph.py`, public workflow mapping,
 frontend rendering, the fixed DAG catalog, runtime bindings, or the runtime
 registry. A later phase must explicitly connect and validate active selected
 routing before runtime behavior changes.
+
+## R8-4 RouteEval Baseline
+
+R8-4 adds RouteEval as an offline deterministic evaluation seam for
+`route_intent_v1`. It evaluates planner/parser output as intent selections,
+not as executable DAGs and not as old route-mode dispatch.
+
+RouteEval behavior:
+
+- loads a small JSONL gold set from `tests/fixtures/route_eval_gold.jsonl`;
+- evaluates task type, targets, selected dimensions, selected agents,
+  clarification, and fallback behavior;
+- reports dimension and agent precision, recall, F1, over-selection, and
+  under-selection;
+- treats `acceptable_extra_agents` as non-penalized extras;
+- treats `must_not_agents` as false positives when predicted;
+- penalizes sentiment-to-risk mistakes through the market-only gold cases;
+- does not evaluate Star/Chain/Debate/Tree mode accuracy;
+- does not call an LLM, provider, search backend, external service, demo stack,
+  or fusion-gate.
+
+The first gold set is intentionally small and deterministic. It is not the
+future formal Route F1 acceptance suite and does not imply an 80% routing
+quality threshold. The active graph still uses the full `fixed_dag_plan_v1`
+path until a later phase explicitly connects selected routing behind a
+validated runtime boundary.

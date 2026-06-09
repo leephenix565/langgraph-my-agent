@@ -28,6 +28,7 @@ TASK_REQUIRED_KEYS = {
 
 
 def hash_contract(contract: Dict[str, Any]) -> str:
+    """Return a stable hash for an A01 contract mapping."""
     try:
         payload = json.dumps(contract, ensure_ascii=False, sort_keys=True)
     except Exception:
@@ -36,6 +37,7 @@ def hash_contract(contract: Dict[str, Any]) -> str:
 
 
 def extract_contract(results: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Extract a parsed A01 contract from agent results when present."""
     a01 = results.get("a01_cio_orchestrator")
     if not isinstance(a01, dict):
         return None
@@ -58,6 +60,7 @@ def validate_contract(
     steps_min: int = 2,
     steps_max: int | None = 6,
 ) -> Tuple[bool, str, Dict[str, Dict[str, Any]]]:
+    """Validate the legacy A01 contract shape retained for compatibility."""
     if not isinstance(contract, dict):
         return False, "missing_contract", {}
     if contract.get("schema_version") != CONTRACT_SCHEMA_VERSION:

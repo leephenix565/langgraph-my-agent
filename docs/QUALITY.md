@@ -143,6 +143,31 @@ Passing R8-3 validation does not mean that an active LLM planner, RouteEval
 suite, external adapter, runtime binding enablement, public workflow
 selected-plan projection, or real business-agent result mapping is implemented.
 
+## R8-4 RouteEval Gate
+
+R8-4 adds provider-free RouteEval helpers and a small local JSONL gold set
+without changing active graph behavior. Its narrow validation gate is:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_route_eval.py -q
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+This gate confirms that RouteEval can load the local fixture and evaluate
+`route_intent_v1` task type, target, dimension, agent, clarification, and
+fallback selections without provider or external calls. R8-4 does not add a
+`route-eval` quality runner mode; the explicit unit test is the offline
+evaluation baseline for this phase.
+
+Passing R8-4 validation does not mean that selected routing is active in the
+graph, that a provider-backed LLM planner is enabled, that the first 12-case
+gold set is a formal >=80% Route F1 acceptance suite, or that external adapter,
+runtime binding enablement, public workflow selected-plan projection, or real
+business-agent result mapping is implemented.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

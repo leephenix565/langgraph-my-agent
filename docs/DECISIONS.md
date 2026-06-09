@@ -644,3 +644,35 @@ frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
 or production deployment. It does not add an active LLM planner, RouteEval
 suite, external adapter, live selected execution path, or selected public
 workflow projection.
+
+## ADR-029: R8-4 Evaluates Route Intent Selections Before Enabling Active Routing
+
+Status: accepted for provider-free route evaluation baseline.
+
+Decision: R8-4 adds RouteEval as an offline deterministic evaluation seam for
+`route_intent_v1`. The evaluator scores task type, targets, selected
+dimensions, selected agents, clarification behavior, fallback behavior,
+over-selection, and under-selection against a small repo fixture. It does not
+evaluate legacy Star/Chain/Debate/Tree modes and does not call providers,
+search, external services, or the active graph.
+
+Reason: R8-1 through R8-3 created selected-routing contracts, deterministic
+selected compilation, and planner/parser seams, but controlled dynamic routing
+still needs a repeatable quality loop before any active selected-routing switch
+or provider-backed planner is enabled. Evaluating intent selections first keeps
+LLM output away from executable DAG dependencies and preserves the deterministic
+compiler boundary.
+
+Consequence: `src/react_agent/route_eval.py` can load JSONL gold cases and
+evaluate deterministic/mock planner output or parser-normalizer output with
+stable provider-free metrics. The first fixture is intentionally small and is a
+baseline only; later RouteEval work should expand the gold set before using
+Route F1 as an acceptance threshold.
+
+Non-consequence: R8-4 does not change active runtime behavior, `graph.py`,
+route planner default behavior, fixed DAG topology, the 27-agent roster,
+catalog, runtime bindings, runtime registry, public workflow contracts,
+frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
+or production deployment. It does not add active selected routing, a live LLM
+planner, external adapter readiness, live selected execution, or a final >=80%
+Route F1 gate.

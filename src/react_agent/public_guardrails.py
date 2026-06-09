@@ -16,6 +16,8 @@ DEFAULT_REQUEST_TIMEOUT_SECONDS = 300
 
 @dataclass(frozen=True)
 class PublicApiGuardrailConfig:
+    """Runtime-configurable public API guardrail limits."""
+
     rate_limit_per_minute: int
     max_message_chars: int
     max_active_streams_per_ip: int
@@ -26,6 +28,7 @@ class PublicApiGuardrailViolation(RuntimeError):
     """Raised when a request violates public trial guardrails."""
 
     def __init__(self, *, status_code: int, code: str, message: str, category: str = "request") -> None:
+        """Initialize a public API guardrail violation."""
         super().__init__(message)
         self.status_code = status_code
         self.code = code
@@ -68,11 +71,15 @@ def client_key_from_request(request: Any) -> str:
 
 
 class InMemoryMinuteRateLimiter:
+    """Per-process minute-window rate limiter for trial public API use."""
+
     def __init__(self) -> None:
+        """Initialize empty in-memory rate-limit windows."""
         self._lock = threading.RLock()
         self._windows: dict[str, tuple[int, int]] = {}
 
     def check(self, client_key: str, *, now: float | None = None) -> None:
+        """Raise if the client exceeds the configured minute request limit."""
         limit = get_public_api_guardrail_config().rate_limit_per_minute
         if limit <= 0:
             return
@@ -97,16 +104,21 @@ class InMemoryMinuteRateLimiter:
                 )
 
     def reset(self) -> None:
+        """Clear tracked request windows."""
         with self._lock:
             self._windows.clear()
 
 
 class ActiveStreamLimiter:
+    """Per-process active stream limiter for trial public API use."""
+
     def __init__(self) -> None:
+        """Initialize empty active stream counters."""
         self._lock = threading.RLock()
         self._counts: dict[str, int] = {}
 
     def acquire(self, client_key: str) -> None:
+        """Reserve an active stream slot or raise when the limit is reached."""
         limit = get_public_api_guardrail_config().max_active_streams_per_ip
         if limit <= 0:
             return
@@ -122,6 +134,7 @@ class ActiveStreamLimiter:
             self._counts[client_key] = count + 1
 
     def release(self, client_key: str) -> None:
+        """Release a previously reserved active stream slot."""
         with self._lock:
             count = self._counts.get(client_key, 0)
             if count <= 1:
@@ -130,6 +143,7 @@ class ActiveStreamLimiter:
             self._counts[client_key] = count - 1
 
     def reset(self) -> None:
+        """Clear active stream counters."""
         with self._lock:
             self._counts.clear()
 
@@ -139,10 +153,12 @@ active_stream_limiter = ActiveStreamLimiter()
 
 
 def check_rate_limit(client_key: str) -> None:
+    """Check the request rate limit for a public API client key."""
     rate_limiter.check(client_key)
 
 
 def validate_message_length(text: str) -> None:
+    """Raise when a public API message exceeds the configured length."""
     max_chars = get_public_api_guardrail_config().max_message_chars
     if max_chars <= 0:
         return
@@ -155,13 +171,16 @@ def validate_message_length(text: str) -> None:
 
 
 def acquire_stream_slot(client_key: str) -> None:
+    """Acquire an active stream slot for a public API client key."""
     active_stream_limiter.acquire(client_key)
 
 
 def release_stream_slot(client_key: str) -> None:
+    """Release an active stream slot for a public API client key."""
     active_stream_limiter.release(client_key)
 
 
 def reset_public_guardrail_state() -> None:
+    """Reset in-memory guardrail counters for tests and local maintenance."""
     rate_limiter.reset()
     active_stream_limiter.reset()

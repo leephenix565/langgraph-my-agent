@@ -3,6 +3,48 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-4 route intent evaluation baseline
+
+### Changed
+
+- Added provider-free RouteEval helpers in `src/react_agent/route_eval.py` for
+  evaluating `route_intent_v1` task type, targets, selected dimensions,
+  selected agents, clarification, and fallback behavior.
+- Added a small deterministic JSONL gold set in
+  `tests/fixtures/route_eval_gold.jsonl` covering single, compare, screen,
+  macro, sentiment, industry, event, general, unclear, explicit exclusion,
+  investment-risk policy, and sentiment market-only cases.
+- Added unit coverage for fixture loading, exact-match metrics, false
+  positives/false negatives, acceptable extra agents, must-not agents,
+  deterministic planner evaluation, legacy mode non-evaluation,
+  sentiment-to-risk penalties, and clarification accuracy.
+- Kept RouteEval offline and deterministic; it does not call an LLM, provider,
+  search backend, external service, demo stack, or fusion-gate.
+- Kept the active graph default on the full `fixed_dag_plan_v1` path; R8-4
+  does not modify `src/react_agent/graph.py` or enable selected routing.
+- Updated README, architecture, contracts, system map, quality, changelog, and
+  decision docs for R8-4 boundaries.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_route_eval.py -q`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Not Done
+
+- No active runtime default behavior change.
+- No `src/react_agent/graph.py` change.
+- No active selected-routing feature flag integration.
+- No provider/search call.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+- No final Route F1 acceptance threshold; the first gold set is a small
+  deterministic baseline, not the future 200-500 case gold suite.
+
 ## 2026-06-09 - Phase R8-3 route intent planner seam
 
 ### Changed

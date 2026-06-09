@@ -1,9 +1,12 @@
 import pytest
 
 from react_agent.context import Context
-from react_agent.public_contracts import CheckpointerStatus, PublicTurn, ReadinessSurface
+from react_agent.public_contracts import (
+    CheckpointerStatus,
+    PublicTurn,
+    ReadinessSurface,
+)
 from react_agent.public_runtime import RuntimeReadinessProbe, invoke_public_turn
-
 
 pytestmark = pytest.mark.anyio
 

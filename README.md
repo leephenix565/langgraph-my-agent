@@ -64,6 +64,11 @@ Phase R8-3 adds a provider-free route-intent planner seam: deterministic/mock
 intent construction, a future LLM prompt contract, and JSON parser/normalizer
 guards that target `route_intent_v1` only. It still does not enable selected
 routing in the active graph by default.
+Phase R8-4 adds a provider-free RouteEval baseline for `route_intent_v1`
+selection quality. It evaluates task type, targets, selected dimensions,
+selected agents, clarification, and fallback behavior against a small local
+gold set, but it does not call an LLM/provider/external service and does not
+enable selected routing.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -73,7 +78,7 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-3 route intent planner seam over the existing
+- Current phase: R8-4 route intent evaluation baseline over the existing
   full fixed DAG backend skeleton, R7-I web presentation surface, and v2.3.1
   scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
@@ -96,8 +101,10 @@ is not a completed business analysis engine.
   changing the active graph default. R8-3 adds
   `build_default_route_intent`, `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT`,
   `build_route_intent_prompt`, `parse_route_intent_json`, and
-  `normalize_route_intent` as provider-free planner seam pieces. The active
-  `route_planner` node still builds the full default fixed DAG.
+  `normalize_route_intent` as provider-free planner seam pieces. R8-4 adds
+  `src/react_agent/route_eval.py` and `tests/fixtures/route_eval_gold.jsonl`
+  as a small deterministic RouteEval baseline for route intent selections. The
+  active `route_planner` node still builds the full default fixed DAG.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -153,6 +160,20 @@ fail-soft raw planner JSON into public-safe route intent. The planner seam never
 outputs executable `dag_steps` or dependencies. The selected compiler remains
 the only path from intent to selected DAG, and it is not wired into the active
 graph default in R8-3.
+
+R8-4 adds RouteEval for the route-intent seam:
+`load_route_eval_cases(path)` reads a small JSONL gold set,
+`evaluate_route_intents(cases, planner_fn)` evaluates deterministic/mock
+planner output, and `route_eval_report_to_dict(report)` emits stable metrics.
+The metrics cover task type accuracy, target exact-or-partial match, dimension
+precision/recall/F1, agent precision/recall/F1, over-selection,
+under-selection, clarification accuracy, and fallback rate. RouteEval does not
+evaluate Star/Chain/Debate/Tree modes and does not call providers, search, or
+external `/v1/agent/invoke`. The first 12-case fixture is a baseline only; the
+future formal Route F1 gate should use a larger gold set.
+R8-4 does not modify `src/react_agent/graph.py`, public workflow mapping,
+frontend rendering, runtime bindings, provider/search readiness, or external
+adapter readiness.
 
 The reset target has 27 formal agent ids:
 
@@ -419,6 +440,14 @@ readiness.
   fallback, runtime bindings, fixed DAG roster, public workflow fields,
   frontend behavior, provider/search readiness, external invocation, LLM
   planning, RouteEval, or external adapter readiness.
+- R8-3 only adds provider-free route-intent planner/prompt/parser seams. It
+  does not change active graph behavior, enable selected routing, call
+  providers/search, invoke external services, or add RouteEval/external adapter
+  readiness.
+- R8-4 only adds provider-free RouteEval helpers, a small local gold fixture,
+  and unit coverage. It does not change active graph behavior, enable selected
+  routing, add a provider-backed LLM planner, call external services, or create
+  a formal >=80% Route F1 acceptance gate.
 - Provider live smoke, external invoke checks, Router-SFT, RARP/route-prior,
   demo stack acceptance, and browser screenshot visual capture remain outside
   the default reset mainline.

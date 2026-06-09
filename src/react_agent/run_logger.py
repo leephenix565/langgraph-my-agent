@@ -7,7 +7,7 @@ import json
 import os
 import threading
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, Dict, Optional
 
@@ -29,7 +29,7 @@ def _log_dir() -> Path:
     raw = os.environ.get("LOG_DIR")
     if raw:
         return Path(raw)
-    date_str = datetime.now(timezone.utc).strftime("%Y%m%d")
+    date_str = datetime.now(UTC).strftime("%Y%m%d")
     return Path("log") / date_str
 
 
@@ -61,6 +61,7 @@ class RunLogger:
     """JSONL logger scoped to a single run."""
 
     def __init__(self, run_id: str) -> None:
+        """Initialize a run-scoped logger from local tracing environment."""
         self.run_id = run_id
         self.enabled = _should_enable()
         self.max_chars = _max_chars()
@@ -71,10 +72,11 @@ class RunLogger:
             self.log_path = self.log_dir / f"{self.run_id}.jsonl"
 
     def log_event(self, event: str, **fields: Any) -> None:
+        """Write a sanitized event when local tracing is enabled."""
         if not self.enabled or not self.log_path:
             return
         record = {
-            "ts": datetime.now(timezone.utc).isoformat(),
+            "ts": datetime.now(UTC).isoformat(),
             "run_id": self.run_id,
             "event": event,
         }
@@ -117,5 +119,6 @@ class RunLogger:
 
 
 def get_run_logger(run_id: str | None) -> RunLogger:
+    """Return a run logger for the provided or generated run id."""
     rid = run_id or uuid.uuid4().hex[:8]
     return RunLogger(rid)
