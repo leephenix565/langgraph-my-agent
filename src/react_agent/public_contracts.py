@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, List, Literal, Optional, Union
+from typing import Any, Dict, List, Literal, Union
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -59,19 +59,19 @@ class EvidenceCardModel(PublicBaseModel):
 class AnswerCardModel(PublicBaseModel):
     answer: str
     finalSource: FinalSource
-    confidence: Optional[str] = None
+    confidence: str | None = None
     citations: List[CitationModel] = Field(default_factory=list)
     evidenceCards: List[EvidenceCardModel] = Field(default_factory=list)
-    evidenceCount: Optional[int] = None
+    evidenceCount: int | None = None
 
 
 class StructuredInputModel(PublicBaseModel):
     task: str
-    context: Optional[str] = None
+    context: str | None = None
     materials: List[str] = Field(default_factory=list)
     urlReferences: List[str] = Field(default_factory=list)
-    constraints: Optional[str] = None
-    outputPreference: Optional[str] = None
+    constraints: str | None = None
+    outputPreference: str | None = None
 
 
 class WorkflowStageModel(PublicBaseModel):
@@ -83,8 +83,8 @@ class WorkflowStageModel(PublicBaseModel):
 class DagStepModel(PublicBaseModel):
     id: str
     stage: WorkflowStageKey
-    agentId: Optional[str] = None
-    dimension: Optional[str] = None
+    agentId: str | None = None
+    dimension: str | None = None
     title: str
     summary: str
     status: DagStepStatus
@@ -103,7 +103,7 @@ class WorkflowProvenanceModel(PublicBaseModel):
     continuityMode: ContinuityMode
     providerInvoked: bool = False
     externalInvoked: bool = False
-    executionStatus: Optional[str] = None
+    executionStatus: str | None = None
     fallbackUsed: bool = False
     limitations: List[str] = Field(default_factory=list)
     summary: str
@@ -118,13 +118,13 @@ class WorkflowModel(PublicBaseModel):
     stages: List[WorkflowStageModel] = Field(default_factory=list)
     dagSteps: List[DagStepModel] = Field(default_factory=list)
     dimensionGroups: List[DimensionGroupModel] = Field(default_factory=list)
-    currentStage: Optional[WorkflowStageKey] = None
+    currentStage: WorkflowStageKey | None = None
     completedSteps: List[str] = Field(default_factory=list)
     executionBatches: List[List[str]] = Field(default_factory=list)
     stepResults: Dict[str, Dict[str, Any]] = Field(default_factory=dict)
     finalSource: FinalSource
     provenanceNote: str
-    provenance: Optional[WorkflowProvenanceModel] = None
+    provenance: WorkflowProvenanceModel | None = None
 
 
 class PublicTurn(PublicBaseModel):
@@ -132,11 +132,11 @@ class PublicTurn(PublicBaseModel):
     role: Literal["user", "assistant"]
     text: str
     createdAt: str
-    structuredInput: Optional[StructuredInputModel] = None
-    answerCard: Optional[AnswerCardModel] = None
-    workflow: Optional[WorkflowModel] = None
-    runId: Optional[str] = None
-    continuityMode: Optional[ContinuityMode] = None
+    structuredInput: StructuredInputModel | None = None
+    answerCard: AnswerCardModel | None = None
+    workflow: WorkflowModel | None = None
+    runId: str | None = None
+    continuityMode: ContinuityMode | None = None
 
 
 class ChatSessionSummary(PublicBaseModel):
@@ -146,8 +146,8 @@ class ChatSessionSummary(PublicBaseModel):
     preview: str
     finalSource: FinalSource
     phase: str
-    active: Optional[bool] = None
-    continuityMode: Optional[ContinuityMode] = None
+    active: bool | None = None
+    continuityMode: ContinuityMode | None = None
 
 
 class PublicThreadDetail(PublicBaseModel):
@@ -172,7 +172,7 @@ class PublicAgentMetadataModel(PublicBaseModel):
     capabilities: List[str] = Field(default_factory=list)
     layer: AgentLayer
     team: str = ""
-    roleType: Optional[str] = None
+    roleType: str | None = None
     defaultEnabled: bool
 
 
@@ -188,12 +188,12 @@ class AgentCatalogResponse(PublicBaseModel):
 
 
 class CreateThreadRequest(PublicBaseModel):
-    title: Optional[str] = None
+    title: str | None = None
 
 
 class SendMessageRequest(PublicBaseModel):
     text: str
-    structuredInput: Optional[StructuredInputModel] = None
+    structuredInput: StructuredInputModel | None = None
 
 
 class SendMessageResponse(PublicBaseModel):
@@ -215,12 +215,12 @@ class RunStartedEventData(PublicBaseModel):
 
 class WorkflowStageEventData(PublicBaseModel):
     stages: List[WorkflowStageProgressModel] = Field(default_factory=list)
-    currentStage: Optional[WorkflowStageKey] = None
+    currentStage: WorkflowStageKey | None = None
 
 
 class WorkflowSnapshotEventData(PublicBaseModel):
     workflow: WorkflowModel
-    runId: Optional[str] = None
+    runId: str | None = None
     continuityMode: ContinuityMode
 
 
@@ -271,7 +271,7 @@ PublicStreamEvent = Union[
 class ReadinessSurface(PublicBaseModel):
     status: str
     code: str
-    hint: Optional[str] = None
+    hint: str | None = None
 
 
 class CheckpointerStatus(PublicBaseModel):
@@ -279,7 +279,7 @@ class CheckpointerStatus(PublicBaseModel):
     mode: str
     status: Literal["enabled", "disabled", "unavailable"]
     code: str
-    hint: Optional[str] = None
+    hint: str | None = None
 
 
 class ErrorDetail(PublicBaseModel):

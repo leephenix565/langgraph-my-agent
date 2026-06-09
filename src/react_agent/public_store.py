@@ -7,7 +7,7 @@ import json
 import threading
 from datetime import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List
 
 from react_agent.public_contracts import PublicThreadDetail, StoreEnvelope
 
@@ -58,7 +58,7 @@ class PublicThreadStore:
         envelope = self._read_envelope()
         return list(envelope.threads.values())
 
-    def get_thread(self, thread_id: str) -> Optional[PublicThreadDetail]:
+    def get_thread(self, thread_id: str) -> PublicThreadDetail | None:
         envelope = self._read_envelope()
         return envelope.threads.get(thread_id)
 
@@ -78,7 +78,7 @@ class PublicThreadStore:
             self._write_envelope(envelope)
         return True
 
-    def clear_thread_messages(self, thread_id: str) -> Optional[PublicThreadDetail]:
+    def clear_thread_messages(self, thread_id: str) -> PublicThreadDetail | None:
         with self._lock:
             envelope = self._read_envelope()
             detail = envelope.threads.get(thread_id)

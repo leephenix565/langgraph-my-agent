@@ -3,6 +3,35 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-6B-QA static quality closure
+
+### Changed
+
+- Closed the static quality gate after R8-6B under the server `.venv` Python
+  3.14 lint profile.
+- Converted static-gate-reported `Optional[...]` annotations in maintained
+  public API source to `X | None` style.
+- Kept changes type-style only: no public response fields, Pydantic defaults,
+  fixed-DAG runtime behavior, internal LLM placeholder behavior, runtime
+  bindings, or frontend code changed.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent/public_contracts.py src/react_agent/public_store.py`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_llm_placeholders.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No provider/live smoke.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No R8-6B runtime semantics change.
+
 ## 2026-06-09 - Phase R8-6B default-off internal LLM placeholders
 
 ### Changed
