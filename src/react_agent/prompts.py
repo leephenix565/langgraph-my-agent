@@ -5,6 +5,12 @@ planner prompt is retained as the future protocol contract and intentionally has
 no execution-mode dispatch instructions.
 """
 
+from __future__ import annotations
+
+import json
+from collections.abc import Mapping
+from typing import Any
+
 FIXED_DAG_PLANNER_SYSTEM_PROMPT = """
 You are the fixed DAG planner for the reset runtime.
 
@@ -22,6 +28,74 @@ Rules:
 - Keep the plan aligned to the reset fixed DAG stages: planning, evidence,
   l2_analysis, dimension_composite, decision, report.
 """.strip()
+
+# R8-3 planner seam prompt. It is a protocol contract for future LLM or
+# semantic planners and is not called by the active deterministic graph.
+FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT = """
+You are the fixed DAG route-intent planner for controlled selected routing.
+
+Return exactly one JSON object. The only target schema is route_intent_v1:
+{
+  "schema": "route_intent_v1",
+  "schema_version": "route_intent_v1",
+  "task_type": "single|compare|screen|macro|sentiment|industry|event|general",
+  "targets": ["public target string"],
+  "selected_dimensions": ["value|market|risk|macro"],
+  "selected_agents": ["fixed_dag_agent_id"],
+  "task_brief_by_agent": {"fixed_dag_agent_id": "brief"},
+  "route_confidence": 0.0,
+  "needs_clarification": false,
+  "clarification_question": "",
+  "fallback_reason": "",
+  "provenance": {"source": "route_intent_planner"}
+}
+
+Rules:
+- Output route_intent_v1 only. Do not output an executable DAG.
+- Do not emit dag_steps, depends_on, runtime bindings, provider responses,
+  external responses, endpoint fields, environment fields, or secrets.
+- Select only snake_case ids from the supplied fixed DAG reset roster.
+- Do not use removed ids, old numbered ids, layer/fusion fields, or legacy
+  route-mode dispatch labels such as Star, Chain, Debate, or Tree.
+- sentiment_company_radar is market-only.
+- Risk is a gate, not a directional vote. Macro is a regulator.
+- Investment-like tasks must include the risk dimension and at least one risk
+  L2 agent. The system compiler owns decision/report insertion.
+- report_generator is always added by the deterministic compiler; you do not
+  need to select it.
+- If the routing target is unclear, set needs_clarification=true and provide a
+  short clarification_question.
+- Do not claim that a provider, search backend, or external service was called.
+""".strip()
+
+
+def build_route_intent_prompt(
+    question: str,
+    catalog_summary: Mapping[str, Any] | None = None,
+) -> str:
+    """Render the R8-3 route-intent prompt without invoking a provider."""
+    if catalog_summary is None:
+        from react_agent.fixed_dag_contracts import (  # noqa: PLC0415
+            DIMENSION_GROUPS,
+            RESET_RUNTIME_AGENT_IDS,
+        )
+
+        catalog_summary = {
+            "allowed_agents": list(RESET_RUNTIME_AGENT_IDS),
+            "dimensions": {
+                dimension: list(agent_ids)
+                for dimension, agent_ids in DIMENSION_GROUPS.items()
+            },
+        }
+    catalog_text = json.dumps(catalog_summary, ensure_ascii=False, sort_keys=True)
+    return "\n\n".join(
+        [
+            FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT,
+            f"User question:\n{str(question or '').strip()}",
+            f"Fixed DAG catalog summary:\n{catalog_text}",
+        ]
+    )
+
 
 # Compatibility alias for callers that still import the historical name.  The
 # active graph uses the fixed DAG skeleton and does not call a provider.

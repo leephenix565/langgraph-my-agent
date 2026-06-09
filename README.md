@@ -60,6 +60,10 @@ Phase R8-2 adds the deterministic selected DAG compiler and selected executor
 validation helpers. `route_intent_v1` can now be compiled into a dependency-
 closed `selected_fixed_dag_plan_v1`, while the active graph default still uses
 the full fixed DAG.
+Phase R8-3 adds a provider-free route-intent planner seam: deterministic/mock
+intent construction, a future LLM prompt contract, and JSON parser/normalizer
+guards that target `route_intent_v1` only. It still does not enable selected
+routing in the active graph by default.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and remains a provider-free placeholder skeleton. It
@@ -69,7 +73,7 @@ is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-2 deterministic selected DAG compiler over the existing
+- Current phase: R8-3 route intent planner seam over the existing
   full fixed DAG backend skeleton, R7-I web presentation surface, and v2.3.1
   scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
@@ -89,7 +93,11 @@ is not a completed business analysis engine.
   defaults. R8-2 adds `compile_selected_fixed_dag_plan`,
   `validate_selected_dag_steps`, and `topological_batches_for_selected_plan` as
   deterministic selected-routing compiler/validator seams, still without
-  changing the active graph default.
+  changing the active graph default. R8-3 adds
+  `build_default_route_intent`, `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT`,
+  `build_route_intent_prompt`, `parse_route_intent_json`, and
+  `normalize_route_intent` as provider-free planner seam pieces. The active
+  `route_planner` node still builds the full default fixed DAG.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -135,6 +143,16 @@ validation is available through `validate_selected_dag_steps` and
 `topological_batches_for_selected_plan`. The active `route_planner` node and
 `execute_fixed_dag` path still use the full `fixed_dag_plan_v1` unless a later
 phase explicitly changes the runtime.
+
+R8-3 adds the planner seam that can produce `route_intent_v1` before compiler
+handoff. `build_default_route_intent(question)` is deterministic and
+provider-free; `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` and
+`build_route_intent_prompt(question)` define the future LLM/semantic planner
+protocol; `parse_route_intent_json` and `normalize_route_intent` parse or
+fail-soft raw planner JSON into public-safe route intent. The planner seam never
+outputs executable `dag_steps` or dependencies. The selected compiler remains
+the only path from intent to selected DAG, and it is not wired into the active
+graph default in R8-3.
 
 The reset target has 27 formal agent ids:
 

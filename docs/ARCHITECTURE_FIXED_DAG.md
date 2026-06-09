@@ -4,7 +4,8 @@ This document describes the active reset skeleton, the Phase R4-A fixed DAG
 catalog source, the Phase R4-B runtime binding registry, the Phase R4-C legacy
 registry boundary cleanup, the Phase R5-B1 frontend contract migration, and the
 Phase R5-B2 workflow DAG inspector UI rewrite, the Phase R8-1 selected routing
-contract foundation, and the Phase R8-2 deterministic selected DAG compiler.
+contract foundation, the Phase R8-2 deterministic selected DAG compiler, and
+the Phase R8-3 route-intent planner seam.
 The skeleton is deterministic, provider-free, plan-driven, and backed by
 explicit catalog, binding, contract, executor, and function seams. It is not a
 completed business analysis engine.
@@ -117,6 +118,10 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   controlled dynamic routing.
 - R8-2 owns deterministic selected DAG compilation and selected executor
   validation helpers without changing the active graph default.
+- R8-3 owns provider-free planner seam preparation: deterministic/mock route
+  intent construction, a future route-intent prompt contract, and parser
+  normalization into `route_intent_v1` without changing the active graph
+  default.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -181,6 +186,36 @@ dependencies, and the sentiment market-only boundary without requiring the full
 
 The active graph still uses the full `fixed_dag_plan_v1` path. R8-2 does not
 modify `src/react_agent/graph.py`, public workflow mapping, frontend rendering,
-the fixed DAG catalog, runtime bindings, or the runtime registry. R8-3 remains
-the LLM or semantic planner seam. R8-4 remains RouteEval. R8-5 remains external
-adapter readiness.
+the fixed DAG catalog, runtime bindings, or the runtime registry. R8-4 remains
+RouteEval. R8-5 remains external adapter readiness.
+
+## R8-3 Route Intent Planner Seam
+
+R8-3 adds the planner seam that prepares `route_intent_v1` before deterministic
+selected compilation. It does not call an LLM, provider, search backend, or
+external service, and it does not make selected routing the active graph
+default.
+
+Planner seam behavior:
+
+- `build_default_route_intent` builds a provider-free deterministic/mock route
+  intent for tests and future feature-flag experiments;
+- `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` defines the future LLM or semantic
+  planner contract and targets `route_intent_v1` only;
+- `build_route_intent_prompt` renders that prompt with a fixed DAG catalog
+  summary without invoking any provider;
+- `parse_route_intent_json` extracts provider-style JSON, filters unknown
+  agents when valid selected agents remain, and fail-softs to a clarification
+  intent for invalid or unsafe shapes;
+- `normalize_route_intent` converts mapping-like planner output into
+  `route_intent_v1` or a public-safe fallback intent;
+- parser and validator guards reject executable DAG fields, dependency fields,
+  runtime binding fields, removed ids, legacy numbered ids, selected
+  sentiment-to-risk misuse, investment intents without risk, and live invocation
+  claims.
+
+The selected compiler remains the only path from route intent to selected DAG.
+R8-3 does not modify `src/react_agent/graph.py`, public workflow mapping,
+frontend rendering, the fixed DAG catalog, runtime bindings, or the runtime
+registry. A later phase must explicitly connect and validate active selected
+routing before runtime behavior changes.

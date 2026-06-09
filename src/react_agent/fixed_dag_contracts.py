@@ -648,6 +648,94 @@ def build_route_intent(
     }
 
 
+def _infer_route_task_type(question: str, requested: str) -> RouteTaskType:
+    if requested in ROUTE_TASK_TYPES and requested != "general":
+        return cast(RouteTaskType, requested)
+    lowered = str(question or "").lower()
+    if any(token in lowered for token in ("compare", "versus", "vs ", "better than")):
+        return "compare"
+    if any(token in lowered for token in ("screen", "rank", "shortlist")):
+        return "screen"
+    if any(token in lowered for token in ("macro", "rate", "inflation", "commodity", "index")):
+        return "macro"
+    if any(token in lowered for token in ("sentiment", "public opinion", "reputation")):
+        return "sentiment"
+    if any(token in lowered for token in ("industry", "sector")):
+        return "industry"
+    if any(token in lowered for token in ("event", "announcement", "earnings")):
+        return "event"
+    if any(token in lowered for token in ("invest", "valuation", "stock", "company", "buy", "sell")):
+        return "single"
+    return "general"
+
+
+def build_default_route_intent(
+    question: str,
+    *,
+    task_type: RouteTaskType = "general",
+) -> RouteIntent:
+    """Build a provider-free mock planner intent for the selected-DAG seam."""
+    inferred_task_type = _infer_route_task_type(question, str(task_type or "general"))
+    selected_dimensions: list[DimensionName]
+    selected_agents: list[str]
+    if inferred_task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
+        selected_dimensions = ["value", "risk"]
+        selected_agents = ["value_research_synthesis", "risk_identification"]
+    elif inferred_task_type == "macro":
+        selected_dimensions = ["macro"]
+        selected_agents = ["macro_analysis"]
+    elif inferred_task_type == "sentiment":
+        selected_dimensions = ["market"]
+        selected_agents = ["sentiment_company_radar"]
+    else:
+        selected_dimensions = ["value"]
+        selected_agents = ["value_research_synthesis"]
+
+    brief_by_agent = {
+        "value_research_synthesis": "Summarize value-related research signals for the question.",
+        "risk_identification": "Identify risk constraints that should gate the response.",
+        "macro_analysis": "Summarize macro and external-environment signals for the question.",
+        "sentiment_company_radar": "Summarize market sentiment signals for the question.",
+    }
+    intent = build_route_intent(
+        task_type=inferred_task_type,
+        targets=[],
+        selected_dimensions=selected_dimensions,
+        selected_agents=selected_agents,
+        task_brief_by_agent={
+            agent_id: brief_by_agent[agent_id]
+            for agent_id in selected_agents
+            if agent_id in brief_by_agent
+        },
+        route_confidence=0.55,
+        fallback_reason="fallback to full DAG",
+        provenance={
+            "source": "deterministic_mock_route_planner",
+            "planner": "r8_3_provider_free_default_route_intent",
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+    valid, reason = validate_route_intent(intent)
+    if valid:
+        return intent
+    return build_route_intent(
+        task_type="general",
+        selected_dimensions=[],
+        selected_agents=[],
+        route_confidence=0.0,
+        needs_clarification=True,
+        clarification_question="Please clarify the routing target before selected planning.",
+        fallback_reason=f"planner_default_failed:{reason}",
+        provenance={
+            "source": "deterministic_mock_route_planner",
+            "planner": "r8_3_provider_free_default_route_intent",
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+
+
 def validate_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
     if not isinstance(plan, Mapping):
         return False, "plan_not_mapping"

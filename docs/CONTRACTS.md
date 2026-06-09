@@ -220,8 +220,10 @@ Purpose: record controlled-routing planner intent without making it an
 executable DAG.
 
 R8-1 adds this contract as an additive seam. R8-2 compiles valid route intent
-deterministically into `selected_fixed_dag_plan_v1`. The active graph still does
-not call an LLM planner and does not use selected routing by default.
+deterministically into `selected_fixed_dag_plan_v1`. R8-3 adds provider-free
+planner seam helpers and a future prompt/parser boundary for generating and
+normalizing route intent. The active graph still does not call an LLM planner
+and does not use selected routing by default.
 
 Fields:
 
@@ -266,8 +268,26 @@ Policy gates:
 Seams:
 
 - `build_route_intent`
+- `build_default_route_intent`
 - `validate_route_intent`
+- `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT`
+- `build_route_intent_prompt`
+- `parse_route_intent_json`
+- `normalize_route_intent`
 - `compile_selected_fixed_dag_plan`
+
+R8-3 prompt/parser boundary:
+
+- the planner target is `route_intent_v1` only;
+- planner output must not contain executable DAG fields, dependency fields, or
+  runtime binding changes;
+- parser normalization may filter unknown agents only when valid selected
+  agents remain;
+- invalid shapes fail soft to a clarification/fallback route intent instead of
+  becoming executable plans;
+- removed ids, legacy numbered ids, selected sentiment-to-risk misuse,
+  investment intents without risk, and provider/external invocation claims are
+  rejected or normalized to fallback.
 
 ## selected_fixed_dag_plan_v1
 
@@ -327,7 +347,7 @@ Non-claims:
 
 - `route_intent_v1` is not executable.
 - `selected_fixed_dag_plan_v1` is not the active runtime default.
-- R8-2 does not add an LLM planner, active graph selected execution, RouteEval,
+- R8-3 does not add an active LLM planner, active graph selected execution, RouteEval,
   external adapter, public workflow field, web UI change, provider call, search
   call, external `/v1/agent/invoke` call, or runtime binding change.
 

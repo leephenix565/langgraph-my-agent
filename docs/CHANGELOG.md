@@ -3,6 +3,48 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-3 route intent planner seam
+
+### Changed
+
+- Added provider-free `build_default_route_intent` as a deterministic/mock
+  planner seam that returns `route_intent_v1` without calling an LLM, provider,
+  search backend, or external service.
+- Added `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` and
+  `build_route_intent_prompt` as the future LLM/semantic planner contract.
+  The prompt targets route intent only and forbids executable DAG output,
+  dependency output, runtime binding changes, and live invocation claims.
+- Added `parse_route_intent_json` and `normalize_route_intent` to normalize raw
+  planner JSON into public-safe `route_intent_v1` or a clarification/fallback
+  route intent.
+- Kept the active graph default on the full `fixed_dag_plan_v1` path; R8-3
+  does not modify `src/react_agent/graph.py` or enable selected routing.
+- Added unit coverage for deterministic route intent construction, route-intent
+  prompt boundaries, valid route intent parsing, unknown/removed/legacy agent
+  fallback, executable-field fallback, sentiment market-only enforcement, and
+  investment risk policy enforcement.
+- Updated README, architecture, contracts, system map, quality, changelog, and
+  decision docs for R8-3 boundaries.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/router_parse.py src/react_agent/prompts.py src/react_agent/context.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Not Done
+
+- No active runtime default behavior change.
+- No `src/react_agent/graph.py` change.
+- No active LLM planner, RouteEval, or external adapter implementation.
+- No fixed DAG roster, catalog, runtime binding, runtime registry, public
+  workflow, frontend, or public API change.
+- No provider/search call.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+
 ## 2026-06-09 - Phase R8-2 deterministic selected DAG compiler
 
 ### Changed

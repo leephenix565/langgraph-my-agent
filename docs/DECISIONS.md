@@ -611,3 +611,36 @@ catalog, runtime bindings, runtime registry, public workflow contracts,
 frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
 or production deployment. It does not add an LLM planner, RouteEval suite,
 external adapter, or live selected execution path.
+
+## ADR-028: R8-3 Adds Route Intent Planner Seam Behind Default-Off Boundary
+
+Status: accepted for provider-free planner seam preparation.
+
+Decision: R8-3 adds a route-intent planner seam without changing the active
+runtime default. `build_default_route_intent` provides deterministic/mock
+`route_intent_v1` output for tests and future feature-flag experiments.
+`FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` and `build_route_intent_prompt` define
+the future LLM or semantic planner contract. `parse_route_intent_json` and
+`normalize_route_intent` normalize raw planner JSON into `route_intent_v1` or a
+safe clarification/fallback intent.
+
+Reason: R8-1 and R8-2 created selected routing contracts and deterministic
+selected DAG compilation, but route planning still needed a safe seam before
+any provider-backed planner could be introduced. The planner must output intent
+only; the deterministic compiler remains responsible for executable selected
+DAG structure, dependencies, L4 inclusion, omission metadata, and validation.
+
+Consequence: the route-intent prompt and parser reject or fail-soft executable
+DAG fields, dependency fields, runtime binding changes, removed ids, legacy
+numbered ids, selected sentiment-to-risk misuse, investment intents without
+risk, and live invocation claims. Unknown agents can be filtered only when
+valid selected agents remain. The full `fixed_dag_plan_v1` default graph path
+and full DAG fallback remain the regression baseline.
+
+Non-consequence: R8-3 does not change active runtime behavior, `graph.py`,
+route planner default behavior, fixed DAG topology, the 27-agent roster,
+catalog, runtime bindings, runtime registry, public workflow contracts,
+frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
+or production deployment. It does not add an active LLM planner, RouteEval
+suite, external adapter, live selected execution path, or selected public
+workflow projection.

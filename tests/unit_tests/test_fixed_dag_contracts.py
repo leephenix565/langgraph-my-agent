@@ -16,6 +16,7 @@ from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_decision_result,
     build_default_fixed_dag_plan,
+    build_default_route_intent,
     build_dimension_results,
     build_entity_relation_bundle,
     build_l2_conclusions,
@@ -222,6 +223,36 @@ def test_route_intent_validates_selected_dimensions_and_agents() -> None:
     assert "risk" in intent["selected_dimensions"]
     assert intent["route_confidence"] == 0.82
     assert not _contains_key(intent, "layerMode")
+
+
+def test_default_route_intent_is_provider_free_and_valid() -> None:
+    intent = build_default_route_intent("Should I invest in example company?")
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert intent["schema"] == "route_intent_v1"
+    assert intent["task_type"] == "single"
+    assert intent["selected_dimensions"] == ["value", "risk"]
+    assert intent["selected_agents"] == ["value_research_synthesis", "risk_identification"]
+    assert intent["fallback_reason"] == "fallback to full DAG"
+    assert intent["provenance"]["provider_invoked"] is False
+    assert intent["provenance"]["external_invoked"] is False
+
+
+def test_default_route_intent_handles_non_investment_tasks_without_risk() -> None:
+    macro = build_default_route_intent("Explain macro inflation and index pressure.")
+    sentiment = build_default_route_intent("Summarize public sentiment about example company.")
+    general = build_default_route_intent("Explain accounting terminology.")
+
+    assert macro["task_type"] == "macro"
+    assert macro["selected_dimensions"] == ["macro"]
+    assert macro["selected_agents"] == ["macro_analysis"]
+    assert sentiment["task_type"] == "sentiment"
+    assert sentiment["selected_dimensions"] == ["market"]
+    assert sentiment["selected_agents"] == ["sentiment_company_radar"]
+    assert general["task_type"] == "general"
+    assert general["selected_dimensions"] == ["value"]
+    assert "risk" not in general["selected_dimensions"]
 
 
 def test_route_intent_allows_general_value_only_selection() -> None:

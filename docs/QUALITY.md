@@ -121,6 +121,28 @@ Passing R8-2 validation does not mean that an LLM planner, RouteEval suite,
 external adapter, runtime binding enablement, public workflow selected-plan
 projection, or real business-agent result mapping is implemented.
 
+## R8-3 Planner Seam Gate
+
+R8-3 adds provider-free route-intent planner seam helpers without changing
+active graph behavior. Its narrow validation gate is:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/router_parse.py src/react_agent/prompts.py src/react_agent/context.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+This gate confirms that deterministic/mock route intent construction, the
+route-intent prompt contract, and parser/normalizer fallback behavior preserve
+the full DAG regression baseline. It does not run provider live smoke, search,
+external `/v1/agent/invoke`, demo stack, fusion-gate, frontend build, active
+graph selected execution, or live selected routing.
+
+Passing R8-3 validation does not mean that an active LLM planner, RouteEval
+suite, external adapter, runtime binding enablement, public workflow
+selected-plan projection, or real business-agent result mapping is implemented.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
