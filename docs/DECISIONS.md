@@ -583,3 +583,31 @@ runtime bindings, runtime registry, public workflow contracts, frontend UI,
 provider/search readiness, external `/v1/agent/invoke` readiness, or production
 deployment. It does not add an LLM planner, selected DAG compiler, selected
 execution, RouteEval suite, or external adapter.
+
+## ADR-027: R8-2 Compiles Route Intent Into Selected DAG Without Enabling Active Runtime
+
+Status: accepted for deterministic selected compiler foundation.
+
+Decision: R8-2 adds `compile_selected_fixed_dag_plan` to compile valid
+`route_intent_v1` objects into dependency-closed `selected_fixed_dag_plan_v1`
+plans. It also adds selected executor validation helpers:
+`validate_selected_dag_steps` and `topological_batches_for_selected_plan`.
+
+Reason: R8-1 established selected contracts, but selected route intent was not
+yet an executable selected DAG shape. The next safe step is deterministic
+compilation under system-owned rules: the compiler, not an LLM, adds fixed
+L1/evidence seams, selected L2 steps, selected composites, policy-gated
+decision synthesis, report output, dependencies, and omission metadata.
+
+Consequence: selected plans can now be compiled and validated as complete
+selected sub-DAGs without requiring the full 27-agent DAG. The full
+`fixed_dag_plan_v1` validator and active graph default remain the regression
+baseline. `route_intent_v1` remains planner intent, and
+`selected_fixed_dag_plan_v1` is the compiler output target.
+
+Non-consequence: R8-2 does not change active runtime behavior, `graph.py`,
+route planner default behavior, fixed DAG topology, the 27-agent roster,
+catalog, runtime bindings, runtime registry, public workflow contracts,
+frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
+or production deployment. It does not add an LLM planner, RouteEval suite,
+external adapter, or live selected execution path.

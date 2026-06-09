@@ -3,10 +3,11 @@
 This document describes the active reset skeleton, the Phase R4-A fixed DAG
 catalog source, the Phase R4-B runtime binding registry, the Phase R4-C legacy
 registry boundary cleanup, the Phase R5-B1 frontend contract migration, and the
-Phase R5-B2 workflow DAG inspector UI rewrite, and the Phase R8-1 selected
-routing contract foundation. The skeleton is deterministic, provider-free,
-plan-driven, and backed by explicit catalog, binding, contract, executor, and
-function seams. It is not a completed business analysis engine.
+Phase R5-B2 workflow DAG inspector UI rewrite, the Phase R8-1 selected routing
+contract foundation, and the Phase R8-2 deterministic selected DAG compiler.
+The skeleton is deterministic, provider-free, plan-driven, and backed by
+explicit catalog, binding, contract, executor, and function seams. It is not a
+completed business analysis engine.
 
 ## Active Skeleton Flow
 
@@ -114,6 +115,8 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - R8-1 owns selected routing contracts only: `route_intent_v1` and
   `selected_fixed_dag_plan_v1` are additive validator seams for future
   controlled dynamic routing.
+- R8-2 owns deterministic selected DAG compilation and selected executor
+  validation helpers without changing the active graph default.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -143,8 +146,41 @@ Policy gates are deliberately conservative:
 - invalid selected contracts fall back to the full DAG path in later compiler
   work;
 - the LLM, if added later, must not generate raw dependencies, runtime binding
-  changes, external invocation flags, or legacy Star/Chain/Debate/Tree dispatch.
+  changes, external invocation flags, or legacy route-mode dispatch.
 
-R8-2 is expected to add the deterministic selected DAG compiler. R8-3 is the
-LLM or semantic planner seam. R8-4 is RouteEval. R8-5 is external adapter
-readiness. None of those are implemented by R8-1.
+## R8-2 Deterministic Selected DAG Compiler
+
+R8-2 implements `compile_selected_fixed_dag_plan` as a deterministic compiler
+from `route_intent_v1` to `selected_fixed_dag_plan_v1`. It does not call an LLM,
+provider, search backend, or external service.
+
+Compiler behavior:
+
+- validates `route_intent_v1` before compilation;
+- treats `route_intent_v1` as planner intent, not executable DAG state;
+- starts from selected dimensions and selected business agents;
+- adds `route_planner`, `financial_data_service`, and
+  `entity_relation_extractor`;
+- keeps only selected L2 agents and gives them the fixed evidence dependencies;
+- adds a selected dimension composite when that dimension has selected L2
+  agents;
+- sets composite `target_ids` and dependencies to selected same-dimension L2
+  agents only;
+- adds `decision_synthesizer` for investment-judgment task types;
+- always includes `report_generator`;
+- makes `report_generator` depend on `decision_synthesizer` when present, or on
+  selected dimension composites otherwise;
+- records omitted dimensions and omitted agents explicitly.
+
+Executor-side selected validation is available through
+`validate_selected_dag_steps` and `topological_batches_for_selected_plan`. The
+selected path validates identity, dependency existence, stage order, acyclicity,
+selected dimension composite dependencies, selected decision/report
+dependencies, and the sentiment market-only boundary without requiring the full
+27-agent DAG.
+
+The active graph still uses the full `fixed_dag_plan_v1` path. R8-2 does not
+modify `src/react_agent/graph.py`, public workflow mapping, frontend rendering,
+the fixed DAG catalog, runtime bindings, or the runtime registry. R8-3 remains
+the LLM or semantic planner seam. R8-4 remains RouteEval. R8-5 remains external
+adapter readiness.

@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-1.
+This file is the reset branch operational map for Phase R8-2.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-1 selected routing contract foundation over the existing
+- Current phase: R8-2 deterministic selected DAG compiler over the existing
   fixed-DAG runtime skeleton, R7-I web presentation surface, and R7-G v2.3.1
   scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
@@ -22,8 +22,10 @@ This file is the reset branch operational map for Phase R8-1.
   `config/fixed_dag/runtime_bindings.json`.
 - Selected routing contract seams:
   `route_intent_v1` and `selected_fixed_dag_plan_v1` in
-  `src/react_agent/fixed_dag_contracts.py`. These are additive future planner
-  and compiler targets, not active runtime defaults.
+  `src/react_agent/fixed_dag_contracts.py`. R8-2 adds
+  `compile_selected_fixed_dag_plan`, `validate_selected_dag_steps`, and
+  `topological_batches_for_selected_plan` as deterministic selected compiler
+  and validation seams, not active runtime defaults.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -77,11 +79,11 @@ The public `/api/agents` path now projects the fixed DAG catalog's 27
 `snake_case` reset agents through the existing `AgentCatalogResponse` shape.
 R4-B does not add binding fields to `/api/agents`.
 
-R8-1 does not change public workflow projection or frontend rendering. The
+R8-2 does not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from
-the active fixed DAG skeleton. Selected plan contracts remain internal
-validator seams until a later compiler/runtime phase intentionally connects
-them.
+the active fixed DAG skeleton. Selected plan compilation remains an internal
+contract/executor validation seam until a later runtime phase intentionally
+connects it.
 
 ## Active Fixed DAG Skeleton
 
@@ -105,7 +107,7 @@ Active skeleton properties:
 - Final public source is `reset_skeleton`.
 - Plan, bundle, conclusion, composite, decision, report, workflow, and final
   emit payloads are generated from `fixed_dag_contracts.py` seams.
-- `route_planner` still builds the default full `fixed_dag_plan_v1`; R8-1 does
+- `route_planner` still builds the default full `fixed_dag_plan_v1`; R8-2 does
   not make selected routing active.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
@@ -162,6 +164,17 @@ compiler output target that can explicitly omit dimensions and agents while
 keeping full-DAG fallback metadata. R8-1 does not add an LLM planner, selected
 DAG compiler, RouteEval, external adapter, public contract field, or runtime
 binding change.
+
+In R8-2, `compile_selected_fixed_dag_plan` deterministically compiles valid
+`route_intent_v1` into dependency-closed `selected_fixed_dag_plan_v1` objects.
+The compiler adds fixed L1/evidence seams, selected L2 agents, selected
+dimension composites, policy-gated `decision_synthesizer`, and
+`report_generator` without calling an LLM, provider, search backend, or external
+service. `validate_selected_dag_steps` and
+`topological_batches_for_selected_plan` validate and batch selected plans
+without requiring the full 27-agent DAG. R8-2 still does not change `graph.py`,
+public workflow mapping, frontend rendering, runtime bindings, RouteEval, or
+external adapter readiness.
 
 ## Target Fixed DAG IDs
 

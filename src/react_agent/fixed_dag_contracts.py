@@ -757,13 +757,11 @@ def validate_route_intent(intent: Mapping[str, Any]) -> tuple[bool, str]:
         return False, "fallback_reason_not_public_safe"
     task_type = str(intent.get("task_type") or "")
     if selected_agents and not needs_clarification:
-        if "report_generator" not in selected_agents:
-            return False, "report_generator_required"
         if task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
             if "risk" not in selected_dimension_set:
                 return False, "risk_dimension_required"
-            if "decision_synthesizer" not in selected_agents:
-                return False, "decision_synthesizer_required"
+            if not any(agent_id in RISK_AGENT_IDS for agent_id in selected_agents):
+                return False, "risk_agent_required"
     provenance = intent.get("provenance", {})
     if not isinstance(provenance, Mapping):
         return False, "invalid_provenance"
@@ -805,6 +803,90 @@ def _stage_items_for_steps(steps: list[Mapping[str, Any]]) -> list[dict[str, Any
     ]
 
 
+def _selected_l2_agents_by_dimension(selected_agents: list[str]) -> dict[str, list[str]]:
+    selected = set(selected_agents)
+    return {
+        dimension: [agent_id for agent_id in agent_ids if agent_id in selected]
+        for dimension, agent_ids in DIMENSION_GROUPS.items()
+    }
+
+
+def _compiled_agent_ids_for_intent(intent: Mapping[str, Any]) -> list[str]:
+    selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
+    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
+    if not selected_dimensions:
+        raise ValueError("selected_dimensions_missing")
+    l2_by_dimension = _selected_l2_agents_by_dimension(selected_agents)
+    missing_l2_dimensions = [
+        dimension for dimension in selected_dimensions if not l2_by_dimension[dimension]
+    ]
+    if missing_l2_dimensions:
+        raise ValueError("selected_dimension_l2_agents_missing")
+
+    compiled: set[str] = {
+        "route_planner",
+        "financial_data_service",
+        "entity_relation_extractor",
+        "report_generator",
+    }
+    for dimension in selected_dimensions:
+        compiled.update(l2_by_dimension[dimension])
+        compiled.add(DIMENSION_COMPOSITE_AGENT_IDS[dimension])
+
+    task_type = str(intent.get("task_type") or "")
+    if task_type in INVESTMENT_JUDGMENT_TASK_TYPES or "decision_synthesizer" in selected_agents:
+        compiled.add("decision_synthesizer")
+
+    return [agent_id for agent_id in RESET_RUNTIME_AGENT_IDS if agent_id in compiled]
+
+
+def _compiled_steps_for_intent(
+    intent: Mapping[str, Any],
+    compiled_agent_ids: list[str],
+) -> list[FixedDagStep]:
+    selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
+    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
+    l2_by_dimension = _selected_l2_agents_by_dimension(selected_agents)
+    compiled_agent_set = set(compiled_agent_ids)
+    include_decision = "decision_synthesizer" in compiled_agent_set
+    terminal_dimension_step_ids = [
+        f"dimension:{dimension}"
+        for dimension in selected_dimensions
+        if l2_by_dimension[dimension]
+    ]
+
+    steps: list[FixedDagStep] = []
+    for step in _build_steps():
+        agent_id = str(step.get("agent_id") or "")
+        if agent_id not in compiled_agent_set:
+            continue
+        compiled_step = dict(step)
+        if agent_id == "route_planner":
+            compiled_step["depends_on"] = []
+        elif agent_id in {"financial_data_service", "entity_relation_extractor"}:
+            compiled_step["depends_on"] = ["route_planner"]
+        elif agent_id in L2_CONCLUSION_AGENT_IDS:
+            compiled_step["depends_on"] = [
+                "financial_data_service",
+                "entity_relation_extractor",
+            ]
+        elif agent_id in DIMENSION_COMPOSITE_AGENT_IDS.values():
+            dimension = _agent_dimension(agent_id)
+            l2_agents = l2_by_dimension[dimension]
+            compiled_step["target_ids"] = list(l2_agents)
+            compiled_step["depends_on"] = [f"l2:{l2_agent_id}" for l2_agent_id in l2_agents]
+        elif agent_id == "decision_synthesizer":
+            compiled_step["depends_on"] = list(terminal_dimension_step_ids)
+        elif agent_id == "report_generator":
+            compiled_step["depends_on"] = (
+                ["decision_synthesizer"]
+                if include_decision
+                else list(terminal_dimension_step_ids)
+            )
+        steps.append(cast(FixedDagStep, compiled_step))
+    return steps
+
+
 def build_selected_fixed_dag_plan(
     *,
     route_intent: Mapping[str, Any],
@@ -818,14 +900,15 @@ def build_selected_fixed_dag_plan(
 ) -> SelectedFixedDagPlan:
     intent = dict(route_intent)
     selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
-    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
-    steps = list(selected_steps or _steps_for_selected_agents(selected_agents))
+    intent_selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
+    steps = list(selected_steps or _steps_for_selected_agents(intent_selected_agents))
     step_agent_ids = [
         str(step.get("agent_id"))
         for step in steps
         if isinstance(step, Mapping) and step.get("agent_id")
     ]
-    target_agent_ids = list(dict.fromkeys(step_agent_ids or selected_agents))
+    target_agent_ids = list(dict.fromkeys(step_agent_ids or intent_selected_agents))
+    selected_agents = list(target_agent_ids)
     selected_dimension_set = set(selected_dimensions)
     omitted_dimensions = [
         cast(DimensionName, dimension)
@@ -870,6 +953,40 @@ def build_selected_fixed_dag_plan(
     }
 
 
+def compile_selected_fixed_dag_plan(
+    route_intent: Mapping[str, Any],
+    *,
+    user_text: str = "",
+    as_of: str | None = None,
+) -> SelectedFixedDagPlan:
+    """Compile planner intent into a deterministic selected fixed DAG plan."""
+    valid, reason = validate_route_intent(route_intent)
+    if not valid:
+        raise ValueError(f"invalid_route_intent:{reason}")
+    if route_intent.get("needs_clarification"):
+        raise ValueError("route_intent_needs_clarification")
+
+    compiled_agent_ids = _compiled_agent_ids_for_intent(route_intent)
+    selected_steps = _compiled_steps_for_intent(route_intent, compiled_agent_ids)
+    plan = build_selected_fixed_dag_plan(
+        route_intent=route_intent,
+        user_text=user_text,
+        as_of=as_of,
+        selected_steps=selected_steps,
+        fallback_reason=str(route_intent.get("fallback_reason") or "fallback to full DAG"),
+        provenance={
+            "source": "deterministic_selected_dag_compiler",
+            "compiler": "r8_2_deterministic_selected_dag_compiler",
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    if not valid:
+        raise ValueError(f"compiled_selected_plan_invalid:{reason}")
+    return plan
+
+
 def validate_selected_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
     if not isinstance(plan, Mapping):
         return False, "plan_not_mapping"
@@ -903,14 +1020,20 @@ def validate_selected_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str
     target = plan.get("target")
     if not isinstance(selected_agents, list) or not isinstance(target_agent_ids, list) or not isinstance(target, list):
         return False, "invalid_targets"
-    if set(selected_agents) != set(route_intent.get("selected_agents", [])):
-        return False, "route_intent_agents_mismatch"
+    route_intent_agents = set(route_intent.get("selected_agents", []))
+    if not route_intent_agents <= set(selected_agents):
+        return False, "route_intent_agent_not_selected"
     if any(_looks_like_legacy_agent_id(str(agent_id)) for agent_id in selected_agents):
         return False, "legacy_agent_id_present"
     if "value_financial_analysis" in selected_agents:
         return False, "removed_agent_present"
     if any(agent_id not in RESET_RUNTIME_AGENT_IDS for agent_id in selected_agents):
         return False, "unknown_selected_agent"
+    selected_dimension_set = set(selected_dimensions)
+    for agent_id in selected_agents:
+        dimension = _agent_dimension(str(agent_id))
+        if dimension in DIMENSION_GROUPS and dimension not in selected_dimension_set:
+            return False, "agent_dimension_not_selected"
     if set(target_agent_ids) != set(target):
         return False, "target_mismatch"
     if set(target_agent_ids) != set(selected_agents):
@@ -919,7 +1042,7 @@ def validate_selected_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str
     if "report_generator" not in target_agent_ids:
         return False, "report_generator_required"
     if route_task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
-        if "risk" not in set(selected_dimensions):
+        if "risk" not in selected_dimension_set:
             return False, "risk_dimension_required"
         if "decision_synthesizer" not in target_agent_ids:
             return False, "decision_synthesizer_required"

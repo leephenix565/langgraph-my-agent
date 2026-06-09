@@ -14,6 +14,7 @@ from typing import Any, cast
 
 from react_agent.fixed_dag_contracts import (
     DECISION_RESULT_SCHEMA_VERSION,
+    DIMENSION_COMPOSITE_AGENT_IDS,
     DIMENSION_GROUPS,
     FIXED_DAG_SCHEMA_VERSION,
     FIXED_DAG_STAGE_ORDER,
@@ -24,6 +25,7 @@ from react_agent.fixed_dag_contracts import (
     REPORT_RESULT_SCHEMA_VERSION,
     RESET_RUNTIME_AGENT_IDS,
     RISK_AGENT_IDS,
+    SELECTED_FIXED_DAG_SCHEMA_VERSION,
     VALUE_AGENT_IDS,
     build_decision_result,
     build_default_fixed_dag_plan,
@@ -36,6 +38,7 @@ from react_agent.fixed_dag_contracts import (
     validate_dimension_composite_result,
     validate_fixed_dag_plan,
     validate_report_result,
+    validate_selected_fixed_dag_plan,
     validate_workflow_snapshot_v2,
 )
 from react_agent.fixed_dag_runtime_registry import (
@@ -198,6 +201,111 @@ def _validate_dimension_dependencies(steps: list[Mapping[str, Any]]) -> tuple[bo
     return True, "ok"
 
 
+def _step_by_agent(steps: list[Mapping[str, Any]]) -> dict[str, Mapping[str, Any]]:
+    return {str(step.get("agent_id")): step for step in steps}
+
+
+def _selected_dimension_step_ids(plan: Mapping[str, Any]) -> list[str]:
+    dimension_groups = cast(Mapping[str, list[str]], plan.get("dimension_groups", {}))
+    return [
+        DIMENSION_STEP_IDS[dimension]
+        for dimension in plan.get("selected_dimensions", [])
+        if dimension in DIMENSION_STEP_IDS and dimension_groups.get(str(dimension))
+    ]
+
+
+def _validate_selected_dimension_dependencies(plan: Mapping[str, Any]) -> tuple[bool, str]:
+    steps = _steps(plan)
+    by_agent = _step_by_agent(steps)
+    dimension_groups = plan.get("dimension_groups")
+    if not isinstance(dimension_groups, Mapping):
+        return False, "invalid_dimension_groups"
+
+    route_step = by_agent.get("route_planner")
+    if route_step is None:
+        return False, "missing_route_planner"
+    if _deps(route_step):
+        return False, "route_planner_dependency_mismatch"
+    for evidence_agent_id in ("financial_data_service", "entity_relation_extractor"):
+        evidence_step = by_agent.get(evidence_agent_id)
+        if evidence_step is None:
+            return False, "missing_evidence_step"
+        if _deps(evidence_step) != ["route_planner"]:
+            return False, "evidence_dependency_mismatch"
+
+    for dimension, agent_ids in dimension_groups.items():
+        if not isinstance(agent_ids, list) or not agent_ids:
+            return False, "selected_dimension_l2_agents_missing"
+        composite_agent_id = DIMENSION_COMPOSITE_AGENT_IDS[str(dimension)]
+        composite_step = by_agent.get(composite_agent_id)
+        if composite_step is None:
+            return False, "missing_selected_composite_step"
+        if composite_agent_id == "risk_composite" and "l2:sentiment_company_radar" in set(_deps(composite_step)):
+            return False, "risk_reads_sentiment"
+        if set(composite_step.get("target_ids", [])) != set(agent_ids):
+            return False, "selected_composite_target_mismatch"
+        expected_l2_step_ids = {f"l2:{agent_id}" for agent_id in agent_ids}
+        if set(_deps(composite_step)) != expected_l2_step_ids:
+            return False, "selected_composite_dependency_mismatch"
+        for agent_id in agent_ids:
+            l2_step = by_agent.get(str(agent_id))
+            if l2_step is None:
+                return False, "missing_selected_l2_step"
+            if set(_deps(l2_step)) != L2_EVIDENCE_DEPS:
+                return False, "l2_dependency_mismatch"
+
+    risk_step = by_agent.get("risk_composite", {})
+    if "l2:sentiment_company_radar" in set(_deps(risk_step)):
+        return False, "risk_reads_sentiment"
+    sentiment_dep = "l2:sentiment_company_radar"
+    for step in steps:
+        if sentiment_dep in _deps(step) and step.get("agent_id") != "market_composite":
+            return False, "sentiment_dependency_not_market_only"
+
+    selected_dimension_step_ids = _selected_dimension_step_ids(plan)
+    decision_step = by_agent.get("decision_synthesizer")
+    if decision_step is not None and set(_deps(decision_step)) != set(selected_dimension_step_ids):
+        return False, "selected_decision_dependency_mismatch"
+
+    report_step = by_agent.get("report_generator")
+    if report_step is None:
+        return False, "missing_report_step"
+    expected_report_deps = (
+        ["decision_synthesizer"]
+        if decision_step is not None
+        else selected_dimension_step_ids
+    )
+    if set(_deps(report_step)) != set(expected_report_deps):
+        return False, "selected_report_dependency_mismatch"
+    return True, "ok"
+
+
+def validate_selected_dag_steps(plan: Mapping[str, Any]) -> tuple[bool, str]:
+    """Validate selected DAG steps without requiring the full 27-agent plan."""
+    if not isinstance(plan, Mapping):
+        return False, "plan_not_mapping"
+    if plan.get("schema") != SELECTED_FIXED_DAG_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if _contains_legacy_key(plan):
+        return False, "legacy_dispatch_field_present"
+    steps = _steps(plan)
+    if not steps:
+        return False, "steps_missing"
+    valid, reason = _validate_step_identity(steps)
+    if not valid:
+        return valid, reason
+    valid, reason = _validate_dependency_graph(steps)
+    if not valid:
+        return valid, reason
+    valid, reason = _validate_selected_dimension_dependencies(plan)
+    if not valid:
+        return valid, reason
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    if not valid:
+        return valid, reason
+    return True, "ok"
+
+
 def validate_dag_steps(plan: Mapping[str, Any]) -> tuple[bool, str]:
     """Validate step ids, dependencies, stage/dimension legality, and roster edges."""
     if not isinstance(plan, Mapping):
@@ -259,6 +367,13 @@ def _topological_batches_from_steps(steps: list[Mapping[str, Any]]) -> list[list
 
 def topological_batches(plan: Mapping[str, Any]) -> list[list[str]]:
     valid, _reason = validate_dag_steps(plan)
+    if not valid:
+        return []
+    return _topological_batches_from_steps(_steps(plan))
+
+
+def topological_batches_for_selected_plan(plan: Mapping[str, Any]) -> list[list[str]]:
+    valid, _reason = validate_selected_dag_steps(plan)
     if not valid:
         return []
     return _topological_batches_from_steps(_steps(plan))

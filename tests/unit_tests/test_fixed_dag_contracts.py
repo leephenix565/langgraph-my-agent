@@ -25,6 +25,7 @@ from react_agent.fixed_dag_contracts import (
     build_route_intent,
     build_selected_fixed_dag_plan,
     build_workflow_snapshot_v2,
+    compile_selected_fixed_dag_plan,
     normalize_fixed_dag_plan,
     validate_conclusion_object,
     validate_data_bundle,
@@ -366,6 +367,114 @@ def test_selected_fixed_dag_plan_allows_general_value_only_subset() -> None:
     assert set(plan["omitted_dimensions"]) == {"market", "risk", "macro"}
     assert "risk_identification" in plan["omitted_agents"]
     assert "macro_analysis" in plan["omitted_agents"]
+
+
+def test_compile_selected_fixed_dag_plan_builds_value_only_dependency_closure() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["valuation method"],
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(
+        intent,
+        user_text="explain valuation method",
+        as_of="2026-06-09",
+    )
+    steps = {step["id"]: step for step in plan["steps"]}
+    selected_valid, selected_reason = validate_selected_fixed_dag_plan(plan)
+    full_valid, full_reason = validate_fixed_dag_plan(plan)
+
+    assert selected_valid, selected_reason
+    assert not full_valid
+    assert full_reason == "invalid_schema"
+    assert list(steps) == [
+        "route_planner",
+        "financial_data_service",
+        "entity_relation_extractor",
+        "l2:value_ml_valuation",
+        "dimension:value",
+        "report_generator",
+    ]
+    assert steps["financial_data_service"]["depends_on"] == ["route_planner"]
+    assert steps["entity_relation_extractor"]["depends_on"] == ["route_planner"]
+    assert steps["l2:value_ml_valuation"]["depends_on"] == [
+        "financial_data_service",
+        "entity_relation_extractor",
+    ]
+    assert steps["dimension:value"]["target_ids"] == ["value_ml_valuation"]
+    assert steps["dimension:value"]["depends_on"] == ["l2:value_ml_valuation"]
+    assert steps["report_generator"]["depends_on"] == ["dimension:value"]
+    assert "decision_synthesizer" not in plan["target_agent_ids"]
+    assert set(plan["omitted_dimensions"]) == {"market", "risk", "macro"}
+    assert len(plan["steps"]) < len(RESET_RUNTIME_AGENT_IDS)
+    assert plan["provenance"]["source"] == "deterministic_selected_dag_compiler"
+    assert not _contains_key(plan, "layerMode")
+    assert not _contains_key(plan, "fusionSteps")
+
+
+def test_compile_selected_fixed_dag_plan_builds_investment_plan_with_risk_and_decision() -> None:
+    intent = build_route_intent(
+        task_type="single",
+        targets=["example company"],
+        selected_dimensions=["value", "risk"],
+        selected_agents=["value_traditional_valuation", "risk_identification"],
+        route_confidence=0.78,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(
+        intent,
+        user_text="evaluate example company",
+        as_of="2026-06-09",
+    )
+    steps = {step["id"]: step for step in plan["steps"]}
+    selected_valid, selected_reason = validate_selected_fixed_dag_plan(plan)
+
+    assert selected_valid, selected_reason
+    assert set(plan["selected_dimensions"]) == {"value", "risk"}
+    assert set(plan["dimension_groups"]) == {"value", "risk"}
+    assert plan["dimension_groups"]["value"] == ["value_traditional_valuation"]
+    assert plan["dimension_groups"]["risk"] == ["risk_identification"]
+    assert steps["dimension:value"]["depends_on"] == ["l2:value_traditional_valuation"]
+    assert steps["dimension:risk"]["depends_on"] == ["l2:risk_identification"]
+    assert set(steps["decision_synthesizer"]["depends_on"]) == {
+        "dimension:value",
+        "dimension:risk",
+    }
+    assert steps["report_generator"]["depends_on"] == ["decision_synthesizer"]
+    assert "market_composite" not in plan["target_agent_ids"]
+    assert "macro_composite" not in plan["target_agent_ids"]
+
+
+def test_compile_selected_fixed_dag_plan_rejects_invalid_or_incomplete_intent() -> None:
+    missing_risk = build_route_intent(
+        task_type="single",
+        targets=["example company"],
+        selected_dimensions=["value"],
+        selected_agents=["value_traditional_valuation"],
+        fallback_reason="fallback to full DAG",
+    )
+    try:
+        compile_selected_fixed_dag_plan(missing_risk)
+    except ValueError as exc:
+        assert str(exc) == "invalid_route_intent:risk_dimension_required"
+    else:
+        raise AssertionError("expected invalid investment intent to fail")
+
+    missing_l2 = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_composite"],
+        fallback_reason="fallback to full DAG",
+    )
+    try:
+        compile_selected_fixed_dag_plan(missing_l2)
+    except ValueError as exc:
+        assert str(exc) == "selected_dimension_l2_agents_missing"
+    else:
+        raise AssertionError("expected missing L2 selected dimension to fail")
 
 
 def test_selected_fixed_dag_plan_validates_subset_and_omissions() -> None:

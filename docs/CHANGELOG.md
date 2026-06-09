@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-2 deterministic selected DAG compiler
+
+### Changed
+
+- Added deterministic `compile_selected_fixed_dag_plan` to compile
+  `route_intent_v1` into dependency-closed `selected_fixed_dag_plan_v1` plans.
+- The compiler adds fixed L1/evidence seams, selected L2 agents, selected
+  dimension composites, policy-gated `decision_synthesizer`, and
+  `report_generator` without calling LLMs, providers, search, or external
+  services.
+- Added selected executor validation helpers:
+  `validate_selected_dag_steps` and `topological_batches_for_selected_plan`.
+- Kept the active graph default on the full `fixed_dag_plan_v1` path; selected
+  compilation is available as an internal deterministic seam only.
+- Added unit coverage for value-only selected compilation, investment selected
+  compilation with risk and decision, selected topological batches, selected
+  dependency rejection, sentiment-to-risk rejection, and full DAG regression
+  separation.
+- Updated README, architecture, contracts, system map, quality, changelog, and
+  decision docs for R8-2 boundaries.
+
+### Validated
+
+- `conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py`
+- `conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py -q`
+- `conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Not Done
+
+- No active runtime default behavior change.
+- No `src/react_agent/graph.py` change.
+- No LLM planner, RouteEval, or external adapter implementation.
+- No fixed DAG roster, catalog, runtime binding, runtime registry, public
+  workflow, frontend, or public API change.
+- No provider/search call.
+- No external `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+
 ## 2026-06-09 - Phase R8-1 selected fixed DAG plan contract
 
 ### Changed

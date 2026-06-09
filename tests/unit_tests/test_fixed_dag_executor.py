@@ -8,14 +8,18 @@ from react_agent.fixed_dag_contracts import (
     RISK_AGENT_IDS,
     VALUE_AGENT_IDS,
     build_default_fixed_dag_plan,
+    build_route_intent,
+    compile_selected_fixed_dag_plan,
 )
 from react_agent.fixed_dag_executor import (
     build_dag_step_index,
     build_initial_step_results,
     execute_fixed_dag_plan,
     topological_batches,
+    topological_batches_for_selected_plan,
     validate_dag_execution_result,
     validate_dag_steps,
+    validate_selected_dag_steps,
     validate_step_result,
 )
 
@@ -37,6 +41,105 @@ def test_default_plan_validates_and_batches_are_stable() -> None:
     assert batches[3] == ["dimension:value", "dimension:market", "dimension:risk", "dimension:macro"]
     assert batches[4] == ["decision_synthesizer"]
     assert batches[5] == ["report_generator"]
+
+
+def test_selected_value_only_plan_validates_and_batches_are_stable() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+    valid, reason = validate_selected_dag_steps(plan)
+    selected_batches = topological_batches_for_selected_plan(plan)
+    full_batches = topological_batches(plan)
+
+    assert valid, reason
+    assert selected_batches == [
+        ["route_planner"],
+        ["financial_data_service", "entity_relation_extractor"],
+        ["l2:value_ml_valuation"],
+        ["dimension:value"],
+        ["report_generator"],
+    ]
+    assert full_batches == []
+
+
+def test_selected_investment_plan_validates_decision_and_report_dependencies() -> None:
+    intent = build_route_intent(
+        task_type="single",
+        selected_dimensions=["value", "risk"],
+        selected_agents=["value_traditional_valuation", "risk_identification"],
+        route_confidence=0.8,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+    index = build_dag_step_index(plan)
+    valid, reason = validate_selected_dag_steps(plan)
+    batches = topological_batches_for_selected_plan(plan)
+
+    assert valid, reason
+    assert set(index["decision_synthesizer"]["depends_on"]) == {
+        "dimension:value",
+        "dimension:risk",
+    }
+    assert index["report_generator"]["depends_on"] == ["decision_synthesizer"]
+    assert batches[0] == ["route_planner"]
+    assert set(batches[2]) == {
+        "l2:value_traditional_valuation",
+        "l2:risk_identification",
+    }
+    assert set(batches[3]) == {"dimension:value", "dimension:risk"}
+    assert batches[4] == ["decision_synthesizer"]
+    assert batches[5] == ["report_generator"]
+
+
+def test_selected_dag_validation_rejects_selected_dependency_shape_errors() -> None:
+    intent = build_route_intent(
+        task_type="single",
+        selected_dimensions=["market", "risk"],
+        selected_agents=["sentiment_company_radar", "risk_identification"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+
+    risk_reads_sentiment = copy.deepcopy(plan)
+    for step in risk_reads_sentiment["steps"]:
+        if step["id"] == "dimension:risk":
+            step["depends_on"].append("l2:sentiment_company_radar")
+            break
+    valid, reason = validate_selected_dag_steps(risk_reads_sentiment)
+    assert not valid
+    assert reason == "risk_reads_sentiment"
+
+    bad_decision = copy.deepcopy(plan)
+    for step in bad_decision["steps"]:
+        if step["id"] == "decision_synthesizer":
+            step["depends_on"] = ["dimension:value"]
+            break
+    valid, reason = validate_selected_dag_steps(bad_decision)
+    assert not valid
+    assert reason == "missing_dependency"
+
+    value_only = compile_selected_fixed_dag_plan(
+        build_route_intent(
+            task_type="general",
+            selected_dimensions=["value"],
+            selected_agents=["value_ml_valuation"],
+            fallback_reason="fallback to full DAG",
+        )
+    )
+    bad_report = copy.deepcopy(value_only)
+    for step in bad_report["steps"]:
+        if step["id"] == "report_generator":
+            step["depends_on"] = ["decision_synthesizer"]
+            break
+    valid, reason = validate_selected_dag_steps(bad_report)
+    assert not valid
+    assert reason == "missing_dependency"
 
 
 def test_dimension_dependencies_preserve_sentiment_market_boundary() -> None:

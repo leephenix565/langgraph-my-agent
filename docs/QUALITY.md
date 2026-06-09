@@ -97,6 +97,30 @@ Passing R8-1 validation does not mean that an LLM planner, deterministic
 selected compiler, RouteEval suite, external adapter, or real business-agent
 result mapping is implemented.
 
+## R8-2 Selected Compiler Gate
+
+R8-2 adds deterministic selected DAG compilation and selected plan executor
+validation helpers without changing active graph behavior. Its narrow
+validation gate is:
+
+```powershell
+conda run --no-capture-output -n cline_env python -m ruff check src/react_agent/fixed_dag_contracts.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py
+conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py -q
+conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+This gate confirms that `compile_selected_fixed_dag_plan`,
+`validate_selected_dag_steps`, and `topological_batches_for_selected_plan`
+preserve the full DAG regression baseline while validating selected
+dependency-closed plans. It does not run active graph selected execution,
+provider live smoke, search, external `/v1/agent/invoke`, demo stack,
+fusion-gate, Router-SFT, RARP/route-prior, or frontend build.
+
+Passing R8-2 validation does not mean that an LLM planner, RouteEval suite,
+external adapter, runtime binding enablement, public workflow selected-plan
+projection, or real business-agent result mapping is implemented.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

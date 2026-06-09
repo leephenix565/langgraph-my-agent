@@ -216,11 +216,12 @@ Seams:
 
 ## route_intent_v1
 
-Purpose: record a future controlled-routing planner intent without making it
-an executable DAG.
+Purpose: record controlled-routing planner intent without making it an
+executable DAG.
 
-R8-1 adds this contract as an additive seam only. The active graph does not call
-an LLM planner and does not use selected routing by default.
+R8-1 adds this contract as an additive seam. R8-2 compiles valid route intent
+deterministically into `selected_fixed_dag_plan_v1`. The active graph still does
+not call an LLM planner and does not use selected routing by default.
 
 Fields:
 
@@ -252,9 +253,11 @@ need clarification.
 
 Policy gates:
 
-- `report_generator` is required whenever selected agents are present.
+- `route_intent_v1` records requested dimensions and business agents. Fixed
+  system dependencies, composites, `decision_synthesizer`, and
+  `report_generator` are compiler responsibilities.
 - Investment-judgment task types (`single`, `compare`, `screen`, `industry`,
-  `event`) require the risk dimension and `decision_synthesizer`.
+  `event`) require the risk dimension and at least one selected risk L2 agent.
 - `general`, `macro`, and `sentiment` intents may omit risk and decision.
 - Fallback text must stay public-safe; it must not expose provider, endpoint,
   env var, secret, traceback, runtime binding, placeholder, or similar raw
@@ -264,15 +267,17 @@ Seams:
 
 - `build_route_intent`
 - `validate_route_intent`
+- `compile_selected_fixed_dag_plan`
 
 ## selected_fixed_dag_plan_v1
 
-Purpose: define the future deterministic compiler/validator target for a
-selected sub-DAG while keeping `fixed_dag_plan_v1` as the full default
-regression baseline.
+Purpose: define the deterministic compiler/validator target for a selected
+sub-DAG while keeping `fixed_dag_plan_v1` as the full default regression
+baseline.
 
-R8-1 adds validation only. It does not execute selected plans and does not call
-`validate_fixed_dag_plan` from the selected validator.
+R8-1 adds validation. R8-2 adds deterministic compilation and selected executor
+validation helpers. The active graph still does not execute selected plans by
+default and the selected validator does not call `validate_fixed_dag_plan`.
 
 Fields include the base plan fields plus:
 
@@ -289,9 +294,21 @@ selected subset. Validation still requires all selected steps, DAG steps, stage
 step ids, targets, selected agents, selected dimensions, omitted agents, and
 omitted dimensions to reconcile. Step agent ids must be fixed DAG roster ids
 and must match the selected target set. Step dimensions must match the catalog
-dimension for the selected agent. Dependencies must point only to selected
-steps in R8-1; full dependency closure and deterministic selected compilation
-are deferred to R8-2.
+dimension for the selected agent.
+
+R8-2 `compile_selected_fixed_dag_plan` builds dependency closure
+deterministically:
+
+- adds `route_planner`, `financial_data_service`, and
+  `entity_relation_extractor`;
+- keeps selected L2 business agents only;
+- adds selected dimension composites and points each composite at selected
+  same-dimension L2 agents;
+- adds `decision_synthesizer` for investment-judgment task types;
+- always adds `report_generator`;
+- makes report depend on decision when present, otherwise on selected dimension
+  composites;
+- records omitted dimensions and omitted agents.
 
 Validation rejects runtime binding fields, external/provider/raw response
 fields, legacy dispatch keys, legacy dispatch values, sentiment-to-risk
@@ -302,12 +319,15 @@ Seams:
 
 - `build_selected_fixed_dag_plan`
 - `validate_selected_fixed_dag_plan`
+- `compile_selected_fixed_dag_plan`
+- `validate_selected_dag_steps`
+- `topological_batches_for_selected_plan`
 
 Non-claims:
 
 - `route_intent_v1` is not executable.
 - `selected_fixed_dag_plan_v1` is not the active runtime default.
-- R8-1 does not add an LLM planner, deterministic selected compiler, RouteEval,
+- R8-2 does not add an LLM planner, active graph selected execution, RouteEval,
   external adapter, public workflow field, web UI change, provider call, search
   call, external `/v1/agent/invoke` call, or runtime binding change.
 
