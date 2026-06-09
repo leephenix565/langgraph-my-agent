@@ -98,6 +98,13 @@ class Context:
             "Defaults off so the active graph keeps the full DAG path."
         },
     )
+    enable_internal_llm_placeholders: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable default-off internal LLM placeholders for fixed-DAG L2 slots. "
+            "Provider failures fall back to deterministic placeholders."
+        },
+    )
     run_id: str = field(
         default="",
         metadata={"description": "Optional run identifier for tracing/logging."},
@@ -139,6 +146,7 @@ class Context:
             "baseline_force_search": "BASELINE_FORCE_SEARCH",
             "enable_fair_fusion_source_switch": "ENABLE_FAIR_FUSION_SOURCE_SWITCH",
             "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
+            "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
         }
         for field_name, env_name in bool_envs.items():
             field_obj = next((f for f in fields(self) if f.name == field_name), None)

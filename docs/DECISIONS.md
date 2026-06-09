@@ -708,3 +708,35 @@ frontend UI, provider/search readiness, external `/v1/agent/invoke` readiness,
 or production deployment. It does not add a provider-backed LLM planner,
 external adapter readiness, final Route F1 acceptance threshold, or real
 business-agent implementation.
+
+## ADR-031: R8-6B Uses Default-Off Internal LLM Placeholders Before External Integration
+
+Status: accepted for default-off L2 placeholder implementation.
+
+Decision: R8-6B adds internal LLM placeholders for fixed-DAG L2 conclusions
+behind `Context.enable_internal_llm_placeholders` /
+`ENABLE_INTERNAL_LLM_PLACEHOLDERS=1`. The default path remains deterministic.
+When explicitly enabled, the executor may call the main-system model to produce
+bounded JSON placeholder observations for selected or full L2 slots. Provider
+missing, provider configuration errors, parse failures, or unsafe content fall
+back to the deterministic pending conclusion.
+
+Reason: server-side business agent directories and processes exist, but they
+have not completed fixed-DAG external adapter readiness, live verification, or
+runtime binding enablement. The reset runtime needs a bounded way to carry L2
+functional slots without claiming those external services are active. Keeping the
+placeholder internal, default-off, and L2-only preserves the runtime boundary
+while preparing later adapter work.
+
+Consequence: `src/react_agent/fixed_dag_llm_placeholders.py` becomes the active
+internal placeholder seam for R8-6B. Successful placeholder conclusions are
+`conclusion_object_v1` with `status=partial`, confidence capped at `0.4`, and
+`provenance.runtime_path=internal_llm_placeholder`. L3 composites, L4 decision
+synthesis, and report generation remain deterministic summaries.
+
+Non-consequence: R8-6B does not enable external `/v1/agent/invoke`, search,
+runtime binding changes, `live_verified=true`, `invoke_enabled_by_default=true`,
+fixed DAG roster changes, `value_financial_analysis`, sentiment-to-risk routing,
+legacy `AGENT_TOOLS`/`config/agents`/aNN authority, frontend rewrite, or
+production deployment. Deployed-but-deferred inventory remains documentation
+evidence, not runtime authority.

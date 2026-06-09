@@ -3,6 +3,55 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-6B default-off internal LLM placeholders
+
+### Changed
+
+- Added `Context.enable_internal_llm_placeholders` with
+  `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` env support through the existing boolean
+  parser.
+- Added `src/react_agent/fixed_dag_llm_placeholders.py` for bounded internal LLM
+  placeholder generation of L2 `conclusion_object_v1` payloads.
+- Wired `execute_fixed_dag_plan(..., context=...)` and `execute_fixed_dag_node`
+  so the optional placeholder seam can run in the active graph only when the flag
+  is enabled.
+- Kept the default path on deterministic `build_l2_conclusions`; no provider is
+  loaded when the flag is off.
+- Kept L3 composites, L4 decision synthesis, and report generation
+  deterministic in this slice.
+- Added fail-soft fallback to deterministic pending conclusions when provider
+  loading, model invocation, JSON parsing, or safety checks fail.
+- Added docs-only deployed-but-deferred inventory for server-side agent evidence
+  without changing runtime bindings.
+- Added tests for default-off behavior, fake-provider success, provider missing
+  fallback, parse failure fallback, unsafe text sanitization, selected routing
+  coexistence, and no external HTTP invocation.
+- Updated README, system map, contracts, quality, readiness ladder, changelog,
+  and decision docs for R8-6B boundaries.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent/context.py src/react_agent/fixed_dag_llm_placeholders.py src/react_agent/fixed_dag_executor.py src/react_agent/graph.py tests/unit_tests/test_fixed_dag_llm_placeholders.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_llm_placeholders.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_runtime_registry.py -q`
+- `git diff --check`
+
+### Not Done
+
+- No provider/live smoke.
+- No external `/v1/agent/invoke` call.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No fixed DAG roster change.
+- No external adapter readiness or live integration.
+- No frontend rewrite.
+- No L3/L4/report LLM generation.
+- `scripts/quality/run_quality.py --mode static` did not complete in the local
+  `.venv` because its broader ruff target reports pre-existing Python 3.14
+  `UP045` style findings in `public_contracts.py` and `public_store.py`; R8-6B
+  did not modify those files.
+
 ## 2026-06-09 - Phase R8-5 default-off selected routing graph integration
 
 ### Changed

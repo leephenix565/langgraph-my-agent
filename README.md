@@ -74,18 +74,25 @@ Phase R8-5 wires selected routing into the graph behind
 active behavior remains full DAG; the selected path uses only the provider-free
 route-intent seam and deterministic compiler, and compile/validation failure
 falls back to the full DAG.
+Phase R8-6B adds default-off internal LLM placeholders for L2 conclusions behind
+`Context.enable_internal_llm_placeholders` /
+`ENABLE_INTERNAL_LLM_PLACEHOLDERS=1`. When enabled, the executor may ask the
+main-system model for bounded, public-safe placeholder observations for selected
+or full L2 slots; provider failures, parse failures, or unsafe payloads fall
+back to deterministic pending conclusions. L3/L4/report remain deterministic in
+this first slice, and no external agent is invoked.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
-per-step `step_results`, and remains a provider-free placeholder skeleton. It
-is not a completed business analysis engine.
+per-step `step_results`, and keeps the default path as a provider-free
+placeholder skeleton. It is not a completed business analysis engine.
 
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-5 default-off selected routing graph integration over the existing
-  full fixed DAG backend skeleton, R7-I web presentation surface, and v2.3.1
-  scaffold package.
+- Current phase: R8-6B default-off internal LLM placeholders over the existing
+  full/selected fixed DAG backend skeleton, R7-I web presentation surface, and
+  v2.3.1 scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
@@ -112,6 +119,12 @@ is not a completed business analysis engine.
   R8-5 adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`
   as a default-off graph boundary. Without that flag, the active
   `route_planner` node still builds the full default fixed DAG.
+- Internal LLM placeholders: R8-6B adds
+  `Context.enable_internal_llm_placeholders` /
+  `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` as an independent default-off graph
+  boundary for L2 conclusion slots only. This is not external adapter
+  readiness, live integration, provider readiness, or a real business-agent
+  output claim. Runtime bindings remain unchanged.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

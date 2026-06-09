@@ -1372,10 +1372,16 @@ def validate_conclusion_object(obj: Mapping[str, Any]) -> tuple[bool, str]:
     provenance = obj.get("provenance", {})
     if not isinstance(provenance, Mapping):
         return False, "invalid_provenance"
-    if isinstance(provenance, Mapping) and (
-        provenance.get("provider_invoked") or provenance.get("external_invoked")
-    ):
+    if isinstance(provenance, Mapping) and provenance.get("external_invoked"):
         return False, "live_invocation_claim_present"
+    if isinstance(provenance, Mapping) and provenance.get("provider_invoked"):
+        if (
+            provenance.get("source") != "internal_llm_placeholder"
+            or provenance.get("runtime_path") != "internal_llm_placeholder"
+        ):
+            return False, "live_invocation_claim_present"
+        if confidence > 0.4:
+            return False, "internal_placeholder_confidence_out_of_range"
     return True, "ok"
 
 

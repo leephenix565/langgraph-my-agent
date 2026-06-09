@@ -1,6 +1,7 @@
 import copy
 import json
 
+from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     MACRO_AGENT_IDS,
     MARKET_AGENT_IDS,
@@ -249,6 +250,31 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
         assert forbidden not in payload
 
 
+def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monkeypatch) -> None:
+    def fail_load(_model: str):
+        raise AssertionError("internal placeholder provider should stay default-off")
+
+    monkeypatch.setattr("react_agent.fixed_dag_llm_placeholders.load_chat_model", fail_load)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(),
+    )
+
+    assert result["provenance"]["internal_llm_placeholders_enabled"] is False
+    assert result["provenance"]["internal_llm_placeholder_conclusions"] == 0
+    assert {
+        item["status"]
+        for item in result["l2_conclusions"].values()
+    } == {"pending_implementation"}
+    assert {
+        item["provenance"]["source"]
+        for item in result["l2_conclusions"].values()
+    } == {"reset_skeleton"}
+
+
 def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> None:
     intent = build_route_intent(
         task_type="general",
@@ -270,6 +296,12 @@ def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> No
     assert len(result["step_results"]) < len(RESET_RUNTIME_AGENT_IDS)
     assert set(result["l2_conclusions"]) == {"value_ml_valuation"}
     assert set(result["dimension_results"]) == {"value"}
+    assert result["step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
+    assert result["step_results"]["financial_data_service"]["invoke_enabled"] is False
+    assert result["step_results"]["entity_relation_extractor"]["runtime_kind"] == "pending_placeholder"
+    assert result["step_results"]["l2:value_ml_valuation"]["runtime_kind"] == "external_http_candidate"
+    assert result["step_results"]["l2:value_ml_valuation"]["live_verified"] is False
+    assert "decision_synthesizer" not in result["step_results"]
     assert {item["id"] for item in result["workflow_snapshot"]["dimensionGroups"]} == {"value"}
     assert len(result["workflow_snapshot"]["dagSteps"]) == len(plan["steps"])
     assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])

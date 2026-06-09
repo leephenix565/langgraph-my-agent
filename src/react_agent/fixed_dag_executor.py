@@ -41,6 +41,10 @@ from react_agent.fixed_dag_contracts import (
     validate_selected_fixed_dag_plan,
     validate_workflow_snapshot_v2,
 )
+from react_agent.fixed_dag_llm_placeholders import (
+    INTERNAL_LLM_PLACEHOLDER_SOURCE,
+    build_l2_conclusions_with_internal_placeholders,
+)
 from react_agent.fixed_dag_runtime_registry import (
     annotate_step_result_with_binding,
     binding_by_agent_id,
@@ -538,8 +542,9 @@ def execute_fixed_dag_plan(
     *,
     question: str,
     as_of: str,
+    context: Any | None = None,
 ) -> dict:
-    """Execute a fixed DAG plan deterministically without live agent calls."""
+    """Execute a fixed DAG plan without external agent calls."""
     execution_plan, fallback_used, fallback_reason = _execution_plan_or_fallback(
         plan,
         question=question,
@@ -564,10 +569,28 @@ def execute_fixed_dag_plan(
                 summary=_summary_for_step(step),
             )
 
-    l2_conclusions = build_l2_conclusions(execution_plan, as_of=as_of)
+    internal_placeholders_enabled = bool(
+        getattr(context, "enable_internal_llm_placeholders", False)
+    )
+    if internal_placeholders_enabled:
+        l2_conclusions = build_l2_conclusions_with_internal_placeholders(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+        )
+    else:
+        l2_conclusions = build_l2_conclusions(execution_plan, as_of=as_of)
     dimension_results = build_dimension_results(l2_conclusions, as_of=as_of)
     decision_result = build_decision_result(dimension_results, as_of=as_of)
     report_result = build_report_result(decision_result, question=question)
+    internal_placeholder_count = sum(
+        1
+        for item in l2_conclusions.values()
+        if isinstance(item, Mapping)
+        and isinstance(item.get("provenance"), Mapping)
+        and item["provenance"].get("runtime_path") == INTERNAL_LLM_PLACEHOLDER_SOURCE
+    )
     limitations = [
         "当前为本地固定流程模式。",
         "高级连接状态可在设置诊断中查看。",
@@ -592,6 +615,8 @@ def execute_fixed_dag_plan(
             "source": "fixed_dag_executor",
             "provider_invoked": False,
             "external_invoked": False,
+            "internal_llm_placeholders_enabled": internal_placeholders_enabled,
+            "internal_llm_placeholder_conclusions": internal_placeholder_count,
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

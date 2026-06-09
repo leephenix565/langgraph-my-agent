@@ -7,6 +7,11 @@ Readiness is deliberately staged. Documentation, samples, and local tests do
 not imply live service readiness. `live_verified=true` does not imply
 `invoke_enabled=true`.
 
+`deployed_but_deferred` is an inventory status, not a readiness level. It means a
+server directory, implementation, or listening process has been observed, but the
+service has not completed this ladder and is not invoked by the fixed DAG reset
+runtime.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -121,6 +126,24 @@ Required:
 
 Prepared mapping does not call the service.
 
+## Deployed But Deferred
+
+R8-6B may record `deployed_but_deferred` evidence in documentation when a server
+agent directory or process exists but the service is not yet active runtime
+authority. This state can exist before or alongside L0-L5 evidence, but it does
+not replace any ladder level.
+
+Required wording:
+
+- Directory presence does not mean health verified.
+- Listening process presence does not mean health verified.
+- Health verified does not mean compute/invoke verified.
+- Compute/invoke verified does not mean `live_verified=true`.
+- `live_verified=true` does not mean `invoke_enabled_by_default=true`.
+- The fixed DAG runtime does not call deployed-but-deferred services by default.
+- Internal LLM placeholders are not external adapter readiness or live service
+  proof.
+
 ## L6: Live Verified
 
 Set `live_verified=true` only after:
@@ -157,5 +180,7 @@ The readiness ladder does not claim:
 - restored fusion-gate acceptance
 - demo stack acceptance
 - public Web end-to-end live proof
+- deployed-but-deferred inventory implies live verification
+- internal LLM placeholder output is a real external business-agent result
 
 Default reset mainline remains no-provider and no-external-invoke.

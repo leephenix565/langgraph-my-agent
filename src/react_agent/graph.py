@@ -158,12 +158,16 @@ def prepare_l1_context_node(state: State) -> dict[str, Any]:
     }
 
 
-def execute_fixed_dag_node(state: State) -> dict[str, Any]:
+def execute_fixed_dag_node(
+    state: State,
+    runtime: Runtime[Context] | None = None,
+) -> dict[str, Any]:
     plan = state["fixed_dag_plan"]
     execution = execute_fixed_dag_plan(
         plan,
         question=str(state.get("current_question", "") or ""),
         as_of=str(plan.get("as_of") or "not_available"),
+        context=runtime.context if runtime is not None else None,
     )
     return {
         "dag_execution": execution,

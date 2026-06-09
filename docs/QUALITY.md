@@ -191,6 +191,31 @@ external adapter, runtime binding enablement, final Route F1 acceptance gate,
 frontend selected-routing UI, or real business-agent result mapping is
 implemented.
 
+## R8-6B Internal LLM Placeholder Gate
+
+R8-6B adds default-off internal LLM placeholders for fixed-DAG L2 conclusions.
+Its narrow validation gate is:
+
+```powershell
+python -m ruff check src/react_agent/context.py src/react_agent/fixed_dag_llm_placeholders.py src/react_agent/fixed_dag_executor.py src/react_agent/graph.py tests/unit_tests/test_fixed_dag_llm_placeholders.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py
+python -m pytest tests/unit_tests/test_fixed_dag_llm_placeholders.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+This gate confirms that the default path remains deterministic and provider-free,
+that `Context.enable_internal_llm_placeholders` /
+`ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` is default-off, that fake-provider tests can
+exercise internal LLM placeholder L2 conclusions, and that provider/parser
+failure falls back to deterministic pending conclusions.
+
+Passing R8-6B validation does not mean external adapter readiness,
+`/v1/agent/invoke` readiness, provider live readiness, `live_verified=true`,
+`invoke_enabled_by_default=true`, production deployment readiness, or real
+business-agent correctness. Deployed server processes remain deferred until
+later live verification and runtime binding enablement work.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

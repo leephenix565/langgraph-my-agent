@@ -1,5 +1,8 @@
 """Blocking runtime graph smoke for the active reset quality gate."""
 
+import json
+from types import SimpleNamespace
+
 import pytest
 
 import react_agent.graph as graph_module
@@ -29,6 +32,12 @@ async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypa
     monkeypatch.setenv("ENABLE_SELECTED_ROUTING", "1")
     assert Context().enable_selected_routing is True
 
+    monkeypatch.delenv("ENABLE_INTERNAL_LLM_PLACEHOLDERS", raising=False)
+    assert Context().enable_internal_llm_placeholders is False
+
+    monkeypatch.setenv("ENABLE_INTERNAL_LLM_PLACEHOLDERS", "1")
+    assert Context().enable_internal_llm_placeholders is True
+
 
 async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_provider(*args, **kwargs):
@@ -37,8 +46,12 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_external_client(*args, **kwargs):
         raise AssertionError("external HTTP should not be called by fixed DAG skeleton")
 
+    def fail_selected_compiler(*args, **kwargs):
+        raise AssertionError("selected compiler should stay default-off")
+
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
+    monkeypatch.setattr(graph_module, "compile_selected_fixed_dag_plan", fail_selected_compiler)
 
     res = await graph_module.graph.ainvoke(
         {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
@@ -118,6 +131,54 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert "decision_synthesizer" not in res["dag_step_results"]
     assert set(res["workflow_snapshot"]["completedSteps"]) == set(res["dag_step_results"])
     assert {item["id"] for item in res["workflow_snapshot"]["dimensionGroups"]} == {"value"}
+
+
+async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(monkeypatch) -> None:
+    class FakeModel:
+        def invoke(self, _prompt: str):
+            return SimpleNamespace(
+                content=json.dumps(
+                    {
+                        "analysis": "企业舆情功能位当前只做内部占位框架梳理。",
+                        "key_points": ["需等待真实舆情雷达服务完成 readiness。"],
+                        "evidence": [{"fact": "内部 LLM 占位，不代表外部服务输出。"}],
+                        "confidence": 0.28,
+                    },
+                    ensure_ascii=False,
+                )
+            )
+
+    def fail_external_client(*args, **kwargs):
+        raise AssertionError("external HTTP should not be called by internal placeholders")
+
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        lambda _model: FakeModel(),
+    )
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "Please summarize public opinion and sentiment for this company.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_internal_llm_placeholders=True,
+        ),
+    )
+
+    assert res["fixed_dag_plan"]["schema"] == "selected_fixed_dag_plan_v1"
+    assert set(res["l2_conclusions"]) == {"sentiment_company_radar"}
+    conclusion = res["l2_conclusions"]["sentiment_company_radar"]
+    assert conclusion["status"] == "partial"
+    assert conclusion["confidence"] <= 0.4
+    assert conclusion["provenance"]["source"] == "internal_llm_placeholder"
+    assert conclusion["provenance"]["provider_invoked"] is True
+    assert conclusion["provenance"]["external_invoked"] is False
+    assert res["dag_execution"]["provenance"]["internal_llm_placeholders_enabled"] is True
+    assert res["dag_execution"]["provenance"]["internal_llm_placeholder_conclusions"] == 1
+    assert res["dag_execution"]["provenance"]["external_invoked"] is False
+    assert set(res["dag_step_results"]) == {step["id"] for step in res["fixed_dag_plan"]["steps"]}
+    assert {item["id"] for item in res["workflow_snapshot"]["dimensionGroups"]} == {"market"}
+    assert "risk" not in res["dimension_results"]
 
 
 async def test_selected_routing_failure_falls_back_to_full_dag(monkeypatch) -> None:
