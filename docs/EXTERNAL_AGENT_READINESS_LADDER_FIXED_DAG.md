@@ -23,6 +23,12 @@ R8-8C adds provider-free adapter compatibility for
 does not call endpoints, change runtime bindings, or advance any candidate to
 health, compute, invoke, or live verification readiness.
 
+R8-8E records one controlled dev evidence item for `value_ml_valuation` after
+service-side identity remediation and R8-8D-ID re-smoke. That evidence shows
+structured health, compute, and adapter mapping success for the dev service
+only. It does not set `live_verified=true`, does not enable runtime bindings,
+does not call `/v1/agent/invoke`, and does not prove production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -131,6 +137,13 @@ requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement
 is claimed.
 
+The R8-8D-ID `value_ml_valuation` dev re-smoke passed controlled health,
+compute, and adapter mapping after the service response identity was remediated
+to use fixed DAG `agent_id=value_ml_valuation` and
+`external_agent_id=valuation_ml`. This is L2/L3 controlled evidence for the dev
+service only. It does not advance the service to L4 invoke readiness, L5 runtime
+binding preparation, L6 live verification, or L7 default invocation.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -217,5 +230,8 @@ The readiness ladder does not claim:
   runtime binding enablement, or production deployment
 - R8-8C `external_agent_compute_v0` adapter compatibility implies live
   readiness, runtime binding enablement, or successful deployed compute smoke
+- R8-8E controlled `value_ml_valuation` health/compute evidence implies
+  production readiness, runtime binding enablement, `/v1/agent/invoke`
+  readiness, `live_verified=true`, or `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.

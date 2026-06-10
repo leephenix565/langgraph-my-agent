@@ -264,6 +264,29 @@ structured JSON health, does not replace the planned R8-8D
 `/v1/agent/compute`, or `/v1/agent/invoke`, and does not set
 `live_verified=true` or `invoke_enabled_by_default=true`.
 
+## R8-8D-ID/R8-8E Controlled Smoke Evidence Boundary
+
+R8-8D-ID performed a controlled dev-only re-smoke for `value_ml_valuation`
+after service-side identity remediation. The allowed live endpoints were limited
+to `GET /health` and `POST /v1/agent/compute` on the dev service. The smoke did
+not call `/v1/agent/invoke`, prod ports, providers, demo stack commands, or
+fusion-gate.
+
+R8-8E records the sanitized evidence in docs only. Its main-repo validation gate
+is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8E validation means the documentation-only evidence record is
+consistent with the maintained reset quality surface. It does not mean runtime
+bindings are enabled, `live_verified=true` is set,
+`invoke_enabled_by_default=true` is set, production readiness is proven, or
+external `/v1/agent/invoke` is safe to call by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

@@ -800,3 +800,30 @@ live readiness evidence, or runtime-binding authority. It does not repair
 `/health`. `value_ml_valuation` remains deferred until an R8-8D controlled
 re-smoke validates the patched adapter boundary. Passing adapter tests does not
 imply `live_verified=true` or `invoke_enabled_by_default=true`.
+
+## ADR-034: R8-8E Records Value ML Controlled Compute Evidence Without Runtime Binding Enablement
+
+Status: accepted for controlled readiness evidence logging.
+
+Decision: R8-8E records sanitized controlled health, compute, and adapter
+mapping evidence for `value_ml_valuation` after service-side identity
+remediation and R8-8D-ID re-smoke. The evidence lives in documentation only and
+references repo-external sanitized artifacts.
+
+Reason: R8-8D showed that the service compute response used the external service
+id as the primary `agent_id`, which the main-system adapter correctly rejected.
+The right remediation is to fix the dev service response identity to emit fixed
+DAG `agent_id=value_ml_valuation` and `external_agent_id=valuation_ml`, then
+record the controlled smoke evidence without relaxing main-system identity
+validation.
+
+Consequence: `value_ml_valuation` now has documented dev-only evidence for
+structured health, `/v1/agent/compute`, and provider-free adapter mapping into
+`conclusion_object_v1`. The evidence can inform later invoke-readiness and
+runtime-binding review.
+
+Non-consequence: R8-8E does not change main-system adapter gates, graph,
+executor, public API, public runtime, public mapping, frontend, fixed DAG
+roster, or runtime bindings. It does not call `/v1/agent/invoke`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+claim prod readiness, and does not update public transcript content.

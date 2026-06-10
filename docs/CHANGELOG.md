@@ -3,6 +3,53 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8E value ML controlled compute evidence
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for `value_ml_valuation`
+  after dev service identity remediation and R8-8D-ID re-smoke.
+- Added `docs/CONTROLLED_READINESS_SMOKE_LOG.md` as the internal evidence log
+  for controlled health/compute smoke results.
+- Updated the readiness ladder, quality boundary, README, and ADR log to state
+  that the evidence is health + compute + adapter mapping only.
+- Kept the main-system adapter identity gate, runtime bindings, live flags,
+  graph, executor, public API, frontend, and fixed DAG roster unchanged.
+
+### Validated
+
+- Dev service validation before smoke:
+  `python3 -m py_compile service.py tests/test_v21_compliance.py`
+- Dev service validation before smoke:
+  `python3 -m pytest tests/test_v21_compliance.py -q`
+- Dev service validation before smoke:
+  `python3 -m pytest tests/test_service_contract.py -q`
+- Controlled dev re-smoke for `value_ml_valuation`:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-09 - Phase R8-8C compute envelope adapter compatibility
 
 ### Changed

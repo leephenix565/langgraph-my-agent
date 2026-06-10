@@ -96,6 +96,12 @@ services live verified, and does not make compute smoke evidence public
 workflow truth. The R8-8B smoke result still leaves `financial_data_service`
 blocked on structured JSON `/health`; `value_ml_valuation` requires an R8-8D
 re-smoke before any readiness advancement wording.
+Phase R8-8E records sanitized controlled readiness evidence after the
+`value_ml_valuation` dev service identity remediation and R8-8D-ID re-smoke:
+health passed, `/v1/agent/compute` passed, and the provider-free adapter mapped
+the compute envelope into `conclusion_object_v1`. This is docs-only evidence. It
+does not call `/v1/agent/invoke`, enable runtime bindings, set live flags,
+update public transcript content, or prove production readiness.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -105,7 +111,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8C provider-free compute-envelope adapter compatibility over the
+- Current phase: R8-8E controlled value ML compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -151,7 +157,10 @@ placeholder skeleton. It is not a completed business analysis engine.
   execution. R8-8C additionally accepts `external_agent_compute_v0` as adapter
   input only when it contains a supported L2 `agent_conclusion_v1` tool result;
   the compute envelope is not graph state, readiness evidence, or runtime
-  binding authority.
+  binding authority. R8-8E records one sanitized controlled dev smoke evidence
+  item for `value_ml_valuation` after service-side identity remediation. The
+  evidence remains docs-only and does not change runtime bindings, live flags,
+  or active graph behavior.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
@@ -392,6 +401,8 @@ runtime/provider/external output.
   payload envelopes to fixed DAG contracts.
 - `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` - readiness ladder from
   docs-only review to explicit live invocation approval.
+- `docs/CONTROLLED_READINESS_SMOKE_LOG.md` - sanitized internal log for
+  controlled health/compute smoke evidence and non-claims.
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
   endpoint and v2.3.1 domain payload samples.
 - `examples/fixed_dag_external_agent_scaffold/` - tracked repo mirror of the
