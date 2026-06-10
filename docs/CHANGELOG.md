@@ -3,6 +3,50 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8M remaining L2 controlled compute coverage
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for
+  `market_capital_flow_chip` after R8-8M dev-only health, compute, and
+  provider-free adapter mapping checks.
+- Documented bounded dev service protocol remediation for fixed-DAG identity,
+  external service id preservation, canonical market dimension, and L2
+  `agent_conclusion_v1 role=direction` output normalization.
+- Recorded explicit deferred reasons for the remaining R8-8M candidates:
+  unsupported IPO scaffold/business output, commodity dev listener and compute
+  endpoint gap, macro-index semantic uncertainty, macro regulator payloads, and
+  missing non-stub fund-manager service metadata.
+- Added ADR-042 for extending remaining L2 controlled compute evidence without
+  runtime enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- `market_capital_flow_chip` service validation before smoke:
+  `python3 -m py_compile service.py schemas.py compute_core.py agents/money_flow_agent.py`
+- Controlled dev smoke for the R8-8M passing candidate:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- R8-8M deferred candidates were not called at `/health` or `/v1/agent/compute`.
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8L remaining risk and market controlled compute evidence
 
 ### Changed

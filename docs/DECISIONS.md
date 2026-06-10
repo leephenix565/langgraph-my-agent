@@ -1039,3 +1039,38 @@ frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
 `invoke_enabled_by_default=true`, does not claim prod readiness, does not update
 public transcript content, does not route sentiment to risk, and does not wire
 any risk L2 output into L3 `risk_composite` or L4 decision runtime.
+
+## ADR-042: R8-8M Extends Remaining L2 Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for remaining L2 controlled readiness evidence logging and
+deferred-candidate classification.
+
+Decision: R8-8M records sanitized controlled health, compute, and adapter
+mapping evidence for `market_capital_flow_chip` after bounded dev service
+protocol remediation. The service remains an L2 market direction signal
+represented as `agent_conclusion_v1 role=direction`, mapped through the
+existing provider-free adapter into `conclusion_object_v1`. Other R8-8M
+candidates remain deferred when they emit L3/regulator semantics, have larger
+protocol drift, lack a dev listener or compute endpoint, or lack non-stub
+service metadata.
+
+Reason: the money-flow service had clear source, a documented dev port, and a
+bounded wrapper path into the existing L2 direction payload family. The correct
+remediation is service-side identity and dimension normalization: fixed DAG id
+`market_capital_flow_chip` is the primary `agent_id`, service-owned id
+`money_flow` remains `external_agent_id`, and the adapter-facing dimension is
+canonical `market`. Services with macro regulator payloads or broader scaffold
+payload drift should not be forced into L2 direction contracts.
+
+Consequence: `market_capital_flow_chip` now has documented dev-only evidence
+for structured health, `/v1/agent/compute`, and provider-free adapter mapping
+into `conclusion_object_v1`. The evidence can inform later invoke-readiness and
+runtime-binding review, but remains documentation-only.
+
+Non-consequence: R8-8M does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
+`/v1/agent/invoke`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not claim prod readiness, does not update
+public transcript content, and does not wire any market L2 output into L3
+`market_composite` or L4 decision runtime.

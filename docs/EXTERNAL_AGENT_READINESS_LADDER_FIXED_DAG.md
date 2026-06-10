@@ -68,6 +68,15 @@ listener, had larger protocol drift, or did not clearly support the requested
 fixed-DAG dimension. R8-8L does not enable runtime bindings, live flags,
 `/v1/agent/invoke`, L3/L4 active runtime, or production readiness.
 
+R8-8M records controlled dev evidence for `market_capital_flow_chip` after a
+bounded service-side protocol remediation and dev-only service start. The
+result is L2 `agent_conclusion_v1 role=direction` market evidence only. Other
+remaining L2 candidates in the batch were deferred for unsupported scaffold
+output, missing dev listener or compute endpoint, unclear macro semantics, L3
+macro regulator payloads, or missing non-stub service metadata. R8-8M does not
+enable runtime bindings, live flags, `/v1/agent/invoke`, L3/L4 active runtime,
+or production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -251,6 +260,15 @@ invoke readiness, L5 runtime binding preparation, L6 live verification, L7
 default invocation, L3 `risk_composite` runtime integration, L4 decision
 runtime integration, or production readiness.
 
+The R8-8M `market_capital_flow_chip` dev smoke passed controlled health,
+compute, and adapter mapping after bounded service-side protocol remediation
+and dev-only service start. Its mapped output is `conclusion_object_v1` market
+L2 direction evidence. This result is not L3 `dimension_conclusion_v1` or
+`market_composite` evidence and does not advance the service to L4 invoke
+readiness, L5 runtime binding preparation, L6 live verification, L7 default
+invocation, L3 market-composite runtime integration, L4 decision runtime
+integration, or production readiness.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -362,5 +380,10 @@ The readiness ladder does not claim:
   `risk_composite` runtime integration, L4 decision integration,
   `/v1/agent/invoke` readiness, `live_verified=true`, or
   `invoke_enabled_by_default=true`
+- R8-8M controlled `market_capital_flow_chip` health/compute evidence implies
+  production readiness, runtime binding enablement, L3
+  `dimension_conclusion_v1` evidence, L3 `market_composite` runtime
+  integration, L4 decision integration, `/v1/agent/invoke` readiness,
+  `live_verified=true`, or `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.

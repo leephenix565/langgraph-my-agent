@@ -698,3 +698,58 @@ Next gate recommendation:
   invoke-readiness and runtime-binding phase.
 - Treat this as L2 risk gate-member controlled evidence only; L3 risk
   composite integration remains deferred.
+
+## 2026-06-10 - R8-8M market_capital_flow_chip
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8M |
+| Run UTC | 2026-06-10T07:22:50Z |
+| Artifact directory | `/tmp/lma-r8-8m-candidate-smoke/20260610T072250Z/market_capital_flow_chip` |
+| Fixed DAG agent id | `market_capital_flow_chip` |
+| External service id | `money_flow` |
+| Legacy agent id | `capital_flow_chip_analysis` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output dimension | `market` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/资金流智能体`.
+- Service project was not a usable git repository during remediation; original
+  service, schema, compute-core, and registration files were backed up outside
+  the repo under
+  `/tmp/lma-r8-8m-service-backup/20260610T072025Z/market_capital_flow_chip`.
+- The dev service boundary now emits fixed-DAG id `market_capital_flow_chip`,
+  external service id `money_flow`, canonical dimension `market`, and
+  `agent_conclusion_v1 role=direction` for fixed-DAG compute requests.
+- The service patch did not change the money-flow model, feature engineering,
+  scoring algorithm, data files, prod config, or main-system runtime bindings.
+- The main-system adapter identity gate was not relaxed.
+- Dev service validation before smoke:
+  `python3 -m py_compile service.py schemas.py compute_core.py agents/money_flow_agent.py`.
+- The dev 8022 process was started with the service's documented dev command
+  because no dev listener was present before R8-8M.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 `market_composite` or L4 decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `market_capital_flow_chip` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L2 market direction controlled evidence only; L3 market
+  composite integration remains deferred.

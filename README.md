@@ -141,6 +141,15 @@ remediation. Both map as `agent_conclusion_v1 role=gate_member` into
 bounded L2 criteria remain deferred. This still does not call
 `/v1/agent/invoke`, enable runtime bindings, set live flags, update public
 transcript content, wire L3/L4 runtime paths, or prove production readiness.
+Phase R8-8M records remaining bounded market L2 controlled evidence for
+`market_capital_flow_chip` after service-side wrapper remediation and dev-only
+service start. It maps as `agent_conclusion_v1 role=direction` into
+`conclusion_object_v1`. Other remaining candidates stay deferred when their
+payload is L3/regulator-shaped, their dev listener or compute endpoint is
+missing, or their semantics are not clear enough for L2 evidence. This still
+does not call `/v1/agent/invoke`, enable runtime bindings, set live flags,
+update public transcript content, wire L3/L4 runtime paths, or prove production
+readiness.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -150,7 +159,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8L remaining risk and market controlled compute evidence over the
+- Current phase: R8-8M remaining L2 controlled compute coverage over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -214,7 +223,10 @@ placeholder skeleton. It is not a completed business analysis engine.
   runtime path. R8-8L adds the same docs-only controlled evidence boundary for
   `risk_financial_fraud` and `risk_crash`; no new main-system adapter branch is
   needed, and L3 `risk_composite` / L4 decision runtime integration remains
-  deferred.
+  deferred. R8-8M adds docs-only controlled market L2 evidence for
+  `market_capital_flow_chip`; remaining macro/market candidates that require
+  L3 adapter design, owner semantic confirmation, or non-stub service metadata
+  remain deferred.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

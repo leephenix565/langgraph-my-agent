@@ -463,6 +463,36 @@ runtime bindings are enabled, `live_verified=true` is set,
 enabled, L4 decision integration is enabled, production readiness is proven, or
 any candidate may be invoked by default.
 
+## R8-8M Remaining L2 Controlled Compute Coverage Boundary
+
+R8-8M expands the dev-only controlled health and compute smoke pattern to the
+remaining bounded L2 candidates that can emit `agent_conclusion_v1` without
+changing business logic. The phase permits bounded service-side remediation for
+fixed-DAG identity, external service id preservation, canonical dimensions, and
+safe dev-only service start when the root and command are explicit. It does not
+permit forcing L3 macro/regulator payloads, dimension-composite payloads, or
+larger scaffold/business outputs into L2 contracts.
+
+R8-8M does not change runtime bindings, graph, executor, public API, public
+runtime, public mapping, frontend, fixed DAG roster, L3/L4 active runtime, or
+default invocation behavior. Docs are updated only after health, compute, and
+provider-free adapter mapping pass.
+
+R8-8M main-repo validation gate is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8M validation means the documentation-only evidence record remains
+consistent with reset quality. It does not mean `/v1/agent/invoke` was called,
+runtime bindings are enabled, `live_verified=true` is set,
+`invoke_enabled_by_default=true` is set, L3 market composite integration is
+enabled, L4 decision integration is enabled, production readiness is proven, or
+any candidate may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
