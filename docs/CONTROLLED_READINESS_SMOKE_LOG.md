@@ -32,7 +32,7 @@ Production coverage summary:
 | Production health pass | 14 |
 | Production compute pass | 13 |
 | Production adapter mapping pass | 5 |
-| Production failed/deferred | 13 |
+| Production failed bucket | 13 |
 | Production endpoint missing | 2 |
 | Production semantic deferred | 3 |
 | Production identity mismatch | 8 |
@@ -40,7 +40,7 @@ Production coverage summary:
 | L3/L4 deferred | 6 |
 | Invoke audit candidates | 5 |
 
-Production pass agents:
+Production health+compute+adapter pass candidates:
 
 - `risk_identification`
 - `risk_compliance_review`
@@ -70,6 +70,53 @@ Non-claims:
 - This does not call `/v1/agent/invoke`.
 - This does not prove production default invocation readiness.
 - This does not update public transcript content.
+
+## 2026-06-10 - R8-8P-DOCS-QA production remediation playbook
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8P-DOCS-QA |
+| Source artifact directory | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z` |
+| Endpoint calls | none |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Production service code changed | no |
+
+R8-8P-DOCS-QA does not create new health, compute, or adapter evidence. It
+turns the R8-8P production results into a problem playbook and copy-ready
+developer prompt catalog:
+
+- `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` now records each failed/deferred
+  agent's current status, production test result, problem type, failure cause,
+  impact, service-owner action, maintainer action, resmoke method, and prompt
+  id.
+- `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` now provides agent-specific
+  Chinese prompts for production health fixes, endpoint deployment, identity
+  backfill, compute wrapper fixes, semantic classification, L3/L4 design, and
+  invoke-audit preparation.
+
+Problem summary:
+
+- `financial_data_service`: production health contract failure.
+- `entity_relation_extractor`: production endpoint missing.
+- `sentiment_company_radar`: production endpoint missing; market-only.
+- Value and selected market services: production identity mismatch.
+- `market_fund_manager_behavior`: service discovery plus identity mismatch.
+- `market_ipo_investor_behavior`: production compute wrapper and identity
+  contract failure.
+- `macro_commodity_pricing`: production compute failure after health pass.
+- `macro_index_valuation`, `macro_sentiment`, `macro_industry_hotspot`:
+  semantic deferred until owner classification.
+- L3/L4: deterministic seams until explicit adapter/runtime design.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not call `/health` or `/v1/agent/compute`.
+- This does not prove production default invocation readiness.
 
 ## 2026-06-10 - R8-8D-ID value_ml_valuation
 

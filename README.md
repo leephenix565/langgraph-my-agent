@@ -167,6 +167,12 @@ production health, production compute, and adapter mapping pass evidence:
 prompt catalog have been rewritten around those results; no `/v1/agent/invoke`
 was called, no runtime bindings were enabled, no live flags were set, and no
 production default invocation is implied.
+Phase R8-8P-DOCS-QA deepens those production-first docs into a developer
+problem playbook: each failed/deferred agent now has a specific issue,
+probable cause, owner action, maintainer action, resmoke boundary, and
+copy-ready Chinese Codex / Claude Code prompt. This is documentation only; it
+does not call endpoints, edit production services, change adapter logic, enable
+runtime bindings, set live flags, or advance `/v1/agent/invoke`.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -176,7 +182,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8P production endpoint readiness rebaseline over the
+- Current phase: R8-8P-DOCS-QA production readiness problem playbook over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C
   provider-free adapter seam, and v2.3.1 scaffold package.
@@ -185,7 +191,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
-- Production-first readiness handoff docs:
+- Production readiness problem playbook docs:
   `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
   `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;

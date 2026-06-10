@@ -3,6 +3,47 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8P-DOCS-QA production readiness problem playbook
+
+### Changed
+
+- Deepened `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` from a production status
+  matrix into a production problem playbook with per-agent current status,
+  production test result, problem type, failure cause, impact, service-owner
+  action, main-system maintainer action, resmoke boundary, and prompt id.
+- Rewrote `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` as a Chinese,
+  copy-ready production remediation prompt catalog with agent-specific prompts
+  for health, endpoint, identity, compute wrapper, semantic-decision, L3/L4
+  design, and invoke-audit-prep work.
+- Tightened wording from broad "production pass" language to production
+  health+compute+adapter pass candidates where applicable.
+- Added ADR-045 for turning production failures into developer remediation
+  prompts without changing runtime behavior.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/health` call.
+- No `/v1/agent/compute` call.
+- No `/v1/agent/invoke` call.
+- No prod or dev port access.
+- No service start, stop, or restart.
+- No production service code modification.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No adapter logic change.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+
 ## 2026-06-10 - Phase R8-8P production endpoint readiness rebaseline
 
 ### Changed

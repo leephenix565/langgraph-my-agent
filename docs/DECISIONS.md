@@ -1109,11 +1109,11 @@ production readiness.
 
 Status: accepted for production readiness rebaseline.
 
-Decision: R8-8P separates production readiness evidence from the earlier dev
+Decision: R8-8P separates production endpoint evidence from the earlier dev
 controlled smoke evidence. The fixed DAG readiness matrix is now production
 first: production endpoint discovery, production `/health`, production
 `/v1/agent/compute`, and provider-free adapter mapping determine production
-status. Earlier R8-8G/H/I/J/K/L/M dev endpoint evidence is retained only as
+endpoint status. Earlier R8-8G/H/I/J/K/L/M dev endpoint evidence is retained only as
 historical debugging and backfill input.
 
 Reason: the previous matrix documented useful controlled compute evidence, but
@@ -1132,3 +1132,37 @@ runtime bindings, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, does not change graph, executor, public API,
 public runtime, public mapping, frontend, fixed DAG roster, adapter logic, or
 production service code, and does not enable production default invocation.
+
+## ADR-045: R8-8P-DOCS-QA Turns Production Rebaseline Into Developer Remediation Playbook
+
+Status: accepted for production readiness documentation refinement.
+
+Decision: R8-8P-DOCS-QA deepens
+`docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` into a production problem playbook
+and rewrites `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` as a copy-ready
+Chinese remediation prompt catalog. Each failed/deferred production candidate
+now has a specific issue, likely cause, owner action, maintainer action,
+resmoke boundary, and prompt id. The prompts distinguish dev historical
+evidence, production failure, production remediation, redeployment, and
+production resmoke.
+
+Reason: R8-8P established the production endpoint baseline, but service owners
+need a concrete handoff that tells them exactly what failed and what to fix.
+Generic prompt categories were not enough for production backfill work because
+identity pairs, production endpoints, payload families, local tests, and
+resmoke boundaries differ by agent.
+
+Consequence: downstream developers can hand a specific prompt to Codex /
+Claude Code or a service owner for `financial_data_service`,
+`entity_relation_extractor`, `sentiment_company_radar`, value/market identity
+fixes, `macro_commodity_pricing`, macro semantic decisions, L3/L4 design, and
+future invoke-audit preparation. The current production matrix remains based
+only on R8-8P production endpoint evidence.
+
+Non-consequence: R8-8P-DOCS-QA does not call endpoints, does not call
+providers, does not call `/v1/agent/invoke`, does not modify runtime bindings,
+does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not change graph, executor, public API,
+public runtime, public mapping, frontend, adapter logic, external service code,
+or fixed DAG roster, and does not prove production default invocation
+readiness. Dev evidence remains historical/backfill input only.

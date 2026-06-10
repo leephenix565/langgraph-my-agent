@@ -91,6 +91,13 @@ local/mock, dev, or production. A production compute pass still remains L3
 evidence only; it is not an L4 invoke pass and does not imply L6/L7 live/default
 invocation eligibility.
 
+R8-8P-DOCS-QA documents production remediation after failed health, compute,
+identity, endpoint, and semantic gates. It turns R8-8P failures into
+service-owner prompts and resmoke instructions, but it is still documentation
+only. It does not create new L2/L3 evidence, does not call endpoints, does not
+advance any service to L4 invoke readiness, and does not enable L5/L6/L7
+runtime or live flags.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -201,6 +208,26 @@ latency-sensitive workflows:
 - Performance target is documented.
 
 Compute passing does not imply production invocation should be enabled.
+
+### Production Remediation After Failed Compute, Identity, Or Health
+
+When a production `/health` or `/v1/agent/compute` gate fails, the next step is
+not runtime binding enablement. The next step is service-owner remediation:
+
+- health failures must return safe `external_agent_health_v0` JSON;
+- compute failures must return `external_agent_compute_v0` or another
+  explicitly supported v2.3.1 envelope;
+- identity failures must use the fixed DAG id as primary `agent_id` and keep
+  service-owned ids in `external_agent_id`;
+- endpoint-missing cases must provide a confirmed production service root,
+  port, runbook, health endpoint, and compute endpoint;
+- semantic-deferred cases need owner classification before any production smoke
+  is attempted.
+
+After remediation, the service must be redeployed to production and resmoked
+with production `/health` and `/v1/agent/compute`. Passing that resmoke still
+remains L3 evidence only. It does not imply `/v1/agent/invoke`, L5 runtime
+binding preparation, L6 live verification, or L7 default invocation.
 
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still

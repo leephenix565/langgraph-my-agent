@@ -80,6 +80,19 @@ mainline after R8-8P validates repository static, unit, integration, graph, and
 frontend gates; it does not prove production service readiness, invoke
 readiness, live verification, or default runtime invocation eligibility.
 
+## R8-8P-DOCS-QA Documentation Boundary
+
+R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer
+prompt catalog into remediation playbooks, but it does not call production or
+dev endpoints, does not modify service code, does not change adapter logic, and
+does not change runtime bindings or live flags.
+
+Default mainline still does not run production smoke, external
+`/v1/agent/invoke`, provider live checks, demo stacks, or fusion-gate. Passing
+static/mainline after R8-8P-DOCS-QA means maintained repository docs and code
+quality still pass; it does not mean any production service has been remediated
+or newly verified.
+
 ## Validation Meaning
 
 Passing the R6-B reset mainline means the maintained static surface passes,

@@ -20,8 +20,8 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-C readiness ladder from docs-only review to explicit live invocation approval. |
 | `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-G documentation-only endpoint and v2.3.1 domain payload samples. |
-| `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` | R8-8P production-first 27-agent readiness matrix, production endpoint coverage, failed/deferred agents, dev-historical appendix, and next phases. |
-| `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | R8-8P production-first Chinese developer prompt catalog for production health/compute/identity fixes, service backfill, semantic deferrals, and L3/L4 adapter design. |
+| `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` | R8-8P-DOCS-QA production readiness problem playbook: 27-agent production matrix, per-agent failure causes, remediation actions, resmoke boundaries, and next phases. |
+| `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | R8-8P-DOCS-QA production remediation prompt catalog with copy-ready Chinese Codex / Claude Code prompts for service owners and maintainers. |
 | `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror and R7-H restore source for the local `E:\muti-agent\external_agent_scaffold` distribution working copy, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage
@@ -103,6 +103,10 @@ readiness.
 R8-8P rewrites those handoff docs around production endpoint evidence. Earlier
 dev-only controlled compute evidence remains historical and cannot be promoted
 to production readiness.
+R8-8P-DOCS-QA turns the production rebaseline into the current problem
+playbook and prompt catalog for remediation/backfill work. It remains
+documentation-only and does not call endpoints, change runtime bindings, set
+live flags, or prove default production invocation readiness.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

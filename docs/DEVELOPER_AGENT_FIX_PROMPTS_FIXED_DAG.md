@@ -1,391 +1,600 @@
 # Fixed DAG Developer Agent Fix Prompt Catalog
 
-This production-first catalog persists the developer prompts for Phase R8-8P:
-Production Endpoint Readiness Rebaseline.
+这是一份 production-first 的开发者修复提示词目录，用于 R8-8P-DOCS-QA
+之后的生产问题处置。每段 prompt 都可以直接复制给 Codex / Claude Code
+或服务 owner 使用。
 
-Every prompt distinguishes dev historical evidence from production evidence.
-Dev pass is useful for debugging and backfill, but it is not production pass.
-Production remediation must be redeployed to the production service and followed
-by production `/health` + `/v1/agent/compute` resmoke before any invoke audit.
+R8-8P 已经证明：dev evidence 只能作为历史参考和 backfill 线索，不能当作
+production pass。所有修复必须进入服务 owner 的源码仓库，重新部署到
+production endpoint，并经过 production `/health` + `/v1/agent/compute` +
+main-system adapter mapping 复测，才可以改变 production matrix 状态。
 
-These prompts do not authorize `/v1/agent/invoke`, runtime binding enablement,
-`live_verified=true`, or `invoke_enabled_by_default=true`.
+默认边界：
+
+- 不调用 `/v1/agent/invoke`，除非未来单独批准 invoke smoke；本目录里的
+  invoke prompt 也只允许审计准备，不允许直接调用。
+- 不改 `runtime_bindings.json`。
+- 不设置 `live_verified=true`。
+- 不设置 `invoke_enabled_by_default=true`。
+- 不改 fixed DAG graph/executor/public API/frontend。
+- 不改业务模型、特征工程、算法、数据源。
+- 不输出 secret、traceback、chain-of-thought、raw provider response、raw
+  production response。
+- dev pass 不等于 production pass。
 
 ## Prompt Index
 
 | Prompt id | Applies to |
 | --- | --- |
-| `PROMPT-PROD-HEALTH-FIX` | Production `/health` missing, non-JSON, unsafe, or wrong identity |
-| `PROMPT-PROD-COMPUTE-WRAPPER` | Production `/compute` missing, raw payload, wrong envelope, missing `tool_result` |
-| `PROMPT-PROD-IDENTITY-FIX` | Production `agent_id` / `external_agent_id` mismatch |
-| `PROMPT-PROD-ADAPTER-MAPPING-FIX` | Supported v2.3.1 payload family needs provider-free main-system mapping |
-| `PROMPT-PROD-BACKFILL-DEV-PATCH` | Service passed in dev because of non-git patch; production must be backfilled and redeployed |
+| `PROMPT-PROD-HEALTH-FIX-DATA-SERVICE` | `financial_data_service` production health invalid JSON |
+| `PROMPT-PROD-ENDPOINT-MISSING-ENTITY` | `entity_relation_extractor` production endpoint missing |
+| `PROMPT-PROD-SENTIMENT-MARKET-ONLY` | `sentiment_company_radar` production endpoint missing; market-only |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL` | `value_traditional_valuation` production identity mismatch |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-ML` | `value_ml_valuation` production identity mismatch |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-META` | `value_meta_valuation` production identity mismatch |
+| `PROMPT-PROD-IDENTITY-FIX-RESEARCH` | `value_research_synthesis` production identity mismatch |
+| `PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL` | `market_stock_technical` production identity mismatch |
+| `PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW` | `market_capital_flow_chip` production identity mismatch |
+| `PROMPT-PROD-FUND-SERVICE-DISCOVERY` | `market_fund_manager_behavior` service metadata + identity |
 | `PROMPT-PROD-IPO-WRAPPER` | `market_ipo_investor_behavior` production wrapper |
-| `PROMPT-PROD-COMMODITY-RUNBOOK` | `macro_commodity_pricing` production compute/runbook |
+| `PROMPT-PROD-COMMODITY-COMPUTE-FIX` | `macro_commodity_pricing` production compute failure |
 | `PROMPT-PROD-MACRO-INDEX-OWNER` | `macro_index_valuation` semantic decision |
-| `PROMPT-PROD-MACRO-L3-DEFER` | `macro_sentiment`, `macro_industry_hotspot` L2-vs-L3 classification |
-| `PROMPT-PROD-FUND-SERVICE-DISCOVERY` | `market_fund_manager_behavior` production ownership/id discovery |
-| `PROMPT-PROD-L3-ADAPTER-DESIGN` | `value_composite`, `market_composite`, `risk_composite`, `macro_composite` |
+| `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` | `macro_sentiment` L2/L3 classification |
+| `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` | `macro_industry_hotspot` L2/L3 classification |
+| `PROMPT-PROD-L3-ADAPTER-DESIGN` | value/market/risk/macro composites |
 | `PROMPT-PROD-L4-ADAPTER-DESIGN` | `decision_synthesizer`, `report_generator` |
-| `PROMPT-PROD-INVOKE-AUDIT-PREP` | Only agents with production health + compute + adapter mapping pass |
+| `PROMPT-PROD-INVOKE-AUDIT-PREP` | only five production health+compute+adapter pass candidates |
 
-## PROMPT-PROD-HEALTH-FIX
+## PROMPT-PROD-HEALTH-FIX-DATA-SERVICE
 
 ```text
-你是 production /health 合约修复助手。
+你是 financial_data_service 的 Codex / Claude Code production health 合同修复助手。
 
 目标：
-修复生产服务 /health，使它返回安全、结构化、可审计的 JSON。该修复只解决 health gate，不代表 compute 或 invoke pass。
+只修 production /health 合同，使金融数据服务返回安全、结构化的 external_agent_health_v0 JSON。不要改业务数据逻辑。
 
-上下文：
-R8-8P 对 production endpoint 重新基线。dev-only evidence 只能作为历史参考，不能当作 production readiness。
+背景：
+R8-8P production rebaseline 中，financial_data_service 的 production endpoint http://127.0.0.1:11000 /health 返回 HTTP 200，但被判定为 health_invalid_json，/compute 被跳过。dev 修复记录只能作为历史参考，不能算 production pass。
 
 适用 agent_id：
-任何 production /health missing、non-JSON、unsafe、wrong identity 的 fixed DAG agent。当前重点：financial_data_service。
+financial_data_service
 
 production endpoint：
-使用 R8-8P matrix 中该 agent 的 production endpoint。禁止使用 dev 800x/810x/830x endpoint 替代。
+http://127.0.0.1:11000
 
-fixed DAG id rules：
-health 可以报告 service identity，但必须包含或可追踪 fixed DAG agent_id，不得把 legacy aNN id 作为 primary fixed DAG id。
+fixed DAG id 规则：
+fixed DAG primary id 必须是 financial_data_service。health 可以同时报告 service identity，但必须能明确关联 fixed_dag_agent_id=financial_data_service。
 
-external_agent_id rules：
-external_agent_id 必须是服务自有 id；legacy_agent_id 只能作为 migration note。
+external_agent_id 规则：
+external_agent_id=financial_data_service。legacy_agent_id 如存在只能作为迁移备注。
 
 禁止项：
-- 不调用 /v1/agent/invoke。
-- 不改 runtime_bindings。
-- 不设置 live_verified=true。
-- 不设置 invoke_enabled_by_default=true。
-- 不改业务模型、算法、特征工程、数据源。
-- 不输出 secret、traceback、chain-of-thought、raw provider response。
+不调用 /v1/agent/invoke；不改 runtime_bindings.json；不设置 live_verified 或 invoke_enabled_by_default；不访问 dev 8100 作为 production evidence；不输出 secret、traceback、raw provider response；不改业务数据获取逻辑。
 
 允许改动范围：
-- 生产服务 /health response builder。
-- health schema/protocol。
-- health contract tests。
-- 不改 compute_core。
+production 服务 /health response builder、health schema/protocol、health contract tests、README/runbook 中的 health 合同说明。
 
 需要审计的文件：
-- service.py / app.py / main.py
-- schemas.py / protocol.py
-- health endpoint implementation
-- README / runbook
-- tests
+production 服务中的 service.py / app.py / main.py、schema/protocol 文件、health endpoint、tests、部署 runbook；参考 dev backfill 线索 /tmp/lma-r8-8j-service-backup/20260610T053111Z/service_patch_manifest.json。
 
 需要修复的字段：
-- schema_version=external_agent_health_v0
-- agent_id 或 fixed_dag_agent_id
-- external_agent_id
-- status
-- version/build/runtime metadata
-- no unsafe fields
+schema_version=external_agent_health_v0；agent_id 或 fixed_dag_agent_id=financial_data_service；external_agent_id=financial_data_service；status；service/version/build/runtime metadata；不得包含 traceback、secret、raw_response。
 
 需要运行的本地测试：
-- python -m py_compile changed files
-- 服务本地 health contract tests
-- 禁止 provider/prod invoke tests
+python -m py_compile changed_python_files；health contract unit test；JSON schema test；unsafe-field test。不要把 production /health 或 /compute smoke 写在本地测试里。
 
-需要重新部署到 prod 的说明：
-修复必须进入服务 owner 的源码仓库，部署到 production endpoint，再由主系统执行 R8-8P-style production resmoke。
+重新部署要求：
+修复必须合入服务 owner 的源码仓库并部署到 production endpoint 11000。只修 dev 不会改变 R8-8P production 状态。
 
-production re-smoke 命令边界：
-只允许 GET /health 和 POST /v1/agent/compute。禁止 /v1/agent/invoke。
+production re-smoke 边界：
+部署后由维护者只调用 GET /health；health pass 后再调用 POST /v1/agent/compute，并用主系统 adapter 映射 data_bundle_v1。禁止 /v1/agent/invoke。
 
 最终回传格式：
-- changed files
-- production endpoint
-- fixed health fields
-- local tests
-- deploy version
-- confirmation: no runtime binding change, no live flag change, no /invoke call
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-COMPUTE-WRAPPER
+## PROMPT-PROD-ENDPOINT-MISSING-ENTITY
 
 ```text
-你是 production /v1/agent/compute wrapper 修复助手。
+你是 entity_relation_extractor 的 Codex / Claude Code production endpoint 补齐助手。
 
 目标：
-让 production /v1/agent/compute 输出 fixed DAG 支持的 envelope 和 tool_result。
+为 entity_relation_extractor 提供明确的 production endpoint，并输出 fixed DAG 支持的 entity_relation_bundle_v1 compute payload。
 
-上下文：
-R8-8P production smoke 只接受 production endpoint 的结构化 compute 结果。dev pass 不能替代 production pass。
+背景：
+R8-8P 没有找到 entity_relation_extractor 的 confirmed production endpoint。dev 8101 和 dev evidence 只能作为历史参考，不能作为 production pass。
 
 适用 agent_id：
-production compute missing、HTTP error、raw business payload、wrong envelope、missing tool_result、unsupported schema 的服务。
+entity_relation_extractor
 
 production endpoint：
-使用 matrix 中的 production endpoint。不要使用 dev endpoint。
+当前缺失。服务 owner 必须提供 production root、host、port、启动/部署 runbook；不要使用 dev 8101 代替。
 
-fixed DAG id rules：
-tool_result.agent_id 必须是 fixed DAG snake_case id。
+fixed DAG id 规则：
+envelope.agent_id 和 tool_result.agent_id 必须是 entity_relation_extractor。
 
-external_agent_id rules：
-external_agent_id 保留服务自有 id；legacy aNN id 只能作为 legacy_agent_id/provenance。
+external_agent_id 规则：
+建议 external_agent_id=entity_relation_agent，除非 owner 用 production health/schema 明确给出其他服务 id。legacy_agent_id=a15_entity_relation_extraction 只能作为迁移备注。
 
 禁止项：
-- 不调用 /v1/agent/invoke。
-- 不改 runtime_bindings。
-- 不设置 live flags。
-- 不改业务 compute_core、模型、数据源。
+不调用 /v1/agent/invoke；不把 dev endpoint 当 production endpoint；不改 runtime_bindings.json；不设置 live flags；不输出 raw business JSON 到 graph state；不改实体关系抽取业务算法。
 
 允许改动范围：
-- production response wrapper。
-- schema/protocol。
-- contract tests。
-- 不改业务核心算法。
+production 服务部署/runbook、/health wrapper、/v1/agent/compute wrapper、entity_relation_bundle_v1 schema/protocol、contract tests。
 
 需要审计的文件：
-- compute endpoint implementation
-- response builder
-- schemas.py / protocol.py
-- tests
-- runbook/deploy scripts
+service.py / app.py / main.py、schema/protocol、compute response builder、README/runbook、deployment scripts、tests；参考 dev backfill 线索 /tmp/lma-r8-8k-service-backup/20260610T060226Z/service_patch_manifest.json。
 
 需要修复的字段：
-- schema_version=external_agent_compute_v0
-- status=ok|partial|needs_clarification|error
-- agent_id
-- external_agent_id
-- as_of
-- data_as_of
-- tool_result
-- warnings/errors
+external_agent_health_v0；external_agent_compute_v0；tool_result.schema_version=entity_relation_bundle_v1；agent_id=entity_relation_extractor；external_agent_id；as_of；data_as_of；entities/relations/evidence/provenance；data_as_of <= as_of。
 
 需要运行的本地测试：
-- wrapper contract tests
-- anti-lookahead test: data_as_of <= as_of
-- py_compile changed files
-- 禁止 provider/prod invoke tests
+py_compile；health JSON contract test；compute success/partial/error mock tests；entity_relation_bundle_v1 schema test；unsafe-field test。
 
-需要重新部署到 prod 的说明：
-部署 production wrapper 后重新执行 production /health + /compute + adapter mapping。
+重新部署要求：
+部署到 production endpoint 后，提供生产端口、cwd/root、cmdline/runbook 和部署版本。
 
-production re-smoke 命令边界：
-只允许 GET /health 和 POST /v1/agent/compute。
+production re-smoke 边界：
+只允许 GET /health 和 POST /v1/agent/compute，再用主系统 adapter 映射 entity_relation_bundle_v1。禁止 /invoke。
 
 最终回传格式：
-- changed files
-- production endpoint
-- tool_result schema
-- local tests
-- deployment notes
-- resmoke readiness
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-IDENTITY-FIX
+## PROMPT-PROD-SENTIMENT-MARKET-ONLY
 
 ```text
-你是 production identity 修复助手。
+你是 sentiment_company_radar 的 Codex / Claude Code production market-only 接入助手。
 
 目标：
-修复 production compute 输出中的 agent identity，使 fixed DAG primary id 和 service-owned external id 同时正确。
+提供 sentiment_company_radar 的 production endpoint，并确保它只作为 market L2 signal 输出 agent_conclusion_v1。
 
-上下文：
-R8-8P 中多个 production 服务 health/compute 通过，但 adapter 因 unknown_agent_id 失败。这通常表示 production 没有回填 dev 阶段的 identity wrapper。
+背景：
+R8-8P 没有找到 confirmed production endpoint。历史 dev evidence 表明该服务可作为 market-only L2，但不能作为 production pass。严禁把 company sentiment 接入 risk。
 
 适用 agent_id：
-value_traditional_valuation、value_ml_valuation、value_meta_valuation、value_research_synthesis、market_stock_technical、market_capital_flow_chip，以及任何 production_identity_mismatch 服务。
+sentiment_company_radar
 
 production endpoint：
-使用 R8-8P matrix 中对应 production endpoint。
+当前缺失。owner 必须提供 production endpoint；不要用 dev 8104 或 stub 8304 代替。
 
-fixed DAG id rules：
-envelope.agent_id 和 tool_result.agent_id 必须是 fixed DAG id。
+fixed DAG id 规则：
+envelope.agent_id 和 tool_result.agent_id 必须是 sentiment_company_radar。
 
-external_agent_id rules：
-envelope.external_agent_id 和 tool_result.external_agent_id 必须是服务自有 id，例如 valuation_ml、valuation_meta、technical_stock、money_flow 等。
-
-legacy_agent_id if known：
-legacy aNN id 只能保留为 legacy_agent_id 或 provenance，不得作为 primary agent_id。
+external_agent_id 规则：
+建议 external_agent_id=company_radar_agent，除非 production schema 明确给出其他服务 id。legacy_agent_id=a09_company_sentiment_radar 只能作为迁移备注。
 
 禁止项：
-- 不放宽主系统 adapter identity gate。
-- 不把 service id 当 fixed DAG primary id。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime_bindings 或 live flags。
-- 不改业务算法/数据源。
+不调用 /v1/agent/invoke；不接 risk dimension；不路由到 risk_composite；不改 runtime_bindings；不设置 live flags；不输出 raw sentiment dump。
 
 允许改动范围：
-- production response builder。
-- schema/protocol。
-- identity contract tests。
+production endpoint/runbook、health wrapper、compute wrapper、agent_conclusion_v1 market-only contract tests。
 
 需要审计的文件：
-- service.py / app.py / main.py
-- schemas.py / protocol.py
-- compute response builder
-- existing dev patch/backfill notes
-- tests
+production service.py / app.py / main.py、health endpoint、compute builder、schema/protocol、README/runbook、tests；参考 dev backfill 线索 /tmp/lma-r8-8i-service-backup/20260610T043253Z/service_patch_manifest.json。
 
 需要修复的字段：
-- envelope.agent_id
-- envelope.external_agent_id
-- tool_result.agent_id
-- tool_result.external_agent_id
-- legacy_agent_id
-- provenance
+external_agent_health_v0；external_agent_compute_v0；tool_result.schema_version=agent_conclusion_v1；role=direction；dimension=market；stance；confidence；evidence；agent_id=sentiment_company_radar；external_agent_id=company_radar_agent；as_of/data_as_of。
 
 需要运行的本地测试：
-- identity contract tests
-- adapter fixture test if available
-- py_compile changed files
+health JSON test；market-only dimension test；sentiment-to-risk rejection test；compute success/partial/error mock tests；unsafe-field test；py_compile。
 
-需要重新部署到 prod 的说明：
-修复必须进入 production 服务部署；仅修 dev 不会改变 production readiness。
+重新部署要求：
+production endpoint 部署完成后，owner 回传端口、root、版本和 market-only contract test 结果。
 
-production re-smoke 命令边界：
-GET /health, POST /v1/agent/compute, main-system adapter mapping. 禁止 /invoke。
+production re-smoke 边界：
+只允许 production /health + /compute + adapter mapping。禁止 /invoke，禁止 risk route。
 
 最终回传格式：
-- before/after identity fields
-- changed files
-- tests
-- deployment version
-- production resmoke result request
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-ADAPTER-MAPPING-FIX
+## PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL
 
 ```text
-你是主系统 provider-free adapter mapping 修复助手。
+你是 value_traditional_valuation 的 Codex / Claude Code production identity 修复助手。
 
 目标：
-仅当 production 服务返回明确的 v2.3.1 payload family，而主系统缺少纯映射时，最小扩展 fixed_dag_external_adapter。
+修复 production 10000 compute 输出中的 identity，使固定 DAG primary id 和服务 id 分离正确。
 
-上下文：
-R8-8P 不允许通过 adapter 放宽 identity 或语义 gate。adapter fix 只处理已支持/应支持的安全 payload family。
+背景：
+R8-8P 中 production /health 和 /compute 可达，但主系统 adapter 以 unknown_agent_id 拒绝。说明 production 没有回填 dev 阶段的 fixed DAG identity wrapper。
 
 适用 agent_id：
-仅适用于 production 返回标准 v2.3.1 payload，但 mapper 明显缺失 pure mapping 的服务。
+value_traditional_valuation
 
 production endpoint：
-不由本 prompt 调用。使用 sanitized production artifact 作为 fixture 来源。
+http://127.0.0.1:10000
 
-fixed DAG id rules：
-不得接受 legacy aNN primary id、unknown id、sentiment-to-risk、L3 payload 强塞 L2。
+fixed DAG id 规则：
+envelope.agent_id=value_traditional_valuation；tool_result.agent_id=value_traditional_valuation。
 
-external_agent_id rules：
-external id 只进入 provenance，不作为 fixed DAG primary id。
+external_agent_id 规则：
+envelope.external_agent_id=valuation_traditional；tool_result.external_agent_id=valuation_traditional；legacy_agent_id=a17_traditional_valuation 只作为迁移备注。
 
 禁止项：
-- 不做 HTTP/provider 调用。
-- 不接 executor active runtime。
-- 不改 runtime_bindings。
-- 不设置 live flags。
-- 不修生产服务代码。
+不放宽主系统 adapter identity gate；不把 valuation_traditional 当 primary agent_id；不调用 /invoke；不改 runtime_bindings；不改估值业务算法/模型/数据。
 
 允许改动范围：
-- src/react_agent/fixed_dag_external_adapter.py
-- tests/unit_tests/test_fixed_dag_external_adapter.py
-- docs/CONTRACTS.md if contract wording changes
+production response builder、schema/protocol、identity contract tests、deployment packaging。
 
 需要审计的文件：
-- fixed_dag_external_adapter.py
-- fixed_dag_contracts.py
-- production sanitized artifacts
-- adapter unit tests
+service.py / app.py / main.py、compute response builder、schemas/protocol、tests、README/runbook；参考 dev patch /tmp/lma-r8-8g-service-backup/20260610T034105Z/value_traditional_valuation。
 
 需要修复的字段：
-只新增 provider-free mapping and validation；不得泄露 raw output。
+external_agent_compute_v0.agent_id；external_agent_compute_v0.external_agent_id；tool_result.agent_id；tool_result.external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；as_of/data_as_of。
 
 需要运行的本地测试：
-- ruff targeted files
-- pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q
-- static quality
+identity contract test；agent_conclusion_v1 schema test；data_as_of <= as_of test；success/partial/error mock tests；unsafe-field test；py_compile。
 
-需要重新部署到 prod 的说明：
-主系统 adapter change does not fix service production output. Production service may still need redeploy if identity/payload is wrong.
+重新部署要求：
+把 wrapper 修复合入服务源码仓库并部署到 production 10000。
 
-production re-smoke 命令边界：
-After adapter change, rerun production /health + /compute + adapter mapping only. 禁止 /invoke。
+production re-smoke 边界：
+GET /health，POST /v1/agent/compute，adapter mapping to conclusion_object_v1。禁止 /invoke。
 
 最终回传格式：
-- mapping added
-- test fixture source
-- tests
-- non-claims
-- remaining service-side blockers
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-BACKFILL-DEV-PATCH
+## PROMPT-PROD-IDENTITY-FIX-VALUE-ML
 
 ```text
-你是 service owner 的 dev patch backfill 助手。
+你是 value_ml_valuation 的 Codex / Claude Code production identity 修复助手。
 
 目标：
-把之前让 dev 服务 pass 的非 git 补丁回填到服务源码仓库，部署到 production endpoint，然后重新做 production smoke。
+把 production 10001 的 compute envelope 和 tool_result primary id 修正为 fixed DAG id。
 
-上下文：
-R8-8G/H/I/J/K/L/M 的 dev evidence 是 historical only。R8-8P 发现很多 production 服务没有这些补丁。
+背景：
+dev 阶段已经修过 identity 并通过 controlled smoke，但 R8-8P production 仍因 unknown_agent_id 被 adapter 拒绝。
 
 适用 agent_id：
-所有 dev pass 但 production missing/failing 的服务，尤其 entity_relation_extractor、sentiment_company_radar、value/market identity mismatch 服务。
+value_ml_valuation
 
 production endpoint：
-如果已有 endpoint，使用 matrix 中 endpoint；如果 missing，先部署/注册 production endpoint。
+http://127.0.0.1:10001
 
-fixed DAG id rules：
-fixed DAG snake_case id 是 primary agent_id。
+fixed DAG id 规则：
+envelope.agent_id=value_ml_valuation；tool_result.agent_id=value_ml_valuation。
 
-external_agent_id rules：
-服务自有 id 放 external_agent_id。
-
-legacy_agent_id if known：
-保留 migration note，不作为 primary id。
+external_agent_id 规则：
+envelope.external_agent_id=valuation_ml；tool_result.external_agent_id=valuation_ml；legacy_agent_id=a16_ml_valuation 只作为迁移备注。
 
 禁止项：
-- 不只修 dev。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime_bindings。
-- 不设置 live flags。
-- 不改业务核心。
+不让 adapter 接受 valuation_ml 作为 primary id；不调用 /invoke；不改 runtime_bindings；不改 ML 估值模型/特征/数据。
 
 允许改动范围：
-- 服务协议 wrapper。
-- health/compute schema。
-- tests。
-- deployment packaging/runbook。
+production response wrapper、identity/schema tests、deployment package。
 
 需要审计的文件：
-- `/tmp/lma-r8-8*-service-backup/*`
-- service owner repo files
-- deployment scripts
-- service tests
+service.py / app.py / main.py、compute builder、schema/protocol、tests、deployment scripts；参考 /tmp/lma-r8-8d-id-backup/20260610T030433Z。
 
 需要修复的字段：
-按对应 dev patch manifest 回填 identity、schema_version、tool_result、dimension、risk_score、data_as_of/as_of。
+external_agent_compute_v0.agent_id/external_agent_id；tool_result.agent_id/external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；confidence/evidence/as_of/data_as_of。
 
 需要运行的本地测试：
-- service contract tests
-- py_compile
-- deployment smoke on production /health + /compute
+identity fixture test；adapter-shaped fixture test if available；anti-lookahead test；unsafe-field test；py_compile。
 
-需要重新部署到 prod 的说明：
-必须部署到 production process; otherwise R8-8P status will not change.
+重新部署要求：
+部署到 production 10001 后再申请 production resmoke；dev pass 不改变 production matrix。
 
-production re-smoke 命令边界：
-GET /health, POST /v1/agent/compute, adapter mapping. 禁止 /invoke。
+production re-smoke 边界：
+只允许 /health + /compute + adapter mapping。禁止 /invoke。
 
 最终回传格式：
-- dev patch source
-- service repo commit
-- prod deployment version
-- production endpoint
-- production resmoke artifacts
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-PROD-IDENTITY-FIX-VALUE-META
+
+```text
+你是 value_meta_valuation 的 Codex / Claude Code production identity 修复助手。
+
+目标：
+修复 production 10002 输出 identity，使 meta valuation 进入 fixed DAG value L2 contract。
+
+背景：
+R8-8P production compute 可达，但 adapter 以 unknown_agent_id 拒绝；这通常表示 dev wrapper 没有回填到 production。
+
+适用 agent_id：
+value_meta_valuation
+
+production endpoint：
+http://127.0.0.1:10002
+
+fixed DAG id 规则：
+envelope.agent_id=value_meta_valuation；tool_result.agent_id=value_meta_valuation。
+
+external_agent_id 规则：
+external_agent_id=valuation_meta；legacy_agent_id=a18_meta_valuation 只作为迁移备注。
+
+禁止项：
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把 valuation_meta 当 primary id；不改元学习估值业务逻辑。
+
+允许改动范围：
+production wrapper、schema/protocol、identity tests、deployment package。
+
+需要审计的文件：
+service.py / app.py / main.py、compute response builder、schemas/protocol、tests、runbook；参考 /tmp/lma-r8-8h-service-backup/20260610T035804Z/value_meta_valuation。
+
+需要修复的字段：
+agent_id=value_meta_valuation；external_agent_id=valuation_meta；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；as_of/data_as_of；safe evidence。
+
+需要运行的本地测试：
+identity contract test；agent_conclusion_v1 schema test；success/partial/error mock tests；unsafe-field test；py_compile。
+
+重新部署要求：
+production 10002 必须加载新 wrapper 后才能重测。
+
+production re-smoke 边界：
+GET /health，POST /compute，adapter mapping。禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-PROD-IDENTITY-FIX-RESEARCH
+
+```text
+你是 value_research_synthesis 的 Codex / Claude Code production identity 修复助手。
+
+目标：
+修复 production 10006 的 analyst research synthesis 输出 identity 和 value L2 wrapper。
+
+背景：
+R8-8P production health/compute 可达，但 adapter 以 unknown_agent_id 拒绝。dev smoke log 记录 external service id 为 analyst_research。
+
+适用 agent_id：
+value_research_synthesis
+
+production endpoint：
+http://127.0.0.1:10006
+
+fixed DAG id 规则：
+envelope.agent_id=value_research_synthesis；tool_result.agent_id=value_research_synthesis。
+
+external_agent_id 规则：
+external_agent_id=analyst_research；legacy_agent_id=a12_research_synthesis 只作为迁移备注。
+
+禁止项：
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不输出 raw report/provider response；不改研报整合业务逻辑。
+
+允许改动范围：
+production wrapper、schema/protocol、identity/value-dimension tests。
+
+需要审计的文件：
+service.py / app.py / main.py、compute builder、schemas/protocol、tests、README/runbook；参考 /tmp/lma-r8-8h-service-backup/20260610T040157Z/value_research_synthesis。
+
+需要修复的字段：
+external_agent_compute_v0 identity；tool_result identity；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；stance/confidence/evidence；as_of/data_as_of。
+
+需要运行的本地测试：
+identity contract test；report raw-output redaction test；schema test；anti-lookahead test；py_compile。
+
+重新部署要求：
+部署到 production 10006 并记录版本。
+
+production re-smoke 边界：
+只允许 /health + /compute + adapter mapping。禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL
+
+```text
+你是 market_stock_technical 的 Codex / Claude Code production identity 修复助手。
+
+目标：
+修复 production 10009 的 technical-stock output identity，并确保它保持 market L2 direction。
+
+背景：
+R8-8P production health/compute 可达，但 adapter 以 unknown_agent_id 拒绝。dev evidence 不能替代 production pass。
+
+适用 agent_id：
+market_stock_technical
+
+production endpoint：
+http://127.0.0.1:10009
+
+fixed DAG id 规则：
+envelope.agent_id=market_stock_technical；tool_result.agent_id=market_stock_technical。
+
+external_agent_id 规则：
+external_agent_id=technical_stock；legacy_agent_id=a10_stock_technical_analysis 只作为迁移备注。
+
+禁止项：
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不改技术分析算法/数据；不输出 raw indicator dump。
+
+允许改动范围：
+production response wrapper、identity/dimension tests、schema/protocol。
+
+需要审计的文件：
+service.py / app.py / main.py、compute builder、schema/protocol、tests、runbook；参考 /tmp/lma-r8-8h-service-backup/20260610T040408Z/market_stock_technical。
+
+需要修复的字段：
+agent_id=market_stock_technical；external_agent_id=technical_stock；tool_result.schema_version=agent_conclusion_v1；dimension=market；role=direction；stance/confidence/evidence；as_of/data_as_of。
+
+需要运行的本地测试：
+identity contract test；dimension=market test；schema test；unsafe-field test；py_compile。
+
+重新部署要求：
+production 10009 部署新 wrapper 后申请 resmoke。
+
+production re-smoke 边界：
+GET /health，POST /compute，adapter mapping。禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW
+
+```text
+你是 market_capital_flow_chip 的 Codex / Claude Code production identity 修复助手。
+
+目标：
+把 production 10022 的资金流/筹码服务输出修成 fixed DAG market L2 contract。
+
+背景：
+R8-8P production health/compute 可达，但 adapter 因 identity mismatch 拒绝。dev 阶段的 money_flow wrapper 需要回填到 production。
+
+适用 agent_id：
+market_capital_flow_chip
+
+production endpoint：
+http://127.0.0.1:10022
+
+fixed DAG id 规则：
+envelope.agent_id=market_capital_flow_chip；tool_result.agent_id=market_capital_flow_chip。
+
+external_agent_id 规则：
+external_agent_id=money_flow，除非 production owner 明确变更；legacy_agent_id 当前无固定值，只能作为备注。
+
+禁止项：
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把 dev 8022 临时服务当 production；不改资金流业务算法。
+
+允许改动范围：
+production wrapper、identity/dimension tests、deployment runbook。
+
+需要审计的文件：
+service.py、compute_core.py、schema/protocol、tests、runbook；参考 /tmp/lma-r8-8m-service-backup/20260610T072025Z/service_patch_manifest.json。
+
+需要修复的字段：
+agent_id=market_capital_flow_chip；external_agent_id=money_flow；tool_result.schema_version=agent_conclusion_v1；dimension=market；role=direction；as_of/data_as_of；safe evidence.
+
+需要运行的本地测试：
+identity contract test；market dimension test；schema test；success/partial/error mock tests；py_compile。
+
+重新部署要求：
+部署到 production 10022；回传 production cwd/root 和版本，证明不是 dev process。
+
+production re-smoke 边界：
+只允许 /health + /compute + adapter mapping。禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-PROD-FUND-SERVICE-DISCOVERY
+
+```text
+你是 market_fund_manager_behavior 的 Codex / Claude Code production service discovery 与 identity 修复助手。
+
+目标：
+确认 fund-manager behavior 的 production service ownership、root、port、external_agent_id，并修复为 fixed DAG market L2 wrapper。
+
+背景：
+R8-8P 发现 production subservice http://127.0.0.1:10007 可达，但 output identity 不兼容 fixed DAG。主仓库 runtime_bindings 仍没有明确 endpoint metadata。
+
+适用 agent_id：
+market_fund_manager_behavior
+
+production endpoint：
+候选为 http://127.0.0.1:10007，但必须由 owner 确认 service root、cmdline、deploy runbook 和 fixed DAG mapping。
+
+fixed DAG id 规则：
+envelope.agent_id=market_fund_manager_behavior；tool_result.agent_id=market_fund_manager_behavior。
+
+external_agent_id 规则：
+external_agent_id 必须由 production health/schema/docs 确认，不能猜。legacy_agent_id=a13_fund_manager_behavior 只能作为迁移备注。
+
+禁止项：
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把未知 subservice 强行接入；不改基金经理行为业务算法。
+
+允许改动范围：
+service discovery docs、production wrapper、health/compute schema、contract tests、runbook。
+
+需要审计的文件：
+production service root、cmdline/runbook、health endpoint、compute builder、schema/protocol、tests、deployment manifest。
+
+需要修复的字段：
+external_agent_health_v0 identity；external_agent_compute_v0 identity；tool_result.schema_version=agent_conclusion_v1；dimension=market；role=direction；agent_id/external_agent_id；as_of/data_as_of。
+
+需要运行的本地测试：
+service discovery doc check；identity contract test；market dimension test；schema test；unsafe-field test；py_compile。
+
+重新部署要求：
+production owner 确认并部署 wrapper 后，回传 endpoint、root、version。
+
+production re-smoke 边界：
+只允许 /health + /compute + adapter mapping；禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
 ## PROMPT-PROD-IPO-WRAPPER
 
 ```text
-你是 market_ipo_investor_behavior 的 production wrapper 修复助手。
+你是 market_ipo_investor_behavior 的 Codex / Claude Code production compute wrapper 修复助手。
 
 目标：
-让 production 10008 输出 fixed DAG L2 market agent_conclusion_v1，而不是 raw/scaffold/business payload 或错误 identity。
+让 production 10008 输出 fixed DAG market L2 agent_conclusion_v1，而不是 raw/scaffold/business payload 或错误 identity。
 
-上下文：
-R8-8P production health/compute 可达，但 adapter 失败。dev evidence 也没有 production pass 效力。
+背景：
+R8-8P production health/compute 可达，但 adapter 因 identity/shape 不兼容拒绝。这个服务的 protocol drift 比普通 identity fix 更大。
 
 适用 agent_id：
 market_ipo_investor_behavior
@@ -393,70 +602,53 @@ market_ipo_investor_behavior
 production endpoint：
 http://127.0.0.1:10008
 
-fixed DAG id rules：
-agent_id 必须是 market_ipo_investor_behavior。
+fixed DAG id 规则：
+envelope.agent_id=market_ipo_investor_behavior；tool_result.agent_id=market_ipo_investor_behavior。
 
-external_agent_id rules：
-external_agent_id 应为 ipo_investor_behavior 或 owner 确认的服务 id。
-
-legacy_agent_id if known：
-a14_ipo_investor_behavior 仅迁移备注。
+external_agent_id 规则：
+external_agent_id=ipo_investor_behavior，除非 production owner 明确变更。legacy_agent_id=a14_ipo_investor_behavior 只能作为迁移备注。
 
 禁止项：
-- 不改业务模型/特征/算法/数据源。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime bindings。
-- 不设置 live flags。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不返回 raw CRJ/scaffold/business payload；不改 IPO 行为模型/数据源。
 
 允许改动范围：
-- production service wrapper。
-- schema/protocol。
-- contract tests。
+production response wrapper、schema/protocol、wrapper tests、runbook。
 
 需要审计的文件：
-- production market subagent service.py
-- schemas/protocol
-- README/runbook
-- tests
+production service.py / app.py / main.py、compute_core、response builder、schema/protocol、tests、README/runbook。
 
 需要修复的字段：
-- external_agent_compute_v0
-- tool_result.schema_version=agent_conclusion_v1
-- role=direction
-- dimension=market
-- stance
-- confidence
-- evidence
-- as_of/data_as_of
+schema_version=external_agent_compute_v0；agent_id=market_ipo_investor_behavior；external_agent_id=ipo_investor_behavior；tool_result.schema_version=agent_conclusion_v1；dimension=market；role=direction；stance/confidence/evidence；as_of/data_as_of。
 
 需要运行的本地测试：
-- production wrapper contract tests
-- py_compile changed files
+wrapper contract test；raw payload does-not-leak test；market dimension test；schema success/partial/error tests；py_compile。
 
-需要重新部署到 prod 的说明：
-部署后重新跑 production resmoke；dev-only pass 不接受。
+重新部署要求：
+部署 production 10008 wrapper 后申请 production resmoke。
 
-production re-smoke 命令边界：
-GET /health, POST /v1/agent/compute, adapter mapping. 禁止 /invoke。
+production re-smoke 边界：
+GET /health，POST /compute，adapter mapping。禁止 /invoke。
 
 最终回传格式：
-- changed files
-- external_agent_id
-- test results
-- production deploy notes
-- resmoke result
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-COMMODITY-RUNBOOK
+## PROMPT-PROD-COMMODITY-COMPUTE-FIX
 
 ```text
-你是 macro_commodity_pricing 的 production compute 修复助手。
+你是 macro_commodity_pricing 的 Codex / Claude Code production compute 修复助手。
 
 目标：
 修复 production 10004 的 /v1/agent/compute，使其返回 fixed DAG L2 macro agent_conclusion_v1。
 
-上下文：
-R8-8P production /health pass，但 /compute HTTP error。之前 dev 8004 未监听，不能作为 production evidence。
+背景：
+R8-8P production /health passed，但 /compute 返回 compute_http_error。dev 8004 未监听或不稳定，不能作为 production evidence。
 
 适用 agent_id：
 macro_commodity_pricing
@@ -464,70 +656,53 @@ macro_commodity_pricing
 production endpoint：
 http://127.0.0.1:10004
 
-fixed DAG id rules：
-tool_result.agent_id=macro_commodity_pricing。
+fixed DAG id 规则：
+envelope.agent_id=macro_commodity_pricing；tool_result.agent_id=macro_commodity_pricing。
 
-external_agent_id rules：
-external_agent_id=price_influence_agent，除非服务 owner 明确更新。
-
-legacy_agent_id if known：
-a04_commodity_hedging 仅迁移备注。
+external_agent_id 规则：
+external_agent_id=price_influence_agent；legacy_agent_id=a04_commodity_hedging 只能作为迁移备注。
 
 禁止项：
-- 不访问 dev 8004 作为 production 替代。
-- 不调用 /v1/agent/invoke。
-- 不改商品定价业务模型、数据源、算法。
-- 不改 runtime bindings。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把 health pass 写成 compute pass；不改商品定价业务模型/数据源/算法。
 
 允许改动范围：
-- production compute wrapper。
-- error handling/fail-soft envelope。
-- schema/tests/runbook。
+production compute route/wrapper、fail-soft envelope、schema/protocol、contract tests、runbook。
 
 需要审计的文件：
-- /sdb/dlut/prod/商品定价分析智能体/agent协议/service.py
-- schemas.py / protocol.py
-- README/runbook
-- tests
+/sdb/dlut/prod/商品定价分析智能体/agent协议/service.py、compute pipeline、schema/protocol、tests、README/runbook、deployment scripts。
 
 需要修复的字段：
-- external_agent_compute_v0
-- status
-- agent_id/external_agent_id
-- tool_result.agent_conclusion_v1
-- dimension=macro
-- target=CU
-- as_of/data_as_of
+external_agent_compute_v0；status；agent_id=macro_commodity_pricing；external_agent_id=price_influence_agent；tool_result.schema_version=agent_conclusion_v1；dimension=macro；role=direction；target examples such as CU；as_of/data_as_of。
 
 需要运行的本地测试：
-- wrapper tests
-- py_compile
-- production compute dry-run only if explicitly approved by maintainer
+compute route contract test；error-path typed envelope test；macro dimension test；schema success/partial/error tests；unsafe-field test；py_compile。
 
-需要重新部署到 prod 的说明：
-修复后生产进程必须加载新代码，再执行 R8-8P production resmoke。
+重新部署要求：
+production 10004 必须部署修复后的 compute wrapper。
 
-production re-smoke 命令边界：
-GET /health, POST /v1/agent/compute. 禁止 /invoke。
+production re-smoke 边界：
+只允许 /health + /compute + adapter mapping。禁止 /invoke。
 
 最终回传格式：
-- root cause of compute_http_error
-- changed files
-- tests
-- deploy notes
-- production resmoke outcome
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
 ## PROMPT-PROD-MACRO-INDEX-OWNER
 
 ```text
-你是 macro_index_valuation 的 production semantic owner 确认助手。
+你是 macro_index_valuation 的 Codex / Claude Code production semantic owner 确认助手。
 
 目标：
-确认生产 10003 是否应作为 fixed DAG macro L2 signal，还是应保持 deferred。
+确认股票指数估值服务是否应作为 fixed DAG macro L2 signal；如果不能确认，保持 deferred。
 
-上下文：
-R8-8P 未 smoke compute，因为该服务更像 index/value valuation，缺少 owner 对 macro L2 的明确确认。
+背景：
+R8-8P 发现 production 10003 endpoint，但没有强行 smoke 为 macro，因为服务语义更像 index/value valuation。
 
 适用 agent_id：
 macro_index_valuation
@@ -535,373 +710,313 @@ macro_index_valuation
 production endpoint：
 http://127.0.0.1:10003
 
-fixed DAG id rules：
-若 owner 批准 macro L2，agent_id 必须是 macro_index_valuation。
+fixed DAG id 规则：
+只有 owner 明确批准 macro L2 后，agent_id 才能是 macro_index_valuation。
 
-external_agent_id rules：
-runtime 候选为 valuation_index。
-
-legacy_agent_id if known：
-a11_index_technical_analysis 仅迁移备注。
+external_agent_id 规则：
+external_agent_id=valuation_index；legacy_agent_id=a11_index_technical_analysis 只作为迁移备注。
 
 禁止项：
-- 不强行把 index/value valuation 归一为 macro。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime bindings。
-- 不设置 live flags。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不强行把 index/value valuation 归一为 macro；不先写 wrapper 再补语义解释。
 
 允许改动范围：
-本阶段只做语义确认和文档/owner 记录；确认后再另开 wrapper phase。
+语义审计、owner decision 记录、future wrapper scope 文档。若 owner 批准，再另开 production wrapper 修复。
 
 需要审计的文件：
-- README
-- service.py
-- schema/protocol
-- sample output
-- owner/domain docs
+README、service.py、schema/protocol、sample output、domain docs、owner/runbook 文档。
 
 需要修复的字段：
-本阶段不修字段。确认后再定义 dimension=macro 的 agent_conclusion_v1 wrapper。
+本 prompt 不直接修字段。若 owner 批准，下一步 wrapper 必须输出 agent_conclusion_v1、dimension=macro、agent_id=macro_index_valuation。
 
 需要运行的本地测试：
-只读阶段不跑 live endpoint。
+只读语义审计不跑 live endpoint。可以跑文档/schema unit checks。
 
-需要重新部署到 prod 的说明：
-若 owner 确认并实现 wrapper，需要生产部署后 resmoke。
+重新部署要求：
+只有实现 wrapper 后才需要 production deployment。
 
-production re-smoke 命令边界：
-确认和 wrapper 后，只允许 /health + /compute，禁止 /invoke。
+production re-smoke 边界：
+owner 确认 + wrapper 部署后，才允许 /health + /compute + adapter mapping。禁止 /invoke。
 
 最终回传格式：
-- owner decision yes/no/unknown
-- semantic evidence
-- allowed output contract
-- next implementation prompt
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-MACRO-L3-DEFER
+## PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3
 
 ```text
-你是 macro_sentiment / macro_industry_hotspot 的 production payload 分类助手。
+你是 macro_sentiment 的 Codex / Claude Code production payload 分类助手。
 
 目标：
-判断生产服务是 L2 agent_conclusion_v1，还是未来 L3/macro_conclusion_v1/regulator payload。
+判断 macro_sentiment 是 L2 agent_conclusion_v1 direction 服务，还是未来 L3/macro_conclusion_v1/regulator 服务。
 
-上下文：
-R8-8P 将 10018/10019 标记为 production_semantic_deferred。它们看起来是 placeholder 或 L3/regulator-like 服务，不应强塞 L2。
+背景：
+R8-8P 将 production 10018 标为 semantic deferred。它看起来像 placeholder 或 L3/regulator-style 服务，不应强塞 L2。
 
 适用 agent_id：
-macro_sentiment, macro_industry_hotspot
+macro_sentiment
 
 production endpoint：
-macro_sentiment: http://127.0.0.1:10018
-macro_industry_hotspot: http://127.0.0.1:10019
+http://127.0.0.1:10018
 
-fixed DAG id rules：
-若分类为 L2，fixed DAG id 必须是对应 snake_case id。
+fixed DAG id 规则：
+如果分类为 L2，agent_id 必须是 macro_sentiment。如果分类为 L3/regulator，不要伪造 L2 fixed DAG id。
 
-external_agent_id rules：
-从 production health/schema/docs 中确认。
-
-legacy_agent_id if known：
-macro_sentiment=a07_macro_sentiment。
-macro_industry_hotspot=a08_industry_hotspot。
+external_agent_id 规则：
+从 production health/schema/docs 中确认。legacy_agent_id=a07_macro_sentiment 只能作为迁移备注。
 
 禁止项：
-- 不把 macro_conclusion_v1 强塞 L2。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime bindings。
-- 不设置 live flags。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把 macro_conclusion_v1 或 regulator payload 强塞进 L2；不绕过 owner 语义判断。
 
 允许改动范围：
-只读协议/语义分类；若确认为 L2，再另开 production wrapper phase。
+只读分类、owner decision、future wrapper/L3 design 文档。若确认 L2，再另开 production wrapper phase。
 
 需要审计的文件：
-- production service.py
-- schemas.py / protocol.py
-- placeholder implementation
-- README/docs
+production service.py / app.py、schema/protocol、sample output、README/runbook、domain owner notes。
 
 需要修复的字段：
-本阶段不修字段，只分类。
+本 prompt 不直接修字段。若为 L2，后续 wrapper 必须输出 agent_conclusion_v1、dimension=macro、role=direction。
 
 需要运行的本地测试：
-不跑 live endpoint。
+只读分类不跑 live endpoint；可跑 schema/document checks。
 
-需要重新部署到 prod 的说明：
-若分类后需要 wrapper，必须部署到 production 后 resmoke。
+重新部署要求：
+只有实现 L2 wrapper 或 L3 adapter 后才部署。
 
-production re-smoke 命令边界：
-分类后只允许 /health + /compute，禁止 /invoke。
+production re-smoke 边界：
+分类后另开 /health + /compute resmoke；禁止 /invoke。
 
 最终回传格式：
-- classification=L2|L3|placeholder|unknown
-- evidence
-- next adapter/wrapper work
-- whether production resmoke is allowed
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
-## PROMPT-PROD-FUND-SERVICE-DISCOVERY
+## PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3
 
 ```text
-你是 market_fund_manager_behavior 的 production service ownership 修复助手。
+你是 macro_industry_hotspot 的 Codex / Claude Code production payload 分类助手。
 
 目标：
-确认 10007 production subservice 是否应作为 fixed DAG market_fund_manager_behavior，并修复 identity/wrapper。
+判断行业热点服务是 macro L2 direction signal，还是未来 L3/macro_conclusion/regulator payload。
 
-上下文：
-R8-8P 发现 production 10007 存在，但 adapter 因 unknown_agent_id 失败。此前 dev 阶段没有有效 pass。
+背景：
+R8-8P 将 production 10019 标为 semantic deferred。当前不允许把不清楚的宏观热点聚合强行塞进 L2。
 
 适用 agent_id：
-market_fund_manager_behavior
+macro_industry_hotspot
 
 production endpoint：
-http://127.0.0.1:10007
+http://127.0.0.1:10019
 
-fixed DAG id rules：
-如果 owner 确认该服务对应 fixed DAG，tool_result.agent_id 必须是 market_fund_manager_behavior。
+fixed DAG id 规则：
+若 owner 确认为 L2，agent_id=macro_industry_hotspot。若为 L3/regulator，保持 deferred。
 
-external_agent_id rules：
-必须从 service constants/health/docs 中确认，不要猜。
-
-legacy_agent_id if known：
-a13_fund_manager_behavior 仅迁移备注。
+external_agent_id 规则：
+从 production health/schema/docs 中确认。legacy_agent_id=a08_industry_hotspot 只能作为迁移备注。
 
 禁止项：
-- 不把综合市场服务或 stub 误当成 L2。
-- 不调用 /v1/agent/invoke。
-- 不改 runtime bindings。
-- 不设置 live flags。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不强行 L3 到 L2；不绕开 owner semantic decision。
 
 允许改动范围：
-- service ownership docs。
-- production wrapper。
-- contract tests。
+只读分类、owner decision、future wrapper/L3 design 文档。
 
 需要审计的文件：
-- /sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior/service.py
-- schema/protocol
-- README/runbook
-- tests
+production service.py / app.py、schema/protocol、sample output、README/runbook、domain owner notes。
 
 需要修复的字段：
-- agent_id=market_fund_manager_behavior
-- external_agent_id=confirmed service id
-- dimension=market
-- role=direction
-- tool_result.schema_version=agent_conclusion_v1
+本 prompt 不直接修字段。若为 L2，后续 wrapper 输出 agent_conclusion_v1、dimension=macro、role=direction、target examples such as 白酒。
 
 需要运行的本地测试：
-- wrapper contract tests
-- py_compile
+只读分类不跑 live endpoint；可跑 schema/document checks。
 
-需要重新部署到 prod 的说明：
-Production wrapper must be deployed before resmoke.
+重新部署要求：
+只有实现 L2 wrapper 或 L3 adapter 后才部署。
 
-production re-smoke 命令边界：
-GET /health, POST /v1/agent/compute, adapter mapping. 禁止 /invoke。
+production re-smoke 边界：
+分类后另开 /health + /compute resmoke；禁止 /invoke。
 
 最终回传格式：
-- ownership decision
-- external_agent_id
-- changed files
-- tests
-- production resmoke readiness
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
 ## PROMPT-PROD-L3-ADAPTER-DESIGN
 
 ```text
-你是 fixed DAG L3 production adapter 设计助手。
+你是 fixed DAG L3 adapter/runtime design 助手。
 
 目标：
-设计 future L3 payload adapter，不接 active runtime，不把 L3 payload 强塞 L2。
+为 value_composite、market_composite、risk_composite、macro_composite 设计未来 L3 adapter/runtime，而不是把它们按 L2 production smoke 处理。
 
-上下文：
-R8-8P 仍将 value_composite、market_composite、risk_composite、macro_composite 标记为 production_l3_l4_deferred。
+背景：
+R8-8P/R8-8P-DOCS-QA 保持 L3 deterministic seams。L3 需要 dimension_composite_result_v1 或明确的 composite payload，不是 agent_conclusion_v1。
 
 适用 agent_id：
 value_composite, market_composite, risk_composite, macro_composite
 
 production endpoint：
-当前无 active external production endpoint 要测试。若存在候选，只做 deferred inventory。
+当前不适用。不要访问 production composite endpoints，也不要把旧 10015/10016 等服务直接当 current authority。
 
-fixed DAG id rules：
-L3 composite id 只映射到 dimension_composite_result_v1。
+fixed DAG id 规则：
+各 composite fixed DAG ids 保持 primary ids；不得使用 legacy aNN id 作为 current truth。
 
-external_agent_id rules：
-服务 id 只进入 provenance，不作为 fixed DAG id。
-
-legacy_agent_id if known：
-仅迁移备注。
+external_agent_id 规则：
+若未来有 external composite 服务，只能作为 provenance/service id，不得覆盖 fixed DAG id。
 
 禁止项：
-- 不调用 endpoint。
-- 不改 runtime bindings。
-- 不设置 live flags。
-- 不把 sentiment_company_radar 接入 risk_composite。
-- 不强塞 L3 到 L2 conclusion_object。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不把 L2/risk_conclusion/macro_conclusion/raw payload 强塞 L3；不允许 sentiment_company_radar 进 risk_composite。
 
 允许改动范围：
-- design docs
-- provider-free adapter proposal
-- unit tests proposal
+设计文档、contract proposal、provider-free sample fixtures、unit tests；实现需另开批准 phase。
 
 需要审计的文件：
-- fixed_dag_contracts.py
-- fixed_dag_external_adapter.py
-- docs/CONTRACTS.md
-- readiness ladder
+fixed_dag_contracts.py、fixed_dag_external_adapter.py、docs/CONTRACTS.md、docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md、sample payloads、current L3 deterministic executor path。
 
 需要修复的字段：
-- dimension_composite_result_v1
-- contributing_agents
-- evidence_refs
-- manual_review
-- provenance
+本 prompt 是设计，不直接修字段。设计必须覆盖 status、confidence、members/evidence、provenance、as_of/data_as_of、安全清洗。
 
 需要运行的本地测试：
-设计阶段不跑 live endpoint；后续只跑 unit/static。
+future phase 应跑 adapter unit tests、contract tests、static quality。当前设计阶段不跑 live endpoints。
 
-需要重新部署到 prod 的说明：
-无 production deployment until adapter/runtime phase is approved.
+重新部署要求：
+无 production deployment；这是 main-system design 预备。
 
-production re-smoke 命令边界：
-未来 phase 才定义；当前禁止 /invoke。
+production re-smoke 边界：
+未来 L3 phase 单独定义；当前禁止 /invoke 和 production composite smoke。
 
 最终回传格式：
-- schema design
-- adapter scope
-- tests
-- runtime non-claims
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
 ## PROMPT-PROD-L4-ADAPTER-DESIGN
 
 ```text
-你是 fixed DAG L4 production adapter 设计助手。
+你是 fixed DAG L4 adapter/runtime design 助手。
 
 目标：
-设计 future L4 decision/report adapter，或确认继续 deterministic seam。
+为 decision_synthesizer 和 report_generator 设计未来 L4 adapter/runtime 或继续保持 deterministic seam。
 
-上下文：
-R8-8P 没有 L4 production external readiness。decision_synthesizer 和 report_generator 仍是 deterministic seams。
+背景：
+R8-8P 没有把 L4 当 production external L2 service。L4 涉及 decision_result_v1、report_result_v1 和 public transcript safety。
 
 适用 agent_id：
 decision_synthesizer, report_generator
 
 production endpoint：
-当前不测试 production endpoint。
+当前不适用；不要访问 production L4 endpoints。
 
-fixed DAG id rules：
-decision_synthesizer -> decision_result_v1。
-report_generator -> report_result_v1。
+fixed DAG id 规则：
+decision_synthesizer 和 report_generator 保持 fixed DAG ids。
 
-external_agent_id rules：
-如未来有服务 id，只进入 provenance。
-
-legacy_agent_id if known：
-report_generator 可保留 a25_report_center 迁移备注。
+external_agent_id 规则：
+未来 external id 只能作为 provenance，不得覆盖 primary id。
 
 禁止项：
-- 不生成 public transcript raw agent JSON。
-- 不调用 endpoint。
-- 不改 runtime bindings。
-- 不设置 live flags。
-- 不接 active runtime。
+不调用 /invoke；不改 runtime_bindings；不设置 live flags；不输出 raw graph messages、raw agent JSON、manager internals、provider raw responses；不把 L4 report raw text直接变成 public transcript。
 
 允许改动范围：
-- design docs
-- contract tests
-- adapter pure mapping draft
+设计文档、contract proposal、public-safety policy、sample fixtures、unit tests；实现需另开批准 phase。
 
 需要审计的文件：
-- fixed_dag_contracts.py
-- public transcript/mapping docs
-- docs/CONTRACTS.md
-- docs/QUALITY.md
+fixed_dag_contracts.py、public_mapping.py、public_api.py、docs/CONTRACTS.md、docs/FRONTEND_V2.md、current report/decision deterministic seams。
 
 需要修复的字段：
-- decision_result_v1
-- report_result_v1
-- safe public transcript projection
-- provenance
+本 prompt 是设计，不直接修字段。设计必须覆盖 decision/report schema、public-safe summary、provenance、redaction、status/failure behavior。
 
 需要运行的本地测试：
-unit/static only; no provider/live.
+future phase 应跑 public API tests、adapter/contract tests、frontend public-safety tests。当前设计阶段不跑 live endpoints。
 
-需要重新部署到 prod 的说明：
-无 production deployment until adapter/runtime phase is approved.
+重新部署要求：
+无 production deployment；这是 main-system design 预备。
 
-production re-smoke 命令边界：
-未来 phase 才定义；当前禁止 /invoke。
+production re-smoke 边界：
+未来 L4 phase 单独定义；当前禁止 /invoke 和 production L4 smoke。
 
 最终回传格式：
-- L4 adapter scope
-- schema mapping
-- public safety boundary
-- next phase DoD
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
 
 ## PROMPT-PROD-INVOKE-AUDIT-PREP
 
 ```text
-你是 production invoke audit 准备助手。
+你是 production /v1/agent/invoke audit 准备助手。注意：本 prompt 只做只读审计准备，不允许调用 /invoke。
 
 目标：
-只读审计已 production health + compute + adapter mapping pass 的服务，判断是否可以进入后续 controlled /v1/agent/invoke smoke。不要直接调用 /invoke。
+审计已经 production health + compute + adapter mapping pass 的服务，判断它们是否可以进入后续 tiny allowlist controlled /v1/agent/invoke smoke。
 
-上下文：
-R8-8P 只有 risk_identification、risk_compliance_review、risk_financial_fraud、risk_crash、macro_analysis 通过 production adapter mapping。
+背景：
+R8-8P 只有五个 agent 达到 production health + compute + adapter mapping pass：risk_identification、risk_compliance_review、risk_financial_fraud、risk_crash、macro_analysis。只有这五个可以用本 prompt 做 invoke audit prep。
 
 适用 agent_id：
-仅适用于 production_compute_pass 的 agent。
+risk_identification, risk_compliance_review, risk_financial_fraud, risk_crash, macro_analysis
 
 production endpoint：
-使用 R8-8P matrix 中的 production endpoint。
+risk_identification: http://127.0.0.1:10010
+risk_compliance_review: http://127.0.0.1:10011
+risk_financial_fraud: http://127.0.0.1:10013
+risk_crash: http://127.0.0.1:10012
+macro_analysis: http://127.0.0.1:10014
 
-fixed DAG id rules：
-invoke 输出必须维持 compute 中已验证的 fixed DAG id。
+fixed DAG id 规则：
+invoke 若未来被 smoke，输出必须维持 compute 中已验证的 fixed DAG primary id，不得退回 service id 或 legacy id。
 
-external_agent_id rules：
-external id 只作为服务 id/provenance。
-
-legacy_agent_id if known：
-仅迁移备注。
+external_agent_id 规则：
+risk_identification=market_risk_reasoning；risk_compliance_review=announcement_compliance；risk_financial_fraud=financial_fraud_agent；risk_crash=crash_risk；macro_analysis=macro_analysis。
 
 禁止项：
-- 本 prompt 不调用 /v1/agent/invoke。
-- 不改 runtime bindings。
-- 不设置 live_verified=true。
-- 不设置 invoke_enabled_by_default=true。
-- 不改业务模型/数据源。
+本 prompt 不调用 /v1/agent/invoke；不改 runtime_bindings；不设置 live_verified=true；不设置 invoke_enabled_by_default=true；不改业务模型/数据源；不把 compute pass 写成 invoke pass。
 
 允许改动范围：
-只读审计 invoke endpoint implementation, tests, schema, failure modes.
+只读审计 invoke endpoint implementation、schema、tests、failure modes、whether invoke reuses compute_core safely。
 
 需要审计的文件：
-- invoke endpoint implementation
-- compute endpoint implementation
-- schema/protocol
-- tests
-- runbook
+invoke endpoint implementation、compute endpoint implementation、schema/protocol、contract tests、runbook、redaction/sanitization logic。
 
 需要修复的字段：
-本阶段不修字段；只确认 invoke 是否复用 compute_core 和 safe response mapping。
+本阶段不修字段；只记录 invoke 是否复用 compute identity、tool_result schema、status mapping、safe failure, and redaction.
 
 需要运行的本地测试：
-本阶段不跑 live invoke。可以跑 local unit/static only.
+只允许 local unit/static tests，不跑 live invoke。可以跑 schema unit tests、py_compile、no-secret/traceback fixtures。
 
-需要重新部署到 prod 的说明：
-若发现 invoke wrapper gap，另开 production service fix and deploy phase。
+重新部署要求：
+若发现 invoke wrapper gap，另开 production service fix/deploy phase；本 prompt 不部署。
 
-production re-smoke 命令边界：
-下一阶段才允许 tiny allowlist /invoke smoke；本 prompt 禁止调用。
+production re-smoke 边界：
+下一阶段才可能允许 tiny allowlist /invoke smoke。本 prompt 只读审计，不调用 endpoint。
 
 最终回传格式：
-- invoke endpoint file/function
-- compute reuse yes/no
-- expected response schema
-- safety/fail-soft behavior
-- whether ready for controlled invoke smoke
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
 ```
