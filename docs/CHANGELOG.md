@@ -3,6 +3,35 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8N agent readiness matrix handoff
+
+### Changed
+
+- Added `docs/AGENT_READINESS_MATRIX_R8_8N.md` as the developer handoff for the
+  full 27-agent readiness audit.
+- Consolidated fixed DAG roster truth, controlled compute evidence, deferred
+  agents, service patch backfill inventory, and copy-ready developer prompts.
+- Kept the R8-8N boundary explicit: controlled compute evidence is not
+  production readiness and does not imply `/v1/agent/invoke`, runtime binding
+  enablement, `live_verified=true`, or `invoke_enabled_by_default=true`.
+
+### Validated
+
+- Documentation-only change.
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No endpoint call.
+- No `/v1/agent/invoke` call.
+- No prod port access.
+- No runtime binding change.
+- No live flag change.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+
 ## 2026-06-10 - Phase R8-8M remaining L2 controlled compute coverage
 
 ### Changed
