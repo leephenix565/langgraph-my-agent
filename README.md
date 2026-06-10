@@ -125,6 +125,15 @@ adapter can now map `external_agent_compute_v0.tool_result.data_bundle_v1` into
 the internal `data_bundle_v1` contract, but this remains docs-only controlled
 evidence with no `/v1/agent/invoke`, runtime binding enablement, live flag,
 active graph L1 data integration, or production readiness claim.
+Phase R8-8K expands the same evidence boundary to L1
+`entity_relation_extractor` and risk L2 `risk_identification` /
+`risk_compliance_review` after bounded dev service protocol remediations. The
+provider-free adapter can now map
+`external_agent_compute_v0.tool_result.entity_relation_bundle_v1` into the
+internal `entity_relation_bundle_v1` contract; risk candidates map as
+`agent_conclusion_v1 role=gate_member`. This remains docs-only controlled
+evidence with no `/v1/agent/invoke`, runtime binding enablement, live flag,
+active graph L1/L3/L4 integration, or production readiness claim.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -134,7 +143,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8J expanded controlled compute evidence over the
+- Current phase: R8-8K entity and risk controlled compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -191,7 +200,11 @@ placeholder skeleton. It is not a completed business analysis engine.
   market-only L2 evidence and preserves the no-risk-routing boundary. R8-8J
   adds docs-only controlled L1 evidence for `financial_data_service` and extends
   compute-envelope mapping to `data_bundle_v1` without wiring it into graph
-  execution.
+  execution. R8-8K adds docs-only controlled L1 evidence for
+  `entity_relation_extractor`, extends compute-envelope mapping to
+  `entity_relation_bundle_v1`, and records risk L2 gate-member evidence for
+  `risk_identification` and `risk_compliance_review` without wiring any L3/L4
+  runtime path.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

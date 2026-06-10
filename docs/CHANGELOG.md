@@ -3,6 +3,58 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8K entity and risk controlled compute evidence
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for
+  `entity_relation_extractor`, `risk_identification`, and
+  `risk_compliance_review` after R8-8K dev-only health, compute, and
+  provider-free adapter mapping checks.
+- Added provider-free adapter support for
+  `external_agent_compute_v0.tool_result.entity_relation_bundle_v1 ->
+  entity_relation_bundle_v1` so L1 entity-relation compute envelopes can be
+  validated without HTTP/provider calls or active graph integration.
+- Documented bounded dev service protocol remediations for fixed-DAG identity,
+  external service id preservation, entity-relation bundle wrapping, and risk
+  L2 `gate_member` output normalization.
+- Added ADR-040 for extending controlled entity-relation and risk compute
+  evidence without runtime enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- Main-system adapter validation:
+  `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py`
+- Main-system adapter tests:
+  `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q`
+- `entity_relation_extractor` service validation before smoke:
+  `python3 -m py_compile entity_relation_agent/service.py entity_relation_agent/schemas.py`
+- `risk_identification` service validation before smoke:
+  `python3 -m py_compile market_risk_model/agent/app.py market_risk_model/agent/protocol.py`
+- `risk_compliance_review` service validation before smoke:
+  `python3 -m py_compile announcement_compliance/agent/app.py announcement_compliance/agent/protocol.py`
+- Controlled dev smoke for all three R8-8K candidates:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8J controlled compute evidence expansion
 
 ### Changed

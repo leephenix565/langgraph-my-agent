@@ -418,3 +418,171 @@ Next gate recommendation:
 - Treat this as L1 data-bundle controlled evidence only. A future phase should
   review invoke semantics and active graph binding separately before any
   `live_verified` or invoke-enabled change.
+
+## 2026-06-10 - R8-8K entity_relation_extractor
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8K |
+| Run UTC | 2026-06-10T06:11:34Z |
+| Artifact directory | `/tmp/lma-r8-8k-candidate-smoke/20260610T061134Z/entity_relation_extractor` |
+| Fixed DAG agent id | `entity_relation_extractor` |
+| External service id | `entity_relation_agent` |
+| Legacy agent id | `a15_entity_relation_extraction` |
+| Payload family | `external_agent_compute_v0` with `entity_relation_bundle_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `entity_relation_bundle_v1` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/实体关系抽取智能体/entity_relation_agent`.
+- Service project was not a usable git repository during remediation; original
+  service and schema files were backed up outside the repo under
+  `/tmp/lma-r8-8k-service-backup/20260610T060226Z/entity_relation_extractor`.
+- The dev service boundary now emits fixed-DAG id
+  `entity_relation_extractor`, external service id `entity_relation_agent`, and
+  `external_agent_compute_v0` with a concrete `entity_relation_bundle_v1` tool
+  result for fixed-DAG compute requests.
+- The service patch did not change the relation extraction business core,
+  database logic, model logic, data files, prod config, or main-system runtime
+  bindings.
+- The main-system adapter gained a provider-free pure mapping branch for
+  `external_agent_compute_v0.tool_result.entity_relation_bundle_v1`; it is
+  still not an HTTP wrapper and is not wired into graph execution.
+- Dev service validation before smoke:
+  `python3 -m py_compile entity_relation_agent/service.py entity_relation_agent/schemas.py`.
+- The dev 8101 process was restarted with the original uvicorn command because
+  it was not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not wire L1 entity-relation results into active graph execution.
+
+Next gate recommendation:
+
+- Keep `entity_relation_extractor` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L1 entity-relation controlled evidence only. Active graph
+  consumption, L2 dependency wiring, and default runtime invocation remain
+  separate later gates.
+
+## 2026-06-10 - R8-8K risk_identification
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8K |
+| Run UTC | 2026-06-10T06:11:34Z |
+| Artifact directory | `/tmp/lma-r8-8k-candidate-smoke/20260610T061134Z/risk_identification` |
+| Fixed DAG agent id | `risk_identification` |
+| External service id | `market_risk_reasoning` |
+| Legacy agent id | `a19_risk_identification` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output stance | `risk_gate_member` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体`.
+- Service project was not a usable git repository during remediation; original
+  service and protocol files were backed up outside the repo under
+  `/tmp/lma-r8-8k-service-backup/20260610T060226Z/risk_identification`.
+- The dev service boundary now emits fixed-DAG id `risk_identification`,
+  external service id `market_risk_reasoning`, canonical dimension `risk`, and
+  `agent_conclusion_v1 role=gate_member` with bounded `risk_score` for
+  fixed-DAG compute requests.
+- The service patch did not change the risk rules, compute core, model logic,
+  data files, prod config, or main-system runtime bindings.
+- The main-system adapter identity gate was not relaxed.
+- Dev service validation before smoke:
+  `python3 -m py_compile market_risk_model/agent/app.py market_risk_model/agent/protocol.py`.
+- The dev 8010 process was restarted with the original uvicorn command because
+  it was not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 `risk_composite` or L4 decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `risk_identification` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L2 risk gate-member controlled evidence only; a later risk
+  composite phase must separately review L3 `risk_conclusion_v1`.
+
+## 2026-06-10 - R8-8K risk_compliance_review
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8K |
+| Run UTC | 2026-06-10T06:11:34Z |
+| Artifact directory | `/tmp/lma-r8-8k-candidate-smoke/20260610T061134Z/risk_compliance_review` |
+| Fixed DAG agent id | `risk_compliance_review` |
+| External service id | `announcement_compliance` |
+| Legacy agent id | `a20_compliance_review` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output stance | `risk_gate_member` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/公告合规审查智能体`.
+- Service project was not a usable git repository during remediation; original
+  service and protocol files were backed up outside the repo under
+  `/tmp/lma-r8-8k-service-backup/20260610T060226Z/risk_compliance_review`.
+- The dev service boundary now emits fixed-DAG id `risk_compliance_review`,
+  external service id `announcement_compliance`, canonical dimension `risk`,
+  and `agent_conclusion_v1 role=gate_member` with bounded `risk_score` for
+  fixed-DAG compute requests.
+- The service patch did not change the compliance rules, compute core, model
+  logic, data files, prod config, or main-system runtime bindings.
+- The main-system adapter identity gate was not relaxed.
+- Dev service validation before smoke:
+  `python3 -m py_compile announcement_compliance/agent/app.py announcement_compliance/agent/protocol.py`.
+- The dev 8011 process was restarted with the original uvicorn command because
+  it was not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 `risk_composite` or L4 decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `risk_compliance_review` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L2 risk gate-member controlled evidence only; L3 risk
+  composite integration remains deferred.

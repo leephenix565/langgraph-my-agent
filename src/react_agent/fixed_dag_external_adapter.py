@@ -15,19 +15,23 @@ from react_agent.fixed_dag_contracts import (
     AGENT_DIMENSIONS,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
     DATA_BUNDLE_SCHEMA_VERSION,
+    ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
     SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES,
     ConclusionObject,
     ConclusionStatus,
     DataBundle,
+    EntityRelationBundle,
     validate_conclusion_object,
     validate_data_bundle,
+    validate_entity_relation_bundle,
 )
 
 EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION = "external_agent_response_v0"
 EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION = "external_agent_compute_v0"
 EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION = "agent_conclusion_v1"
 EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
+EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
 FIXED_DAG_EXTERNAL_ADAPTER_SOURCE = "fixed_dag_external_adapter"
 ADAPTER_FAILURE_SCHEMA_VERSION = "fixed_dag_external_adapter_failure_v1"
 
@@ -255,6 +259,33 @@ def _safe_note_values(label: str, values: Iterable[Any], *, limit: int = 12) -> 
         if len(notes) >= limit:
             break
     return notes
+
+
+def _safe_mapping_items(value: Any, *, limit: int = 50) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for item in value:
+        if not isinstance(item, Mapping) or _contains_unsafe_text(item):
+            continue
+        safe_item: dict[str, Any] = {}
+        for key, raw in item.items():
+            field = _safe_string(key, limit=80)
+            if not field:
+                continue
+            if isinstance(raw, int | float | bool) and not isinstance(raw, bool):
+                safe_item[field] = raw
+            elif isinstance(raw, bool):
+                safe_item[field] = raw
+            else:
+                text = _safe_string(raw, limit=180)
+                if text:
+                    safe_item[field] = text
+        if safe_item:
+            items.append(safe_item)
+        if len(items) >= limit:
+            break
+    return items
 
 
 def validate_external_response_envelope(payload: Mapping[str, Any]) -> tuple[bool, str]:
@@ -573,6 +604,56 @@ def map_external_data_bundle_to_data_bundle(payload: Mapping[str, Any]) -> dict[
     return cast(dict[str, Any], bundle)
 
 
+def map_external_entity_relation_bundle_to_entity_relation_bundle(
+    payload: Mapping[str, Any],
+) -> dict[str, Any]:
+    """Map an external entity_relation_bundle_v1 payload into EntityRelationBundle."""
+    if payload.get("schema_version") != EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_entity_relation_bundle_schema",
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    status = _status_from_external(payload.get("status"))
+    if status is None:
+        return _adapter_failure(
+            "invalid_external_status",
+            schema_version=EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        )
+
+    as_of = _normalize_date_text(payload.get("as_of"))
+    data_as_of = _normalize_date_text(payload.get("data_as_of") or as_of)
+    if not _data_not_after(data_as_of, as_of):
+        return _adapter_failure(
+            "data_as_of_after_as_of",
+            schema_version=EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        )
+
+    notes = [
+        "Mapped by fixed_dag_external_adapter.",
+        "No HTTP, provider, or live external invocation was performed by this adapter.",
+    ]
+    notes.extend(_safe_note_values("source", _source_strings(payload.get("sources"))))
+    notes.extend(_safe_note_values("note", payload.get("notes") or []))
+
+    bundle: EntityRelationBundle = {
+        "schema": ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        "schema_version": ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        "status": status,
+        "as_of": as_of,
+        "data_as_of": data_as_of,
+        "entities": _safe_mapping_items(payload.get("entities")),
+        "relations": _safe_mapping_items(payload.get("relations")),
+        "notes": notes[:30],
+    }
+    valid, reason = validate_entity_relation_bundle(bundle)
+    if not valid:
+        return _adapter_failure(
+            f"mapped_entity_relation_bundle_invalid:{reason}",
+            schema_version=EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], bundle)
+
+
 def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Map a compute endpoint envelope to a supported internal fixed-DAG object."""
     valid, reason = validate_external_compute_envelope(payload)
@@ -589,6 +670,8 @@ def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]
         return map_external_agent_conclusion_to_conclusion_object(tool_result, envelope=payload)
     if schema_version == EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION:
         return map_external_data_bundle_to_data_bundle(tool_result)
+    if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+        return map_external_entity_relation_bundle_to_entity_relation_bundle(tool_result)
     return _adapter_failure(
         "unsupported_compute_tool_result_schema",
         agent_id=str(payload.get("agent_id") or ""),
@@ -614,6 +697,8 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
             return map_external_agent_conclusion_to_conclusion_object(tool_result, envelope=payload)
         if schema_version == EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION:
             return map_external_data_bundle_to_data_bundle(tool_result)
+        if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+            return map_external_entity_relation_bundle_to_entity_relation_bundle(tool_result)
         return _adapter_failure(
             "unsupported_tool_result_schema",
             agent_id=str(payload.get("agent_id") or ""),
@@ -629,6 +714,8 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
         return map_external_agent_conclusion_to_conclusion_object(payload)
     if schema_version == EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION:
         return map_external_data_bundle_to_data_bundle(payload)
+    if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+        return map_external_entity_relation_bundle_to_entity_relation_bundle(payload)
     return _adapter_failure("unsupported_schema_version", schema_version=str(schema_version or ""))
 
 
@@ -636,10 +723,12 @@ __all__ = [
     "ADAPTER_FAILURE_SCHEMA_VERSION",
     "EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION",
     "EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION",
+    "EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION",
     "FIXED_DAG_EXTERNAL_ADAPTER_SOURCE",
     "map_external_compute_envelope_to_fixed_dag_object",
     "map_external_agent_conclusion_to_conclusion_object",
     "map_external_data_bundle_to_data_bundle",
+    "map_external_entity_relation_bundle_to_entity_relation_bundle",
     "map_external_response_to_fixed_dag_object",
     "safe_adapter_failure_conclusion",
     "validate_external_compute_envelope",

@@ -399,6 +399,40 @@ does not mean `/v1/agent/invoke` was called, runtime bindings are enabled,
 graph L1 data integration is enabled, production readiness is proven, or any
 candidate may be invoked by default.
 
+## R8-8K Entity And Risk Controlled Compute Evidence Boundary
+
+R8-8K expands the dev-only controlled health and compute smoke pattern to L1
+entity-relation evidence and risk L2 gate-member evidence. The phase permits
+bounded service-side remediation for structured health JSON, fixed-DAG identity,
+canonical risk dimensions, `agent_conclusion_v1 role=gate_member`, and an
+`external_agent_compute_v0` compute wrapper with a concrete
+`entity_relation_bundle_v1` tool result. It also permits the main-system adapter
+to add the provider-free pure mapping branch for that entity-relation
+compute-envelope input.
+
+R8-8K does not change runtime bindings, graph, executor, public API, public
+runtime, public mapping, frontend, fixed DAG roster, L3/L4 active runtime, or
+default invocation behavior. Docs are updated only after health, compute, and
+provider-free adapter mapping pass.
+
+R8-8K main-repo validation gate is:
+
+```powershell
+python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py
+python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8K validation means the documentation-only evidence record and
+provider-free adapter mapping branch remain consistent with reset quality. It
+does not mean `/v1/agent/invoke` was called, runtime bindings are enabled,
+`live_verified=true` is set, `invoke_enabled_by_default=true` is set, active
+graph L1 entity integration is enabled, L3 risk composite integration is
+enabled, L4 decision integration is enabled, production readiness is proven, or
+any candidate may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

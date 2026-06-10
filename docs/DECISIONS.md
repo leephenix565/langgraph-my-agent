@@ -969,3 +969,37 @@ DAG roster. It does not call `/v1/agent/invoke`, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
 claim prod readiness, does not update public transcript content, and does not
 wire L1 data service output into active graph execution.
+
+## ADR-040: R8-8K Extends Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for entity-relation and risk controlled readiness evidence
+logging.
+
+Decision: R8-8K records sanitized controlled health, compute, and adapter
+mapping evidence for `entity_relation_extractor`, `risk_identification`, and
+`risk_compliance_review` after bounded dev service protocol remediation. The
+main-system adapter is extended only as a provider-free pure mapper so
+`external_agent_compute_v0` envelopes with concrete
+`entity_relation_bundle_v1` tool results can map to the internal
+`entity_relation_bundle_v1` contract.
+
+Reason: entity relation is an L1 fixed-DAG dependency, while the two risk
+services are L2 risk gate-member signals. The deployed dev services were close
+to the external compute-envelope family but needed service-side identity,
+wrapper, and role/dimension normalization. The correct boundary remains strict:
+fixed DAG ids are primary `agent_id` values, service-owned ids remain
+`external_agent_id`, risk services emit `agent_conclusion_v1 role=gate_member`,
+and L3 `risk_conclusion_v1` remains a separate later integration concern.
+
+Consequence: the three R8-8K services now have documented dev-only evidence for
+structured health, `/v1/agent/compute`, and provider-free adapter mapping into
+either `entity_relation_bundle_v1` or `conclusion_object_v1`. The evidence can
+inform later invoke-readiness and runtime-binding review, but remains
+documentation-only.
+
+Non-consequence: R8-8K does not change runtime bindings, graph, executor,
+public API, public runtime, public mapping, frontend, L3/L4 active runtime, or
+fixed DAG roster. It does not call `/v1/agent/invoke`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+claim prod readiness, does not update public transcript content, and does not
+wire L1 entity-relation or risk L2 outputs into active graph execution.

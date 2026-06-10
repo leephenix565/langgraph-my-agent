@@ -5,15 +5,18 @@ from pathlib import Path
 from react_agent.fixed_dag_contracts import (
     validate_conclusion_object,
     validate_data_bundle,
+    validate_entity_relation_bundle,
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
     EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION,
     EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION,
+    EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     FIXED_DAG_EXTERNAL_ADAPTER_SOURCE,
     map_external_agent_conclusion_to_conclusion_object,
     map_external_compute_envelope_to_fixed_dag_object,
     map_external_data_bundle_to_data_bundle,
+    map_external_entity_relation_bundle_to_entity_relation_bundle,
     map_external_response_to_fixed_dag_object,
     validate_external_compute_envelope,
     validate_external_response_envelope,
@@ -138,6 +141,68 @@ def test_external_compute_envelope_maps_data_bundle_tool_result() -> None:
     assert mapped["sources"] == ["sample_local_snapshot"]
     assert any("feature_key: close" == note for note in mapped["notes"])
     _assert_safe_public_payload(mapped)
+
+
+def _entity_relation_payload() -> dict[str, object]:
+    return {
+        "schema_version": EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+        "agent_id": "entity_relation_extractor",
+        "external_agent_id": "entity_relation_agent",
+        "status": "ok",
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "entities": [
+            {"id": "600519.SH", "name": "贵州茅台", "type": "security"},
+            {"id": "baijiu", "name": "白酒", "type": "industry"},
+        ],
+        "relations": [
+            {
+                "source": "600519.SH",
+                "target": "baijiu",
+                "type": "belongs_to",
+                "weight": 1.0,
+            }
+        ],
+        "sources": ["entity_relation_agent_local_snapshot"],
+        "notes": ["bounded test fixture"],
+    }
+
+
+def test_external_compute_envelope_maps_entity_relation_bundle_tool_result() -> None:
+    payload = _compute_envelope(_entity_relation_payload())
+    payload["agent_id"] = "entity_relation_extractor"
+    payload["external_agent_id"] = "entity_relation_agent"
+
+    valid, reason = validate_external_compute_envelope(payload)
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    mapped_valid, mapped_reason = validate_entity_relation_bundle(mapped)
+
+    assert valid, reason
+    assert mapped_valid, mapped_reason
+    assert mapped["schema"] == "entity_relation_bundle_v1"
+    assert mapped["schema_version"] == "entity_relation_bundle_v1"
+    assert mapped["status"] == "complete"
+    assert mapped["entities"][0]["id"] == "600519.SH"
+    assert mapped["relations"][0]["type"] == "belongs_to"
+    assert "source: entity_relation_agent_local_snapshot" in mapped["notes"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_entity_relation_bundle_unsafe_content_does_not_leak() -> None:
+    payload = _entity_relation_payload()
+    payload["entities"] = [{"id": "safe"}, {"id": "api_key=abc"}]
+    payload["relations"] = [{"source": "safe", "target": "secret"}]
+    payload["notes"] = ["raw_response should be stripped", "safe note"]
+
+    mapped = map_external_entity_relation_bundle_to_entity_relation_bundle(payload)
+    valid, reason = validate_entity_relation_bundle(mapped)
+
+    assert valid, reason
+    rendered = json.dumps(mapped, ensure_ascii=False).lower()
+    assert "api_key" not in rendered
+    assert "secret" not in rendered
+    assert "raw_response" not in rendered
+    assert "safe note" in rendered
 
 
 def test_external_compute_envelope_without_tool_result_fails_controlled() -> None:

@@ -52,6 +52,14 @@ bounded service-side health and compute wrapper remediation. The evidence is L1
 not enable runtime bindings, live flags, `/v1/agent/invoke`, active graph L1
 data integration, or production readiness.
 
+R8-8K records controlled dev evidence for `entity_relation_extractor`,
+`risk_identification`, and `risk_compliance_review` after bounded service-side
+protocol remediation. The entity relation result is L1
+`entity_relation_bundle_v1` evidence only. The two risk results are L2
+`agent_conclusion_v1 role=gate_member` evidence only. None of these results
+enables runtime bindings, live flags, `/v1/agent/invoke`, active graph L1/L3/L4
+integration, or production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -104,6 +112,10 @@ Required:
 - For R8-8J, `external_agent_compute_v0.tool_result.data_bundle_v1` may also
   be accepted as adapter input for L1 data-service evidence. This is still
   provider-free mapping only and does not enable graph/runtime consumption.
+- For R8-8K, `external_agent_compute_v0.tool_result.entity_relation_bundle_v1`
+  may also be accepted as adapter input for L1 entity-relation evidence. This
+  is still provider-free mapping only and does not enable graph/runtime
+  consumption.
 - If using the R7-G scaffold package, both the repo-external
   `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
   mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
@@ -204,6 +216,23 @@ This result is L2/L3 controlled evidence only and does not advance the service
 to L4 invoke readiness, L5 runtime binding preparation, L6 live verification,
 L7 default invocation, active graph L1 data integration, or production
 readiness.
+
+The R8-8K `entity_relation_extractor` dev smoke passed controlled health,
+compute, and adapter mapping after bounded service-side protocol remediation.
+The mapped output is the internal `entity_relation_bundle_v1` contract for L1
+entity-relation evidence. This result is L2/L3 controlled evidence only and
+does not advance the service to L4 invoke readiness, L5 runtime binding
+preparation, L6 live verification, L7 default invocation, active graph L1
+entity-relation integration, or production readiness.
+
+The R8-8K `risk_identification` and `risk_compliance_review` dev smokes passed
+controlled health, compute, and adapter mapping after bounded service-side
+protocol remediation. Their mapped outputs are `conclusion_object_v1` risk L2
+gate-member evidence with bounded `risk_score` provenance. These results are
+not L3 `risk_conclusion_v1` evidence and do not advance either service to L4
+invoke readiness, L5 runtime binding preparation, L6 live verification, L7
+default invocation, L3 `risk_composite` runtime integration, L4 decision
+runtime integration, or production readiness.
 
 ## L4: Invoke Controlled Live Passes
 
