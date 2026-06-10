@@ -3,6 +3,41 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8N-DOCS agent readiness matrix persistence
+
+### Changed
+
+- Added `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` as the formal persisted
+  fixed DAG readiness matrix for the full 27-agent roster.
+- Added `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` as the copy-ready
+  developer prompt catalog for service owners and coding agents.
+- Linked the new readiness handoff docs from `README.md` and `docs/INDEX.md`.
+- Updated readiness, quality, and decision docs to keep the R8-8N-DOCS
+  boundary explicit.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/health` call.
+- No `/v1/agent/compute` call.
+- No `/v1/agent/invoke` call.
+- No prod port access.
+- No service start, stop, or restart.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  adapter logic, external service code, or fixed DAG roster change.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8N agent readiness matrix handoff
 
 ### Changed

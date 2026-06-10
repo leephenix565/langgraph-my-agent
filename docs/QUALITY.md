@@ -54,6 +54,19 @@ These checks are not default reset mainline gates:
 - Router-SFT and RARP/route-prior: archived lineage only.
 - browser screenshot visual capture: manual frontend visual acceptance only.
 
+## R8-8N-DOCS Readiness Documentation Boundary
+
+R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:
+
+- `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md`
+- `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`
+
+This is a docs-only persistence phase. The default mainline still does not run
+external `/v1/agent/invoke`, provider live smoke, prod service checks, demo
+stacks, or fusion-gate. Passing static or mainline after this phase means the
+maintained repository quality checks still pass; it does not mean any external
+service is live verified or production ready.
+
 ## Validation Meaning
 
 Passing the R6-B reset mainline means the maintained static surface passes,

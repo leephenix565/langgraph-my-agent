@@ -20,6 +20,8 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-C readiness ladder from docs-only review to explicit live invocation approval. |
 | `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` | R7-G documentation-only endpoint and v2.3.1 domain payload samples. |
+| `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` | R8-8N-DOCS persisted 27-agent readiness matrix, controlled compute coverage, deferred/problem agents, service patch backfill inventory, and next phases. |
+| `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | R8-8N-DOCS copy-ready Chinese developer prompt catalog for service-side backfill, wrappers, semantic deferrals, and L3/L4 adapter design. |
 | `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror and R7-H restore source for the local `E:\muti-agent\external_agent_scaffold` distribution working copy, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage
@@ -94,6 +96,10 @@ current docs aligned with the R7-C/R7-D/R7-G phase boundaries.
 R7-I adds an `apps/web` report-first "研判思维链" disclosure derived from the
 existing `workflow_snapshot_v2` payload while retaining the main assistant
 report body and the technical WorkflowPanel.
+R8-8N-DOCS persists the 27-agent readiness matrix and developer prompt catalog
+for service owners. It is a documentation-only handoff and does not call
+endpoints, enable runtime bindings, set live flags, or prove production
+readiness.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

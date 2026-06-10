@@ -1074,3 +1074,33 @@ frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
 `invoke_enabled_by_default=true`, does not claim prod readiness, does not update
 public transcript content, and does not wire any market L2 output into L3
 `market_composite` or L4 decision runtime.
+
+## ADR-043: R8-8N-DOCS Persists Agent Readiness Matrix Without Runtime Enablement
+
+Status: accepted for readiness documentation persistence.
+
+Decision: R8-8N-DOCS persists the R8-8N read-only audit into
+`docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
+`docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`. The matrix records the full
+27-agent fixed DAG roster, controlled compute evidence, deferred/problem
+agents, service patch backfill inventory, and next developer actions. The
+prompt catalog gives service owners copy-ready Codex / Claude Code prompts for
+service-side backfill, wrapper fixes, semantic deferrals, and future L3/L4
+adapter design.
+
+Reason: the R8-8N audit produced operationally useful readiness state, but the
+audit phase was intentionally read-only. Persisting the matrix and prompt
+catalog in maintained docs gives downstream developers a stable handoff without
+changing runtime behavior.
+
+Consequence: developers now have repository-local documentation for which
+agents have controlled compute evidence, which remain deferred, and which
+service-side protocol patches must be backfilled into service-owned
+repositories before invoke audit or runtime binding work.
+
+Non-consequence: R8-8N-DOCS does not call endpoints, does not call providers,
+does not call `/v1/agent/invoke`, does not modify runtime bindings, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+change graph, executor, public API, public runtime, public mapping, frontend,
+adapter logic, external service code, or fixed DAG roster, and does not prove
+production readiness.

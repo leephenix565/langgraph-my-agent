@@ -77,6 +77,13 @@ macro regulator payloads, or missing non-stub service metadata. R8-8M does not
 enable runtime bindings, live flags, `/v1/agent/invoke`, L3/L4 active runtime,
 or production readiness.
 
+R8-8N-DOCS persists the 27-agent readiness matrix and developer prompt catalog
+in `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
+`docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`. The matrix records which
+agents have controlled compute evidence and which remain deferred, but it does
+not advance any service beyond L3. Controlled compute evidence remains below
+L4 invoke evidence and below L6/L7 live/default invocation readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |

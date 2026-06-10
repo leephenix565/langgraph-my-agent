@@ -150,6 +150,14 @@ missing, or their semantics are not clear enough for L2 evidence. This still
 does not call `/v1/agent/invoke`, enable runtime bindings, set live flags,
 update public transcript content, wire L3/L4 runtime paths, or prove production
 readiness.
+Phase R8-8N-DOCS persists the full R8-8N agent readiness audit into
+`docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
+`docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`. These docs record the
+27-agent matrix, controlled compute coverage, deferred/problem agents, service
+patch backfill inventory, and developer prompt catalog. This is documentation
+only: it does not call endpoints, enable runtime bindings, set live flags,
+advance `/v1/agent/invoke`, change active graph runtime, or prove production
+readiness.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -159,15 +167,18 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8M remaining L2 controlled compute coverage over the
+- Current phase: R8-8N-DOCS agent readiness matrix persistence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
-  LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
-  package.
+  LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C
+  provider-free adapter seam, and v2.3.1 scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
+- Readiness handoff docs:
+  `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
+  `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;
   the current WorkflowPanel renders the R5-B2 fixed DAG inspector from
   `workflow_snapshot_v2`, with R5-B2.6 Chinese localization, R5-C
