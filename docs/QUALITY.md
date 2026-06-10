@@ -240,6 +240,30 @@ Passing R8-7B validation does not mean HTTP integration, provider readiness,
 `invoke_enabled_by_default=true`, L3/L4 active executor mapping, or real
 business-agent correctness. Deployed server agents remain deferred.
 
+## R8-8C Compute Envelope Adapter Compatibility Gate
+
+R8-8C extends the provider-free adapter to accept
+`external_agent_compute_v0` as adapter input when it contains a supported L2
+`agent_conclusion_v1` tool result. Its narrow validation gate is:
+
+```powershell
+python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py
+python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+This gate confirms that a compute envelope dictionary can be mapped or rejected
+by the pure adapter without HTTP, provider, runtime binding, graph, executor, or
+public API changes.
+
+Passing R8-8C validation does not mean `financial_data_service` passed
+structured JSON health, does not replace the planned R8-8D
+`value_ml_valuation` re-smoke, does not call `/health`,
+`/v1/agent/compute`, or `/v1/agent/invoke`, and does not set
+`live_verified=true` or `invoke_enabled_by_default=true`.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

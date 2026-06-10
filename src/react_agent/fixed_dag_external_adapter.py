@@ -25,6 +25,7 @@ from react_agent.fixed_dag_contracts import (
 )
 
 EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION = "external_agent_response_v0"
+EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION = "external_agent_compute_v0"
 EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION = "agent_conclusion_v1"
 EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
 FIXED_DAG_EXTERNAL_ADAPTER_SOURCE = "fixed_dag_external_adapter"
@@ -284,6 +285,19 @@ def validate_external_response_envelope(payload: Mapping[str, Any]) -> tuple[boo
     return True, "ok"
 
 
+def validate_external_compute_envelope(payload: Mapping[str, Any]) -> tuple[bool, str]:
+    """Validate a compute endpoint envelope without validating tool_result."""
+    if not isinstance(payload, Mapping):
+        return False, "payload_not_mapping"
+    if payload.get("schema_version") != EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    if _status_from_external(payload.get("status")) is None:
+        return False, "invalid_status"
+    if not isinstance(payload.get("tool_result"), Mapping) or not payload.get("tool_result"):
+        return False, "compute_tool_result_missing"
+    return True, "ok"
+
+
 def safe_adapter_failure_conclusion(
     agent_id: str,
     dimension: str,
@@ -387,6 +401,12 @@ def map_external_agent_conclusion_to_conclusion_object(
 
     stance: str
     provenance_extra: dict[str, Any] = {}
+    if isinstance(envelope, Mapping):
+        envelope_schema = _safe_string(envelope.get("schema_version"), limit=120)
+        if envelope_schema:
+            provenance_extra["adapter_input_schema"] = envelope_schema
+        if envelope_schema == EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION:
+            provenance_extra["compute_envelope_status"] = _safe_code(envelope.get("status"))
     if role == "direction":
         if payload.get("stance") is None:
             return safe_adapter_failure_conclusion(
@@ -553,6 +573,28 @@ def map_external_data_bundle_to_data_bundle(payload: Mapping[str, Any]) -> dict[
     return cast(dict[str, Any], bundle)
 
 
+def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]) -> dict[str, Any]:
+    """Map a compute endpoint envelope to a supported internal fixed-DAG object."""
+    valid, reason = validate_external_compute_envelope(payload)
+    if not valid:
+        return _adapter_failure(
+            reason,
+            agent_id=str(payload.get("agent_id") or ""),
+            external_agent_id=str(payload.get("external_agent_id") or ""),
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    tool_result = cast(Mapping[str, Any], payload["tool_result"])
+    schema_version = tool_result.get("schema_version")
+    if schema_version == EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION:
+        return map_external_agent_conclusion_to_conclusion_object(tool_result, envelope=payload)
+    return _adapter_failure(
+        "unsupported_compute_tool_result_schema",
+        agent_id=str(payload.get("agent_id") or ""),
+        external_agent_id=str(payload.get("external_agent_id") or ""),
+        schema_version=str(schema_version or ""),
+    )
+
+
 def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Map an external response envelope or supported tool_result to an internal object."""
     if payload.get("schema_version") == EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION:
@@ -577,6 +619,9 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
             schema_version=str(schema_version or ""),
         )
 
+    if payload.get("schema_version") == EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION:
+        return map_external_compute_envelope_to_fixed_dag_object(payload)
+
     schema_version = payload.get("schema_version")
     if schema_version == EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION:
         return map_external_agent_conclusion_to_conclusion_object(payload)
@@ -587,11 +632,14 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
 
 __all__ = [
     "ADAPTER_FAILURE_SCHEMA_VERSION",
+    "EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION",
     "EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION",
     "FIXED_DAG_EXTERNAL_ADAPTER_SOURCE",
+    "map_external_compute_envelope_to_fixed_dag_object",
     "map_external_agent_conclusion_to_conclusion_object",
     "map_external_data_bundle_to_data_bundle",
     "map_external_response_to_fixed_dag_object",
     "safe_adapter_failure_conclusion",
+    "validate_external_compute_envelope",
     "validate_external_response_envelope",
 ]

@@ -8,11 +8,14 @@ from react_agent.fixed_dag_contracts import (
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
+    EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION,
     EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION,
     FIXED_DAG_EXTERNAL_ADAPTER_SOURCE,
     map_external_agent_conclusion_to_conclusion_object,
+    map_external_compute_envelope_to_fixed_dag_object,
     map_external_data_bundle_to_data_bundle,
     map_external_response_to_fixed_dag_object,
+    validate_external_compute_envelope,
     validate_external_response_envelope,
 )
 
@@ -26,6 +29,23 @@ SAMPLE_DIR = (
 
 def _sample(name: str) -> dict[str, object]:
     return json.loads((SAMPLE_DIR / name).read_text(encoding="utf-8"))
+
+
+def _compute_envelope(tool_result: dict[str, object] | None = None) -> dict[str, object]:
+    payload: dict[str, object] = {
+        "schema_version": EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION,
+        "agent_id": "valuation_ml",
+        "external_agent_id": "valuation_ml",
+        "status": "ok",
+        "confidence": 0.7071,
+        "as_of": "20260605",
+        "data_as_of": "20260605",
+        "warnings": ["Model output is research-only."],
+        "errors": [],
+    }
+    if tool_result is not None:
+        payload["tool_result"] = tool_result
+    return payload
 
 
 def _assert_safe_public_payload(payload: dict[str, object]) -> None:
@@ -79,6 +99,108 @@ def test_external_response_envelope_maps_tool_result() -> None:
     assert mapped["agent_id"] == "value_ml_valuation"
     assert mapped["status"] == "complete"
     assert mapped["provenance"]["external_status"] == "ok"
+
+
+def test_external_compute_envelope_maps_agent_conclusion_tool_result() -> None:
+    payload = _compute_envelope(_sample("agent_conclusion.response.json"))
+    valid, reason = validate_external_compute_envelope(payload)
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    mapped_valid, mapped_reason = validate_conclusion_object(mapped)
+
+    assert valid, reason
+    assert mapped_valid, mapped_reason
+    assert mapped["schema"] == "conclusion_object_v1"
+    assert mapped["agent_id"] == "value_ml_valuation"
+    assert mapped["status"] == "complete"
+    assert mapped["provenance"]["adapter_source"] == FIXED_DAG_EXTERNAL_ADAPTER_SOURCE
+    assert mapped["provenance"]["adapter_input_schema"] == EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION
+    assert mapped["provenance"]["compute_envelope_status"] == "ok"
+    assert mapped["provenance"]["external_agent_id"] == "valuation_ml"
+    assert mapped["provenance"]["provider_invoked"] is False
+    assert mapped["provenance"]["external_invoked"] is False
+    _assert_safe_public_payload(mapped)
+
+
+def test_external_compute_envelope_without_tool_result_fails_controlled() -> None:
+    for tool_result in ("missing", None, {}):
+        payload = _compute_envelope()
+        payload["tool_result_schema_version"] = "agent_conclusion_v1"
+        if tool_result != "missing":
+            payload["tool_result"] = tool_result
+
+        valid, reason = validate_external_compute_envelope(payload)
+        mapped = map_external_compute_envelope_to_fixed_dag_object(payload)
+
+        assert not valid
+        assert reason == "compute_tool_result_missing"
+        assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+        assert mapped["reason"] == "compute_tool_result_missing"
+        _assert_safe_public_payload(mapped)
+
+
+def test_external_compute_envelope_anti_lookahead_returns_error_conclusion() -> None:
+    tool_result = _sample("agent_conclusion.response.json")
+    tool_result["data_as_of"] = "2026-06-06"
+    tool_result["as_of"] = "2026-06-05"
+
+    mapped = map_external_response_to_fixed_dag_object(_compute_envelope(tool_result))
+    valid, reason = validate_conclusion_object(mapped)
+
+    assert valid, reason
+    assert mapped["status"] == "error"
+    assert mapped["provenance"]["adapter_failure"] is True
+    assert mapped["provenance"]["reason"] == "data_as_of_after_as_of"
+    assert mapped["provenance"]["provider_invoked"] is False
+    assert mapped["provenance"]["external_invoked"] is False
+    _assert_safe_public_payload(mapped)
+
+
+def test_external_compute_envelope_identity_rejections_return_controlled_failure() -> None:
+    legacy = _sample("agent_conclusion.response.json")
+    legacy["agent_id"] = "a16_ml_valuation"
+    mapped = map_external_response_to_fixed_dag_object(_compute_envelope(legacy))
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "legacy_agent_id_as_primary"
+
+    unknown = _sample("agent_conclusion.response.json")
+    unknown["agent_id"] = "unknown_agent"
+    mapped = map_external_response_to_fixed_dag_object(_compute_envelope(unknown))
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "unknown_agent_id"
+    _assert_safe_public_payload(mapped)
+
+
+def test_external_compute_envelope_unsafe_raw_content_does_not_leak() -> None:
+    tool_result = _sample("agent_conclusion.response.json")
+    tool_result["raw_output"] = {
+        "secret": "api_key=abc",
+        "safe_metric": 1,
+        "endpoint": "http://example.invalid/v1/agent/invoke",
+    }
+    tool_result["quality"] = {"model_trust": 0.8, "raw_response": "traceback"}
+    payload = _compute_envelope(tool_result)
+    payload["raw_response"] = "traceback with chain-of-thought"
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_conclusion_object(mapped)
+
+    assert valid, reason
+    assert mapped["provenance"]["raw_output_keys"] == ["safe_metric"]
+    assert mapped["provenance"]["quality_keys"] == ["model_trust"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_health_payload_is_not_treated_as_adapter_success() -> None:
+    mapped = map_external_response_to_fixed_dag_object(
+        {
+            "schema_version": "external_agent_health_v0",
+            "agent_id": "financial_data_service",
+            "status": "ok",
+        }
+    )
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "unsupported_schema_version"
 
 
 def test_risk_gate_member_maps_to_validator_legal_conclusion() -> None:

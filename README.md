@@ -88,6 +88,14 @@ layer for already-available payload dictionaries: first-slice support maps
 current internal `data_bundle_v1`. It does not call HTTP, providers, `/health`,
 `/v1/agent/invoke`, or any server-deployed agent; it does not change the active
 graph, executor, runtime bindings, live flags, or fixed DAG roster.
+Phase R8-8C extends that pure adapter seam to accept
+`external_agent_compute_v0` as compute-envelope input for supported L2
+`agent_conclusion_v1` tool results. This remains adapter-only compatibility:
+it does not call endpoints, does not update runtime bindings, does not mark
+services live verified, and does not make compute smoke evidence public
+workflow truth. The R8-8B smoke result still leaves `financial_data_service`
+blocked on structured JSON `/health`; `value_ml_valuation` requires an R8-8D
+re-smoke before any readiness advancement wording.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -97,7 +105,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-7B provider-free external payload adapter mapping over the
+- Current phase: R8-8C provider-free compute-envelope adapter compatibility over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -140,7 +148,10 @@ placeholder skeleton. It is not a completed business analysis engine.
   first supported families: `agent_conclusion_v1 -> conclusion_object_v1` and
   `data_bundle_v1 -> data_bundle_v1`. It is not an HTTP wrapper, does not load a
   provider, does not call deployed services, and is not wired into active graph
-  execution.
+  execution. R8-8C additionally accepts `external_agent_compute_v0` as adapter
+  input only when it contains a supported L2 `agent_conclusion_v1` tool result;
+  the compute envelope is not graph state, readiness evidence, or runtime
+  binding authority.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

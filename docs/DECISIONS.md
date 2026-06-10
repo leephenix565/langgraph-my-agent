@@ -772,3 +772,31 @@ change `graph.py`, `fixed_dag_executor.py`, public API/runtime/mapping modules,
 runtime bindings, live flags, the fixed DAG roster, frontend code, L3/L4 active
 mapping, external readiness levels, or production deployment. Passing adapter
 tests does not imply `live_verified=true` or `invoke_enabled_by_default=true`.
+
+## ADR-033: R8-8C Accepts external_agent_compute_v0 As Adapter Input Only
+
+Status: accepted for compute-envelope adapter compatibility.
+
+Decision: R8-8C treats `external_agent_compute_v0` as a provider-free adapter
+input envelope only. When a compute envelope contains a concrete supported L2
+`agent_conclusion_v1` `tool_result`, the adapter reuses the existing conclusion
+mapper and records the input envelope schema in provenance.
+
+Reason: R8-8B controlled smoke showed `value_ml_valuation` health passing and
+`/v1/agent/compute` returning HTTP 200 with an `external_agent_compute_v0`
+envelope whose tool result family was `agent_conclusion_v1`. The R8-7B adapter
+rejected that outer envelope as unsupported even though the nested payload
+family is already in scope.
+
+Consequence: `src/react_agent/fixed_dag_external_adapter.py` can map supported
+compute-envelope L2 conclusions without adding HTTP calls, provider calls,
+graph/executor integration, runtime binding changes, or live flags. A compute
+envelope that declares a tool result schema but lacks a concrete `tool_result`
+returns the controlled failure `compute_tool_result_missing`.
+
+Non-consequence: R8-8C does not make `external_agent_compute_v0` graph state,
+live readiness evidence, or runtime-binding authority. It does not repair
+`financial_data_service`; that service remains blocked on structured JSON
+`/health`. `value_ml_valuation` remains deferred until an R8-8D controlled
+re-smoke validates the patched adapter boundary. Passing adapter tests does not
+imply `live_verified=true` or `invoke_enabled_by_default=true`.

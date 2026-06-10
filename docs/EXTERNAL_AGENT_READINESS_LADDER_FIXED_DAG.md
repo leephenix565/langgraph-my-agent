@@ -17,6 +17,12 @@ payload dictionaries. Passing those tests can support L1 adapter mapping review,
 but it does not call or verify `/health`, `/v1/agent/compute`,
 `/v1/agent/invoke`, any provider, or any deployed service.
 
+R8-8C adds provider-free adapter compatibility for
+`external_agent_compute_v0` envelopes that contain supported L2
+`agent_conclusion_v1` tool results. This is still L1 adapter evidence only. It
+does not call endpoints, change runtime bindings, or advance any candidate to
+health, compute, invoke, or live verification readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -63,6 +69,9 @@ Required:
 - For R8-7B, the implemented mapping surface is limited to
   `agent_conclusion_v1 -> conclusion_object_v1` and
   `data_bundle_v1 -> data_bundle_v1`.
+- For R8-8C, `external_agent_compute_v0` samples may be accepted as adapter
+  input only when a concrete supported `tool_result` is present. A sample or
+  unit test does not prove the deployed `/v1/agent/compute` endpoint passes.
 - If using the R7-G scaffold package, both the repo-external
   `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
   mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
@@ -93,6 +102,10 @@ Required:
 - Response contains no credentials, raw traceback, private data, provider raw
   responses, or chain-of-thought.
 
+The R8-8B `financial_data_service` smoke remains blocked at L2 because the
+controlled `/health` endpoint did not return safe structured JSON. R8-8C does
+not convert plain-text or HTML health output into a pass.
+
 Health passing does not imply invoke passing.
 
 ## L3: Compute Passes
@@ -112,6 +125,11 @@ latency-sensitive workflows:
 - Performance target is documented.
 
 Compute passing does not imply production invocation should be enabled.
+
+The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
+requires R8-8C adapter compatibility. After the adapter patch, the service still
+requires an R8-8D controlled re-smoke before any compute-readiness advancement
+is claimed.
 
 ## L4: Invoke Controlled Live Passes
 
@@ -197,5 +215,7 @@ The readiness ladder does not claim:
 - internal LLM placeholder output is a real external business-agent result
 - R8-7B adapter mapping tests imply health, compute, invoke, live verification,
   runtime binding enablement, or production deployment
+- R8-8C `external_agent_compute_v0` adapter compatibility implies live
+  readiness, runtime binding enablement, or successful deployed compute smoke
 
 Default reset mainline remains no-provider and no-external-invoke.

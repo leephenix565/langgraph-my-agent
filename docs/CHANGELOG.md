@@ -3,6 +3,47 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-09 - Phase R8-8C compute envelope adapter compatibility
+
+### Changed
+
+- Extended the provider-free fixed DAG external adapter to accept
+  `external_agent_compute_v0` as adapter input only when it contains a
+  supported L2 `agent_conclusion_v1` tool result.
+- Added controlled failure handling for compute envelopes that declare a tool
+  result schema but lack a concrete `tool_result`.
+- Recorded compute-envelope provenance with the adapter input schema and
+  compute envelope status while keeping `provider_invoked=false` and
+  `external_invoked=false`.
+- Added unit coverage for compute-envelope mapping, missing tool results,
+  anti-lookahead rejection, identity rejection, unsafe raw-content filtering,
+  health payload rejection, and the existing no-HTTP import path.
+- Updated README, payload mapping, readiness ladder, quality, and decisions
+  docs for the R8-8C adapter-only boundary.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No HTTP call.
+- No provider call.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` call.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+- `financial_data_service` remains blocked on structured JSON `/health`.
+- `value_ml_valuation` requires R8-8D re-smoke before readiness advancement.
+
 ## 2026-06-09 - Phase R8-7B provider-free external adapter mapping
 
 ### Changed
