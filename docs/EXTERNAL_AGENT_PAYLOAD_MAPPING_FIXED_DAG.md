@@ -123,6 +123,24 @@ future work. R8-10B does not map `decision_conclusion_v1`, `eval_record_v1`,
 or `fixed_dag_plan_v1` into executor state, and it does not enable active L3
 runtime execution.
 
+### R8-10C L3 Service Owner Backfill Guidance
+
+R8-10B means the main system can map sanitized L3 payload dictionaries. It does
+not mean L3 services are production-ready or runtime-enabled. R8-10C inspected
+only process/source metadata and found that each L3 service needs protocol
+backfill before any controlled L3 health/compute smoke:
+
+| L3 service | Required owner backfill |
+| --- | --- |
+| `value_composite` | Emit a real L3 `dimension_conclusion_v1` wrapper with `agent_id=value_composite`; current source still exposes `composite_valuation` / `value_ml_valuation` compatibility paths. |
+| `market_composite` | Keep `dimension_conclusion_v1`, but normalize `dimension=market` and `members[].agent_id` to the fixed DAG market L2 roster. |
+| `risk_composite` | Emit adapter-facing `risk_conclusion_v1` with `agent_id=risk_composite`, `dimension=risk`, flat `gate`, top-level `penalty`, and risk-only `contributing_agents`. |
+| `macro_composite` | Emit `macro_conclusion_v1` with `agent_id=macro_composite`, value/market-only `dimension_weights`, `risk_sensitivity`, and explicit `contributing_agents`; document the compute envelope/runbook. |
+
+These backfills are service-owner work. They do not change main-system
+`runtime_bindings.json`, do not set live flags, and do not authorize
+`/v1/agent/invoke`.
+
 ## Dimension Mapping
 
 | External label or alias | Fixed DAG dimension id |

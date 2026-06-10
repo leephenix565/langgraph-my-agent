@@ -555,6 +555,26 @@ map locally into `dimension_composite_result_v1`. It does not enable runtime
 bindings, set live flags, prove L3 service readiness, wire active graph L3
 external execution, or permit default invocation.
 
+## R8-10C L3 Service Backfill Audit Boundary
+
+R8-10C is docs-only and read-only with respect to services. It may inspect
+process metadata and shallow service source/docs, but it does not call
+`/health`, `/v1/agent/compute`, `/v1/agent/invoke`, production ports, dev
+ports, providers, or demo stacks. It does not modify service code.
+
+R8-10C validation is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing this gate means only that the L3 protocol backfill findings and service
+owner prompts are documented. It does not create L3 health/compute evidence,
+enable runtime bindings, set live flags, prove production readiness, or permit
+default invocation.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

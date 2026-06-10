@@ -1197,3 +1197,32 @@ not call `/v1/agent/invoke`, does not modify runtime bindings, does not set
 wire active L3 runtime execution, does not change graph/executor/public
 API/frontend behavior, does not modify external services, and does not prove
 L3 production readiness.
+
+## ADR-047: R8-10C Sends L3 Services To Protocol Backfill Before Smoke
+
+Status: accepted for L3 service readiness documentation.
+
+Decision: R8-10C records that the four L3 services must complete service-owner
+protocol backfill before controlled L3 health/compute smoke. The main-system
+adapter already supports L3 payload families from R8-10B, but that local mapper
+does not make the services ready. `value_composite` needs a true
+`agent_id=value_composite` L3 value wrapper; `market_composite` needs fixed DAG
+member id normalization; `risk_composite` needs R8-10B-compatible fixed id,
+canonical dimension, flat gate, and risk-only contributing agents; and
+`macro_composite` needs fixed id/runbook alignment around `macro_conclusion_v1`.
+
+Reason: smoking a service before its identity and payload family are aligned
+would either fail predictably or encourage weakening the adapter gates. The
+safer path is to give service owners precise backfill prompts, keep runtime
+bindings disabled, and only run controlled L3 smoke after the service-side
+wrappers are redeployed.
+
+Consequence: `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` now includes an L3
+service protocol backfill audit table, and
+`docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` now includes four
+service-specific L3 backfill prompts.
+
+Non-consequence: R8-10C does not call endpoints, does not call providers, does
+not call `/v1/agent/invoke`, does not modify service code, does not modify
+runtime bindings, does not set live flags, does not wire active L3 runtime
+execution, and does not create L3 production readiness evidence.

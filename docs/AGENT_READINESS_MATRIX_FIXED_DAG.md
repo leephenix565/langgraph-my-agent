@@ -101,6 +101,26 @@ invocation, or production business correctness.
 | `risk_crash` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_analysis` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 
+## R8-10C L3 Service Protocol Backfill Audit
+
+R8-10C is a no-endpoint, docs-only protocol backfill audit for the four L3
+composite services. It did not call `/health`, `/v1/agent/compute`, or
+`/v1/agent/invoke`. It did not modify service code, did not update runtime
+bindings, and did not create L3 production readiness evidence.
+
+R8-10B already gives the main system provider-free adapter mappings for
+`dimension_conclusion_v1`, `risk_conclusion_v1`, and
+`macro_conclusion_v1`. R8-10C found that the services must still backfill or
+confirm service-side protocol shape before a later controlled L3 smoke can be
+meaningful.
+
+| agent_id | candidate service | current endpoint evidence | current payload shape | problem | required payload | next action | developer_prompt_id |
+| --- | --- | --- | --- | --- | --- | --- | --- |
+| `value_composite` | 综合估值智能体 | Prod listener `10015`; dev listener `8015`; both process cwd point to `/sdb/dlut/prod/综合估值智能体`. No endpoint was called. | Source contains a `dimension_conclusion_v1` helper, but normal compute still appears to return `decision_conclusion_v1` from `AGENT_ID=composite_valuation`; the fixed-DAG compatibility branch returns L2 sample `agent_conclusion_v1` for `value_ml_valuation`. | Current service is not yet a true L3 `value_composite` endpoint. | `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with `agent_id=value_composite`, `dimension=value`, and members from value L2 roster. | Service owner confirms ownership and backfills an actual L3 identity/wrapper, then requests controlled L3 smoke. | `PROMPT-L3-VALUE-COMPOSITE-BACKFILL` |
+| `market_composite` | 市场面综合智能体 | Prod listener `10023`; dev listener `8023`; subservice listeners exist under market root. No endpoint was called. | Source already builds `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with `agent_id=market_composite`; current payload still exposes Chinese `dimension=市场面` and service-local member ids such as `technical_stock`, `money_flow`, and `market_sentiment`. | Payload is close, but canonical dimension and member ids need fixed DAG alignment before adapter smoke can be authoritative. | `dimension_conclusion_v1` with `agent_id=market_composite`, `dimension=market`, fixed DAG market members, and weights summing to one. | Service owner backfills canonical dimension/member id mapping and confirms market-only sentiment handling, then requests controlled L3 smoke. | `PROMPT-L3-MARKET-COMPOSITE-BACKFILL` |
+| `risk_composite` | 综合风险智能体 | Prod listener `10016`; dev listener `8016`; distinct prod/dev service roots. No endpoint was called. | Source emits `risk_conclusion_v1`, but primary id is `risk_synthesis`, tool_result lacks the required `agent_id=risk_composite` shape, dimension is Chinese `风险`, and `gate` is a nested object rather than the R8-10B adapter-facing `pass|penalty|veto|manual_review` field. | Risk L3 protocol mismatch. | `external_agent_compute_v0.tool_result.risk_conclusion_v1` with `agent_id=risk_composite`, `dimension=risk`, `role=gate`, flat gate action, top-level `risk_score`, `penalty`, and risk-only contributing agents. | Service owner adds R8-10B-compatible wrapper without changing D-S risk business logic, then requests controlled L3 smoke. | `PROMPT-L3-RISK-COMPOSITE-BACKFILL` |
+| `macro_composite` | 宏观综合智能体 | Prod listener `10024`; no dev `8024` listener observed. No endpoint was called. | Source emits `macro_conclusion_v1` and already uses value/market-only `dimension_weights`, but primary id is `macro_synthesis` and compute returns an `external_agent_response_v0` style envelope. | Macro payload is close, but fixed DAG id and endpoint/runbook backfill are still needed. | `external_agent_compute_v0` or `external_agent_response_v0` tool_result with `schema_version=macro_conclusion_v1`, `agent_id=macro_composite`, `dimension=macro`, `role=regulator`, and value/market-only `dimension_weights`. | Service owner backfills fixed DAG id, confirms prod/dev runbook, and requests controlled L3 smoke. | `PROMPT-L3-MACRO-COMPOSITE-BACKFILL` |
+
 ## Production Problem Playbook
 
 Each item below states the production problem, likely cause, remediation path,
@@ -410,80 +430,107 @@ payload pass.
 
 ### value_composite
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external L2; deterministic internal seam
-  remains.
-- Problem type: L3 runtime/service smoke not started.
-- Failure reason: R8-10B supports provider-free mapping from
-  `dimension_conclusion_v1`, but no production L3 endpoint has been smoked and
-  runtime bindings remain disabled.
-- Impact: no external production L3 evidence.
-- Solution: service owner can backfill a `dimension_conclusion_v1` wrapper;
-  main-system maintainer can run a later controlled L3 health/compute smoke.
-- Service owner action: emit `agent_id=value_composite`, `dimension=value`,
-  `members[]` from value L2 roster, weights summing to one.
+- Current status: `protocol_backfill_needed`.
+- Production test result: R8-10C only inspected process state and shallow
+  source. Production listener `10015` exists, and dev listener `8015` exists,
+  but no endpoint was called.
+- Problem type: L3 identity and wrapper mismatch.
+- Failure reason: the service source contains a `dimension_conclusion_v1`
+  helper, but the normal compute path still appears to emit
+  `decision_conclusion_v1` under `AGENT_ID=composite_valuation`; the fixed DAG
+  compatibility branch emits L2 sample `agent_conclusion_v1` under
+  `value_ml_valuation`. It is not yet a true L3 `value_composite` service path.
+- Impact: R8-10B adapter mapping exists, but a later L3 smoke would fail fixed
+  DAG identity unless the service owner backfills the wrapper.
+- Solution: add or correct a production compute wrapper that emits
+  `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with
+  `agent_id=value_composite`, `dimension=value`, value L2 members, bounded
+  evidence, and `data_as_of <= as_of`.
+- Service owner action: backfill the wrapper and tests in the service-owned
+  repo; do not change valuation business logic.
 - Main-system maintainer action: keep deterministic seam and runtime bindings
-  disabled until an explicit L3 runtime phase.
-- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
-- Prompt: `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER`.
+  disabled until a later controlled L3 smoke phase.
+- Retest method: future controlled L3 `/health` + `/v1/agent/compute` smoke
+  only after owner backfill; no `/v1/agent/invoke`.
+- Prompt: `PROMPT-L3-VALUE-COMPOSITE-BACKFILL`.
 
 ### market_composite
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external L2; deterministic internal seam
-  remains.
-- Problem type: L3 runtime/service smoke not started.
-- Failure reason: R8-10B supports provider-free mapping from
-  `dimension_conclusion_v1`, but no production L3 endpoint has been smoked and
-  runtime bindings remain disabled.
-- Impact: no external production L3 evidence.
-- Solution: service owner can backfill a `dimension_conclusion_v1` wrapper that
-  allows `sentiment_company_radar` only as a market member.
-- Service owner action: emit `agent_id=market_composite`, `dimension=market`,
-  `members[]` from market L2 roster, weights summing to one.
+- Current status: `protocol_backfill_needed`.
+- Production test result: R8-10C only inspected process state and shallow
+  source. Production listener `10023` and dev listener `8023` exist; subservice
+  listeners also exist under the market root. No endpoint was called.
+- Problem type: L3 member-id alignment.
+- Failure reason: the service source already builds
+  `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with
+  `agent_id=market_composite`, but the adapter-facing dimension still needs to
+  be canonical English `market`, and member ids are service-local names such as
+  `technical_stock`, `money_flow`, and `market_sentiment`, not the fixed DAG
+  market L2 roster.
+- Impact: R8-10B adapter mapping can validate L3 payloads, but service-local
+  member ids would block authoritative mapping.
+- Solution: backfill fixed DAG member ids:
+  `market_stock_technical`, `market_capital_flow_chip`,
+  `sentiment_company_radar`, `market_ipo_investor_behavior`, and
+  `market_fund_manager_behavior`; keep sentiment market-only.
+- Service owner action: add member-id normalization in the service wrapper and
+  tests; do not change market fusion business logic.
 - Main-system maintainer action: keep deterministic seam and runtime bindings
-  disabled until an explicit L3 runtime phase.
-- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
-- Prompt: `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER`.
+  disabled until a later controlled L3 smoke phase.
+- Retest method: future controlled L3 `/health` + `/v1/agent/compute` smoke
+  only after owner backfill; no `/v1/agent/invoke`.
+- Prompt: `PROMPT-L3-MARKET-COMPOSITE-BACKFILL`.
 
 ### risk_composite
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external L2; deterministic internal seam
-  remains.
-- Problem type: L3 runtime/service smoke not started.
-- Failure reason: R8-10B supports provider-free mapping from
-  `risk_conclusion_v1`, but no production L3 risk endpoint has been smoked and
-  runtime bindings remain disabled.
-- Impact: no external production L3 risk evidence.
-- Solution: service owner can backfill a `risk_conclusion_v1` gate wrapper.
-- Service owner action: emit `agent_id=risk_composite`, `dimension=risk`,
-  `role=gate`, `gate`, `risk_score`, `penalty`, and risk-only
-  `contributing_agents`.
-- Main-system maintainer action: preserve no sentiment-to-risk rule and keep
-  runtime bindings disabled.
-- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
-- Prompt: `PROMPT-L3-RISK-CONCLUSION-WRAPPER`.
+- Current status: `protocol_backfill_needed`.
+- Production test result: R8-10C only inspected process state and shallow
+  source. Production listener `10016` and dev listener `8016` exist. No
+  endpoint was called.
+- Problem type: L3 risk payload shape mismatch.
+- Failure reason: the service emits `risk_conclusion_v1`, but primary id is
+  `risk_synthesis`; the adapter-facing payload needs `agent_id=risk_composite`,
+  `dimension=risk`, `role=gate`, and a flat gate value
+  `pass|penalty|veto|manual_review`. Current source uses Chinese dimension
+  labels and a nested `gate` object with `action`.
+- Impact: the business risk synthesis may be usable, but the protocol is not
+  directly ready for R8-10B adapter smoke.
+- Solution: add a bounded adapter-facing wrapper that preserves the existing
+  D-S risk calculation while emitting R8-10B `risk_conclusion_v1` fields.
+- Service owner action: backfill fixed DAG identity, flat gate action, top-level
+  `risk_score`, `penalty`, risk-only contributing agents, and tests.
+- Main-system maintainer action: keep no-sentiment-to-risk and no-runtime flags
+  unchanged.
+- Retest method: future controlled L3 `/health` + `/v1/agent/compute` smoke
+  only after owner backfill; no `/v1/agent/invoke`.
+- Prompt: `PROMPT-L3-RISK-COMPOSITE-BACKFILL`.
 
 ### macro_composite
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external L2; deterministic internal seam
-  remains.
-- Problem type: L3 runtime/service smoke not started.
-- Failure reason: R8-10B supports provider-free mapping from
-  `macro_conclusion_v1`, but no production L3 macro endpoint has been smoked
-  and runtime bindings remain disabled.
-- Impact: no external production L3 evidence.
-- Solution: service owner can backfill a `macro_conclusion_v1` regulator
-  wrapper.
-- Service owner action: emit `agent_id=macro_composite`, `dimension=macro`,
-  `role=regulator`, `regime`, value/market-only `dimension_weights`, and
-  `risk_sensitivity`.
+- Current status: `protocol_backfill_needed`.
+- Production test result: R8-10C only inspected process state and shallow
+  source. Production listener `10024` exists; no dev `8024` listener was
+  observed. No endpoint was called.
+- Problem type: L3 macro identity/runbook backfill.
+- Failure reason: the service source already emits `macro_conclusion_v1` and
+  value/market-only `dimension_weights`, but primary id is `macro_synthesis`,
+  not `macro_composite`; compute currently returns an
+  `external_agent_response_v0` style envelope rather than a clearly documented
+  compute envelope.
+- Impact: R8-10B can map macro payloads, but fixed DAG identity and runbook
+  alignment must be explicit before controlled L3 smoke.
+- Solution: backfill fixed DAG `agent_id=macro_composite`, keep
+  `external_agent_id=macro_synthesis_service` or another owner-approved service
+  id, and document whether compute returns `external_agent_compute_v0` or
+  supported `external_agent_response_v0`.
+- Service owner action: add tests proving `dimension_weights` contains only
+  `value` and `market`, `risk_sensitivity` is separate, and no direction
+  stance is emitted.
 - Main-system maintainer action: keep deterministic seam and runtime bindings
-  disabled until an explicit L3 runtime phase.
-- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
-- Prompt: `PROMPT-L3-MACRO-CONCLUSION-WRAPPER`.
+  disabled until a later controlled L3 smoke phase.
+- Retest method: future controlled L3 `/health` + `/v1/agent/compute` smoke
+  only after owner backfill; no `/v1/agent/invoke`.
+- Prompt: `PROMPT-L3-MACRO-COMPOSITE-BACKFILL`.
 
 ### decision_synthesizer
 
@@ -540,10 +587,10 @@ payload pass.
 | `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
-| `value_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `dimension_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER` |
-| `market_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `dimension_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER` |
-| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `risk_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-RISK-CONCLUSION-WRAPPER` |
-| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `macro_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-MACRO-CONCLUSION-WRAPPER` |
+| `value_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10015` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Current endpoint paths look like `decision_conclusion_v1` or L2 sample shim, not true L3 `value_composite` | Backfill `agent_id=value_composite` L3 wrapper | Keep deterministic until L3 smoke | `PROMPT-L3-VALUE-COMPOSITE-BACKFILL` |
+| `market_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10023` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source has `dimension_conclusion_v1`, but canonical dimension/member ids need fixed DAG alignment | Normalize dimension/member ids to market fixed DAG L2 roster | Keep deterministic until L3 smoke | `PROMPT-L3-MARKET-COMPOSITE-BACKFILL` |
+| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10016` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source emits `risk_conclusion_v1`, but id/gate shape differs from R8-10B | Backfill fixed id and flat gate wrapper | Keep deterministic until L3 smoke | `PROMPT-L3-RISK-COMPOSITE-BACKFILL` |
+| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10024` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source emits `macro_conclusion_v1`, but id is `macro_synthesis` and dev runbook is unresolved | Backfill `agent_id=macro_composite` and runbook | Keep deterministic until L3 smoke | `PROMPT-L3-MACRO-COMPOSITE-BACKFILL` |
 | `decision_synthesizer` | L4 | l4 | `decision_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 | `report_generator` | L4 | l4 | `report_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 
@@ -574,7 +621,9 @@ P2 work should not be forced into L2:
 
 1. `macro_index_valuation`: owner decision on macro semantics.
 2. `macro_sentiment` and `macro_industry_hotspot`: L2 vs L3 classification.
-3. L3/L4 adapter/runtime design for composites, decision, and report.
+3. L3 service owner protocol backfill for `value_composite`,
+   `market_composite`, `risk_composite`, and `macro_composite`.
+4. L3/L4 adapter/runtime design for composites, decision, and report.
 
 ## Dev Historical Evidence Appendix
 

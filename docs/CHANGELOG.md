@@ -3,6 +3,26 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10C L3 service protocol backfill audit
+
+### Changed
+
+- Added an R8-10C L3 service protocol backfill audit to the fixed DAG readiness
+  matrix for `value_composite`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
+- Added service-owner prompt entries for each L3 composite service so owners
+  can backfill `dimension_conclusion_v1`, `risk_conclusion_v1`, or
+  `macro_conclusion_v1` without changing main-system runtime bindings.
+- Clarified that R8-10C does not call endpoints, does not modify services, does
+  not enable runtime bindings, and does not create L3 production readiness
+  evidence.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
 ## 2026-06-10 - Phase R8-10B L3 composite adapter mapping
 
 ### Changed

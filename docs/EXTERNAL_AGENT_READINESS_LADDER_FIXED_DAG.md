@@ -245,6 +245,18 @@ bindings, and does not wire external L3 services into the active graph. Passing
 L3 adapter unit tests means only that sanitized payload dictionaries can be
 mapped locally.
 
+### R8-10C L3 Protocol Backfill Audit
+
+R8-10C is a pre-smoke, docs-only L3 service audit. It inspects process state and
+shallow source/docs for `value_composite`, `market_composite`,
+`risk_composite`, and `macro_composite`; it does not call `/health`, does not
+call `/v1/agent/compute`, and does not call `/v1/agent/invoke`.
+
+The result remains below L3 compute evidence. R8-10C does not prove service
+readiness; it only records which service-side wrappers must be backfilled
+before a later controlled L3 smoke can run. R8-10C also keeps L3 runtime
+bindings disabled and does not set live flags.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement

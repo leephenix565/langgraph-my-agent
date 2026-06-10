@@ -180,6 +180,12 @@ regulator. All three map into the existing `dimension_composite_result_v1`
 internal contract, including compute/response envelope tool results. This does
 not call endpoints, enable runtime bindings, set live flags, wire active L3
 runtime execution, or treat adapter tests as live readiness.
+Phase R8-10C audits the four L3 services for protocol backfill readiness and
+turns the findings into service-owner prompts. It observes process/source
+metadata only: no `/health`, `/v1/agent/compute`, `/v1/agent/invoke`, prod or
+dev endpoint call is made. The result is that `value_composite`,
+`market_composite`, `risk_composite`, and `macro_composite` need service-side
+wrapper or identity/runbook backfill before any controlled L3 smoke.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
