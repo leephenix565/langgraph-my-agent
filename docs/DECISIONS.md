@@ -912,3 +912,30 @@ frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
 `invoke_enabled_by_default=true`, does not claim prod readiness, does not update
 public transcript content, and does not create or imply any
 `sentiment_company_radar` risk route.
+
+## ADR-038: R8-8I-QA Completes Sentiment Radar Evidence Logging Without Runtime Enablement
+
+Status: accepted for documentation QA completion.
+
+Decision: R8-8I-QA records that the `sentiment_company_radar` controlled
+readiness evidence is fully represented in the reset documentation set:
+controlled smoke log, readiness ladder, quality boundary, changelog, README, and
+decision log. The evidence remains market-only health, compute, and
+provider-free adapter mapping evidence.
+
+Reason: R8-8I produced a successful dev-only controlled smoke for
+`sentiment_company_radar`, and the follow-up QA pass ensures that the evidence
+is not misread as live readiness, runtime binding enablement, risk routing, or
+production readiness.
+
+Consequence: downstream R8-8J work can proceed with a clean documentation
+baseline for prior market-only evidence. The evidence can inform later
+invoke-readiness and runtime-binding review, but it remains documentation-only.
+
+Non-consequence: R8-8I-QA does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
+`/v1/agent/invoke`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not claim prod readiness, does not update
+public transcript content, and does not create or imply any
+`sentiment_company_radar` risk route.

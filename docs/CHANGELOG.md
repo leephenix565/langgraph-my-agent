@@ -3,6 +3,42 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8I-QA sentiment radar evidence log completion
+
+### Changed
+
+- Completed the R8-8I documentation QA record for
+  `sentiment_company_radar` controlled readiness evidence.
+- Confirmed the evidence is documented as market-only health, compute, and
+  provider-free adapter mapping evidence with no risk routing claim.
+- Added ADR-038 for the R8-8I-QA evidence logging completion boundary.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8I broaden controlled compute evidence
 
 ### Changed
