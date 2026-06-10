@@ -339,6 +339,35 @@ runtime bindings are enabled, `live_verified=true` is set,
 enabled, production readiness is proven, or any candidate may be invoked by
 default.
 
+## R8-8I Broaden Controlled Compute Evidence Boundary
+
+R8-8I broadens the same dev-only controlled health and compute smoke pattern to
+the L1 and remaining macro/market L2 candidate queue. Docs are updated only for
+candidates that pass health, compute, and provider-free adapter mapping. In this
+phase, `sentiment_company_radar` passed as market-only L2 evidence after bounded
+service-side protocol remediation; it does not create or imply a risk route.
+
+Allowed service-side remediation remains limited to fixed-DAG identity,
+structured health JSON, compute envelope fields, and canonical adapter-facing
+dimensions. Main-system runtime bindings, live flags, graph, executor, public
+API, public runtime, public mapping, frontend, fixed DAG roster, L3/L4 active
+runtime, and the main-system adapter identity gate remain unchanged.
+
+R8-8I main-repo validation gate is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8I validation means the documentation-only evidence record remains
+consistent with reset quality. It does not mean `/v1/agent/invoke` was called,
+runtime bindings are enabled, `live_verified=true` is set,
+`invoke_enabled_by_default=true` is set, risk routing is enabled, L3/L4 active
+runtime integration is enabled, production readiness is proven, or any candidate
+may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

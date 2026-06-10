@@ -303,3 +303,61 @@ Next gate recommendation:
   explicit invoke-readiness and runtime-binding phase.
 - Do not treat `dimension=market` compute mapping as evidence for any L3 market
   composite or L4 decision runtime path.
+
+## 2026-06-10 - R8-8I sentiment_company_radar
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8I |
+| Run UTC | 2026-06-10T04:48:54Z |
+| Artifact directory | `/tmp/lma-r8-8i-candidate-smoke/20260610T044854Z/sentiment_company_radar` |
+| Fixed DAG agent id | `sentiment_company_radar` |
+| External service id | `company_radar_agent` |
+| Legacy agent id | `a09_company_sentiment_radar` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output route | `market_composite` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/企业舆情雷达智能体/company_radar_agent`.
+- Service project was not a usable git repository during remediation; original
+  service, schema, and local test files were backed up outside the repo under
+  `/tmp/lma-r8-8i-service-backup/20260610T043253Z/sentiment_company_radar`.
+- Response identity, structured health identity, and compute tool-result
+  dimension were remediated only for the dev service boundary: fixed-DAG id is
+  `sentiment_company_radar`, external service id is `company_radar_agent`, and
+  the emitted adapter-facing dimension is `market`.
+- The main-system adapter identity gate was not relaxed.
+- The service remains market-only. It is not risk evidence and must not be
+  routed into risk composites.
+- Dev service validation before smoke:
+  `python3 -m py_compile company_radar_agent/service.py company_radar_agent/schemas.py company_radar_agent/tests/conftest.py company_radar_agent/tests/test_service_contract.py`.
+- The dev 8104 process was restarted with the original uvicorn command because
+  it was not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 market composite or L4 decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `sentiment_company_radar` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat its controlled compute evidence as L2 market-only evidence. Do not
+  restore or infer any sentiment-to-risk path.
+- Revisit L1 `financial_data_service` separately; the observed dev service
+  still needs a fixed-DAG compute wrapper before it can produce `data_bundle_v1`
+  evidence.

@@ -114,6 +114,11 @@ Phase R8-8H expands that docs-only controlled evidence batch to
 evidence is still health + compute + provider-free adapter mapping only; no
 `/v1/agent/invoke`, runtime binding enablement, live flag, public transcript, or
 L3/L4 active runtime change is implied.
+Phase R8-8I broadens the same evidence boundary to
+`sentiment_company_radar` as market-only L2 evidence after bounded dev service
+protocol remediation. It still does not call `/v1/agent/invoke`, enable runtime
+bindings, set live flags, update public transcript content, prove production
+readiness, or create a sentiment-to-risk path.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -123,7 +128,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8H expanded controlled compute evidence over the
+- Current phase: R8-8I broadened controlled compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -176,6 +181,8 @@ placeholder skeleton. It is not a completed business analysis engine.
   `macro_analysis` and `value_traditional_valuation`. R8-8H adds docs-only
   controlled evidence for `value_meta_valuation`, `value_research_synthesis`,
   and `market_stock_technical` after bounded dev service protocol remediation.
+  R8-8I adds docs-only controlled evidence for `sentiment_company_radar` as
+  market-only L2 evidence and preserves the no-risk-routing boundary.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

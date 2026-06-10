@@ -36,6 +36,16 @@ after bounded dev service identity remediation. Both remain disabled external
 candidates; neither result enables runtime bindings, sets live flags, calls
 `/v1/agent/invoke`, or proves production readiness.
 
+R8-8H records controlled dev evidence for `value_meta_valuation`,
+`value_research_synthesis`, and `market_stock_technical` after bounded
+service-side protocol remediation where needed.
+
+R8-8I records controlled dev evidence for `sentiment_company_radar` after a
+bounded service-side protocol remediation. The evidence is market-only L2
+health, compute, and adapter mapping evidence. It does not authorize risk
+routing, L3/L4 active runtime, runtime bindings, live flags, `/v1/agent/invoke`,
+or production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -169,6 +179,14 @@ L2/L3 controlled evidence only and do not advance any service to L4 invoke
 readiness, L5 runtime binding preparation, L6 live verification, or L7 default
 invocation.
 
+The R8-8I `sentiment_company_radar` dev smoke passed controlled health, compute,
+and adapter mapping after bounded service-side protocol remediation. The mapped
+output is `conclusion_object_v1` for the `market` dimension and routes only to
+`market_composite`. This result is L2/L3 controlled evidence only and does not
+advance the service to L4 invoke readiness, L5 runtime binding preparation, L6
+live verification, L7 default invocation, L3 market-composite runtime, or any
+risk path.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -267,5 +285,9 @@ The readiness ladder does not claim:
   runtime binding enablement, L3/L4 active runtime integration,
   `/v1/agent/invoke` readiness, `live_verified=true`, or
   `invoke_enabled_by_default=true`
+- R8-8I controlled `sentiment_company_radar` health/compute evidence implies
+  production readiness, runtime binding enablement, L3/L4 active runtime
+  integration, risk routing, `/v1/agent/invoke` readiness,
+  `live_verified=true`, or `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.

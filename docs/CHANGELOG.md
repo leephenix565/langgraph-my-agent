@@ -3,6 +3,51 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8I broaden controlled compute evidence
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for
+  `sentiment_company_radar` after R8-8I dev-only health, compute, and
+  provider-free adapter mapping checks.
+- Documented the bounded dev service protocol remediation for
+  `sentiment_company_radar`: fixed-DAG primary id, external service id,
+  structured health identity, and canonical `market` L2 dimension.
+- Added ADR-037 for broadening controlled compute evidence without runtime
+  enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- `sentiment_company_radar` service validation before smoke:
+  `python3 -m py_compile company_radar_agent/service.py company_radar_agent/schemas.py company_radar_agent/tests/conftest.py company_radar_agent/tests/test_service_contract.py`
+- `sentiment_company_radar` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8H expanded controlled compute evidence batch
 
 ### Changed

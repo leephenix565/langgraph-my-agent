@@ -883,3 +883,32 @@ frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
 `/v1/agent/invoke`, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, does not claim prod readiness, and does not
 update public transcript content.
+
+## ADR-037: R8-8I Broadens Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for broadened controlled readiness evidence logging.
+
+Decision: R8-8I records sanitized controlled health, compute, and adapter
+mapping evidence for `sentiment_company_radar` after bounded service-side
+protocol remediation. The evidence is market-only L2 evidence and is recorded
+in documentation only.
+
+Reason: the dev `company_radar_agent` service was already close to the fixed DAG
+external compute-envelope family but still emitted service-owned identity and
+Chinese-domain dimension fields at the adapter boundary. The correct remediation
+is service-side: the fixed DAG id becomes primary `agent_id`, the service-owned
+id remains `external_agent_id`, and the adapter-facing dimension is canonical
+`market`. The main-system adapter identity gate remains strict.
+
+Consequence: `sentiment_company_radar` now has documented dev-only evidence for
+structured health, `/v1/agent/compute`, and provider-free adapter mapping into
+`conclusion_object_v1` with `market_composite` output routing. The evidence can
+inform later invoke-readiness and runtime-binding review.
+
+Non-consequence: R8-8I does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
+`/v1/agent/invoke`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not claim prod readiness, does not update
+public transcript content, and does not create or imply any
+`sentiment_company_radar` risk route.
