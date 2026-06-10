@@ -358,6 +358,63 @@ Next gate recommendation:
   explicit invoke-readiness and runtime-binding phase.
 - Treat its controlled compute evidence as L2 market-only evidence. Do not
   restore or infer any sentiment-to-risk path.
-- Revisit L1 `financial_data_service` separately; the observed dev service
-  still needs a fixed-DAG compute wrapper before it can produce `data_bundle_v1`
-  evidence.
+- Revisit L1 `financial_data_service` separately; R8-8J records that follow-up
+  as a distinct L1 data-bundle evidence item.
+
+## 2026-06-10 - R8-8J financial_data_service
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8J |
+| Run UTC | 2026-06-10T05:33:59Z |
+| Artifact directory | `/tmp/lma-r8-8j-candidate-smoke/20260610T053359Z/financial_data_service` |
+| Fixed DAG agent id | `financial_data_service` |
+| External service id | `financial_data_service` |
+| Payload family | `external_agent_compute_v0` with `data_bundle_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `data_bundle_v1` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/金融数据服务智能体/pg-ops-agent-v1.2/backend`.
+- Service project was not a usable git repository during remediation; original
+  `app/main.py` was backed up outside the repo under
+  `/tmp/lma-r8-8j-service-backup/20260610T053111Z/financial_data_service`.
+- Structured health and compute wrappers were remediated only for the dev
+  service boundary: fixed-DAG id is `financial_data_service`, external service
+  id is `financial_data_service`, health emits `external_agent_health_v0`, and
+  compute emits `external_agent_compute_v0` with a concrete `data_bundle_v1`
+  tool result.
+- The service patch did not change the service business core, database query
+  service, model logic, data files, prod config, or main-system runtime
+  bindings.
+- The main-system adapter gained a provider-free pure mapping branch for
+  `external_agent_compute_v0.tool_result.data_bundle_v1`; it is still not an
+  HTTP wrapper and is not wired into graph execution.
+- Dev service validation before smoke:
+  `python3 -m py_compile app/main.py`.
+- The dev 8100 process was restarted with `PORT=8100` and the existing
+  `run.py` entry because it was not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not wire L1 data service results into active graph execution.
+
+Next gate recommendation:
+
+- Keep `financial_data_service` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L1 data-bundle controlled evidence only. A future phase should
+  review invoke semantics and active graph binding separately before any
+  `live_verified` or invoke-enabled change.

@@ -46,6 +46,12 @@ health, compute, and adapter mapping evidence. It does not authorize risk
 routing, L3/L4 active runtime, runtime bindings, live flags, `/v1/agent/invoke`,
 or production readiness.
 
+R8-8J records controlled dev evidence for `financial_data_service` after a
+bounded service-side health and compute wrapper remediation. The evidence is L1
+`data_bundle_v1` health, compute, and adapter mapping evidence only. It does
+not enable runtime bindings, live flags, `/v1/agent/invoke`, active graph L1
+data integration, or production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -95,6 +101,9 @@ Required:
 - For R8-8C, `external_agent_compute_v0` samples may be accepted as adapter
   input only when a concrete supported `tool_result` is present. A sample or
   unit test does not prove the deployed `/v1/agent/compute` endpoint passes.
+- For R8-8J, `external_agent_compute_v0.tool_result.data_bundle_v1` may also
+  be accepted as adapter input for L1 data-service evidence. This is still
+  provider-free mapping only and does not enable graph/runtime consumption.
 - If using the R7-G scaffold package, both the repo-external
   `E:\muti-agent\external_agent_scaffold\tests` suite and the tracked repo
   mirror `examples/fixed_dag_external_agent_scaffold/tests` suite pass.
@@ -125,9 +134,10 @@ Required:
 - Response contains no credentials, raw traceback, private data, provider raw
   responses, or chain-of-thought.
 
-The R8-8B `financial_data_service` smoke remains blocked at L2 because the
-controlled `/health` endpoint did not return safe structured JSON. R8-8C does
-not convert plain-text or HTML health output into a pass.
+The R8-8B `financial_data_service` smoke was blocked at L2 because the
+controlled `/health` endpoint did not return safe structured JSON. R8-8J later
+records a separate pass after bounded dev service remediation. R8-8C did not
+convert plain-text or HTML health output into a pass.
 
 Health passing does not imply invoke passing.
 
@@ -186,6 +196,14 @@ output is `conclusion_object_v1` for the `market` dimension and routes only to
 advance the service to L4 invoke readiness, L5 runtime binding preparation, L6
 live verification, L7 default invocation, L3 market-composite runtime, or any
 risk path.
+
+The R8-8J `financial_data_service` dev smoke passed controlled health, compute,
+and adapter mapping after bounded service-side protocol remediation. The mapped
+output is the internal `data_bundle_v1` contract for L1 data-service evidence.
+This result is L2/L3 controlled evidence only and does not advance the service
+to L4 invoke readiness, L5 runtime binding preparation, L6 live verification,
+L7 default invocation, active graph L1 data integration, or production
+readiness.
 
 ## L4: Invoke Controlled Live Passes
 
@@ -289,5 +307,9 @@ The readiness ladder does not claim:
   production readiness, runtime binding enablement, L3/L4 active runtime
   integration, risk routing, `/v1/agent/invoke` readiness,
   `live_verified=true`, or `invoke_enabled_by_default=true`
+- R8-8J controlled `financial_data_service` health/compute evidence implies
+  production readiness, runtime binding enablement, active graph L1 data
+  integration, `/v1/agent/invoke` readiness, `live_verified=true`, or
+  `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.

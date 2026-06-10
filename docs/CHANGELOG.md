@@ -3,6 +3,59 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8J controlled compute evidence expansion
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for
+  `financial_data_service` after R8-8J dev-only health, compute, and
+  provider-free adapter mapping checks.
+- Added provider-free adapter support for
+  `external_agent_compute_v0.tool_result.data_bundle_v1 -> data_bundle_v1` so
+  L1 data-service compute envelopes can be validated without HTTP/provider
+  calls or active graph integration.
+- Documented the bounded dev service protocol remediation for
+  `financial_data_service`: structured health JSON, fixed-DAG identity, and an
+  L1 `data_bundle_v1` compute wrapper.
+- Added ADR-039 for expanding controlled compute evidence without runtime
+  enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- Main-system adapter validation:
+  `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py`
+- Main-system adapter tests:
+  `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q`
+- `financial_data_service` service validation before smoke:
+  `python3 -m py_compile app/main.py`
+- `financial_data_service` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8I-QA sentiment radar evidence log completion
 
 ### Changed

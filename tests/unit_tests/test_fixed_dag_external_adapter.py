@@ -121,6 +121,25 @@ def test_external_compute_envelope_maps_agent_conclusion_tool_result() -> None:
     _assert_safe_public_payload(mapped)
 
 
+def test_external_compute_envelope_maps_data_bundle_tool_result() -> None:
+    payload = _compute_envelope(_sample("data_bundle.response.json"))
+    payload["agent_id"] = "financial_data_service"
+    payload["external_agent_id"] = "financial_data_service"
+
+    valid, reason = validate_external_compute_envelope(payload)
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    mapped_valid, mapped_reason = validate_data_bundle(mapped)
+
+    assert valid, reason
+    assert mapped_valid, mapped_reason
+    assert mapped["schema"] == "data_bundle_v1"
+    assert mapped["schema_version"] == "data_bundle_v1"
+    assert mapped["status"] == "complete"
+    assert mapped["sources"] == ["sample_local_snapshot"]
+    assert any("feature_key: close" == note for note in mapped["notes"])
+    _assert_safe_public_payload(mapped)
+
+
 def test_external_compute_envelope_without_tool_result_fails_controlled() -> None:
     for tool_result in ("missing", None, {}):
         payload = _compute_envelope()

@@ -40,6 +40,12 @@ internal `data_bundle_v1`. It does not call HTTP, providers, `/health`,
 change the active graph, executor, runtime bindings, live flags, or fixed DAG
 roster.
 
+R8-8J extends the same provider-free adapter boundary so
+`external_agent_compute_v0` envelopes with concrete `data_bundle_v1` tool
+results can map to the internal `data_bundle_v1` contract. This is adapter input
+only. It does not make compute envelopes graph state, does not call services,
+and does not wire L1 data services into active graph execution.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal
@@ -126,6 +132,8 @@ R8-7B makes that decision only for the first supported families:
   provenance because `conclusion_object_v1` has no top-level `risk_score` slot.
 - `data_bundle_v1` maps into the current narrow `DataBundle` shape by preserving
   status, timestamps, source names, and bounded notes for snapshot/features.
+- `external_agent_compute_v0.tool_result.data_bundle_v1` maps through the same
+  `data_bundle_v1` adapter path as R8-8J L1 data-service evidence only.
 - `raw_output` and `quality` do not enter graph state; at most bounded key
   summaries may appear in provenance.
 - `dimension_conclusion_v1`, `risk_conclusion_v1`, `macro_conclusion_v1`,

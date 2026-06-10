@@ -368,6 +368,37 @@ runtime bindings are enabled, `live_verified=true` is set,
 runtime integration is enabled, production readiness is proven, or any candidate
 may be invoked by default.
 
+## R8-8J Controlled Compute Evidence Expansion Boundary
+
+R8-8J expands the dev-only controlled health and compute smoke pattern to
+`financial_data_service` as L1 data-service evidence. The phase permits bounded
+service-side remediation for structured health JSON and an
+`external_agent_compute_v0` compute wrapper with a concrete `data_bundle_v1`
+tool result. It also permits the main-system adapter to add the provider-free
+pure mapping branch for that compute-envelope input.
+
+R8-8J does not change runtime bindings, graph, executor, public API, public
+runtime, public mapping, frontend, fixed DAG roster, L3/L4 active runtime, or
+default invocation behavior. Docs are updated only after health, compute, and
+provider-free adapter mapping pass.
+
+R8-8J main-repo validation gate is:
+
+```powershell
+python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py
+python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8J validation means the documentation-only evidence record and
+provider-free adapter mapping branch remain consistent with reset quality. It
+does not mean `/v1/agent/invoke` was called, runtime bindings are enabled,
+`live_verified=true` is set, `invoke_enabled_by_default=true` is set, active
+graph L1 data integration is enabled, production readiness is proven, or any
+candidate may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

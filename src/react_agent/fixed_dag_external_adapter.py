@@ -587,6 +587,8 @@ def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]
     schema_version = tool_result.get("schema_version")
     if schema_version == EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION:
         return map_external_agent_conclusion_to_conclusion_object(tool_result, envelope=payload)
+    if schema_version == EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION:
+        return map_external_data_bundle_to_data_bundle(tool_result)
     return _adapter_failure(
         "unsupported_compute_tool_result_schema",
         agent_id=str(payload.get("agent_id") or ""),

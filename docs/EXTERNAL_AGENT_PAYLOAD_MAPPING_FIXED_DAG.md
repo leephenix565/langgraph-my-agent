@@ -22,6 +22,12 @@ compatibility for supported L2 `agent_conclusion_v1` tool results. The compute
 envelope is adapter input only. It is not graph state, not live readiness
 evidence, and not runtime-binding authority.
 
+R8-8J extends that compute-envelope compatibility to concrete L1
+`data_bundle_v1` tool results. This remains provider-free pure mapping for
+already available payload dictionaries; it does not call `/health`,
+`/v1/agent/compute`, `/v1/agent/invoke`, or wire L1 data services into active
+graph execution.
+
 ## Mapping Authority
 
 Current fixed DAG authority:
@@ -74,7 +80,7 @@ services should not claim it as their own success state.
 | External payload | Fixed DAG contract | Mapping notes |
 | --- | --- | --- |
 | `external_agent_response_v0` | adapter input | The external response envelope is not graph state. |
-| `external_agent_compute_v0` | adapter input | The compute endpoint envelope is not graph state, not live readiness evidence, and not runtime-binding authority. R8-8C accepts it only as a pure adapter input when it carries a supported tool result. |
+| `external_agent_compute_v0` | adapter input | The compute endpoint envelope is not graph state, not live readiness evidence, and not runtime-binding authority. R8-8C accepts it for L2 `agent_conclusion_v1` tool results, and R8-8J accepts it for L1 `data_bundle_v1` tool results, only as pure adapter input. |
 | `agent_conclusion_v1` | `conclusion_object_v1` | Map direction outputs with `stance`; map `gate_member` risk outputs as adapter-side risk member evidence. `raw_output` and `quality` are audit metadata, not graph state. |
 | `dimension_conclusion_v1` | `dimension_composite_result_v1` | Use for value/market composites. Map `DimensionMember[]` to contributing agents, weights, member confidence, and evidence refs. |
 | `risk_conclusion_v1` | `dimension_composite_result_v1` risk fields | Map `gate`, including `manual_review`, `penalty`, `risk_score`, triggered flags, and red lines. Risk must not consume `sentiment_company_radar`. |
@@ -86,13 +92,14 @@ services should not claim it as their own success state.
 
 ## R8-7B Implemented Adapter Slice
 
-R8-7B implements the first provider-free mappings, and R8-8C adds a compute
-envelope compatibility input without changing runtime invocation:
+R8-7B implements the first provider-free mappings. R8-8C and R8-8J add compute
+envelope compatibility inputs without changing runtime invocation:
 
 | Input | Output | Implementation behavior |
 | --- | --- | --- |
 | `external_agent_response_v0.tool_result.agent_conclusion_v1` | `conclusion_object_v1` | Validates the envelope, maps status `ok -> complete`, `partial/needs_clarification -> partial`, `error -> error`, normalizes dates, checks fixed DAG identity, preserves bounded evidence/event flags, and records safe provenance with provider/external invocation flags set to false. |
 | `external_agent_compute_v0.tool_result.agent_conclusion_v1` | `conclusion_object_v1` | R8-8C treats compute envelopes as adapter input only. It reuses the L2 conclusion mapper, records `adapter_input_schema=external_agent_compute_v0` and `compute_envelope_status`, and returns `compute_tool_result_missing` if the envelope declares a tool result schema but lacks a concrete `tool_result`. |
+| `external_agent_compute_v0.tool_result.data_bundle_v1` | `data_bundle_v1` | R8-8J treats L1 compute envelopes as adapter input only. It validates the compute envelope, requires a concrete tool result, then reuses the data-bundle mapper without recording HTTP/provider/live invocation claims. |
 | direct `agent_conclusion_v1` | `conclusion_object_v1` | Same mapping without requiring an envelope. Direction payloads require `stance`; risk `gate_member` payloads require a current fixed-DAG risk L2 `agent_id` and preserve `risk_score` in provenance. |
 | direct `data_bundle_v1` or envelope tool result | `data_bundle_v1` | Compresses the external data payload into the current internal narrow shape: status, `as_of`, `data_as_of`, source names, and bounded notes for `snapshot_id`, `publish_time`, feature keys, and missing fields. |
 
@@ -211,11 +218,16 @@ R8-8C compute-envelope provenance additionally records
 `compute_envelope_status` for mapped L2 conclusions. Future live wrappers must
 record actual invocation evidence outside this pure mapping layer.
 
+R8-8J compute-envelope data-bundle mapping intentionally returns the internal
+`data_bundle_v1` object without copying raw compute envelopes into graph state.
+The adapter remains provider-free and records no live invocation claim.
+
 The R8-8B smoke artifact showed `financial_data_service` blocked before mapping
 because `/health` did not return structured JSON at the controlled endpoint.
-R8-8C does not treat plain-text or HTML health responses as readiness evidence.
-`value_ml_valuation` can be re-smoked in R8-8D after this adapter patch, but a
-successful adapter test alone still does not imply `live_verified=true` or
+R8-8C did not treat plain-text or HTML health responses as readiness evidence.
+R8-8J records a separate controlled pass after service-side structured health
+remediation and L1 compute wrapper remediation. A successful adapter test or
+controlled compute pass still does not imply `live_verified=true` or
 `invoke_enabled_by_default=true`.
 
 Do not let the external service self-declare cross-dimension routes or public

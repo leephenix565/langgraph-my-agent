@@ -939,3 +939,33 @@ frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
 `invoke_enabled_by_default=true`, does not claim prod readiness, does not update
 public transcript content, and does not create or imply any
 `sentiment_company_radar` risk route.
+
+## ADR-039: R8-8J Expands Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for controlled L1 readiness evidence logging.
+
+Decision: R8-8J records sanitized controlled health, compute, and adapter
+mapping evidence for `financial_data_service` after bounded dev service
+protocol remediation. The main-system adapter is extended only as a
+provider-free pure mapper so `external_agent_compute_v0` envelopes with concrete
+`data_bundle_v1` tool results can map to the internal `data_bundle_v1`
+contract.
+
+Reason: the earlier R8-8B smoke showed the L1 data service blocked on an
+unstructured health boundary. The dev service was close enough for a bounded
+service-side wrapper fix: structured health JSON plus a fixed-DAG compute
+envelope around data-bundle evidence. The adapter needed a narrow L1
+compute-envelope branch, but runtime bindings and active graph behavior remain
+separate readiness concerns.
+
+Consequence: `financial_data_service` now has documented dev-only evidence for
+structured health, `/v1/agent/compute`, and provider-free adapter mapping into
+`data_bundle_v1`. The evidence can inform later invoke-readiness and
+runtime-binding review, but remains documentation-only.
+
+Non-consequence: R8-8J does not change runtime bindings, graph, executor, public
+API, public runtime, public mapping, frontend, L3/L4 active runtime, or fixed
+DAG roster. It does not call `/v1/agent/invoke`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+claim prod readiness, does not update public transcript content, and does not
+wire L1 data service output into active graph execution.

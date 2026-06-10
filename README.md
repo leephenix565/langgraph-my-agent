@@ -119,6 +119,12 @@ Phase R8-8I broadens the same evidence boundary to
 protocol remediation. It still does not call `/v1/agent/invoke`, enable runtime
 bindings, set live flags, update public transcript content, prove production
 readiness, or create a sentiment-to-risk path.
+Phase R8-8J expands the evidence boundary to L1 `financial_data_service` after
+bounded dev service health and compute wrapper remediation. The provider-free
+adapter can now map `external_agent_compute_v0.tool_result.data_bundle_v1` into
+the internal `data_bundle_v1` contract, but this remains docs-only controlled
+evidence with no `/v1/agent/invoke`, runtime binding enablement, live flag,
+active graph L1 data integration, or production readiness claim.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -128,7 +134,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8I broadened controlled compute evidence over the
+- Current phase: R8-8J expanded controlled compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -182,7 +188,10 @@ placeholder skeleton. It is not a completed business analysis engine.
   controlled evidence for `value_meta_valuation`, `value_research_synthesis`,
   and `market_stock_technical` after bounded dev service protocol remediation.
   R8-8I adds docs-only controlled evidence for `sentiment_company_radar` as
-  market-only L2 evidence and preserves the no-risk-routing boundary.
+  market-only L2 evidence and preserves the no-risk-routing boundary. R8-8J
+  adds docs-only controlled L1 evidence for `financial_data_service` and extends
+  compute-envelope mapping to `data_bundle_v1` without wiring it into graph
+  execution.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the
