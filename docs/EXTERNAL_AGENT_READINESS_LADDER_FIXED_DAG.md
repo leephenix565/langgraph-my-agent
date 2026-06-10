@@ -270,6 +270,17 @@ restart services, does not enable runtime bindings, does not set live flags,
 and does not prove production readiness. A future R8-10E controlled L3 smoke
 must verify the deployed endpoints before any L3 readiness state can advance.
 
+### R8-10E L3 Production Compute Evidence Boundary
+
+R8-10E records production L3 health + compute + adapter mapping evidence for
+`market_composite`, `risk_composite`, and `macro_composite` after authorized
+controlled restart of the four L3 production services. `value_composite`
+remains blocked at health identity mismatch and did not proceed to compute.
+
+This is still compute-level evidence only. It is not `/v1/agent/invoke`
+evidence, does not enable runtime bindings, does not set live flags, and does
+not make active graph execution call L3 production services by default.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement

@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10E L3 production controlled compute smoke
+
+### Changed
+
+- Recorded authorized controlled restart and production L3 `/health` +
+  `/v1/agent/compute` smoke evidence for the four L3 production services.
+- Added production compute evidence for `market_composite`, `risk_composite`,
+  and `macro_composite`; each mapped through the main-system L3 adapter into
+  `dimension_composite_result_v1`.
+- Recorded `value_composite` as still blocked by production health identity
+  mismatch; compute remained skipped fail-closed.
+- Updated readiness matrix, controlled smoke log, readiness ladder, quality,
+  README, and ADR documentation for the R8-10E boundary.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `/v1/agent/invoke` call.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No public transcript update.
+- No production default invocation readiness claim.
+
 ## 2026-06-10 - Phase R8-10D-SNAPSHOT L3 service shadow handoff repository
 
 ### Changed

@@ -618,6 +618,18 @@ It does not call endpoints, restart services, enable runtime bindings, set live
 flags, or create L3 smoke evidence. R8-10E still owns controlled L3 endpoint
 verification after service owners confirm deployment or restart status.
 
+## R8-10E L3 Production Controlled Smoke Boundary
+
+R8-10E is manual/live readiness work for the four L3 production services only.
+It is not part of default mainline and must remain outside normal CI. The
+allowed endpoint calls are limited to production `GET /health` and
+`POST /v1/agent/compute` for `10015`, `10016`, `10023`, and `10024`; it does
+not call `/v1/agent/invoke`.
+
+Passing this smoke records compute-level evidence only. It does not enable
+runtime bindings, set `live_verified=true`, set
+`invoke_enabled_by_default=true`, or prove production default invocation.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

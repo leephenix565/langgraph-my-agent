@@ -200,6 +200,13 @@ this environment. The snapshot at
 `/sdb/dlut/service-shadow-repos/l3-composite-services` stores service notes,
 the R8-10D manifest, and zero-context patch files only; it is not production
 readiness evidence and is not the long-term service source of truth.
+Phase R8-10E performs an authorized controlled production restart and
+production `/health` + `/v1/agent/compute` smoke for the four L3 services.
+`market_composite`, `risk_composite`, and `macro_composite` reached production
+health + compute + adapter mapping evidence. `value_composite` remains blocked
+on production health identity mismatch. This is still compute evidence only:
+no `/v1/agent/invoke`, runtime binding enablement, live flags, public transcript
+update, or default production invocation was performed.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -209,7 +216,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-10D-SNAPSHOT L3 service shadow handoff over the existing
+- Current phase: R8-10E L3 production controlled compute evidence over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

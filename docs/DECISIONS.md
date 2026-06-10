@@ -1287,3 +1287,29 @@ services, does not modify runtime bindings, does not set live flags, does not
 prove that running services loaded the patched files, and does not create L3
 production readiness evidence. Controlled endpoint verification remains
 R8-10E.
+
+## ADR-050: R8-10E Records L3 Production Compute Evidence Without Runtime Enablement
+
+Status: accepted for L3 production controlled compute evidence.
+
+Decision: R8-10E performs authorized controlled restart and production
+`/health` + `/v1/agent/compute` smoke for the four L3 production services.
+`market_composite`, `risk_composite`, and `macro_composite` produced production
+compute payloads that mapped through the main-system L3 adapter into
+`dimension_composite_result_v1`. `value_composite` failed closed at health
+identity validation and did not proceed to compute.
+
+Reason: R8-10B added pure L3 adapter mapping and R8-10D backfilled service
+wrappers, but neither phase proved that production processes had loaded the
+wrappers. R8-10E provides compute-level production evidence while preserving
+the runtime boundary.
+
+Consequence: the readiness matrix and controlled smoke log can list the three
+passing L3 services as production compute evidence candidates for later invoke
+audit planning. `value_composite` remains a service-side remediation item.
+
+Non-consequence: R8-10E does not call `/v1/agent/invoke`, does not modify
+runtime bindings, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not update public transcript content,
+does not wire active graph/runtime L3 execution, and does not prove production
+default invocation readiness.

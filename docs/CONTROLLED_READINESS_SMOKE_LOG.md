@@ -9,6 +9,45 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-10 - R8-10E L3 production controlled compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-10E |
+| Artifact directory | `/tmp/lma-r8-10e-l3-prod-smoke/20260610T150158Z` |
+| Environment | production L3 endpoints only |
+| Authorized restart | yes, `ALLOW_R8_10E_L3_PROD_RESTART=1` |
+| Endpoint calls | `GET /health`, `POST /v1/agent/compute` |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+Production L3 smoke summary:
+
+| agent_id | endpoint | health | compute | adapter mapping | status |
+| --- | --- | --- | --- | --- | --- |
+| `value_composite` | `127.0.0.1:10015` | fail: `health_identity_mismatch` | skipped | skipped | remediation needed |
+| `market_composite` | `127.0.0.1:10023` | pass | pass: `dimension_conclusion_v1` | pass | production compute evidence |
+| `risk_composite` | `127.0.0.1:10016` | pass | pass: `risk_conclusion_v1` | pass | production compute evidence |
+| `macro_composite` | `127.0.0.1:10024` | pass | pass: `macro_conclusion_v1` | pass | production compute evidence |
+
+Notes:
+
+- `risk_composite` health returned service-owned `agent_id=risk_synthesis`;
+  this matched the expected external service id and was accepted as structured
+  service health identity for this compute-only gate.
+- `value_composite` health returned value-ML service identity, not
+  `value_composite` / `composite_valuation`, so compute was skipped fail-closed.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not prove production default invocation readiness.
+- This does not update public transcript content.
+
 ## 2026-06-10 - R8-8P production endpoint rebaseline
 
 | Field | Value |
