@@ -9,6 +9,14 @@ R8-10B 增加了 L3 provider-free adapter pure mapping：
 本地映射为 `dimension_composite_result_v1`。这只是主系统 adapter 能力，不是
 L3 production readiness，不启用 runtime bindings，也不允许直接调用 `/invoke`。
 
+R8-10D 已在当前机器的四个 L3 服务目录中做了 bounded protocol wrapper
+backfill，并写入 repo-external manifest：
+`/tmp/lma-r8-10d-l3-service-backup/20260610T142216Z/service_patch_manifest.json`。
+这些补丁只说明服务端协议层已有本地回填草案：没有调用 endpoint、没有重启服务、
+没有 production smoke，也没有启用 runtime bindings。下面的 L3 prompt 仍应作为
+服务 owner 将补丁回填到各自源码仓库、部署、再申请 R8-10E controlled smoke 的
+执行手册。
+
 R8-8P 已经证明：dev evidence 只能作为历史参考和 backfill 线索，不能当作
 production pass。所有修复必须进入服务 owner 的源码仓库，重新部署到
 production endpoint，并经过 production `/health` + `/v1/agent/compute` +

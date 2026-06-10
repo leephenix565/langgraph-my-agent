@@ -186,6 +186,14 @@ metadata only: no `/health`, `/v1/agent/compute`, `/v1/agent/invoke`, prod or
 dev endpoint call is made. The result is that `value_composite`,
 `market_composite`, `risk_composite`, and `macro_composite` need service-side
 wrapper or identity/runbook backfill before any controlled L3 smoke.
+Phase R8-10D performs that bounded service-side wrapper backfill in the four
+L3 service directories: value/market composites now expose fixed DAG
+`dimension_conclusion_v1` wrappers, risk exposes a fixed DAG
+`risk_conclusion_v1` gate wrapper, and macro exposes a fixed DAG
+`macro_conclusion_v1` compute-envelope wrapper. The phase did not call
+endpoints, did not restart services, did not enable runtime bindings or live
+flags, and does not create L3 readiness evidence; controlled L3 smoke remains
+R8-10E.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -195,9 +203,9 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8P-DOCS-QA production readiness problem playbook over the
-  existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
-  LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C
+- Current phase: R8-10D L3 service wrapper backfill over the existing
+  full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
+  placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.

@@ -257,6 +257,19 @@ readiness; it only records which service-side wrappers must be backfilled
 before a later controlled L3 smoke can run. R8-10C also keeps L3 runtime
 bindings disabled and does not set live flags.
 
+### R8-10D L3 Service Wrapper Backfill Boundary
+
+R8-10D is service-side protocol-wrapper implementation for the four L3
+composites. It backfills adapter-facing wrapper paths for `value_composite`,
+`market_composite`, `risk_composite`, and `macro_composite` in their service
+directories, with repo-external backups and focused local validation.
+
+This remains below L3 compute evidence. R8-10D does not call `/health`, does
+not call `/v1/agent/compute`, does not call `/v1/agent/invoke`, does not
+restart services, does not enable runtime bindings, does not set live flags,
+and does not prove production readiness. A future R8-10E controlled L3 smoke
+must verify the deployed endpoints before any L3 readiness state can advance.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement

@@ -3,6 +3,44 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10D L3 service protocol wrapper backfill
+
+### Changed
+
+- Backfilled bounded fixed DAG L3 protocol wrappers in the four L3 service
+  directories for `value_composite`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
+- Recorded repo-external service backups and patch manifest at
+  `/tmp/lma-r8-10d-l3-service-backup/20260610T142216Z/service_patch_manifest.json`.
+- Updated readiness matrix, developer prompts, payload mapping, readiness
+  ladder, quality, README, and ADR documentation to show that L3 wrappers are
+  locally backfilled but not smoke verified.
+
+### Validated
+
+- Service changed-file `py_compile` for all four L3 service directories.
+- Focused service pytest coverage for value, market, risk, and macro L3 wrapper
+  behavior.
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/health` call.
+- No `/v1/agent/compute` call.
+- No `/v1/agent/invoke` call.
+- No prod or dev endpoint call.
+- No service start, stop, or restart.
+- No main-system `src/`, `config/`, runtime binding, graph, executor, public
+  API/runtime/mapping, frontend, or active runtime integration change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No L3 production readiness evidence; controlled L3 smoke remains R8-10E.
+
 ## 2026-06-10 - Phase R8-10C L3 service protocol backfill audit
 
 ### Changed

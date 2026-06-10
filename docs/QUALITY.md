@@ -575,6 +575,34 @@ owner prompts are documented. It does not create L3 health/compute evidence,
 enable runtime bindings, set live flags, prove production readiness, or permit
 default invocation.
 
+## R8-10D L3 Service Wrapper Backfill Boundary
+
+R8-10D modifies only the protocol wrapper layer in the four L3 service
+directories and updates main-repo docs. It does not modify main-system `src/`,
+`config/`, runtime bindings, graph, executor, public API/runtime/mapping, or
+frontend code. It does not call `/health`, `/v1/agent/compute`,
+`/v1/agent/invoke`, providers, prod/dev endpoints, or demo stacks, and it does
+not restart services.
+
+Service validation is limited to changed-file `py_compile` and focused local
+pytest cases that exercise wrapper functions or in-process FastAPI handlers
+with monkeypatched compute cores. These tests do not create L3 readiness
+evidence; they only show that the local wrapper code is syntactically valid and
+contract-shaped.
+
+Main-repo validation remains:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing this gate means the wrapper backfill has been documented and the main
+repo remains healthy. It does not enable runtime bindings, set live flags, prove
+L3 production readiness, or permit default invocation. Controlled L3 endpoint
+smoke remains R8-10E.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

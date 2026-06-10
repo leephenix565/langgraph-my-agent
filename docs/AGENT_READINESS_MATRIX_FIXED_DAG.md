@@ -121,6 +121,26 @@ meaningful.
 | `risk_composite` | 综合风险智能体 | Prod listener `10016`; dev listener `8016`; distinct prod/dev service roots. No endpoint was called. | Source emits `risk_conclusion_v1`, but primary id is `risk_synthesis`, tool_result lacks the required `agent_id=risk_composite` shape, dimension is Chinese `风险`, and `gate` is a nested object rather than the R8-10B adapter-facing `pass|penalty|veto|manual_review` field. | Risk L3 protocol mismatch. | `external_agent_compute_v0.tool_result.risk_conclusion_v1` with `agent_id=risk_composite`, `dimension=risk`, `role=gate`, flat gate action, top-level `risk_score`, `penalty`, and risk-only contributing agents. | Service owner adds R8-10B-compatible wrapper without changing D-S risk business logic, then requests controlled L3 smoke. | `PROMPT-L3-RISK-COMPOSITE-BACKFILL` |
 | `macro_composite` | 宏观综合智能体 | Prod listener `10024`; no dev `8024` listener observed. No endpoint was called. | Source emits `macro_conclusion_v1` and already uses value/market-only `dimension_weights`, but primary id is `macro_synthesis` and compute returns an `external_agent_response_v0` style envelope. | Macro payload is close, but fixed DAG id and endpoint/runbook backfill are still needed. | `external_agent_compute_v0` or `external_agent_response_v0` tool_result with `schema_version=macro_conclusion_v1`, `agent_id=macro_composite`, `dimension=macro`, `role=regulator`, and value/market-only `dimension_weights`. | Service owner backfills fixed DAG id, confirms prod/dev runbook, and requests controlled L3 smoke. | `PROMPT-L3-MACRO-COMPOSITE-BACKFILL` |
 
+## R8-10D L3 Service Wrapper Backfill
+
+R8-10D applied bounded protocol-wrapper patches to the four L3 service
+directories. This phase did not call `/health`, `/v1/agent/compute`, or
+`/v1/agent/invoke`; it did not restart services; it did not change main-system
+`src/`, `config/`, runtime bindings, live flags, graph, executor, public API,
+or frontend behavior. The result is service-side protocol backfill only, not
+production readiness evidence. Controlled L3 smoke remains a future R8-10E
+phase.
+
+Repo-external backup and manifest:
+`/tmp/lma-r8-10d-l3-service-backup/20260610T142216Z/service_patch_manifest.json`.
+
+| agent_id | service root | wrapper backfilled | validation performed | current status | next action |
+| --- | --- | --- | --- | --- | --- |
+| `value_composite` | `/sdb/dlut/prod/综合估值智能体` | Fixed DAG request path now returns `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with `agent_id=value_composite`, `dimension=value`, and fixed DAG value member ids for the three computed valuation members. | `py_compile`; focused pytest `tests/test_fixed_dag_l3_wrapper.py`. | `service_wrapper_backfilled_not_smoked` | R8-10E controlled `/health` + `/v1/agent/compute` smoke; do not call `/invoke`. |
+| `market_composite` | `/sdb/dlut/prod/市场面综合智能体` | Adapter-facing `dimension=market`; `members[].agent_id` maps service-local market members to fixed DAG market L2 ids while preserving local ids in `external_agent_id`. | `py_compile`; focused pytest for external contract handoff, health, and compute degradation. | `service_wrapper_backfilled_not_smoked` | R8-10E controlled `/health` + `/v1/agent/compute` smoke; keep sentiment market-only. |
+| `risk_composite` | `/sdb/dlut/prod/综合风险智能体` | Fixed DAG request path now returns `risk_conclusion_v1` with `agent_id=risk_composite`, `dimension=risk`, `role=gate`, flat `gate`, `risk_score`, `penalty`, and risk-only contributing agents. | `py_compile`; focused pytest `test_fixed_dag_risk_compute_wrapper` plus health schema. | `service_wrapper_backfilled_not_smoked` | R8-10E controlled `/health` + `/v1/agent/compute` smoke; do not route sentiment into risk. |
+| `macro_composite` | `/sdb/dlut/prod/宏观综合智能体` | Fixed DAG request path now returns `external_agent_compute_v0.tool_result.macro_conclusion_v1` with `agent_id=macro_composite`, value/market-only `dimension_weights`, `risk_sensitivity`, and macro L2 contributing agents. | `py_compile`; focused pytest for fixed DAG and legacy compute envelopes. | `service_wrapper_backfilled_not_smoked` | R8-10E controlled `/health` + `/v1/agent/compute` smoke; no runtime enablement. |
+
 ## Production Problem Playbook
 
 Each item below states the production problem, likely cause, remediation path,
@@ -430,7 +450,7 @@ payload pass.
 
 ### value_composite
 
-- Current status: `protocol_backfill_needed`.
+- Current status: `service_wrapper_backfilled_not_smoked`.
 - Production test result: R8-10C only inspected process state and shallow
   source. Production listener `10015` exists, and dev listener `8015` exists,
   but no endpoint was called.
@@ -456,7 +476,7 @@ payload pass.
 
 ### market_composite
 
-- Current status: `protocol_backfill_needed`.
+- Current status: `service_wrapper_backfilled_not_smoked`.
 - Production test result: R8-10C only inspected process state and shallow
   source. Production listener `10023` and dev listener `8023` exist; subservice
   listeners also exist under the market root. No endpoint was called.
@@ -483,7 +503,7 @@ payload pass.
 
 ### risk_composite
 
-- Current status: `protocol_backfill_needed`.
+- Current status: `service_wrapper_backfilled_not_smoked`.
 - Production test result: R8-10C only inspected process state and shallow
   source. Production listener `10016` and dev listener `8016` exist. No
   endpoint was called.
@@ -507,7 +527,7 @@ payload pass.
 
 ### macro_composite
 
-- Current status: `protocol_backfill_needed`.
+- Current status: `service_wrapper_backfilled_not_smoked`.
 - Production test result: R8-10C only inspected process state and shallow
   source. Production listener `10024` exists; no dev `8024` listener was
   observed. No endpoint was called.
@@ -587,10 +607,10 @@ payload pass.
 | `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
-| `value_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10015` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Current endpoint paths look like `decision_conclusion_v1` or L2 sample shim, not true L3 `value_composite` | Backfill `agent_id=value_composite` L3 wrapper | Keep deterministic until L3 smoke | `PROMPT-L3-VALUE-COMPOSITE-BACKFILL` |
-| `market_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10023` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source has `dimension_conclusion_v1`, but canonical dimension/member ids need fixed DAG alignment | Normalize dimension/member ids to market fixed DAG L2 roster | Keep deterministic until L3 smoke | `PROMPT-L3-MARKET-COMPOSITE-BACKFILL` |
-| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10016` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source emits `risk_conclusion_v1`, but id/gate shape differs from R8-10B | Backfill fixed id and flat gate wrapper | Keep deterministic until L3 smoke | `PROMPT-L3-RISK-COMPOSITE-BACKFILL` |
-| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10024` observed, not called | not called | not called | not called | `protocol_backfill_needed` | Source emits `macro_conclusion_v1`, but id is `macro_synthesis` and dev runbook is unresolved | Backfill `agent_id=macro_composite` and runbook | Keep deterministic until L3 smoke | `PROMPT-L3-MACRO-COMPOSITE-BACKFILL` |
+| `value_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10015` observed, not called | not called | not called | not called | `service_wrapper_backfilled_not_smoked` | R8-10D added fixed DAG L3 value wrapper in service source; not smoke verified | R8-10E controlled L3 compute smoke | Keep deterministic until L3 smoke | `PROMPT-L3-VALUE-COMPOSITE-BACKFILL` |
+| `market_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10023` observed, not called | not called | not called | not called | `service_wrapper_backfilled_not_smoked` | R8-10D canonicalized market dimension/member ids in service source; not smoke verified | R8-10E controlled L3 compute smoke | Keep deterministic until L3 smoke | `PROMPT-L3-MARKET-COMPOSITE-BACKFILL` |
+| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10016` observed, not called | not called | not called | not called | `service_wrapper_backfilled_not_smoked` | R8-10D added fixed DAG risk gate wrapper in service source; not smoke verified | R8-10E controlled L3 compute smoke | Keep deterministic until L3 smoke | `PROMPT-L3-RISK-COMPOSITE-BACKFILL` |
+| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10024` observed, not called | not called | not called | not called | `service_wrapper_backfilled_not_smoked` | R8-10D added fixed DAG macro compute-envelope wrapper in service source; not smoke verified | R8-10E controlled L3 compute smoke | Keep deterministic until L3 smoke | `PROMPT-L3-MACRO-COMPOSITE-BACKFILL` |
 | `decision_synthesizer` | L4 | l4 | `decision_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 | `report_generator` | L4 | l4 | `report_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 

@@ -1226,3 +1226,34 @@ Non-consequence: R8-10C does not call endpoints, does not call providers, does
 not call `/v1/agent/invoke`, does not modify service code, does not modify
 runtime bindings, does not set live flags, does not wire active L3 runtime
 execution, and does not create L3 production readiness evidence.
+
+## ADR-048: R8-10D Backfills L3 Service Wrappers Before Controlled Smoke
+
+Status: accepted for bounded L3 service protocol implementation.
+
+Decision: R8-10D applies service-side protocol wrapper patches for the four L3
+composites before any controlled endpoint smoke. `value_composite` and
+`market_composite` use adapter-facing `dimension_conclusion_v1`; `risk_composite`
+uses `risk_conclusion_v1` with a flat gate action; and `macro_composite` uses
+`macro_conclusion_v1` with value/market-only `dimension_weights`. The changes
+are restricted to service wrapper/schema/test layers and main-repo
+documentation.
+
+Reason: R8-10B made the main-system adapter capable of pure L3 mapping, and
+R8-10C showed that service payload shape was still the gating issue. Backfilling
+the wrappers first avoids weakening adapter identity/dimension gates and gives
+R8-10E a meaningful controlled smoke target.
+
+Consequence: the local service directories now contain fixed DAG L3 wrapper
+paths and focused tests. A repo-external backup and manifest record the
+non-git service changes at
+`/tmp/lma-r8-10d-l3-service-backup/20260610T142216Z/service_patch_manifest.json`.
+Service owners still need to backfill these changes into source-controlled
+service repositories where applicable.
+
+Non-consequence: R8-10D does not call `/health`, does not call
+`/v1/agent/compute`, does not call `/v1/agent/invoke`, does not call providers,
+does not restart services, does not modify runtime bindings, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+change main-system graph/executor/public API/frontend behavior, does not enable
+active L3 runtime execution, and does not prove L3 production readiness.

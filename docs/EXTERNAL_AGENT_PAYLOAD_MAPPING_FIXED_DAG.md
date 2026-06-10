@@ -141,6 +141,23 @@ These backfills are service-owner work. They do not change main-system
 `runtime_bindings.json`, do not set live flags, and do not authorize
 `/v1/agent/invoke`.
 
+### R8-10D L3 Service Wrapper Backfill
+
+R8-10D applied bounded service-side wrapper patches for the four L3 services
+without changing the main-system adapter:
+
+| L3 service | R8-10D local wrapper result |
+| --- | --- |
+| `value_composite` | Fixed DAG requests return `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with `agent_id=value_composite`, `dimension=value`, and fixed DAG value member ids for the computed valuation members. |
+| `market_composite` | The existing `dimension_conclusion_v1` output now uses `dimension=market` and maps service-local members to fixed DAG market L2 ids. |
+| `risk_composite` | Fixed DAG requests return `risk_conclusion_v1` with `agent_id=risk_composite`, `dimension=risk`, `role=gate`, flat `gate`, `risk_score`, `penalty`, and risk-only contributing agents. |
+| `macro_composite` | Fixed DAG requests return `external_agent_compute_v0.tool_result.macro_conclusion_v1` with `agent_id=macro_composite`, value/market-only `dimension_weights`, `risk_sensitivity`, and macro L2 contributing agents. |
+
+This is not L3 readiness evidence. R8-10D did not call `/health`,
+`/v1/agent/compute`, or `/v1/agent/invoke`, did not restart services, did not
+enable runtime bindings, and did not set live flags. Controlled L3 smoke remains
+R8-10E.
+
 ## Dimension Mapping
 
 | External label or alias | Fixed DAG dimension id |
