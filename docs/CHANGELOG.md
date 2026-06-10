@@ -3,6 +3,64 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8H expanded controlled compute evidence batch
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for `value_meta_valuation`,
+  `value_research_synthesis`, and `market_stock_technical` after R8-8H dev-only
+  health, compute, and provider-free adapter mapping checks.
+- Documented bounded dev service protocol remediations for fixed-DAG identity,
+  external service id preservation, and canonical L2 dimensions where required.
+- Added ADR-036 for recording expanded controlled compute evidence without
+  runtime binding enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- `value_meta_valuation` service validation before smoke:
+  `python3 -m py_compile service.py tests/test_v21_compliance.py`
+- `value_meta_valuation` service validation before smoke:
+  `python3 -m pytest tests/test_v21_compliance.py tests/test_domain_contract_v1.py -q`
+- `value_meta_valuation` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- `value_research_synthesis` service validation before smoke:
+  `python3 -m py_compile service.py`
+- `value_research_synthesis` service validation before smoke:
+  `python3 -m pytest tests/test_service_contract.py tests/test_compute_endpoint.py tests/test_domain_payload.py tests/test_local_data_offline.py -q`
+- `value_research_synthesis` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- `market_stock_technical` service validation before smoke:
+  `python3 -m py_compile service.py schemas.py tests/test_compute_endpoint.py tests/test_domain_contract_v1.py tests/test_service_contract.py`
+- `market_stock_technical` service validation before smoke:
+  `python3 -m pytest tests/test_service_contract.py tests/test_compute_endpoint.py tests/test_domain_contract_v1.py tests/test_local_data_offline.py -q -p no:cacheprovider`
+- `market_stock_technical` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8G accelerated controlled compute evidence
 
 ### Changed

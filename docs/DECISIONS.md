@@ -853,3 +853,33 @@ identity gates, graph, executor, public API, public runtime, public mapping,
 frontend, or fixed DAG roster. It does not call `/v1/agent/invoke`, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
 claim prod readiness, and does not update public transcript content.
+
+## ADR-036: R8-8H Expands Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for expanded controlled readiness evidence logging.
+
+Decision: R8-8H records sanitized controlled health, compute, and adapter
+mapping evidence for an expanded L2 dev-service batch. In this phase,
+`value_meta_valuation`, `value_research_synthesis`, and
+`market_stock_technical` passed after bounded service-side protocol remediation
+where needed.
+
+Reason: R8-8G established a safe service-side remediation pattern for deployed
+dev services that were already close to the fixed DAG external payload family
+but still emitted service-owned ids or non-canonical dimensions at the adapter
+boundary. R8-8H applies that pattern to additional L2 candidates while keeping
+the main-system adapter strict: fixed DAG ids remain primary `agent_id`, service
+ids remain `external_agent_id`, and adapter-facing dimensions use canonical
+English fixed DAG values.
+
+Consequence: the three R8-8H services now have documented dev-only evidence for
+structured health, `/v1/agent/compute`, and provider-free adapter mapping into
+`conclusion_object_v1`. The evidence can inform later invoke-readiness and
+runtime-binding review, but remains documentation-only.
+
+Non-consequence: R8-8H does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
+`/v1/agent/invoke`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not claim prod readiness, and does not
+update public transcript content.

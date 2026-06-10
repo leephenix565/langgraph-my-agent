@@ -159,6 +159,16 @@ compute responses use fixed DAG `agent_id=value_traditional_valuation` and
 evidence only and do not advance either service to L4 invoke readiness, L5
 runtime binding preparation, L6 live verification, or L7 default invocation.
 
+The R8-8H `value_meta_valuation`, `value_research_synthesis`, and
+`market_stock_technical` dev smokes passed controlled health, compute, and
+adapter mapping after bounded service-side protocol remediation. The remediation
+kept the main-system adapter strict: the fixed DAG ids are primary `agent_id`
+values, service-owned ids remain `external_agent_id`, and adapter-facing L2
+dimensions are canonical English values (`value` or `market`). These results are
+L2/L3 controlled evidence only and do not advance any service to L4 invoke
+readiness, L5 runtime binding preparation, L6 live verification, or L7 default
+invocation.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -251,6 +261,11 @@ The readiness ladder does not claim:
 - R8-8G controlled `macro_analysis` or `value_traditional_valuation`
   health/compute evidence implies production readiness, runtime binding
   enablement, `/v1/agent/invoke` readiness, `live_verified=true`, or
+  `invoke_enabled_by_default=true`
+- R8-8H controlled `value_meta_valuation`, `value_research_synthesis`, or
+  `market_stock_technical` health/compute evidence implies production readiness,
+  runtime binding enablement, L3/L4 active runtime integration,
+  `/v1/agent/invoke` readiness, `live_verified=true`, or
   `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.
