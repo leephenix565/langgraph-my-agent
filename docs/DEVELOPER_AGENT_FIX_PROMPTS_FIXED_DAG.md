@@ -17,6 +17,12 @@ backfill，并写入 repo-external manifest：
 服务 owner 将补丁回填到各自源码仓库、部署、再申请 R8-10E controlled smoke 的
 执行手册。
 
+R8-10D-SNAPSHOT 额外建立了临时交接仓库：
+`/sdb/dlut/service-shadow-repos/l3-composite-services`。该仓库只保存四个
+L3 服务的说明文件、R8-10D manifest 和 zero-context patch，不复制完整生产目录，
+也不是长期源码真源。正式源码仓库可用后，owner 应把 shadow repo 中的 patch
+回填到正式仓库并按生产流程部署。
+
 R8-8P 已经证明：dev evidence 只能作为历史参考和 backfill 线索，不能当作
 production pass。所有修复必须进入服务 owner 的源码仓库，重新部署到
 production endpoint，并经过 production `/health` + `/v1/agent/compute` +

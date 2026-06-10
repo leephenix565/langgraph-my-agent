@@ -603,6 +603,21 @@ repo remains healthy. It does not enable runtime bindings, set live flags, prove
 L3 production readiness, or permit default invocation. Controlled L3 endpoint
 smoke remains R8-10E.
 
+## R8-10D-SNAPSHOT L3 Service Shadow Handoff Boundary
+
+R8-10D-SNAPSHOT creates a local handoff repository at
+`/sdb/dlut/service-shadow-repos/l3-composite-services` because the formal L3
+service source repositories are not available in this environment. The shadow
+repo stores service notes, the R8-10D manifest, and zero-context protocol patch
+files only. It deliberately avoids mirroring full production directories,
+runtime state, virtual environments, data, models, logs, and secret-bearing
+deployment material.
+
+This is a documentation and handoff control, not a runtime or readiness gate.
+It does not call endpoints, restart services, enable runtime bindings, set live
+flags, or create L3 smoke evidence. R8-10E still owns controlled L3 endpoint
+verification after service owners confirm deployment or restart status.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

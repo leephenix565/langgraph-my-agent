@@ -194,6 +194,12 @@ L3 service directories: value/market composites now expose fixed DAG
 endpoints, did not restart services, did not enable runtime bindings or live
 flags, and does not create L3 readiness evidence; controlled L3 smoke remains
 R8-10E.
+Phase R8-10D-SNAPSHOT adds a local handoff repository for those four L3 service
+patches because the formal service source repositories are not available in
+this environment. The snapshot at
+`/sdb/dlut/service-shadow-repos/l3-composite-services` stores service notes,
+the R8-10D manifest, and zero-context patch files only; it is not production
+readiness evidence and is not the long-term service source of truth.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -203,7 +209,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-10D L3 service wrapper backfill over the existing
+- Current phase: R8-10D-SNAPSHOT L3 service shadow handoff over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.
@@ -215,6 +221,8 @@ placeholder skeleton. It is not a completed business analysis engine.
 - Production readiness problem playbook docs:
   `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
   `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`.
+- Temporary L3 service handoff repository:
+  `/sdb/dlut/service-shadow-repos/l3-composite-services`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;
   the current WorkflowPanel renders the R5-B2 fixed DAG inspector from
   `workflow_snapshot_v2`, with R5-B2.6 Chinese localization, R5-C

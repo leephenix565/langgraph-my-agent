@@ -1257,3 +1257,33 @@ does not restart services, does not modify runtime bindings, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
 change main-system graph/executor/public API/frontend behavior, does not enable
 active L3 runtime execution, and does not prove L3 production readiness.
+
+## ADR-049: R8-10D-SNAPSHOT Uses A Shadow Handoff Repo For L3 Service Patches
+
+Status: accepted for temporary service patch handoff.
+
+Decision: because the formal source repositories for the four L3 composite
+services are not available in this environment, R8-10D-SNAPSHOT records the
+R8-10D service wrapper patches in a local shadow handoff repository at
+`/sdb/dlut/service-shadow-repos/l3-composite-services`. The shadow repository
+contains service notes, the R8-10D manifest, and zero-context patch files. It
+does not mirror whole production directories.
+
+Reason: committing directly inside `/sdb/dlut/prod/...` would treat deployed
+production directories as source-of-truth repositories and risks capturing
+runtime state, virtual environments, logs, data, models, or secret-bearing
+deployment material. A separate shadow repo gives developers a reviewable
+handoff artifact while preserving the long-term requirement that service owners
+backfill patches into formal source-controlled repositories.
+
+Consequence: service owners can inspect one local repository to understand the
+L3 wrapper changes and apply them to their eventual formal service repos. The
+four production service directories also include
+`FIXED_DAG_PROTOCOL_BACKFILL.md` notes that point to the backup manifest and
+shadow repo.
+
+Non-consequence: R8-10D-SNAPSHOT does not call endpoints, does not restart
+services, does not modify runtime bindings, does not set live flags, does not
+prove that running services loaded the patched files, and does not create L3
+production readiness evidence. Controlled endpoint verification remains
+R8-10E.

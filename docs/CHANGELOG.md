@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10D-SNAPSHOT L3 service shadow handoff repository
+
+### Changed
+
+- Added service-local `FIXED_DAG_PROTOCOL_BACKFILL.md` notes beside the four L3
+  production service directories so service owners can see fixed DAG identity,
+  expected L3 payload, changed files, backup manifest, and R8-10E restart/smoke
+  boundary.
+- Created a temporary local shadow handoff repository at
+  `/sdb/dlut/service-shadow-repos/l3-composite-services` with service notes,
+  the R8-10D manifest, and zero-context protocol patch files.
+- Updated README, readiness matrix, developer prompt catalog, quality docs, and
+  ADRs to clarify that the shadow repository is a handoff artifact, not the
+  long-term source of truth and not production readiness evidence.
+
+### Validated
+
+- Shadow repo initialized on branch `main` with commit
+  `7a3c517 chore(snapshot): capture l3 protocol backfill handoff`.
+- Sensitive-pattern scan reviewed at file/line classification level; no raw
+  secret value was intentionally copied into the shadow handoff repo.
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+
+### Not Done
+
+- No push.
+- No endpoint call.
+- No service restart.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No production readiness evidence.
+
 ## 2026-06-10 - Phase R8-10D L3 service protocol wrapper backfill
 
 ### Changed

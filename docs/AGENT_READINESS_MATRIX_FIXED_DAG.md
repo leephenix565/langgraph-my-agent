@@ -134,6 +134,23 @@ phase.
 Repo-external backup and manifest:
 `/tmp/lma-r8-10d-l3-service-backup/20260610T142216Z/service_patch_manifest.json`.
 
+R8-10D-SNAPSHOT records a temporary handoff repository for the four service
+patches because the formal service source repositories are not available in
+this environment:
+
+- Shadow repo: `/sdb/dlut/service-shadow-repos/l3-composite-services`
+- Shadow repo commit: `7a3c517 chore(snapshot): capture l3 protocol backfill handoff`
+- Contents: service-local backfill notes, the R8-10D manifest, and zero-context
+  patch files for the protocol wrapper changes.
+- Non-claim: this shadow repo is not the long-term source of truth, does not
+  prove production readiness, and does not mean the currently running services
+  have loaded the patched files.
+
+Each production service directory also now contains
+`FIXED_DAG_PROTOCOL_BACKFILL.md` so service owners can see the fixed DAG id,
+expected payload, changed files, backup manifest, and R8-10E restart/smoke
+boundary beside the deployed files.
+
 | agent_id | service root | wrapper backfilled | validation performed | current status | next action |
 | --- | --- | --- | --- | --- | --- |
 | `value_composite` | `/sdb/dlut/prod/综合估值智能体` | Fixed DAG request path now returns `external_agent_compute_v0.tool_result.dimension_conclusion_v1` with `agent_id=value_composite`, `dimension=value`, and fixed DAG value member ids for the three computed valuation members. | `py_compile`; focused pytest `tests/test_fixed_dag_l3_wrapper.py`. | `service_wrapper_backfilled_not_smoked` | R8-10E controlled `/health` + `/v1/agent/compute` smoke; do not call `/invoke`. |
