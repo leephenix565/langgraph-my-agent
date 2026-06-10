@@ -1003,3 +1003,39 @@ fixed DAG roster. It does not call `/v1/agent/invoke`, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
 claim prod readiness, does not update public transcript content, and does not
 wire L1 entity-relation or risk L2 outputs into active graph execution.
+
+## ADR-041: R8-8L Records Remaining Risk And Market Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for remaining risk controlled readiness evidence logging and
+market-candidate deferral.
+
+Decision: R8-8L records sanitized controlled health, compute, and adapter
+mapping evidence for `risk_financial_fraud` and `risk_crash` after bounded dev
+service protocol remediation. The two services remain L2 risk gate-member
+signals represented as `agent_conclusion_v1 role=gate_member`, mapped through
+the existing provider-free adapter into `conclusion_object_v1`. The market and
+macro candidates that did not meet the bounded-remediation criteria remain
+deferred.
+
+Reason: the two risk dev services were deployed and listening but emitted
+service-owned identities, Chinese risk dimensions, and `role=gate` values at
+the adapter boundary. The correct remediation is service-side wrapper
+normalization: fixed DAG ids become primary `agent_id` values, service-owned
+ids remain `external_agent_id`, risk dimensions are canonical `risk`, and risk
+scores are bounded before adapter mapping. This preserves the main-system
+adapter identity gate and avoids forcing L3 `risk_conclusion_v1` or unrelated
+market/macro payloads into L2 contracts.
+
+Consequence: `risk_financial_fraud` and `risk_crash` now have documented
+dev-only evidence for structured health, `/v1/agent/compute`, and
+provider-free adapter mapping into `conclusion_object_v1`. The evidence can
+inform later invoke-readiness and runtime-binding review, but remains
+documentation-only.
+
+Non-consequence: R8-8L does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, L3/L4 active runtime, or fixed DAG roster. It does not call
+`/v1/agent/invoke`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not claim prod readiness, does not update
+public transcript content, does not route sentiment to risk, and does not wire
+any risk L2 output into L3 `risk_composite` or L4 decision runtime.

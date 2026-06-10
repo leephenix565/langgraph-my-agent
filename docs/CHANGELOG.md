@@ -3,6 +3,51 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8L remaining risk and market controlled compute evidence
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for `risk_financial_fraud`
+  and `risk_crash` after R8-8L dev-only health, compute, and provider-free
+  adapter mapping checks.
+- Documented bounded dev service protocol remediations for fixed-DAG identity,
+  external service id preservation, canonical risk dimension, and L2
+  `agent_conclusion_v1 role=gate_member` output normalization.
+- Recorded that the remaining market/macro candidates in the R8-8L queue were
+  deferred when the dev listener was absent, the response builder was not a
+  small fixed-DAG L2 wrapper, or the service semantics did not clearly support
+  the requested fixed-DAG dimension.
+- Added ADR-041 for recording remaining risk and market controlled compute
+  evidence without runtime enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend,
+  fixed DAG roster, L3/L4 active runtime, and public transcript unchanged.
+
+### Validated
+
+- `risk_financial_fraud` service validation before smoke:
+  `python3 -m py_compile app/main.py app/schemas.py`
+- `risk_crash` service validation before smoke:
+  `python3 -m py_compile crash_risk_model/agent/app.py crash_risk_model/agent/protocol.py`
+- Controlled dev smoke for both R8-8L risk candidates:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend,
+  L3/L4 active runtime, or fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8K entity and risk controlled compute evidence
 
 ### Changed

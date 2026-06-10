@@ -586,3 +586,115 @@ Next gate recommendation:
   explicit invoke-readiness and runtime-binding phase.
 - Treat this as L2 risk gate-member controlled evidence only; L3 risk
   composite integration remains deferred.
+
+## 2026-06-10 - R8-8L risk_financial_fraud
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8L |
+| Run UTC | 2026-06-10T06:52:14Z |
+| Artifact directory | `/tmp/lma-r8-8l-candidate-smoke/20260610T065214Z/risk_financial_fraud` |
+| Fixed DAG agent id | `risk_financial_fraud` |
+| External service id | `financial_fraud_agent` |
+| Legacy agent id | `a24_financial_fraud_risk` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output stance | `risk_gate_member` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/财务造假风险智能体`.
+- Service project was not a usable git repository during remediation; original
+  service and schema files were backed up outside the repo under
+  `/tmp/lma-r8-8l-service-backup/20260610T064145Z/risk_financial_fraud`.
+- The dev service boundary now emits fixed-DAG id `risk_financial_fraud`,
+  external service id `financial_fraud_agent`, canonical dimension `risk`,
+  and `agent_conclusion_v1 role=gate_member` with bounded `risk_score` for
+  fixed-DAG compute requests.
+- The service patch did not change the financial-fraud model, feature logic,
+  compute core, data files, prod config, or main-system runtime bindings.
+- The main-system adapter identity gate was not relaxed.
+- Dev service validation before smoke:
+  `python3 -m py_compile app/main.py app/schemas.py`.
+- The dev 8013 process was restarted with the original command because it was
+  not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 `risk_conclusion_v1`, L3 `risk_composite`, or L4
+  decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `risk_financial_fraud` disabled in runtime bindings until a later
+  explicit invoke-readiness and runtime-binding phase.
+- Treat this as L2 risk gate-member controlled evidence only; L3 risk
+  composite integration remains deferred.
+
+## 2026-06-10 - R8-8L risk_crash
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8L |
+| Run UTC | 2026-06-10T06:52:14Z |
+| Artifact directory | `/tmp/lma-r8-8l-candidate-smoke/20260610T065214Z/risk_crash` |
+| Fixed DAG agent id | `risk_crash` |
+| External service id | `crash_risk` |
+| Legacy agent id | `a23_crash_risk` |
+| Payload family | `external_agent_compute_v0` with `agent_conclusion_v1` tool result |
+| Health status | pass |
+| Compute status | pass |
+| Adapter mapping status | pass |
+| Adapter output family | `conclusion_object_v1` |
+| Adapter output stance | `risk_gate_member` |
+
+Service patch summary:
+
+- Dev service source root:
+  `/sdb/dlut/dev/股价崩盘风险智能体`.
+- Service project was not a usable git repository during remediation; original
+  service and protocol files were backed up outside the repo under
+  `/tmp/lma-r8-8l-service-backup/20260610T064145Z/risk_crash`.
+- The dev service boundary now emits fixed-DAG id `risk_crash`, external
+  service id `crash_risk`, canonical dimension `risk`, and
+  `agent_conclusion_v1 role=gate_member` with bounded `risk_score` for
+  fixed-DAG compute requests.
+- The service patch did not change the crash-risk model, feature logic, compute
+  core, data files, prod config, or main-system runtime bindings.
+- The main-system adapter identity gate was not relaxed.
+- Dev service validation before smoke:
+  `python3 -m py_compile crash_risk_model/agent/app.py crash_risk_model/agent/protocol.py`.
+- The dev 8012 process was restarted with the original command because it was
+  not running in reload mode.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not update public transcript content.
+- This does not prove production readiness.
+- This does not authorize default runtime invocation.
+- This does not cover prod service ports.
+- This does not provide L3 `risk_conclusion_v1`, L3 `risk_composite`, or L4
+  decision runtime evidence.
+
+Next gate recommendation:
+
+- Keep `risk_crash` disabled in runtime bindings until a later explicit
+  invoke-readiness and runtime-binding phase.
+- Treat this as L2 risk gate-member controlled evidence only; L3 risk
+  composite integration remains deferred.

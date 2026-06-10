@@ -433,6 +433,36 @@ graph L1 entity integration is enabled, L3 risk composite integration is
 enabled, L4 decision integration is enabled, production readiness is proven, or
 any candidate may be invoked by default.
 
+## R8-8L Remaining Risk And Market Controlled Compute Evidence Boundary
+
+R8-8L expands the dev-only controlled health and compute smoke pattern to the
+remaining bounded risk L2 candidates that can emit `agent_conclusion_v1
+role=gate_member`. The phase permits bounded service-side remediation for
+fixed-DAG identity, canonical risk dimensions, and risk-score exposure at the
+service wrapper boundary. It does not permit forcing L3 `risk_conclusion_v1`,
+dimension-composite payloads, macro payloads, or wider market protocol drift
+into L2 contracts.
+
+R8-8L does not change runtime bindings, graph, executor, public API, public
+runtime, public mapping, frontend, fixed DAG roster, L3/L4 active runtime, or
+default invocation behavior. Docs are updated only after health, compute, and
+provider-free adapter mapping pass.
+
+R8-8L main-repo validation gate is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8L validation means the documentation-only evidence record remains
+consistent with reset quality. It does not mean `/v1/agent/invoke` was called,
+runtime bindings are enabled, `live_verified=true` is set,
+`invoke_enabled_by_default=true` is set, L3 risk composite integration is
+enabled, L4 decision integration is enabled, production readiness is proven, or
+any candidate may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

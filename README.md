@@ -134,6 +134,13 @@ internal `entity_relation_bundle_v1` contract; risk candidates map as
 `agent_conclusion_v1 role=gate_member`. This remains docs-only controlled
 evidence with no `/v1/agent/invoke`, runtime binding enablement, live flag,
 active graph L1/L3/L4 integration, or production readiness claim.
+Phase R8-8L records the remaining bounded risk L2 controlled evidence for
+`risk_financial_fraud` and `risk_crash` after service-side wrapper
+remediation. Both map as `agent_conclusion_v1 role=gate_member` into
+`conclusion_object_v1`. Market and macro candidates that did not meet the
+bounded L2 criteria remain deferred. This still does not call
+`/v1/agent/invoke`, enable runtime bindings, set live flags, update public
+transcript content, wire L3/L4 runtime paths, or prove production readiness.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -143,7 +150,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8K entity and risk controlled compute evidence over the
+- Current phase: R8-8L remaining risk and market controlled compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -204,7 +211,10 @@ placeholder skeleton. It is not a completed business analysis engine.
   `entity_relation_extractor`, extends compute-envelope mapping to
   `entity_relation_bundle_v1`, and records risk L2 gate-member evidence for
   `risk_identification` and `risk_compliance_review` without wiring any L3/L4
-  runtime path.
+  runtime path. R8-8L adds the same docs-only controlled evidence boundary for
+  `risk_financial_fraud` and `risk_crash`; no new main-system adapter branch is
+  needed, and L3 `risk_composite` / L4 decision runtime integration remains
+  deferred.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

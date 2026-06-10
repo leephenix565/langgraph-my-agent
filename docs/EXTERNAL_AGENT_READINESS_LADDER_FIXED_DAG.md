@@ -60,6 +60,14 @@ protocol remediation. The entity relation result is L1
 enables runtime bindings, live flags, `/v1/agent/invoke`, active graph L1/L3/L4
 integration, or production readiness.
 
+R8-8L records controlled dev evidence for `risk_financial_fraud` and
+`risk_crash` after bounded service-side protocol remediation. Both results are
+L2 `agent_conclusion_v1 role=gate_member` evidence only. The remaining
+market/macro candidates in the batch were deferred when they lacked a dev
+listener, had larger protocol drift, or did not clearly support the requested
+fixed-DAG dimension. R8-8L does not enable runtime bindings, live flags,
+`/v1/agent/invoke`, L3/L4 active runtime, or production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -234,6 +242,15 @@ invoke readiness, L5 runtime binding preparation, L6 live verification, L7
 default invocation, L3 `risk_composite` runtime integration, L4 decision
 runtime integration, or production readiness.
 
+The R8-8L `risk_financial_fraud` and `risk_crash` dev smokes passed controlled
+health, compute, and adapter mapping after bounded service-side protocol
+remediation. Their mapped outputs are `conclusion_object_v1` risk L2
+gate-member evidence with bounded `risk_score` provenance. These results are
+not L3 `risk_conclusion_v1` evidence and do not advance either service to L4
+invoke readiness, L5 runtime binding preparation, L6 live verification, L7
+default invocation, L3 `risk_composite` runtime integration, L4 decision
+runtime integration, or production readiness.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -339,6 +356,11 @@ The readiness ladder does not claim:
 - R8-8J controlled `financial_data_service` health/compute evidence implies
   production readiness, runtime binding enablement, active graph L1 data
   integration, `/v1/agent/invoke` readiness, `live_verified=true`, or
+  `invoke_enabled_by_default=true`
+- R8-8K or R8-8L controlled risk health/compute evidence implies production
+  readiness, runtime binding enablement, L3 `risk_conclusion_v1` evidence, L3
+  `risk_composite` runtime integration, L4 decision integration,
+  `/v1/agent/invoke` readiness, `live_verified=true`, or
   `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.
