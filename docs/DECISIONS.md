@@ -1104,3 +1104,31 @@ does not call `/v1/agent/invoke`, does not modify runtime bindings, does not set
 change graph, executor, public API, public runtime, public mapping, frontend,
 adapter logic, external service code, or fixed DAG roster, and does not prove
 production readiness.
+
+## ADR-044: R8-8P Rebaselines Agent Readiness Against Production Endpoints
+
+Status: accepted for production readiness rebaseline.
+
+Decision: R8-8P separates production readiness evidence from the earlier dev
+controlled smoke evidence. The fixed DAG readiness matrix is now production
+first: production endpoint discovery, production `/health`, production
+`/v1/agent/compute`, and provider-free adapter mapping determine production
+status. Earlier R8-8G/H/I/J/K/L/M dev endpoint evidence is retained only as
+historical debugging and backfill input.
+
+Reason: the previous matrix documented useful controlled compute evidence, but
+most of that evidence came from dev ports. Production readiness cannot be
+inferred from dev endpoints. A production rebaseline is required before any
+invoke audit, runtime binding preparation, or live verification review.
+
+Consequence: only services with production health pass, production compute
+pass, and production adapter mapping pass can be considered candidates for a
+later production invoke audit. Services that passed in dev but fail production
+identity, health, compute, or semantic gates must go through production
+remediation/backfill and production resmoke.
+
+Non-consequence: R8-8P does not call `/v1/agent/invoke`, does not modify
+runtime bindings, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not change graph, executor, public API,
+public runtime, public mapping, frontend, fixed DAG roster, adapter logic, or
+production service code, and does not enable production default invocation.

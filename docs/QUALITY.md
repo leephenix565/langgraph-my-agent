@@ -67,6 +67,19 @@ stacks, or fusion-gate. Passing static or mainline after this phase means the
 maintained repository quality checks still pass; it does not mean any external
 service is live verified or production ready.
 
+## R8-8P Production Smoke Boundary
+
+R8-8P production smoke is manual/live readiness work. It is not part of the
+default reset mainline. Production smoke may call confirmed production
+`/health` and `/v1/agent/compute` endpoints only in an explicit readiness phase.
+It must not call `/v1/agent/invoke` unless a later invoke phase explicitly owns
+that scope.
+
+The default mainline remains provider-free and external-HTTP-free. Passing
+mainline after R8-8P validates repository static, unit, integration, graph, and
+frontend gates; it does not prove production service readiness, invoke
+readiness, live verification, or default runtime invocation eligibility.
+
 ## Validation Meaning
 
 Passing the R6-B reset mainline means the maintained static surface passes,

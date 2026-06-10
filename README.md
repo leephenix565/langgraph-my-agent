@@ -158,6 +158,15 @@ patch backfill inventory, and developer prompt catalog. This is documentation
 only: it does not call endpoints, enable runtime bindings, set live flags,
 advance `/v1/agent/invoke`, change active graph runtime, or prove production
 readiness.
+Phase R8-8P rebaselines that readiness state against production endpoints.
+Earlier R8-8G/H/I/J/K/L/M dev endpoint evidence is now historical only. The
+production rebaseline found that only five external candidates currently have
+production health, production compute, and adapter mapping pass evidence:
+`risk_identification`, `risk_compliance_review`, `risk_financial_fraud`,
+`risk_crash`, and `macro_analysis`. The production-first matrix and developer
+prompt catalog have been rewritten around those results; no `/v1/agent/invoke`
+was called, no runtime bindings were enabled, no live flags were set, and no
+production default invocation is implied.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -167,7 +176,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8N-DOCS agent readiness matrix persistence over the
+- Current phase: R8-8P production endpoint readiness rebaseline over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C
   provider-free adapter seam, and v2.3.1 scaffold package.
@@ -176,7 +185,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
-- Readiness handoff docs:
+- Production-first readiness handoff docs:
   `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` and
   `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md`.
 - Public web shell: migrated in place to consume the fixed DAG public contract;

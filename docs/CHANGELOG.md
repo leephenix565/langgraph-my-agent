@@ -3,6 +3,50 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8P production endpoint readiness rebaseline
+
+### Changed
+
+- Rebaselined fixed DAG readiness against production endpoints instead of
+  dev-only controlled smoke evidence.
+- Rewrote `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` as a production-first
+  matrix with production endpoint status, production health/compute/adapter
+  results, dev-historical appendix, and production next actions.
+- Rewrote `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` as a production-first
+  prompt catalog for health, compute, identity, adapter, backfill, semantic
+  deferral, L3/L4 design, and invoke-audit-prep work.
+- Recorded R8-8P production artifact root in
+  `docs/CONTROLLED_READINESS_SMOKE_LOG.md`.
+- Added ADR-044 for separating production evidence from previous dev evidence.
+
+### Validated
+
+- Production smoke artifact root:
+  `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z`.
+- Production pass agents:
+  `risk_identification`, `risk_compliance_review`, `risk_financial_fraud`,
+  `risk_crash`, and `macro_analysis`.
+- `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_adapter.py || true`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No dev endpoint counted as production evidence.
+- No production service code modification.
+- No service start, stop, or restart.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+- No production default invocation claim.
+
 ## 2026-06-10 - Phase R8-8N-DOCS agent readiness matrix persistence
 
 ### Changed

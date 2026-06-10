@@ -84,6 +84,13 @@ agents have controlled compute evidence and which remain deferred, but it does
 not advance any service beyond L3. Controlled compute evidence remains below
 L4 invoke evidence and below L6/L7 live/default invocation readiness.
 
+R8-8P rebaselines readiness against production endpoints. Earlier dev endpoint
+evidence from R8-8G/H/I/J/K/L/M is historical only and cannot be promoted to
+production readiness. Every readiness record must state its environment:
+local/mock, dev, or production. A production compute pass still remains L3
+evidence only; it is not an L4 invoke pass and does not imply L6/L7 live/default
+invocation eligibility.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |

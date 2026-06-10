@@ -1,189 +1,176 @@
 # Fixed DAG Agent Readiness Matrix
 
-This document persists the Phase R8-8N read-only audit result for the fixed DAG
-agent roster. It records the current readiness state of all 27 fixed DAG agents,
-the controlled compute evidence that exists, the deferred/problem agents, and
-the next developer actions.
+This document is the production-first readiness matrix for the fixed DAG agent
+roster after Phase R8-8P: Production Endpoint Readiness Rebaseline.
 
-This document is a developer handoff. It does not enable runtime bindings,
-change active graph behavior, call external services, or mark any external
-agent production-ready.
+R8-8P rebaselines readiness against confirmed production endpoints. Earlier
+R8-8G/H/I/J/K/L/M controlled smoke results used dev endpoints and are now
+historical evidence only. Dev evidence remains useful for debugging, service
+owner backfill, and wrapper design, but it must not be counted as production
+readiness.
 
-## Purpose / Scope
+## Scope
 
-R8-8N audited the fixed DAG readiness state after the R8-8B through R8-8M
-controlled smoke phases. The audit used repository files, readiness docs,
-sanitized `/tmp/lma-r8-*` summaries, and service patch manifests as evidence.
+R8-8P tested only confirmed production endpoints on `127.0.0.1` production
+ports or marked production services as missing/deferred. The phase called:
 
-The audit did not call:
+- `GET /health`
+- `POST /v1/agent/compute`
 
-- `/health`
-- `/v1/agent/compute`
-- `/v1/agent/invoke`
-- provider APIs
-- prod ports
+The phase did not call `/v1/agent/invoke`.
 
-The matrix below covers the full 27-agent fixed DAG roster.
+Production smoke artifact root:
+
+```text
+/tmp/lma-r8-8p-prod-readiness/20260610T104456Z
+```
 
 ## Non-Claims
 
-- No `/v1/agent/invoke` evidence exists.
+- No `/v1/agent/invoke` was called.
 - No runtime binding was enabled.
 - No `live_verified=true` flag was set.
-- No `invoke_enabled_by_default=true` flag was set for external candidates.
-- No active graph runtime integration was changed.
-- No production readiness is claimed.
-- Controlled compute evidence is not production readiness.
+- No `invoke_enabled_by_default=true` flag was set.
+- No production endpoint compute pass implies production default invocation.
+- No public transcript was updated with raw external output.
+- No production service code was modified.
+- No production service was started, stopped, or restarted.
+- Dev-only evidence is historical and cannot be promoted to production
+  evidence.
 - `sentiment_company_radar` remains market-only and must not be routed into
   `risk_composite`.
 - L3 and L4 remain deterministic seams until a separate adapter/runtime design
   phase owns them.
 
-## Evidence Sources
-
-Primary fixed DAG roster and runtime metadata:
-
-- `config/fixed_dag/agent_catalog.json`
-- `config/fixed_dag/runtime_bindings.json`
-- `src/react_agent/fixed_dag_catalog.py`
-- `src/react_agent/fixed_dag_runtime_registry.py`
-- `docs/ARCHITECTURE_FIXED_DAG.md`
-- `docs/CONTRACTS.md`
-
-Controlled readiness evidence:
-
-- `docs/CONTROLLED_READINESS_SMOKE_LOG.md`
-- `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`
-- `docs/CHANGELOG.md`
-- `docs/DECISIONS.md`
-- `/tmp/lma-r8-8d-id-value-ml-resmoke/*/summary.json`
-- `/tmp/lma-r8-8g-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8h-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8i-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8j-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8k-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8l-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8m-candidate-smoke/*/*/summary.json`
-- `/tmp/lma-r8-8*-service-backup/*/service_patch_manifest.json`
-
-The `/tmp` paths are operational evidence and backfill references. They are not
-repository source of truth.
-
-## Coverage Summary
+## Production Coverage Summary
 
 | Metric | Count | Notes |
 | --- | ---: | --- |
-| Total fixed DAG agents | 27 | Catalog roster count |
+| Total fixed DAG agents | 27 | Full catalog roster |
 | External-service candidates | 20 | L1 evidence services and L2 analysis services |
-| Controlled compute pass | 14 | Health pass, compute pass, adapter mapping pass |
-| Controlled compute failed | 1 | `market_ipo_investor_behavior` has unsupported compute shape |
-| Deferred count | 11 | 5 external-service deferred/problem plus 6 L3/L4 deferred |
-| Not attempted count | 2 | `macro_commodity_pricing`, `market_fund_manager_behavior` |
+| Production endpoint known | 18 | Confirmed production listener or production port/cwd |
+| Production health pass | 14 | `/health` returned structured JSON and no unsafe content |
+| Production compute pass | 13 | `/v1/agent/compute` returned HTTP 2xx structured JSON |
+| Production adapter mapping pass | 5 | Mapped through main-system provider-free adapter |
+| Production failed/deferred | 13 | Failed health/compute/identity/semantic gates |
+| Production endpoint missing | 2 | No confirmed production endpoint |
+| Production semantic deferred | 3 | Not safe to force into L2 production mapping |
+| Production identity mismatch | 8 | Compute returned service/unknown primary id instead of fixed DAG id |
+| Internal deterministic | 1 | `route_planner` |
 | L3/L4 deferred | 6 | 4 composites plus decision/report |
-| Invoke audit candidates | 14 | Compute-pass services only |
-| Service patches outside git | 13 | Must be backfilled by service owners |
-| Agents needing developer backfill | 13 | Non-git service protocol patches |
+| Invoke audit candidates | 5 | Based only on production health + compute + adapter mapping pass |
 
 Layer coverage:
 
-| Layer/group | Coverage |
+| Layer/group | Production coverage |
 | --- | --- |
-| L1 | 2/2 external evidence services pass; `route_planner` is deterministic internal |
-| L2 value | 4/4 pass |
-| L2 market | 3/5 pass |
-| L2 risk | 4/4 pass |
-| L2 macro | 1/5 pass; 4 deferred/problem |
-| L3 | 0/4 external controlled compute; deterministic internal seams only |
-| L4 | 0/2 external controlled compute; deterministic internal seams only |
+| L1 | 0/2 production adapter pass; one health failure and one endpoint missing |
+| L2 value | 0/4 production adapter pass; all four are identity mismatches |
+| L2 market | 0/5 production adapter pass; three identity/missing issues, one semantic/missing, no pass |
+| L2 risk | 4/4 production adapter pass |
+| L2 macro | 1/5 production adapter pass; remaining macro candidates failed or were deferred |
+| L3 | 0/4 external production readiness; deterministic internal seams only |
+| L4 | 0/2 external production readiness; deterministic internal seams only |
 
-## Passed Agents Summary
+## Production Pass Agents
 
-L1:
-
-- `financial_data_service`
-- `entity_relation_extractor`
-
-L2 value:
-
-- `value_ml_valuation`
-- `value_traditional_valuation`
-- `value_meta_valuation`
-- `value_research_synthesis`
-
-L2 market:
-
-- `market_stock_technical`
-- `sentiment_company_radar`
-- `market_capital_flow_chip`
-
-L2 risk:
+These agents have production `/health` pass, production `/v1/agent/compute`
+pass, and provider-free adapter mapping pass:
 
 - `risk_identification`
 - `risk_compliance_review`
 - `risk_financial_fraud`
 - `risk_crash`
-
-L2 macro:
-
 - `macro_analysis`
 
-These services are candidates for a later controlled invoke audit. They are not
-live verified and must remain disabled in runtime bindings until a later phase
-explicitly owns invoke and binding decisions.
+These five are candidates for a later production invoke audit planning phase.
+They are not live verified and must not be enabled by default.
 
-## Problem / Deferred Agents Summary
+## Production Failed / Deferred Agents
 
-| Agent | Current issue | Required next work |
-| --- | --- | --- |
-| `market_ipo_investor_behavior` | Protocol drift; compute shape unsupported | Add `external_agent_compute_v0.tool_result.agent_conclusion_v1` wrapper |
-| `macro_commodity_pricing` | Dev port 8004 was not listening | Provide dev runbook plus structured health and compute wrapper |
-| `macro_index_valuation` | Semantic owner decision needed | Do not force index/value valuation into macro |
-| `macro_sentiment` | Likely L3/regulator or `macro_conclusion_v1` semantics | Classify before any L2 wrapper |
-| `macro_industry_hotspot` | Same as `macro_sentiment` | Classify before any L2 wrapper |
-| `market_fund_manager_behavior` | Service root, dev port, and external id unknown | Discover non-stub service metadata |
-| L3 composites | External L3 adapter not designed | Keep deterministic seams until explicit L3 adapter/runtime phase |
-| L4 decision/report | External L4 adapter not designed | Keep deterministic seams until explicit L4 adapter/runtime phase |
+| Agent | Failure code/status | Reason | Owner/developer action | Prompt |
+| --- | --- | --- | --- | --- |
+| `financial_data_service` | `production_health_failed` / `health_invalid_json` | Production `/health` did not return safe structured JSON | Fix production health contract, then production resmoke | `PROMPT-PROD-HEALTH-FIX` |
+| `entity_relation_extractor` | `production_endpoint_missing` | No confirmed production endpoint | Deploy/register production endpoint | `PROMPT-PROD-BACKFILL-DEV-PATCH` |
+| `value_traditional_valuation` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev identity patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `value_ml_valuation` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev identity patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `value_meta_valuation` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev identity patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `value_research_synthesis` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev identity patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `market_stock_technical` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev identity patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `market_fund_manager_behavior` | `production_identity_mismatch` / `unknown_agent_id` | Production subservice exists, but output identity is not fixed DAG compatible | Confirm service ownership/id and fix wrapper | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` |
+| `market_ipo_investor_behavior` | `production_identity_mismatch` / `unknown_agent_id` | Production compute remains incompatible with fixed DAG primary id | Add production compute wrapper | `PROMPT-PROD-IPO-WRAPPER` |
+| `market_capital_flow_chip` | `production_identity_mismatch` / `unknown_agent_id` | Production compute did not emit fixed DAG primary id | Backfill dev patch and redeploy | `PROMPT-PROD-IDENTITY-FIX` |
+| `sentiment_company_radar` | `production_endpoint_missing` | No confirmed production endpoint | Deploy/register market-only production endpoint | `PROMPT-PROD-BACKFILL-DEV-PATCH` |
+| `macro_commodity_pricing` | `production_health_pass_compute_failed` / `compute_http_error` | Production health passed but compute failed | Fix production compute wrapper/runbook | `PROMPT-PROD-COMMODITY-RUNBOOK` |
+| `macro_index_valuation` | `production_semantic_deferred` | Macro L2 semantics still need owner confirmation | Do not force index/value valuation into macro | `PROMPT-PROD-MACRO-INDEX-OWNER` |
+| `macro_sentiment` | `production_semantic_deferred` | Production listener is placeholder/L3-regulator-like, not safe L2 | Classify L2 vs macro L3 payload | `PROMPT-PROD-MACRO-L3-DEFER` |
+| `macro_industry_hotspot` | `production_semantic_deferred` | Production listener is placeholder/L3-regulator-like, not safe L2 | Classify L2 vs macro L3 payload | `PROMPT-PROD-MACRO-L3-DEFER` |
 
-## Full 27-Agent Matrix
+## Full 27-Agent Production Matrix
 
-| agent_id | layer | dimension | expected_payload_or_contract | runtime_binding_kind | implementation_status | current_status | health_status | compute_status | adapter_mapping_status | known_issues | next_action | developer_prompt_id |
-| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
-| `route_planner` | L1 | l1 | `fixed_dag_plan_v1` | `deterministic_system` | `deterministic_skeleton` | `not_external_runtime_target` | n/a | n/a | n/a | Internal deterministic planner | Keep deterministic | `PROMPT-NONE-INTERNAL` |
-| `financial_data_service` | L1 | l1 | `data_bundle_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; binding disabled | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `entity_relation_extractor` | L1 | l1 | `entity_relation_bundle_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; binding placeholder | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Identity patch outside git | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `market_stock_technical` | L2 | market | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `service_source_unknown` | skipped | skipped | skipped | No non-stub service root, dev port, or external id found | Discover service/runbook | `PROMPT-FUND-SERVICE-DISCOVERY` |
-| `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `service_patch_needed` | skipped | skipped | skipped | Unsupported scaffold/raw business compute shape | Add compute wrapper, then resmoke | `PROMPT-IPO-WRAPPER` |
-| `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; binding placeholder | Backfill patch, then invoke audit | `PROMPT-INVOKE-BACKFILL` |
-| `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Market-only; must not enter risk | Backfill patch, then market-only invoke audit | `PROMPT-SENTIMENT-MARKET-INVOKE` |
-| `risk_crash` | L2 | risk | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; L2 gate-member only | Backfill patch, then invoke audit | `PROMPT-RISK-INVOKE-BACKFILL` |
-| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; L2 gate-member only | Backfill patch, then invoke audit | `PROMPT-RISK-INVOKE-BACKFILL` |
-| `risk_identification` | L2 | risk | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; L2 gate-member only | Backfill patch, then invoke audit | `PROMPT-RISK-INVOKE-BACKFILL` |
-| `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `controlled_compute_pass` | pass | pass | pass | Patch outside git; L2 gate-member only | Backfill patch, then invoke audit | `PROMPT-RISK-INVOKE-BACKFILL` |
-| `macro_analysis` | L2 | macro | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `controlled_compute_pass` | pass | pass | pass | No patch recorded | Invoke audit prep | `PROMPT-INVOKE-AUDIT` |
-| `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `dev_port_missing` | skipped | skipped | skipped | Dev listener missing; do not touch prod 10004 | Add dev runbook and wrapper | `PROMPT-COMMODITY-RUNBOOK` |
-| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `external_http_candidate` | `external_candidate_disabled` | `owner_confirmation_needed` | skipped | skipped | skipped | Looks index/value oriented; macro semantics unclear | Owner semantic decision | `PROMPT-MACRO-INDEX-OWNER` |
-| `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `l3_l4_deferred` | skipped | skipped | skipped | Likely macro regulator/L3-style payload | L2 vs L3 classification | `PROMPT-MACRO-L3-DEFER` |
-| `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `pending_placeholder` | `pending_implementation` | `l3_l4_deferred` | skipped | skipped | skipped | Likely macro regulator/L3-style payload | L2 vs L3 classification | `PROMPT-MACRO-L3-DEFER` |
-| `value_composite` | L3 | composite | `dimension_composite_result_v1` | `deterministic_composite` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L3 adapter not designed | L3 adapter design | `PROMPT-L3-ADAPTER-DESIGN` |
-| `market_composite` | L3 | composite | `dimension_composite_result_v1` | `deterministic_composite` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L3 adapter not designed | L3 adapter design | `PROMPT-L3-ADAPTER-DESIGN` |
-| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `deterministic_composite` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L3 adapter not designed; no sentiment risk input | L3 adapter design | `PROMPT-L3-ADAPTER-DESIGN` |
-| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `deterministic_composite` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L3 adapter not designed | L3 adapter design | `PROMPT-L3-ADAPTER-DESIGN` |
-| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | `deterministic_decision` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L4 decision adapter not designed | L4 adapter design | `PROMPT-L4-ADAPTER-DESIGN` |
-| `report_generator` | L4 | l4 | `report_result_v1` | `deterministic_report` | `deterministic_skeleton` | `l3_l4_deferred` | n/a | n/a | n/a | External L4 report adapter not designed | L4 adapter design | `PROMPT-L4-ADAPTER-DESIGN` |
+| agent_id | layer | dimension | expected_payload_or_contract | production_endpoint | production_service_root | production_health_status | production_compute_status | production_adapter_mapping_status | production_status | dev_historical_status | known_issues | next_action | developer_prompt_id | artifact_path |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| `route_planner` | L1 | l1 | `fixed_dag_plan_v1` | n/a | n/a | n/a | n/a | n/a | `production_internal_deterministic` | deterministic internal | Internal planner, not external service | Keep deterministic | n/a | n/a |
+| `financial_data_service` | L1 | l1 | `data_bundle_v1` | `127.0.0.1:11000` | `/sdb/dlut/prod/金融数据服务智能体/pg-ops-agent/backend` | fail | skipped | skipped | `production_health_failed` | dev pass after remediation | Production `/health` invalid JSON | Production health fix and resmoke | `PROMPT-PROD-HEALTH-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/financial_data_service` |
+| `entity_relation_extractor` | L1 | l1 | `entity_relation_bundle_v1` | missing | unknown | skipped | skipped | skipped | `production_endpoint_missing` | dev pass after remediation | No confirmed production endpoint | Production deploy/register then resmoke | `PROMPT-PROD-BACKFILL-DEV-PATCH` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/entity_relation_extractor` |
+| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | `/sdb/dlut/prod/传统企业估值智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/value_traditional_valuation` |
+| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | `/sdb/dlut/prod/机器学习企业估值智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after identity remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/value_ml_valuation` |
+| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | `/sdb/dlut/prod/元学习企业估值智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/value_meta_valuation` |
+| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | `/sdb/dlut/prod/分析师研报与观点集成智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/value_research_synthesis` |
+| `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | `/sdb/dlut/prod/个股技术分析智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/market_stock_technical` |
+| `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10007` | `/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior` | pass | pass | fail | `production_identity_mismatch` | no dev pass | Production subservice exists but id/wrapper not fixed DAG compatible | Confirm service ownership and wrapper | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/market_fund_manager_behavior` |
+| `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10008` | `/sdb/dlut/prod/市场面综合智能体` | pass | pass | fail | `production_identity_mismatch` | dev failed/skipped | Production output still not fixed DAG compatible | Add production wrapper | `PROMPT-PROD-IPO-WRAPPER` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/market_ipo_investor_behavior` |
+| `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | `/sdb/dlut/prod/资金流智能体` | pass | pass | fail | `production_identity_mismatch` | dev pass after remediation | `unknown_agent_id`; production patch not backfilled | Backfill identity wrapper and redeploy | `PROMPT-PROD-IDENTITY-FIX` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/market_capital_flow_chip` |
+| `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | missing | unknown | skipped | skipped | skipped | `production_endpoint_missing` | dev pass market-only | No confirmed production endpoint; must remain market-only | Production deploy/register and market-only resmoke | `PROMPT-PROD-BACKFILL-DEV-PATCH` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/sentiment_company_radar` |
+| `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | `/sdb/dlut/prod/股价崩盘风险智能体` | pass | pass | pass | `production_compute_pass` | dev pass after remediation | L2 risk gate-member only; not L3 risk evidence | Production invoke audit prep | `PROMPT-PROD-INVOKE-AUDIT-PREP` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/risk_crash` |
+| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | `/sdb/dlut/prod/财务造假风险智能体` | pass | pass | pass | `production_compute_pass` | dev pass after remediation | L2 risk gate-member only; not L3 risk evidence | Production invoke audit prep | `PROMPT-PROD-INVOKE-AUDIT-PREP` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/risk_financial_fraud` |
+| `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | `/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体` | pass | pass | pass | `production_compute_pass` | dev pass after remediation | L2 risk gate-member only; not L3 risk evidence | Production invoke audit prep | `PROMPT-PROD-INVOKE-AUDIT-PREP` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/risk_identification` |
+| `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | `/sdb/dlut/prod/公告合规审查智能体` | pass | pass | pass | `production_compute_pass` | dev pass after remediation | L2 risk gate-member only; not L3 risk evidence | Production invoke audit prep | `PROMPT-PROD-INVOKE-AUDIT-PREP` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/risk_compliance_review` |
+| `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | `/sdb/dlut/prod/宏观分析智能体` | pass | pass | pass | `production_compute_pass` | dev pass | Production L2 macro pass | Production invoke audit prep | `PROMPT-PROD-INVOKE-AUDIT-PREP` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/macro_analysis` |
+| `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | `/sdb/dlut/prod/商品定价分析智能体/agent协议` | pass | fail | skipped | `production_health_pass_compute_failed` | dev endpoint missing | Production compute HTTP error | Fix production compute wrapper/runbook | `PROMPT-PROD-COMMODITY-RUNBOOK` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/macro_commodity_pricing` |
+| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | `/sdb/dlut/prod/股票指数估值智能体` | skipped | skipped | skipped | `production_semantic_deferred` | semantic deferred | Owner has not approved macro L2 semantics | Owner semantic decision | `PROMPT-PROD-MACRO-INDEX-OWNER` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/macro_index_valuation` |
+| `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | `/sdb/dlut/prod/宏观综合智能体/placeholders.macro_sentiment` | skipped | skipped | skipped | `production_semantic_deferred` | L3-style deferred | Placeholder or macro_conclusion semantics, not L2 | L2/L3 classification | `PROMPT-PROD-MACRO-L3-DEFER` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/macro_sentiment` |
+| `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | `/sdb/dlut/prod/宏观综合智能体/placeholders.industry_hotspot` | skipped | skipped | skipped | `production_semantic_deferred` | L3-style deferred | Placeholder or macro_conclusion semantics, not L2 | L2/L3 classification | `PROMPT-PROD-MACRO-L3-DEFER` | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z/macro_industry_hotspot` |
+| `value_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L3 adapter not designed | L3 adapter design | `PROMPT-PROD-L3-ADAPTER-DESIGN` | n/a |
+| `market_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L3 adapter not designed | L3 adapter design | `PROMPT-PROD-L3-ADAPTER-DESIGN` | n/a |
+| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L3 adapter not designed; no sentiment risk input | L3 adapter design | `PROMPT-PROD-L3-ADAPTER-DESIGN` | n/a |
+| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L3 adapter not designed | L3 adapter design | `PROMPT-PROD-L3-ADAPTER-DESIGN` | n/a |
+| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L4 adapter not designed | L4 adapter design | `PROMPT-PROD-L4-ADAPTER-DESIGN` | n/a |
+| `report_generator` | L4 | l4 | `report_result_v1` | n/a | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | deterministic internal | L4 adapter not designed | L4 adapter design | `PROMPT-PROD-L4-ADAPTER-DESIGN` | n/a |
 
-## Service Patches Outside Git Inventory
+## Dev Historical Evidence Appendix
 
-These service-side patches were applied in dev service directories that were
-not usable service git repositories during the smoke/remediation phases. Service
-owners must backfill the same protocol changes into their own source-controlled
-repositories before invoke audit or runtime binding work.
+Earlier R8-8G/H/I/J/K/L/M evidence is retained only as dev historical evidence.
+It helped identify wrappers and service patches, but it does not drive the
+production status above.
 
-| agent_id | patch/backfill evidence |
+Dev historical controlled compute pass agents:
+
+- `financial_data_service`
+- `entity_relation_extractor`
+- `value_ml_valuation`
+- `value_traditional_valuation`
+- `value_meta_valuation`
+- `value_research_synthesis`
+- `market_stock_technical`
+- `sentiment_company_radar`
+- `market_capital_flow_chip`
+- `risk_identification`
+- `risk_compliance_review`
+- `risk_financial_fraud`
+- `risk_crash`
+- `macro_analysis`
+
+Important production rebaseline result: only five of these currently pass
+production adapter mapping. Several dev fixes were not backfilled to production.
+
+## Service Patch Backfill Inventory
+
+These patches made dev services pass. They must be backfilled into
+service-owned source-controlled repositories and redeployed to production before
+production evidence can pass.
+
+| agent_id | dev patch evidence |
 | --- | --- |
 | `value_ml_valuation` | `/tmp/lma-r8-8d-id-backup/20260610T030433Z` |
 | `value_traditional_valuation` | `/tmp/lma-r8-8g-service-backup/20260610T034105Z/value_traditional_valuation` |
@@ -201,12 +188,16 @@ repositories before invoke audit or runtime binding work.
 
 ## Next Recommended Phases
 
-1. R8-9A: controlled `/v1/agent/invoke` audit plan only, no calls yet.
-2. R8-9B: first controlled invoke smoke for a tiny allowlist, still no runtime
-   binding change.
-3. Service-owner backfill phase: move the 13 non-git service protocol patches
-   into each service's source-controlled repository.
-4. Macro cleanup phase: resolve `macro_index_valuation`, `macro_sentiment`,
-   `macro_industry_hotspot`, and `macro_commodity_pricing`.
-5. L3/L4 adapter design phase: define composite, decision, and report adapter
-   contracts before any live runtime work.
+Because only five production candidates passed adapter mapping, the next phase
+should be R8-8Q production remediation/backfill, not broad runtime binding
+enablement.
+
+Recommended sequence:
+
+1. R8-8Q: backfill dev service protocol fixes into production services and
+   redeploy.
+2. R8-8R: production `/health` + `/v1/agent/compute` resmoke for failed agents.
+3. R8-9A: production `/v1/agent/invoke` audit planning only for the five current
+   production pass agents and any later production-pass resmoke agents.
+4. R8-9B: first controlled production invoke smoke for a tiny allowlist, still
+   without runtime binding enablement.

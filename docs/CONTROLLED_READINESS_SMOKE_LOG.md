@@ -5,6 +5,72 @@ service candidates. It is not public transcript content and must not include raw
 service responses, credentials, traceback text, provider raw responses, or
 chain-of-thought.
 
+R8-8G through R8-8M entries below are dev-only historical evidence unless a
+section explicitly says production. Dev evidence is useful for debugging and
+service backfill, but it is not production readiness.
+
+## 2026-06-10 - R8-8P production endpoint rebaseline
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8P |
+| Run UTC | 2026-06-10T10:44:56Z |
+| Artifact directory | `/tmp/lma-r8-8p-prod-readiness/20260610T104456Z` |
+| Environment | production endpoints only |
+| Endpoint calls | `GET /health`, `POST /v1/agent/compute` |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+Production coverage summary:
+
+| Metric | Count |
+| --- | ---: |
+| Total fixed DAG agents | 27 |
+| External-service candidates | 20 |
+| Production endpoint known | 18 |
+| Production health pass | 14 |
+| Production compute pass | 13 |
+| Production adapter mapping pass | 5 |
+| Production failed/deferred | 13 |
+| Production endpoint missing | 2 |
+| Production semantic deferred | 3 |
+| Production identity mismatch | 8 |
+| Internal deterministic | 1 |
+| L3/L4 deferred | 6 |
+| Invoke audit candidates | 5 |
+
+Production pass agents:
+
+- `risk_identification`
+- `risk_compliance_review`
+- `risk_financial_fraud`
+- `risk_crash`
+- `macro_analysis`
+
+Production failed/deferred highlights:
+
+- `financial_data_service`: production `/health` failed with invalid JSON.
+- `entity_relation_extractor`: no confirmed production endpoint.
+- `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `value_research_synthesis`,
+  `market_stock_technical`, `market_fund_manager_behavior`,
+  `market_ipo_investor_behavior`, and `market_capital_flow_chip`: production
+  compute was reachable, but adapter mapping failed on identity mismatch.
+- `sentiment_company_radar`: no confirmed production endpoint.
+- `macro_commodity_pricing`: production health passed but compute failed.
+- `macro_index_valuation`, `macro_sentiment`, and
+  `macro_industry_hotspot`: production semantic deferred.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not prove production default invocation readiness.
+- This does not update public transcript content.
+
 ## 2026-06-10 - R8-8D-ID value_ml_valuation
 
 | Field | Value |
