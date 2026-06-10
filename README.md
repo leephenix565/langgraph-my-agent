@@ -173,6 +173,13 @@ probable cause, owner action, maintainer action, resmoke boundary, and
 copy-ready Chinese Codex / Claude Code prompt. This is documentation only; it
 does not call endpoints, edit production services, change adapter logic, enable
 runtime bindings, set live flags, or advance `/v1/agent/invoke`.
+Phase R8-10B adds provider-free pure adapter mappings for L3 composite payloads:
+`dimension_conclusion_v1` for value/market composites,
+`risk_conclusion_v1` for the risk gate, and `macro_conclusion_v1` for the macro
+regulator. All three map into the existing `dimension_composite_result_v1`
+internal contract, including compute/response envelope tool results. This does
+not call endpoints, enable runtime bindings, set live flags, wire active L3
+runtime execution, or treat adapter tests as live readiness.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free

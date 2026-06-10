@@ -3,6 +3,51 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10B L3 composite adapter mapping
+
+### Changed
+
+- Added provider-free pure adapter mappings for L3 payloads:
+  `dimension_conclusion_v1`, `risk_conclusion_v1`, and
+  `macro_conclusion_v1`.
+- Added direct, `external_agent_compute_v0.tool_result`, and
+  `external_agent_response_v0.tool_result` dispatch for those L3 payloads into
+  `dimension_composite_result_v1`.
+- Unified deterministic macro composite placeholder weights to `value` and
+  `market` only, matching the R8-10A/R8-10B macro regulator decision.
+- Added L3 adapter and contract unit tests for value/market members, risk
+  gates, manual review, macro value/market weights, envelope dispatch, and safe
+  provenance.
+- Updated contract, payload mapping, sample, readiness, developer prompt,
+  matrix, quality, README, and ADR documentation for the L3 pure mapping
+  boundary.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py -q`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/health` call.
+- No `/v1/agent/compute` call.
+- No `/v1/agent/invoke` call.
+- No prod or dev port access.
+- No service start, stop, or restart.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No active L3 runtime integration.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  external service code change.
+- No adapter test is treated as live readiness.
+
 ## 2026-06-10 - Phase R8-8P-DOCS-QA production readiness problem playbook
 
 ### Changed

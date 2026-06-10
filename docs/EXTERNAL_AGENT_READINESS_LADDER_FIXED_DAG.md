@@ -229,6 +229,22 @@ with production `/health` and `/v1/agent/compute`. Passing that resmoke still
 remains L3 evidence only. It does not imply `/v1/agent/invoke`, L5 runtime
 binding preparation, L6 live verification, or L7 default invocation.
 
+### R8-10B L3 Adapter Mapping Boundary
+
+R8-10B adds provider-free pure mappings for L3 composite payloads:
+`dimension_conclusion_v1` maps value/market composites,
+`risk_conclusion_v1` maps the risk gate, and `macro_conclusion_v1` maps the
+macro regulator. The adapter can accept those payloads directly or as
+`external_agent_compute_v0.tool_result` /
+`external_agent_response_v0.tool_result` and produce
+`dimension_composite_result_v1`.
+
+This is not L3 live readiness. R8-10B does not call `/health`, does not call
+`/v1/agent/compute`, does not call `/v1/agent/invoke`, does not enable runtime
+bindings, and does not wire external L3 services into the active graph. Passing
+L3 adapter unit tests means only that sanitized payload dictionaries can be
+mapped locally.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement

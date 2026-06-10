@@ -682,9 +682,52 @@ def test_dimension_composites_validate_and_preserve_sentiment_boundary() -> None
     assert "sentiment_company_radar" not in results["risk"]["contributing_agents"]
     assert {"gate", "veto", "penalty", "risk_score"} <= set(results["risk"])
     assert {"regime", "dimension_weights", "risk_sensitivity"} <= set(results["macro"])
+    assert set(results["macro"]["dimension_weights"]) == {"value", "market"}
     for item in results.values():
         valid, reason = validate_dimension_composite_result(item)
         assert valid, reason
+
+
+def test_dimension_composite_validator_accepts_selected_subset_contributors() -> None:
+    item = {
+        "schema": "dimension_composite_result_v1",
+        "schema_version": "dimension_composite_result_v1",
+        "agent_id": "value_composite",
+        "dimension": "value",
+        "stance": "0.12",
+        "confidence": 0.7,
+        "status": "complete",
+        "contributing_agents": ["value_ml_valuation", "value_research_synthesis"],
+        "evidence_refs": ["bounded-evidence"],
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "vote_type": "weighted_member_vote",
+        "provenance": {
+            "source": "fixed_dag_external_adapter",
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    }
+
+    valid, reason = validate_dimension_composite_result(item)
+
+    assert valid, reason
+
+
+def test_macro_composite_validator_rejects_legacy_four_weight_shape() -> None:
+    results = build_dimension_results({}, as_of="2026-06-04")
+    macro = dict(results["macro"])
+    macro["dimension_weights"] = {
+        "value": 0.35,
+        "market": 0.25,
+        "risk": 0.25,
+        "macro": 0.15,
+    }
+
+    valid, reason = validate_dimension_composite_result(macro)
+
+    assert not valid
+    assert reason == "dimension_weights_keys_mismatch"
 
 
 def test_risk_composite_ignores_sentiment_even_if_present_in_input() -> None:

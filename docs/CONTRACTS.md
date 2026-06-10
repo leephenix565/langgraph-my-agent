@@ -131,7 +131,8 @@ External v2.3.1 fields such as `DimensionMember[]`, `raw_output`, `quality`,
 adapter code must explicitly decide how to map or discard them; they do not
 automatically become fixed DAG runtime state.
 
-R8-7B makes that decision only for the first supported families:
+R8-7B made that decision for the first supported families, and R8-10B extends
+the same provider-free adapter boundary to L3 composite payloads:
 
 - `agent_conclusion_v1` direction outputs map to `conclusion_object_v1`.
 - `agent_conclusion_v1` risk `gate_member` outputs may map only when the primary
@@ -147,11 +148,23 @@ R8-7B makes that decision only for the first supported families:
 - `external_agent_compute_v0.tool_result.entity_relation_bundle_v1` maps
   through the same `entity_relation_bundle_v1` adapter path as R8-8K L1
   entity-relation evidence only.
+- `dimension_conclusion_v1` maps into `dimension_composite_result_v1` for
+  `value_composite` and `market_composite`. The adapter requires member ids to
+  come from the matching L2 roster, requires member weights to sum to roughly
+  one, and keeps only bounded member/evidence summaries in provenance.
+- `risk_conclusion_v1` maps into `dimension_composite_result_v1` for
+  `risk_composite`. It preserves `gate`, `manual_review`, `veto`, `penalty`,
+  `risk_score`, triggered flags, and red lines without producing a direction
+  `stance`; `sentiment_company_radar` remains forbidden as a risk contributor.
+- `macro_conclusion_v1` maps into `dimension_composite_result_v1` for
+  `macro_composite`. `dimension_weights` are restricted to `value` and
+  `market`; `risk` remains the independent gate and `macro` remains the
+  regulator.
 - `raw_output` and `quality` do not enter graph state; at most bounded key
   summaries may appear in provenance.
-- `dimension_conclusion_v1`, `risk_conclusion_v1`, `macro_conclusion_v1`,
-  `decision_conclusion_v1`, `eval_record_v1`, `fixed_dag_plan_v1`, L3
-  composites, L4 decision/report, and executor integration remain later work.
+- `decision_conclusion_v1`, `eval_record_v1`, `fixed_dag_plan_v1`, active L3
+  runtime execution, L4 decision/report, and executor integration remain later
+  work.
 
 ## fixed_dag_agent_catalog_v1
 
@@ -638,10 +651,16 @@ Runtime fields:
 - value/market `vote_type`
 - risk-only `gate`, `veto`, `penalty`, `risk_score`
 - macro-only `regime`, `dimension_weights`, `risk_sensitivity`
+- optional bounded `provenance`
 
 Seams: `build_value_composite`, `build_market_composite`,
 `build_risk_composite`, `build_macro_composite`, `build_dimension_results`,
 `validate_dimension_composite_result`.
+
+R8-10B notes: the deterministic macro placeholder and the external macro
+adapter both use `dimension_weights` keys `value` and `market` only. A risk
+decision remains represented by `risk_composite`; macro is a regulator over
+directional value/market weights rather than a fourth direction vote.
 
 ## decision_result_v1
 

@@ -5,6 +5,7 @@ from pathlib import Path
 from react_agent.fixed_dag_contracts import (
     validate_conclusion_object,
     validate_data_bundle,
+    validate_dimension_composite_result,
     validate_entity_relation_bundle,
 )
 from react_agent.fixed_dag_external_adapter import (
@@ -168,6 +169,127 @@ def _entity_relation_payload() -> dict[str, object]:
     }
 
 
+def _dimension_conclusion_payload(
+    *,
+    agent_id: str = "value_composite",
+    dimension: str = "value",
+    members: list[dict[str, object]] | None = None,
+) -> dict[str, object]:
+    if members is None:
+        members = [
+            {
+                "agent_id": "value_ml_valuation",
+                "stance": 0.2,
+                "confidence": 0.72,
+                "weight": 0.6,
+                "status": "ok",
+            },
+            {
+                "agent_id": "value_research_synthesis",
+                "stance": 0.1,
+                "confidence": 0.68,
+                "weight": 0.4,
+                "status": "ok",
+            },
+        ]
+    return {
+        "schema_version": "dimension_conclusion_v1",
+        "agent_id": agent_id,
+        "external_agent_id": f"{agent_id}_service",
+        "dimension": dimension,
+        "role": "direction",
+        "target": "600519.SH",
+        "stance": 0.16,
+        "confidence": 0.7,
+        "members": members,
+        "method": "weighted_member_vote",
+        "evidence": [
+            {
+                "id": "dimension-evidence-1",
+                "fact": "Weighted value members are mildly positive.",
+                "source": "bounded_l3_fixture",
+                "as_of": "2026-06-05",
+                "data_as_of": "2026-06-05",
+            }
+        ],
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "status": "ok",
+    }
+
+
+def _risk_conclusion_payload(*, gate: str = "pass") -> dict[str, object]:
+    return {
+        "schema_version": "risk_conclusion_v1",
+        "agent_id": "risk_composite",
+        "external_agent_id": "risk_composite_service",
+        "dimension": "risk",
+        "role": "gate",
+        "target": "600519.SH",
+        "gate": gate,
+        "risk_score": 0.42,
+        "penalty": 0.15,
+        "confidence": 0.78,
+        "contributing_agents": ["risk_identification", "risk_compliance_review"],
+        "triggered_flags": ["bounded_risk_flag"],
+        "red_lines": ["manual review only if disclosure changes"],
+        "evidence": [
+            {
+                "id": "risk-evidence-1",
+                "fact": "Risk gate inputs remain below veto level.",
+                "source": "bounded_l3_fixture",
+                "as_of": "2026-06-05",
+                "data_as_of": "2026-06-05",
+            }
+        ],
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "status": "ok",
+    }
+
+
+def _macro_conclusion_payload() -> dict[str, object]:
+    return {
+        "schema_version": "macro_conclusion_v1",
+        "agent_id": "macro_composite",
+        "external_agent_id": "macro_composite_service",
+        "dimension": "macro",
+        "role": "regulator",
+        "target": "CN_A_SHARE_MACRO",
+        "regime": "neutral_liquidity_watch",
+        "dimension_weights": {"value": 0.55, "market": 0.45},
+        "risk_sensitivity": 0.6,
+        "style_bias": {"quality": 0.7, "defensive": 0.3},
+        "confidence": 0.69,
+        "contributing_agents": ["macro_analysis", "macro_commodity_pricing"],
+        "evidence": [
+            {
+                "id": "macro-evidence-1",
+                "fact": "Macro regime supports balanced value and market weights.",
+                "source": "bounded_l3_fixture",
+                "as_of": "2026-06-05",
+                "data_as_of": "2026-06-05",
+            }
+        ],
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "status": "ok",
+    }
+
+
+def _response_envelope(tool_result: dict[str, object]) -> dict[str, object]:
+    return {
+        "schema_version": EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION,
+        "agent_id": str(tool_result["agent_id"]),
+        "external_agent_id": str(tool_result.get("external_agent_id", "")),
+        "status": "ok",
+        "confidence": 0.7,
+        "warnings": [],
+        "errors": [],
+        "tool_result": tool_result,
+    }
+
+
 def test_external_compute_envelope_maps_entity_relation_bundle_tool_result() -> None:
     payload = _compute_envelope(_entity_relation_payload())
     payload["agent_id"] = "entity_relation_extractor"
@@ -186,6 +308,235 @@ def test_external_compute_envelope_maps_entity_relation_bundle_tool_result() -> 
     assert mapped["relations"][0]["type"] == "belongs_to"
     assert "source: entity_relation_agent_local_snapshot" in mapped["notes"]
     _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_value_maps_to_dimension_composite_result() -> None:
+    mapped = map_external_response_to_fixed_dag_object(_dimension_conclusion_payload())
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["agent_id"] == "value_composite"
+    assert mapped["dimension"] == "value"
+    assert mapped["status"] == "complete"
+    assert mapped["contributing_agents"] == ["value_ml_valuation", "value_research_synthesis"]
+    assert mapped["evidence_refs"] == ["dimension-evidence-1"]
+    assert mapped["vote_type"] == "weighted_member_vote"
+    assert mapped["provenance"]["adapter_input_schema"] == "dimension_conclusion_v1"
+    assert mapped["provenance"]["provider_invoked"] is False
+    assert mapped["provenance"]["external_invoked"] is False
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_market_maps_and_allows_sentiment_company_radar() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": 0.1,
+                "confidence": 0.65,
+                "weight": 0.5,
+                "status": "ok",
+            },
+            {
+                "agent_id": "sentiment_company_radar",
+                "stance": -0.05,
+                "confidence": 0.61,
+                "weight": 0.5,
+                "status": "ok",
+            },
+        ],
+    )
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["agent_id"] == "market_composite"
+    assert mapped["dimension"] == "market"
+    assert "sentiment_company_radar" in mapped["contributing_agents"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_value_rejects_sentiment_or_risk_member() -> None:
+    payload = _dimension_conclusion_payload(
+        members=[
+            {
+                "agent_id": "sentiment_company_radar",
+                "stance": 0.0,
+                "confidence": 0.5,
+                "weight": 1.0,
+                "status": "ok",
+            }
+        ],
+    )
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "dimension_member_agent_mismatch"
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_rejects_weights_sum_not_approx_one() -> None:
+    payload = _dimension_conclusion_payload()
+    payload["members"] = [
+        {
+            "agent_id": "value_ml_valuation",
+            "stance": 0.2,
+            "confidence": 0.72,
+            "weight": 0.6,
+            "status": "ok",
+        },
+        {
+            "agent_id": "value_research_synthesis",
+            "stance": 0.1,
+            "confidence": 0.68,
+            "weight": 0.3,
+            "status": "ok",
+        },
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "dimension_member_weight_sum_mismatch"
+
+
+def test_risk_conclusion_gate_pass_maps_to_dimension_composite_result() -> None:
+    mapped = map_external_response_to_fixed_dag_object(_risk_conclusion_payload())
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["agent_id"] == "risk_composite"
+    assert mapped["dimension"] == "risk"
+    assert mapped["stance"] == "risk_gate"
+    assert mapped["gate"] == "pass"
+    assert mapped["veto"] is False
+    assert mapped["risk_score"] == 0.42
+    assert mapped["provenance"]["triggered_flags"] == ["bounded_risk_flag"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_risk_conclusion_manual_review_maps_and_preserves_gate() -> None:
+    payload = _risk_conclusion_payload(gate="manual_review")
+    payload["penalty"] = 0.0
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["gate"] == "manual_review"
+    assert mapped["veto"] is False
+    assert mapped["penalty"] == 0.0
+    _assert_safe_public_payload(mapped)
+
+
+def test_risk_conclusion_rejects_sentiment_company_radar_contributor() -> None:
+    payload = _risk_conclusion_payload()
+    payload["contributing_agents"] = ["risk_identification", "sentiment_company_radar"]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "risk_reads_sentiment"
+    _assert_safe_public_payload(mapped)
+
+
+def test_macro_conclusion_maps_with_value_market_dimension_weights_only() -> None:
+    mapped = map_external_response_to_fixed_dag_object(_macro_conclusion_payload())
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["agent_id"] == "macro_composite"
+    assert mapped["dimension"] == "macro"
+    assert mapped["stance"] == "macro_regulator"
+    assert mapped["dimension_weights"] == {"value": 0.55, "market": 0.45}
+    assert mapped["risk_sensitivity"] == 0.6
+    assert mapped["provenance"]["style_bias"] == {"quality": 0.7, "defensive": 0.3}
+    _assert_safe_public_payload(mapped)
+
+
+def test_macro_conclusion_rejects_dimension_weights_containing_risk_or_macro() -> None:
+    payload = _macro_conclusion_payload()
+    payload["dimension_weights"] = {
+        "value": 0.4,
+        "market": 0.4,
+        "risk": 0.1,
+        "macro": 0.1,
+    }
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "dimension_weights_invalid_keys"
+    _assert_safe_public_payload(mapped)
+
+
+def test_external_compute_envelope_maps_l3_tool_result() -> None:
+    payload = _compute_envelope(_risk_conclusion_payload())
+    payload["agent_id"] = "risk_composite"
+    payload["external_agent_id"] = "risk_composite_service"
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["agent_id"] == "risk_composite"
+    assert mapped["provenance"]["adapter_input_schema"] == "risk_conclusion_v1"
+    assert mapped["provenance"]["envelope_schema"] == EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION
+    assert mapped["provenance"]["compute_envelope_status"] == "ok"
+    _assert_safe_public_payload(mapped)
+
+
+def test_external_response_envelope_maps_l3_tool_result() -> None:
+    payload = _response_envelope(_macro_conclusion_payload())
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["agent_id"] == "macro_composite"
+    assert mapped["provenance"]["adapter_input_schema"] == "macro_conclusion_v1"
+    assert mapped["provenance"]["envelope_schema"] == EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION
+    assert mapped["provenance"]["response_envelope_status"] == "ok"
+    _assert_safe_public_payload(mapped)
+
+
+def test_l3_unsafe_raw_fields_do_not_leak() -> None:
+    payload = _dimension_conclusion_payload()
+    payload["raw_output"] = {"secret": "api_key=abc", "safe_metric": 1}
+    payload["members"] = [
+        {
+            "agent_id": "value_ml_valuation",
+            "stance": 0.2,
+            "confidence": 0.72,
+            "weight": 1.0,
+            "status": "ok",
+            "raw_response": "traceback",
+        }
+    ]
+    payload["evidence"] = [
+        {
+            "id": "safe-evidence",
+            "fact": "Safe fact.",
+            "source": "bounded_l3_fixture",
+            "note": "raw_response hidden",
+        }
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    _assert_safe_public_payload(mapped)
+    rendered = json.dumps(mapped, ensure_ascii=False).lower()
+    assert "safe-evidence" in rendered
+    assert "raw_response" not in rendered
 
 
 def test_entity_relation_bundle_unsafe_content_does_not_leak() -> None:

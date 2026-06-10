@@ -2,6 +2,8 @@
 
 This document is the production-first readiness matrix and remediation
 playbook for the fixed DAG agent roster after Phase R8-8P-DOCS-QA.
+R8-10B adds local provider-free L3 adapter mapping, but it does not change the
+production endpoint baseline below and does not make L3 services live.
 
 R8-8P rebaselined readiness against confirmed production endpoints. Earlier
 R8-8G/H/I/J/K/L/M controlled smoke results used dev endpoints and are now
@@ -51,6 +53,8 @@ in dev.
   `risk_composite`.
 - L3 and L4 remain deterministic seams until a separate adapter/runtime design
   phase owns them.
+- R8-10B L3 adapter tests are not live readiness and do not enable external L3
+  runtime execution.
 
 ## Production Coverage Summary
 
@@ -409,61 +413,77 @@ payload pass.
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external L2; deterministic internal seam
   remains.
-- Problem type: L3 adapter/runtime design not started.
-- Failure reason: L3 composites need `dimension_composite_result_v1`, not L2
-  `agent_conclusion_v1`.
+- Problem type: L3 runtime/service smoke not started.
+- Failure reason: R8-10B supports provider-free mapping from
+  `dimension_conclusion_v1`, but no production L3 endpoint has been smoked and
+  runtime bindings remain disabled.
 - Impact: no external production L3 evidence.
-- Solution: design an explicit L3 adapter/runtime phase.
-- Service owner action: none until L3 scope is approved.
-- Main-system maintainer action: keep deterministic seam.
-- Retest method: future L3 phase only.
-- Prompt: `PROMPT-PROD-L3-ADAPTER-DESIGN`.
+- Solution: service owner can backfill a `dimension_conclusion_v1` wrapper;
+  main-system maintainer can run a later controlled L3 health/compute smoke.
+- Service owner action: emit `agent_id=value_composite`, `dimension=value`,
+  `members[]` from value L2 roster, weights summing to one.
+- Main-system maintainer action: keep deterministic seam and runtime bindings
+  disabled until an explicit L3 runtime phase.
+- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
+- Prompt: `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER`.
 
 ### market_composite
 
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external L2; deterministic internal seam
   remains.
-- Problem type: L3 adapter/runtime design not started.
-- Failure reason: market composite is an aggregate contract, not an L2 external
-  service target.
+- Problem type: L3 runtime/service smoke not started.
+- Failure reason: R8-10B supports provider-free mapping from
+  `dimension_conclusion_v1`, but no production L3 endpoint has been smoked and
+  runtime bindings remain disabled.
 - Impact: no external production L3 evidence.
-- Solution: future L3 adapter design with explicit evidence/provenance rules.
-- Service owner action: none until L3 scope is approved.
-- Main-system maintainer action: keep deterministic seam.
-- Retest method: future L3 phase only.
-- Prompt: `PROMPT-PROD-L3-ADAPTER-DESIGN`.
+- Solution: service owner can backfill a `dimension_conclusion_v1` wrapper that
+  allows `sentiment_company_radar` only as a market member.
+- Service owner action: emit `agent_id=market_composite`, `dimension=market`,
+  `members[]` from market L2 roster, weights summing to one.
+- Main-system maintainer action: keep deterministic seam and runtime bindings
+  disabled until an explicit L3 runtime phase.
+- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
+- Prompt: `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER`.
 
 ### risk_composite
 
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external L2; deterministic internal seam
   remains.
-- Problem type: L3 adapter/runtime design not started.
-- Failure reason: risk composite consumes risk member evidence; it must not
-  receive sentiment-to-risk or raw risk service payloads directly.
+- Problem type: L3 runtime/service smoke not started.
+- Failure reason: R8-10B supports provider-free mapping from
+  `risk_conclusion_v1`, but no production L3 risk endpoint has been smoked and
+  runtime bindings remain disabled.
 - Impact: no external production L3 risk evidence.
-- Solution: future L3 adapter design for `dimension_composite_result_v1` or
-  explicit risk composite contract.
-- Service owner action: none until L3 scope is approved.
-- Main-system maintainer action: preserve no sentiment-to-risk rule.
-- Retest method: future L3 phase only.
-- Prompt: `PROMPT-PROD-L3-ADAPTER-DESIGN`.
+- Solution: service owner can backfill a `risk_conclusion_v1` gate wrapper.
+- Service owner action: emit `agent_id=risk_composite`, `dimension=risk`,
+  `role=gate`, `gate`, `risk_score`, `penalty`, and risk-only
+  `contributing_agents`.
+- Main-system maintainer action: preserve no sentiment-to-risk rule and keep
+  runtime bindings disabled.
+- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
+- Prompt: `PROMPT-L3-RISK-CONCLUSION-WRAPPER`.
 
 ### macro_composite
 
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external L2; deterministic internal seam
   remains.
-- Problem type: L3 adapter/runtime design not started.
-- Failure reason: macro composite is an aggregate, not a direct L2 external
-  agent.
+- Problem type: L3 runtime/service smoke not started.
+- Failure reason: R8-10B supports provider-free mapping from
+  `macro_conclusion_v1`, but no production L3 macro endpoint has been smoked
+  and runtime bindings remain disabled.
 - Impact: no external production L3 evidence.
-- Solution: future L3 adapter design after macro L2 semantic issues are settled.
-- Service owner action: none until L3 scope is approved.
-- Main-system maintainer action: keep deterministic seam.
-- Retest method: future L3 phase only.
-- Prompt: `PROMPT-PROD-L3-ADAPTER-DESIGN`.
+- Solution: service owner can backfill a `macro_conclusion_v1` regulator
+  wrapper.
+- Service owner action: emit `agent_id=macro_composite`, `dimension=macro`,
+  `role=regulator`, `regime`, value/market-only `dimension_weights`, and
+  `risk_sensitivity`.
+- Main-system maintainer action: keep deterministic seam and runtime bindings
+  disabled until an explicit L3 runtime phase.
+- Retest method: future R8-10C L3 controlled `/health` + `/compute` smoke only.
+- Prompt: `PROMPT-L3-MACRO-CONCLUSION-WRAPPER`.
 
 ### decision_synthesizer
 
@@ -520,10 +540,10 @@ payload pass.
 | `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
-| `value_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L3 adapter not designed | Future L3 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L3-ADAPTER-DESIGN` |
-| `market_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L3 adapter not designed | Future L3 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L3-ADAPTER-DESIGN` |
-| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L3 adapter not designed | Future L3 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L3-ADAPTER-DESIGN` |
-| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L3 adapter not designed | Future L3 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L3-ADAPTER-DESIGN` |
+| `value_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `dimension_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER` |
+| `market_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `dimension_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER` |
+| `risk_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `risk_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-RISK-CONCLUSION-WRAPPER` |
+| `macro_composite` | L3 | composite | `dimension_composite_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | R8-10B adapter mapping exists; no L3 live smoke/runtime | Future `macro_conclusion_v1` wrapper and L3 smoke | Keep deterministic | `PROMPT-L3-MACRO-CONCLUSION-WRAPPER` |
 | `decision_synthesizer` | L4 | l4 | `decision_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 | `report_generator` | L4 | l4 | `report_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 

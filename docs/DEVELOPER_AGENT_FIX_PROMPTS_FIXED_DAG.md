@@ -4,6 +4,11 @@
 之后的生产问题处置。每段 prompt 都可以直接复制给 Codex / Claude Code
 或服务 owner 使用。
 
+R8-10B 增加了 L3 provider-free adapter pure mapping：
+`dimension_conclusion_v1`、`risk_conclusion_v1`、`macro_conclusion_v1` 可以
+本地映射为 `dimension_composite_result_v1`。这只是主系统 adapter 能力，不是
+L3 production readiness，不启用 runtime bindings，也不允许直接调用 `/invoke`。
+
 R8-8P 已经证明：dev evidence 只能作为历史参考和 backfill 线索，不能当作
 production pass。所有修复必须进入服务 owner 的源码仓库，重新部署到
 production endpoint，并经过 production `/health` + `/v1/agent/compute` +
@@ -41,6 +46,10 @@ main-system adapter mapping 复测，才可以改变 production matrix 状态。
 | `PROMPT-PROD-MACRO-INDEX-OWNER` | `macro_index_valuation` semantic decision |
 | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` | `macro_sentiment` L2/L3 classification |
 | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` | `macro_industry_hotspot` L2/L3 classification |
+| `PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER` | `value_composite`, `market_composite` L3 payload wrapper |
+| `PROMPT-L3-RISK-CONCLUSION-WRAPPER` | `risk_composite` L3 risk gate wrapper |
+| `PROMPT-L3-MACRO-CONCLUSION-WRAPPER` | `macro_composite` L3 macro regulator wrapper |
+| `PROMPT-L3-ADAPTER-MAPPING` | main-system L3 adapter maintainer |
 | `PROMPT-PROD-L3-ADAPTER-DESIGN` | value/market/risk/macro composites |
 | `PROMPT-PROD-L4-ADAPTER-DESIGN` | `decision_synthesizer`, `report_generator` |
 | `PROMPT-PROD-INVOKE-AUDIT-PREP` | only five production health+compute+adapter pass candidates |
@@ -844,6 +853,226 @@ production service.py / app.py、schema/protocol、sample output、README/runboo
 
 production re-smoke 边界：
 分类后另开 /health + /compute resmoke；禁止 /invoke。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段
+D) 本地测试结果
+E) production 部署/重启方式
+F) production re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-L3-DIMENSION-CONCLUSION-WRAPPER
+
+```text
+你是 fixed DAG L3 value/market composite 服务端协议修复助手。
+
+目标：
+为 value_composite 或 market_composite 服务实现 production /v1/agent/compute 的 L3 输出 wrapper，使它返回 external_agent_compute_v0.tool_result.dimension_conclusion_v1，并能被主系统 R8-10B adapter 纯映射为 dimension_composite_result_v1。
+
+上下文：
+R8-10B 已经在主系统支持 dimension_conclusion_v1 -> dimension_composite_result_v1 的 provider-free pure mapping。这个能力不等于 live readiness，也不启用 runtime bindings。服务 owner 需要先把 L3 服务输出补齐，再请求后续 R8-10C controlled /health + /compute smoke。
+
+适用 agent_id：
+value_composite, market_composite
+
+固定 DAG id 规则：
+tool_result.agent_id 必须分别是 value_composite 或 market_composite。不得使用中文名、旧 aNN id、服务内部 id 或 L2 agent id 作为 primary agent_id。
+
+输入 L2 contracts：
+value_composite 只能消费 value L2 members：value_traditional_valuation、value_ml_valuation、value_meta_valuation、value_research_synthesis。
+market_composite 只能消费 market L2 members：market_stock_technical、market_fund_manager_behavior、market_ipo_investor_behavior、market_capital_flow_chip、sentiment_company_radar。sentiment_company_radar 只能在 market 出现，不能进入 risk。
+
+输出 payload schema：
+schema_version=dimension_conclusion_v1；dimension=value 或 market；role=direction；members 为 DimensionMember[]；每个 member 至少包含 agent_id、stance、confidence、weight、status；weight 总和约等于 1.0；confidence 在 0..1；as_of/data_as_of 满足 data_as_of <= as_of；evidence 只放安全摘要。
+
+禁止项：
+不得调用 /v1/agent/invoke；不得改 runtime_bindings；不得设置 live_verified 或 invoke_enabled_by_default；不得把 risk 或 macro agent 放进 value/market members；不得把完整 raw_output、provider raw response、traceback、secret、chain-of-thought 写入 payload。
+
+允许改动范围：
+只修改当前 L3 服务项目里的 /health、/v1/agent/compute response wrapper、schema/test/sample；不改主系统 graph/executor；不改业务模型、特征工程、算法和数据源。
+
+需要审计的文件：
+服务端 app/service/router 文件、compute_core 调用点、response builder、schema/model 文件、本地 tests、README/runbook。
+
+需要实现的字段：
+external_agent_compute_v0 envelope；tool_result.schema_version=dimension_conclusion_v1；tool_result.agent_id；tool_result.external_agent_id；dimension；members[]；stance；confidence；evidence；as_of；data_as_of；status；warnings/errors。
+
+需要运行的测试：
+python3 -m py_compile <changed_python_files>；如项目有 tests，运行相关 pytest；如项目有 ruff，运行相关 ruff check。禁止运行 provider/live/invoke tests。
+
+不得调用 /invoke：
+本 prompt 只允许修 compute wrapper 和本地测试。/invoke 审计必须另开阶段。
+
+不得设置 live flags：
+不要修改 runtime bindings，不要设置 live_verified=true 或 invoke_enabled_by_default=true。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段示例
+D) 本地测试结果
+E) production 部署/重启方式
+F) production /health + /compute re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-L3-RISK-CONCLUSION-WRAPPER
+
+```text
+你是 fixed DAG L3 risk_composite 服务端协议修复助手。
+
+目标：
+为 risk_composite 服务实现 production /v1/agent/compute 的 L3 风险闸门 wrapper，使它返回 external_agent_compute_v0.tool_result.risk_conclusion_v1，并能被主系统 R8-10B adapter 纯映射为 dimension_composite_result_v1。
+
+上下文：
+R8-10B 已经支持 risk_conclusion_v1 -> dimension_composite_result_v1。risk_composite 是风险 gate，不是方向票。它不会输出普通 stance，也不能消费 sentiment_company_radar。
+
+适用 agent_id：
+risk_composite
+
+固定 DAG id 规则：
+tool_result.agent_id 必须是 risk_composite；dimension 必须是 risk；role 必须是 gate。external_agent_id 只能保存服务 id，不得覆盖 fixed DAG id。
+
+输入 L2 contracts：
+contributing_agents 只能来自 risk L2 roster：risk_crash、risk_financial_fraud、risk_identification、risk_compliance_review。
+
+输出 payload schema：
+schema_version=risk_conclusion_v1；agent_id=risk_composite；dimension=risk；role=gate；gate 只能是 pass、penalty、veto、manual_review；risk_score 在 0..1；penalty 在 0..1；confidence 在 0..1；triggered_flags 和 red_lines 是安全 bounded 字符串列表；as_of/data_as_of 满足 data_as_of <= as_of。
+
+禁止项：
+不得调用 /v1/agent/invoke；不得改 runtime_bindings；不得设置 live flags；不得输出 direction stance；不得把 sentiment_company_radar 放进 contributing_agents；不得把 risk_conclusion_v1 强塞成 L2 agent_conclusion_v1。
+
+允许改动范围：
+只修改 risk_composite 服务项目里的 /health、/v1/agent/compute response wrapper、schema/test/sample；不改主系统 runtime；不改风险模型或阈值算法。
+
+需要审计的文件：
+服务端 app/service/router 文件、risk aggregation 或 compute_core 调用点、response builder、schema/model 文件、本地 tests、README/runbook。
+
+需要实现的字段：
+external_agent_compute_v0 envelope；tool_result.schema_version=risk_conclusion_v1；tool_result.agent_id=risk_composite；external_agent_id；dimension=risk；role=gate；gate；risk_score；penalty；triggered_flags；red_lines；contributing_agents；evidence；as_of；data_as_of；status。
+
+需要运行的测试：
+python3 -m py_compile <changed_python_files>；相关 pytest/ruff 如可用。增加至少一个 manual_review fixture，并确认 veto 时 gate=veto、veto 语义可被 adapter 映射。
+
+不得调用 /invoke：
+本 prompt 只允许修 compute wrapper 和本地测试。/invoke 另开阶段。
+
+不得设置 live flags：
+不要修改 runtime bindings，不要设置 live_verified=true 或 invoke_enabled_by_default=true。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段示例
+D) 本地测试结果
+E) production 部署/重启方式
+F) production /health + /compute re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-L3-MACRO-CONCLUSION-WRAPPER
+
+```text
+你是 fixed DAG L3 macro_composite 服务端协议修复助手。
+
+目标：
+为 macro_composite 服务实现 production /v1/agent/compute 的 L3 宏观调节器 wrapper，使它返回 external_agent_compute_v0.tool_result.macro_conclusion_v1，并能被主系统 R8-10B adapter 纯映射为 dimension_composite_result_v1。
+
+上下文：
+R8-10B 已经支持 macro_conclusion_v1 -> dimension_composite_result_v1。macro_composite 是 regulator，不是普通方向票。宏观只调节 value/market 方向权重；risk 是独立 gate；macro 本身不是 dimension_weights 的一个 key。
+
+适用 agent_id：
+macro_composite
+
+固定 DAG id 规则：
+tool_result.agent_id 必须是 macro_composite；dimension 必须是 macro；role 必须是 regulator。external_agent_id 只能保存服务 id。
+
+输入 L2 contracts：
+contributing_agents 只能来自 macro L2 roster：macro_analysis、macro_commodity_pricing、macro_index_valuation、macro_sentiment、macro_industry_hotspot。
+
+输出 payload schema：
+schema_version=macro_conclusion_v1；agent_id=macro_composite；dimension=macro；role=regulator；regime 必填；dimension_weights 必须且只能包含 value、market；risk_sensitivity 在 0..1；style_bias 如存在只能是 bounded 安全摘要；confidence 在 0..1；as_of/data_as_of 满足 data_as_of <= as_of。
+
+禁止项：
+不得调用 /v1/agent/invoke；不得改 runtime_bindings；不得设置 live flags；不得输出 direction stance；dimension_weights 不得包含 risk 或 macro；不得把 macro_conclusion_v1 强塞成 L2 agent_conclusion_v1。
+
+允许改动范围：
+只修改 macro_composite 服务项目里的 /health、/v1/agent/compute response wrapper、schema/test/sample；不改主系统 runtime；不改宏观模型或权重算法。
+
+需要审计的文件：
+服务端 app/service/router 文件、macro aggregation 或 compute_core 调用点、response builder、schema/model 文件、本地 tests、README/runbook。
+
+需要实现的字段：
+external_agent_compute_v0 envelope；tool_result.schema_version=macro_conclusion_v1；tool_result.agent_id=macro_composite；external_agent_id；dimension=macro；role=regulator；regime；dimension_weights={value, market}；risk_sensitivity；style_bias；contributing_agents；evidence；as_of；data_as_of；status。
+
+需要运行的测试：
+python3 -m py_compile <changed_python_files>；相关 pytest/ruff 如可用。增加一个 fixture 验证 dimension_weights 只含 value/market，另一个负例验证 risk/macro keys 被拒绝。
+
+不得调用 /invoke：
+本 prompt 只允许修 compute wrapper 和本地测试。/invoke 另开阶段。
+
+不得设置 live flags：
+不要修改 runtime bindings，不要设置 live_verified=true 或 invoke_enabled_by_default=true。
+
+最终回传格式：
+A) 修改范围
+B) 修复前问题
+C) 修复后字段示例
+D) 本地测试结果
+E) production 部署/重启方式
+F) production /health + /compute re-smoke 结果
+G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime bindings
+```
+
+## PROMPT-L3-ADAPTER-MAPPING
+
+```text
+你是 fixed DAG 主系统 L3 adapter maintainer。
+
+目标：
+维护或扩展 main-system provider-free L3 adapter mapping。当前 R8-10B 已支持 dimension_conclusion_v1、risk_conclusion_v1、macro_conclusion_v1 以及 external_agent_compute_v0 / external_agent_response_v0 tool_result envelope。
+
+上下文：
+L3 mapping 只处理已经拿到的 payload dict，不做 HTTP/provider 调用，不接 active runtime。任何服务端 smoke、runtime binding、/invoke audit 都必须另开阶段。
+
+适用 agent_id：
+value_composite, market_composite, risk_composite, macro_composite。
+
+固定 DAG id 规则：
+value/market 使用 dimension_conclusion_v1；risk 使用 risk_conclusion_v1；macro 使用 macro_conclusion_v1。不得让 L3 主要沿用 L2 agent_conclusion_v1。
+
+输入 L2 contracts：
+mapping 必须校验 members/contributing_agents 来自对应 L2 roster；market 可含 sentiment_company_radar；risk 不得含 sentiment_company_radar。
+
+输出 payload schema：
+统一输出 dimension_composite_result_v1，且只保留 bounded provenance、member summaries、triggered flags、red lines、style bias，不保留完整 raw object。
+
+禁止项：
+不调用 /health、/compute、/invoke；不改 runtime_bindings；不设置 live flags；不改 graph/executor/public API/frontend；不把 adapter unit test 当 live readiness。
+
+允许改动范围：
+src/react_agent/fixed_dag_external_adapter.py、src/react_agent/fixed_dag_contracts.py、相关 unit tests、contract/docs/changelog/ADR。
+
+需要审计的文件：
+fixed_dag_external_adapter.py、fixed_dag_contracts.py、test_fixed_dag_external_adapter.py、test_fixed_dag_contracts.py、docs/CONTRACTS.md、docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md。
+
+需要实现的字段：
+schema_version dispatch；identity/dimension validation；data_as_of <= as_of；member weights；risk gate；macro value/market-only dimension_weights；safe provenance；controlled adapter failure reason。
+
+需要运行的测试：
+.venv/bin/python -m ruff check src/react_agent/fixed_dag_external_adapter.py src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py
+.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py -q
+.venv/bin/python scripts/quality/run_quality.py --mode static
+git diff --check
+
+不得调用 /invoke：
+本 prompt 不允许 live endpoint 调用。
+
+不得设置 live flags：
+不要修改 runtime bindings，不要设置 live_verified=true 或 invoke_enabled_by_default=true。
 
 最终回传格式：
 A) 修改范围

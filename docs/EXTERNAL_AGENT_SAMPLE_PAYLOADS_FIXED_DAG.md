@@ -33,6 +33,10 @@ It also contains v2.3.1 domain payload samples:
 - `fixed_dag_plan.response.json`
 
 All domain payload samples are expected to pass `validate_tool_result`.
+R8-10B additionally uses the L3 samples as pure main-system adapter fixtures:
+`dimension_conclusion_v1`, `risk_conclusion_v1`, and `macro_conclusion_v1`
+can map into `dimension_composite_result_v1` without calling endpoints or
+enabling runtime bindings.
 
 ## Canonical Request Identity
 
@@ -139,6 +143,8 @@ Samples should satisfy:
 - macro uses `role=regulator` and has no `stance`
 - macro `dimension_weights` contains only `value` and `market`
 - `DimensionMember` weights sum to one and reproduce composite stance
+- main-system R8-10B mapping keeps only bounded member/evidence/provenance
+  summaries and never stores full raw L3 payloads in graph state
 - decision reasoning trace has at least three distinct `stage` values
 - decision `score` is within `0.01` of `calculation_trace.final_score`
 - data bundle includes `snapshot_id`

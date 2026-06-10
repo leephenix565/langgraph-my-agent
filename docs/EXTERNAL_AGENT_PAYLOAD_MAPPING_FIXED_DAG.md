@@ -96,10 +96,11 @@ services should not claim it as their own success state.
 | `data_bundle_v1` | `data_bundle_v1` | Map target, timestamps, `publish_time`, `snapshot_id`, sources, features, missing fields, and status. |
 | `entity_relation_bundle_v1` | `entity_relation_bundle_v1` | Map entity and relation evidence into the current L1 entity-relation bundle contract while keeping raw extraction payloads out of graph state. |
 
-## R8-7B Implemented Adapter Slice
+## Implemented Adapter Slices
 
-R8-7B implements the first provider-free mappings. R8-8C, R8-8J, and R8-8K add
-compute-envelope compatibility inputs without changing runtime invocation:
+R8-7B implements the first provider-free mappings. R8-8C, R8-8J, R8-8K, and
+R8-10B add compute/response-envelope compatibility inputs without changing
+runtime invocation:
 
 | Input | Output | Implementation behavior |
 | --- | --- | --- |
@@ -107,14 +108,20 @@ compute-envelope compatibility inputs without changing runtime invocation:
 | `external_agent_compute_v0.tool_result.agent_conclusion_v1` | `conclusion_object_v1` | R8-8C treats compute envelopes as adapter input only. It reuses the L2 conclusion mapper, records `adapter_input_schema=external_agent_compute_v0` and `compute_envelope_status`, and returns `compute_tool_result_missing` if the envelope declares a tool result schema but lacks a concrete `tool_result`. |
 | `external_agent_compute_v0.tool_result.data_bundle_v1` | `data_bundle_v1` | R8-8J treats L1 compute envelopes as adapter input only. It validates the compute envelope, requires a concrete tool result, then reuses the data-bundle mapper without recording HTTP/provider/live invocation claims. |
 | `external_agent_compute_v0.tool_result.entity_relation_bundle_v1` | `entity_relation_bundle_v1` | R8-8K treats L1 entity-relation compute envelopes as adapter input only. It validates the compute envelope, requires a concrete tool result, then reuses the entity-relation bundle mapper without recording HTTP/provider/live invocation claims. |
+| `external_agent_compute_v0.tool_result.dimension_conclusion_v1` or `external_agent_response_v0.tool_result.dimension_conclusion_v1` | `dimension_composite_result_v1` | R8-10B treats L3 value/market composite envelopes as adapter input only. Member ids must be a non-empty subset of the matching L2 dimension roster, member weights must sum to approximately one, and `sentiment_company_radar` is allowed only under market. |
+| `external_agent_compute_v0.tool_result.risk_conclusion_v1` or `external_agent_response_v0.tool_result.risk_conclusion_v1` | `dimension_composite_result_v1` | R8-10B maps risk gates into risk composite fields: `gate`, `veto`, `penalty`, `risk_score`, bounded triggered flags, and bounded red lines. Risk cannot include `sentiment_company_radar` and must not carry a direction `stance`. |
+| `external_agent_compute_v0.tool_result.macro_conclusion_v1` or `external_agent_response_v0.tool_result.macro_conclusion_v1` | `dimension_composite_result_v1` | R8-10B maps macro regulators into macro composite fields: `regime`, `dimension_weights`, `risk_sensitivity`, and bounded style bias. `dimension_weights` keys are exactly `value` and `market`; `risk` remains a separate gate and `macro` is the regulator itself. |
 | direct `agent_conclusion_v1` | `conclusion_object_v1` | Same mapping without requiring an envelope. Direction payloads require `stance`; risk `gate_member` payloads require a current fixed-DAG risk L2 `agent_id` and preserve `risk_score` in provenance. |
 | direct `data_bundle_v1` or envelope tool result | `data_bundle_v1` | Compresses the external data payload into the current internal narrow shape: status, `as_of`, `data_as_of`, source names, and bounded notes for `snapshot_id`, `publish_time`, feature keys, and missing fields. |
 | direct `entity_relation_bundle_v1` or envelope tool result | `entity_relation_bundle_v1` | Compresses the external entity-relation payload into the current internal bundle shape: status, timestamps, bounded entities, bounded relations, source names, and safe notes. |
+| direct `dimension_conclusion_v1` | `dimension_composite_result_v1` | Same value/market L3 mapping without requiring an envelope. |
+| direct `risk_conclusion_v1` | `dimension_composite_result_v1` | Same risk gate mapping without requiring an envelope. |
+| direct `macro_conclusion_v1` | `dimension_composite_result_v1` | Same macro regulator mapping without requiring an envelope. |
 
 Unsupported payload families return controlled adapter failure records or remain
-future work. R8-7B does not actively map `dimension_conclusion_v1`,
-`risk_conclusion_v1`, `macro_conclusion_v1`, `decision_conclusion_v1`,
-`eval_record_v1`, or `fixed_dag_plan_v1` into executor state.
+future work. R8-10B does not map `decision_conclusion_v1`, `eval_record_v1`,
+or `fixed_dag_plan_v1` into executor state, and it does not enable active L3
+runtime execution.
 
 ## Dimension Mapping
 

@@ -15,15 +15,20 @@ from react_agent.fixed_dag_contracts import (
     AGENT_DIMENSIONS,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
     DATA_BUNDLE_SCHEMA_VERSION,
+    DIMENSION_COMPOSITE_AGENT_IDS,
+    DIMENSION_COMPOSITE_SCHEMA_VERSION,
+    DIMENSION_GROUPS,
     ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
     SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES,
     ConclusionObject,
     ConclusionStatus,
     DataBundle,
+    DimensionCompositeResult,
     EntityRelationBundle,
     validate_conclusion_object,
     validate_data_bundle,
+    validate_dimension_composite_result,
     validate_entity_relation_bundle,
 )
 
@@ -32,6 +37,9 @@ EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION = "external_agent_compute_v0"
 EXTERNAL_AGENT_CONCLUSION_SCHEMA_VERSION = "agent_conclusion_v1"
 EXTERNAL_DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
 EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
+EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION = "dimension_conclusion_v1"
+EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION = "risk_conclusion_v1"
+EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION = "macro_conclusion_v1"
 FIXED_DAG_EXTERNAL_ADAPTER_SOURCE = "fixed_dag_external_adapter"
 ADAPTER_FAILURE_SCHEMA_VERSION = "fixed_dag_external_adapter_failure_v1"
 
@@ -59,6 +67,7 @@ _UNSAFE_TEXT_TOKENS = (
     "cot",
 )
 _ALLOWED_EVIDENCE_FIELDS = {
+    "id",
     "fact",
     "source",
     "as_of",
@@ -286,6 +295,137 @@ def _safe_mapping_items(value: Any, *, limit: int = 50) -> list[dict[str, Any]]:
         if len(items) >= limit:
             break
     return items
+
+
+def _safe_string_list(value: Any, *, limit: int = 20, item_limit: int = 120) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items: list[str] = []
+    for item in value:
+        text = _safe_string(item, limit=item_limit)
+        if text and text not in items:
+            items.append(text)
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _safe_evidence_refs(value: Any, *, limit: int = 12) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    refs: list[str] = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, Mapping):
+            continue
+        text = _safe_string(
+            item.get("id")
+            or item.get("source")
+            or item.get("fact")
+            or f"evidence_{index}",
+            limit=160,
+        )
+        if text and text not in refs:
+            refs.append(text)
+        if len(refs) >= limit:
+            break
+    return refs
+
+
+def _numeric_in_range(value: Any, *, field: str, minimum: float = 0.0, maximum: float = 1.0) -> tuple[float, str]:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return 0.0, f"invalid_{field}"
+    if not minimum <= number <= maximum:
+        return 0.0, f"{field}_out_of_range"
+    return number, ""
+
+
+def _member_weight_summary(members: list[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    summary: list[dict[str, Any]] = []
+    for item in members[:12]:
+        member: dict[str, Any] = {
+            "agent_id": _safe_string(item.get("agent_id"), limit=120),
+            "weight": _bounded_float(item.get("weight")),
+            "confidence": _bounded_float(item.get("confidence")),
+        }
+        if item.get("stance") is not None:
+            try:
+                member["stance"] = float(item.get("stance"))
+            except (TypeError, ValueError):
+                member["stance"] = _safe_string(item.get("stance"), limit=80)
+        status = _safe_code(item.get("status"))
+        if status:
+            member["status"] = status
+        summary.append({key: value for key, value in member.items() if value != ""})
+    return summary
+
+
+def _bounded_float_mapping(value: Any, *, allowed_keys: set[str], require_exact_keys: bool) -> tuple[dict[str, float], str]:
+    if not isinstance(value, Mapping):
+        return {}, "invalid_dimension_weights"
+    keys = {str(key) for key in value}
+    if not keys:
+        return {}, "dimension_weights_missing"
+    if not keys <= allowed_keys:
+        return {}, "dimension_weights_invalid_keys"
+    if require_exact_keys and keys != allowed_keys:
+        return {}, "dimension_weights_keys_mismatch"
+    weights: dict[str, float] = {}
+    for key, raw in value.items():
+        number, reason = _numeric_in_range(raw, field="dimension_weight")
+        if reason:
+            return {}, reason
+        weights[str(key)] = number
+    return weights, ""
+
+
+def _composite_provenance(
+    *,
+    input_schema: str,
+    external_agent_id: str,
+    legacy_agent_id: str = "",
+    envelope: Mapping[str, Any] | None = None,
+    extra: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    provenance: dict[str, Any] = {
+        "source": FIXED_DAG_EXTERNAL_ADAPTER_SOURCE,
+        "adapter_source": FIXED_DAG_EXTERNAL_ADAPTER_SOURCE,
+        "adapter_input_schema": input_schema,
+        "external_agent_id": _safe_string(external_agent_id, limit=120),
+        "legacy_agent_id": _safe_string(legacy_agent_id, limit=120),
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    if isinstance(envelope, Mapping):
+        envelope_schema = _safe_string(envelope.get("schema_version"), limit=120)
+        if envelope_schema:
+            provenance["envelope_schema"] = envelope_schema
+        if envelope_schema == EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION:
+            provenance["compute_envelope_status"] = _safe_code(envelope.get("status"))
+        elif envelope_schema == EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION:
+            provenance["response_envelope_status"] = _safe_code(envelope.get("status"))
+    provenance.update(dict(extra or {}))
+    return provenance
+
+
+def _validate_l3_dates(
+    payload: Mapping[str, Any],
+    *,
+    schema_version: str,
+    agent_id: str,
+    external_agent_id: str,
+) -> tuple[str, str, dict[str, Any] | None]:
+    as_of = _normalize_date_text(payload.get("as_of"))
+    data_as_of = _normalize_date_text(payload.get("data_as_of") or as_of)
+    if not _data_not_after(data_as_of, as_of):
+        return as_of, data_as_of, _adapter_failure(
+            "data_as_of_after_as_of",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=schema_version,
+        )
+    return as_of, data_as_of, None
 
 
 def validate_external_response_envelope(payload: Mapping[str, Any]) -> tuple[bool, str]:
@@ -654,6 +794,463 @@ def map_external_entity_relation_bundle_to_entity_relation_bundle(
     return cast(dict[str, Any], bundle)
 
 
+def map_external_dimension_conclusion_to_dimension_composite_result(
+    payload: Mapping[str, Any],
+    *,
+    envelope: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Map a value/market dimension_conclusion_v1 payload into an L3 composite."""
+    if payload.get("schema_version") != EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_dimension_conclusion_schema",
+            agent_id=str(payload.get("agent_id") or ""),
+            external_agent_id=str(payload.get("external_agent_id") or ""),
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    agent_id = str(payload.get("agent_id") or "").strip()
+    dimension = str(payload.get("dimension") or "").strip()
+    external_agent_id = str(payload.get("external_agent_id") or "").strip()
+    legacy_agent_id = str(payload.get("legacy_agent_id") or "").strip()
+    if dimension not in {"value", "market"}:
+        return _adapter_failure(
+            "dimension_conclusion_dimension_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    if agent_id != DIMENSION_COMPOSITE_AGENT_IDS[dimension]:
+        return _adapter_failure(
+            "dimension_conclusion_agent_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    if payload.get("role") not in (None, "", "direction"):
+        return _adapter_failure(
+            "dimension_conclusion_role_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    status = _status_from_external(
+        payload.get("status") or (envelope.get("status") if isinstance(envelope, Mapping) else "")
+    )
+    if status is None:
+        return _adapter_failure(
+            "invalid_external_status",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    members_value = payload.get("members")
+    if not isinstance(members_value, list) or not members_value:
+        return _adapter_failure(
+            "dimension_members_missing",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    members: list[Mapping[str, Any]] = []
+    contributing_agents: list[str] = []
+    total_weight = 0.0
+    allowed_agents = set(DIMENSION_GROUPS[dimension])
+    for item in members_value:
+        if not isinstance(item, Mapping):
+            return _adapter_failure(
+                "invalid_dimension_member",
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            )
+        member_agent_id = str(item.get("agent_id") or "").strip()
+        if member_agent_id not in allowed_agents:
+            return _adapter_failure(
+                "dimension_member_agent_mismatch",
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            )
+        if member_agent_id in contributing_agents:
+            return _adapter_failure(
+                "duplicate_dimension_member",
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            )
+        weight, reason = _numeric_in_range(item.get("weight"), field="member_weight")
+        if reason:
+            return _adapter_failure(
+                reason,
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            )
+        total_weight += weight
+        contributing_agents.append(member_agent_id)
+        members.append(item)
+    if abs(total_weight - 1.0) > 0.01:
+        return _adapter_failure(
+            "dimension_member_weight_sum_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    confidence, reason = _numeric_in_range(payload.get("confidence"), field="confidence")
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    as_of, data_as_of, failure = _validate_l3_dates(
+        payload,
+        schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        agent_id=agent_id,
+        external_agent_id=external_agent_id,
+    )
+    if failure is not None:
+        return failure
+    result: DimensionCompositeResult = {
+        "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "agent_id": agent_id,
+        "dimension": dimension,
+        "stance": _safe_string(payload.get("stance"), limit=80) or "not_evaluated",
+        "confidence": confidence,
+        "status": status,
+        "contributing_agents": contributing_agents,
+        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "as_of": as_of,
+        "data_as_of": data_as_of,
+        "vote_type": _safe_string(
+            payload.get("method") or payload.get("vote_type") or "weighted_member_vote",
+            limit=120,
+        ),
+        "provenance": _composite_provenance(
+            input_schema=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
+            envelope=envelope,
+            extra={
+                "member_weight_summary": _member_weight_summary(members),
+                "event_flags": _safe_event_flags(payload.get("event_flags")),
+            },
+        ),
+    }
+    valid, validation_reason = validate_dimension_composite_result(result)
+    if not valid:
+        return _adapter_failure(
+            f"mapped_dimension_composite_invalid:{validation_reason}",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], result)
+
+
+def map_external_risk_conclusion_to_dimension_composite_result(
+    payload: Mapping[str, Any],
+    *,
+    envelope: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Map a risk_conclusion_v1 gate payload into an L3 risk composite."""
+    if payload.get("schema_version") != EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_risk_conclusion_schema",
+            agent_id=str(payload.get("agent_id") or ""),
+            external_agent_id=str(payload.get("external_agent_id") or ""),
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    agent_id = str(payload.get("agent_id") or "").strip()
+    dimension = str(payload.get("dimension") or "").strip()
+    external_agent_id = str(payload.get("external_agent_id") or "").strip()
+    legacy_agent_id = str(payload.get("legacy_agent_id") or "").strip()
+    if agent_id != "risk_composite" or dimension != "risk":
+        return _adapter_failure(
+            "risk_conclusion_identity_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    if payload.get("role") != "gate":
+        return _adapter_failure(
+            "risk_role_must_be_gate",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    if payload.get("stance") not in (None, ""):
+        return _adapter_failure(
+            "risk_conclusion_must_not_have_stance",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    gate = _safe_code(payload.get("gate"))
+    if gate not in {"pass", "penalty", "veto", "manual_review"}:
+        return _adapter_failure(
+            "invalid_risk_gate",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    status = _status_from_external(
+        payload.get("status") or (envelope.get("status") if isinstance(envelope, Mapping) else "")
+    )
+    if status is None:
+        return _adapter_failure(
+            "invalid_external_status",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
+    if not contributing_agents:
+        return _adapter_failure(
+            "contributing_agents_missing",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    if not set(contributing_agents) <= set(DIMENSION_GROUPS["risk"]):
+        reason = (
+            "risk_reads_sentiment"
+            if "sentiment_company_radar" in contributing_agents
+            else "contributing_agents_mismatch"
+        )
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    risk_score, reason = _numeric_in_range(payload.get("risk_score"), field="risk_score")
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    if gate == "manual_review":
+        penalty = _bounded_float(payload.get("penalty"), default=0.0)
+    else:
+        penalty, reason = _numeric_in_range(payload.get("penalty"), field="penalty")
+        if reason:
+            return _adapter_failure(
+                reason,
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+            )
+    confidence, reason = _numeric_in_range(payload.get("confidence"), field="confidence")
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    as_of, data_as_of, failure = _validate_l3_dates(
+        payload,
+        schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        agent_id=agent_id,
+        external_agent_id=external_agent_id,
+    )
+    if failure is not None:
+        return failure
+    result: DimensionCompositeResult = {
+        "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "agent_id": "risk_composite",
+        "dimension": "risk",
+        "stance": "risk_gate",
+        "confidence": confidence,
+        "status": status,
+        "contributing_agents": contributing_agents,
+        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "as_of": as_of,
+        "data_as_of": data_as_of,
+        "gate": gate,
+        "veto": gate == "veto",
+        "penalty": penalty,
+        "risk_score": risk_score,
+        "provenance": _composite_provenance(
+            input_schema=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+            external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
+            envelope=envelope,
+            extra={
+                "triggered_flags": _safe_string_list(payload.get("triggered_flags"), limit=12),
+                "red_lines": _safe_string_list(payload.get("red_lines"), limit=12),
+                "event_flags": _safe_event_flags(payload.get("event_flags")),
+            },
+        ),
+    }
+    valid, validation_reason = validate_dimension_composite_result(result)
+    if not valid:
+        return _adapter_failure(
+            f"mapped_risk_composite_invalid:{validation_reason}",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], result)
+
+
+def map_external_macro_conclusion_to_dimension_composite_result(
+    payload: Mapping[str, Any],
+    *,
+    envelope: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Map a macro_conclusion_v1 regulator payload into an L3 macro composite."""
+    if payload.get("schema_version") != EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_macro_conclusion_schema",
+            agent_id=str(payload.get("agent_id") or ""),
+            external_agent_id=str(payload.get("external_agent_id") or ""),
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    agent_id = str(payload.get("agent_id") or "").strip()
+    dimension = str(payload.get("dimension") or "").strip()
+    external_agent_id = str(payload.get("external_agent_id") or "").strip()
+    legacy_agent_id = str(payload.get("legacy_agent_id") or "").strip()
+    if agent_id != "macro_composite" or dimension != "macro":
+        return _adapter_failure(
+            "macro_conclusion_identity_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    if payload.get("role") != "regulator":
+        return _adapter_failure(
+            "macro_role_must_be_regulator",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    if payload.get("stance") not in (None, ""):
+        return _adapter_failure(
+            "macro_conclusion_must_not_have_stance",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    regime = _safe_string(payload.get("regime"), limit=120)
+    if not regime:
+        return _adapter_failure(
+            "regime_missing",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    status = _status_from_external(
+        payload.get("status") or (envelope.get("status") if isinstance(envelope, Mapping) else "")
+    )
+    if status is None:
+        return _adapter_failure(
+            "invalid_external_status",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
+    if not contributing_agents:
+        return _adapter_failure(
+            "contributing_agents_missing",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    if not set(contributing_agents) <= set(DIMENSION_GROUPS["macro"]):
+        return _adapter_failure(
+            "contributing_agents_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    dimension_weights, reason = _bounded_float_mapping(
+        payload.get("dimension_weights"),
+        allowed_keys={"value", "market"},
+        require_exact_keys=True,
+    )
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    risk_sensitivity, reason = _numeric_in_range(
+        payload.get("risk_sensitivity"),
+        field="risk_sensitivity",
+    )
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    confidence, reason = _numeric_in_range(payload.get("confidence"), field="confidence")
+    if reason:
+        return _adapter_failure(
+            reason,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    as_of, data_as_of, failure = _validate_l3_dates(
+        payload,
+        schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        agent_id=agent_id,
+        external_agent_id=external_agent_id,
+    )
+    if failure is not None:
+        return failure
+    style_bias, _ = _bounded_float_mapping(
+        payload.get("style_bias") or {},
+        allowed_keys={"growth", "value", "quality", "defensive", "cyclical"},
+        require_exact_keys=False,
+    )
+    result: DimensionCompositeResult = {
+        "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
+        "agent_id": "macro_composite",
+        "dimension": "macro",
+        "stance": "macro_regulator",
+        "confidence": confidence,
+        "status": status,
+        "contributing_agents": contributing_agents,
+        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "as_of": as_of,
+        "data_as_of": data_as_of,
+        "regime": regime,
+        "dimension_weights": dimension_weights,
+        "risk_sensitivity": risk_sensitivity,
+        "provenance": _composite_provenance(
+            input_schema=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+            external_agent_id=external_agent_id,
+            legacy_agent_id=legacy_agent_id,
+            envelope=envelope,
+            extra={
+                "style_bias": style_bias,
+                "event_flags": _safe_event_flags(payload.get("event_flags")),
+            },
+        ),
+    }
+    valid, validation_reason = validate_dimension_composite_result(result)
+    if not valid:
+        return _adapter_failure(
+            f"mapped_macro_composite_invalid:{validation_reason}",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], result)
+
+
 def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Map a compute endpoint envelope to a supported internal fixed-DAG object."""
     valid, reason = validate_external_compute_envelope(payload)
@@ -672,6 +1269,21 @@ def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]
         return map_external_data_bundle_to_data_bundle(tool_result)
     if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
         return map_external_entity_relation_bundle_to_entity_relation_bundle(tool_result)
+    if schema_version == EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION:
+        return map_external_dimension_conclusion_to_dimension_composite_result(
+            tool_result,
+            envelope=payload,
+        )
+    if schema_version == EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION:
+        return map_external_risk_conclusion_to_dimension_composite_result(
+            tool_result,
+            envelope=payload,
+        )
+    if schema_version == EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION:
+        return map_external_macro_conclusion_to_dimension_composite_result(
+            tool_result,
+            envelope=payload,
+        )
     return _adapter_failure(
         "unsupported_compute_tool_result_schema",
         agent_id=str(payload.get("agent_id") or ""),
@@ -699,6 +1311,21 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
             return map_external_data_bundle_to_data_bundle(tool_result)
         if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
             return map_external_entity_relation_bundle_to_entity_relation_bundle(tool_result)
+        if schema_version == EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION:
+            return map_external_dimension_conclusion_to_dimension_composite_result(
+                tool_result,
+                envelope=payload,
+            )
+        if schema_version == EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION:
+            return map_external_risk_conclusion_to_dimension_composite_result(
+                tool_result,
+                envelope=payload,
+            )
+        if schema_version == EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION:
+            return map_external_macro_conclusion_to_dimension_composite_result(
+                tool_result,
+                envelope=payload,
+            )
         return _adapter_failure(
             "unsupported_tool_result_schema",
             agent_id=str(payload.get("agent_id") or ""),
@@ -716,6 +1343,12 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
         return map_external_data_bundle_to_data_bundle(payload)
     if schema_version == EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
         return map_external_entity_relation_bundle_to_entity_relation_bundle(payload)
+    if schema_version == EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION:
+        return map_external_dimension_conclusion_to_dimension_composite_result(payload)
+    if schema_version == EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION:
+        return map_external_risk_conclusion_to_dimension_composite_result(payload)
+    if schema_version == EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION:
+        return map_external_macro_conclusion_to_dimension_composite_result(payload)
     return _adapter_failure("unsupported_schema_version", schema_version=str(schema_version or ""))
 
 
@@ -723,13 +1356,19 @@ __all__ = [
     "ADAPTER_FAILURE_SCHEMA_VERSION",
     "EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION",
     "EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION",
+    "EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION",
     "EXTERNAL_ENTITY_RELATION_BUNDLE_SCHEMA_VERSION",
+    "EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION",
+    "EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION",
     "FIXED_DAG_EXTERNAL_ADAPTER_SOURCE",
     "map_external_compute_envelope_to_fixed_dag_object",
     "map_external_agent_conclusion_to_conclusion_object",
     "map_external_data_bundle_to_data_bundle",
+    "map_external_dimension_conclusion_to_dimension_composite_result",
     "map_external_entity_relation_bundle_to_entity_relation_bundle",
+    "map_external_macro_conclusion_to_dimension_composite_result",
     "map_external_response_to_fixed_dag_object",
+    "map_external_risk_conclusion_to_dimension_composite_result",
     "safe_adapter_failure_conclusion",
     "validate_external_compute_envelope",
     "validate_external_response_envelope",

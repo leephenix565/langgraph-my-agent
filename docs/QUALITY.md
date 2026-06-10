@@ -532,6 +532,29 @@ runtime bindings are enabled, `live_verified=true` is set,
 enabled, L4 decision integration is enabled, production readiness is proven, or
 any candidate may be invoked by default.
 
+## R8-10B L3 Adapter Pure Mapping Boundary
+
+R8-10B adds unit-tested, provider-free pure adapter mappings for
+`dimension_conclusion_v1`, `risk_conclusion_v1`, and `macro_conclusion_v1`.
+The quality gate is code/static/unit validation only. It does not call
+`/health`, `/v1/agent/compute`, `/v1/agent/invoke`, production ports, dev
+ports, providers, or demo stacks.
+
+R8-10B validation is:
+
+```powershell
+python -m ruff check src/react_agent/fixed_dag_external_adapter.py src/react_agent/fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py
+python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing this gate means only that already-available L3 payload dictionaries can
+map locally into `dimension_composite_result_v1`. It does not enable runtime
+bindings, set live flags, prove L3 service readiness, wire active graph L3
+external execution, or permit default invocation.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

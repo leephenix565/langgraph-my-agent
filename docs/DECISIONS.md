@@ -1166,3 +1166,34 @@ does not set `live_verified=true`, does not set
 public runtime, public mapping, frontend, adapter logic, external service code,
 or fixed DAG roster, and does not prove production default invocation
 readiness. Dev evidence remains historical/backfill input only.
+
+## ADR-046: R8-10B Maps L3 Composite Payloads Without Enabling Runtime
+
+Status: accepted for provider-free adapter compatibility.
+
+Decision: R8-10B adds pure mappings from L3 external payload families into the
+existing internal `dimension_composite_result_v1` contract. Value and market
+composites use `dimension_conclusion_v1`; risk composite uses
+`risk_conclusion_v1`; macro composite uses `macro_conclusion_v1`. The adapter
+accepts these payloads directly or inside `external_agent_compute_v0` /
+`external_agent_response_v0` envelopes. Macro `dimension_weights` are restricted
+to `value` and `market`; risk remains an independent gate and macro remains a
+regulator rather than a direction vote.
+
+Reason: L3 composites need member weights, gate semantics, macro regime, and
+bounded provenance that L2 `agent_conclusion_v1` cannot represent. Mapping the
+explicit L3 payload families lets service owners backfill correct wrappers and
+lets the main system validate sanitized payloads without relaxing L2 identity
+or dimension gates.
+
+Consequence: `fixed_dag_external_adapter.py` can now map L3 payload dictionaries
+into validator-legal `dimension_composite_result_v1` objects, and unit tests
+cover direct plus envelope forms. The deterministic macro placeholder uses the
+same value/market-only weight key policy.
+
+Non-consequence: R8-10B does not call endpoints, does not call providers, does
+not call `/v1/agent/invoke`, does not modify runtime bindings, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+wire active L3 runtime execution, does not change graph/executor/public
+API/frontend behavior, does not modify external services, and does not prove
+L3 production readiness.

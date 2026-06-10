@@ -308,7 +308,8 @@ class DimensionCompositeResult(TypedDict):
     risk_score: NotRequired[float]
     regime: NotRequired[str]
     dimension_weights: NotRequired[dict[str, float]]
-    risk_sensitivity: NotRequired[str]
+    risk_sensitivity: NotRequired[str | float]
+    provenance: NotRequired[dict[str, Any]]
 
 
 class DecisionResult(TypedDict):
@@ -1449,10 +1450,8 @@ def _build_dimension_composite(
             {
                 "regime": "not_evaluated",
                 "dimension_weights": {
-                    "market": 0.25,
-                    "value": 0.35,
-                    "risk": 0.25,
-                    "macro": 0.15,
+                    "value": 0.5,
+                    "market": 0.5,
                 },
                 "risk_sensitivity": "not_evaluated",
             }
@@ -1528,6 +1527,18 @@ def validate_dimension_composite_result(obj: Mapping[str, Any]) -> tuple[bool, s
         for field in ("regime", "dimension_weights", "risk_sensitivity"):
             if field not in obj:
                 return False, f"missing_{field}"
+        dimension_weights = obj.get("dimension_weights")
+        if not isinstance(dimension_weights, Mapping):
+            return False, "invalid_dimension_weights"
+        if set(dimension_weights) != {"value", "market"}:
+            return False, "dimension_weights_keys_mismatch"
+        for value in dimension_weights.values():
+            try:
+                weight = float(value)
+            except (TypeError, ValueError):
+                return False, "invalid_dimension_weight"
+            if not 0.0 <= weight <= 1.0:
+                return False, "dimension_weight_out_of_range"
     return True, "ok"
 
 
