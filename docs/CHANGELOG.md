@@ -3,6 +3,58 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-8G accelerated controlled compute evidence
+
+### Changed
+
+- Recorded sanitized controlled readiness evidence for `macro_analysis` and
+  `value_traditional_valuation` after R8-8G dev-only health, compute, and
+  provider-free adapter mapping checks.
+- Documented that `macro_analysis` required no service patch for controlled
+  compute mapping.
+- Documented that `value_traditional_valuation` required a bounded dev service
+  identity remediation before passing adapter mapping.
+- Added ADR-035 for recording additional controlled compute evidence without
+  runtime binding enablement.
+- Kept runtime bindings, live flags, graph, executor, public API, frontend, and
+  fixed DAG roster unchanged.
+
+### Validated
+
+- `macro_analysis` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- `value_traditional_valuation` service validation before smoke:
+  `python3 -m py_compile service.py tests/test_v21_compliance.py`
+- `value_traditional_valuation` service validation before smoke:
+  `python3 -m pytest tests/test_v21_compliance.py -q`
+- `value_traditional_valuation` service validation before smoke:
+  `python3 -m pytest tests/test_domain_contract_v1.py -q`
+- `value_traditional_valuation` controlled dev smoke:
+  `GET /health` pass, `POST /v1/agent/compute` pass, adapter mapping pass.
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- Main repo validation:
+  `git diff --check`
+- Main repo validation:
+  `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No `.env` change.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No prod port smoke.
+- No demo stack startup.
+- No fusion-gate run.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No graph, executor, public API, public runtime, public mapping, frontend, or
+  fixed DAG roster change.
+- No public transcript update.
+- No production readiness claim.
+
 ## 2026-06-10 - Phase R8-8E value ML controlled compute evidence
 
 ### Changed

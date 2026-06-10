@@ -102,6 +102,12 @@ health passed, `/v1/agent/compute` passed, and the provider-free adapter mapped
 the compute envelope into `conclusion_object_v1`. This is docs-only evidence. It
 does not call `/v1/agent/invoke`, enable runtime bindings, set live flags,
 update public transcript content, or prove production readiness.
+Phase R8-8G accelerates controlled dev smoke for additional candidates:
+`macro_analysis` and `value_traditional_valuation` now have sanitized
+health+compute+adapter-mapping evidence. `value_traditional_valuation` required
+a bounded dev service identity remediation; the main-system adapter gate,
+runtime bindings, live flags, graph, executor, public API, frontend, and public
+transcript boundary remain unchanged.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -111,7 +117,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8E controlled value ML compute evidence over the
+- Current phase: R8-8G accelerated controlled compute evidence over the
   existing full/selected fixed DAG backend skeleton, R8-6B default-off internal
   LLM placeholder boundary, R7-I web presentation surface, and v2.3.1 scaffold
   package.
@@ -160,7 +166,8 @@ placeholder skeleton. It is not a completed business analysis engine.
   binding authority. R8-8E records one sanitized controlled dev smoke evidence
   item for `value_ml_valuation` after service-side identity remediation. The
   evidence remains docs-only and does not change runtime bindings, live flags,
-  or active graph behavior.
+  or active graph behavior. R8-8G adds the same docs-only evidence boundary for
+  `macro_analysis` and `value_traditional_valuation`.
 - Production status: not a production deployment claim.
 
 Historical material removed on this branch remains recoverable from the

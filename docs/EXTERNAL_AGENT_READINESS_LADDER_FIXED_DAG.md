@@ -29,6 +29,13 @@ structured health, compute, and adapter mapping success for the dev service
 only. It does not set `live_verified=true`, does not enable runtime bindings,
 does not call `/v1/agent/invoke`, and does not prove production readiness.
 
+R8-8G records controlled dev evidence for `macro_analysis` and
+`value_traditional_valuation`. `macro_analysis` passed health, compute, and
+adapter mapping without service patching. `value_traditional_valuation` passed
+after bounded dev service identity remediation. Both remain disabled external
+candidates; neither result enables runtime bindings, sets live flags, calls
+`/v1/agent/invoke`, or proves production readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -144,6 +151,14 @@ to use fixed DAG `agent_id=value_ml_valuation` and
 service only. It does not advance the service to L4 invoke readiness, L5 runtime
 binding preparation, L6 live verification, or L7 default invocation.
 
+The R8-8G `macro_analysis` and `value_traditional_valuation` dev smokes also
+passed controlled health, compute, and adapter mapping. The traditional
+valuation service required the same fixed-DAG identity boundary as value ML:
+compute responses use fixed DAG `agent_id=value_traditional_valuation` and
+`external_agent_id=valuation_traditional`. These results are L2/L3 controlled
+evidence only and do not advance either service to L4 invoke readiness, L5
+runtime binding preparation, L6 live verification, or L7 default invocation.
+
 ## L4: Invoke Controlled Live Passes
 
 Required:
@@ -233,5 +248,9 @@ The readiness ladder does not claim:
 - R8-8E controlled `value_ml_valuation` health/compute evidence implies
   production readiness, runtime binding enablement, `/v1/agent/invoke`
   readiness, `live_verified=true`, or `invoke_enabled_by_default=true`
+- R8-8G controlled `macro_analysis` or `value_traditional_valuation`
+  health/compute evidence implies production readiness, runtime binding
+  enablement, `/v1/agent/invoke` readiness, `live_verified=true`, or
+  `invoke_enabled_by_default=true`
 
 Default reset mainline remains no-provider and no-external-invoke.

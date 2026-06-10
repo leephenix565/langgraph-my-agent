@@ -827,3 +827,29 @@ executor, public API, public runtime, public mapping, frontend, fixed DAG
 roster, or runtime bindings. It does not call `/v1/agent/invoke`, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
 claim prod readiness, and does not update public transcript content.
+
+## ADR-035: R8-8G Records Additional Controlled Compute Evidence Without Runtime Enablement
+
+Status: accepted for accelerated controlled readiness evidence logging.
+
+Decision: R8-8G records sanitized controlled health, compute, and adapter
+mapping evidence for additional dev services that pass the bounded smoke gate.
+In this phase, `macro_analysis` passed without service patching, and
+`value_traditional_valuation` passed after bounded dev service identity
+remediation.
+
+Reason: R8-8D-ID proved the remediation pattern for services that still emit an
+external service id as primary `agent_id`. R8-8G applies that pattern only where
+needed and keeps the main-system adapter strict: the fixed DAG id remains the
+primary `agent_id`, and the external service id remains `external_agent_id`.
+
+Consequence: `macro_analysis` and `value_traditional_valuation` now have
+documented dev-only evidence for structured health, `/v1/agent/compute`, and
+provider-free adapter mapping into `conclusion_object_v1`. The evidence can
+inform later invoke-readiness and runtime-binding review.
+
+Non-consequence: R8-8G does not change runtime bindings, main-system adapter
+identity gates, graph, executor, public API, public runtime, public mapping,
+frontend, or fixed DAG roster. It does not call `/v1/agent/invoke`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+claim prod readiness, and does not update public transcript content.

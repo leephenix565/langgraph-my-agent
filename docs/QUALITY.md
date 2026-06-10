@@ -287,6 +287,31 @@ bindings are enabled, `live_verified=true` is set,
 `invoke_enabled_by_default=true` is set, production readiness is proven, or
 external `/v1/agent/invoke` is safe to call by default.
 
+## R8-8G Accelerated Controlled Smoke Evidence Boundary
+
+R8-8G performs dev-only controlled health and compute smokes for a bounded
+allowlist of candidate services. The only live endpoints allowed in this phase
+are `GET /health` and `POST /v1/agent/compute` on explicitly selected dev ports.
+The phase may perform small service-side response identity remediations, but it
+does not change the main-system adapter identity gate, runtime bindings, graph,
+executor, public API, public runtime, public mapping, frontend, or fixed DAG
+roster.
+
+R8-8G docs are updated only for candidates that pass health, compute, and
+provider-free adapter mapping. Its main-repo validation gate is:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+Passing R8-8G validation means the documentation-only evidence record remains
+consistent with reset quality. It does not mean `/v1/agent/invoke` was called,
+runtime bindings are enabled, `live_verified=true` is set,
+`invoke_enabled_by_default=true` is set, production readiness is proven, or any
+candidate may be invoked by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
