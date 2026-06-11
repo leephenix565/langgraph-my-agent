@@ -247,6 +247,15 @@ The runtime validates
 per-step `step_results`, and keeps the default path as a provider-free
 placeholder skeleton. It is not a completed business analysis engine.
 
+Phase R8-12B adds local remote-agent demo tunnel tooling for developers who
+clone the repo to their own computer while the 16 demo agents continue running
+on the server. Use `scripts/dev/start_agent_tunnels.sh` or
+`scripts/dev/start_agent_tunnels.ps1` to create same-port SSH forwards bound to
+`127.0.0.1`, then run the local API/Web with the R8-12 demo flags. See
+`docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md`. This is demo/dev only: no `.env`
+secret is written, no `/invoke` call is made, production `100xx` ports are not
+publicly exposed, and `runtime_bindings.json` remains unchanged.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
@@ -568,6 +577,8 @@ runtime/provider/external output.
   controlled health/compute smoke evidence and non-claims.
 - `docs/DEMO_EXTERNAL_COMPUTE_DAG_RUNBOOK.md` - default-off external compute
   demo setup, allowlist, and non-claims.
+- `docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md` - local remote-agent demo over SSH
+  tunnel setup, troubleshooting, shutdown, and security boundaries.
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
   endpoint and v2.3.1 domain payload samples.
 - `examples/fixed_dag_external_agent_scaffold/` - tracked repo mirror of the

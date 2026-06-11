@@ -115,6 +115,18 @@ The optional live demo smoke is manual demo acceptance and writes sanitized
 artifacts under `/tmp/lma-r8-12-demo/`; it is not a default mainline gate and
 does not prove production business correctness.
 
+## R8-12B Local Remote-Agent Demo Tunnel Boundary
+
+R8-12B adds local demo/dev SSH tunnel helpers and a runbook only. Validation
+must not start the tunnel and must not call `/health`, `/v1/agent/compute`, or
+`/v1/agent/invoke`. The scripts bind only `127.0.0.1`, use same-port forwards
+for the R8-12 allowlist, and do not write `.env` or runtime binding files.
+
+The allowlist example
+`config/fixed_dag/external_compute_demo_allowlist.local.example.json` is a
+documentation/config sample for developer setup. It is not runtime authority,
+does not mark services live, and does not enable invoke by default.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-12B local remote agent demo tunnel tooling
+
+### Changed
+
+- Added Bash and PowerShell SSH tunnel helpers for local same-port access to
+  the 16 R8-12 production compute demo agents.
+- Added a local allowlist example JSON for the SSH tunnel setup. This file is
+  documentation/config sample only and is not a runtime binding source.
+- Added a Chinese local remote-agent demo runbook covering tunnel startup,
+  local API/Web startup, security boundaries, troubleshooting, and shutdown.
+- Updated README, docs index, quality notes, and ADR documentation for the
+  local remote-agent demo boundary.
+
+### Validated
+
+- `bash -n scripts/dev/start_agent_tunnels.sh`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+
+### Not Done
+
+- No push.
+- No SSH tunnel was started.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No `.env` file or runtime binding was modified.
+- No production port is exposed publicly by the helper scripts.
+
 ## 2026-06-11 - Phase R8-12 default-off external compute demo integration
 
 ### Changed

@@ -1,0 +1,142 @@
+{
+  "schema_version": "external_compute_demo_allowlist_local_v1",
+  "purpose": "local_demo_over_ssh_tunnel_only",
+  "not_runtime_binding": true,
+  "not_live_verified": true,
+  "not_invoke_enabled": true,
+  "notes": [
+    "Documentation/config sample for local same-port SSH tunnels.",
+    "The current R8-12 bridge still uses env flags and the built-in same-port demo registry.",
+    "Do not add secrets. Do not expose these ports publicly."
+  ],
+  "entries": [
+    {
+      "agent_id": "value_traditional_valuation",
+      "base_url": "http://127.0.0.1:10000",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "value",
+      "external_agent_id": "valuation_traditional"
+    },
+    {
+      "agent_id": "value_ml_valuation",
+      "base_url": "http://127.0.0.1:10001",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "value",
+      "external_agent_id": "valuation_ml"
+    },
+    {
+      "agent_id": "value_meta_valuation",
+      "base_url": "http://127.0.0.1:10002",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "value",
+      "external_agent_id": "valuation_meta"
+    },
+    {
+      "agent_id": "value_research_synthesis",
+      "base_url": "http://127.0.0.1:10006",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "value",
+      "external_agent_id": "analyst_research"
+    },
+    {
+      "agent_id": "market_stock_technical",
+      "base_url": "http://127.0.0.1:10009",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "market",
+      "external_agent_id": "technical_stock"
+    },
+    {
+      "agent_id": "market_capital_flow_chip",
+      "base_url": "http://127.0.0.1:10022",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "market",
+      "external_agent_id": "money_flow"
+    },
+    {
+      "agent_id": "sentiment_company_radar",
+      "base_url": "http://127.0.0.1:10020",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "market",
+      "external_agent_id": "company_sentiment_radar"
+    },
+    {
+      "agent_id": "risk_identification",
+      "base_url": "http://127.0.0.1:10010",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "risk",
+      "external_agent_id": "market_risk_reasoning"
+    },
+    {
+      "agent_id": "risk_compliance_review",
+      "base_url": "http://127.0.0.1:10011",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "risk",
+      "external_agent_id": "announcement_compliance"
+    },
+    {
+      "agent_id": "risk_financial_fraud",
+      "base_url": "http://127.0.0.1:10013",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "risk",
+      "external_agent_id": "financial_fraud_agent"
+    },
+    {
+      "agent_id": "risk_crash",
+      "base_url": "http://127.0.0.1:10012",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "risk",
+      "external_agent_id": "crash_risk"
+    },
+    {
+      "agent_id": "macro_analysis",
+      "base_url": "http://127.0.0.1:10014",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "agent_conclusion_v1",
+      "dimension": "macro",
+      "external_agent_id": "macro_analysis"
+    },
+    {
+      "agent_id": "value_composite",
+      "base_url": "http://127.0.0.1:10015",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "dimension_conclusion_v1",
+      "dimension": "value",
+      "external_agent_id": "composite_valuation"
+    },
+    {
+      "agent_id": "market_composite",
+      "base_url": "http://127.0.0.1:10023",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "dimension_conclusion_v1",
+      "dimension": "market",
+      "external_agent_id": "market_composite"
+    },
+    {
+      "agent_id": "risk_composite",
+      "base_url": "http://127.0.0.1:10016",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "risk_conclusion_v1",
+      "dimension": "risk",
+      "external_agent_id": "risk_synthesis"
+    },
+    {
+      "agent_id": "macro_composite",
+      "base_url": "http://127.0.0.1:10024",
+      "compute_path": "/v1/agent/compute",
+      "expected_payload": "macro_conclusion_v1",
+      "dimension": "macro",
+      "external_agent_id": "macro_synthesis_service"
+    }
+  ]
+}

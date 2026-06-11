@@ -1428,3 +1428,32 @@ not modify `runtime_bindings.json`, does not set `live_verified=true`, does not
 set `invoke_enabled_by_default=true`, does not make external services default
 graph dependencies, does not update public transcript content with raw external
 responses, and does not prove production business correctness.
+
+## ADR-055: R8-12B Uses SSH Tunnels For Local Demo Access To Remote Agents
+
+Status: accepted for local demo/dev tooling.
+
+Decision: R8-12B documents and scripts a same-port SSH tunnel workflow for
+developers who run the main fixed-DAG project locally while the external
+production agents remain on the server. The helpers forward only the 16 R8-12
+demo allowlist ports from local `127.0.0.1` to remote `127.0.0.1`, use
+`ExitOnForwardFailure=yes`, and refuse to proceed when a required local port is
+already in use.
+
+Reason: the R8-12 bridge intentionally accepts only loopback production
+compute endpoints and an explicit allowlist. SSH local forwarding preserves
+that loopback-only boundary for a developer laptop without exposing the
+production `100xx` service ports to the public network or introducing a new
+remote proxy surface.
+
+Consequence: a developer can clone the repo locally, start the tunnel, run the
+local API/Web with the R8-12 demo flags, and see the same external-compute
+workflow shape against server-hosted agents. The sample allowlist JSON is
+handoff documentation only; the current bridge still uses environment flags
+and the built-in same-port demo registry.
+
+Non-consequence: R8-12B does not start an SSH tunnel during validation, does
+not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`, does not store
+SSH passwords or write `.env`, does not modify `runtime_bindings.json`, does
+not set `live_verified=true`, does not set `invoke_enabled_by_default=true`,
+and does not expose production agent ports on `0.0.0.0`.

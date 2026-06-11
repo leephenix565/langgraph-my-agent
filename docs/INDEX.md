@@ -23,6 +23,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` | R8-8P-DOCS-QA production readiness problem playbook: 27-agent production matrix, per-agent failure causes, remediation actions, resmoke boundaries, and next phases. |
 | `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | R8-8P-DOCS-QA production remediation prompt catalog with copy-ready Chinese Codex / Claude Code prompts for service owners and maintainers. |
 | `docs/DEMO_EXTERNAL_COMPUTE_DAG_RUNBOOK.md` | R8-12 default-off external compute demo runbook: flags, allowlist, API/Web launch commands, and non-claims. |
+| `docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md` | R8-12B local remote-agent demo runbook: SSH tunnel helpers, local API/Web startup, security boundaries, troubleshooting, and shutdown. |
 | `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror and R7-H restore source for the local `E:\muti-agent\external_agent_scaffold` distribution working copy, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage
@@ -112,6 +113,11 @@ R8-12 adds a default-off external compute demo bridge. It only calls production
 `/v1/agent/compute` when both the explicit demo flag and an allowlist are set,
 does not call `/v1/agent/invoke`, does not change runtime bindings, and does
 not set live flags.
+R8-12B adds local remote-agent demo tunnel tooling so a developer laptop can
+reach the same allowlisted server-hosted production agents through SSH
+same-port forwards bound to `127.0.0.1`. The tunnel scripts are demo/dev
+helpers only; they do not expose production ports publicly and do not replace
+runtime bindings.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

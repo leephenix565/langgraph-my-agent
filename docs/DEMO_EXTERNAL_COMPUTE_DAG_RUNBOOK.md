@@ -57,6 +57,12 @@ Then open:
 http://127.0.0.1:8201
 ```
 
+If the main system is running on a developer laptop and the external agents
+remain on the server, start the SSH same-port tunnel first. See
+`docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md`. The tunnel preserves the bridge's
+loopback-only boundary by forwarding local `127.0.0.1:100xx` ports to remote
+server `127.0.0.1:100xx` ports.
+
 Suggested demo question:
 
 ```text
