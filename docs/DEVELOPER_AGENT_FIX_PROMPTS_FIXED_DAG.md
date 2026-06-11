@@ -35,10 +35,17 @@ R8-8Q 已经在当前 production 目录中完成部分 bounded protocol remediat
 这些服务的修复 prompt，主要用于服务 owner 将 R8-8Q 生产目录补丁回填到正式
 源码仓库、部署、并在后续 resmoke 中防止回归。
 
+R8-11B 已完成首批 tiny allowlist controlled production `/v1/agent/invoke`
+smoke：`risk_identification`、`risk_compliance_review`、`risk_crash`、
+`risk_financial_fraud`、`value_research_synthesis`。这些结果只是受控
+invoke evidence，不是 runtime binding enablement、live_verified 或默认图执行。
+后续 prompt 仍应区分：已通过首批 invoke 的 agent 可以进入 runtime-binding
+prepare review；其余 compute-pass agent 仍需要只读 invoke audit 或 wrapper backfill。
+
 默认边界：
 
-- 不调用 `/v1/agent/invoke`，除非未来单独批准 invoke smoke；本目录里的
-  invoke prompt 也只允许审计准备，不允许直接调用。
+- 不调用 `/v1/agent/invoke`，除非单独批准 invoke smoke；R8-11B 只批准并执行了
+  5 个 production allowlist 服务，其余 invoke prompt 仍只允许审计准备。
 - 不改 `runtime_bindings.json`。
 - 不设置 `live_verified=true`。
 - 不设置 `invoke_enabled_by_default=true`。
@@ -77,7 +84,7 @@ R8-8Q 已经在当前 production 目录中完成部分 bounded protocol remediat
 | `PROMPT-L3-ADAPTER-MAPPING` | main-system L3 adapter maintainer |
 | `PROMPT-PROD-L3-ADAPTER-DESIGN` | value/market/risk/macro composites |
 | `PROMPT-PROD-L4-ADAPTER-DESIGN` | `decision_synthesizer`, `report_generator` |
-| `PROMPT-PROD-INVOKE-AUDIT-PREP` | only five production health+compute+adapter pass candidates |
+| `PROMPT-PROD-INVOKE-AUDIT-PREP` | production health+compute+adapter pass candidates not yet covered by controlled invoke smoke |
 
 ## PROMPT-PROD-HEALTH-FIX-DATA-SERVICE
 
@@ -1454,7 +1461,7 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 审计已经 production health + compute + adapter mapping pass 的服务，判断它们是否可以进入后续 tiny allowlist controlled /v1/agent/invoke smoke。
 
 背景：
-R8-8P 首批只有五个 agent 达到 production health + compute + adapter mapping pass。R8-10E/R8-10F 又补齐四个 L3 composite 的 production compute evidence，R8-8Q 补齐八个 value/market L2 的 production compute evidence。只有当前 matrix 中 health + compute + adapter mapping 全部 pass 的 agent 可以用本 prompt 做 invoke audit prep；失败、semantic deferred、endpoint missing 的 agent 不能进入 invoke audit。
+R8-8P 首批只有五个 agent 达到 production health + compute + adapter mapping pass。R8-10E/R8-10F 又补齐四个 L3 composite 的 production compute evidence，R8-8Q 补齐八个 value/market L2 的 production compute evidence。R8-11B 已经对 `risk_identification`、`risk_compliance_review`、`risk_crash`、`risk_financial_fraud`、`value_research_synthesis` 完成 controlled production invoke smoke。只有当前 matrix 中 health + compute + adapter mapping 全部 pass、且尚未通过 controlled invoke 的 agent，才继续用本 prompt 做 invoke audit prep；失败、semantic deferred、endpoint missing 的 agent 不能进入 invoke audit。
 
 适用 agent_id：
 risk_identification, risk_compliance_review, risk_financial_fraud, risk_crash, macro_analysis,

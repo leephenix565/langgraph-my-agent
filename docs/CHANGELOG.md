@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-11B first controlled production invoke smoke
+
+### Changed
+
+- Ran the first tiny allowlist controlled production `/v1/agent/invoke` smoke
+  after source-level invoke audit.
+- Recorded controlled invoke + adapter mapping evidence for
+  `risk_identification`, `risk_compliance_review`, `risk_crash`,
+  `risk_financial_fraud`, and `value_research_synthesis`.
+- Kept the smoke on production endpoints only and used no-LLM style options
+  (`allow_llm=false` plus service-compatible structured/template flags).
+- Updated README, readiness matrix, controlled smoke log, readiness ladder,
+  quality, changelog, and ADR documentation for the R8-11B boundary.
+
+### Validated
+
+- Controlled production invoke smoke artifact:
+  `/tmp/lma-r8-11b-prod-invoke-smoke/20260611T022513Z`.
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No default graph invocation.
+- No public transcript update.
+
 ## 2026-06-11 - Phase R8-8Q production remediation and re-smoke
 
 ### Changed

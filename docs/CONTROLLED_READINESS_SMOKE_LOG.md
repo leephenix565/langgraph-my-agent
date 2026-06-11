@@ -9,6 +9,51 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-11B first controlled production invoke smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-11B |
+| Artifact directory | `/tmp/lma-r8-11b-prod-invoke-smoke/20260611T022513Z` |
+| Environment | production invoke tiny allowlist only |
+| Endpoint calls | `POST /v1/agent/invoke` |
+| `/health` or `/v1/agent/compute` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Allow-LLM setting | `allow_llm=false`; service-compatible no-LLM options included |
+
+R8-11B audited production invoke paths and then invoked only a five-service
+allowlist whose source path could return structured tool results without a
+required provider/LLM call. The smoke verified HTTP 200, structured JSON,
+fixed-DAG `tool_result` mapping, and no unsafe content in the sanitized
+artifact.
+
+| agent_id | endpoint | invoke | adapter mapping | mapping input | status |
+| --- | --- | --- | --- | --- | --- |
+| `risk_identification` | `127.0.0.1:10010` | pass | pass: `conclusion_object_v1` | `tool_result` | controlled production invoke evidence |
+| `risk_compliance_review` | `127.0.0.1:10011` | pass | pass: `conclusion_object_v1` | `tool_result` | controlled production invoke evidence |
+| `risk_crash` | `127.0.0.1:10012` | pass | pass: `conclusion_object_v1` | `tool_result` | controlled production invoke evidence |
+| `risk_financial_fraud` | `127.0.0.1:10013` | pass | pass: `conclusion_object_v1` | `tool_result` | controlled production invoke evidence |
+| `value_research_synthesis` | `127.0.0.1:10006` | pass | pass: `conclusion_object_v1` | envelope | controlled production invoke evidence |
+
+Notes:
+
+- For the four risk services, the current main-system adapter mapping used the
+  sanitized `tool_result` because several legacy `external_agent_response_v0`
+  envelopes do not expose every envelope identity field that the strict adapter
+  response-envelope validator expects.
+- This phase did not weaken adapter identity gates and did not change service
+  code.
+
+Non-claims:
+
+- This is controlled production invoke evidence only.
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not make the fixed DAG graph call these services by default.
+- This does not update public transcript content.
+
 ## 2026-06-11 - R8-8Q production remediation and re-smoke
 
 | Field | Value |

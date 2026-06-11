@@ -224,6 +224,15 @@ phase adds production compute evidence for `value_traditional_valuation`,
 `macro_commodity_pricing` remain remediation items. No `/v1/agent/invoke`,
 runtime binding enablement, live flag, public transcript update, or default
 production invocation was performed.
+Phase R8-11B runs the first tiny allowlist controlled production
+`/v1/agent/invoke` smoke for `risk_identification`,
+`risk_compliance_review`, `risk_crash`, `risk_financial_fraud`, and
+`value_research_synthesis`. Each response mapped through the existing
+provider-free adapter into `conclusion_object_v1` with `allow_llm=false` style
+options. This is controlled invoke evidence only: runtime bindings remain
+unchanged, no live flags are set, no public transcript content is updated, and
+the fixed DAG graph still does not invoke production external services by
+default.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -233,7 +242,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-8Q production L1/L2 remediation re-smoke over the existing
+- Current phase: R8-11B first controlled production invoke smoke over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

@@ -1372,3 +1372,32 @@ runtime bindings, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, does not update public transcript content,
 does not wire active graph/runtime external execution, and does not prove
 production default invocation readiness.
+
+## ADR-053: R8-11B Runs First Controlled Production Invoke Smoke Without Runtime Enablement
+
+Status: accepted for a tiny production invoke evidence allowlist.
+
+Decision: R8-11B audits production `/v1/agent/invoke` source paths and then
+runs a controlled invoke smoke for five low-risk services only:
+`risk_identification`, `risk_compliance_review`, `risk_crash`,
+`risk_financial_fraud`, and `value_research_synthesis`. The smoke uses
+production endpoints, no-LLM style request options, sanitized artifacts, and
+the existing provider-free fixed-DAG adapter to validate the returned
+`tool_result`.
+
+Reason: R8-8Q and R8-10E/F created production health + compute + adapter
+mapping evidence, but compute evidence is below L4 invoke evidence in the
+readiness ladder. A very small allowlist lets the project validate the invoke
+transport and tool-result mapping boundary without enabling runtime bindings
+or broad production invocation.
+
+Consequence: the readiness matrix and controlled smoke log can mark the five
+services as having controlled production invoke evidence. They may proceed to a
+runtime-binding preparation review, but the config remains unchanged until a
+separate approved phase owns that work.
+
+Non-consequence: R8-11B does not push, does not modify runtime bindings, does
+not set `live_verified=true`, does not set `invoke_enabled_by_default=true`,
+does not make the fixed DAG graph call production services by default, does not
+update public transcript content, does not weaken adapter identity gates, and
+does not prove production business correctness.

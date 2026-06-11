@@ -80,6 +80,21 @@ mainline after R8-8P validates repository static, unit, integration, graph, and
 frontend gates; it does not prove production service readiness, invoke
 readiness, live verification, or default runtime invocation eligibility.
 
+## R8-11B Controlled Invoke Smoke Boundary
+
+R8-11B is manual/live readiness work and is not part of the default reset
+mainline. It may call production `POST /v1/agent/invoke` only for a tiny
+allowlist after source audit shows the invoke path can return structured
+`tool_result` without a required provider call. The first allowlist used
+`allow_llm=false` style options and recorded sanitized adapter-mapping evidence
+only.
+
+Passing R8-11B does not change `runtime_bindings.json`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+enable active graph calls to production services, and does not update public
+transcript content. The default mainline remains provider-free and
+external-HTTP-free.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

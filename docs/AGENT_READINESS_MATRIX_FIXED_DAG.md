@@ -4,7 +4,8 @@ This document is the production-first readiness matrix and remediation
 playbook for the fixed DAG agent roster after Phase R8-8P-DOCS-QA.
 R8-10B adds local provider-free L3 adapter mapping, but it does not make L3
 services live. R8-10E/R8-10F add L3 production compute evidence. R8-8Q adds
-production re-smoke evidence for remediated L1/L2 services.
+production re-smoke evidence for remediated L1/L2 services. R8-11B adds the
+first tiny allowlist controlled production invoke evidence.
 
 R8-8P rebaselined readiness against confirmed production endpoints. Earlier
 R8-8G/H/I/J/K/L/M controlled smoke results used dev endpoints and are now
@@ -23,14 +24,23 @@ Latest L1/L2 production re-smoke artifact root:
 /tmp/lma-r8-8q-prod-resmoke/20260611T020302Z
 ```
 
+Latest controlled production invoke smoke artifact root:
+
+```text
+/tmp/lma-r8-11b-prod-invoke-smoke/20260611T022513Z
+```
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.
 R8-8Q then remediated and re-smoked selected production L1/L2 services. The
 current production compute evidence set now includes thirteen L1/L2 external
-candidates and all four L3 composite candidates. This remains compute evidence
-only; no `/v1/agent/invoke`, runtime binding enablement, live flag, public
-transcript update, or default production invocation was performed.
+candidates and all four L3 composite candidates. R8-11B then ran a tiny
+controlled production `/v1/agent/invoke` smoke for five low-risk candidates:
+`risk_identification`, `risk_compliance_review`, `risk_crash`,
+`risk_financial_fraud`, and `value_research_synthesis`. This invoke evidence is
+still not runtime binding enablement, live verification, public transcript
+integration, or default production invocation.
 
 The remaining production gaps are operational rather than graph-runtime
 changes. `financial_data_service` still fails production health with invalid
@@ -49,7 +59,8 @@ in dev.
 
 ## Non-Claims
 
-- No `/v1/agent/invoke` was called.
+- R8-11B called `/v1/agent/invoke` only for the five-service controlled
+  production allowlist listed in this document.
 - No `live_verified=true` flag was set.
 - No `invoke_enabled_by_default=true` flag was set.
 - No `runtime_bindings.json` entry was changed.
@@ -76,6 +87,7 @@ in dev.
 | Production health pass | 18 | Latest matrix count across production candidates with structured health, including L3 evidence |
 | Production compute pass | 18 | Production `/v1/agent/compute` HTTP 2xx structured JSON across current evidence set |
 | Production adapter mapping pass | 17 | 13 L1/L2 candidates plus 4 L3 composites mapped through provider-free adapter |
+| Controlled production invoke pass | 5 | R8-11B tiny allowlist with `allow_llm=false` and adapter mapping pass |
 | Production failed bucket | 7 | Remaining failed/deferred production items in the current matrix, excluding internal deterministic/L4 |
 | Production endpoint missing | 1 | `entity_relation_extractor` remains without confirmed production compute evidence in this matrix |
 | Production semantic deferred | 3 | Not safe to force into L2 production mapping |
@@ -99,21 +111,22 @@ Layer coverage:
 ## Production Health+Compute+Adapter Pass Candidates
 
 These agents have production `/health` pass, production `/v1/agent/compute`
-pass, and provider-free adapter mapping pass. This is L3-style production
-endpoint evidence only; it is not invoke readiness, live verification, default
-invocation, or production business correctness.
+pass, and provider-free adapter mapping pass. A five-service subset also has
+R8-11B controlled production `/v1/agent/invoke` evidence. Neither compute nor
+invoke smoke is live verification, default invocation, or production business
+correctness.
 
 | agent_id | What passed | What has not passed | Next action |
 | --- | --- | --- | --- |
-| `risk_identification` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_compliance_review` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_financial_fraud` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_crash` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `risk_identification` | Production health + compute + adapter mapping; R8-11B controlled invoke | runtime binding enablement, live flags, default invocation | runtime binding prepare review |
+| `risk_compliance_review` | Production health + compute + adapter mapping; R8-11B controlled invoke | runtime binding enablement, live flags, default invocation | runtime binding prepare review |
+| `risk_financial_fraud` | Production health + compute + adapter mapping; R8-11B controlled invoke | runtime binding enablement, live flags, default invocation | runtime binding prepare review |
+| `risk_crash` | Production health + compute + adapter mapping; R8-11B controlled invoke | runtime binding enablement, live flags, default invocation | runtime binding prepare review |
 | `macro_analysis` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_traditional_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_ml_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_meta_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_research_synthesis` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_research_synthesis` | R8-8Q production health + compute + adapter mapping; R8-11B controlled invoke | runtime binding enablement, live flags, default invocation | runtime binding prepare review |
 | `market_stock_technical` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_capital_flow_chip` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `sentiment_company_radar` | R8-8Q production health + compute + adapter mapping as market-only L2 | `/v1/agent/invoke`, runtime binding enablement, live flags, risk routing | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
@@ -602,16 +615,16 @@ payload pass.
 | `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated fixed DAG primary id | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Backfill service patch to formal repo; review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
 | `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10007` | pass | pass | fail | `production_identity_mismatch` | Service metadata incomplete | Confirm owner/id and wrapper | Discovery + identity fix | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` |
 | `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10008` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated market dimension wrapper | Backfill shared market subagent patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10020` | pass | pass | pass | `production_compute_pass` | R8-8Q confirmed market-only production endpoint and wrapper | Preserve market-only routing | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
 | `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | fail | skipped | skipped | `production_health_failed` | Fixed DAG health identity missing; compute wrapper not verified | Fix production health identity and compute wrapper | Health/compute fix + resmoke | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` |
 | `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
@@ -638,14 +651,14 @@ P0 remediation should now focus on the remaining production blockers:
    and fixed DAG wrapper.
 
 P1 work should backfill the R8-8Q production patches into formal service source
-repositories and prepare invoke audits:
+repositories and continue invoke audits beyond the R8-11B tiny allowlist:
 
 1. Value family: `value_traditional_valuation`, `value_ml_valuation`,
    `value_meta_valuation`, `value_research_synthesis`.
 2. Market family: `market_stock_technical`, `market_capital_flow_chip`,
    `sentiment_company_radar`, `market_ipo_investor_behavior`.
-3. Existing production compute pass set: run read-only `/invoke` audit planning
-   before any controlled invoke call.
+3. Existing production compute pass set not included in R8-11B: run read-only
+   `/invoke` audit planning before any controlled invoke call.
 
 P2 work should not be forced into L2:
 
@@ -717,6 +730,19 @@ The R8-8Q production patch manifest covers protocol-only wrapper changes for
 changes into their formal source-controlled repositories. The manifest records
 `business_core_changed=false`.
 
+## R8-11B Runtime Binding Readiness Recommendation
+
+R8-11B does not edit `runtime_bindings.json`. The following table is a
+recommendation only, based on controlled production invoke smoke results.
+
+| agent_id | compute_pass | invoke_pass | remaining risk | ready_for_runtime_binding_prepare? | requires_owner_backfill? |
+| --- | --- | --- | --- | --- | --- |
+| `risk_identification` | yes | yes | adapter mapped sanitized `tool_result`; strict envelope fields remain a later polish item | yes, review only | no |
+| `risk_compliance_review` | yes | yes | adapter mapped sanitized `tool_result`; strict envelope fields remain a later polish item | yes, review only | no |
+| `risk_crash` | yes | yes | adapter mapped sanitized `tool_result`; strict envelope fields remain a later polish item | yes, review only | no |
+| `risk_financial_fraud` | yes | yes | avoid news-text payloads unless provider behavior is separately audited | yes, review only | no |
+| `value_research_synthesis` | yes | yes | invoke stayed in no-LLM/template path for this smoke | yes, review only | yes, R8-8Q patch backfill |
+
 ## Next Phase
 
 Recommended sequence:
@@ -724,9 +750,9 @@ Recommended sequence:
 1. R8-8R: production `/health` + `/v1/agent/compute` resmoke for remaining
    remediated agents: `financial_data_service`, `entity_relation_extractor`,
    `market_fund_manager_behavior`, and `macro_commodity_pricing`.
-2. R8-9A: production `/v1/agent/invoke` audit planning only for agents with
-   production health + compute + adapter mapping evidence.
-3. R8-9B: first controlled production invoke smoke for a tiny allowlist, still
-   without runtime binding enablement.
+2. R8-11C: continue production `/v1/agent/invoke` audit planning for remaining
+   compute-pass services, especially those with narrative/provider risk.
+3. R8-11D: if approved, run a second tiny controlled invoke smoke for services
+   whose `allow_llm=false` path is proven safe.
 4. Service-owner backfill phase: move service protocol patches into each
    service's source-controlled repo and redeploy.

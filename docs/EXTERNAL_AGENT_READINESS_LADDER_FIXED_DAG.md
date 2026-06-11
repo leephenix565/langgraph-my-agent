@@ -98,6 +98,15 @@ only. It does not create new L2/L3 evidence, does not call endpoints, does not
 advance any service to L4 invoke readiness, and does not enable L5/L6/L7
 runtime or live flags.
 
+R8-11B records the first controlled production L4 invoke evidence for a tiny
+allowlist: `risk_identification`, `risk_compliance_review`, `risk_crash`,
+`risk_financial_fraud`, and `value_research_synthesis`. The phase called only
+production `POST /v1/agent/invoke` for those five services, used no-LLM style
+options, and mapped sanitized `tool_result` payloads through the provider-free
+adapter. This is L4 controlled evidence only. It does not prepare runtime
+bindings, set `live_verified=true`, set `invoke_enabled_by_default=true`, or
+enable default graph invocation.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
@@ -399,7 +408,9 @@ Required:
 - Public transcript remains user/assistant only.
 
 This level is manual/live readiness work and is not part of default reset
-mainline.
+mainline. R8-11B is the first narrow production example of this level; passing
+L4 for one service does not imply L4 for the rest of the compute-pass set and
+does not advance any service to L5/L6/L7 without explicit follow-up approval.
 
 ## L5: Runtime Binding Prepared
 
