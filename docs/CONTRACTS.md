@@ -764,6 +764,12 @@ business correctness.
 Purpose: allow a default-off report generator to read `report_input_bundle_v1`
 and produce a natural Chinese `report_result_v1`.
 
+Boundary: this is the R8-12D main-system fallback/demo seam, anchored locally by
+tag `r8-12d-llm-report-synthesizer-fallback`. It is not the formal external
+`report_generator` agent integration. The future external service should use
+the same bounded input/output contract so the main system can swap the primary
+path without accepting raw agent output or enabling runtime bindings by default.
+
 Runtime controls:
 
 - `Context.enable_llm_report_synthesis`

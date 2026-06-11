@@ -1512,6 +1512,18 @@ with R8-12D LLM report synthesis so active agent evidence informs the final
 natural-language report. Public workflow provenance may show
 `providerInvoked=true` when this path actually invokes the configured model.
 
+Version management: the local annotated tag
+`r8-12d-llm-report-synthesizer-fallback` anchors the current implementation
+state. The tag labels this as a main-system fallback/demo seam before a formal
+external `report_generator` service is wired through the fixed DAG
+external-agent contract.
+
+Future direction: the formal multi-agent implementation should move primary
+report synthesis behind the `report_generator` agent contract:
+`report_input_bundle_v1` in, `report_result_v1` out, with controlled compute
+evidence before any invoke or runtime-binding phase. The R8-12D synthesizer can
+remain as a safe fallback when that external service is unavailable.
+
 Non-consequence: R8-12D does not call external agent `/v1/agent/invoke`, does
 not modify `runtime_bindings.json`, does not set `live_verified=true`, does not
 set `invoke_enabled_by_default=true`, does not make provider use default, does

@@ -1,4 +1,12 @@
-"""Default-off LLM report synthesis for fixed DAG evidence bundles."""
+"""Default-off LLM report synthesis for fixed DAG evidence bundles.
+
+This module is the R8-12D main-system fallback/demo seam. It is intentionally
+not the formal external ``report_generator`` agent integration: that future
+path should accept ``report_input_bundle_v1`` over the external-agent contract
+and return ``report_result_v1`` through the fixed DAG adapter/runtime boundary.
+Keeping the current synthesizer as a bounded fallback lets demos use the same
+public-safe evidence bundle without changing runtime bindings or live flags.
+"""
 
 from __future__ import annotations
 
@@ -253,7 +261,12 @@ def synthesize_report_result_with_llm(
     fallback_report_result: Mapping[str, Any],
     context: Any,
 ) -> LLMReportSynthesisOutcome:
-    """Generate a final report from report_input_bundle_v1 behind an explicit flag."""
+    """Generate a final report from report_input_bundle_v1 behind an explicit flag.
+
+    The explicit flag keeps this helper out of the default graph path. It can be
+    replaced by, or kept as fallback for, a future external report-generator
+    agent once that service exposes the same bounded input/output schemas.
+    """
     valid, reason = validate_report_input_bundle(report_input_bundle)
     if not valid:
         return _fallback_outcome(

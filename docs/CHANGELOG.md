@@ -3,6 +3,25 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-12D version anchor and fallback boundary note
+
+### Changed
+
+- Added local version-management documentation for tag
+  `r8-12d-llm-report-synthesizer-fallback`.
+- Clarified that the current LLM report synthesizer is a main-system
+  fallback/demo seam, not the final external `report_generator` agent
+  integration.
+- Documented the intended future handoff: `report_generator` should consume
+  `report_input_bundle_v1` and return `report_result_v1` through the
+  external-agent contract.
+
+### Not Done
+
+- No endpoint was called.
+- No runtime binding or live flag was changed.
+- No production deployment or push was performed.
+
 ## 2026-06-11 - Phase R8-12D LLM report synthesizer with active evidence
 
 ### Changed

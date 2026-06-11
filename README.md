@@ -275,6 +275,12 @@ output fails closed back to the R8-12C template report. This does not call
 external `/v1/agent/invoke`, does not change runtime bindings, does not set
 live flags, and does not expose raw external responses.
 
+Version anchor: local tag `r8-12d-llm-report-synthesizer-fallback` marks this
+fallback/demo state. It is not the final external `report_generator` agent
+handoff; the formal multi-agent path should later make `report_generator`
+consume `report_input_bundle_v1` and return `report_result_v1` through the
+external-agent contract while this main-system synthesizer remains fallback.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
