@@ -9,7 +9,7 @@ import threading
 import uuid
 from datetime import UTC, datetime
 from pathlib import Path
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 _WRITE_LOCK = threading.Lock()
 
@@ -65,8 +65,8 @@ class RunLogger:
         self.run_id = run_id
         self.enabled = _should_enable()
         self.max_chars = _max_chars()
-        self.log_path: Optional[Path] = None
-        self.log_dir: Optional[Path] = None
+        self.log_path: Path | None = None
+        self.log_dir: Path | None = None
         if self.enabled:
             self.log_dir = _log_dir()
             self.log_path = self.log_dir / f"{self.run_id}.jsonl"

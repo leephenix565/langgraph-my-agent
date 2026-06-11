@@ -105,6 +105,24 @@ class Context:
             "Provider failures fall back to deterministic placeholders."
         },
     )
+    enable_external_compute_demo: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable the default-off fixed-DAG external compute demo bridge. "
+            "The bridge only calls explicitly allowlisted production /v1/agent/compute endpoints."
+        },
+    )
+    external_compute_demo_allowlist: tuple[str, ...] = field(
+        default=(),
+        metadata={
+            "description": "Fixed-DAG agent ids allowed for external compute demo calls. "
+            "Empty by default, so enabling the bridge alone makes no HTTP calls."
+        },
+    )
+    external_compute_demo_timeout_seconds: float = field(
+        default=20.0,
+        metadata={"description": "Per-agent timeout for external compute demo calls."},
+    )
     run_id: str = field(
         default="",
         metadata={"description": "Optional run identifier for tracing/logging."},
@@ -147,6 +165,7 @@ class Context:
             "enable_fair_fusion_source_switch": "ENABLE_FAIR_FUSION_SOURCE_SWITCH",
             "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
+            "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
         }
         for field_name, env_name in bool_envs.items():
             field_obj = next((f for f in fields(self) if f.name == field_name), None)
@@ -162,6 +181,34 @@ class Context:
                 field_name,
                 _parse_bool_env(raw, name=env_name, default=field_obj.default),
             )
+
+        allowlist_env = os.environ.get("EXTERNAL_COMPUTE_DEMO_ALLOWLIST")
+        if allowlist_env is not None and self.external_compute_demo_allowlist == ():
+            self.external_compute_demo_allowlist = tuple(
+                item.strip()
+                for item in allowlist_env.split(",")
+                if item.strip()
+            )
+
+        timeout_env = os.environ.get("EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS")
+        if timeout_env is not None and self.external_compute_demo_timeout_seconds == 20.0:
+            try:
+                parsed_timeout = float(str(timeout_env).strip())
+            except (TypeError, ValueError):
+                warnings.warn(
+                    f"Invalid EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS='{timeout_env}', "
+                    "using default 20.0.",
+                    RuntimeWarning,
+                )
+            else:
+                if parsed_timeout <= 0:
+                    warnings.warn(
+                        f"Invalid EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS='{timeout_env}', "
+                        "using default 20.0.",
+                        RuntimeWarning,
+                    )
+                else:
+                    self.external_compute_demo_timeout_seconds = parsed_timeout
 
         max_env = os.environ.get("MAX_SEARCH_RESULTS")
         if max_env is None:

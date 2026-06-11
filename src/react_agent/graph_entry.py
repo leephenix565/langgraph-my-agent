@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import os
 import warnings
-from typing import Any, Optional, Tuple
+from typing import Any, Tuple
 
 
 def maybe_make_checkpointer():
@@ -66,7 +66,7 @@ def compile_graph_variants(builder: Any, graph_name: str) -> Tuple[Any, Any]:
     return graph, graph_persistent
 
 
-def select_graph_for_invoke(thread_id: Optional[str], graph: Any, graph_persistent: Any) -> Any:
+def select_graph_for_invoke(thread_id: str | None, graph: Any, graph_persistent: Any) -> Any:
     """Select the persistent graph only when continuity has a thread id."""
     if thread_id and graph_persistent is not None:
         return graph_persistent

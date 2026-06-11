@@ -10,7 +10,7 @@ from __future__ import annotations
 import json
 from dataclasses import dataclass
 from pathlib import Path
-from typing import Dict, List, Optional
+from typing import Dict, List
 
 from langchain_core.tools import BaseTool
 
@@ -27,23 +27,23 @@ class AgentMetadata:
     latency_level: str
     cost_level: str
     version: str
-    layer: Optional[str] = None
-    team: Optional[str] = None
-    role_type: Optional[str] = None
-    business_order: Optional[int] = None
-    business_role: Optional[str] = None
-    business_status: Optional[str] = None
-    business_layer: Optional[str] = None
-    business_category: Optional[str] = None
-    business_subcategory: Optional[str] = None
-    profile_summary: Optional[str] = None
-    when_to_use: Optional[str] = None
-    when_not_to_use: Optional[str] = None
-    required_inputs: Optional[str] = None
-    missing_input_policy: Optional[str] = None
-    owner: Optional[str] = None
-    profile_source: Optional[str] = None
-    profile_updated_from_excel: Optional[str] = None
+    layer: str | None = None
+    team: str | None = None
+    role_type: str | None = None
+    business_order: int | None = None
+    business_role: str | None = None
+    business_status: str | None = None
+    business_layer: str | None = None
+    business_category: str | None = None
+    business_subcategory: str | None = None
+    profile_summary: str | None = None
+    when_to_use: str | None = None
+    when_not_to_use: str | None = None
+    required_inputs: str | None = None
+    missing_input_policy: str | None = None
+    owner: str | None = None
+    profile_source: str | None = None
+    profile_updated_from_excel: str | None = None
     default_enabled: bool = True
 
 

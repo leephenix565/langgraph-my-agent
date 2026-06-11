@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-12 default-off external compute demo integration
+
+### Changed
+
+- Added `Context.enable_external_compute_demo`,
+  `external_compute_demo_allowlist`, and
+  `external_compute_demo_timeout_seconds`.
+- Added `fixed_dag_external_compute_bridge.py`, a default-off demo bridge that
+  calls only allowlisted loopback production `/v1/agent/compute` endpoints and
+  maps responses through the provider-free fixed-DAG adapter.
+- Integrated mapped L2/L3 compute results into `execute_fixed_dag_plan` behind
+  the explicit demo flag and allowlist while preserving deterministic behavior
+  when flags are off.
+- Added a Chinese demo report/workflow summary and a runbook for local
+  API/Web demo startup.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent tests`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_compute_bridge.py -q`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+
+### Not Done
+
+- No push.
+- No `/v1/agent/invoke` call from the bridge.
+- No runtime binding change.
+- No live flag change.
+- No default external invocation.
+- No raw external response stored in the repo.
+
 ## 2026-06-11 - Phase R8-11B first controlled production invoke smoke
 
 ### Changed

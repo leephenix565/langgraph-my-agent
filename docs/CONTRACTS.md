@@ -91,6 +91,16 @@ failure records. `external_invoked=false` in mapper output means the mapper
 itself made no live call; future live bridges must record invocation facts in a
 separate readiness/runtime layer.
 
+R8-12 adds such a bridge only for demo use. The bridge lives in
+`fixed_dag_external_compute_bridge.py`, is default-off, and is loaded by
+`execute_fixed_dag_plan` only when `enable_external_compute_demo` is true and
+`external_compute_demo_allowlist` contains registered fixed DAG ids. It sends
+`external_agent_request_v0` requests only to loopback production
+`/v1/agent/compute`, maps responses through the pure adapter, and stores only
+validator-legal internal contracts plus bounded public-safe summaries. It does
+not call `/v1/agent/invoke`, does not change runtime bindings, and does not
+make compute evidence default graph execution.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`

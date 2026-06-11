@@ -9,6 +9,63 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-12 default-off external compute demo
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-12 |
+| Artifact directory | `/tmp/lma-r8-12-demo/20260611T025315Z` |
+| Local API | `http://127.0.0.1:8212` |
+| Local Web | `http://127.0.0.1:8213` |
+| Bridge endpoint calls | production `POST /v1/agent/compute` for explicit allowlist only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Default external invocation enabled | no |
+
+R8-12 added a default-off demo bridge that is activated only by explicit local
+flags and an explicit allowlist. The local API smoke submitted one Chinese stock
+analysis question through the public API, executed the fixed DAG, read
+production `/v1/agent/compute` structured results for allowlisted services, and
+mapped those results through the fixed-DAG external adapter before producing the
+public answer and workflow snapshot.
+
+Sanitized demo result:
+
+- Public API smoke passed with HTTP 200 for the message request.
+- The public answer contained the Chinese external-compute demo summary.
+- The workflow snapshot reached `report`.
+- Sixteen allowlisted L2/L3 steps were marked complete from mapped external
+  compute results.
+- The answer artifact did not contain `/v1/agent/invoke`.
+- Web server launch succeeded; screenshot capture was not available because the
+  host lacks a Chromium/Chrome browser binary for Playwright. The screenshot
+  limitation is recorded in
+  `/tmp/lma-r8-12-demo/20260611T025315Z/screenshot.failure.json`.
+
+Allowlist used:
+
+- `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `value_research_synthesis`
+- `market_stock_technical`, `market_capital_flow_chip`,
+  `sentiment_company_radar`
+- `risk_identification`, `risk_compliance_review`,
+  `risk_financial_fraud`, `risk_crash`
+- `macro_analysis`
+- `value_composite`, `market_composite`, `risk_composite`,
+  `macro_composite`
+
+Non-claims:
+
+- This is default-off demo evidence only.
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not make the fixed DAG graph call production external services by
+  default.
+- This does not prove production business correctness.
+- This does not update public transcript content with raw external responses.
+
 ## 2026-06-11 - R8-11B first controlled production invoke smoke
 
 | Field | Value |

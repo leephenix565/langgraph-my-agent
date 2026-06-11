@@ -2,8 +2,10 @@
 """Plan-driven deterministic fixed-DAG executor.
 
 The Phase R3 executor is an orchestration seam only. It validates and walks the
-fixed DAG plan, emits deterministic placeholder outputs, and never calls a
-provider, search backend, or external agent endpoint.
+fixed DAG plan and emits deterministic placeholder outputs by default. R8-12
+adds an explicit default-off demo bridge for production `/v1/agent/compute`
+calls; the bridge is not loaded or used unless the demo flag and allowlist are
+set.
 """
 
 from __future__ import annotations
@@ -537,6 +539,167 @@ def _execution_batches(plan: Mapping[str, Any]) -> list[list[str]]:
     return topological_batches(plan)
 
 
+def _apply_external_compute_step_updates(
+    step_results: dict[str, dict],
+    *runs: Mapping[str, Any],
+) -> None:
+    for run in runs:
+        updates = run.get("step_updates", {}) if isinstance(run, Mapping) else {}
+        if not isinstance(updates, Mapping):
+            continue
+        for step_id, update in updates.items():
+            if step_id not in step_results or not isinstance(update, Mapping):
+                continue
+            status = str(update.get("status") or "")
+            if status:
+                step_results[str(step_id)]["status"] = status
+            summary = str(update.get("summary") or "")
+            if summary:
+                step_results[str(step_id)]["summary"] = summary
+            warning = str(update.get("warning") or "")
+            if warning and warning not in step_results[str(step_id)]["warnings"]:
+                step_results[str(step_id)]["warnings"].append(warning)
+
+
+def _safe_report_value(value: Any, *, limit: int = 80) -> str:
+    text = str(value or "").strip()
+    text = text.replace("\n", " ").replace("\r", " ")
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
+def _dimension_demo_line(label: str, result: Mapping[str, Any] | None) -> str:
+    if not isinstance(result, Mapping):
+        return f"{label}：本轮没有可用的外部 compute 映射结果。"
+    confidence = result.get("confidence", 0.0)
+    try:
+        confidence_text = f"{float(confidence):.2f}"
+    except (TypeError, ValueError):
+        confidence_text = "n/a"
+    if result.get("dimension") == "risk":
+        gate = _safe_report_value(result.get("gate") or result.get("stance") or "risk_gate")
+        risk_score = result.get("risk_score", 0.0)
+        try:
+            risk_text = f"{float(risk_score):.2f}"
+        except (TypeError, ValueError):
+            risk_text = "n/a"
+        return f"{label}：风险门为 {gate}，风险分 {risk_text}，置信度 {confidence_text}。"
+    if result.get("dimension") == "macro":
+        regime = _safe_report_value(result.get("regime") or result.get("stance") or "macro_regulator")
+        weights = result.get("dimension_weights", {})
+        if isinstance(weights, Mapping):
+            weight_text = ", ".join(
+                f"{_safe_report_value(key)}={value}"
+                for key, value in weights.items()
+                if key in {"value", "market"}
+            )
+        else:
+            weight_text = "n/a"
+        return f"{label}：宏观状态 {regime}，value/market 权重 {weight_text}，置信度 {confidence_text}。"
+    stance = _safe_report_value(result.get("stance") or "not_evaluated")
+    contributors = result.get("contributing_agents", [])
+    contributor_text = len(contributors) if isinstance(contributors, list) else 0
+    return f"{label}：综合 stance={stance}，参与成员 {contributor_text} 个，置信度 {confidence_text}。"
+
+
+def _l2_demo_summary_lines(l2_conclusions: Mapping[str, Any]) -> list[str]:
+    labels = {
+        "value": "估值信号",
+        "market": "市场信号",
+        "risk": "风险成员",
+        "macro": "宏观成员",
+    }
+    lines: list[str] = []
+    for dimension in ("value", "market", "risk", "macro"):
+        items = [
+            item
+            for item in l2_conclusions.values()
+            if isinstance(item, Mapping)
+            and item.get("dimension") == dimension
+            and item.get("status") in {"complete", "partial"}
+            and isinstance(item.get("provenance"), Mapping)
+            and item["provenance"].get("adapter_source")
+        ]
+        if not items:
+            continue
+        sample = items[:3]
+        text = "；".join(
+            f"{_safe_report_value(item.get('agent_id'))}: "
+            f"{_safe_report_value(item.get('stance'))}, "
+            f"confidence={item.get('confidence', 0.0)}"
+            for item in sample
+        )
+        suffix = "；..." if len(items) > len(sample) else ""
+        lines.append(f"{labels[dimension]}：{text}{suffix}")
+    return lines
+
+
+def _augment_report_with_external_compute_demo(
+    report_result: Mapping[str, Any],
+    *,
+    l2_conclusions: Mapping[str, Any],
+    dimension_results: Mapping[str, Any],
+    demo_summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    mapped_agents = [
+        str(agent_id)
+        for agent_id in demo_summary.get("mapped_agents", [])
+        if str(agent_id or "")
+    ]
+    if not mapped_agents:
+        return dict(report_result)
+
+    dimension_lines = [
+        _dimension_demo_line("估值综合", cast(Mapping[str, Any] | None, dimension_results.get("value"))),
+        _dimension_demo_line("市场综合", cast(Mapping[str, Any] | None, dimension_results.get("market"))),
+        _dimension_demo_line("风险闸门", cast(Mapping[str, Any] | None, dimension_results.get("risk"))),
+        _dimension_demo_line("宏观调节", cast(Mapping[str, Any] | None, dimension_results.get("macro"))),
+    ]
+    l2_lines = _l2_demo_summary_lines(l2_conclusions)
+    demo_body = "\n".join(
+        [
+            "本次研判使用固定 DAG 流程，并在演示模式下读取了若干已通过生产 compute smoke 的外部智能体结构化结果。",
+            "这些结果只用于演示默认关闭的结构化接入，不代表默认启用或正式生产接入承诺。",
+            *l2_lines,
+            *dimension_lines,
+            "综合结论：当前页面展示的是结构化接入链路和审慎研判框架，仍需业务 owner 对结果含义负责。",
+        ]
+    )
+    answer = str(report_result.get("answer") or "")
+    if demo_body not in answer:
+        answer = f"{answer}\n\n外部计算演示摘要：\n{demo_body}"
+    sections = list(report_result.get("sections", []) or [])
+    sections.append(
+        {
+            "id": "external_compute_demo",
+            "title": "外部计算演示",
+            "content": demo_body,
+        }
+    )
+    evidence_cards = list(report_result.get("evidence_cards", []) or [])
+    evidence_cards.append(
+        {
+            "title": "外部 compute 演示来源",
+            "note": f"本轮映射 {len(mapped_agents)} 个 allowlist agent；未调用 invoke 接口。",
+        }
+    )
+    limitations = list(report_result.get("limitations", []) or [])
+    limitation = (
+        "外部 compute demo 为显式开关 + allowlist 模式，不改变默认运行配置。"
+    )
+    if limitation not in limitations:
+        limitations.append(limitation)
+    return {
+        **dict(report_result),
+        "answer": answer,
+        "status": "partial",
+        "sections": sections,
+        "evidence_cards": evidence_cards,
+        "limitations": limitations,
+    }
+
+
 def execute_fixed_dag_plan(
     plan: Mapping[str, Any],
     *,
@@ -581,9 +744,64 @@ def execute_fixed_dag_plan(
         )
     else:
         l2_conclusions = build_l2_conclusions(execution_plan, as_of=as_of)
+
+    external_compute_demo_enabled = bool(
+        getattr(context, "enable_external_compute_demo", False)
+    )
+    external_l2_run: Mapping[str, Any] = {}
+    external_l3_run: Mapping[str, Any] = {}
+    external_demo_summary: Mapping[str, Any] = {
+        "called_agents": [],
+        "mapped_agents": [],
+        "failed_agents": [],
+        "warnings": [],
+    }
+    if external_compute_demo_enabled:
+        from react_agent.fixed_dag_external_compute_bridge import (  # noqa: PLC0415
+            merge_external_compute_demo_runs,
+            run_external_compute_for_plan,
+        )
+
+        external_l2_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            l2_conclusions=l2_conclusions,
+            stages=("l2_analysis",),
+        )
+        l2_conclusions = cast(dict[str, Any], external_l2_run["l2_conclusions"])
     dimension_results = build_dimension_results(l2_conclusions, as_of=as_of)
+    if external_compute_demo_enabled:
+        external_l3_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            stages=("dimension_composite",),
+        )
+        l2_conclusions = cast(dict[str, Any], external_l3_run["l2_conclusions"])
+        dimension_results = cast(dict[str, Any], external_l3_run["dimension_results"])
+        _apply_external_compute_step_updates(
+            step_results,
+            external_l2_run,
+            external_l3_run,
+        )
+        external_demo_summary = merge_external_compute_demo_runs(
+            external_l2_run,
+            external_l3_run,
+        )
     decision_result = build_decision_result(dimension_results, as_of=as_of)
     report_result = build_report_result(decision_result, question=question)
+    if external_compute_demo_enabled:
+        report_result = _augment_report_with_external_compute_demo(
+            report_result,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            demo_summary=external_demo_summary,
+        )
     internal_placeholder_count = sum(
         1
         for item in l2_conclusions.values()
@@ -595,6 +813,17 @@ def execute_fixed_dag_plan(
         "当前为本地固定流程模式。",
         "高级连接状态可在设置诊断中查看。",
     ]
+    if external_compute_demo_enabled:
+        if external_demo_summary.get("mapped_agents"):
+            limitations.append(
+                "已在显式演示开关 + allowlist 下读取部分生产 /compute 结构化结果；"
+                "这不是默认运行配置变更。"
+            )
+        else:
+            limitations.append(
+                "external compute demo 演示开关已开启，但没有 allowlist agent 完成映射；"
+                "执行已回退到本地固定流程。"
+            )
     if fallback_used:
         limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")
 
@@ -617,6 +846,16 @@ def execute_fixed_dag_plan(
             "external_invoked": False,
             "internal_llm_placeholders_enabled": internal_placeholders_enabled,
             "internal_llm_placeholder_conclusions": internal_placeholder_count,
+            "external_compute_demo_enabled": external_compute_demo_enabled,
+            "external_compute_demo_called_agents": list(
+                external_demo_summary.get("called_agents", [])
+            ),
+            "external_compute_demo_mapped_agents": list(
+                external_demo_summary.get("mapped_agents", [])
+            ),
+            "external_compute_demo_failed_agents": list(
+                external_demo_summary.get("failed_agents", [])
+            ),
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

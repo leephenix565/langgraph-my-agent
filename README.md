@@ -233,6 +233,15 @@ options. This is controlled invoke evidence only: runtime bindings remain
 unchanged, no live flags are set, no public transcript content is updated, and
 the fixed DAG graph still does not invoke production external services by
 default.
+Phase R8-12 adds a default-off external compute demo bridge. When
+`ENABLE_EXTERNAL_COMPUTE_DEMO=1` and `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` are both
+set, the executor may call only allowlisted loopback production
+`/v1/agent/compute` endpoints, map the results through the provider-free
+adapter, and surface a Chinese demo report/workflow summary. With flags off, or
+with an empty allowlist, the active graph remains the deterministic fixed DAG
+skeleton. R8-12 does not call `/v1/agent/invoke`, does not change
+`runtime_bindings.json`, does not set live flags, and does not make external
+invocation the default runtime.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -242,7 +251,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-11B first controlled production invoke smoke over the existing
+- Current phase: R8-12 default-off external compute demo bridge over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.
@@ -557,6 +566,8 @@ runtime/provider/external output.
   docs-only review to explicit live invocation approval.
 - `docs/CONTROLLED_READINESS_SMOKE_LOG.md` - sanitized internal log for
   controlled health/compute smoke evidence and non-claims.
+- `docs/DEMO_EXTERNAL_COMPUTE_DAG_RUNBOOK.md` - default-off external compute
+  demo setup, allowlist, and non-claims.
 - `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md` - documentation-only
   endpoint and v2.3.1 domain payload samples.
 - `examples/fixed_dag_external_agent_scaffold/` - tracked repo mirror of the

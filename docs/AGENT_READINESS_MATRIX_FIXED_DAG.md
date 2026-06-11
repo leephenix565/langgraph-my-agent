@@ -30,6 +30,13 @@ Latest controlled production invoke smoke artifact root:
 /tmp/lma-r8-11b-prod-invoke-smoke/20260611T022513Z
 ```
 
+R8-12 adds a default-off external compute demo bridge. The bridge can read
+production `/v1/agent/compute` only when both the explicit demo flag and an
+allowlist are set. It maps responses through the provider-free adapter before
+they can appear in the fixed DAG workflow/report. This does not update
+readiness status by itself, does not call `/v1/agent/invoke`, does not change
+runtime bindings, and does not set live flags.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.
@@ -76,6 +83,46 @@ in dev.
   phase owns them.
 - R8-10B L3 adapter tests are not live readiness and do not enable external L3
   runtime execution.
+- R8-12 demo mode is default-off. It does not make any external service a
+  default runtime dependency and does not promote demo output into production
+  readiness.
+
+## R8-12 Demo Bridge Allowlist Boundary
+
+The demo registry includes only loopback production compute endpoints that have
+prior production compute evidence. Runtime bindings remain the only authority
+for default graph behavior and are unchanged.
+
+Recommended full-DAG demo allowlist:
+
+- `value_traditional_valuation`
+- `value_ml_valuation`
+- `value_meta_valuation`
+- `value_research_synthesis`
+- `market_stock_technical`
+- `market_capital_flow_chip`
+- `sentiment_company_radar` (market-only)
+- `risk_identification`
+- `risk_compliance_review`
+- `risk_financial_fraud`
+- `risk_crash`
+- `macro_analysis`
+- `value_composite`
+- `market_composite`
+- `risk_composite`
+- `macro_composite`
+
+Excluded from the demo allowlist until a later remediation or design phase:
+
+- `financial_data_service`
+- `entity_relation_extractor`
+- `market_fund_manager_behavior`
+- `macro_commodity_pricing`
+- `macro_index_valuation`
+- `macro_sentiment`
+- `macro_industry_hotspot`
+- `decision_synthesizer`
+- `report_generator`
 
 ## Production Coverage Summary
 

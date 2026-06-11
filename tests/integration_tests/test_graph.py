@@ -21,8 +21,46 @@ from react_agent.fixed_dag_executor import (
     validate_dag_execution_result,
     validate_selected_dag_steps,
 )
+from react_agent.fixed_dag_external_adapter import (
+    map_external_response_to_fixed_dag_object,
+)
 
 pytestmark = pytest.mark.anyio
+
+
+def _compute_envelope(agent_id: str, external_agent_id: str, tool_result: dict[str, object]):
+    return {
+        "schema_version": "external_agent_compute_v0",
+        "agent_id": agent_id,
+        "external_agent_id": external_agent_id,
+        "status": "ok",
+        "tool_result": tool_result,
+    }
+
+
+def _agent_conclusion() -> dict[str, object]:
+    return {
+        "schema_version": "agent_conclusion_v1",
+        "agent_id": "value_ml_valuation",
+        "external_agent_id": "valuation_ml",
+        "dimension": "value",
+        "role": "direction",
+        "stance": "demo_positive",
+        "confidence": 0.66,
+        "status": "ok",
+        "evidence": [
+            {
+                "id": "graph-demo-evidence",
+                "fact": "Bounded graph demo fixture.",
+                "source": "integration_test",
+                "as_of": "2026-06-05",
+                "data_as_of": "2026-06-05",
+            }
+        ],
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "event_flags": [],
+    }
 
 
 async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypatch) -> None:
@@ -98,6 +136,66 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert "contract" not in graph_module.__dict__
     assert "AGENT_METADATA" not in graph_module.__dict__
     assert "AGENT_TOOLS" not in graph_module.__dict__
+
+
+async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    def fail_provider(*args, **kwargs):
+        raise AssertionError("provider should not be called by external compute demo")
+
+    def fail_legacy_external_client(*args, **kwargs):
+        raise AssertionError("legacy external HTTP client should not be used")
+
+    def fake_invoke(entry, **_kwargs):
+        assert entry.agent_id == "value_ml_valuation"
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_legacy_external_client)
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "请从估值角度分析贵州茅台 600519.SH 当前是否值得关注。")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+        ),
+    )
+    rendered = json.dumps(
+        {
+            "dag_execution": res["dag_execution"],
+            "workflow_snapshot": res["workflow_snapshot"],
+            "report_result": res["report_result"],
+            "l2_conclusions": res["l2_conclusions"],
+        },
+        ensure_ascii=False,
+    ).lower()
+
+    valid, reason = validate_dag_execution_result(res["dag_execution"])
+    assert valid, reason
+    assert res["dag_execution"]["provenance"]["external_invoked"] is False
+    assert res["dag_execution"]["provenance"]["external_compute_demo_mapped_agents"] == [
+        "value_ml_valuation"
+    ]
+    assert res["l2_conclusions"]["value_ml_valuation"]["status"] == "complete"
+    assert "外部计算演示摘要" in res["messages"][-1].content
+    assert "http://127.0.0.1" not in rendered
+    assert "/v1/agent/invoke" not in res["messages"][-1].content
+    assert "raw_response" not in rendered
 
 
 async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypatch) -> None:

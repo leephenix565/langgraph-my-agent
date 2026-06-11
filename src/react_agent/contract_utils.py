@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import hashlib
 import json
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Tuple
 
 CONTRACT_SCHEMA_VERSION = "a01_contract_v0"
 CONTRACT_REQUIRED_KEYS = {
@@ -36,7 +36,7 @@ def hash_contract(contract: Dict[str, Any]) -> str:
     return hashlib.sha256(payload.encode("utf-8")).hexdigest()
 
 
-def extract_contract(results: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+def extract_contract(results: Dict[str, Any]) -> Dict[str, Any] | None:
     """Extract a parsed A01 contract from agent results when present."""
     a01 = results.get("a01_cio_orchestrator")
     if not isinstance(a01, dict):
@@ -54,7 +54,7 @@ def extract_contract(results: Dict[str, Any]) -> Optional[Dict[str, Any]]:
 
 
 def validate_contract(
-    contract: Optional[Dict[str, Any]],
+    contract: Dict[str, Any] | None,
     selected_agents: List[str],
     *,
     steps_min: int = 2,

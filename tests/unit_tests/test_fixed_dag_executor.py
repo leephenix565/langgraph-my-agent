@@ -23,10 +23,88 @@ from react_agent.fixed_dag_executor import (
     validate_selected_dag_steps,
     validate_step_result,
 )
+from react_agent.fixed_dag_external_adapter import (
+    map_external_response_to_fixed_dag_object,
+)
 
 
 def _plan():
     return build_default_fixed_dag_plan("q", as_of="2026-06-04")
+
+
+def _compute_envelope(agent_id: str, external_agent_id: str, tool_result: dict[str, object]):
+    return {
+        "schema_version": "external_agent_compute_v0",
+        "agent_id": agent_id,
+        "external_agent_id": external_agent_id,
+        "status": "ok",
+        "tool_result": tool_result,
+    }
+
+
+def _agent_conclusion(
+    *,
+    agent_id: str = "value_ml_valuation",
+    external_agent_id: str = "valuation_ml",
+    dimension: str = "value",
+) -> dict[str, object]:
+    role = "gate_member" if dimension == "risk" else "direction"
+    payload: dict[str, object] = {
+        "schema_version": "agent_conclusion_v1",
+        "agent_id": agent_id,
+        "external_agent_id": external_agent_id,
+        "dimension": dimension,
+        "role": role,
+        "stance": "demo_positive",
+        "confidence": 0.64,
+        "status": "ok",
+        "evidence": [
+            {
+                "id": "demo-evidence",
+                "fact": "Bounded external compute demo fixture.",
+                "source": "unit_test",
+                "as_of": "2026-06-04",
+                "data_as_of": "2026-06-04",
+            }
+        ],
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "event_flags": [],
+    }
+    if role == "gate_member":
+        payload.pop("stance")
+        payload["risk_score"] = 0.22
+    return payload
+
+
+def _risk_conclusion() -> dict[str, object]:
+    return {
+        "schema_version": "risk_conclusion_v1",
+        "agent_id": "risk_composite",
+        "external_agent_id": "risk_synthesis",
+        "dimension": "risk",
+        "role": "gate",
+        "target": "600519.SH",
+        "gate": "pass",
+        "risk_score": 0.31,
+        "penalty": 0.1,
+        "confidence": 0.73,
+        "contributing_agents": ["risk_identification", "risk_compliance_review"],
+        "triggered_flags": ["bounded_demo_flag"],
+        "red_lines": [],
+        "evidence": [
+            {
+                "id": "risk-demo-evidence",
+                "fact": "Risk gate stays below veto level.",
+                "source": "unit_test",
+                "as_of": "2026-06-04",
+                "data_as_of": "2026-06-04",
+            }
+        ],
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "status": "ok",
+    }
 
 
 def test_default_plan_validates_and_batches_are_stable() -> None:
@@ -275,6 +353,128 @@ def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monke
     } == {"reset_skeleton"}
 
 
+def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    def fail_invoke(*_args, **_kwargs):
+        raise AssertionError("external compute bridge should stay default-off")
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fail_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(external_compute_demo_allowlist=("value_ml_valuation",)),
+    )
+
+    assert result["provenance"]["external_compute_demo_enabled"] is False
+    assert result["provenance"]["external_compute_demo_called_agents"] == []
+    assert result["provenance"]["external_invoked"] is False
+    assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "pending_implementation"
+
+
+def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    def fake_invoke(entry, **_kwargs):
+        if entry.agent_id == "value_ml_valuation":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "value_ml_valuation",
+                    "valuation_ml",
+                    _agent_conclusion(),
+                )
+            )
+        elif entry.agent_id == "risk_composite":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "risk_composite",
+                    "risk_synthesis",
+                    _risk_conclusion(),
+                )
+            )
+        else:
+            raise AssertionError(f"unexpected demo agent {entry.agent_id}")
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation", "risk_composite"),
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert valid, reason
+    assert result["provenance"]["external_invoked"] is False
+    assert result["provenance"]["external_compute_demo_enabled"] is True
+    assert result["provenance"]["external_compute_demo_called_agents"] == [
+        "value_ml_valuation",
+        "risk_composite",
+    ]
+    assert result["provenance"]["external_compute_demo_mapped_agents"] == [
+        "value_ml_valuation",
+        "risk_composite",
+    ]
+    assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "complete"
+    assert result["l2_conclusions"]["value_ml_valuation"]["stance"] == "demo_positive"
+    assert result["dimension_results"]["risk"]["gate"] == "pass"
+    assert result["step_results"]["l2:value_ml_valuation"]["status"] == "complete"
+    assert result["step_results"]["dimension:risk"]["status"] == "complete"
+    assert "外部计算演示摘要" in result["report_result"]["answer"]
+    assert "live_verified" not in result["report_result"]["answer"]
+    assert "/v1/agent/invoke" not in result["report_result"]["answer"]
+    assert "http://127.0.0.1" not in rendered
+    assert "raw_response" not in rendered
+
+
+def test_external_compute_demo_failure_falls_back_to_placeholder(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    def fake_invoke(entry, **_kwargs):
+        return {
+            "agent_id": entry.agent_id,
+            "status": "failed",
+            "mapped": None,
+            "failure_code": "timeout",
+            "warning": "external_compute_demo_failed:timeout",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+
+    assert valid, reason
+    assert result["provenance"]["external_compute_demo_failed_agents"] == [
+        "value_ml_valuation"
+    ]
+    assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "pending_implementation"
+    assert "external_compute_demo_failed:timeout" in result["step_results"]["l2:value_ml_valuation"]["warnings"]
+    assert "外部计算演示摘要" not in result["report_result"]["answer"]
+
+
 def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> None:
     intent = build_route_intent(
         task_type="general",
@@ -305,6 +505,57 @@ def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> No
     assert {item["id"] for item in result["workflow_snapshot"]["dimensionGroups"]} == {"value"}
     assert len(result["workflow_snapshot"]["dagSteps"]) == len(plan["steps"])
     assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])
+
+
+def test_external_compute_demo_with_selected_plan_calls_only_selected_agents(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+    called = []
+
+    def fake_invoke(entry, **_kwargs):
+        called.append(entry.agent_id)
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        plan,
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=(
+                "value_ml_valuation",
+                "value_meta_valuation",
+            ),
+        ),
+    )
+
+    assert called == ["value_ml_valuation"]
+    assert result["provenance"]["external_compute_demo_called_agents"] == ["value_ml_valuation"]
+    assert set(result["l2_conclusions"]) == {"value_ml_valuation"}
+    assert set(result["dimension_results"]) == {"value"}
 
 
 def test_invalid_plan_falls_back_to_deterministic_default_without_raising() -> None:

@@ -1401,3 +1401,30 @@ not set `live_verified=true`, does not set `invoke_enabled_by_default=true`,
 does not make the fixed DAG graph call production services by default, does not
 update public transcript content, does not weaken adapter identity gates, and
 does not prove production business correctness.
+
+## ADR-054: R8-12 Uses Default-Off Compute Bridge For Demo Before Runtime Enablement
+
+Status: accepted for demo-only fixed DAG external compute integration.
+
+Decision: R8-12 adds a default-off bridge that can call allowlisted production
+`/v1/agent/compute` endpoints from `execute_fixed_dag_plan` only when an
+explicit demo flag and allowlist are both set. Responses must map through the
+provider-free fixed-DAG adapter before replacing L2/L3 placeholder outputs.
+
+Reason: the project needs a same-day web demo that shows structured external
+agent outputs flowing through the fixed DAG workflow, but runtime binding
+enablement and broad production invocation are separate readiness phases. The
+smallest safe bridge is demo-only, allowlisted, loopback-only, compute-only,
+and fail-soft back to deterministic placeholders.
+
+Consequence: the local API/Web demo can display a Chinese fixed-DAG report with
+value, market, risk, and macro summaries sourced from mapped production compute
+responses. Tests cover default-off behavior, allowlist enforcement, loopback
+and `/invoke` rejection, mapping success, fallback, selected routing
+coexistence, and public-safe output.
+
+Non-consequence: R8-12 does not call `/v1/agent/invoke` from the bridge, does
+not modify `runtime_bindings.json`, does not set `live_verified=true`, does not
+set `invoke_enabled_by_default=true`, does not make external services default
+graph dependencies, does not update public transcript content with raw external
+responses, and does not prove production business correctness.

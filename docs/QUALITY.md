@@ -95,6 +95,26 @@ enable active graph calls to production services, and does not update public
 transcript content. The default mainline remains provider-free and
 external-HTTP-free.
 
+## R8-12 Default-Off External Compute Demo Boundary
+
+R8-12 introduces a demo bridge in the active executor, but the bridge remains
+default-off and is not part of the default reset mainline. It can call
+production `POST /v1/agent/compute` only when both of these are true:
+
+- `ENABLE_EXTERNAL_COMPUTE_DEMO=1`
+- `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` contains one or more registered fixed DAG
+  agent ids
+
+With flags off or an empty allowlist, no bridge module is loaded and no
+external HTTP call is made. The bridge never calls `/v1/agent/invoke`, never
+uses dev endpoints as production evidence, and never changes
+`runtime_bindings.json`.
+
+R8-12 validation uses unit and integration tests with fake bridge transports.
+The optional live demo smoke is manual demo acceptance and writes sanitized
+artifacts under `/tmp/lma-r8-12-demo/`; it is not a default mainline gate and
+does not prove production business correctness.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

@@ -1,14 +1,14 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-7B.
+This file is the reset branch operational map for Phase R8-12.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-7B provider-free external payload adapter mapping over the
+- Current phase: R8-12 default-off external compute demo bridge over the
   existing fixed-DAG runtime skeleton, selected-routing boundary, R8-6B internal
-  LLM placeholder boundary, R7-I web presentation surface, and R7-G v2.3.1
-  scaffold package.
+  LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
+  provider-free adapter seams, and R7-G v2.3.1 scaffold package.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
   a deterministic provider-free fixed DAG skeleton whose execution order is
@@ -39,6 +39,11 @@ This file is the reset branch operational map for Phase R8-7B.
   placeholder boundary. R8-7B adds
   `src/react_agent/fixed_dag_external_adapter.py` as a provider-free pure
   mapping seam for already-available external payload dictionaries.
+  R8-12 adds `Context.enable_external_compute_demo` /
+  `ENABLE_EXTERNAL_COMPUTE_DEMO=1` plus
+  `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` as a default-off demo bridge boundary for
+  production `/v1/agent/compute`; with flags off or an empty allowlist, no
+  bridge module is loaded and no external HTTP call is made.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -112,6 +117,16 @@ current internal `data_bundle_v1` in provider-free unit tests only. It does not
 perform HTTP, does not call `/health`, `/v1/agent/compute`, or
 `/v1/agent/invoke`, does not change `runtime_bindings.json`, and does not set
 `live_verified` or `invoke_enabled_by_default`.
+
+R8-12 adds a separate demo bridge in
+`src/react_agent/fixed_dag_external_compute_bridge.py`. The bridge is only
+used by `execute_fixed_dag_plan` when `enable_external_compute_demo` is true
+and an allowlist contains fixed DAG agent ids. It only accepts
+`http://127.0.0.1:<prod_port>/v1/agent/compute` entries from the demo registry,
+rejects `/v1/agent/invoke`, maps responses through
+`fixed_dag_external_adapter.py`, and stores only bounded mapped contracts plus
+public-safe workflow/report summaries. It is not `runtime_bindings.json`
+authority, not live verification, and not default graph invocation.
 
 R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from

@@ -107,6 +107,13 @@ adapter. This is L4 controlled evidence only. It does not prepare runtime
 bindings, set `live_verified=true`, set `invoke_enabled_by_default=true`, or
 enable default graph invocation.
 
+R8-12 adds a default-off demo bridge that can call production
+`POST /v1/agent/compute` for allowlisted agents and map responses into the
+fixed DAG execution snapshot. This is a demo/runtime seam, not a readiness
+level advancement. It does not call `/v1/agent/invoke`, does not change
+runtime bindings, does not set live flags, and does not convert production
+compute evidence into L4/L6/L7 readiness.
+
 ## Level Summary
 
 | Level | Name | DoD | Result |
