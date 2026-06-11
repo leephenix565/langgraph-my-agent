@@ -1342,3 +1342,33 @@ runtime bindings, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, does not change main-system adapter gates,
 does not update public transcript content, and does not prove production
 default invocation readiness.
+
+## ADR-052: R8-8Q Remediates Production Compute Endpoints Without Runtime Enablement
+
+Status: accepted for scoped production L1/L2 remediation and compute evidence.
+
+Decision: R8-8Q applies bounded production service protocol-wrapper
+remediations for selected L1/L2 candidates and then re-smokes only production
+`GET /health` and `POST /v1/agent/compute`. The phase records new production
+compute evidence for `value_traditional_valuation`, `value_ml_valuation`,
+`value_meta_valuation`, `value_research_synthesis`,
+`market_stock_technical`, `market_capital_flow_chip`,
+`sentiment_company_radar`, and `market_ipo_investor_behavior`.
+
+Reason: R8-8P showed that several services had dev evidence but production
+wrappers still emitted service ids, legacy ids, Chinese dimension labels, or
+missing envelope identity fields. The smallest safe remediation is to fix the
+production protocol wrapper and re-run controlled compute smoke without
+relaxing main-system adapter gates.
+
+Consequence: the readiness matrix and controlled smoke log can list the eight
+remediated L1/L2 services as production compute evidence candidates for later
+invoke audit planning. `financial_data_service`, `entity_relation_extractor`,
+`market_fund_manager_behavior`, `macro_commodity_pricing`, and semantic-deferred
+macro services remain outside the pass set.
+
+Non-consequence: R8-8Q does not call `/v1/agent/invoke`, does not modify
+runtime bindings, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not update public transcript content,
+does not wire active graph/runtime external execution, and does not prove
+production default invocation readiness.

@@ -293,6 +293,19 @@ This remains below invoke readiness. R8-10F does not call
 `/v1/agent/invoke`, does not enable runtime bindings, does not set live flags,
 and does not make the active graph call production L3 services by default.
 
+### R8-8Q Production L1/L2 Remediation Re-smoke Boundary
+
+R8-8Q records production L1/L2 health + compute + adapter mapping evidence for
+remediated value and market services after bounded service-side protocol
+wrapper fixes. It also records `financial_data_service` and
+`macro_commodity_pricing` as still fail-closed remediation items.
+
+This remains below invoke readiness. R8-8Q does not call
+`/v1/agent/invoke`, does not enable runtime bindings, does not set live flags,
+does not update public transcript content, and does not make the active graph
+call production services by default. `sentiment_company_radar` remains
+market-only and is not routed to risk.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement

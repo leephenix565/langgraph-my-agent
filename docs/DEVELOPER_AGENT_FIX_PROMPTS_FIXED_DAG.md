@@ -28,6 +28,13 @@ production pass。所有修复必须进入服务 owner 的源码仓库，重新�
 production endpoint，并经过 production `/health` + `/v1/agent/compute` +
 main-system adapter mapping 复测，才可以改变 production matrix 状态。
 
+R8-8Q 已经在当前 production 目录中完成部分 bounded protocol remediation
+并通过 production re-smoke：四个 value L2、`market_stock_technical`、
+`market_capital_flow_chip`、`sentiment_company_radar`、以及
+`market_ipo_investor_behavior` 已有 production compute evidence。下面保留
+这些服务的修复 prompt，主要用于服务 owner 将 R8-8Q 生产目录补丁回填到正式
+源码仓库、部署、并在后续 resmoke 中防止回归。
+
 默认边界：
 
 - 不调用 `/v1/agent/invoke`，除非未来单独批准 invoke smoke；本目录里的
@@ -47,15 +54,15 @@ main-system adapter mapping 复测，才可以改变 production matrix 状态。
 | --- | --- |
 | `PROMPT-PROD-HEALTH-FIX-DATA-SERVICE` | `financial_data_service` production health invalid JSON |
 | `PROMPT-PROD-ENDPOINT-MISSING-ENTITY` | `entity_relation_extractor` production endpoint missing |
-| `PROMPT-PROD-SENTIMENT-MARKET-ONLY` | `sentiment_company_radar` production endpoint missing; market-only |
-| `PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL` | `value_traditional_valuation` production identity mismatch |
-| `PROMPT-PROD-IDENTITY-FIX-VALUE-ML` | `value_ml_valuation` production identity mismatch |
-| `PROMPT-PROD-IDENTITY-FIX-VALUE-META` | `value_meta_valuation` production identity mismatch |
-| `PROMPT-PROD-IDENTITY-FIX-RESEARCH` | `value_research_synthesis` production identity mismatch |
-| `PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL` | `market_stock_technical` production identity mismatch |
-| `PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW` | `market_capital_flow_chip` production identity mismatch |
+| `PROMPT-PROD-SENTIMENT-MARKET-ONLY` | `sentiment_company_radar` R8-8Q backfill prompt; keep market-only |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL` | `value_traditional_valuation` R8-8Q backfill prompt |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-ML` | `value_ml_valuation` R8-8Q backfill prompt |
+| `PROMPT-PROD-IDENTITY-FIX-VALUE-META` | `value_meta_valuation` R8-8Q backfill prompt |
+| `PROMPT-PROD-IDENTITY-FIX-RESEARCH` | `value_research_synthesis` R8-8Q backfill prompt |
+| `PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL` | `market_stock_technical` R8-8Q backfill prompt |
+| `PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW` | `market_capital_flow_chip` R8-8Q backfill prompt |
 | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` | `market_fund_manager_behavior` service metadata + identity |
-| `PROMPT-PROD-IPO-WRAPPER` | `market_ipo_investor_behavior` production wrapper |
+| `PROMPT-PROD-IPO-WRAPPER` | `market_ipo_investor_behavior` R8-8Q backfill prompt |
 | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` | `macro_commodity_pricing` production compute failure |
 | `PROMPT-PROD-MACRO-INDEX-OWNER` | `macro_index_valuation` semantic decision |
 | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` | `macro_sentiment` L2/L3 classification |
@@ -1447,10 +1454,13 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 审计已经 production health + compute + adapter mapping pass 的服务，判断它们是否可以进入后续 tiny allowlist controlled /v1/agent/invoke smoke。
 
 背景：
-R8-8P 只有五个 agent 达到 production health + compute + adapter mapping pass：risk_identification、risk_compliance_review、risk_financial_fraud、risk_crash、macro_analysis。只有这五个可以用本 prompt 做 invoke audit prep。
+R8-8P 首批只有五个 agent 达到 production health + compute + adapter mapping pass。R8-10E/R8-10F 又补齐四个 L3 composite 的 production compute evidence，R8-8Q 补齐八个 value/market L2 的 production compute evidence。只有当前 matrix 中 health + compute + adapter mapping 全部 pass 的 agent 可以用本 prompt 做 invoke audit prep；失败、semantic deferred、endpoint missing 的 agent 不能进入 invoke audit。
 
 适用 agent_id：
-risk_identification, risk_compliance_review, risk_financial_fraud, risk_crash, macro_analysis
+risk_identification, risk_compliance_review, risk_financial_fraud, risk_crash, macro_analysis,
+value_traditional_valuation, value_ml_valuation, value_meta_valuation, value_research_synthesis,
+market_stock_technical, market_capital_flow_chip, sentiment_company_radar, market_ipo_investor_behavior,
+value_composite, market_composite, risk_composite, macro_composite
 
 production endpoint：
 risk_identification: http://127.0.0.1:10010
@@ -1458,12 +1468,24 @@ risk_compliance_review: http://127.0.0.1:10011
 risk_financial_fraud: http://127.0.0.1:10013
 risk_crash: http://127.0.0.1:10012
 macro_analysis: http://127.0.0.1:10014
+value_traditional_valuation: http://127.0.0.1:10000
+value_ml_valuation: http://127.0.0.1:10001
+value_meta_valuation: http://127.0.0.1:10002
+value_research_synthesis: http://127.0.0.1:10006
+market_stock_technical: http://127.0.0.1:10009
+market_capital_flow_chip: http://127.0.0.1:10022
+sentiment_company_radar: http://127.0.0.1:10020
+market_ipo_investor_behavior: http://127.0.0.1:10008
+value_composite: http://127.0.0.1:10015
+market_composite: http://127.0.0.1:10023
+risk_composite: http://127.0.0.1:10016
+macro_composite: http://127.0.0.1:10024
 
 fixed DAG id 规则：
 invoke 若未来被 smoke，输出必须维持 compute 中已验证的 fixed DAG primary id，不得退回 service id 或 legacy id。
 
 external_agent_id 规则：
-risk_identification=market_risk_reasoning；risk_compliance_review=announcement_compliance；risk_financial_fraud=financial_fraud_agent；risk_crash=crash_risk；macro_analysis=macro_analysis。
+risk_identification=market_risk_reasoning；risk_compliance_review=announcement_compliance；risk_financial_fraud=financial_fraud_agent；risk_crash=crash_risk；macro_analysis=macro_analysis；value_traditional_valuation=valuation_traditional；value_ml_valuation=valuation_ml；value_meta_valuation=valuation_meta；value_research_synthesis=analyst_research；market_stock_technical=technical_stock；market_capital_flow_chip=money_flow；sentiment_company_radar=company_sentiment_radar；market_ipo_investor_behavior=ipo_investor_behavior；value_composite=composite_valuation；market_composite、risk_composite、macro_composite 使用各自 R8-10E/R8-10F smoke 记录的 production external service id。
 
 禁止项：
 本 prompt 不调用 /v1/agent/invoke；不改 runtime_bindings；不设置 live_verified=true；不设置 invoke_enabled_by_default=true；不改业务模型/数据源；不把 compute pass 写成 invoke pass。

@@ -2,8 +2,9 @@
 
 This document is the production-first readiness matrix and remediation
 playbook for the fixed DAG agent roster after Phase R8-8P-DOCS-QA.
-R8-10B adds local provider-free L3 adapter mapping, but it does not change the
-production endpoint baseline below and does not make L3 services live.
+R8-10B adds local provider-free L3 adapter mapping, but it does not make L3
+services live. R8-10E/R8-10F add L3 production compute evidence. R8-8Q adds
+production re-smoke evidence for remediated L1/L2 services.
 
 R8-8P rebaselined readiness against confirmed production endpoints. Earlier
 R8-8G/H/I/J/K/L/M controlled smoke results used dev endpoints and are now
@@ -16,19 +17,28 @@ Production smoke artifact root:
 /tmp/lma-r8-8p-prod-readiness/20260610T104456Z
 ```
 
+Latest L1/L2 production re-smoke artifact root:
+
+```text
+/tmp/lma-r8-8q-prod-resmoke/20260611T020302Z
+```
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.
-Only five external candidates currently reached production `/health` pass,
-production `/v1/agent/compute` pass, and provider-free adapter mapping pass:
-`risk_identification`, `risk_compliance_review`, `risk_financial_fraud`,
-`risk_crash`, and `macro_analysis`.
+R8-8Q then remediated and re-smoked selected production L1/L2 services. The
+current production compute evidence set now includes thirteen L1/L2 external
+candidates and all four L3 composite candidates. This remains compute evidence
+only; no `/v1/agent/invoke`, runtime binding enablement, live flag, public
+transcript update, or default production invocation was performed.
 
 The remaining production gaps are operational rather than graph-runtime
-changes. Most failures are caused by production services not backfilling dev
-wrapper patches, identity mismatches between service ids and fixed DAG ids,
-missing or invalid production health/compute wrappers, missing production
-endpoints, or unresolved semantic ownership for macro services.
+changes. `financial_data_service` still fails production health with invalid
+JSON, `entity_relation_extractor` still lacks confirmed production compute
+evidence in this matrix, `market_fund_manager_behavior` remains a
+service-discovery/identity item, `macro_commodity_pricing` still fails the
+fixed-DAG health/compute gate, and three macro candidates remain semantic
+deferred.
 
 This document converts those gaps into a production problem playbook. Service
 owners should use the matching prompt id in
@@ -62,28 +72,28 @@ in dev.
 | --- | ---: | --- |
 | Total fixed DAG agents | 27 | Full catalog roster |
 | External-service candidates | 20 | L1 evidence services and L2 analysis services |
-| Production endpoint known | 18 | Confirmed production listener or production port/cwd |
-| Production health pass | 14 | `/health` returned structured JSON and no unsafe content |
-| Production compute pass | 13 | `/v1/agent/compute` returned HTTP 2xx structured JSON |
-| Production adapter mapping pass | 5 | Mapped through main-system provider-free adapter |
-| Production failed bucket | 13 | R8-8P artifact failure bucket; endpoint-missing and semantic-deferred counts are also shown separately |
-| Production endpoint missing | 2 | No confirmed production endpoint |
+| Production endpoint known | 19 | Confirmed production listener or production port/cwd |
+| Production health pass | 18 | Latest matrix count across production candidates with structured health, including L3 evidence |
+| Production compute pass | 18 | Production `/v1/agent/compute` HTTP 2xx structured JSON across current evidence set |
+| Production adapter mapping pass | 17 | 13 L1/L2 candidates plus 4 L3 composites mapped through provider-free adapter |
+| Production failed bucket | 7 | Remaining failed/deferred production items in the current matrix, excluding internal deterministic/L4 |
+| Production endpoint missing | 1 | `entity_relation_extractor` remains without confirmed production compute evidence in this matrix |
 | Production semantic deferred | 3 | Not safe to force into L2 production mapping |
-| Production identity mismatch | 8 | Compute returned service/unknown primary id instead of fixed DAG id |
+| Production identity mismatch | 1 | `market_fund_manager_behavior` remains unresolved |
 | Internal deterministic | 1 | `route_planner` |
 | L3/L4 deferred | 6 | 4 composites plus decision/report |
-| Production invoke audit candidates | 5 | Based only on production health + compute + adapter mapping pass |
+| Production invoke audit candidates | 17 | Based only on production health + compute + adapter mapping pass |
 
 Layer coverage:
 
 | Layer/group | Production coverage |
 | --- | --- |
 | L1 | 0/2 production adapter pass; one health failure and one endpoint missing |
-| L2 value | 0/4 production adapter pass; all four are identity mismatches |
-| L2 market | 0/5 production adapter pass; identity mismatches plus one endpoint missing |
+| L2 value | 4/4 production adapter pass |
+| L2 market | 4/5 production adapter pass; fund-manager behavior remains unresolved |
 | L2 risk | 4/4 production adapter pass |
-| L2 macro | 1/5 production adapter pass; remaining macro candidates failed or were deferred |
-| L3 | 0/4 external production readiness; deterministic internal seams only |
+| L2 macro | 1/5 production adapter pass; commodity failed and three macro candidates remain deferred |
+| L3 | 4/4 production adapter pass; compute evidence only, no active runtime enablement |
 | L4 | 0/2 external production readiness; deterministic internal seams only |
 
 ## Production Health+Compute+Adapter Pass Candidates
@@ -100,6 +110,18 @@ invocation, or production business correctness.
 | `risk_financial_fraud` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_crash` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_analysis` | Production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_traditional_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_ml_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_meta_valuation` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_research_synthesis` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_stock_technical` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_capital_flow_chip` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `sentiment_company_radar` | R8-8Q production health + compute + adapter mapping as market-only L2 | `/v1/agent/invoke`, runtime binding enablement, live flags, risk routing | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_ipo_investor_behavior` | R8-8Q production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_composite` | R8-10F production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_composite` | R8-10E production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `risk_composite` | R8-10E production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `macro_composite` | R8-10E production health + compute + adapter mapping | `/v1/agent/invoke`, runtime binding enablement, live flags | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 
 ## R8-10C L3 Service Protocol Backfill Audit
 
@@ -215,136 +237,107 @@ payload pass.
 
 ### sentiment_company_radar
 
-- Current status: `production_endpoint_missing`.
-- Production test result: no confirmed company-radar production endpoint was
-  found.
-- Problem type: production deployment / endpoint missing.
-- Failure reason: no production service was mapped to fixed DAG
-  `sentiment_company_radar` with market-only L2 output.
-- Impact: market sentiment radar has no production evidence and must not be
-  routed to risk.
-- Solution: owner must provide a production endpoint that emits
-  `agent_conclusion_v1` with `dimension=market`; it must not emit risk
-  dimension or feed `risk_composite`.
-- Service owner action: deploy/register production endpoint, document
-  `external_agent_id`, add health and compute contract tests, and preserve
-  market-only semantics.
-- Main-system maintainer action: reject any sentiment-to-risk payload or
-  runtime routing proposal.
-- Retest method: production `/health` + `/compute` + adapter mapping to
-  `conclusion_object_v1` with market dimension only.
-- Prompt: `PROMPT-PROD-SENTIMENT-MARKET-ONLY`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10020` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved production endpoint and market-dimension wrapper gap.
+- Failure reason before R8-8Q: production evidence was missing and the market
+  subagent wrapper emitted a Chinese dimension value that the main-system
+  adapter intentionally rejected.
+- Impact: this service can now enter `/invoke` audit planning as market-only
+  evidence, but it is still not live/default runtime.
+- Solution applied: the shared market subagent protocol wrapper now emits
+  adapter-facing `dimension=market` while preserving
+  `external_agent_id=company_sentiment_radar`.
+- Service owner action: backfill the wrapper patch into the formal service
+  source repository and preserve market-only routing.
+- Main-system maintainer action: keep the sentiment-to-risk guard and do not
+  relax runtime bindings.
+- Retest method: production `/health` + `/compute` + adapter mapping only; no
+  `/v1/agent/invoke` until a later audit phase.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_traditional_valuation
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10000` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill fixed DAG identity patch.
-- Failure reason: production envelope/tool_result uses a service or legacy id
-  as primary `agent_id` instead of `value_traditional_valuation`.
-- Impact: value L2 production compute cannot enter the fixed DAG contract.
-- Solution: production envelope and nested `tool_result` must use
-  `agent_id=value_traditional_valuation`; service id stays in
-  `external_agent_id`; legacy id stays only as migration metadata.
-- Service owner action: backfill the dev identity wrapper into the service repo,
-  redeploy production, and provide before/after identity fields.
-- Main-system maintainer action: keep adapter identity gate strict.
-- Retest method: production health + compute + adapter mapping to
-  `conclusion_object_v1`.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10000` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
+- Solution applied: production envelope and nested `tool_result` now use
+  `agent_id=value_traditional_valuation`, service id
+  `external_agent_id=valuation_traditional`, legacy id
+  `a17_traditional_valuation`, and adapter-facing `dimension=value`.
+- Remaining action: service owner backfills this production patch into the
+  formal service source repository; maintainer keeps runtime disabled until
+  invoke audit.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_ml_valuation
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10001` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill fixed DAG identity patch.
-- Failure reason: production primary id remained the service id instead of
-  `value_ml_valuation`.
-- Impact: the dev identity remediation has not been promoted to production.
-- Solution: set envelope/tool_result `agent_id=value_ml_valuation` and
-  `external_agent_id=valuation_ml`; preserve `legacy_agent_id` only as
-  provenance.
-- Service owner action: backfill and redeploy the identity wrapper used in dev.
-- Main-system maintainer action: do not relax adapter to accept `valuation_ml`
-  as a primary fixed DAG id.
-- Retest method: production health + compute + adapter mapping to
-  `conclusion_object_v1`.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-VALUE-ML`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10001` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
+- Solution applied: production health and compute now advertise
+  `agent_id=value_ml_valuation`, `external_agent_id=valuation_ml`,
+  `legacy_agent_id=a16_ml_valuation`, and adapter-facing `dimension=value`.
+- Remaining action: service owner backfills the wrapper patch into formal
+  source control; maintainer keeps the adapter identity gate strict.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_meta_valuation
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10002` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill fixed DAG identity patch.
-- Failure reason: production payload does not use
-  `value_meta_valuation` as primary fixed DAG id.
-- Impact: production meta-valuation cannot contribute to value L2 evidence.
-- Solution: set envelope/tool_result `agent_id=value_meta_valuation`,
-  `external_agent_id=valuation_meta`, and keep legacy ids in provenance only.
-- Service owner action: backfill identity wrapper, tests, and production
-  deployment.
-- Main-system maintainer action: keep runtime binding disabled until production
-  resmoke passes.
-- Retest method: production health + compute + adapter mapping to
-  `conclusion_object_v1`.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-VALUE-META`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10002` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
+- Solution applied: production compute now emits
+  `agent_id=value_meta_valuation`, `external_agent_id=valuation_meta`,
+  `legacy_agent_id=a18_meta_valuation`, and `dimension=value`.
+- Remaining action: service owner backfills the production protocol patch into
+  formal source control.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_research_synthesis
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10006` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill fixed DAG identity patch.
-- Failure reason: production payload does not use
-  `value_research_synthesis` as primary fixed DAG id.
-- Impact: analyst/research synthesis has no production adapter evidence.
-- Solution: set envelope/tool_result `agent_id=value_research_synthesis`, keep
-  the service-owned id in `external_agent_id`, and emit `agent_conclusion_v1`
-  for value dimension.
-- Service owner action: backfill wrapper and contract tests to production.
-- Main-system maintainer action: keep adapter identity gate strict.
-- Retest method: production health + compute + adapter mapping.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-RESEARCH`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10006` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved fixed DAG primary id default.
+- Solution applied: production default primary id is now
+  `value_research_synthesis`, while service-owned
+  `external_agent_id=analyst_research` and legacy id
+  `a12_research_synthesis` remain metadata.
+- Remaining action: service owner backfills the default identity patch into the
+  formal service source repository.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### market_stock_technical
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10009` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill market L2 identity wrapper.
-- Failure reason: production payload primary id is not
-  `market_stock_technical`.
-- Impact: technical market signal has no production adapter evidence.
-- Solution: set envelope/tool_result `agent_id=market_stock_technical`,
-  `dimension=market`, and keep service id in `external_agent_id`.
-- Service owner action: backfill identity/dimension wrapper and redeploy.
-- Main-system maintainer action: reject non-market or unknown-id payloads.
-- Retest method: production health + compute + adapter mapping to
-  `conclusion_object_v1`.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10009` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved production envelope identity and market-dimension
+  wrapper gap.
+- Solution applied: compute envelope includes `external_agent_id=technical_stock`
+  and tool result emits adapter-facing `dimension=market`.
+- Remaining action: service owner backfills the wrapper patch into the formal
+  service source repository.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### market_capital_flow_chip
 
-- Current status: `production_identity_mismatch`.
-- Production test result: production `10022` health and compute were reachable,
-  but adapter rejected compute with `unknown_agent_id`.
-- Problem type: production service did not backfill market L2 identity wrapper.
-- Failure reason: production payload primary id is not
-  `market_capital_flow_chip`.
-- Impact: capital-flow/chip signal has no production adapter evidence despite
-  dev remediation.
-- Solution: set envelope/tool_result `agent_id=market_capital_flow_chip`,
-  `external_agent_id=money_flow` or owner-confirmed service id, and
-  `dimension=market`.
-- Service owner action: backfill dev patch to production; confirm production is
-  not a temporary dev 8022 process.
-- Main-system maintainer action: keep production endpoint classification tied
-  to prod root/port, not dev starts.
-- Retest method: production health + compute + adapter mapping.
-- Prompt: `PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10022` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved production envelope identity and market-dimension
+  wrapper gap.
+- Solution applied: compute envelope now includes `external_agent_id=money_flow`
+  and tool result emits adapter-facing `dimension=market`.
+- Remaining action: service owner backfills the wrapper patch into formal
+  source control. The R8-8Q process restart used the production root and
+  production port only.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### market_fund_manager_behavior
 
@@ -371,37 +364,37 @@ payload pass.
 
 ### market_ipo_investor_behavior
 
-- Current status: `production_identity_mismatch` and compute wrapper problem.
-- Production test result: production `10008` health and compute were reachable,
-  but adapter rejected payload identity/shape.
-- Problem type: compute wrapper contract failure.
-- Failure reason: production output is still scaffold/raw-business shaped or
-  uses the wrong primary id; it is not the fixed DAG L2 market contract.
-- Impact: IPO behavior cannot be used as production market L2 evidence.
-- Solution: wrap production compute as
-  `external_agent_compute_v0.tool_result.agent_conclusion_v1`, with
-  `agent_id=market_ipo_investor_behavior` and `dimension=market`.
-- Service owner action: add wrapper tests and redeploy production service.
-- Main-system maintainer action: do not map raw/scaffold payloads into graph
-  state.
-- Retest method: production health + compute + adapter mapping.
-- Prompt: `PROMPT-PROD-IPO-WRAPPER`.
+- Current status: `production_compute_pass` after R8-8Q.
+- Production test result: production `10008` passed `/health`, passed
+  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
+- Problem type: resolved market subagent dimension wrapper gap.
+- Solution applied: the shared market subagent protocol wrapper now emits
+  adapter-facing `dimension=market` while preserving
+  `external_agent_id=ipo_investor_behavior`.
+- Remaining action: service owner backfills the shared wrapper patch into the
+  formal service source repository.
+- Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### macro_commodity_pricing
 
-- Current status: `production_health_pass_compute_failed`.
-- Production test result: production `10004` `/health` passed, but
-  `/v1/agent/compute` failed with `compute_http_error`.
+- Current status: `production_health_failed`.
+- Production test result: R8-8Q production `10004` `/health` returned HTTP 200
+  JSON but failed fixed-DAG health identity validation; compute was skipped
+  fail-closed.
 - Problem type: production compute endpoint failure.
-- Failure reason: production compute route or wrapper does not reliably return
-  `external_agent_compute_v0.tool_result.agent_conclusion_v1`.
+- Failure reason: production health advertises service-owned
+  `price_influence_agent` without fixed DAG `macro_commodity_pricing`
+  identity, and the service still lacks a verified fixed DAG compute wrapper.
 - Impact: commodity pricing has no macro L2 production adapter evidence.
-- Solution: keep structured health; fix production compute wrapper/fail-soft
-  path so it emits `agent_conclusion_v1` with `agent_id=macro_commodity_pricing`,
+- Solution: fix structured health to include fixed DAG identity, then add or
+  repair production `/v1/agent/compute` so it emits
+  `external_agent_compute_v0.tool_result.agent_conclusion_v1` with
+  `agent_id=macro_commodity_pricing`, `external_agent_id=price_influence_agent`,
   `dimension=macro`, and target examples such as `CU`.
-- Service owner action: debug compute route, add wrapper contract tests, deploy
-  production fix.
-- Main-system maintainer action: do not treat health pass as compute pass.
+- Service owner action: add health/compute wrapper contract tests and deploy
+  the production fix.
+- Main-system maintainer action: do not treat service-owned health identity or
+  a missing compute wrapper as production pass.
 - Retest method: production health + compute + adapter mapping.
 - Prompt: `PROMPT-PROD-COMMODITY-COMPUTE-FIX`.
 
@@ -606,21 +599,21 @@ payload pass.
 | `route_planner` | L1 | l1 | `fixed_dag_plan_v1` | n/a | n/a | n/a | n/a | `production_internal_deterministic` | Internal deterministic planner | Keep deterministic | No endpoint work | n/a |
 | `financial_data_service` | L1 | l1 | `data_bundle_v1` | `127.0.0.1:11000` | fail | skipped | skipped | `production_health_failed` | `/health` invalid JSON | Fix structured production health, then compute wrapper | Production health fix and resmoke | `PROMPT-PROD-HEALTH-FIX-DATA-SERVICE` |
 | `entity_relation_extractor` | L1 | l1 | `entity_relation_bundle_v1` | missing | skipped | skipped | skipped | `production_endpoint_missing` | No production endpoint | Deploy/register prod endpoint and entity wrapper | Endpoint + wrapper deployment | `PROMPT-PROD-ENDPOINT-MISSING-ENTITY` |
-| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill fixed DAG identity wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-VALUE-TRADITIONAL` |
-| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill `value_ml_valuation` identity wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-VALUE-ML` |
-| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill `value_meta_valuation` identity wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-VALUE-META` |
-| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill research synthesis wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-RESEARCH` |
-| `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill market identity wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-STOCK-TECHNICAL` |
+| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated fixed DAG primary id | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10007` | pass | pass | fail | `production_identity_mismatch` | Service metadata incomplete | Confirm owner/id and wrapper | Discovery + identity fix | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` |
-| `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10008` | pass | pass | fail | `production_identity_mismatch` | Wrapper shape/identity problem | Emit market `agent_conclusion_v1` wrapper | IPO wrapper fix | `PROMPT-PROD-IPO-WRAPPER` |
-| `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | pass | pass | fail | `production_identity_mismatch` | Wrong primary id | Backfill capital-flow market wrapper | Identity fix + resmoke | `PROMPT-PROD-IDENTITY-FIX-CAPITAL-FLOW` |
-| `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | missing | skipped | skipped | skipped | `production_endpoint_missing` | No market-only prod endpoint | Deploy market-only sentiment endpoint | Endpoint + market-only wrapper | `PROMPT-PROD-SENTIMENT-MARKET-ONLY` |
+| `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10008` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated market dimension wrapper | Backfill shared market subagent patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10020` | pass | pass | pass | `production_compute_pass` | R8-8Q confirmed market-only production endpoint and wrapper | Preserve market-only routing | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | pass | fail | skipped | `production_health_pass_compute_failed` | Compute HTTP error | Fix production compute wrapper/runbook | Compute fix + resmoke | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` |
+| `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | fail | skipped | skipped | `production_health_failed` | Fixed DAG health identity missing; compute wrapper not verified | Fix production health identity and compute wrapper | Health/compute fix + resmoke | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` |
 | `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
@@ -633,34 +626,32 @@ payload pass.
 
 ## Developer Execution Order
 
-P0 remediation should focus on services that block the largest amount of
-production L1/L2 coverage:
+P0 remediation should now focus on the remaining production blockers:
 
 1. `financial_data_service`: fix production `/health` JSON, then compute
    `data_bundle_v1`.
-2. Value family identity mismatches:
-   `value_traditional_valuation`, `value_ml_valuation`,
-   `value_meta_valuation`, `value_research_synthesis`.
-3. Market identity mismatches:
-   `market_stock_technical`, `market_capital_flow_chip`.
-4. `macro_commodity_pricing`: fix production compute failure.
-
-P1 remediation should establish missing or unclear market/L1 services:
-
-1. `entity_relation_extractor`: production endpoint and
+2. `macro_commodity_pricing`: fix production fixed-DAG health identity, then
+   compute wrapper.
+3. `entity_relation_extractor`: confirm production endpoint and
    `entity_relation_bundle_v1` wrapper.
-2. `sentiment_company_radar`: market-only production endpoint.
-3. `market_ipo_investor_behavior`: production L2 market wrapper.
-4. `market_fund_manager_behavior`: service discovery, owner metadata, and
-   wrapper identity.
+4. `market_fund_manager_behavior`: resolve service discovery, owner metadata,
+   and fixed DAG wrapper.
+
+P1 work should backfill the R8-8Q production patches into formal service source
+repositories and prepare invoke audits:
+
+1. Value family: `value_traditional_valuation`, `value_ml_valuation`,
+   `value_meta_valuation`, `value_research_synthesis`.
+2. Market family: `market_stock_technical`, `market_capital_flow_chip`,
+   `sentiment_company_radar`, `market_ipo_investor_behavior`.
+3. Existing production compute pass set: run read-only `/invoke` audit planning
+   before any controlled invoke call.
 
 P2 work should not be forced into L2:
 
 1. `macro_index_valuation`: owner decision on macro semantics.
 2. `macro_sentiment` and `macro_industry_hotspot`: L2 vs L3 classification.
-3. L3 service owner protocol backfill for `value_composite`,
-   `market_composite`, `risk_composite`, and `macro_composite`.
-4. L3/L4 adapter/runtime design for composites, decision, and report.
+3. L4 adapter/runtime design for decision and report.
 
 ## Dev Historical Evidence Appendix
 
@@ -685,8 +676,10 @@ Dev historical controlled compute pass agents:
 - `risk_crash`
 - `macro_analysis`
 
-Important production rebaseline result: only five of these currently pass
-production adapter mapping. Several dev fixes were not backfilled to production.
+Important production rebaseline result: R8-8Q remediated eight L1/L2 production
+services that previously failed or lacked confirmed production evidence. Dev
+evidence remains historical; production pass status is driven only by
+production artifact roots listed in this document.
 
 ## Service Patch Backfill Inventory
 
@@ -710,15 +703,30 @@ production evidence can pass.
 | `risk_crash` | `/tmp/lma-r8-8l-service-backup/20260610T064145Z/service_patch_manifest.json` |
 | `market_capital_flow_chip` | `/tmp/lma-r8-8m-service-backup/20260610T072025Z/service_patch_manifest.json` |
 
+R8-8Q production remediation patch manifest:
+
+```text
+/tmp/lma-r8-8q-prod-service-backup/20260611T015600Z/service_patch_manifest.json
+```
+
+The R8-8Q production patch manifest covers protocol-only wrapper changes for
+`value_traditional_valuation`, `value_ml_valuation`, `value_meta_valuation`,
+`value_research_synthesis`, `market_stock_technical`,
+`market_capital_flow_chip`, `sentiment_company_radar`, and
+`market_ipo_investor_behavior`. Service owners still need to backfill these
+changes into their formal source-controlled repositories. The manifest records
+`business_core_changed=false`.
+
 ## Next Phase
 
 Recommended sequence:
 
-1. R8-8Q: production remediation/backfill for health, identity, compute wrapper,
-   endpoint, and semantic-decision failures.
-2. R8-8R: production `/health` + `/v1/agent/compute` resmoke for remediated
-   agents.
-3. R8-9A: production `/v1/agent/invoke` audit planning only for the five current
-   production pass candidates and any later production-pass resmoke agents.
-4. R8-9B: first controlled production invoke smoke for a tiny allowlist, still
+1. R8-8R: production `/health` + `/v1/agent/compute` resmoke for remaining
+   remediated agents: `financial_data_service`, `entity_relation_extractor`,
+   `market_fund_manager_behavior`, and `macro_commodity_pricing`.
+2. R8-9A: production `/v1/agent/invoke` audit planning only for agents with
+   production health + compute + adapter mapping evidence.
+3. R8-9B: first controlled production invoke smoke for a tiny allowlist, still
    without runtime binding enablement.
+4. Service-owner backfill phase: move service protocol patches into each
+   service's source-controlled repo and redeploy.

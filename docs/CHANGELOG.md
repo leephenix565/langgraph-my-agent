@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-8Q production remediation and re-smoke
+
+### Changed
+
+- Remediated bounded production protocol wrapper issues for selected L1/L2
+  services without changing main-system runtime bindings or adapter gates.
+- Recorded production `/health` + `/v1/agent/compute` + adapter mapping
+  evidence for `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `value_research_synthesis`,
+  `market_stock_technical`, `market_capital_flow_chip`,
+  `sentiment_company_radar`, and `market_ipo_investor_behavior`.
+- Kept `sentiment_company_radar` market-only and explicitly excluded risk
+  routing.
+- Recorded `financial_data_service` and `macro_commodity_pricing` as still
+  requiring production remediation.
+- Updated README, readiness matrix, controlled smoke log, readiness ladder,
+  quality, developer prompts, changelog, and ADR documentation for the R8-8Q
+  boundary.
+
+### Validated
+
+- Service changed-file `py_compile` for the remediated production service
+  wrappers.
+- Controlled production smoke artifact:
+  `/tmp/lma-r8-8q-prod-resmoke/20260611T020302Z`.
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No public transcript update.
+- No production default invocation readiness claim.
+
 ## 2026-06-10 - Phase R8-10F value composite production remediation
 
 ### Changed

@@ -9,6 +9,45 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-8Q production remediation and re-smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-8Q / R8-11A |
+| Artifact directory | `/tmp/lma-r8-8q-prod-resmoke/20260611T020302Z` |
+| Service patch manifest | `/tmp/lma-r8-8q-prod-service-backup/20260611T015600Z/service_patch_manifest.json` |
+| Environment | production L1/L2 candidate endpoints only |
+| Endpoint calls | `GET /health`, `POST /v1/agent/compute` |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+R8-8Q remediated bounded production protocol wrapper issues and re-smoked the
+remaining L1/L2 candidates that were safe to test. The smoke payload set
+`allow_llm=false`; no provider call or `/v1/agent/invoke` call was made.
+
+| agent_id | endpoint | health | compute | adapter mapping | status |
+| --- | --- | --- | --- | --- | --- |
+| `financial_data_service` | `127.0.0.1:11000` | fail: `invalid_json` | skipped | skipped | remediation needed |
+| `value_traditional_valuation` | `127.0.0.1:10000` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `value_ml_valuation` | `127.0.0.1:10001` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `value_meta_valuation` | `127.0.0.1:10002` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `value_research_synthesis` | `127.0.0.1:10006` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `market_stock_technical` | `127.0.0.1:10009` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `market_capital_flow_chip` | `127.0.0.1:10022` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `sentiment_company_radar` | `127.0.0.1:10020` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence, market-only |
+| `market_ipo_investor_behavior` | `127.0.0.1:10008` | pass | pass: `agent_conclusion_v1` | pass | production compute evidence |
+| `macro_commodity_pricing` | `127.0.0.1:10004` | fail: `health_identity_mismatch` | skipped | skipped | remediation needed |
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not prove production default invocation readiness.
+- This does not update public transcript content.
+
 ## 2026-06-11 - R8-10F value composite production remediation
 
 | Field | Value |

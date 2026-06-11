@@ -214,6 +214,16 @@ mapping evidence for `value_composite`. This closes the R8-10E L3 compute
 coverage gap while still avoiding `/v1/agent/invoke`, runtime binding
 enablement, live flags, public transcript updates, and default production
 invocation.
+Phase R8-8Q remediates selected production L1/L2 protocol wrapper issues and
+re-smokes only production `/health` plus `/v1/agent/compute` endpoints. The
+phase adds production compute evidence for `value_traditional_valuation`,
+`value_ml_valuation`, `value_meta_valuation`, `value_research_synthesis`,
+`market_stock_technical`, `market_capital_flow_chip`,
+`sentiment_company_radar` as market-only, and
+`market_ipo_investor_behavior`. `financial_data_service` and
+`macro_commodity_pricing` remain remediation items. No `/v1/agent/invoke`,
+runtime binding enablement, live flag, public transcript update, or default
+production invocation was performed.
 The runtime validates
 `dag_steps[].depends_on`, computes deterministic `execution_batches`, emits
 per-step `step_results`, and keeps the default path as a provider-free
@@ -223,7 +233,7 @@ placeholder skeleton. It is not a completed business analysis engine.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-10F value composite production compute remediation over the existing
+- Current phase: R8-8Q production L1/L2 remediation re-smoke over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

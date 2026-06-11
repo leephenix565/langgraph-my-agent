@@ -643,6 +643,20 @@ Passing this remediation records compute-level evidence only. It does not
 enable runtime bindings, set `live_verified=true`, set
 `invoke_enabled_by_default=true`, or prove production default invocation.
 
+## R8-8Q Production L1/L2 Remediation Re-smoke Boundary
+
+R8-8Q is manual/live readiness work for selected production L1/L2 services. It
+is not part of default mainline and must remain outside normal CI. The allowed
+endpoint calls are limited to confirmed production `GET /health` and
+`POST /v1/agent/compute` for the named candidates; the phase must not call
+`/v1/agent/invoke`, use dev endpoints as production evidence, or touch runtime
+bindings.
+
+Passing this remediation records compute-level evidence only. It does not
+enable runtime bindings, set `live_verified=true`, set
+`invoke_enabled_by_default=true`, prove production default invocation, or make
+the active graph call production services by default.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external
