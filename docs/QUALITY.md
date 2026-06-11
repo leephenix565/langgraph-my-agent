@@ -127,6 +127,20 @@ The allowlist example
 documentation/config sample for developer setup. It is not runtime authority,
 does not mark services live, and does not enable invoke by default.
 
+## R8-12C Report Input Bundle Boundary
+
+R8-12C is repository implementation work for report generation and public
+workflow projection. It introduces `report_input_bundle_v1`, feeds it into
+`build_report_result`, and exposes bounded `agent_evidence` /
+`composite_evidence` summaries in `workflow_snapshot_v2.stepResults`.
+
+The default reset mainline remains provider-free unless an existing test uses a
+fake transport. R8-12C validation must not call production endpoints, must not
+call `/v1/agent/invoke`, must not modify `runtime_bindings.json`, and must not
+store raw external responses or endpoint URLs in graph state or Web fixtures.
+Passing mainline means the public-safe report bundle and frontend projection
+are contract-valid; it does not deploy the main system to production.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

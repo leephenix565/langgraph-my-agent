@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-12C report generator evidence bundle integration
+
+### Changed
+
+- Added `report_input_bundle_v1` as the public-safe input package consumed by
+  the fixed DAG report generator.
+- Wired report generation to L2 agent summaries, L3 composite summaries, risk
+  gate summary, macro regulator summary, and decision context.
+- Projected bounded `agent_evidence` and `composite_evidence` summaries into
+  `workflow_snapshot_v2.stepResults` for Web workflow details.
+- Updated the Web workflow step details view to show the report-consumed agent
+  and composite summaries when present.
+
+### Validated
+
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+- `.venv/bin/python -m ruff check src/react_agent tests`
+- `npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json`
+- `npm --prefix apps/web run test`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No production endpoint was called.
+- No `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No raw external response, endpoint URL, secret, error stack, or internal
+  reasoning draft is stored in the report bundle or public workflow.
+- No production main-system deployment was performed in this commit.
+
 ## 2026-06-11 - Phase R8-12B local remote agent demo tunnel tooling
 
 ### Changed

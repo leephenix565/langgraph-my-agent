@@ -33,12 +33,14 @@ from react_agent.fixed_dag_contracts import (
     build_default_fixed_dag_plan,
     build_dimension_results,
     build_l2_conclusions,
+    build_report_input_bundle,
     build_report_result,
     build_workflow_snapshot_v2,
     normalize_fixed_dag_plan,
     validate_decision_result,
     validate_dimension_composite_result,
     validate_fixed_dag_plan,
+    validate_report_input_bundle,
     validate_report_result,
     validate_selected_fixed_dag_plan,
     validate_workflow_snapshot_v2,
@@ -561,6 +563,71 @@ def _apply_external_compute_step_updates(
                 step_results[str(step_id)]["warnings"].append(warning)
 
 
+def _attach_report_input_bundle_to_step_results(
+    step_results: dict[str, dict],
+    report_input_bundle: Mapping[str, Any],
+) -> None:
+    l2_items = report_input_bundle.get("l2_agent_summaries", [])
+    if isinstance(l2_items, list):
+        for item in l2_items:
+            if not isinstance(item, Mapping):
+                continue
+            agent_id = str(item.get("agent_id") or "")
+            step_id = f"l2:{agent_id}"
+            if step_id in step_results:
+                step_results[step_id]["agent_evidence"] = {
+                    key: item[key]
+                    for key in (
+                        "agent_id",
+                        "display_name",
+                        "layer",
+                        "dimension",
+                        "status",
+                        "stance",
+                        "confidence",
+                        "summary",
+                        "as_of",
+                        "data_as_of",
+                        "source",
+                        "risk_score",
+                    )
+                    if key in item
+                }
+    l3_items = report_input_bundle.get("l3_composite_summaries", [])
+    if isinstance(l3_items, list):
+        for item in l3_items:
+            if not isinstance(item, Mapping):
+                continue
+            dimension = str(item.get("dimension") or "")
+            step_id = f"dimension:{dimension}"
+            if step_id in step_results:
+                step_results[step_id]["composite_evidence"] = {
+                    key: item[key]
+                    for key in (
+                        "agent_id",
+                        "display_name",
+                        "layer",
+                        "dimension",
+                        "status",
+                        "stance",
+                        "confidence",
+                        "summary",
+                        "members",
+                        "gate",
+                        "veto",
+                        "penalty",
+                        "risk_score",
+                        "regime",
+                        "dimension_weights",
+                        "risk_sensitivity",
+                        "as_of",
+                        "data_as_of",
+                        "source",
+                    )
+                    if key in item
+                }
+
+
 def _safe_report_value(value: Any, *, limit: int = 80) -> str:
     text = str(value or "").strip()
     text = text.replace("\n", " ").replace("\r", " ")
@@ -794,7 +861,22 @@ def execute_fixed_dag_plan(
             external_l3_run,
         )
     decision_result = build_decision_result(dimension_results, as_of=as_of)
-    report_result = build_report_result(decision_result, question=question)
+    report_input_bundle = build_report_input_bundle(
+        question=question,
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+    )
+    valid_report_input_bundle, _report_input_bundle_reason = validate_report_input_bundle(
+        report_input_bundle
+    )
+    if valid_report_input_bundle:
+        _attach_report_input_bundle_to_step_results(step_results, report_input_bundle)
+    report_result = build_report_result(
+        decision_result,
+        question=question,
+        report_input_bundle=report_input_bundle,
+    )
     if external_compute_demo_enabled:
         report_result = _augment_report_with_external_compute_demo(
             report_result,
@@ -838,6 +920,7 @@ def execute_fixed_dag_plan(
         "l2_conclusions": l2_conclusions,
         "dimension_results": dimension_results,
         "decision_result": decision_result,
+        "report_input_bundle": report_input_bundle,
         "report_result": report_result,
         "limitations": limitations,
         "provenance": {
@@ -919,6 +1002,12 @@ def validate_dag_execution_result(result: Mapping[str, Any]) -> tuple[bool, str]
     if not isinstance(report, Mapping) or report.get("schema") != REPORT_RESULT_SCHEMA_VERSION:
         return False, "report_result_missing"
     valid, reason = validate_report_result(cast(Mapping[str, Any], report))
+    if not valid:
+        return False, reason
+    report_input_bundle = result.get("report_input_bundle")
+    if not isinstance(report_input_bundle, Mapping):
+        return False, "report_input_bundle_missing"
+    valid, reason = validate_report_input_bundle(cast(Mapping[str, Any], report_input_bundle))
     if not valid:
         return False, reason
     if not isinstance(workflow, Mapping):

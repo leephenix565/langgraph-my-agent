@@ -37,6 +37,12 @@ they can appear in the fixed DAG workflow/report. This does not update
 readiness status by itself, does not call `/v1/agent/invoke`, does not change
 runtime bindings, and does not set live flags.
 
+R8-12C adds the report-generator evidence bundle that consumes those mapped
+results. It lets the final report and Web workflow details show bounded L2
+single-agent summaries and L3 composite summaries, but it does not add new
+endpoint evidence, does not change readiness counts, and does not deploy the
+main system to production.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

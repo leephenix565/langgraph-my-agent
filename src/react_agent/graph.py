@@ -27,6 +27,7 @@ from react_agent.fixed_dag_contracts import (
     build_entity_relation_bundle,
     build_final_emit_payload,
     build_l2_conclusions,
+    build_report_input_bundle,
     build_report_result,
     build_reset_multi_agent_bundle,
     build_workflow_snapshot_v2,
@@ -176,6 +177,7 @@ def execute_fixed_dag_node(
         "l2_conclusions": execution["l2_conclusions"],
         "dimension_results": execution["dimension_results"],
         "decision_result": execution["decision_result"],
+        "report_input_bundle": execution["report_input_bundle"],
         "report_result": execution["report_result"],
         "workflow_snapshot": execution["workflow_snapshot"],
         "thread_summary": "Fixed DAG executor completed deterministic topological orchestration.",
@@ -248,8 +250,15 @@ def decision_synthesizer_node(state: State) -> dict[str, Any]:
 
 def report_generator_node(state: State) -> dict[str, Any]:
     plan = state["fixed_dag_plan"]
+    l2_conclusions = state.get("l2_conclusions", {})
     dimension_results = state.get("dimension_results", {})
     decision = state.get("decision_result", build_decision_result(dimension_results))
+    report_input_bundle = build_report_input_bundle(
+        question=str(state.get("current_question", "") or ""),
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision,
+    )
     completed = [
         *_completed_from_stage(plan, "planning"),
         *_completed_from_stage(plan, "evidence"),
@@ -261,14 +270,17 @@ def report_generator_node(state: State) -> dict[str, Any]:
     report = build_report_result(
         decision,
         question=str(state.get("current_question", "") or ""),
+        report_input_bundle=report_input_bundle,
     )
     return {
+        "report_input_bundle": report_input_bundle,
         "report_result": report,
         "workflow_snapshot": build_workflow_snapshot_v2(
             plan=plan,
             current_stage="report",
             completed_steps=completed,
             dimension_results=dimension_results,
+            report_result=report,
         ),
         "thread_summary": "Report generator placeholder completed.",
     }
@@ -293,6 +305,7 @@ def final_emit_node(state: State) -> dict[str, Any]:
             l2_conclusions=state.get("l2_conclusions", {}),
             dimension_results=state.get("dimension_results", {}),
             decision_result=state.get("decision_result", {}),
+            report_input_bundle=state.get("report_input_bundle", {}),
             report_result=report,
         ),
         "final_answer_source": "reset_skeleton",

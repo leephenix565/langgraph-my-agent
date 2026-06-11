@@ -115,6 +115,8 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["report_result"]["schema"] == "report_result_v1"
     valid, reason = validate_report_result(res["report_result"])
     assert valid, reason
+    assert res["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+    assert "报告生成输入摘要" in res["report_result"]["answer"]
     valid, reason = validate_decision_result(res["decision_result"])
     assert valid, reason
     assert set(res["dimension_results"]) == set(DIMENSION_GROUPS)
@@ -129,6 +131,7 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["emitted_bundle"]["external_invoked"] is False
     assert res["multi_agent_bundle"]["schema"] == "fixed_dag_reset_bundle_v1"
     assert res["multi_agent_bundle"]["dag_execution"]["schema_version"] == "fixed_dag_execution_v1"
+    assert res["multi_agent_bundle"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
     assert res.get("messages")
     assert "研判流程" in res["messages"][-1].content
     assert "layer_plan" not in res
@@ -192,6 +195,10 @@ async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) ->
         "value_ml_valuation"
     ]
     assert res["l2_conclusions"]["value_ml_valuation"]["status"] == "complete"
+    assert res["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+    assert res["dag_step_results"]["l2:value_ml_valuation"]["agent_evidence"]["stance"] == "demo_positive"
+    assert "单体智能体输入" in res["messages"][-1].content
+    assert "综合智能体输入" in res["messages"][-1].content
     assert "外部计算演示摘要" in res["messages"][-1].content
     assert "http://127.0.0.1" not in rendered
     assert "/v1/agent/invoke" not in res["messages"][-1].content

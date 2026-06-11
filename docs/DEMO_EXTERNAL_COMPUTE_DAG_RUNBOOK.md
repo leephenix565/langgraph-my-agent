@@ -13,6 +13,12 @@ The bridge never calls `/v1/agent/invoke`. It maps compute responses through
 `fixed_dag_external_adapter.py` before results can enter the fixed DAG report
 or workflow snapshot.
 
+R8-12C adds a report evidence bundle on top of the same demo boundary. The
+final report consumes bounded L2 agent summaries and L3 composite summaries,
+and the Web workflow detail panel can show those summaries per step. The demo
+still does not expose raw external responses, endpoint URLs, secrets, error
+stacks, or internal reasoning drafts.
+
 ## Required Flags
 
 Both the boolean flag and the allowlist must be set. With only the boolean flag

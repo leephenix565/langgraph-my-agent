@@ -7,7 +7,13 @@ import {
   stageLabel,
   zhCN,
 } from "../../content/zh-CN";
-import type { DagStep, WorkflowModel, WorkflowStepResult } from "../../types/workflow";
+import type {
+  WorkflowAgentEvidence,
+  WorkflowCompositeEvidence,
+  DagStep,
+  WorkflowModel,
+  WorkflowStepResult,
+} from "../../types/workflow";
 
 interface WorkflowStepResultsProps {
   workflow: WorkflowModel;
@@ -34,6 +40,83 @@ function renderTechnicalValue(label: string, raw: string) {
       <span>{label}</span>
       <code>{raw}</code>
     </span>
+  );
+}
+
+function formatNumber(value: unknown) {
+  return typeof value === "number" && Number.isFinite(value) ? value.toFixed(2) : null;
+}
+
+function renderEvidenceField(label: string, value: unknown) {
+  const text = typeof value === "number" ? formatNumber(value) : asDisplayString(value);
+  if (!text) {
+    return null;
+  }
+  return (
+    <div>
+      <dt>{label}</dt>
+      <dd>{text}</dd>
+    </div>
+  );
+}
+
+function renderAgentEvidence(evidence: WorkflowAgentEvidence | undefined) {
+  if (!evidence) {
+    return null;
+  }
+  const confidence = formatNumber(evidence.confidence);
+  const riskScore = formatNumber(evidence.risk_score);
+  return (
+    <section className="workflow-evidence-card">
+      <strong>{zhCN.workflow.resultFields.agentEvidence}</strong>
+      <dl className="workflow-metadata-grid">
+        {renderEvidenceField(zhCN.workflow.resultFields.signal, evidence.stance)}
+        {confidence ? renderEvidenceField(zhCN.workflow.resultFields.confidence, confidence) : null}
+        {riskScore ? renderEvidenceField(zhCN.workflow.resultFields.riskScore, riskScore) : null}
+        {renderEvidenceField(zhCN.workflow.resultFields.source, evidence.source)}
+      </dl>
+      {evidence.summary ? <p>{evidence.summary}</p> : null}
+    </section>
+  );
+}
+
+function renderCompositeEvidence(evidence: WorkflowCompositeEvidence | undefined) {
+  if (!evidence) {
+    return null;
+  }
+  const confidence = formatNumber(evidence.confidence);
+  const weights = evidence.dimension_weights
+    ? Object.entries(evidence.dimension_weights)
+        .filter(([key]) => key === "value" || key === "market")
+        .map(([key, value]) => `${dimensionLabel(key)} ${formatNumber(value) ?? value}`)
+        .join(" / ")
+    : "";
+  return (
+    <section className="workflow-evidence-card">
+      <strong>{zhCN.workflow.resultFields.compositeEvidence}</strong>
+      <dl className="workflow-metadata-grid">
+        {renderEvidenceField(zhCN.workflow.resultFields.signal, evidence.stance ?? evidence.regime)}
+        {confidence ? renderEvidenceField(zhCN.workflow.resultFields.confidence, confidence) : null}
+        {renderEvidenceField(zhCN.workflow.resultFields.riskGate, evidence.gate)}
+        {renderEvidenceField(zhCN.workflow.resultFields.riskScore, evidence.risk_score)}
+        {weights ? renderEvidenceField(zhCN.workflow.resultFields.macroWeights, weights) : null}
+        {renderEvidenceField(zhCN.workflow.resultFields.source, evidence.source)}
+      </dl>
+      {evidence.summary ? <p>{evidence.summary}</p> : null}
+      {evidence.members?.length ? (
+        <div className="workflow-evidence-members">
+          <span>{zhCN.workflow.resultFields.members}</span>
+          <div className="workflow-chip-row">
+            {evidence.members.slice(0, 8).map((member) => (
+              <span className="workflow-chip" key={member.agent_id}>
+                {member.display_name ?? member.agent_id}
+                {typeof member.weight === "number" ? ` ${member.weight.toFixed(2)}` : ""}
+              </span>
+            ))}
+          </div>
+        </div>
+      ) : null}
+    </section>
   );
 }
 
@@ -123,6 +206,9 @@ export function WorkflowStepResults({ workflow, selectedStepId }: WorkflowStepRe
           </div>
         ) : null}
       </dl>
+
+      {renderAgentEvidence(result?.agent_evidence)}
+      {renderCompositeEvidence(result?.composite_evidence)}
 
       {warnings.length ? (
         <div className="workflow-warning-list">

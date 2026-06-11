@@ -1810,6 +1810,34 @@
   white-space: nowrap;
 }
 
+.workflow-evidence-card {
+  display: grid;
+  gap: 7px;
+  padding: 8px;
+  border: 1px solid rgba(101, 109, 227, 0.14);
+  border-radius: 10px;
+  background: rgba(246, 248, 255, 0.72);
+}
+
+.workflow-evidence-card > strong,
+.workflow-evidence-members > span {
+  color: var(--ink-muted);
+  font-size: 11px;
+  font-weight: 600;
+}
+
+.workflow-evidence-card p {
+  margin: 0;
+  color: var(--ink-soft);
+  font-size: 12px;
+  line-height: 1.6;
+}
+
+.workflow-evidence-members {
+  display: grid;
+  gap: 5px;
+}
+
 .workflow-warning-list {
   display: grid;
   gap: 5px;

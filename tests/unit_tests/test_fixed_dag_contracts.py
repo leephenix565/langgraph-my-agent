@@ -21,6 +21,7 @@ from react_agent.fixed_dag_contracts import (
     build_entity_relation_bundle,
     build_l2_conclusions,
     build_pending_conclusion,
+    build_report_input_bundle,
     build_report_result,
     build_risk_composite,
     build_route_intent,
@@ -34,6 +35,7 @@ from react_agent.fixed_dag_contracts import (
     validate_dimension_composite_result,
     validate_entity_relation_bundle,
     validate_fixed_dag_plan,
+    validate_report_input_bundle,
     validate_report_result,
     validate_route_intent,
     validate_selected_fixed_dag_plan,
@@ -764,6 +766,56 @@ def test_report_result_validates_and_has_reset_limitations() -> None:
     assert "分析框架" in report["evidence_cards"][0]["title"]
     assert "高级连接状态可在设置诊断中查看" in joined
     assert "provider verified" not in joined.lower()
+
+
+def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    value = conclusions["value_ml_valuation"]
+    value["status"] = "complete"
+    value["stance"] = "demo_positive"
+    value["confidence"] = 0.66
+    value["evidence"] = [
+        {
+            "id": "value-demo",
+            "fact": "估值模型给出偏积极信号。",
+            "source": "unit_test",
+            "raw_response": "must_not_leak",
+        }
+    ]
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    dimensions["risk"]["gate"] = "manual_review"
+    dimensions["risk"]["veto"] = False
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+    )
+    valid, reason = validate_report_input_bundle(bundle)
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    rendered = json.dumps({"bundle": bundle, "report": report}, ensure_ascii=False)
+
+    assert valid, reason
+    assert bundle["schema"] == "report_input_bundle_v1"
+    assert any(
+        item["agent_id"] == "value_ml_valuation"
+        for item in bundle["l2_agent_summaries"]
+    )
+    assert any(
+        item["dimension"] == "risk" and item["gate"] == "manual_review"
+        for item in bundle["l3_composite_summaries"]
+    )
+    assert "单体智能体输入" in report["answer"]
+    assert "综合智能体输入" in report["answer"]
+    assert "机器学习企业估值" in report["answer"]
+    assert "raw_response" not in rendered
+    assert "must_not_leak" not in rendered
 
 
 def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:

@@ -101,6 +101,16 @@ validator-legal internal contracts plus bounded public-safe summaries. It does
 not call `/v1/agent/invoke`, does not change runtime bindings, and does not
 make compute evidence default graph execution.
 
+R8-12C adds `report_input_bundle_v1` as the report-generator consumption
+contract. The executor builds it after L2/L3 mapping and before report
+generation. It contains only bounded public-safe summaries: L2 agent signals,
+L3 composite summaries, risk gate summary, macro regulator summary, and
+decision context. The same bounded summaries may be projected into
+`workflow_snapshot_v2.stepResults` as `agent_evidence` and
+`composite_evidence` for Web drilldown. The bundle must not contain raw
+external responses, endpoint URLs, secrets, error stacks, or internal reasoning
+drafts.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
@@ -708,6 +718,39 @@ Runtime fields:
 
 Seams: `build_report_result`, `validate_report_result`.
 
+## report_input_bundle_v1
+
+Purpose: describe the structured L2 and L3 evidence that the report generator
+receives, without exposing raw agent JSON or endpoint details.
+
+Runtime fields:
+
+- `schema`
+- `schema_version`
+- `question`
+- `status`
+- `l2_agent_summaries`
+- `l3_composite_summaries`
+- `risk_gate`
+- `macro_regulator`
+- `decision_context`
+- `limitations`
+- `provenance`
+
+`l2_agent_summaries[]` contains bounded fields such as `agent_id`,
+`display_name`, `dimension`, `stance`, `confidence`, `summary`, and source.
+`l3_composite_summaries[]` adds bounded composite-specific fields such as
+members, risk gate/risk score, macro regime, and value/market macro weights.
+The bundle is validated before report rendering and before
+`validate_dag_execution_result` accepts an execution result.
+
+Seams: `build_report_input_bundle`, `validate_report_input_bundle`,
+`build_report_result`.
+
+Non-claims: the bundle does not enable runtime bindings, does not call
+`/v1/agent/invoke`, does not set live flags, and does not prove production
+business correctness.
+
 ## workflow_snapshot_v2
 
 Purpose: expose safe workflow inspector state without leaking raw graph messages
@@ -728,6 +771,9 @@ Public fields:
 - `finalSource`
 
 `finalSource` is currently `reset_skeleton`.
+R8-12C may include optional `stepResults.agent_evidence` and
+`stepResults.composite_evidence` fields. They are public-safe report input
+summaries only, not raw external payloads.
 `provenance` includes executor-oriented fields such as `executionStatus`,
 `fallbackUsed`, and `limitations` while keeping provider and external invocation
 flags false.

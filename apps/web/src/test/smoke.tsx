@@ -500,6 +500,18 @@ async function runAssistantRenderChecks() {
   assert.ok(article.textContent?.includes("external_candidate_disabled"));
   assert.ok(view.getByText("高级连接处于关闭状态，本轮使用本地流程。"));
 
+  fireEvent.click(view.getByRole("button", { name: /传统企业估值/ }));
+  assert.equal(view.getByRole("button", { name: /传统企业估值/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(view.getByText("单体智能体输入"));
+  assert.ok(article.textContent?.includes("cautious_positive"));
+  assert.ok(article.textContent?.includes("估值维度给出偏积极但需复核的结构化信号。"));
+
+  fireEvent.click(view.getByRole("button", { name: /价值综合/ }));
+  assert.equal(view.getByRole("button", { name: /价值综合/ }).getAttribute("aria-pressed"), "true");
+  assert.ok(view.getByText("综合智能体输入"));
+  assert.ok(view.getByText("成员"));
+  assert.ok(article.textContent?.includes("价值综合智能体汇总了估值维度成员信号。"));
+
   fireEvent.click(view.getByRole("button", { name: /企业舆情雷达/ }));
   assert.equal(view.getByRole("button", { name: /企业舆情雷达/ }).getAttribute("aria-pressed"), "true");
   assert.ok(article.textContent?.includes("pending_placeholder"));

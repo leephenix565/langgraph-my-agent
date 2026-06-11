@@ -41,6 +41,7 @@ class State(InputState, total=False):
     l2_conclusions: Dict[str, Any]
     dimension_results: Dict[str, Any]
     decision_result: Dict[str, Any]
+    report_input_bundle: Dict[str, Any]
     report_result: Dict[str, Any]
     workflow_snapshot: Dict[str, Any]
     final_emit_payload: Dict[str, Any]

@@ -67,6 +67,52 @@ export interface DimensionGroup {
   summary: string;
 }
 
+export interface WorkflowAgentEvidence {
+  agent_id: string;
+  display_name?: string;
+  layer?: "L2" | string;
+  dimension?: string;
+  status?: string;
+  stance?: string;
+  confidence?: number;
+  summary?: string;
+  as_of?: string;
+  data_as_of?: string;
+  source?: string;
+  risk_score?: number;
+}
+
+export interface WorkflowCompositeMemberEvidence {
+  agent_id: string;
+  display_name?: string;
+  weight?: number;
+  stance?: string;
+  confidence?: number;
+  status?: string;
+}
+
+export interface WorkflowCompositeEvidence {
+  agent_id: string;
+  display_name?: string;
+  layer?: "L3" | string;
+  dimension?: string;
+  status?: string;
+  stance?: string;
+  confidence?: number;
+  summary?: string;
+  members?: WorkflowCompositeMemberEvidence[];
+  gate?: string;
+  veto?: boolean;
+  penalty?: number;
+  risk_score?: number;
+  regime?: string;
+  dimension_weights?: Record<string, number>;
+  risk_sensitivity?: string | number;
+  as_of?: string;
+  data_as_of?: string;
+  source?: string;
+}
+
 export interface WorkflowStepResult extends Record<string, unknown> {
   status?: DagStepStatus | string;
   runtime_kind?: WorkflowRuntimeKind;
@@ -77,6 +123,8 @@ export interface WorkflowStepResult extends Record<string, unknown> {
   invoke_enabled?: boolean;
   live_verified?: boolean;
   warnings?: string[] | string;
+  agent_evidence?: WorkflowAgentEvidence;
+  composite_evidence?: WorkflowCompositeEvidence;
 }
 
 export interface WorkflowProvenance {

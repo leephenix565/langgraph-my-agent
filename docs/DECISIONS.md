@@ -1457,3 +1457,34 @@ not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`, does not store
 SSH passwords or write `.env`, does not modify `runtime_bindings.json`, does
 not set `live_verified=true`, does not set `invoke_enabled_by_default=true`,
 and does not expose production agent ports on `0.0.0.0`.
+
+## ADR-056: R8-12C Feeds Report Generation From Public-Safe Evidence Bundles
+
+Status: accepted for fixed DAG report generation and workflow projection.
+
+Decision: R8-12C introduces `report_input_bundle_v1` as the bounded input
+package for the fixed DAG report generator. The executor builds the bundle from
+current L2 conclusions, L3 composite results, risk gate, macro regulator, and
+decision context, then passes it to `build_report_result`. The same summaries
+are projected into `workflow_snapshot_v2.stepResults` as `agent_evidence` and
+`composite_evidence` so the Web workflow details can show what each single
+agent and composite agent contributed to the final report.
+
+Reason: the R8-12 demo could already call allowlisted production `/compute`
+services and map the results into internal contracts, but the final report did
+not explicitly consume or expose the detailed L2/L3 input bundle. A bounded
+report input contract makes the report generator's inputs auditable without
+turning raw external payloads into public transcript content.
+
+Consequence: report text and workflow details can explain the individual agent
+signals, composite members, risk gate, and macro regulator that shaped a fixed
+DAG answer. Tests validate default-off behavior, report bundle validation, no
+raw leakage, and frontend rendering of the bounded summaries.
+
+Non-consequence: R8-12C does not call production endpoints, does not call
+`/v1/agent/invoke`, does not modify `runtime_bindings.json`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+make external services default runtime dependencies, and does not deploy the
+main system to `/sdb/dlut/prod/langgraph-my-agent`. Production rollout requires
+a separate backup, sync, validation, and restart step for the main-system
+service.

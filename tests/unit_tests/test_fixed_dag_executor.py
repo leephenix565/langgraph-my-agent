@@ -313,6 +313,7 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert result["workflow_snapshot"]["executionBatches"] == result["execution_batches"]
     assert result["workflow_snapshot"]["stepResults"] == result["step_results"]
     assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])
+    assert result["report_input_bundle"]["schema"] == "report_input_bundle_v1"
     assert result["step_results"]["route_planner"]["runtime_kind"] == "deterministic_system"
     assert result["step_results"]["route_planner"]["implementation_status"] == "deterministic_skeleton"
     assert result["step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
@@ -322,6 +323,9 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert result["step_results"]["dimension:market"]["runtime_kind"] == "deterministic_composite"
     assert result["step_results"]["dimension:market"]["implementation_status"] == "deterministic_skeleton"
     assert result["step_results"]["l2:sentiment_company_radar"]["runtime_kind"] == "pending_placeholder"
+    assert "agent_evidence" in result["step_results"]["l2:value_ml_valuation"]
+    assert "composite_evidence" in result["step_results"]["dimension:value"]
+    assert "报告生成输入摘要" in result["report_result"]["answer"]
     assert "sentiment_company_radar" not in result["step_results"]["dimension:risk"]["depends_on"]
     payload = json.dumps(result)
     for forbidden in ("layerMode", "fusionSteps", "layerPlan", "value_financial_analysis"):
@@ -434,6 +438,11 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
     assert result["dimension_results"]["risk"]["gate"] == "pass"
     assert result["step_results"]["l2:value_ml_valuation"]["status"] == "complete"
     assert result["step_results"]["dimension:risk"]["status"] == "complete"
+    assert result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]["stance"] == "demo_positive"
+    assert result["step_results"]["dimension:risk"]["composite_evidence"]["gate"] == "pass"
+    assert result["report_input_bundle"]["risk_gate"]["gate"] == "pass"
+    assert "单体智能体输入" in result["report_result"]["answer"]
+    assert "综合智能体输入" in result["report_result"]["answer"]
     assert "外部计算演示摘要" in result["report_result"]["answer"]
     assert "live_verified" not in result["report_result"]["answer"]
     assert "/v1/agent/invoke" not in result["report_result"]["answer"]

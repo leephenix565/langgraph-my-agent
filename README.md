@@ -256,11 +256,21 @@ on the server. Use `scripts/dev/start_agent_tunnels.sh` or
 secret is written, no `/invoke` call is made, production `100xx` ports are not
 publicly exposed, and `runtime_bindings.json` remains unchanged.
 
+Phase R8-12C wires report generation to a public-safe
+`report_input_bundle_v1`. The bundle summarizes the L2 agent signals and L3
+composite inputs that the report generator receives, then projects those
+summaries into `workflow_snapshot_v2.stepResults` for the Web workflow detail
+view. It does not store raw external responses, endpoints, secrets, error
+stacks, or internal reasoning drafts, and it does not change runtime bindings,
+live flags, or `/invoke` behavior. Production deployment requires syncing the
+validated main-system code to `/sdb/dlut/prod/langgraph-my-agent` and restarting
+the main-system service in a separate deployment step.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-12 default-off external compute demo bridge over the existing
+- Current phase: R8-12C report generator evidence bundle integration over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

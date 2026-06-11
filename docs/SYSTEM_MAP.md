@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-12.
+This file is the reset branch operational map for Phase R8-12C.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-12 default-off external compute demo bridge over the
+- Current phase: R8-12C report generator evidence bundle integration over the
   existing fixed-DAG runtime skeleton, selected-routing boundary, R8-6B internal
   LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seams, and R7-G v2.3.1 scaffold package.
@@ -44,6 +44,10 @@ This file is the reset branch operational map for Phase R8-12.
   `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` as a default-off demo bridge boundary for
   production `/v1/agent/compute`; with flags off or an empty allowlist, no
   bridge module is loaded and no external HTTP call is made.
+  R8-12C adds `report_input_bundle_v1` as the public-safe report-generator
+  input package. It summarizes L2 agent signals and L3 composite inputs for
+  report generation and workflow drilldown without storing raw external
+  responses, endpoints, secrets, error stacks, or internal reasoning drafts.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -65,6 +69,9 @@ This file is the reset branch operational map for Phase R8-12.
   snapshot; it is the normal user-facing workflow surface below the assistant
   report, not a backend runtime change or extra public agent lane. The full
   WorkflowPanel remains available as a technical inspector behind "技术流程详情".
+  R8-12C lets selected workflow step details render `agent_evidence` and
+  `composite_evidence` when present, so the Web view can show the bounded
+  public summaries that the report generator consumed.
 
 ## Current Runtime Entry
 

@@ -9,6 +9,32 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-12C report generator evidence bundle integration
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-12C |
+| Endpoint calls | none |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Default external invocation enabled | no |
+
+R8-12C is an implementation and documentation phase, not a live readiness
+smoke. It wires `report_input_bundle_v1` into report generation so the final
+answer can consume bounded L2 agent summaries, L3 composite summaries, risk
+gate information, macro regulator information, and decision context. The same
+bounded summaries are projected into `workflow_snapshot_v2.stepResults` as
+`agent_evidence` and `composite_evidence` for Web workflow drilldown.
+
+Non-claims:
+
+- This does not create new production endpoint evidence.
+- This does not call `/v1/agent/invoke`.
+- This does not enable runtime bindings.
+- This does not set live flags.
+- This does not deploy the main system to production.
+
 ## 2026-06-11 - R8-12 default-off external compute demo
 
 | Field | Value |
