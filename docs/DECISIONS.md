@@ -1313,3 +1313,32 @@ runtime bindings, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, does not update public transcript content,
 does not wire active graph/runtime L3 execution, and does not prove production
 default invocation readiness.
+
+## ADR-051: R8-10F Remediates Value Composite Health Identity Before Readiness Evidence
+
+Status: accepted for scoped L3 production service remediation.
+
+Decision: R8-10F fixes the `value_composite` production health identity on
+`127.0.0.1:10015`, keeping `agent_id=value_composite`,
+`external_agent_id=composite_valuation`, and
+`fixed_dag_agent_id=value_composite` in structured
+`external_agent_health_v0`. It also preserves the existing fixed DAG L3 compute
+wrapper and verifies that production compute maps through the main-system
+adapter into `dimension_composite_result_v1`.
+
+Reason: R8-10E showed the value composite production service had loaded enough
+wrapper code for L3 compute but still advertised the value-ML sample identity
+from `/health`, so the readiness smoke correctly skipped compute fail-closed.
+Readiness evidence should only advance after the service advertises the correct
+production identity and the compute envelope maps through the existing adapter
+without relaxing identity gates.
+
+Consequence: `value_composite` joins the L3 production compute evidence set.
+The service wrapper now rejects unintended value members at the protocol layer
+by only emitting fixed DAG value L2 member ids.
+
+Non-consequence: R8-10F does not call `/v1/agent/invoke`, does not modify
+runtime bindings, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not change main-system adapter gates,
+does not update public transcript content, and does not prove production
+default invocation readiness.

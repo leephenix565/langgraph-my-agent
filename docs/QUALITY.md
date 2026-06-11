@@ -630,6 +630,19 @@ Passing this smoke records compute-level evidence only. It does not enable
 runtime bindings, set `live_verified=true`, set
 `invoke_enabled_by_default=true`, or prove production default invocation.
 
+## R8-10F Value Composite Production Remediation Boundary
+
+R8-10F is a scoped production remediation and smoke for `value_composite` on
+port `10015` only. It may update the service protocol wrapper, restart that
+single production service, and call production `GET /health` plus
+`POST /v1/agent/compute` for that service. It must not call
+`/v1/agent/invoke`, use dev ports as production evidence, or touch unrelated
+services.
+
+Passing this remediation records compute-level evidence only. It does not
+enable runtime bindings, set `live_verified=true`, set
+`invoke_enabled_by_default=true`, or prove production default invocation.
+
 ## R7-G/R7-H External Scaffold Package
 
 R7-C/R7-D/R7-E/R7-F/R7-G external developer handoff work upgrades the repo-external

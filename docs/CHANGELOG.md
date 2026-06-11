@@ -3,6 +3,42 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-10 - Phase R8-10F value composite production remediation
+
+### Changed
+
+- Remediated `value_composite` production health identity on port `10015` so
+  `/health` identifies the L3 value composite service instead of the value-ML
+  sample identity.
+- Preserved and verified the existing
+  `external_agent_compute_v0.tool_result.dimension_conclusion_v1` production
+  compute wrapper for `value_composite`.
+- Recorded production health + compute + adapter mapping evidence for
+  `value_composite`.
+- Updated README, readiness matrix, controlled smoke log, readiness ladder,
+  quality, changelog, and ADR documentation for the R8-10F boundary.
+
+### Validated
+
+- `python3 -m py_compile service.py schemas.py tests/test_fixed_dag_l3_wrapper.py`
+  in `/sdb/dlut/prod/综合估值智能体`.
+- `python3 -m pytest tests/test_fixed_dag_l3_wrapper.py -q` in
+  `/sdb/dlut/prod/综合估值智能体`.
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No push.
+- No provider call.
+- No `/v1/agent/invoke` call.
+- No runtime binding change.
+- No `live_verified=true`.
+- No `invoke_enabled_by_default=true`.
+- No public transcript update.
+- No production default invocation readiness claim.
+
 ## 2026-06-10 - Phase R8-10E L3 production controlled compute smoke
 
 ### Changed

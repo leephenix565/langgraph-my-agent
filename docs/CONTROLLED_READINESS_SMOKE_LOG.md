@@ -9,6 +9,44 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-10F value composite production remediation
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-10F |
+| Artifact directory | `/tmp/lma-r8-10f-value-composite-prod-smoke/20260611T014340Z` |
+| Environment | production `value_composite` endpoint only |
+| Endpoint calls | `GET /health`, `POST /v1/agent/compute` |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+R8-10F remediated the `value_composite` production health identity mismatch on
+`127.0.0.1:10015` and re-smoked only that production endpoint.
+
+| agent_id | endpoint | health | compute | adapter mapping | status |
+| --- | --- | --- | --- | --- | --- |
+| `value_composite` | `127.0.0.1:10015` | pass | pass: `dimension_conclusion_v1` | pass | production compute evidence |
+
+Sanitized result summary:
+
+- Health identity: `agent_id=value_composite`, `external_agent_id=composite_valuation`,
+  `fixed_dag_agent_id=value_composite`.
+- Compute envelope: `external_agent_compute_v0` with
+  `tool_result.schema_version=dimension_conclusion_v1`.
+- Adapter target: `dimension_composite_result_v1`.
+- Members: `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`.
+
+Non-claims:
+
+- This is not `live_verified=true`.
+- This does not enable runtime bindings.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not prove production default invocation readiness.
+- This does not update public transcript content.
+
 ## 2026-06-10 - R8-10E L3 production controlled compute smoke
 
 | Field | Value |

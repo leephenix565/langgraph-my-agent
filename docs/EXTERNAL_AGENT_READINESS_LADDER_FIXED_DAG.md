@@ -281,6 +281,18 @@ This is still compute-level evidence only. It is not `/v1/agent/invoke`
 evidence, does not enable runtime bindings, does not set live flags, and does
 not make active graph execution call L3 production services by default.
 
+### R8-10F Value Composite Production Remediation Boundary
+
+R8-10F remediates the remaining L3 compute evidence gap by fixing
+`value_composite` production health identity and re-smoking only
+`127.0.0.1:10015`. The service now has production health + compute + adapter
+mapping evidence for `dimension_conclusion_v1` into
+`dimension_composite_result_v1`.
+
+This remains below invoke readiness. R8-10F does not call
+`/v1/agent/invoke`, does not enable runtime bindings, does not set live flags,
+and does not make the active graph call production L3 services by default.
+
 The R8-8B `value_ml_valuation` smoke returned a compute envelope shape that
 requires R8-8C adapter compatibility. After the adapter patch, the service still
 requires an R8-8D controlled re-smoke before any compute-readiness advancement
