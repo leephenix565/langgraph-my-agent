@@ -141,6 +141,22 @@ store raw external responses or endpoint URLs in graph state or Web fixtures.
 Passing mainline means the public-safe report bundle and frontend projection
 are contract-valid; it does not deploy the main system to production.
 
+## R8-12D LLM Report Synthesis Boundary
+
+R8-12D adds a default-off LLM report synthesizer for the final fixed-DAG
+report. The synthesizer may call the configured chat model only when
+`ENABLE_LLM_REPORT_SYNTHESIS=1` or `Context.enable_llm_report_synthesis=True`
+is explicit. It receives only `report_input_bundle_v1` and must fail closed to
+the template report if model loading, parsing, schema validation, or safety
+checks fail.
+
+Default static/mainline validation uses fake model transports only. It must not
+call a real provider, must not call `/v1/agent/invoke`, must not call production
+agent endpoints, must not write raw model output, and must not change runtime
+bindings or live flags. A live demo may combine this flag with the R8-12
+external compute demo flag, but that remains manual demo acceptance, not a
+default quality gate.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

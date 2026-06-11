@@ -5,7 +5,8 @@ The Phase R3 executor is an orchestration seam only. It validates and walks the
 fixed DAG plan and emits deterministic placeholder outputs by default. R8-12
 adds an explicit default-off demo bridge for production `/v1/agent/compute`
 calls; the bridge is not loaded or used unless the demo flag and allowlist are
-set.
+set. R8-12D adds default-off LLM report synthesis from the public-safe
+report_input_bundle_v1.
 """
 
 from __future__ import annotations
@@ -815,6 +816,9 @@ def execute_fixed_dag_plan(
     external_compute_demo_enabled = bool(
         getattr(context, "enable_external_compute_demo", False)
     )
+    llm_report_synthesis_enabled = bool(
+        getattr(context, "enable_llm_report_synthesis", False)
+    )
     external_l2_run: Mapping[str, Any] = {}
     external_l3_run: Mapping[str, Any] = {}
     external_demo_summary: Mapping[str, Any] = {
@@ -884,6 +888,26 @@ def execute_fixed_dag_plan(
             dimension_results=dimension_results,
             demo_summary=external_demo_summary,
         )
+    llm_report_synthesis_used = False
+    llm_report_synthesis_attempted = False
+    llm_report_synthesis_provider_invoked = False
+    llm_report_synthesis_fallback_reason = ""
+    if llm_report_synthesis_enabled:
+        from react_agent.fixed_dag_report_synthesizer import (  # noqa: PLC0415
+            synthesize_report_result_with_llm,
+        )
+
+        synthesis_outcome = synthesize_report_result_with_llm(
+            question=question,
+            report_input_bundle=report_input_bundle,
+            fallback_report_result=report_result,
+            context=context,
+        )
+        report_result = synthesis_outcome["report_result"]
+        llm_report_synthesis_used = bool(synthesis_outcome["used_llm_report"])
+        llm_report_synthesis_attempted = bool(synthesis_outcome["attempted"])
+        llm_report_synthesis_provider_invoked = bool(synthesis_outcome["provider_invoked"])
+        llm_report_synthesis_fallback_reason = str(synthesis_outcome["fallback_reason"])
     internal_placeholder_count = sum(
         1
         for item in l2_conclusions.values()
@@ -906,6 +930,16 @@ def execute_fixed_dag_plan(
                 "external compute demo 演示开关已开启，但没有 allowlist agent 完成映射；"
                 "执行已回退到本地固定流程。"
             )
+    if llm_report_synthesis_enabled:
+        if llm_report_synthesis_used:
+            limitations.append(
+                "已在显式演示开关下使用大模型读取结构化报告输入包生成最终报告；"
+                "这不是默认运行配置变更。"
+            )
+        else:
+            limitations.append(
+                "大模型报告综合开关已开启，但未生成有效报告，已回退到模板报告。"
+            )
     if fallback_used:
         limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")
 
@@ -925,7 +959,7 @@ def execute_fixed_dag_plan(
         "limitations": limitations,
         "provenance": {
             "source": "fixed_dag_executor",
-            "provider_invoked": False,
+            "provider_invoked": llm_report_synthesis_provider_invoked,
             "external_invoked": False,
             "internal_llm_placeholders_enabled": internal_placeholders_enabled,
             "internal_llm_placeholder_conclusions": internal_placeholder_count,
@@ -939,6 +973,10 @@ def execute_fixed_dag_plan(
             "external_compute_demo_failed_agents": list(
                 external_demo_summary.get("failed_agents", [])
             ),
+            "llm_report_synthesis_enabled": llm_report_synthesis_enabled,
+            "llm_report_synthesis_attempted": llm_report_synthesis_attempted,
+            "llm_report_synthesis_used": llm_report_synthesis_used,
+            "llm_report_synthesis_fallback_reason": llm_report_synthesis_fallback_reason,
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

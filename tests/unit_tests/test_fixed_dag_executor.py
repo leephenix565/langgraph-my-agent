@@ -337,6 +337,7 @@ def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monke
         raise AssertionError("internal placeholder provider should stay default-off")
 
     monkeypatch.setattr("react_agent.fixed_dag_llm_placeholders.load_chat_model", fail_load)
+    monkeypatch.setattr("react_agent.fixed_dag_report_synthesizer.load_chat_model", fail_load)
 
     result = execute_fixed_dag_plan(
         _plan(),
@@ -355,6 +356,8 @@ def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monke
         item["provenance"]["source"]
         for item in result["l2_conclusions"].values()
     } == {"reset_skeleton"}
+    assert result["provenance"]["llm_report_synthesis_enabled"] is False
+    assert result["provenance"]["provider_invoked"] is False
 
 
 def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) -> None:
@@ -448,6 +451,129 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
     assert "/v1/agent/invoke" not in result["report_result"]["answer"]
     assert "http://127.0.0.1" not in rendered
     assert "raw_response" not in rendered
+
+
+def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    class FakeReportModel:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def invoke(self, prompt: str):
+            self.prompts.append(prompt)
+            return json.dumps(
+                {
+                    "title": "贵州茅台固定 DAG 研判报告",
+                    "answer": (
+                        "估值维度由机器学习企业估值给出 demo_positive 信号；"
+                        "风险综合为 pass。综合研判：当前可进入关注池，但需要等待更多确认。"
+                    ),
+                    "sections": [
+                        {
+                            "id": "final_view",
+                            "title": "最终研判",
+                            "content": "大模型已读取单体智能体和综合智能体输入后整理报告。",
+                        }
+                    ],
+                    "evidence_cards": [
+                        {
+                            "title": "参与输入",
+                            "note": "包含 L2 机器学习企业估值和 L3 风险综合。",
+                        }
+                    ],
+                    "limitations": ["显式开关下的大模型报告综合，不代表默认生产调用。"],
+                },
+                ensure_ascii=False,
+            )
+
+    fake_model = FakeReportModel()
+
+    def fake_invoke(entry, **_kwargs):
+        if entry.agent_id == "value_ml_valuation":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "value_ml_valuation",
+                    "valuation_ml",
+                    _agent_conclusion(),
+                )
+            )
+        elif entry.agent_id == "risk_composite":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "risk_composite",
+                    "risk_synthesis",
+                    _risk_conclusion(),
+                )
+            )
+        else:
+            raise AssertionError(f"unexpected demo agent {entry.agent_id}")
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        lambda _model: fake_model,
+    )
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation", "risk_composite"),
+            enable_llm_report_synthesis=True,
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert valid, reason
+    assert fake_model.prompts
+    assert "value_ml_valuation" in fake_model.prompts[0]
+    assert "risk_gate" in fake_model.prompts[0]
+    assert result["provenance"]["provider_invoked"] is True
+    assert result["provenance"]["llm_report_synthesis_used"] is True
+    assert result["workflow_snapshot"]["provenance"]["providerInvoked"] is True
+    assert "综合研判：当前可进入关注池" in result["report_result"]["answer"]
+    assert "报告生成输入摘要" not in result["report_result"]["answer"]
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
+
+
+def test_llm_report_synthesis_failure_keeps_template_report(monkeypatch) -> None:
+    class BadReportModel:
+        def invoke(self, _prompt: str):
+            return "not json raw_response secret traceback"
+
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        lambda _model: BadReportModel(),
+    )
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(enable_llm_report_synthesis=True),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert valid, reason
+    assert result["provenance"]["provider_invoked"] is True
+    assert result["provenance"]["llm_report_synthesis_used"] is False
+    assert result["provenance"]["llm_report_synthesis_attempted"] is True
+    assert "报告生成输入摘要" in result["report_result"]["answer"]
+    assert "raw_response" not in rendered
+    assert "secret" not in rendered
 
 
 def test_external_compute_demo_failure_falls_back_to_placeholder(monkeypatch) -> None:

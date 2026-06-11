@@ -19,6 +19,12 @@ and the Web workflow detail panel can show those summaries per step. The demo
 still does not expose raw external responses, endpoint URLs, secrets, error
 stacks, or internal reasoning drafts.
 
+R8-12D optionally adds natural-language LLM report synthesis. Set
+`ENABLE_LLM_REPORT_SYNTHESIS=1` only when you intentionally want the main system
+model to read `report_input_bundle_v1` and write the final report. The model
+does not receive raw external responses or endpoint URLs, and failure falls
+back to the template report.
+
 ## Required Flags
 
 Both the boolean flag and the allowlist must be set. With only the boolean flag
@@ -28,6 +34,10 @@ enabled and an empty allowlist, no HTTP call is made.
 ENABLE_EXTERNAL_COMPUTE_DEMO=1
 EXTERNAL_COMPUTE_DEMO_ALLOWLIST=value_traditional_valuation,value_ml_valuation,value_meta_valuation,value_research_synthesis,market_stock_technical,market_capital_flow_chip,sentiment_company_radar,risk_identification,risk_compliance_review,risk_financial_fraud,risk_crash,macro_analysis,value_composite,market_composite,risk_composite,macro_composite
 EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS=20
+# Optional: use the main-system model to synthesize the final natural report.
+ENABLE_LLM_REPORT_SYNTHESIS=1
+# Optional: override only the report synthesis model.
+# LLM_REPORT_SYNTHESIS_MODEL=deepseek/deepseek-chat
 ```
 
 Optional selected routing can be enabled separately:
@@ -47,6 +57,7 @@ Start the local API from the repo root:
 ENABLE_EXTERNAL_COMPUTE_DEMO=1 \
 EXTERNAL_COMPUTE_DEMO_ALLOWLIST=value_traditional_valuation,value_ml_valuation,value_meta_valuation,value_research_synthesis,market_stock_technical,market_capital_flow_chip,sentiment_company_radar,risk_identification,risk_compliance_review,risk_financial_fraud,risk_crash,macro_analysis,value_composite,market_composite,risk_composite,macro_composite \
 EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS=20 \
+ENABLE_LLM_REPORT_SYNTHESIS=1 \
 .venv/bin/python -m uvicorn react_agent.public_api:app --host 127.0.0.1 --port 8200
 ```
 

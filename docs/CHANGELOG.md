@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-11 - Phase R8-12D LLM report synthesizer with active evidence
+
+### Changed
+
+- Added `Context.enable_llm_report_synthesis` and optional
+  `llm_report_synthesis_model` / `LLM_REPORT_SYNTHESIS_MODEL`.
+- Added `fixed_dag_report_synthesizer.py`, a default-off report generator that
+  passes only `report_input_bundle_v1` to the configured chat model and expects
+  a validated `report_result_v1` response.
+- Wired the synthesizer into `execute_fixed_dag_plan` after L2/L3 evidence
+  mapping and report bundle construction.
+- Allowed public workflow provenance to mark `providerInvoked=true` only when
+  the explicit LLM report synthesis path invokes the configured model.
+- Updated the demo runbook and docs to distinguish template report fallback
+  from natural-language LLM report synthesis.
+
+### Validated
+
+- `.venv/bin/python -m ruff check src/react_agent tests`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_fixed_dag_executor.py tests/integration_tests/test_graph.py -q`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `git diff --check`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+
+### Not Done
+
+- No real provider was called during validation.
+- No production endpoint was called during validation.
+- No external agent `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No production main-system deployment was performed in this commit.
+
 ## 2026-06-11 - Phase R8-12C report generator evidence bundle integration
 
 ### Changed

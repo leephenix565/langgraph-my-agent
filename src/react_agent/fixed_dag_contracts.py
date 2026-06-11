@@ -2307,8 +2307,18 @@ def build_workflow_snapshot_v2(
         "stepResults": dict(step_results or {}),
         "provenance": {
             "source": RESET_SOURCE,
-            "providerInvoked": False,
-            "externalInvoked": False,
+            "providerInvoked": bool(
+                dag_execution.get("provenance", {}).get("provider_invoked")
+            )
+            if isinstance(dag_execution, Mapping)
+            and isinstance(dag_execution.get("provenance"), Mapping)
+            else False,
+            "externalInvoked": bool(
+                dag_execution.get("provenance", {}).get("external_invoked")
+            )
+            if isinstance(dag_execution, Mapping)
+            and isinstance(dag_execution.get("provenance"), Mapping)
+            else False,
             "executionStatus": str(dag_execution.get("status"))
             if isinstance(dag_execution, Mapping) and dag_execution.get("status")
             else "not_started",
@@ -2344,7 +2354,7 @@ def validate_workflow_snapshot_v2(obj: Mapping[str, Any]) -> tuple[bool, str]:
     provenance = obj.get("provenance", {})
     if not isinstance(provenance, Mapping):
         return False, "invalid_provenance"
-    if provenance.get("providerInvoked") or provenance.get("externalInvoked"):
+    if provenance.get("externalInvoked"):
         return False, "live_invocation_claim_present"
     dag_steps = obj.get("dagSteps")
     completed = obj.get("completedSteps")

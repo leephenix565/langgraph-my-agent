@@ -266,11 +266,20 @@ live flags, or `/invoke` behavior. Production deployment requires syncing the
 validated main-system code to `/sdb/dlut/prod/langgraph-my-agent` and restarting
 the main-system service in a separate deployment step.
 
+Phase R8-12D adds a default-off LLM report synthesizer. When
+`ENABLE_LLM_REPORT_SYNTHESIS=1` is set, the main system can load the configured
+chat model, pass only `report_input_bundle_v1` to the report synthesizer, and
+replace the template report with a natural Chinese report that understands the
+single-agent and composite-agent inputs. Invalid, unsafe, or unavailable model
+output fails closed back to the R8-12C template report. This does not call
+external `/v1/agent/invoke`, does not change runtime bindings, does not set
+live flags, and does not expose raw external responses.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-12C report generator evidence bundle integration over the existing
+- Current phase: R8-12D LLM report synthesizer over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

@@ -111,6 +111,14 @@ decision context. The same bounded summaries may be projected into
 external responses, endpoint URLs, secrets, error stacks, or internal reasoning
 drafts.
 
+R8-12D adds `fixed_dag_report_synthesizer.py` as a default-off LLM report
+synthesis seam. When `enable_llm_report_synthesis` is true, the synthesizer
+passes only `report_input_bundle_v1` to the configured chat model and expects a
+bounded `report_result_v1` JSON response. Invalid, unsafe, or unavailable model
+output fails closed back to the template report from R8-12C. This is a
+main-system model call, not an external agent `/v1/agent/invoke` call, and it
+does not change runtime bindings or live flags.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
@@ -750,6 +758,31 @@ Seams: `build_report_input_bundle`, `validate_report_input_bundle`,
 Non-claims: the bundle does not enable runtime bindings, does not call
 `/v1/agent/invoke`, does not set live flags, and does not prove production
 business correctness.
+
+## LLM report synthesis seam
+
+Purpose: allow a default-off report generator to read `report_input_bundle_v1`
+and produce a natural Chinese `report_result_v1`.
+
+Runtime controls:
+
+- `Context.enable_llm_report_synthesis`
+- `ENABLE_LLM_REPORT_SYNTHESIS=1`
+- optional `Context.llm_report_synthesis_model`
+- optional `LLM_REPORT_SYNTHESIS_MODEL`
+
+Failure behavior: provider/model load failure, parse failure, invalid schema,
+or unsafe output returns the fallback template `report_result_v1`. The fallback
+must remain valid and public-safe.
+
+Safety rules:
+
+- The synthesizer receives only `report_input_bundle_v1`.
+- It must not receive raw external payloads or endpoint URLs.
+- It must not call external agent `/v1/agent/invoke`.
+- It must not store raw model output in graph state or public workflow.
+- It may set public workflow `providerInvoked=true` when the explicit synthesis
+  flag actually invokes the configured model.
 
 ## workflow_snapshot_v2
 

@@ -43,6 +43,11 @@ single-agent summaries and L3 composite summaries, but it does not add new
 endpoint evidence, does not change readiness counts, and does not deploy the
 main system to production.
 
+R8-12D adds a default-off LLM report synthesizer over the same bundle. It can
+turn active L2/L3 evidence into a natural Chinese final report when explicitly
+enabled, but it does not change which agents have production compute/invoke
+evidence and does not enable default runtime bindings.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

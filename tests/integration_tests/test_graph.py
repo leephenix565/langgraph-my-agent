@@ -76,6 +76,12 @@ async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypa
     monkeypatch.setenv("ENABLE_INTERNAL_LLM_PLACEHOLDERS", "1")
     assert Context().enable_internal_llm_placeholders is True
 
+    monkeypatch.delenv("ENABLE_LLM_REPORT_SYNTHESIS", raising=False)
+    assert Context().enable_llm_report_synthesis is False
+
+    monkeypatch.setenv("ENABLE_LLM_REPORT_SYNTHESIS", "1")
+    assert Context().enable_llm_report_synthesis is True
+
 
 async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_provider(*args, **kwargs):
@@ -203,6 +209,97 @@ async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) ->
     assert "http://127.0.0.1" not in rendered
     assert "/v1/agent/invoke" not in res["messages"][-1].content
     assert "raw_response" not in rendered
+
+
+async def test_graph_path_can_synthesize_llm_report_from_external_evidence(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    class FakeReportModel:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def invoke(self, prompt: str):
+            self.prompts.append(prompt)
+            return json.dumps(
+                {
+                    "title": "固定 DAG 大模型研判报告",
+                    "answer": (
+                        "估值维度接收到机器学习企业估值的 demo_positive 输入；"
+                        "风险维度暂未触发风险否决。综合研判：本轮可以关注，但需要业务复核。"
+                    ),
+                    "sections": [
+                        {
+                            "id": "summary",
+                            "title": "综合研判",
+                            "content": "报告生成智能体已读取结构化输入包后整理最终报告。",
+                        }
+                    ],
+                    "evidence_cards": [
+                        {
+                            "title": "输入覆盖",
+                            "note": "包含 L2 单体智能体和 L3 综合智能体摘要。",
+                        }
+                    ],
+                    "limitations": ["显式开关下的大模型报告综合，不代表默认生产调用。"],
+                },
+                ensure_ascii=False,
+            )
+
+    fake_model = FakeReportModel()
+
+    def fake_invoke(entry, **_kwargs):
+        assert entry.agent_id == "value_ml_valuation"
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", lambda *_args, **_kwargs: fake_model)
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        lambda _model: fake_model,
+    )
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "请分析贵州茅台 600519.SH 当前是否值得关注。")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+            enable_llm_report_synthesis=True,
+        ),
+    )
+    rendered = json.dumps(
+        {
+            "dag_execution": res["dag_execution"],
+            "workflow_snapshot": res["workflow_snapshot"],
+            "report_result": res["report_result"],
+        },
+        ensure_ascii=False,
+    ).lower()
+
+    valid, reason = validate_dag_execution_result(res["dag_execution"])
+    assert valid, reason
+    valid, reason = validate_workflow_snapshot_v2(res["workflow_snapshot"])
+    assert valid, reason
+    assert fake_model.prompts
+    assert res["dag_execution"]["provenance"]["provider_invoked"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerInvoked"] is True
+    assert "综合研判：本轮可以关注" in res["messages"][-1].content
+    assert "报告生成输入摘要" not in res["messages"][-1].content
+    assert "value_ml_valuation" in fake_model.prompts[0]
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
 
 
 async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypatch) -> None:

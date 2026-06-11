@@ -9,6 +9,31 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-11 - R8-12D LLM report synthesizer implementation
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-12D |
+| Endpoint calls | none |
+| Real provider calls during validation | none |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+R8-12D adds a default-off LLM report synthesizer that reads only
+`report_input_bundle_v1` and returns a validated `report_result_v1`. Tests use
+fake model transports. Live model use requires an explicit
+`ENABLE_LLM_REPORT_SYNTHESIS=1` runtime flag and remains separate from runtime
+binding enablement.
+
+Non-claims:
+
+- This does not create new production endpoint evidence.
+- This does not call external agent `/v1/agent/invoke`.
+- This does not enable runtime bindings.
+- This does not set live flags.
+- This does not store raw model output or raw external responses.
+
 ## 2026-06-11 - R8-12C report generator evidence bundle integration
 
 | Field | Value |

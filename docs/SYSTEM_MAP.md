@@ -1,11 +1,11 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-12C.
+This file is the reset branch operational map for Phase R8-12D.
 
 ## Phase
 
 - Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-12C report generator evidence bundle integration over the
+- Current phase: R8-12D LLM report synthesizer over the
   existing fixed-DAG runtime skeleton, selected-routing boundary, R8-6B internal
   LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seams, and R7-G v2.3.1 scaffold package.
@@ -48,6 +48,11 @@ This file is the reset branch operational map for Phase R8-12C.
   input package. It summarizes L2 agent signals and L3 composite inputs for
   report generation and workflow drilldown without storing raw external
   responses, endpoints, secrets, error stacks, or internal reasoning drafts.
+  R8-12D adds `Context.enable_llm_report_synthesis` /
+  `ENABLE_LLM_REPORT_SYNTHESIS=1` as a default-off report synthesis boundary.
+  With that flag enabled, the main system may load the configured chat model
+  and generate the final report from `report_input_bundle_v1`; invalid or
+  unsafe output falls back to the template report.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,

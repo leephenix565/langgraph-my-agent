@@ -1488,3 +1488,31 @@ make external services default runtime dependencies, and does not deploy the
 main system to `/sdb/dlut/prod/langgraph-my-agent`. Production rollout requires
 a separate backup, sync, validation, and restart step for the main-system
 service.
+
+## ADR-057: R8-12D Uses Default-Off LLM Synthesis For Final Reports
+
+Status: accepted for explicit demo/runtime flag use.
+
+Decision: R8-12D adds a default-off LLM report synthesis seam. When
+`Context.enable_llm_report_synthesis` or `ENABLE_LLM_REPORT_SYNTHESIS=1` is
+explicitly set, the main system may load the configured chat model and ask it
+to produce a `report_result_v1` from `report_input_bundle_v1`. The synthesizer
+does not receive raw external responses or endpoint URLs, and invalid or unsafe
+model output fails closed to the template report.
+
+Reason: R8-12C made the report generator's L2/L3 inputs auditable, but the
+report remained template-shaped. The target demo and user workflow require the
+report generator to understand the single-agent and composite-agent inputs and
+write a natural Chinese final report. The safest first step is to give the
+model only the bounded public-safe input bundle and keep the feature behind an
+explicit flag.
+
+Consequence: an explicit demo can combine the R8-12 external compute bridge
+with R8-12D LLM report synthesis so active agent evidence informs the final
+natural-language report. Public workflow provenance may show
+`providerInvoked=true` when this path actually invokes the configured model.
+
+Non-consequence: R8-12D does not call external agent `/v1/agent/invoke`, does
+not modify `runtime_bindings.json`, does not set `live_verified=true`, does not
+set `invoke_enabled_by_default=true`, does not make provider use default, does
+not store raw model output, and does not deploy the main system to production.

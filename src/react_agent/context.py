@@ -112,6 +112,20 @@ class Context:
             "The bridge only calls explicitly allowlisted production /v1/agent/compute endpoints."
         },
     )
+    enable_llm_report_synthesis: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable default-off LLM synthesis of the final fixed-DAG report from "
+            "the public-safe report_input_bundle_v1."
+        },
+    )
+    llm_report_synthesis_model: str = field(
+        default="",
+        metadata={
+            "description": "Optional override model for LLM report synthesis. "
+            "If empty, report synthesis uses `model`."
+        },
+    )
     external_compute_demo_allowlist: tuple[str, ...] = field(
         default=(),
         metadata={
@@ -166,6 +180,7 @@ class Context:
             "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
             "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
+            "enable_llm_report_synthesis": "ENABLE_LLM_REPORT_SYNTHESIS",
         }
         for field_name, env_name in bool_envs.items():
             field_obj = next((f for f in fields(self) if f.name == field_name), None)
