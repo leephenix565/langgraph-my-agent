@@ -1528,3 +1528,29 @@ Non-consequence: R8-12D does not call external agent `/v1/agent/invoke`, does
 not modify `runtime_bindings.json`, does not set `live_verified=true`, does not
 set `invoke_enabled_by_default=true`, does not make provider use default, does
 not store raw model output, and does not deploy the main system to production.
+
+## ADR-058: R8-13D Packages Sandbox L3 Repairs Before Production Backfill
+
+Status: accepted for R8-13D handoff.
+
+Decision: R8-13D does not directly modify the four production L3 service
+directories. Instead, it packages the successful sandbox R8-13C main-system
+patch, sanitized E2E trace, and reviewable candidate service patches under
+`/tmp/lma-r8-13d-handoff-package/20260612T023822Z`.
+
+Reason: the four L3 composite services need production backfill, but direct
+production edits should happen only after a reviewer can inspect the exact
+patch, target files, validation plan, and rollback path. A package-first phase
+keeps the demonstrated sandbox flow reproducible without turning it into
+unreviewed production runtime behavior.
+
+Consequence: service owners and maintainers can review per-service patches for
+`value_composite`, `market_composite`, `risk_composite`, and
+`macro_composite`. The next phase may apply one patch at a time with
+service-local backup, focused validation, controlled restart, and production
+`/health` + `/v1/agent/compute` smoke.
+
+Non-consequence: R8-13D does not modify `/sdb/dlut/prod`, does not call
+`/v1/agent/invoke`, does not change `runtime_bindings.json`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, and does
+not prove production readiness for the L3 services.

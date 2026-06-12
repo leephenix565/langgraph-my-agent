@@ -157,6 +157,21 @@ bindings or live flags. A live demo may combine this flag with the R8-12
 external compute demo flag, but that remains manual demo acceptance, not a
 default quality gate.
 
+## R8-13D Sandbox L3 Backfill Handoff Boundary
+
+R8-13D is a packaging and documentation gate. It may read sandbox artifacts,
+read sandbox service copies, and write a handoff package under `/tmp`, but it
+must not modify production service directories.
+
+The package may include reviewable service patches and sanitized trace files.
+It is not a production smoke result and is not runtime binding enablement.
+Validation for this phase is repository static quality and diff hygiene only;
+no endpoint call is required or allowed by the phase itself.
+
+R8-13D does not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`;
+does not set live flags; does not update `runtime_bindings.json`; and does not
+make sandbox L3 wrapper success a production readiness claim.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

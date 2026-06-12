@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-12 - Phase R8-13D sandbox L3 backfill handoff package
+
+### Changed
+
+- Generated the R8-13D handoff package under
+  `/tmp/lma-r8-13d-handoff-package/20260612T023822Z`.
+- Packaged the sandbox main-system patch from
+  `e030d57 feat(demo): pass l2 evidence to sandbox l3 composites`.
+- Packaged reviewable candidate service patches for the four L3 composite
+  services:
+  `value_composite`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
+- Copied the sanitized R8-13C E2E trace artifacts into the package:
+  `summary.json`, `final_report.md`, `agent_tasks.json`,
+  `agent_evidence_bundle.json`, and `workflow_trace.json`.
+- Added `docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md` with the service-by-service
+  modification summary, safe production backfill sequence, validation,
+  rollback, and non-claims.
+
+### Not Done
+
+- No production service directory was modified.
+- No endpoint was called during package generation.
+- No `/v1/agent/invoke` call was made.
+- No runtime binding or live flag was changed.
+- The package is a review/handoff artifact, not production readiness.
+
 ## 2026-06-11 - Phase R8-12D version anchor and fallback boundary note
 
 ### Changed

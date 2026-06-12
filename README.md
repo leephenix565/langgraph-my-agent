@@ -281,11 +281,21 @@ handoff; the formal multi-agent path should later make `report_generator`
 consume `report_input_bundle_v1` and return `report_result_v1` through the
 external-agent contract while this main-system synthesizer remains fallback.
 
+Phase R8-13D packages the sandbox L3 demo and backfill plan without touching
+production services. The package lives at
+`/tmp/lma-r8-13d-handoff-package/20260612T023822Z` and contains the sandbox
+main-system patch, four L3 service candidate patches, sanitized R8-13C trace
+artifacts, and a manifest. See
+`docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md` for the exact service-by-service
+changes, safe apply order, validation, rollback, and non-claims. This package
+does not call endpoints, does not modify `/sdb/dlut/prod`, does not change
+runtime bindings, and does not enable default external invocation.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-12D LLM report synthesizer over the existing
+- Current phase: R8-13D sandbox L3 backfill handoff packaging over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

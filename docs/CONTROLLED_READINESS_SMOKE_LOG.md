@@ -9,6 +9,30 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-12 - R8-13D sandbox L3 backfill handoff package
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13D |
+| Package directory | `/tmp/lma-r8-13d-handoff-package/20260612T023822Z` |
+| Source sandbox trace | `/tmp/lma-r8-13c-real-agent-e2e/20260611T122047Z` |
+| Endpoint calls during package generation | none |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Production service directories changed | no |
+
+R8-13D packages the R8-13C sandbox trace and candidate L3 service patches for
+review. It is not a new live smoke and does not create new production
+readiness evidence.
+
+Non-claims:
+
+- This does not modify `/sdb/dlut/prod`.
+- This does not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`.
+- This does not enable runtime bindings or default external invocation.
+- This does not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+
 ## 2026-06-11 - R8-12D LLM report synthesizer implementation
 
 | Field | Value |
