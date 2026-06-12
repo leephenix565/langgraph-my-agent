@@ -27,6 +27,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md` | R8-13D sandbox demo trace and L3 production backfill handoff package: patch inventory, service-by-service modification summary, safe apply procedure, validation, rollback, and non-claims. |
 | `docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md` | R8-13E production L3 backfill and controlled smoke record: changed service files, backup path, restart result, `/health` + `/compute` evidence, rollback, and non-claims. |
 | `docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md` | R8-13F end-to-end production compute trace QA: agent_task/evidence bundle propagation, L3 upstream outputs, mapped agents, final report behavior, and remaining remediation. |
+| `docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md` | R8-13G value L2 stance remediation: three valuation service wrapper patches, backup/restart records, production compute re-smoke, E2E configured-report trace, and non-claims. |
 | `examples/fixed_dag_external_agent_scaffold/` | R7-G tracked repo mirror and R7-H restore source for the local `E:\muti-agent\external_agent_scaffold` distribution working copy, including schemas, samples, tests, and AI coding handoff. |
 
 ## Removed Lineage

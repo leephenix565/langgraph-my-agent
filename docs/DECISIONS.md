@@ -1609,3 +1609,31 @@ Non-consequence: R8-13F does not call `/v1/agent/invoke`, does not change
 `invoke_enabled_by_default=true`, does not enable default graph calls to
 production services, and does not store raw external responses or provider raw
 output in the repository.
+
+## ADR-061: R8-13G Backfills Value L2 Direction Stance Without Runtime Enablement
+
+Status: accepted for controlled production service remediation.
+
+Decision: R8-13G fixes the three production value L2 valuation service wrappers
+that returned `normalized.stance` but omitted the top-level
+`agent_conclusion_v1.stance` field required by the fixed DAG adapter. The
+services now project the already-computed direction and confidence to top-level
+`stance` / `confidence` while preserving the existing business payload.
+
+Reason: R8-13F proved the end-to-end trace path but exposed
+`direction_stance_missing` for `value_traditional_valuation`,
+`value_ml_valuation`, and `value_meta_valuation`. This was a protocol shape
+gap, not a valuation-model gap. Fixing it service-side keeps the main adapter
+strict and avoids relaxing the fixed DAG identity or direction contract.
+
+Consequence: after service-local validation and controlled restart, all three
+value L2 services passed production `/health`, production
+`/v1/agent/compute`, and main-system adapter mapping. The R8-13G E2E trace
+`/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z` includes those three
+services as usable value-side evidence in the final configured-report run.
+
+Non-consequence: R8-13G does not call `/v1/agent/invoke`, does not change
+`runtime_bindings.json`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not enable default graph calls to
+production services, and does not change valuation models, feature
+engineering, scoring algorithms, data files, or deployment configuration.

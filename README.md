@@ -311,11 +311,24 @@ Chinese report from the configured report model. See
 QA: no `/v1/agent/invoke`, runtime binding change, live flag, or default
 production graph invocation is introduced.
 
+Phase R8-13G remediates the three value L2 valuation services exposed by
+R8-13F: `value_traditional_valuation`, `value_ml_valuation`, and
+`value_meta_valuation` already computed `normalized.stance`, but omitted the
+top-level `agent_conclusion_v1.stance` consumed by the fixed DAG adapter. The
+production service wrappers now project the existing direction and confidence
+to top-level fields, all three services pass production `/health` +
+`/v1/agent/compute` + adapter mapping, and the configured-report E2E trace
+`/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z` includes them as usable
+value evidence. See `docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md`. This is still
+default-off demo/readiness work: no `/v1/agent/invoke`, runtime binding change,
+live flag, valuation model change, or default production graph invocation is
+introduced.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-13F end-to-end production compute trace QA over the existing
+- Current phase: R8-13G value L2 stance remediation over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

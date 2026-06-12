@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-12 - Phase R8-13G value L2 stance remediation
+
+### Changed
+
+- Backfilled top-level `stance` / `confidence` protocol projections in the
+  three production value L2 valuation service wrappers:
+  `value_traditional_valuation`, `value_ml_valuation`, and
+  `value_meta_valuation`.
+- Added service-local contract tests to prevent future
+  `direction_stance_missing` regressions.
+- Documented the service-side wrapper changes in the affected service
+  directories and added `docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md`.
+
+### Evidence
+
+- Service backup root:
+  `/tmp/lma-r8-13g-value-l2-stance-backfill/20260612T033501Z`.
+- Restart log root:
+  `/tmp/lma-r8-13g-value-l2-restart/20260612T033801Z`.
+- Production re-smoke artifact:
+  `/tmp/lma-r8-13g-value-l2-resmoke/20260612T033846Z`.
+- Configured-report E2E trace:
+  `/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z`.
+- All three value L2 services passed production `/health`, production
+  `/v1/agent/compute`, and main-system adapter mapping.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No default graph production invocation was enabled.
+- Valuation models, feature engineering, scoring algorithms, data files, and
+  deployment configuration were not changed.
+
 ## 2026-06-12 - Phase R8-13F end-to-end production trace QA
 
 ### Changed

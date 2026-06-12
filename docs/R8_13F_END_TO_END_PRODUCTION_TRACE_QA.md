@@ -14,6 +14,11 @@ report generator can receive auditable agent inputs and outputs.
 
 This remains demo and QA work. It does not enable production runtime bindings.
 
+Follow-up: R8-13G remediated the three value L2
+`direction_stance_missing` findings recorded below. Keep this document as the
+historical R8-13F QA result; use
+`docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md` for the current value L2 status.
+
 ## Code Changes
 
 Main-system files changed:
@@ -151,8 +156,8 @@ bundle and reports both signals and evidence limitations.
 
 Priority service or protocol fixes:
 
-1. Fix the three value L2 services or adapter shape that causes
-   `direction_stance_missing`.
+1. Closed by R8-13G: fix the three value L2 services or adapter shape that
+   causes `direction_stance_missing`.
 2. Improve `sentiment_company_radar` and `market_ipo_investor_behavior` so they
    stop returning deterministic fallback summaries when LLM output is expected.
 3. Connect or remediate the missing macro L2 services:

@@ -97,6 +97,10 @@ in dev.
 - R8-12 demo mode is default-off. It does not make any external service a
   default runtime dependency and does not promote demo output into production
   readiness.
+- R8-13G closes the value L2 adapter gap found by R8-13F: the three valuation
+  services now expose top-level `agent_conclusion_v1.stance` in addition to
+  `normalized.stance`, so their production compute outputs map as usable value
+  evidence instead of `direction_stance_missing` adapter errors.
 
 ## R8-12 Demo Bridge Allowlist Boundary
 
@@ -330,14 +334,16 @@ payload pass.
 
 ### value_traditional_valuation
 
-- Current status: `production_compute_pass` after R8-8Q.
+- Current status: `production_compute_pass` after R8-13G re-smoke.
 - Production test result: production `10000` passed `/health`, passed
   `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
-- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
-- Solution applied: production envelope and nested `tool_result` now use
+- Problem type: resolved fixed DAG identity, value-dimension wrapper, and
+  top-level direction stance gaps.
+- Solution applied: production envelope and nested `tool_result` use
   `agent_id=value_traditional_valuation`, service id
   `external_agent_id=valuation_traditional`, legacy id
-  `a17_traditional_valuation`, and adapter-facing `dimension=value`.
+  `a17_traditional_valuation`, adapter-facing `dimension=value`, and top-level
+  `stance` projected from `normalized.stance`.
 - Remaining action: service owner backfills this production patch into the
   formal service source repository; maintainer keeps runtime disabled until
   invoke audit.
@@ -345,26 +351,30 @@ payload pass.
 
 ### value_ml_valuation
 
-- Current status: `production_compute_pass` after R8-8Q.
+- Current status: `production_compute_pass` after R8-13G re-smoke.
 - Production test result: production `10001` passed `/health`, passed
   `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
-- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
+- Problem type: resolved fixed DAG identity, value-dimension wrapper, and
+  top-level direction stance gaps.
 - Solution applied: production health and compute now advertise
   `agent_id=value_ml_valuation`, `external_agent_id=valuation_ml`,
-  `legacy_agent_id=a16_ml_valuation`, and adapter-facing `dimension=value`.
+  `legacy_agent_id=a16_ml_valuation`, adapter-facing `dimension=value`, and
+  top-level `stance` projected from `normalized.stance`.
 - Remaining action: service owner backfills the wrapper patch into formal
   source control; maintainer keeps the adapter identity gate strict.
 - Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_meta_valuation
 
-- Current status: `production_compute_pass` after R8-8Q.
+- Current status: `production_compute_pass` after R8-13G re-smoke.
 - Production test result: production `10002` passed `/health`, passed
   `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
-- Problem type: resolved fixed DAG identity and value-dimension wrapper gap.
+- Problem type: resolved fixed DAG identity, value-dimension wrapper, and
+  top-level direction stance gaps.
 - Solution applied: production compute now emits
   `agent_id=value_meta_valuation`, `external_agent_id=valuation_meta`,
-  `legacy_agent_id=a18_meta_valuation`, and `dimension=value`.
+  `legacy_agent_id=a18_meta_valuation`, `dimension=value`, and top-level
+  `stance` projected from `normalized.stance`.
 - Remaining action: service owner backfills the production protocol patch into
   formal source control.
 - Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
@@ -670,9 +680,9 @@ payload pass.
 | `route_planner` | L1 | l1 | `fixed_dag_plan_v1` | n/a | n/a | n/a | n/a | `production_internal_deterministic` | Internal deterministic planner | Keep deterministic | No endpoint work | n/a |
 | `financial_data_service` | L1 | l1 | `data_bundle_v1` | `127.0.0.1:11000` | fail | skipped | skipped | `production_health_failed` | `/health` invalid JSON | Fix structured production health, then compute wrapper | Production health fix and resmoke | `PROMPT-PROD-HEALTH-FIX-DATA-SERVICE` |
 | `entity_relation_extractor` | L1 | l1 | `entity_relation_bundle_v1` | missing | skipped | skipped | skipped | `production_endpoint_missing` | No production endpoint | Deploy/register prod endpoint and entity wrapper | Endpoint + wrapper deployment | `PROMPT-PROD-ENDPOINT-MISSING-ENTITY` |
-| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated identity and value dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Backfill service patch to formal repo; review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
 | `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10007` | pass | pass | fail | `production_identity_mismatch` | Service metadata incomplete | Confirm owner/id and wrapper | Discovery + identity fix | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` |

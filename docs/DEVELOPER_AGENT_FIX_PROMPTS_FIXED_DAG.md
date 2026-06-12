@@ -257,7 +257,7 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 修复 production 10000 compute 输出中的 identity，使固定 DAG primary id 和服务 id 分离正确。
 
 背景：
-R8-8P 中 production /health 和 /compute 可达，但主系统 adapter 以 unknown_agent_id 拒绝。说明 production 没有回填 dev 阶段的 fixed DAG identity wrapper。
+R8-8P 中 production /health 和 /compute 可达，但主系统 adapter 以 unknown_agent_id 拒绝。说明 production 没有回填 dev 阶段的 fixed DAG identity wrapper。R8-13G 后还要确认正式源码包含顶层 `stance` / `confidence` 投影：生产 wrapper 不能只返回 `normalized.stance`，否则端到端报告会再次出现 `direction_stance_missing`。
 
 适用 agent_id：
 value_traditional_valuation
@@ -281,7 +281,7 @@ production response builder、schema/protocol、identity contract tests、deploy
 service.py / app.py / main.py、compute response builder、schemas/protocol、tests、README/runbook；参考 dev patch /tmp/lma-r8-8g-service-backup/20260610T034105Z/value_traditional_valuation。
 
 需要修复的字段：
-external_agent_compute_v0.agent_id；external_agent_compute_v0.external_agent_id；tool_result.agent_id；tool_result.external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；as_of/data_as_of。
+external_agent_compute_v0.agent_id；external_agent_compute_v0.external_agent_id；tool_result.agent_id；tool_result.external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；top-level stance；top-level confidence；as_of/data_as_of。
 
 需要运行的本地测试：
 identity contract test；agent_conclusion_v1 schema test；data_as_of <= as_of test；success/partial/error mock tests；unsafe-field test；py_compile。
@@ -311,7 +311,7 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 把 production 10001 的 compute envelope 和 tool_result primary id 修正为 fixed DAG id。
 
 背景：
-dev 阶段已经修过 identity 并通过 controlled smoke，但 R8-8P production 仍因 unknown_agent_id 被 adapter 拒绝。
+dev 阶段已经修过 identity 并通过 controlled smoke，但 R8-8P production 仍因 unknown_agent_id 被 adapter 拒绝。R8-13G 后还要确认正式源码包含顶层 `stance` / `confidence` 投影：生产 wrapper 不能只返回 `normalized.stance`，否则主系统 adapter 会 fail closed。
 
 适用 agent_id：
 value_ml_valuation
@@ -335,7 +335,7 @@ production response wrapper、identity/schema tests、deployment package。
 service.py / app.py / main.py、compute builder、schema/protocol、tests、deployment scripts；参考 /tmp/lma-r8-8d-id-backup/20260610T030433Z。
 
 需要修复的字段：
-external_agent_compute_v0.agent_id/external_agent_id；tool_result.agent_id/external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；confidence/evidence/as_of/data_as_of。
+external_agent_compute_v0.agent_id/external_agent_id；tool_result.agent_id/external_agent_id；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；top-level stance；top-level confidence；evidence/as_of/data_as_of。
 
 需要运行的本地测试：
 identity fixture test；adapter-shaped fixture test if available；anti-lookahead test；unsafe-field test；py_compile。
@@ -365,7 +365,7 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 修复 production 10002 输出 identity，使 meta valuation 进入 fixed DAG value L2 contract。
 
 背景：
-R8-8P production compute 可达，但 adapter 以 unknown_agent_id 拒绝；这通常表示 dev wrapper 没有回填到 production。
+R8-8P production compute 可达，但 adapter 以 unknown_agent_id 拒绝；这通常表示 dev wrapper 没有回填到 production。R8-13G 后还要确认正式源码包含顶层 `stance` / `confidence` 投影：生产 wrapper 不能只返回 `normalized.stance`，否则端到端报告会再次把该 agent 当成 adapter-error evidence。
 
 适用 agent_id：
 value_meta_valuation
@@ -389,7 +389,7 @@ production wrapper、schema/protocol、identity tests、deployment package。
 service.py / app.py / main.py、compute response builder、schemas/protocol、tests、runbook；参考 /tmp/lma-r8-8h-service-backup/20260610T035804Z/value_meta_valuation。
 
 需要修复的字段：
-agent_id=value_meta_valuation；external_agent_id=valuation_meta；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；as_of/data_as_of；safe evidence。
+agent_id=value_meta_valuation；external_agent_id=valuation_meta；tool_result.schema_version=agent_conclusion_v1；dimension=value；role=direction；top-level stance；top-level confidence；as_of/data_as_of；safe evidence。
 
 需要运行的本地测试：
 identity contract test；agent_conclusion_v1 schema test；success/partial/error mock tests；unsafe-field test；py_compile。

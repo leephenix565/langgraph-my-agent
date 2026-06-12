@@ -9,6 +9,49 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-12 - R8-13G value L2 stance remediation and re-smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13G |
+| Backup root | `/tmp/lma-r8-13g-value-l2-stance-backfill/20260612T033501Z` |
+| Restart log root | `/tmp/lma-r8-13g-value-l2-restart/20260612T033801Z` |
+| Smoke artifact root | `/tmp/lma-r8-13g-value-l2-resmoke/20260612T033846Z` |
+| E2E trace artifact | `/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z` |
+| Endpoint calls | production `/health` and `/v1/agent/compute` for three value L2 services; allowlisted production `/v1/agent/compute` for the E2E trace |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+R8-13G remediates a protocol-wrapper gap in
+`value_traditional_valuation`, `value_ml_valuation`, and
+`value_meta_valuation`: each service already produced `normalized.stance`, but
+the fixed DAG adapter requires top-level `agent_conclusion_v1.stance` for
+direction L2 outputs.
+
+Production value L2 result:
+
+| Agent | Health | Compute | Adapter mapping | Mapped stance |
+| --- | --- | --- | --- | --- |
+| `value_traditional_valuation` | pass | pass | pass | `0.0397` |
+| `value_ml_valuation` | pass | pass | pass | `-0.000399` |
+| `value_meta_valuation` | pass | pass | pass | `-0.2852` |
+
+The configured-report E2E trace mapped 17 production compute agents and used 5
+explicit placeholder L2 slots. The three value valuation services now appear in
+the report as usable value-side evidence instead of adapter-error conclusions.
+
+Non-claims:
+
+- This is not `/v1/agent/invoke` readiness.
+- This does not enable runtime bindings or default external invocation.
+- This does not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not change valuation models, feature engineering, scoring
+  algorithms, data files, or deployment configuration.
+- This does not store raw external responses, endpoint URLs, credentials, or
+  provider raw output in the repo.
+
 ## 2026-06-12 - R8-13F end-to-end production compute trace QA
 
 | Field | Value |

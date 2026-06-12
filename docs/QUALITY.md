@@ -204,6 +204,25 @@ Default static/mainline validation still does not call production endpoints,
 providers, demo stacks, or `/v1/agent/invoke`. R8-13F E2E artifacts are manual
 QA artifacts under `/tmp`, not default quality gate artifacts.
 
+## R8-13G Value L2 Stance Remediation Boundary
+
+R8-13G is controlled production service wrapper remediation for three value L2
+valuation services. It may modify only service-side protocol wrapper files,
+service-local tests, and service-local notes for
+`value_traditional_valuation`, `value_ml_valuation`, and
+`value_meta_valuation`; it must not modify valuation models, feature
+engineering, scoring algorithms, data files, deployment configuration, runtime
+bindings, or live flags.
+
+R8-13G may restart only the affected production service ports and may call
+production `/health` + `/v1/agent/compute` for those services. It must not call
+`/v1/agent/invoke`. The E2E trace may use the default-off external compute
+demo bridge and configured report model only under explicit flags.
+
+Default static/mainline validation still does not call production endpoints,
+providers, demo stacks, or `/v1/agent/invoke`. R8-13G artifacts are manual
+readiness/demo artifacts under `/tmp`, not default quality gate artifacts.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer
