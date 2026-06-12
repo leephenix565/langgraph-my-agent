@@ -110,6 +110,50 @@ def _risk_conclusion() -> dict[str, object]:
     }
 
 
+def _data_bundle() -> dict[str, object]:
+    return {
+        "schema_version": "data_bundle_v1",
+        "agent_id": "financial_data_service",
+        "external_agent_id": "financial_data_service",
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "snapshot_id": "executor-data-snapshot",
+        "sources": [
+            {"name": "daily_price", "source": "unit_test"},
+            {"name": "financial_indicator", "source": "unit_test"},
+        ],
+        "feature_bundle": {"close": 1520.0, "pe_ttm": 28.4},
+        "missing_fields": [],
+    }
+
+
+def _entity_relation_bundle() -> dict[str, object]:
+    return {
+        "schema_version": "entity_relation_bundle_v1",
+        "agent_id": "entity_relation_extractor",
+        "external_agent_id": "entity_relation_agent",
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "entities": [
+            {"id": "stock:600519.SH", "name": "贵州茅台", "type": "company"},
+            {"id": "industry:baijiu", "name": "白酒", "type": "industry"},
+        ],
+        "relations": [
+            {
+                "source": "stock:600519.SH",
+                "target": "industry:baijiu",
+                "type": "belongs_to",
+            }
+        ],
+        "sources": [{"name": "unit_relation_extractor"}],
+        "notes": ["bounded entity relation fixture"],
+    }
+
+
 class _FakePlaceholderModel:
     def __init__(self) -> None:
         self.prompts: list[str] = []
@@ -533,6 +577,115 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
     assert "/v1/agent/invoke" not in result["report_result"]["answer"]
     assert "http://127.0.0.1" not in rendered
     assert "raw_response" not in rendered
+
+
+def test_external_compute_demo_overlays_l1_before_l2_tasks(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    called = []
+
+    def fake_invoke(entry, **_kwargs):
+        called.append(entry.agent_id)
+        if entry.agent_id == "financial_data_service":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "financial_data_service",
+                    "financial_data_service",
+                    _data_bundle(),
+                )
+            )
+        elif entry.agent_id == "entity_relation_extractor":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "entity_relation_extractor",
+                    "entity_relation_agent",
+                    _entity_relation_bundle(),
+                )
+            )
+        elif entry.agent_id == "macro_commodity_pricing":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "macro_commodity_pricing",
+                    "price_influence_agent",
+                    _agent_conclusion(
+                        agent_id="macro_commodity_pricing",
+                        external_agent_id="price_influence_agent",
+                        dimension="macro",
+                    ),
+                )
+            )
+        elif entry.agent_id == "macro_index_valuation":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "macro_index_valuation",
+                    "valuation_index",
+                    _agent_conclusion(
+                        agent_id="macro_index_valuation",
+                        external_agent_id="valuation_index",
+                        dimension="macro",
+                    ),
+                )
+            )
+        else:
+            raise AssertionError(f"unexpected demo agent {entry.agent_id}")
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请从宏观和估值角度分析贵州茅台 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=(
+                "financial_data_service",
+                "entity_relation_extractor",
+                "macro_commodity_pricing",
+                "macro_index_valuation",
+            ),
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    data_evidence = result["step_results"]["financial_data_service"]["agent_evidence"]
+    entity_evidence = result["step_results"]["entity_relation_extractor"]["agent_evidence"]
+    macro_task = result["step_results"]["l2:macro_commodity_pricing"]["agent_task"]
+    l1_evidence = result["report_input_bundle"]["agent_evidence_bundle"]["l1_evidence"]
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert valid, reason
+    assert called == [
+        "financial_data_service",
+        "entity_relation_extractor",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+    ]
+    assert result["data_bundle"]["status"] == "complete"
+    assert result["entity_relation_bundle"]["status"] == "complete"
+    assert data_evidence["status"] == "complete"
+    assert data_evidence["sources_count"] == 2
+    assert entity_evidence["status"] == "complete"
+    assert entity_evidence["entities_count"] == 2
+    assert macro_task["has_l1_data_bundle"] is True
+    assert macro_task["has_l1_entity_relation_bundle"] is True
+    assert result["l2_conclusions"]["macro_commodity_pricing"]["status"] == "complete"
+    assert result["l2_conclusions"]["macro_index_valuation"]["status"] == "complete"
+    assert l1_evidence["data_bundle_status"] == "complete"
+    assert l1_evidence["entity_relation_status"] == "complete"
+    assert result["provenance"]["external_compute_demo_mapped_agents"] == [
+        "financial_data_service",
+        "entity_relation_extractor",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+    ]
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
 
 
 def test_external_compute_overlays_task_aware_llm_placeholders(monkeypatch) -> None:

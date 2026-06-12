@@ -49,6 +49,37 @@ ENABLE_SELECTED_ROUTING=1
 For the broad demo, keep selected routing off so the full fixed DAG can display
 value, market, risk, and macro paths.
 
+## R8-13H Sandbox A-Class Extension
+
+R8-13H ports the sandbox-validated default-off bridge path for the A-class
+L1/L2 remediation candidates into the main development branch:
+
+- `financial_data_service` as L1 `data_bundle_v1`;
+- `entity_relation_extractor` as L1 `entity_relation_bundle_v1`;
+- `macro_commodity_pricing` as macro L2 `agent_conclusion_v1`;
+- `macro_index_valuation` as macro L2 `agent_conclusion_v1`.
+
+This changes the demo data flow only when the explicit external compute demo
+flag and allowlist are set. The important ordering change is that the L1
+compute bridge runs before L2 `agent_task_v1` construction, so L2 tasks can
+receive mapped financial data and entity-relation evidence instead of only the
+local placeholder bundles.
+
+Example experimental sandbox allowlist:
+
+```bash
+EXTERNAL_COMPUTE_DEMO_ALLOWLIST=financial_data_service,entity_relation_extractor,macro_commodity_pricing,macro_index_valuation,value_traditional_valuation,value_ml_valuation,value_meta_valuation,value_research_synthesis,market_stock_technical,market_capital_flow_chip,sentiment_company_radar,risk_identification,risk_compliance_review,risk_financial_fraud,risk_crash,macro_analysis,value_composite,market_composite,risk_composite,macro_composite
+```
+
+Do not treat that allowlist as production readiness. In the latest audit,
+`macro_commodity_pricing` and `macro_index_valuation` have service-local
+contract tests that pass, `financial_data_service` has a production wrapper
+that can be mapped by the adapter, and `entity_relation_extractor` still needs
+a confirmed production endpoint before it can count as production evidence.
+If testing entity relation from its dev process, set a local loopback override
+such as `EXTERNAL_COMPUTE_DEMO_URL_ENTITY_RELATION_EXTRACTOR=http://127.0.0.1:8101`
+and label the run as dev-only.
+
 ## Local API And Web
 
 Start the local API from the repo root:
@@ -95,14 +126,15 @@ be the authority for default runtime behavior.
 Do not add these services to the demo allowlist until separate production
 compute evidence exists:
 
-- `financial_data_service`
-- `entity_relation_extractor`
 - `market_fund_manager_behavior`
-- `macro_commodity_pricing`
-- `macro_index_valuation`
 - `macro_sentiment`
 - `macro_industry_hotspot`
 - L4 agents
+
+R8-13H moves `financial_data_service`, `entity_relation_extractor`,
+`macro_commodity_pricing`, and `macro_index_valuation` into experimental
+default-off allowlist support. They still require separate controlled
+production re-smoke before docs may describe them as production pass.
 
 `sentiment_company_radar` is market-only and must not be routed into risk.
 

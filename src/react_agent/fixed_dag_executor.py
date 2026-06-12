@@ -916,6 +916,7 @@ def execute_fixed_dag_plan(
     llm_report_synthesis_enabled = bool(
         getattr(context, "enable_llm_report_synthesis", False)
     )
+    external_l1_run: Mapping[str, Any] = {}
     external_l2_run: Mapping[str, Any] = {}
     external_l3_run: Mapping[str, Any] = {}
     external_demo_summary: Mapping[str, Any] = {
@@ -930,6 +931,36 @@ def execute_fixed_dag_plan(
             run_external_compute_for_plan,
         )
 
+        l1_agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+        )
+        external_l1_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            l2_conclusions={},
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            agent_tasks=l1_agent_tasks,
+            stages=("evidence",),
+        )
+        data_bundle = cast(dict[str, Any], external_l1_run["data_bundle"])
+        entity_relation_bundle = cast(
+            dict[str, Any],
+            external_l1_run["entity_relation_bundle"],
+        )
+        l2_agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+        )
         external_l2_run = run_external_compute_for_plan(
             execution_plan,
             question=question,
@@ -965,10 +996,12 @@ def execute_fixed_dag_plan(
         dimension_results = cast(dict[str, Any], external_l3_run["dimension_results"])
         _apply_external_compute_step_updates(
             step_results,
+            external_l1_run,
             external_l2_run,
             external_l3_run,
         )
         external_demo_summary = merge_external_compute_demo_runs(
+            external_l1_run,
             external_l2_run,
             external_l3_run,
         )
@@ -1072,6 +1105,8 @@ def execute_fixed_dag_plan(
         "fallback_reason": fallback_reason if fallback_used else "",
         "execution_batches": batches,
         "step_results": step_results,
+        "data_bundle": data_bundle,
+        "entity_relation_bundle": entity_relation_bundle,
         "l2_conclusions": l2_conclusions,
         "dimension_results": dimension_results,
         "decision_result": decision_result,

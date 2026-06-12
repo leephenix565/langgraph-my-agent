@@ -3,6 +3,41 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-12 - Phase R8-13H sandbox A-class L1/L2 bridge integration
+
+### Changed
+
+- Extended the default-off external compute demo bridge in the sandbox so L1
+  `financial_data_service` and `entity_relation_extractor` compute results can
+  map into the executor before L2 `agent_task_v1` construction.
+- Added sandbox demo registry entries for `macro_commodity_pricing` and
+  `macro_index_valuation` as macro L2 `agent_conclusion_v1` candidates.
+- Preserved the existing default-off behavior: no HTTP call is made unless
+  `ENABLE_EXTERNAL_COMPUTE_DEMO=1` and the agent is explicitly allowlisted.
+- Added unit coverage for L1 data/entity bundle mapping, L1-before-L2 task
+  propagation, and macro L2 A-class registry overlays.
+- Extended the offline R8-13A trace runner with `data_bundle_v1` and
+  `entity_relation_bundle_v1` fixtures so A-class sandbox traces can exercise
+  L1 evidence without calling endpoints.
+
+### Evidence
+
+- This phase ports sandbox-validated implementation and test evidence into the
+  default-off demo path. It does not record production readiness evidence.
+- Targeted sandbox checks:
+  `ruff check src/react_agent/fixed_dag_external_compute_bridge.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_executor.py`
+  and
+  `pytest tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_executor.py -q`.
+- Offline fixture trace:
+  `/tmp/lma-r8-13h-a-class-offline-trace/20260612T095736Z`.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No production service source was modified.
+- No production default external invocation was enabled.
+
 ## 2026-06-12 - Phase R8-13G value L2 stance remediation
 
 ### Changed

@@ -3,6 +3,28 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-055: R8-13H Tests A-Class L1/L2 Bridge In Sandbox Before Prod Backfill
+
+Status: accepted for sandbox validation.
+
+Decision: R8-13H ports sandbox-validated default-off external compute bridge
+support for A-class remediation candidates into the main development branch.
+L1 `financial_data_service` and
+`entity_relation_extractor` may be mapped into the executor before L2
+`agent_task_v1` construction, and macro L2 `macro_commodity_pricing` /
+`macro_index_valuation` may be allowlisted as `agent_conclusion_v1` compute
+candidates.
+
+Reason: L2 agents need structured data and entity evidence in their task
+payloads. Calling L2 compute while L1 remains placeholder makes the demo look
+connected while still starving downstream agents of the evidence they are
+supposed to read.
+
+Consequence: the sandbox can validate the data-flow shape without touching
+production services, runtime bindings, live flags, or `/v1/agent/invoke`. This
+does not create production readiness evidence. Production re-smoke and service
+owner backfill remain separate phases.
+
 ## ADR-001: Fixed DAG Replaces Route Mode Routing
 
 Status: accepted for reset runtime.

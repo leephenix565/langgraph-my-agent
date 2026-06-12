@@ -96,6 +96,55 @@ def _dimension_conclusion() -> dict[str, object]:
     }
 
 
+def _data_bundle() -> dict[str, object]:
+    return {
+        "schema_version": "data_bundle_v1",
+        "agent_id": "financial_data_service",
+        "external_agent_id": "financial_data_service",
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "snapshot_id": "unit-data-snapshot",
+        "sources": [
+            {"name": "daily_price", "source": "unit_test"},
+            {"name": "financial_indicator", "source": "unit_test"},
+        ],
+        "feature_bundle": {
+            "close": 1520.0,
+            "pe_ttm": 28.4,
+            "raw_response": "must_not_leak",
+        },
+        "missing_fields": [],
+    }
+
+
+def _entity_relation_bundle() -> dict[str, object]:
+    return {
+        "schema_version": "entity_relation_bundle_v1",
+        "agent_id": "entity_relation_extractor",
+        "external_agent_id": "entity_relation_agent",
+        "legacy_agent_id": "a15_entity_relation_extraction",
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": "2026-06-05",
+        "data_as_of": "2026-06-05",
+        "entities": [
+            {"id": "stock:600519.SH", "name": "贵州茅台", "type": "company"},
+            {"id": "industry:baijiu", "name": "白酒", "type": "industry"},
+        ],
+        "relations": [
+            {
+                "source": "stock:600519.SH",
+                "target": "industry:baijiu",
+                "type": "belongs_to",
+            }
+        ],
+        "sources": [{"name": "unit_relation_extractor"}],
+        "notes": ["raw_response should not leak"],
+    }
+
+
 def _compute_envelope(agent_id: str, external_agent_id: str, tool_result: dict[str, object]):
     return {
         "schema_version": "external_agent_compute_v0",
@@ -287,6 +336,62 @@ def test_fake_l2_external_compute_maps_to_conclusion_object() -> None:
     assert calls[0][0].compute_path == "/v1/agent/compute"
 
 
+def test_fake_l1_data_external_compute_maps_to_data_bundle() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["financial_data_service"]
+
+    def transport(_entry, _request, _timeout):
+        return _compute_envelope(
+            "financial_data_service",
+            "financial_data_service",
+            _data_bundle(),
+        )
+
+    result = invoke_external_compute(
+        entry,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        request_id="unit-l1-data",
+        timeout_seconds=3,
+        transport=transport,
+    )
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert result["status"] == "pass"
+    assert result["mapped"]["schema"] == "data_bundle_v1"
+    assert result["mapped"]["status"] == "complete"
+    assert result["mapped"]["sources"]
+    assert "raw_response" not in rendered
+    assert "must_not_leak" not in rendered
+
+
+def test_fake_l1_entity_external_compute_maps_to_entity_relation_bundle() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["entity_relation_extractor"]
+
+    def transport(_entry, _request, _timeout):
+        return _compute_envelope(
+            "entity_relation_extractor",
+            "entity_relation_agent",
+            _entity_relation_bundle(),
+        )
+
+    result = invoke_external_compute(
+        entry,
+        question="请分析贵州茅台",
+        as_of="2026-06-05",
+        request_id="unit-l1-entity",
+        timeout_seconds=3,
+        transport=transport,
+    )
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert result["status"] == "pass"
+    assert result["mapped"]["schema"] == "entity_relation_bundle_v1"
+    assert result["mapped"]["status"] == "complete"
+    assert len(result["mapped"]["entities"]) == 2
+    assert len(result["mapped"]["relations"]) == 1
+    assert "raw_response" not in rendered
+
+
 def test_fake_l3_external_compute_maps_to_dimension_result() -> None:
     entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_composite"]
 
@@ -415,3 +520,65 @@ def test_run_external_compute_for_selected_plan_only_calls_selected_allowlisted_
     assert called == ["value_ml_valuation"]
     assert result["mapped_agents"] == ["value_ml_valuation"]
     assert result["l2_conclusions"]["value_ml_valuation"]["schema"] == "conclusion_object_v1"
+
+
+def test_run_external_compute_for_plan_updates_l1_bundles_before_l2() -> None:
+    plan = compile_selected_fixed_dag_plan(
+        build_route_intent(
+            task_type="general",
+            selected_dimensions=["value"],
+            selected_agents=["value_ml_valuation"],
+            route_confidence=0.7,
+            fallback_reason="fallback to full DAG",
+        ),
+        user_text="请分析 600519.SH",
+        as_of="2026-06-05",
+    )
+    called = []
+
+    def transport(entry, _request, _timeout):
+        called.append(entry.agent_id)
+        if entry.agent_id == "financial_data_service":
+            return _compute_envelope(
+                "financial_data_service",
+                "financial_data_service",
+                _data_bundle(),
+            )
+        if entry.agent_id == "entity_relation_extractor":
+            return _compute_envelope(
+                "entity_relation_extractor",
+                "entity_relation_agent",
+                _entity_relation_bundle(),
+            )
+        raise AssertionError(f"unexpected agent {entry.agent_id}")
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=(
+                "financial_data_service",
+                "entity_relation_extractor",
+            ),
+        ),
+        data_bundle={"schema": "data_bundle_v1", "schema_version": "data_bundle_v1"},
+        entity_relation_bundle={
+            "schema": "entity_relation_bundle_v1",
+            "schema_version": "entity_relation_bundle_v1",
+        },
+        l2_conclusions={},
+        stages=("evidence",),
+        transport=transport,
+    )
+
+    assert called == ["financial_data_service", "entity_relation_extractor"]
+    assert result["mapped_agents"] == [
+        "financial_data_service",
+        "entity_relation_extractor",
+    ]
+    assert result["data_bundle"]["status"] == "complete"
+    assert result["data_bundle"]["sources"]
+    assert result["entity_relation_bundle"]["status"] == "complete"
+    assert len(result["entity_relation_bundle"]["entities"]) == 2

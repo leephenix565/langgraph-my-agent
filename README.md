@@ -4,6 +4,15 @@ This branch is the Fixed DAG reset branch. It replaces the old route-mode,
 Router-SFT, route-prior, A01 contract dispatch, and Fair Fusion mainline with a
 smaller deterministic fixed-DAG runtime skeleton.
 
+R8-13H ports the sandbox-validated A-class integration slice into the
+default-off demo path. It extends the external compute demo bridge so L1
+`financial_data_service` and
+`entity_relation_extractor` results can be mapped before L2 task construction,
+and it adds sandbox registry entries for macro L2 `macro_commodity_pricing` and
+`macro_index_valuation`. This is not production readiness evidence: it does not
+call `/v1/agent/invoke`, does not modify `runtime_bindings.json`, does not set
+live flags, and does not enable default external invocation.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

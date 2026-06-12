@@ -216,6 +216,57 @@ def _l2_conclusion(entry: bridge.ExternalComputeDemoEntry, as_of: str) -> dict[s
     return result
 
 
+def _data_bundle(entry: bridge.ExternalComputeDemoEntry, as_of: str) -> dict[str, Any]:
+    return {
+        "schema_version": "data_bundle_v1",
+        "agent_id": entry.agent_id,
+        "external_agent_id": entry.external_agent_id,
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": as_of,
+        "data_as_of": as_of,
+        "snapshot_id": "r8-13h-offline-data-snapshot",
+        "sources": [
+            {"name": "daily_price", "source": "offline_fixture"},
+            {"name": "financial_indicator", "source": "offline_fixture"},
+        ],
+        "feature_bundle": {
+            "close": 1520.0,
+            "pe_ttm": 28.4,
+            "pb": 8.1,
+        },
+        "missing_fields": [],
+    }
+
+
+def _entity_relation_bundle(
+    entry: bridge.ExternalComputeDemoEntry,
+    as_of: str,
+) -> dict[str, Any]:
+    return {
+        "schema_version": "entity_relation_bundle_v1",
+        "agent_id": entry.agent_id,
+        "external_agent_id": entry.external_agent_id,
+        "status": "ok",
+        "target": "600519.SH",
+        "as_of": as_of,
+        "data_as_of": as_of,
+        "entities": [
+            {"id": "stock:600519.SH", "name": "贵州茅台", "type": "company"},
+            {"id": "industry:baijiu", "name": "白酒", "type": "industry"},
+        ],
+        "relations": [
+            {
+                "source": "stock:600519.SH",
+                "target": "industry:baijiu",
+                "type": "belongs_to",
+            }
+        ],
+        "sources": [{"name": "offline_relation_fixture"}],
+        "notes": ["R8-13H offline entity relation fixture."],
+    }
+
+
 def _dimension_conclusion(entry: bridge.ExternalComputeDemoEntry, as_of: str) -> dict[str, Any]:
     members = (
         [
@@ -322,6 +373,10 @@ def fake_invoke_external_compute(
     del question, request_id, timeout_seconds, upstream_outputs, transport
     if entry.expected_payload == "agent_conclusion_v1":
         tool_result = _l2_conclusion(entry, as_of)
+    elif entry.expected_payload == "data_bundle_v1":
+        tool_result = _data_bundle(entry, as_of)
+    elif entry.expected_payload == "entity_relation_bundle_v1":
+        tool_result = _entity_relation_bundle(entry, as_of)
     elif entry.expected_payload == "dimension_conclusion_v1":
         tool_result = _dimension_conclusion(entry, as_of)
     elif entry.expected_payload == "risk_conclusion_v1":

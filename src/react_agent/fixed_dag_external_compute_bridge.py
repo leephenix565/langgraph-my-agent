@@ -19,8 +19,10 @@ from urllib.parse import urlsplit
 from react_agent.fixed_dag_contracts import (
     AGENT_TASK_SCHEMA_VERSION,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
+    DATA_BUNDLE_SCHEMA_VERSION,
     DIMENSION_COMPOSITE_AGENT_IDS,
     DIMENSION_COMPOSITE_SCHEMA_VERSION,
+    ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
     validate_agent_task,
 )
@@ -62,6 +64,22 @@ def _demo_base_url(agent_id: str, default: str) -> str:
 
 
 DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
+    "financial_data_service": ExternalComputeDemoEntry(
+        agent_id="financial_data_service",
+        base_url=_demo_base_url("financial_data_service", "http://127.0.0.1:11000"),
+        compute_path=COMPUTE_PATH,
+        expected_payload="data_bundle_v1",
+        dimension="l1",
+        external_agent_id="financial_data_service",
+    ),
+    "entity_relation_extractor": ExternalComputeDemoEntry(
+        agent_id="entity_relation_extractor",
+        base_url=_demo_base_url("entity_relation_extractor", "http://127.0.0.1:10017"),
+        compute_path=COMPUTE_PATH,
+        expected_payload="entity_relation_bundle_v1",
+        dimension="l1",
+        external_agent_id="entity_relation_agent",
+    ),
     "value_traditional_valuation": ExternalComputeDemoEntry(
         agent_id="value_traditional_valuation",
         base_url="http://127.0.0.1:10000",
@@ -166,6 +184,24 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
         dimension="macro",
         external_agent_id="macro_analysis",
         default_target="CN_A_SHARE_MACRO",
+    ),
+    "macro_commodity_pricing": ExternalComputeDemoEntry(
+        agent_id="macro_commodity_pricing",
+        base_url="http://127.0.0.1:10004",
+        compute_path=COMPUTE_PATH,
+        expected_payload="agent_conclusion_v1",
+        dimension="macro",
+        external_agent_id="price_influence_agent",
+        default_target="CU",
+    ),
+    "macro_index_valuation": ExternalComputeDemoEntry(
+        agent_id="macro_index_valuation",
+        base_url="http://127.0.0.1:10003",
+        compute_path=COMPUTE_PATH,
+        expected_payload="agent_conclusion_v1",
+        dimension="macro",
+        external_agent_id="valuation_index",
+        default_target="沪深300",
     ),
     "value_composite": ExternalComputeDemoEntry(
         agent_id="value_composite",
@@ -515,10 +551,30 @@ def _apply_mapped_result(
     *,
     agent_id: str,
     mapped: Mapping[str, Any],
+    data_bundle: dict[str, Any] | None,
+    entity_relation_bundle: dict[str, Any] | None,
     l2_conclusions: dict[str, Any],
     dimension_results: dict[str, Any],
 ) -> tuple[bool, str]:
     schema = mapped.get("schema")
+    if agent_id == "financial_data_service":
+        if schema != DATA_BUNDLE_SCHEMA_VERSION:
+            return False, "mapped_data_bundle_schema_mismatch"
+        if data_bundle is None:
+            return False, "data_bundle_target_missing"
+        data_bundle.clear()
+        data_bundle.update(dict(mapped))
+        return True, "ok"
+
+    if agent_id == "entity_relation_extractor":
+        if schema != ENTITY_RELATION_BUNDLE_SCHEMA_VERSION:
+            return False, "mapped_entity_relation_schema_mismatch"
+        if entity_relation_bundle is None:
+            return False, "entity_relation_bundle_target_missing"
+        entity_relation_bundle.clear()
+        entity_relation_bundle.update(dict(mapped))
+        return True, "ok"
+
     if agent_id in L2_CONCLUSION_AGENT_IDS:
         if schema != CONCLUSION_OBJECT_SCHEMA_VERSION or mapped.get("agent_id") != agent_id:
             return False, "mapped_l2_schema_or_identity_mismatch"
@@ -544,6 +600,8 @@ def run_external_compute_for_plan(
     as_of: str,
     context: Any,
     l2_conclusions: Mapping[str, Any],
+    data_bundle: Mapping[str, Any] | None = None,
+    entity_relation_bundle: Mapping[str, Any] | None = None,
     dimension_results: Mapping[str, Any] | None = None,
     agent_tasks: Mapping[str, Any] | None = None,
     stages: tuple[str, ...] = ("l2_analysis", "dimension_composite"),
@@ -554,11 +612,19 @@ def run_external_compute_for_plan(
         getattr(context, "external_compute_demo_allowlist", ())
     )
     updated_l2 = {str(agent_id): dict(value) for agent_id, value in l2_conclusions.items()}
+    updated_data_bundle = dict(data_bundle) if isinstance(data_bundle, Mapping) else {}
+    updated_entity_relation_bundle = (
+        dict(entity_relation_bundle)
+        if isinstance(entity_relation_bundle, Mapping)
+        else {}
+    )
     updated_dimensions = {
         str(dimension): dict(value)
         for dimension, value in (dimension_results or {}).items()
     }
     result = {
+        "data_bundle": updated_data_bundle,
+        "entity_relation_bundle": updated_entity_relation_bundle,
         "l2_conclusions": updated_l2,
         "dimension_results": updated_dimensions,
         "step_updates": {},
@@ -621,6 +687,8 @@ def run_external_compute_for_plan(
         applied, reason = _apply_mapped_result(
             agent_id=agent_id,
             mapped=mapped,
+            data_bundle=updated_data_bundle,
+            entity_relation_bundle=updated_entity_relation_bundle,
             l2_conclusions=updated_l2,
             dimension_results=updated_dimensions,
         )
