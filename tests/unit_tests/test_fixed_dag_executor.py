@@ -1,5 +1,6 @@
 import copy
 import json
+from types import SimpleNamespace
 
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
@@ -9,6 +10,8 @@ from react_agent.fixed_dag_contracts import (
     RISK_AGENT_IDS,
     VALUE_AGENT_IDS,
     build_default_fixed_dag_plan,
+    build_report_input_bundle,
+    build_report_result,
     build_route_intent,
     compile_selected_fixed_dag_plan,
 )
@@ -105,6 +108,25 @@ def _risk_conclusion() -> dict[str, object]:
         "data_as_of": "2026-06-04",
         "status": "ok",
     }
+
+
+class _FakePlaceholderModel:
+    def __init__(self) -> None:
+        self.prompts: list[str] = []
+
+    def invoke(self, prompt: str):
+        self.prompts.append(prompt)
+        return SimpleNamespace(
+            content=json.dumps(
+                {
+                    "analysis": "根据 agent_task_v1 做内部占位分析，等待真实外部 agent 接入。",
+                    "key_points": ["已读取 L1 证据边界和 required_output_schema。"],
+                    "evidence": [{"fact": "当前为内部 LLM 占位，不代表真实外部服务结果。"}],
+                    "confidence": 0.22,
+                },
+                ensure_ascii=False,
+            )
+        )
 
 
 def test_default_plan_validates_and_batches_are_stable() -> None:
@@ -314,6 +336,18 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert result["workflow_snapshot"]["stepResults"] == result["step_results"]
     assert set(result["workflow_snapshot"]["completedSteps"]) == set(result["step_results"])
     assert result["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+    assert result["report_input_bundle"]["agent_evidence_bundle"]["schema"] == "agent_evidence_bundle_v1"
+    assert result["report_input_bundle"]["agent_evidence_bundle"]["l1_evidence"]["data_bundle_status"] == "pending_implementation"
+    assert result["agent_task_summaries"]
+    assert result["report_input_bundle"]["agent_task_summaries"]
+    value_task = result["step_results"]["l2:value_ml_valuation"]["agent_task"]
+    assert value_task["required_output_schema"] == "agent_conclusion_v1"
+    assert value_task["has_l1_data_bundle"] is True
+    assert value_task["has_l1_entity_relation_bundle"] is True
+    assert "机器学习企业估值智能体" in value_task["task_instruction"]
+    l3_task = result["step_results"]["dimension:value"]["agent_task"]
+    assert l3_task["required_output_schema"] == "dimension_conclusion_v1"
+    assert "value_ml_valuation" in l3_task["upstream_agent_ids"]
     assert result["step_results"]["route_planner"]["runtime_kind"] == "deterministic_system"
     assert result["step_results"]["route_planner"]["implementation_status"] == "deterministic_skeleton"
     assert result["step_results"]["financial_data_service"]["runtime_kind"] == "external_http_candidate"
@@ -324,6 +358,8 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert result["step_results"]["dimension:market"]["implementation_status"] == "deterministic_skeleton"
     assert result["step_results"]["l2:sentiment_company_radar"]["runtime_kind"] == "pending_placeholder"
     assert "agent_evidence" in result["step_results"]["l2:value_ml_valuation"]
+    assert "evidence_count" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
+    assert "detail_notes" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
     assert "composite_evidence" in result["step_results"]["dimension:value"]
     assert "报告生成输入摘要" in result["report_result"]["answer"]
     assert "sentiment_company_radar" not in result["step_results"]["dimension:risk"]["depends_on"]
@@ -358,6 +394,52 @@ def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monke
     } == {"reset_skeleton"}
     assert result["provenance"]["llm_report_synthesis_enabled"] is False
     assert result["provenance"]["provider_invoked"] is False
+
+
+def test_report_input_bundle_explains_thin_external_agent_evidence() -> None:
+    payload = _agent_conclusion()
+    payload["evidence"] = []
+    payload["raw_output"] = {"model_score": 0.51, "feature_count": 8}
+    payload["quality"] = {"coverage": "thin", "sample_size": 1}
+    mapped = map_external_response_to_fixed_dag_object(
+        _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+    )
+
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions={"value_ml_valuation": mapped},
+        dimension_results={},
+        decision_result={
+            "decision": "hold",
+            "score": 0.0,
+            "confidence": 0.1,
+            "status": "partial",
+        },
+    )
+    report = build_report_result(
+        {
+            "decision": "hold",
+            "score": 0.0,
+            "confidence": 0.1,
+            "status": "partial",
+        },
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    item = bundle["l2_agent_summaries"][0]
+    evidence_bundle = bundle["agent_evidence_bundle"]
+    evidence_detail = evidence_bundle["l2_agent_outputs"][0]
+    rendered = json.dumps(report, ensure_ascii=False)
+
+    assert item["evidence_count"] == 0
+    assert "readable_evidence_count=0" in item["detail_notes"]
+    assert any("raw_output_keys=model_score,feature_count" == note for note in item["detail_notes"])
+    assert evidence_bundle["schema"] == "agent_evidence_bundle_v1"
+    assert evidence_bundle["quality_summary"]["l2_without_readable_evidence"] == 1
+    assert evidence_detail["provenance_notes"]["raw_output_keys"] == ["model_score", "feature_count"]
+    assert evidence_detail["provenance_notes"]["quality_keys"] == ["coverage", "sample_size"]
+    assert "证据质量" in rendered
+    assert "raw_output_keys=model_score,feature_count" in rendered
 
 
 def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) -> None:
@@ -451,6 +533,69 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
     assert "/v1/agent/invoke" not in result["report_result"]["answer"]
     assert "http://127.0.0.1" not in rendered
     assert "raw_response" not in rendered
+
+
+def test_external_compute_overlays_task_aware_llm_placeholders(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    fake_model = _FakePlaceholderModel()
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        lambda _model: fake_model,
+    )
+
+    def fake_invoke(entry, **_kwargs):
+        assert entry.agent_id == "value_ml_valuation"
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            enable_internal_llm_placeholders=True,
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+
+    assert valid, reason
+    assert fake_model.prompts
+    assert any("agent_task_schema: agent_task_v1" in prompt for prompt in fake_model.prompts)
+    assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "complete"
+    assert result["l2_conclusions"]["value_ml_valuation"]["provenance"].get("runtime_path") != (
+        "internal_llm_placeholder"
+    )
+    placeholder = result["l2_conclusions"]["market_fund_manager_behavior"]
+    assert placeholder["status"] == "partial"
+    assert placeholder["provenance"]["runtime_path"] == "internal_llm_placeholder"
+    assert placeholder["provenance"]["required_output_schema"] == "agent_conclusion_v1"
+    market_task = result["step_results"]["l2:market_fund_manager_behavior"]["agent_task"]
+    assert market_task["required_output_schema"] == "agent_conclusion_v1"
+    assert market_task["has_l1_data_bundle"] is True
+    assert result["step_results"]["dimension:market"]["agent_task"]["upstream_agent_ids"]
+    assert result["provenance"]["external_compute_demo_mapped_agents"] == ["value_ml_valuation"]
+    assert result["provenance"]["internal_llm_placeholder_conclusions"] > 0
+    assert "agent_task_v1" in result["report_result"]["answer"]
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
 
 
 def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None:

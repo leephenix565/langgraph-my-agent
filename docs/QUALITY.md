@@ -186,6 +186,24 @@ R8-13E must not call `/v1/agent/invoke`, must not change
 production services. Passing this phase proves controlled L3 protocol and
 adapter mapping after backfill only.
 
+## R8-13F End-to-End Trace QA Boundary
+
+R8-13F is default-off demo QA for the fixed DAG production compute path. It may
+run `scripts/dev/run_r8_13a_e2e_smoke.py` with explicit flags to call only
+allowlisted loopback production `/v1/agent/compute` endpoints, pass bounded L2
+`context.upstream_outputs` to L3 compute requests, and use the configured
+report model when explicitly enabled.
+
+R8-13F must not call `/v1/agent/invoke`, must not change
+`runtime_bindings.json`, must not set `live_verified=true`, must not set
+`invoke_enabled_by_default=true`, and must not store raw external responses,
+endpoint URLs, credentials, traceback text, or provider raw output in the
+repository.
+
+Default static/mainline validation still does not call production endpoints,
+providers, demo stacks, or `/v1/agent/invoke`. R8-13F E2E artifacts are manual
+QA artifacts under `/tmp`, not default quality gate artifacts.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

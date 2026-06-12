@@ -13,6 +13,8 @@ from react_agent.fixed_dag_contracts import (
     RISK_AGENT_IDS,
     SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES,
     VALUE_AGENT_IDS,
+    build_agent_task,
+    build_agent_tasks_for_plan,
     build_data_bundle,
     build_decision_result,
     build_default_fixed_dag_plan,
@@ -29,6 +31,7 @@ from react_agent.fixed_dag_contracts import (
     build_workflow_snapshot_v2,
     compile_selected_fixed_dag_plan,
     normalize_fixed_dag_plan,
+    validate_agent_task,
     validate_conclusion_object,
     validate_data_bundle,
     validate_decision_result,
@@ -816,6 +819,90 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
     assert "机器学习企业估值" in report["answer"]
     assert "raw_response" not in rendered
     assert "must_not_leak" not in rendered
+
+
+def test_agent_task_v1_carries_l1_and_l2_upstream_context_safely() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    data_bundle = build_data_bundle(plan)
+    entity_bundle = build_entity_relation_bundle(plan)
+    conclusions = build_l2_conclusions(plan)
+    conclusions["value_ml_valuation"]["status"] = "complete"
+    conclusions["value_ml_valuation"]["stance"] = "slightly_positive"
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+
+    l2_task = build_agent_task(
+        "value_ml_valuation",
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        data_bundle={**data_bundle, "raw_response": "must_not_leak"},
+        entity_relation_bundle=entity_bundle,
+    )
+    l3_task = build_agent_task(
+        "value_composite",
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_bundle,
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+    )
+
+    valid_l2, reason_l2 = validate_agent_task(l2_task)
+    valid_l3, reason_l3 = validate_agent_task(l3_task)
+    rendered = json.dumps({"l2": l2_task, "l3": l3_task}, ensure_ascii=False)
+
+    assert valid_l2, reason_l2
+    assert valid_l3, reason_l3
+    assert l2_task["required_output_schema"] == "agent_conclusion_v1"
+    assert l2_task["data_bundle"]["schema"] == "data_bundle_v1"
+    assert l2_task["entity_relation_bundle"]["schema"] == "entity_relation_bundle_v1"
+    assert "机器学习企业估值智能体" in l2_task["task_instruction"]
+    assert l3_task["required_output_schema"] == "dimension_conclusion_v1"
+    assert "value_ml_valuation" in l3_task["upstream_results"]
+    assert "raw_response" not in rendered
+    assert "must_not_leak" not in rendered
+
+
+def test_report_input_bundle_includes_agent_task_summaries() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    data_bundle = build_data_bundle(plan)
+    entity_bundle = build_entity_relation_bundle(plan)
+    conclusions = build_l2_conclusions(plan)
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    tasks = build_agent_tasks_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_bundle,
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+    )
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+        agent_tasks=tasks,
+    )
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    rendered = json.dumps(report, ensure_ascii=False)
+
+    assert bundle["agent_task_summaries"]
+    assert any(
+        item["agent_id"] == "value_ml_valuation"
+        and item["has_l1_data_bundle"]
+        and item["has_l1_entity_relation_bundle"]
+        for item in bundle["agent_task_summaries"]
+    )
+    assert "智能体任务编排" in rendered
+    assert "agent_task_v1" in rendered
 
 
 def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:

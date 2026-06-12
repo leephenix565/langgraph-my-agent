@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-12 - Phase R8-13F end-to-end production trace QA
+
+### Changed
+
+- Restored the sandbox-proven main-system `agent_task_v1` and
+  `agent_evidence_bundle_v1` trace path in this branch.
+- Extended the default-off compute bridge so allowlisted L3 production compute
+  requests receive bounded current-run L2 `context.upstream_outputs`.
+- Added `scripts/dev/run_r8_13a_e2e_smoke.py` as a reusable trace runner for
+  offline fixture mode or explicitly enabled real production compute mode.
+- Updated unit coverage for agent tasks, evidence bundles, L3 upstream output
+  propagation, task-aware placeholders, and executor trace projection.
+- Added `docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md`.
+
+### Evidence
+
+- Real production compute with fake report model:
+  `/tmp/lma-r8-13f-prod-e2e/20260612T030650Z`.
+- Real production compute with configured LLM report model:
+  `/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z`.
+- The configured-report run mapped 17 production compute agents, used 5
+  explicit placeholder L2 slots, and generated a natural Chinese report from
+  `report_input_bundle_v1`.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No default graph production invocation was enabled.
+- Raw external responses, endpoint URLs, credentials, and provider raw output
+  were not stored in the repository.
+
 ## 2026-06-12 - Phase R8-13E production L3 backfill and smoke
 
 ### Changed

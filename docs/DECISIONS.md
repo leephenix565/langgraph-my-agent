@@ -1579,3 +1579,33 @@ Non-consequence: R8-13E does not call `/v1/agent/invoke`, does not change
 `runtime_bindings.json`, does not set `live_verified=true`, does not set
 `invoke_enabled_by_default=true`, and does not enable default graph calls to
 production external services.
+
+## ADR-060: R8-13F Restores End-to-End Agent Task Trace Without Runtime Enablement
+
+Status: accepted for default-off demo QA.
+
+Decision: R8-13F restores the sandbox-proven main-system trace path in the
+reset branch. The executor now builds `agent_task_v1` instructions,
+`agent_evidence_bundle_v1`, and report input bundles that expose each agent's
+bounded task, inputs, output summary, and evidence quality. The default-off
+compute bridge may send bounded current-run L2 `context.upstream_outputs` to
+allowlisted L3 production compute endpoints.
+
+Reason: after R8-13E, the four production L3 services could accept upstream
+outputs, but the active main-system demo bridge still did not send them. That
+meant an end-to-end run could pass protocol checks without proving that L3
+composites consumed the current run's L2 evidence. R8-13F fixes that main
+system gap and makes the trace auditable from user question to final report.
+
+Consequence: the R8-13F QA run
+`/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z` mapped 17 production
+compute agents and produced a natural Chinese report from the configured
+report model. The trace also exposed service quality problems, including
+`direction_stance_missing` in three value L2 services and placeholder macro
+slots.
+
+Non-consequence: R8-13F does not call `/v1/agent/invoke`, does not change
+`runtime_bindings.json`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, does not enable default graph calls to
+production services, and does not store raw external responses or provider raw
+output in the repository.

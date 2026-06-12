@@ -9,6 +9,43 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-12 - R8-13F end-to-end production compute trace QA
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13F |
+| Artifact directory | `/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z` |
+| Main-system mode | default-off external compute demo bridge + LLM report synthesis |
+| Endpoint calls | allowlisted production `POST /v1/agent/compute` only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Production service directories changed | no |
+
+R8-13F validates the end-to-end QA path after production L3 backfill. The main
+system generates `agent_task_v1`, maps production L2 compute outputs, passes
+bounded `context.upstream_outputs` to allowlisted L3 production compute calls,
+builds `agent_evidence_bundle_v1`, and lets the configured report model produce
+a final Chinese report from the structured bundle.
+
+Sanitized QA result:
+
+- Mapped production compute agents: 17.
+- Failed external compute mappings: 0.
+- Internal placeholder L2 conclusions: 5.
+- L2 quality summary: 7 complete, 3 error, 8 partial.
+- L3 quality summary: 4 partial composites because upstream evidence remained
+  partial, placeholder, or error.
+
+Non-claims:
+
+- This is not `/v1/agent/invoke` readiness.
+- This does not enable runtime bindings or default external invocation.
+- This does not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not store raw external responses, endpoint URLs, credentials, or
+  provider raw output in the repo.
+
 ## 2026-06-12 - R8-13E production L3 backfill and smoke
 
 | Field | Value |

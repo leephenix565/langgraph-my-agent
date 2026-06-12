@@ -300,11 +300,22 @@ services passed compute and adapter mapping after backfill. See
 `/v1/agent/invoke`, change runtime bindings, set live flags, or enable default
 graph calls to production services.
 
+Phase R8-13F restores the sandbox-proven main-system trace path in this branch:
+`agent_task_v1`, `agent_evidence_bundle_v1`, and bounded L2
+`context.upstream_outputs` propagation to allowlisted L3 production compute
+calls. The reference E2E QA artifact
+`/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z` mapped 17 production
+compute agents, used 5 explicit placeholder L2 slots, and generated a natural
+Chinese report from the configured report model. See
+`docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md`. This remains default-off demo
+QA: no `/v1/agent/invoke`, runtime binding change, live flag, or default
+production graph invocation is introduced.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-13E production L3 wrapper backfill smoke over the existing
+- Current phase: R8-13F end-to-end production compute trace QA over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

@@ -8,6 +8,7 @@ by graph nodes and public workflow mapping.
 
 from __future__ import annotations
 
+import re
 from collections.abc import Mapping
 from typing import Any, Literal, NotRequired, TypedDict, cast
 
@@ -28,8 +29,10 @@ CONCLUSION_OBJECT_SCHEMA_VERSION = "conclusion_object_v1"
 DIMENSION_COMPOSITE_SCHEMA_VERSION = "dimension_composite_result_v1"
 DECISION_RESULT_SCHEMA_VERSION = "decision_result_v1"
 REPORT_INPUT_BUNDLE_SCHEMA_VERSION = "report_input_bundle_v1"
+AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION = "agent_evidence_bundle_v1"
 REPORT_RESULT_SCHEMA_VERSION = "report_result_v1"
 WORKFLOW_SNAPSHOT_SCHEMA_VERSION = "workflow_snapshot_v2"
+AGENT_TASK_SCHEMA_VERSION = "agent_task_v1"
 RESET_SOURCE = "reset_skeleton"
 DEFAULT_AS_OF = "not_available"
 
@@ -331,6 +334,8 @@ class ReportInputBundle(TypedDict):
     schema_version: str
     question: str
     status: ConclusionStatus
+    agent_task_summaries: NotRequired[list[dict[str, Any]]]
+    agent_evidence_bundle: NotRequired[dict[str, Any]]
     l2_agent_summaries: list[dict[str, Any]]
     l3_composite_summaries: list[dict[str, Any]]
     risk_gate: dict[str, Any]
@@ -349,6 +354,24 @@ class ReportResult(TypedDict):
     sections: list[dict[str, Any]]
     evidence_cards: list[dict[str, Any]]
     limitations: list[str]
+
+
+class AgentTask(TypedDict):
+    schema: str
+    schema_version: str
+    agent_id: str
+    display_name: str
+    layer: str
+    dimension: str
+    user_question: str
+    task_instruction: str
+    target: str
+    as_of: str
+    data_bundle: dict[str, Any]
+    entity_relation_bundle: dict[str, Any]
+    upstream_results: dict[str, Any]
+    required_output_schema: str
+    provenance: dict[str, Any]
 
 
 def _as_of(value: str | None = None) -> str:
@@ -1727,6 +1750,360 @@ def _safe_public_mapping(value: Any, *, allowed_keys: set[str]) -> dict[str, Any
     return result
 
 
+def _target_from_question(question: str, *, default: str = "600519.SH") -> str:
+    match = re.search(r"\b\d{6}\.(?:SH|SZ|BJ)\b", str(question or "").upper())
+    if match:
+        return match.group(0)
+    return default
+
+
+def _agent_layer(agent_id: str) -> str:
+    if agent_id in L1_AGENT_IDS:
+        return "L1"
+    if agent_id in L2_CONCLUSION_AGENT_IDS:
+        return "L2"
+    if agent_id in L3_COMPOSITE_AGENT_IDS:
+        return "L3"
+    if agent_id in L4_AGENT_IDS:
+        return "L4"
+    return "unknown"
+
+
+def _agent_task_dimension(agent_id: str) -> str:
+    if agent_id in AGENT_DIMENSIONS:
+        return AGENT_DIMENSIONS[agent_id]
+    if agent_id in DIMENSION_COMPOSITE_AGENT_IDS.values():
+        return _agent_dimension(agent_id)
+    if agent_id in {"route_planner", "financial_data_service", "entity_relation_extractor"}:
+        return "l1"
+    if agent_id in L4_AGENT_IDS:
+        return "l4"
+    return "unknown"
+
+
+def _required_output_schema_for_agent(agent_id: str) -> str:
+    if agent_id == "route_planner":
+        return FIXED_DAG_SCHEMA_VERSION
+    if agent_id == "financial_data_service":
+        return DATA_BUNDLE_SCHEMA_VERSION
+    if agent_id == "entity_relation_extractor":
+        return ENTITY_RELATION_BUNDLE_SCHEMA_VERSION
+    if agent_id in L2_CONCLUSION_AGENT_IDS:
+        return "agent_conclusion_v1"
+    if agent_id in {"value_composite", "market_composite"}:
+        return "dimension_conclusion_v1"
+    if agent_id == "risk_composite":
+        return "risk_conclusion_v1"
+    if agent_id == "macro_composite":
+        return "macro_conclusion_v1"
+    if agent_id == "decision_synthesizer":
+        return DECISION_RESULT_SCHEMA_VERSION
+    if agent_id == "report_generator":
+        return REPORT_RESULT_SCHEMA_VERSION
+    return "unknown"
+
+
+def _task_instruction_for_agent(agent_id: str) -> str:
+    display_name = AGENT_TITLE_LABELS.get(agent_id, agent_id)
+    dimension = _agent_task_dimension(agent_id)
+    if agent_id == "route_planner":
+        return "请理解用户自然语言问题，识别分析对象、任务类型、维度范围，并组织本轮固定 DAG 研判流程。"
+    if agent_id == "financial_data_service":
+        return "请根据用户问题和固定 DAG 计划整理本轮分析需要的行情、财务、估值和时间点数据，输出 data_bundle_v1；不要给出投资结论。"
+    if agent_id == "entity_relation_extractor":
+        return "请识别用户问题中的公司、证券代码、行业、事件和关系，输出 entity_relation_bundle_v1；不要替代 L2 分析智能体给观点。"
+    if agent_id in L2_CONCLUSION_AGENT_IDS:
+        dimension_label = {
+            "value": "价值/估值",
+            "market": "市场面",
+            "risk": "风险",
+            "macro": "宏观",
+        }.get(dimension, dimension)
+        if dimension == "risk":
+            return f"你是{display_name}智能体。请阅读用户问题、L1 数据证据和实体关系，从{dimension_label}角度输出结构化 agent_conclusion_v1；风险类输出应表达 gate_member/risk_score，不要输出最终投资裁决。"
+        return f"你是{display_name}智能体。请阅读用户问题、L1 数据证据和实体关系，从{dimension_label}角度输出结构化 agent_conclusion_v1，包含 stance、confidence、evidence 和 status。"
+    if agent_id in {"value_composite", "market_composite"}:
+        dimension_label = "价值维" if agent_id == "value_composite" else "市场维"
+        return f"你是{display_name}智能体。请只综合本轮{dimension_label} L2 智能体输出，形成 dimension_conclusion_v1；不要直接调用无关维度，不要替代 L2 重新编造证据。"
+    if agent_id == "risk_composite":
+        return "你是风险综合智能体。请只综合本轮风险维 L2 输出，形成 risk_conclusion_v1 风险闸门；不要输出方向票，不要消费企业舆情雷达。"
+    if agent_id == "macro_composite":
+        return "你是宏观综合智能体。请综合本轮宏观维 L2 输出，形成 macro_conclusion_v1 宏观调节器；dimension_weights 只能包含 value 和 market。"
+    if agent_id == "decision_synthesizer":
+        return "请读取四个 L3 综合结果，形成受风险门和宏观调节约束的 decision_result_v1；不要绕过缺失或错误证据。"
+    if agent_id == "report_generator":
+        return "请读取完整 report_input_bundle_v1，包括每个 agent 的任务、L1 证据、L2 输出、L3 综合和决策结果，生成面向用户的中文研判报告。"
+    return f"请按固定 DAG 当前任务要求执行 {display_name}。"
+
+
+def _bounded_task_value(value: Any, *, depth: int = 0) -> Any:
+    if depth > 4:
+        return ""
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, raw in list(value.items())[:40]:
+            text_key = str(key)
+            if text_key.lower() in REPORT_BUNDLE_UNSAFE_KEYS:
+                continue
+            bounded = _bounded_task_value(raw, depth=depth + 1)
+            if bounded not in ("", [], {}):
+                result[text_key] = bounded
+        return result
+    if isinstance(value, list):
+        return [
+            bounded
+            for item in value[:20]
+            if (bounded := _bounded_task_value(item, depth=depth + 1)) not in ("", [], {})
+        ]
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return value
+    return _safe_public_text(value, limit=500)
+
+
+def _l2_task_upstream_result(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any]:
+    item = _l2_agent_summary(agent_id, result)
+    return {
+        key: item[key]
+        for key in (
+            "agent_id",
+            "display_name",
+            "layer",
+            "dimension",
+            "status",
+            "stance",
+            "confidence",
+            "summary",
+            "risk_score",
+            "as_of",
+            "data_as_of",
+            "source",
+        )
+        if key in item
+    }
+
+
+def _l3_task_upstream_result(result: Mapping[str, Any]) -> dict[str, Any]:
+    item = _l3_composite_summary(result)
+    return {
+        key: item[key]
+        for key in (
+            "agent_id",
+            "display_name",
+            "layer",
+            "dimension",
+            "status",
+            "stance",
+            "confidence",
+            "summary",
+            "members",
+            "gate",
+            "risk_score",
+            "regime",
+            "dimension_weights",
+            "risk_sensitivity",
+            "as_of",
+            "data_as_of",
+            "source",
+        )
+        if key in item
+    }
+
+
+def _upstream_results_for_agent(
+    agent_id: str,
+    *,
+    l2_conclusions: Mapping[str, Any] | None,
+    dimension_results: Mapping[str, Any] | None,
+    decision_result: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    if agent_id in DIMENSION_COMPOSITE_AGENT_IDS.values():
+        dimension = _agent_dimension(agent_id)
+        return {
+            upstream_agent_id: _l2_task_upstream_result(
+                upstream_agent_id,
+                cast(Mapping[str, Any], result),
+            )
+            for upstream_agent_id, result in (l2_conclusions or {}).items()
+            if upstream_agent_id in DIMENSION_GROUPS[dimension] and isinstance(result, Mapping)
+        }
+    if agent_id == "decision_synthesizer":
+        return {
+            dimension: _l3_task_upstream_result(cast(Mapping[str, Any], result))
+            for dimension, result in (dimension_results or {}).items()
+            if dimension in DIMENSION_GROUPS and isinstance(result, Mapping)
+        }
+    if agent_id == "report_generator":
+        return {
+            "l2": {
+                upstream_agent_id: _l2_task_upstream_result(
+                    upstream_agent_id,
+                    cast(Mapping[str, Any], result),
+                )
+                for upstream_agent_id, result in (l2_conclusions or {}).items()
+                if upstream_agent_id in L2_CONCLUSION_AGENT_IDS and isinstance(result, Mapping)
+            },
+            "l3": {
+                dimension: _l3_task_upstream_result(cast(Mapping[str, Any], result))
+                for dimension, result in (dimension_results or {}).items()
+                if dimension in DIMENSION_GROUPS and isinstance(result, Mapping)
+            },
+            "decision": _bounded_task_value(decision_result or {}),
+        }
+    return {}
+
+
+def build_agent_task(
+    agent_id: str,
+    *,
+    question: str,
+    as_of: str,
+    data_bundle: Mapping[str, Any] | None = None,
+    entity_relation_bundle: Mapping[str, Any] | None = None,
+    l2_conclusions: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+) -> AgentTask:
+    """Build one public-safe natural-language task for a fixed DAG agent."""
+    task_agent_id = str(agent_id)
+    return {
+        "schema": AGENT_TASK_SCHEMA_VERSION,
+        "schema_version": AGENT_TASK_SCHEMA_VERSION,
+        "agent_id": task_agent_id,
+        "display_name": AGENT_TITLE_LABELS.get(task_agent_id, task_agent_id),
+        "layer": _agent_layer(task_agent_id),
+        "dimension": _agent_task_dimension(task_agent_id),
+        "user_question": _safe_public_text(question, limit=500),
+        "task_instruction": _task_instruction_for_agent(task_agent_id),
+        "target": _target_from_question(question),
+        "as_of": _as_of(as_of),
+        "data_bundle": cast(dict[str, Any], _bounded_task_value(data_bundle or {})),
+        "entity_relation_bundle": cast(
+            dict[str, Any],
+            _bounded_task_value(entity_relation_bundle or {}),
+        ),
+        "upstream_results": _upstream_results_for_agent(
+            task_agent_id,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+        ),
+        "required_output_schema": _required_output_schema_for_agent(task_agent_id),
+        "provenance": {
+            "source": "fixed_dag_agent_task_builder",
+            "default_off_demo_contract": True,
+            "runtime_binding_enabled": False,
+            "invoke_enabled_by_default": False,
+        },
+    }
+
+
+def build_agent_tasks_for_plan(
+    plan: Mapping[str, Any],
+    *,
+    question: str,
+    as_of: str,
+    data_bundle: Mapping[str, Any] | None = None,
+    entity_relation_bundle: Mapping[str, Any] | None = None,
+    l2_conclusions: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+) -> dict[str, AgentTask]:
+    """Build agent tasks keyed by step id for a fixed or selected DAG plan."""
+    tasks: dict[str, AgentTask] = {}
+    raw_steps = plan.get("dag_steps", plan.get("steps", []))
+    steps = raw_steps if isinstance(raw_steps, list) else []
+    for step in steps:
+        if not isinstance(step, Mapping):
+            continue
+        agent_id = str(step.get("agent_id") or "")
+        step_id = str(step.get("id") or agent_id)
+        if agent_id in RESET_RUNTIME_AGENT_IDS and step_id:
+            tasks[step_id] = build_agent_task(
+                agent_id,
+                question=question,
+                as_of=as_of,
+                data_bundle=data_bundle,
+                entity_relation_bundle=entity_relation_bundle,
+                l2_conclusions=l2_conclusions,
+                dimension_results=dimension_results,
+                decision_result=decision_result,
+            )
+    return tasks
+
+
+def _agent_task_summary(task: Mapping[str, Any]) -> dict[str, Any]:
+    upstream = task.get("upstream_results", {})
+    upstream_ids: list[str] = []
+    if isinstance(upstream, Mapping):
+        upstream_ids = [
+            str(key)
+            for key in upstream
+            if str(key) and str(key) not in {"l2", "l3", "decision"}
+        ]
+        if not upstream_ids:
+            for group_key in ("l2", "l3"):
+                group = upstream.get(group_key)
+                if isinstance(group, Mapping):
+                    upstream_ids.extend(str(key) for key in group if str(key))
+    return {
+        "schema": AGENT_TASK_SCHEMA_VERSION,
+        "agent_id": _safe_public_text(task.get("agent_id"), limit=80),
+        "display_name": _safe_public_text(task.get("display_name"), limit=80),
+        "layer": _safe_public_text(task.get("layer"), limit=20),
+        "dimension": _safe_public_text(task.get("dimension"), limit=40),
+        "task_instruction": _safe_public_text(task.get("task_instruction"), limit=260),
+        "target": _safe_public_text(task.get("target"), limit=80),
+        "as_of": _safe_public_text(task.get("as_of"), limit=40),
+        "required_output_schema": _safe_public_text(
+            task.get("required_output_schema"),
+            limit=80,
+        ),
+        "upstream_agent_ids": upstream_ids[:24],
+        "has_l1_data_bundle": bool(task.get("data_bundle")),
+        "has_l1_entity_relation_bundle": bool(task.get("entity_relation_bundle")),
+    }
+
+
+def build_agent_task_summaries(agent_tasks: Mapping[str, Any] | None) -> list[dict[str, Any]]:
+    """Return bounded public task summaries for report input and workflow trace."""
+    if not isinstance(agent_tasks, Mapping):
+        return []
+    summaries: list[dict[str, Any]] = []
+    for step_id, task in agent_tasks.items():
+        if not isinstance(task, Mapping):
+            continue
+        summary = _agent_task_summary(task)
+        summary["step_id"] = _safe_public_text(step_id, limit=120)
+        summaries.append(summary)
+    return summaries
+
+
+def validate_agent_task(task: Mapping[str, Any]) -> tuple[bool, str]:
+    if task.get("schema") != AGENT_TASK_SCHEMA_VERSION:
+        return False, "invalid_schema"
+    if task.get("schema_version", AGENT_TASK_SCHEMA_VERSION) != AGENT_TASK_SCHEMA_VERSION:
+        return False, "invalid_schema_version"
+    agent_id = str(task.get("agent_id") or "")
+    if agent_id not in RESET_RUNTIME_AGENT_IDS:
+        return False, "invalid_agent_id"
+    if not _safe_public_text(task.get("user_question"), limit=500):
+        return False, "user_question_missing"
+    if not _safe_public_text(task.get("task_instruction"), limit=260):
+        return False, "task_instruction_missing"
+    if task.get("required_output_schema") != _required_output_schema_for_agent(agent_id):
+        return False, "required_output_schema_mismatch"
+    if _contains_unsafe_report_key(task):
+        return False, "unsafe_agent_task_present"
+    provenance = task.get("provenance", {})
+    if not isinstance(provenance, Mapping):
+        return False, "invalid_provenance"
+    if provenance.get("runtime_binding_enabled") or provenance.get("invoke_enabled_by_default"):
+        return False, "runtime_enablement_claim_present"
+    return True, "ok"
+
+
 def _safe_evidence_summary(evidence: Any) -> str:
     if not isinstance(evidence, list):
         return ""
@@ -1738,6 +2115,48 @@ def _safe_evidence_summary(evidence: Any) -> str:
             if text:
                 return text
     return ""
+
+
+def _safe_public_text_list(value: Any, *, limit: int = 6, item_limit: int = 80) -> list[str]:
+    if not isinstance(value, list):
+        return []
+    items: list[str] = []
+    for item in value:
+        text = _safe_public_text(item, limit=item_limit)
+        if text and text not in items:
+            items.append(text)
+        if len(items) >= limit:
+            break
+    return items
+
+
+def _l2_quality_notes(result: Mapping[str, Any]) -> list[str]:
+    """Build bounded report-facing notes explaining thin external evidence."""
+    notes: list[str] = []
+    provenance = result.get("provenance", {})
+    status = _safe_public_text(result.get("status"), limit=40)
+    if isinstance(provenance, Mapping):
+        reason = _safe_public_text(provenance.get("reason"), limit=120)
+        external_status = _safe_public_text(provenance.get("external_status"), limit=80)
+        if reason:
+            notes.append(f"adapter_reason={reason}")
+        if external_status and external_status != status:
+            notes.append(f"external_status={external_status}")
+        raw_keys = _safe_public_text_list(provenance.get("raw_output_keys"), limit=8)
+        if raw_keys:
+            notes.append(f"raw_output_keys={','.join(raw_keys)}")
+        quality_keys = _safe_public_text_list(provenance.get("quality_keys"), limit=8)
+        if quality_keys:
+            notes.append(f"quality_keys={','.join(quality_keys)}")
+        if provenance.get("adapter_failure") is True:
+            notes.append("adapter_failure=true")
+    evidence = result.get("evidence")
+    evidence_count = len(evidence) if isinstance(evidence, list) else 0
+    if evidence_count == 0:
+        notes.append("readable_evidence_count=0")
+    if status in {"error", "partial"}:
+        notes.append(f"service_status={status}")
+    return notes[:10]
 
 
 def _evidence_ref_summary(evidence_refs: Any) -> str:
@@ -1767,13 +2186,17 @@ def _l2_agent_summary(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any
     risk_score = None
     if isinstance(provenance, Mapping) and provenance.get("risk_score") is not None:
         risk_score = _safe_public_float(provenance.get("risk_score"))
+    detail_notes = _l2_quality_notes(result)
     summary = _safe_evidence_summary(result.get("evidence"))
     if not summary:
+        detail = f"；诊断：{'；'.join(detail_notes[:3])}" if detail_notes else ""
         summary = (
             f"{AGENT_TITLE_LABELS.get(agent_id, agent_id)} 输出 "
             f"{_safe_public_text(result.get('stance') or 'not_evaluated', limit=80)} "
             f"信号，置信度 {_safe_public_float(result.get('confidence')):.2f}。"
+            f"{detail}"
         )
+    evidence = result.get("evidence")
     item: dict[str, Any] = {
         "agent_id": agent_id,
         "display_name": AGENT_TITLE_LABELS.get(agent_id, agent_id),
@@ -1786,6 +2209,8 @@ def _l2_agent_summary(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any
         "as_of": _safe_public_text(result.get("as_of"), limit=40),
         "data_as_of": _safe_public_text(result.get("data_as_of"), limit=40),
         "source": _report_source_from_provenance(provenance),
+        "evidence_count": len(evidence) if isinstance(evidence, list) else 0,
+        "detail_notes": detail_notes,
     }
     if risk_score is not None:
         item["risk_score"] = risk_score
@@ -1834,10 +2259,108 @@ def _safe_member_summaries(result: Mapping[str, Any]) -> list[dict[str, Any]]:
     return members
 
 
+def _safe_evidence_detail_items(value: Any, *, limit: int = 8) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for raw in value[:limit]:
+        if not isinstance(raw, Mapping):
+            continue
+        item: dict[str, Any] = {}
+        for key in ("id", "fact", "source", "as_of", "data_as_of", "unit"):
+            text = _safe_public_text(raw.get(key), limit=220 if key == "fact" else 80)
+            if text:
+                item[key] = text
+        if raw.get("value") is not None:
+            try:
+                item["value"] = float(raw.get("value"))
+            except (TypeError, ValueError):
+                text = _safe_public_text(raw.get("value"), limit=80)
+                if text:
+                    item["value"] = text
+        if item:
+            items.append(item)
+    return items
+
+
+def _provenance_notes(provenance: Any) -> dict[str, Any]:
+    if not isinstance(provenance, Mapping):
+        return {}
+    notes: dict[str, Any] = {}
+    for key in (
+        "reason",
+        "external_status",
+        "adapter_input_schema",
+        "compute_envelope_status",
+        "stance_source",
+        "confidence_source",
+    ):
+        text = _safe_public_text(provenance.get(key), limit=120)
+        if text:
+            notes[key] = text
+    for key in ("raw_output_keys", "quality_keys"):
+        values = _safe_public_text_list(provenance.get(key), limit=10, item_limit=80)
+        if values:
+            notes[key] = values
+    if provenance.get("adapter_failure") is True:
+        notes["adapter_failure"] = True
+    if provenance.get("risk_score") is not None:
+        notes["risk_score"] = _safe_public_float(provenance.get("risk_score"))
+    return notes
+
+
+def _l2_agent_evidence_detail(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any]:
+    summary = _l2_agent_summary(agent_id, result)
+    provenance = result.get("provenance", {})
+    detail: dict[str, Any] = {
+        **summary,
+        "received_output_schema": _safe_public_text(result.get("schema"), limit=80),
+        "required_output_schema": "agent_conclusion_v1",
+        "evidence_items": _safe_evidence_detail_items(result.get("evidence")),
+        "provenance_notes": _provenance_notes(provenance),
+    }
+    output_routes = result.get("output_routes")
+    if isinstance(output_routes, list):
+        detail["output_routes"] = _safe_public_text_list(output_routes, limit=6, item_limit=80)
+    return detail
+
+
+def _l3_composite_evidence_detail(result: Mapping[str, Any]) -> dict[str, Any]:
+    summary = _l3_composite_summary(result)
+    provenance = result.get("provenance", {})
+    evidence_refs = result.get("evidence_refs")
+    detail: dict[str, Any] = {
+        **summary,
+        "received_output_schema": _safe_public_text(result.get("schema"), limit=80),
+        "required_output_schema": {
+            "value_composite": "dimension_conclusion_v1",
+            "market_composite": "dimension_conclusion_v1",
+            "risk_composite": "risk_conclusion_v1",
+            "macro_composite": "macro_conclusion_v1",
+        }.get(str(result.get("agent_id") or ""), "dimension_composite_result_v1"),
+        "evidence_refs": [
+            _safe_public_text(ref, limit=220)
+            for ref in evidence_refs[:8]
+            if _safe_public_text(ref, limit=220)
+        ]
+        if isinstance(evidence_refs, list)
+        else [],
+        "provenance_notes": _provenance_notes(provenance),
+    }
+    return detail
+
+
 def _l3_composite_summary(result: Mapping[str, Any]) -> dict[str, Any]:
     agent_id = _safe_public_text(result.get("agent_id"), limit=80)
     dimension = _safe_public_text(result.get("dimension"), limit=40)
     provenance = result.get("provenance", {})
+    evidence_refs = result.get("evidence_refs")
+    detail_notes: list[str] = []
+    if isinstance(evidence_refs, list):
+        detail_notes.append(f"evidence_refs_count={len(evidence_refs)}")
+    members_preview = _safe_member_summaries(result)
+    if members_preview:
+        detail_notes.append(f"member_count={len(members_preview)}")
     item: dict[str, Any] = {
         "agent_id": agent_id,
         "display_name": AGENT_TITLE_LABELS.get(agent_id, agent_id),
@@ -1850,7 +2373,8 @@ def _l3_composite_summary(result: Mapping[str, Any]) -> dict[str, Any]:
             _evidence_ref_summary(result.get("evidence_refs"))
             or f"{DIMENSION_TITLE_LABELS.get(dimension, dimension)} 已形成综合结果。"
         ),
-        "members": _safe_member_summaries(result),
+        "members": members_preview,
+        "detail_notes": detail_notes[:8],
         "as_of": _safe_public_text(result.get("as_of"), limit=40),
         "data_as_of": _safe_public_text(result.get("data_as_of"), limit=40),
         "source": _report_source_from_provenance(provenance),
@@ -1873,12 +2397,86 @@ def _l3_composite_summary(result: Mapping[str, Any]) -> dict[str, Any]:
     return item
 
 
+def build_agent_evidence_bundle(
+    *,
+    question: str,
+    l2_conclusions: Mapping[str, Any],
+    dimension_results: Mapping[str, Any],
+    decision_result: Mapping[str, Any],
+    agent_tasks: Mapping[str, Any] | None = None,
+    data_bundle: Mapping[str, Any] | None = None,
+    entity_relation_bundle: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Build the richer public-safe bundle consumed by demo report generation."""
+    task_summaries = build_agent_task_summaries(agent_tasks)
+    l2_items = [
+        _l2_agent_evidence_detail(agent_id, cast(Mapping[str, Any], result))
+        for agent_id, result in l2_conclusions.items()
+        if agent_id in L2_CONCLUSION_AGENT_IDS and isinstance(result, Mapping)
+    ]
+    l3_items = [
+        _l3_composite_evidence_detail(cast(Mapping[str, Any], result))
+        for dimension, result in dimension_results.items()
+        if dimension in DIMENSION_GROUPS and isinstance(result, Mapping)
+    ]
+    return {
+        "schema": AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+        "schema_version": AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+        "question": _safe_public_text(question, limit=500),
+        "l1_evidence": {
+            "data_bundle_status": _safe_public_text(
+                (data_bundle or {}).get("status") if isinstance(data_bundle, Mapping) else "",
+                limit=40,
+            ),
+            "entity_relation_status": _safe_public_text(
+                (entity_relation_bundle or {}).get("status")
+                if isinstance(entity_relation_bundle, Mapping)
+                else "",
+                limit=40,
+            ),
+            "data_sources_count": len((data_bundle or {}).get("sources", []))
+            if isinstance((data_bundle or {}).get("sources"), list)
+            else 0,
+            "entities_count": len((entity_relation_bundle or {}).get("entities", []))
+            if isinstance((entity_relation_bundle or {}).get("entities"), list)
+            else 0,
+            "relations_count": len((entity_relation_bundle or {}).get("relations", []))
+            if isinstance((entity_relation_bundle or {}).get("relations"), list)
+            else 0,
+        },
+        "agent_tasks": task_summaries,
+        "l2_agent_outputs": l2_items,
+        "l3_composite_outputs": l3_items,
+        "decision_output": _bounded_task_value(decision_result or {}),
+        "quality_summary": {
+            "l2_total": len(l2_items),
+            "l2_complete": sum(1 for item in l2_items if item.get("status") == "complete"),
+            "l2_error": sum(1 for item in l2_items if item.get("status") == "error"),
+            "l2_partial": sum(1 for item in l2_items if item.get("status") == "partial"),
+            "l2_without_readable_evidence": sum(
+                1 for item in l2_items if int(item.get("evidence_count") or 0) == 0
+            ),
+            "l3_total": len(l3_items),
+            "l3_complete": sum(1 for item in l3_items if item.get("status") == "complete"),
+        },
+        "provenance": {
+            "source": "fixed_dag_agent_evidence_bundle",
+            "provider_invoked": False,
+            "external_invoked": False,
+            "public_safe": True,
+        },
+    }
+
+
 def build_report_input_bundle(
     *,
     question: str,
     l2_conclusions: Mapping[str, Any],
     dimension_results: Mapping[str, Any],
     decision_result: Mapping[str, Any],
+    agent_tasks: Mapping[str, Any] | None = None,
+    data_bundle: Mapping[str, Any] | None = None,
+    entity_relation_bundle: Mapping[str, Any] | None = None,
 ) -> ReportInputBundle:
     l2_summaries = [
         _l2_agent_summary(agent_id, cast(Mapping[str, Any], result))
@@ -1903,6 +2501,16 @@ def build_report_input_bundle(
         "schema_version": REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
         "question": _safe_public_text(question, limit=500),
         "status": "complete" if l2_summaries or l3_summaries else "pending_implementation",
+        "agent_task_summaries": build_agent_task_summaries(agent_tasks),
+        "agent_evidence_bundle": build_agent_evidence_bundle(
+            question=question,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            agent_tasks=agent_tasks,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+        ),
         "l2_agent_summaries": l2_summaries,
         "l3_composite_summaries": l3_summaries,
         "risk_gate": dict(risk_summary),
@@ -1945,6 +2553,14 @@ def validate_report_input_bundle(obj: Mapping[str, Any]) -> tuple[bool, str]:
         return False, "invalid_schema"
     if obj.get("schema_version", REPORT_INPUT_BUNDLE_SCHEMA_VERSION) != REPORT_INPUT_BUNDLE_SCHEMA_VERSION:
         return False, "invalid_schema_version"
+    if "agent_task_summaries" in obj and not isinstance(obj.get("agent_task_summaries"), list):
+        return False, "agent_task_summaries_invalid"
+    if "agent_evidence_bundle" in obj:
+        bundle = obj.get("agent_evidence_bundle")
+        if not isinstance(bundle, Mapping):
+            return False, "agent_evidence_bundle_invalid"
+        if bundle.get("schema") != AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION:
+            return False, "agent_evidence_bundle_invalid_schema"
     if not isinstance(obj.get("l2_agent_summaries"), list):
         return False, "l2_agent_summaries_missing"
     if not isinstance(obj.get("l3_composite_summaries"), list):
@@ -1984,17 +2600,38 @@ def _format_l2_summary_line(item: Mapping[str, Any]) -> str:
     stance = _safe_public_text(item.get("stance") or "not_evaluated", limit=80)
     confidence = _format_confidence(item.get("confidence"))
     summary = _safe_public_text(item.get("summary"), limit=140)
-    return f"- {display_name}：信号 {stance}，置信度 {confidence}。{summary}"
+    detail_notes = item.get("detail_notes")
+    note_text = ""
+    if isinstance(detail_notes, list) and detail_notes:
+        notes = [
+            _safe_public_text(note, limit=80)
+            for note in detail_notes[:3]
+            if _safe_public_text(note, limit=80)
+        ]
+        if notes:
+            note_text = f" 证据质量：{'；'.join(notes)}。"
+    return f"- {display_name}：信号 {stance}，置信度 {confidence}。{summary}{note_text}"
 
 
 def _format_l3_summary_line(item: Mapping[str, Any]) -> str:
     display_name = _safe_public_text(item.get("display_name"), limit=80)
     dimension = _safe_public_text(item.get("dimension"), limit=40)
     confidence = _format_confidence(item.get("confidence"))
+    detail_notes = item.get("detail_notes")
+    note_text = ""
+    if isinstance(detail_notes, list) and detail_notes:
+        notes = [
+            _safe_public_text(note, limit=80)
+            for note in detail_notes[:2]
+            if _safe_public_text(note, limit=80)
+        ]
+        if notes:
+            note_text = f" 证据质量：{'；'.join(notes)}。"
     if dimension == "risk":
         return (
             f"- {display_name}：风险门 {item.get('gate', 'not_evaluated')}，"
             f"风险分 {_format_confidence(item.get('risk_score'))}，置信度 {confidence}。"
+            f"{note_text}"
         )
     if dimension == "macro":
         weights = item.get("dimension_weights", {})
@@ -2006,14 +2643,35 @@ def _format_l3_summary_line(item: Mapping[str, Any]) -> str:
         return (
             f"- {display_name}：宏观状态 {item.get('regime', 'not_evaluated')}，"
             f"value/market 权重 {weight_text or 'n/a'}，置信度 {confidence}。"
+            f"{note_text}"
         )
     stance = _safe_public_text(item.get("stance") or "not_evaluated", limit=80)
     members = item.get("members", [])
     member_count = len(members) if isinstance(members, list) else 0
-    return f"- {display_name}：综合信号 {stance}，成员 {member_count} 个，置信度 {confidence}。"
+    return (
+        f"- {display_name}：综合信号 {stance}，成员 {member_count} 个，"
+        f"置信度 {confidence}。{note_text}"
+    )
+
+
+def _format_agent_task_summary_line(item: Mapping[str, Any]) -> str:
+    display_name = _safe_public_text(item.get("display_name"), limit=80)
+    required_schema = _safe_public_text(item.get("required_output_schema"), limit=80)
+    instruction = _safe_public_text(item.get("task_instruction"), limit=180)
+    upstream = item.get("upstream_agent_ids", [])
+    upstream_count = len(upstream) if isinstance(upstream, list) else 0
+    return (
+        f"- {display_name}：要求输出 {required_schema}；"
+        f"上游输入 {upstream_count} 个；任务：{instruction}"
+    )
 
 
 def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict[str, str]]:
+    task_items = [
+        cast(dict[str, Any], item)
+        for item in report_input_bundle.get("agent_task_summaries", [])
+        if isinstance(item, Mapping)
+    ]
     l2_items = [
         cast(dict[str, Any], item)
         for item in report_input_bundle.get("l2_agent_summaries", [])
@@ -2024,6 +2682,12 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         for item in report_input_bundle.get("l3_composite_summaries", [])
         if isinstance(item, Mapping)
     ]
+    evidence_bundle = report_input_bundle.get("agent_evidence_bundle", {})
+    quality_summary = (
+        evidence_bundle.get("quality_summary", {})
+        if isinstance(evidence_bundle, Mapping)
+        else {}
+    )
     by_dimension = _summaries_by_dimension(l2_items)
     l2_lines: list[str] = []
     for dimension, label in (
@@ -2037,7 +2701,35 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         l2_lines.append(f"{label}单体智能体：")
         l2_lines.extend(_format_l2_summary_line(item) for item in by_dimension[dimension])
     l3_lines = [_format_l3_summary_line(item) for item in l3_items]
+    task_lines = [
+        _format_agent_task_summary_line(item)
+        for item in task_items
+        if item.get("layer") in {"L2", "L3", "L4"}
+    ][:24]
+    quality_lines: list[str] = []
+    if isinstance(quality_summary, Mapping):
+        quality_lines.append(
+            "L2 完成 {complete}/{total}，partial {partial}，error {error}，无可读证据 {thin}；L3 完成 {l3_complete}/{l3_total}。".format(
+                complete=int(quality_summary.get("l2_complete") or 0),
+                total=int(quality_summary.get("l2_total") or 0),
+                partial=int(quality_summary.get("l2_partial") or 0),
+                error=int(quality_summary.get("l2_error") or 0),
+                thin=int(quality_summary.get("l2_without_readable_evidence") or 0),
+                l3_complete=int(quality_summary.get("l3_complete") or 0),
+                l3_total=int(quality_summary.get("l3_total") or 0),
+            )
+        )
     return [
+        {
+            "id": "evidence_quality",
+            "title": "证据质量诊断",
+            "content": "\n".join(quality_lines) or "本轮没有可展示的证据质量统计。",
+        },
+        {
+            "id": "agent_task_orchestration",
+            "title": "智能体任务编排(agent_task_v1)",
+            "content": "\n".join(task_lines) or "本轮没有可展示的 agent_task_v1 任务摘要。",
+        },
         {
             "id": "l2_agent_evidence",
             "title": "单体智能体输入",

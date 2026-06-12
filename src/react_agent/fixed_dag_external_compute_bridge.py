@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import http.client
 import json
+import os
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
@@ -16,10 +17,12 @@ from typing import Any
 from urllib.parse import urlsplit
 
 from react_agent.fixed_dag_contracts import (
+    AGENT_TASK_SCHEMA_VERSION,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
     DIMENSION_COMPOSITE_AGENT_IDS,
     DIMENSION_COMPOSITE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
+    validate_agent_task,
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
@@ -51,6 +54,11 @@ Transport = Callable[
     [ExternalComputeDemoEntry, Mapping[str, Any], float],
     Mapping[str, Any],
 ]
+
+
+def _demo_base_url(agent_id: str, default: str) -> str:
+    env_name = f"EXTERNAL_COMPUTE_DEMO_URL_{agent_id.upper()}"
+    return str(os.getenv(env_name, default) or default).strip().rstrip("/")
 
 
 DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
@@ -161,7 +169,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "value_composite": ExternalComputeDemoEntry(
         agent_id="value_composite",
-        base_url="http://127.0.0.1:10015",
+        base_url=_demo_base_url("value_composite", "http://127.0.0.1:10015"),
         compute_path=COMPUTE_PATH,
         expected_payload="dimension_conclusion_v1",
         dimension="value",
@@ -169,7 +177,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "market_composite": ExternalComputeDemoEntry(
         agent_id="market_composite",
-        base_url="http://127.0.0.1:10023",
+        base_url=_demo_base_url("market_composite", "http://127.0.0.1:10023"),
         compute_path=COMPUTE_PATH,
         expected_payload="dimension_conclusion_v1",
         dimension="market",
@@ -177,7 +185,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "risk_composite": ExternalComputeDemoEntry(
         agent_id="risk_composite",
-        base_url="http://127.0.0.1:10016",
+        base_url=_demo_base_url("risk_composite", "http://127.0.0.1:10016"),
         compute_path=COMPUTE_PATH,
         expected_payload="risk_conclusion_v1",
         dimension="risk",
@@ -185,7 +193,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "macro_composite": ExternalComputeDemoEntry(
         agent_id="macro_composite",
-        base_url="http://127.0.0.1:10024",
+        base_url=_demo_base_url("macro_composite", "http://127.0.0.1:10024"),
         compute_path=COMPUTE_PATH,
         expected_payload="macro_conclusion_v1",
         dimension="macro",
@@ -259,10 +267,17 @@ def build_external_compute_request(
     question: str,
     as_of: str,
     request_id: str,
+    agent_task: Mapping[str, Any] | None = None,
+    upstream_outputs: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a production compute request for an allowlisted demo agent."""
     target = _target_for_entry(entry, question)
-    return {
+    safe_agent_task: dict[str, Any] | None = None
+    if isinstance(agent_task, Mapping):
+        valid_task, _task_reason = validate_agent_task(agent_task)
+        if valid_task:
+            safe_agent_task = dict(agent_task)
+    request = {
         "schema_version": EXTERNAL_AGENT_REQUEST_SCHEMA_VERSION,
         "request_id": request_id,
         "agent_id": entry.agent_id,
@@ -274,6 +289,12 @@ def build_external_compute_request(
             "dimension": entry.dimension,
             "environment": "production",
             "demo": True,
+            "user_question": question,
+            "task_instruction": (
+                safe_agent_task.get("task_instruction", "")
+                if safe_agent_task is not None
+                else ""
+            ),
         },
         "options": {
             "smoke": False,
@@ -283,6 +304,98 @@ def build_external_compute_request(
             "return_tool_result": True,
         },
     }
+    if safe_agent_task is not None:
+        request["agent_task"] = safe_agent_task
+        request["context"]["agent_task"] = safe_agent_task
+        request["context"]["agent_task_schema_version"] = AGENT_TASK_SCHEMA_VERSION
+    safe_upstream_outputs = _safe_upstream_outputs(
+        upstream_outputs,
+        safe_agent_task,
+    )
+    if safe_upstream_outputs:
+        request["context"]["upstream_outputs"] = safe_upstream_outputs
+        request["context"]["upstream_output_schema"] = "fixed_dag_mapped_outputs_v1"
+    return request
+
+
+def _safe_evidence_items(value: Any, *, limit: int = 4) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    items: list[dict[str, Any]] = []
+    for item in value[:limit]:
+        if not isinstance(item, Mapping):
+            continue
+        safe_item = {
+            key: item[key]
+            for key in (
+                "id",
+                "fact",
+                "source",
+                "as_of",
+                "data_as_of",
+                "unit",
+                "value",
+            )
+            if key in item
+        }
+        if safe_item:
+            items.append(safe_item)
+    return items
+
+
+def _safe_upstream_output(agent_id: str, value: Any) -> dict[str, Any] | None:
+    if not isinstance(value, Mapping):
+        return None
+    if value.get("agent_id") != agent_id:
+        return None
+    safe = {
+        key: value.get(key)
+        for key in (
+            "schema",
+            "schema_version",
+            "agent_id",
+            "dimension",
+            "role",
+            "status",
+            "stance",
+            "confidence",
+            "risk_score",
+            "summary",
+            "as_of",
+            "data_as_of",
+        )
+        if key in value
+    }
+    evidence = _safe_evidence_items(value.get("evidence"))
+    if evidence:
+        safe["evidence"] = evidence
+    return safe
+
+
+def _safe_upstream_outputs(
+    outputs: Mapping[str, Any] | None,
+    agent_task: Mapping[str, Any] | None,
+) -> dict[str, dict[str, Any]]:
+    if not isinstance(outputs, Mapping):
+        return {}
+    upstream_ids: list[str] = []
+    if isinstance(agent_task, Mapping) and isinstance(
+        agent_task.get("upstream_agent_ids"),
+        list,
+    ):
+        upstream_ids = [
+            str(agent_id)
+            for agent_id in agent_task["upstream_agent_ids"]
+            if isinstance(agent_id, str)
+        ]
+    if not upstream_ids:
+        upstream_ids = [str(agent_id) for agent_id in outputs if isinstance(agent_id, str)]
+    safe_outputs: dict[str, dict[str, Any]] = {}
+    for agent_id in upstream_ids[:24]:
+        safe_output = _safe_upstream_output(agent_id, outputs.get(agent_id))
+        if safe_output is not None:
+            safe_outputs[agent_id] = safe_output
+    return safe_outputs
 
 
 def _post_json_loopback(
@@ -336,6 +449,8 @@ def invoke_external_compute(
     as_of: str,
     request_id: str,
     timeout_seconds: float,
+    agent_task: Mapping[str, Any] | None = None,
+    upstream_outputs: Mapping[str, Any] | None = None,
     transport: Transport | None = None,
 ) -> dict[str, Any]:
     """Call one allowlisted compute endpoint and map its response safely."""
@@ -347,6 +462,8 @@ def invoke_external_compute(
         question=question,
         as_of=as_of,
         request_id=request_id,
+        agent_task=agent_task,
+        upstream_outputs=upstream_outputs,
     )
     try:
         response = (
@@ -369,6 +486,7 @@ def invoke_external_compute(
         "mapped": mapped,
         "failure_code": "",
         "warning": "",
+        "agent_task": dict(agent_task) if isinstance(agent_task, Mapping) else {},
     }
 
 
@@ -427,6 +545,7 @@ def run_external_compute_for_plan(
     context: Any,
     l2_conclusions: Mapping[str, Any],
     dimension_results: Mapping[str, Any] | None = None,
+    agent_tasks: Mapping[str, Any] | None = None,
     stages: tuple[str, ...] = ("l2_analysis", "dimension_composite"),
     transport: Transport | None = None,
 ) -> dict[str, Any]:
@@ -462,6 +581,11 @@ def run_external_compute_for_plan(
             continue
         entry = DEMO_COMPUTE_SERVICE_REGISTRY.get(agent_id)
         step_id = str(step.get("id") or agent_id)
+        agent_task = {}
+        if isinstance(agent_tasks, Mapping):
+            raw_task = agent_tasks.get(step_id) or agent_tasks.get(agent_id)
+            if isinstance(raw_task, Mapping):
+                agent_task = dict(raw_task)
         if entry is None:
             warning = "external_compute_demo_failed:agent_not_registered"
             result["warnings"].append(warning)
@@ -470,12 +594,19 @@ def run_external_compute_for_plan(
             continue
 
         timeout = _timeout_from_context(context, entry)
+        upstream_outputs = (
+            updated_l2
+            if stage == "dimension_composite"
+            else None
+        )
         mapped_result = invoke_external_compute(
             entry,
             question=question,
             as_of=as_of,
             request_id=f"r8-12-demo-{agent_id}",
             timeout_seconds=timeout,
+            agent_task=agent_task,
+            upstream_outputs=upstream_outputs,
             transport=transport,
         )
         result["called_agents"].append(agent_id)
@@ -505,6 +636,7 @@ def run_external_compute_for_plan(
             "status": "complete",
             "summary": "演示模式已读取生产 /compute 结构化结果并完成固定 DAG 适配映射。",
             "warning": "external_compute_demo_default_off_not_runtime_binding",
+            "agent_task": agent_task,
         }
 
     return result

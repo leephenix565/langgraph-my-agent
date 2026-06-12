@@ -106,6 +106,38 @@ def _safe_text_list(value: Any) -> list[str]:
     return items
 
 
+def _safe_agent_task_prompt_context(agent_task: Mapping[str, Any] | None) -> str:
+    """Render a bounded task context for the internal L2 placeholder prompt."""
+    if not isinstance(agent_task, Mapping):
+        return "agent_task_present: false"
+    upstream = agent_task.get("upstream_agent_ids", [])
+    if isinstance(upstream, list):
+        upstream_ids = ", ".join(_safe_text(item) for item in upstream[:_MAX_LIST_ITEMS])
+    else:
+        upstream_results = agent_task.get("upstream_results", {})
+        upstream_ids = (
+            ", ".join(str(key) for key in list(upstream_results)[:_MAX_LIST_ITEMS])
+            if isinstance(upstream_results, Mapping)
+            else ""
+        )
+    has_l1_data = bool(agent_task.get("has_l1_data_bundle") or agent_task.get("data_bundle"))
+    has_l1_entity = bool(
+        agent_task.get("has_l1_entity_relation_bundle")
+        or agent_task.get("entity_relation_bundle")
+    )
+    return "\n".join(
+        [
+            "agent_task_present: true",
+            f"agent_task_schema: {_safe_text(agent_task.get('schema'))}",
+            f"agent_task_instruction: {_safe_text(agent_task.get('task_instruction'))}",
+            f"required_output_schema: {_safe_text(agent_task.get('required_output_schema'))}",
+            f"has_l1_data_bundle: {has_l1_data}",
+            f"has_l1_entity_relation_bundle: {has_l1_entity}",
+            f"upstream_agent_ids: {upstream_ids}",
+        ]
+    )
+
+
 def _safe_confidence(value: Any) -> float:
     try:
         confidence = float(value)
@@ -153,15 +185,19 @@ def build_l2_placeholder_prompt(
     agent_label: str,
     plan: Mapping[str, Any] | None,
     as_of: str,
+    agent_task: Mapping[str, Any] | None = None,
 ) -> str:
     """Build the bounded JSON-only prompt for one L2 placeholder slot."""
     plan_schema = str(plan.get("schema") or "") if isinstance(plan, Mapping) else ""
     plan_id = str(plan.get("plan_id") or "") if isinstance(plan, Mapping) else ""
     selected = plan_schema == SELECTED_FIXED_DAG_SCHEMA_VERSION
+    task_context = _safe_agent_task_prompt_context(agent_task)
     return (
         "你是 langgraph-my-agent 主系统内部 fixed-DAG L2 占位能力。"
         "你不是服务器上的真实外部专属智能体，不得声称调用了真实 agent、HTTP 服务、实时数据库或搜索。"
         "不要编造实时数据、目标价、收益率、回测结果、财报数字或已验证事实。"
+        "必须优先理解 agent_task_v1 中的中文任务指令、L1 证据是否存在、"
+        "以及该 agent 的 required_output_schema。"
         "只能输出该功能位正式接入前应关注的分析框架、需补数据和初步非结论性观察。"
         "不要输出 chain-of-thought、密钥、端点、traceback、raw provider response。"
         "仅输出 JSON 对象，字段为 analysis、key_points、evidence、confidence。"
@@ -173,6 +209,7 @@ def build_l2_placeholder_prompt(
         f"\nplan_schema: {plan_schema}"
         f"\nplan_id: {plan_id}"
         f"\nselected_plan: {selected}"
+        f"\n{task_context}"
     )
 
 
@@ -232,6 +269,7 @@ def build_internal_llm_placeholder_conclusion(
     plan: Mapping[str, Any] | None,
     as_of: str,
     model: Any,
+    agent_task: Mapping[str, Any] | None = None,
 ) -> ConclusionObject:
     """Build one public-safe L2 internal LLM placeholder conclusion."""
     dimension = AGENT_DIMENSIONS[agent_id]
@@ -242,6 +280,7 @@ def build_internal_llm_placeholder_conclusion(
         agent_label=AGENT_TITLE_LABELS.get(agent_id, agent_id),
         plan=plan,
         as_of=as_of,
+        agent_task=agent_task,
     )
     try:
         raw_text = _content_from_model_response(model.invoke(prompt))
@@ -281,6 +320,12 @@ def build_internal_llm_placeholder_conclusion(
             "external_invoked": False,
             "deployed_but_deferred": agent_id in _KNOWN_DEPLOYED_BUT_DEFERRED_L2_AGENT_IDS,
             "raw_model_output_stored": False,
+            "agent_task_schema": _safe_text(agent_task.get("schema"))
+            if isinstance(agent_task, Mapping)
+            else "",
+            "required_output_schema": _safe_text(agent_task.get("required_output_schema"))
+            if isinstance(agent_task, Mapping)
+            else "",
         },
     }
     if agent_id == "sentiment_company_radar":
@@ -294,6 +339,7 @@ def build_l2_conclusions_with_internal_placeholders(
     question: str,
     as_of: str,
     context: Any,
+    agent_tasks: Mapping[str, Any] | None = None,
 ) -> dict[str, ConclusionObject]:
     """Build selected/full L2 conclusions through the internal placeholder seam."""
     deterministic = build_l2_conclusions(plan, as_of=as_of)
@@ -319,6 +365,9 @@ def build_l2_conclusions_with_internal_placeholders(
             plan=plan,
             as_of=as_of,
             model=model,
+            agent_task=agent_tasks.get(f"l2:{agent_id}") or agent_tasks.get(agent_id)
+            if isinstance(agent_tasks, Mapping)
+            else None,
         )
         for agent_id in agent_ids
         if agent_id in deterministic

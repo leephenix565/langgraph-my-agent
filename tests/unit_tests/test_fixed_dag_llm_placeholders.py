@@ -4,6 +4,7 @@ from types import SimpleNamespace
 
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
+    build_agent_task,
     build_default_fixed_dag_plan,
     build_route_intent,
     compile_selected_fixed_dag_plan,
@@ -12,6 +13,7 @@ from react_agent.fixed_dag_contracts import (
 from react_agent.fixed_dag_llm_placeholders import (
     INTERNAL_LLM_PLACEHOLDER_SOURCE,
     build_l2_conclusions_with_internal_placeholders,
+    build_l2_placeholder_prompt,
     parse_l2_placeholder_response,
 )
 
@@ -74,6 +76,32 @@ def test_internal_llm_placeholder_success_builds_safe_partial_conclusion(monkeyp
     assert conclusion["provenance"]["deployed_but_deferred"] is True
     assert conclusion["output_routes"] == ["market_composite"]
     assert "真实外部专属智能体" in fake_model.prompts[0]
+
+
+def test_internal_llm_placeholder_prompt_includes_agent_task_contract() -> None:
+    task = build_agent_task(
+        "value_ml_valuation",
+        question="请分析贵州茅台 600519.SH",
+        as_of="2026-06-09",
+        data_bundle={"schema": "data_bundle_v1", "target": "600519.SH"},
+        entity_relation_bundle={"schema": "entity_relation_bundle_v1"},
+    )
+
+    prompt = build_l2_placeholder_prompt(
+        question="请分析贵州茅台 600519.SH",
+        agent_id="value_ml_valuation",
+        dimension="value",
+        agent_label="机器学习企业估值",
+        plan=build_default_fixed_dag_plan("请分析贵州茅台", as_of="2026-06-09"),
+        as_of="2026-06-09",
+        agent_task=task,
+    )
+
+    assert "agent_task_present: true" in prompt
+    assert "agent_task_schema: agent_task_v1" in prompt
+    assert "required_output_schema: agent_conclusion_v1" in prompt
+    assert "has_l1_data_bundle: True" in prompt
+    assert "机器学习企业估值智能体" in prompt
 
 
 def test_provider_missing_falls_back_to_deterministic_pending_without_raw_leakage(monkeypatch) -> None:

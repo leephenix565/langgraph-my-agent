@@ -30,9 +30,13 @@ from react_agent.fixed_dag_contracts import (
     RISK_AGENT_IDS,
     SELECTED_FIXED_DAG_SCHEMA_VERSION,
     VALUE_AGENT_IDS,
+    build_agent_task_summaries,
+    build_agent_tasks_for_plan,
+    build_data_bundle,
     build_decision_result,
     build_default_fixed_dag_plan,
     build_dimension_results,
+    build_entity_relation_bundle,
     build_l2_conclusions,
     build_report_input_bundle,
     build_report_result,
@@ -562,13 +566,81 @@ def _apply_external_compute_step_updates(
             warning = str(update.get("warning") or "")
             if warning and warning not in step_results[str(step_id)]["warnings"]:
                 step_results[str(step_id)]["warnings"].append(warning)
+            agent_task = update.get("agent_task")
+            if isinstance(agent_task, Mapping):
+                step_results[str(step_id)]["agent_task"] = {
+                    key: agent_task[key]
+                    for key in (
+                        "schema",
+                        "schema_version",
+                        "agent_id",
+                        "display_name",
+                        "layer",
+                        "dimension",
+                        "task_instruction",
+                        "target",
+                        "as_of",
+                        "required_output_schema",
+                    )
+                    if key in agent_task
+                }
 
 
 def _attach_report_input_bundle_to_step_results(
     step_results: dict[str, dict],
     report_input_bundle: Mapping[str, Any],
 ) -> None:
+    evidence_bundle = report_input_bundle.get("agent_evidence_bundle", {})
+    if isinstance(evidence_bundle, Mapping):
+        l1_evidence = evidence_bundle.get("l1_evidence", {})
+        if isinstance(l1_evidence, Mapping):
+            if "financial_data_service" in step_results:
+                step_results["financial_data_service"]["agent_evidence"] = {
+                    "schema": "agent_evidence_bundle_v1.l1_evidence",
+                    "agent_id": "financial_data_service",
+                    "status": l1_evidence.get("data_bundle_status", ""),
+                    "sources_count": l1_evidence.get("data_sources_count", 0),
+                    "summary": "L1 金融数据证据输入状态。",
+                }
+            if "entity_relation_extractor" in step_results:
+                step_results["entity_relation_extractor"]["agent_evidence"] = {
+                    "schema": "agent_evidence_bundle_v1.l1_evidence",
+                    "agent_id": "entity_relation_extractor",
+                    "status": l1_evidence.get("entity_relation_status", ""),
+                    "entities_count": l1_evidence.get("entities_count", 0),
+                    "relations_count": l1_evidence.get("relations_count", 0),
+                    "summary": "L1 实体关系证据输入状态。",
+                }
+    task_items = report_input_bundle.get("agent_task_summaries", [])
+    if isinstance(task_items, list):
+        for item in task_items:
+            if not isinstance(item, Mapping):
+                continue
+            step_id = str(item.get("step_id") or "")
+            if step_id in step_results:
+                step_results[step_id]["agent_task"] = {
+                    key: item[key]
+                    for key in (
+                        "schema",
+                        "agent_id",
+                        "display_name",
+                        "layer",
+                        "dimension",
+                        "task_instruction",
+                        "target",
+                        "as_of",
+                        "required_output_schema",
+                        "upstream_agent_ids",
+                        "has_l1_data_bundle",
+                        "has_l1_entity_relation_bundle",
+                    )
+                    if key in item
+                }
     l2_items = report_input_bundle.get("l2_agent_summaries", [])
+    if isinstance(evidence_bundle, Mapping) and isinstance(
+        evidence_bundle.get("l2_agent_outputs"), list
+    ):
+        l2_items = evidence_bundle["l2_agent_outputs"]
     if isinstance(l2_items, list):
         for item in l2_items:
             if not isinstance(item, Mapping):
@@ -591,10 +663,20 @@ def _attach_report_input_bundle_to_step_results(
                         "data_as_of",
                         "source",
                         "risk_score",
+                        "evidence_count",
+                        "detail_notes",
+                        "evidence_items",
+                        "provenance_notes",
+                        "required_output_schema",
+                        "received_output_schema",
                     )
                     if key in item
                 }
     l3_items = report_input_bundle.get("l3_composite_summaries", [])
+    if isinstance(evidence_bundle, Mapping) and isinstance(
+        evidence_bundle.get("l3_composite_outputs"), list
+    ):
+        l3_items = evidence_bundle["l3_composite_outputs"]
     if isinstance(l3_items, list):
         for item in l3_items:
             if not isinstance(item, Mapping):
@@ -624,6 +706,11 @@ def _attach_report_input_bundle_to_step_results(
                         "as_of",
                         "data_as_of",
                         "source",
+                        "evidence_refs",
+                        "detail_notes",
+                        "provenance_notes",
+                        "required_output_schema",
+                        "received_output_schema",
                     )
                     if key in item
                 }
@@ -800,6 +887,15 @@ def execute_fixed_dag_plan(
                 summary=_summary_for_step(step),
             )
 
+    data_bundle = build_data_bundle(execution_plan)
+    entity_relation_bundle = build_entity_relation_bundle(execution_plan)
+    l2_agent_tasks = build_agent_tasks_for_plan(
+        execution_plan,
+        question=question,
+        as_of=as_of,
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_relation_bundle,
+    )
     internal_placeholders_enabled = bool(
         getattr(context, "enable_internal_llm_placeholders", False)
     )
@@ -809,6 +905,7 @@ def execute_fixed_dag_plan(
             question=question,
             as_of=as_of,
             context=context,
+            agent_tasks=l2_agent_tasks,
         )
     else:
         l2_conclusions = build_l2_conclusions(execution_plan, as_of=as_of)
@@ -839,11 +936,21 @@ def execute_fixed_dag_plan(
             as_of=as_of,
             context=context,
             l2_conclusions=l2_conclusions,
+            agent_tasks=l2_agent_tasks,
             stages=("l2_analysis",),
         )
         l2_conclusions = cast(dict[str, Any], external_l2_run["l2_conclusions"])
     dimension_results = build_dimension_results(l2_conclusions, as_of=as_of)
     if external_compute_demo_enabled:
+        l3_agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+        )
         external_l3_run = run_external_compute_for_plan(
             execution_plan,
             question=question,
@@ -851,6 +958,7 @@ def execute_fixed_dag_plan(
             context=context,
             l2_conclusions=l2_conclusions,
             dimension_results=dimension_results,
+            agent_tasks=l3_agent_tasks,
             stages=("dimension_composite",),
         )
         l2_conclusions = cast(dict[str, Any], external_l3_run["l2_conclusions"])
@@ -865,11 +973,24 @@ def execute_fixed_dag_plan(
             external_l3_run,
         )
     decision_result = build_decision_result(dimension_results, as_of=as_of)
+    agent_tasks = build_agent_tasks_for_plan(
+        execution_plan,
+        question=question,
+        as_of=as_of,
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_relation_bundle,
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+    )
     report_input_bundle = build_report_input_bundle(
         question=question,
         l2_conclusions=l2_conclusions,
         dimension_results=dimension_results,
         decision_result=decision_result,
+        agent_tasks=agent_tasks,
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_relation_bundle,
     )
     valid_report_input_bundle, _report_input_bundle_reason = validate_report_input_bundle(
         report_input_bundle
@@ -954,6 +1075,7 @@ def execute_fixed_dag_plan(
         "l2_conclusions": l2_conclusions,
         "dimension_results": dimension_results,
         "decision_result": decision_result,
+        "agent_task_summaries": build_agent_task_summaries(agent_tasks),
         "report_input_bundle": report_input_bundle,
         "report_result": report_result,
         "limitations": limitations,
