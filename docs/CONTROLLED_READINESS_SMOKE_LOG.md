@@ -9,6 +9,37 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-12 - R8-13E production L3 backfill and smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13E |
+| Backup root | `/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z` |
+| Restart log root | `/tmp/lma-r8-13e-prod-l3-restart/20260612T024553Z` |
+| Smoke artifact root | `/tmp/lma-r8-13e-prod-l3-smoke/20260612T024649Z` |
+| Endpoint calls | production `/health` and `/v1/agent/compute` for four L3 services |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+
+Production L3 result:
+
+| Agent | Health | Compute | Adapter mapping |
+| --- | --- | --- | --- |
+| `value_composite` | pass | pass | pass |
+| `market_composite` | pass | pass | pass |
+| `risk_composite` | pass | pass | pass |
+| `macro_composite` | pass | pass | pass |
+
+Non-claims:
+
+- This does not enable runtime bindings or default external invocation.
+- This does not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not call `/v1/agent/invoke`.
+- This does not change business models, scoring algorithms, feature
+  engineering, model files, data files, or deployment configuration.
+
 ## 2026-06-12 - R8-13D sandbox L3 backfill handoff package
 
 | Field | Value |

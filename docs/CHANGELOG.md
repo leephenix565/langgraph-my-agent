@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-12 - Phase R8-13E production L3 backfill and smoke
+
+### Changed
+
+- Applied the R8-13D reviewed protocol-wrapper patches to the four production
+  L3 composite service directories:
+  `value_composite`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
+- Added support for `context.upstream_outputs` in the production L3 services so
+  they can synthesize L3 payloads from the current run's L2 outputs.
+- Added focused service tests for the upstream-output wrapper behavior where
+  needed.
+- Added `docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md` with changed files,
+  backup path, validation, restart, smoke artifacts, rollback, and non-claims.
+
+### Evidence
+
+- Backup root:
+  `/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z`.
+- Restart log root:
+  `/tmp/lma-r8-13e-prod-l3-restart/20260612T024553Z`.
+- Smoke artifact root:
+  `/tmp/lma-r8-13e-prod-l3-smoke/20260612T024649Z`.
+- All four L3 services passed production `/health`, production
+  `/v1/agent/compute`, and main-system adapter mapping.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No runtime binding or live flag was changed.
+- No default graph production invocation was enabled.
+- Business models, feature engineering, scoring algorithms, data files, and
+  deployment configuration were not changed.
+
 ## 2026-06-12 - Phase R8-13D sandbox L3 backfill handoff package
 
 ### Changed

@@ -172,6 +172,20 @@ R8-13D does not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`;
 does not set live flags; does not update `runtime_bindings.json`; and does not
 make sandbox L3 wrapper success a production readiness claim.
 
+## R8-13E Production L3 Backfill Smoke Boundary
+
+R8-13E is controlled production service work for the four L3 composite services
+only. It may modify the protocol wrapper layer in those service directories,
+run focused service tests, restart only ports `10015`, `10023`, `10016`, and
+`10024`, and call production `/health` + `/v1/agent/compute` for those four
+services.
+
+R8-13E must not call `/v1/agent/invoke`, must not change
+`runtime_bindings.json`, must not set `live_verified=true`, must not set
+`invoke_enabled_by_default=true`, and must not enable default graph calls to
+production services. Passing this phase proves controlled L3 protocol and
+adapter mapping after backfill only.
+
 ## R8-8P-DOCS-QA Documentation Boundary
 
 R8-8P-DOCS-QA is docs-only. It deepens the production matrix and developer

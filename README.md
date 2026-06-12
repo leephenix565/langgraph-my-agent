@@ -291,11 +291,20 @@ changes, safe apply order, validation, rollback, and non-claims. This package
 does not call endpoints, does not modify `/sdb/dlut/prod`, does not change
 runtime bindings, and does not enable default external invocation.
 
+Phase R8-13E applies those reviewed L3 wrapper patches to the four production
+L3 service directories and records controlled production `/health` +
+`/v1/agent/compute` smoke evidence. The changed service layer now accepts
+bounded `context.upstream_outputs` for L3 composite requests. All four L3
+services passed compute and adapter mapping after backfill. See
+`docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md`. This still does not call
+`/v1/agent/invoke`, change runtime bindings, set live flags, or enable default
+graph calls to production services.
+
 ## Current Branch Scope
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-13D sandbox L3 backfill handoff packaging over the existing
+- Current phase: R8-13E production L3 wrapper backfill smoke over the existing
   full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
   placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
   provider-free adapter seam, and v2.3.1 scaffold package.

@@ -1554,3 +1554,28 @@ Non-consequence: R8-13D does not modify `/sdb/dlut/prod`, does not call
 `/v1/agent/invoke`, does not change `runtime_bindings.json`, does not set
 `live_verified=true`, does not set `invoke_enabled_by_default=true`, and does
 not prove production readiness for the L3 services.
+
+## ADR-059: R8-13E Backfills Production L3 Wrappers Without Runtime Enablement
+
+Status: accepted for controlled production L3 protocol backfill.
+
+Decision: R8-13E applies the reviewed R8-13D service wrapper patches to the
+four production L3 composite service directories. The patches add support for
+bounded `context.upstream_outputs` so `value_composite`, `market_composite`,
+`risk_composite`, and `macro_composite` can synthesize their L3 payloads from
+the current run's L2 outputs.
+
+Reason: the sandbox R8-13C trace proved the intended orchestration shape, but
+the formal production L3 services still needed the same protocol wrapper
+behavior before a production controlled smoke could verify it. Applying only
+the protocol wrapper layer keeps the business algorithms and deployment
+configuration unchanged.
+
+Consequence: the four L3 production services now pass controlled production
+`/health` + `/v1/agent/compute` smoke with adapter mapping. The smoke artifact
+root is `/tmp/lma-r8-13e-prod-l3-smoke/20260612T024649Z`.
+
+Non-consequence: R8-13E does not call `/v1/agent/invoke`, does not change
+`runtime_bindings.json`, does not set `live_verified=true`, does not set
+`invoke_enabled_by_default=true`, and does not enable default graph calls to
+production external services.
