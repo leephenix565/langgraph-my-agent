@@ -16,7 +16,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/QUALITY.md` | R6-B reset mainline, frontend repo-external build gate, and manual/live/archived quality boundaries. |
 | `docs/DECISIONS.md` | Reset architecture decisions. |
 | `docs/CHANGELOG.md` | Reset branch changelog. |
-| `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` | Main-system dev/prod/sandbox directory roles, sync policy, documentation authority, and docs compaction guidance. |
+| `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` | Main-system dev/prod/sandbox directory roles, sync policy, external-agent repo ownership boundary, documentation authority, and docs compaction guidance. |
 | `docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` | Current progress and next-phase roadmap: A/B/C agent work classes, near/medium/long-term sequencing, demo/runtime boundaries, and a new-session Codex prompt. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
@@ -129,6 +129,10 @@ R8-13I documents the server directory model for the main system:
 experiment area, and `prod` is a runtime/deployment copy. It also records which
 docs are current authority, which docs are phase records, and which docs should
 be merged only in a later docs-compaction phase.
+It now also clarifies that other `/sdb/dlut/dev/*` agent repositories are owned
+by their own developers, while user sandbox agent experiments and
+developer-owned dev-agent changes are synchronized to prod through separate
+owner-controlled flows.
 R8-13J adds `docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` as the current roadmap
 entry point for future work. It consolidates current progress, A/B/C agent work
 classes, near-term P0/P1/P2 priorities, medium/long-term runtime preparation,

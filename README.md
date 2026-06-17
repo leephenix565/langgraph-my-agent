@@ -18,7 +18,10 @@ Repository operations now use an explicit three-directory convention:
 `/sdb/dlut/sandbox/langgraph-my-agent-r8-a-class` is an experiment area, and
 `/sdb/dlut/prod/langgraph-my-agent` is the runtime/deployment copy. See
 `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` for the directory roles, sync policy,
-and documentation authority map.
+documentation authority map, and external-agent repository ownership boundary.
+Other agent repositories under `/sdb/dlut/dev/*` remain owned by their
+developers; user sandbox agent experiments and developer-owned dev-agent
+changes are synchronized to prod through separate owner-controlled flows.
 
 The current next-phase roadmap is centralized in
 `docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md`. Use it as the first planning entry

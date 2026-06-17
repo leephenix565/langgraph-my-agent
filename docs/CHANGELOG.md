@@ -3,6 +3,28 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Documentation clarification for external agent repo ownership
+
+### Changed
+
+- Clarified in the repository environment guide that
+  `/sdb/dlut/dev/langgraph-my-agent` is the main-system dev authority, while
+  other `/sdb/dlut/dev/*` agent repositories are owned by their corresponding
+  developers.
+- Documented that user sandbox agent experiments may be synchronized by the
+  user to prod, while other developers synchronize their own dev-agent changes
+  to prod through their service workflows.
+- Updated README, roadmap, docs index, and ADR wording so future sessions do
+  not treat external agent dev repositories as main-system writable authority.
+
+### Not Done
+
+- No runtime binding was enabled.
+- No live flags were set.
+- No endpoint was called.
+- No production service source was modified.
+- No external agent repository was modified.
+
 ## 2026-06-17 - Phase R8-13J next phase roadmap
 
 ### Changed

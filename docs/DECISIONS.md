@@ -46,7 +46,10 @@ Consequence: future main-system work should be committed and pushed from dev,
 sandbox work should be backfilled into dev before it becomes authoritative, and
 prod should be updated from stable pushed commits. Phase documents remain
 historical records until a dedicated docs-compaction phase merges them into
-current authority documents.
+current authority documents. Other `/sdb/dlut/dev/*` agent repositories remain
+owned by their respective developers; user sandbox agent experiments and
+developer-owned dev-agent changes reach prod through separate owner-controlled
+flows.
 
 ## ADR-055: R8-13H Tests A-Class L1/L2 Bridge In Sandbox Before Prod Backfill
 

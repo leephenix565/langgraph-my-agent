@@ -18,6 +18,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 维护；主系统只记录协议、adapter、demo bridge、trace、readiness evidence
 和开发者修复提示词。
 
+外部 agent 仓库的 dev/sandbox/prod 流程必须按 owner 区分：用户可以在 sandbox
+自由试改并按需同步到 prod；其他开发者维护的 dev agent 仓库由对应开发者负责
+开发和同步到 prod。主系统维护者不能默认改写其他开发者的 dev agent 仓库。
+
 ## Current Snapshot
 
 截至 R8-13I：
@@ -54,6 +58,16 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 sandbox 先试大改
   -> dev 整理成正式代码、测试、文档、commit、push
   -> prod 从稳定提交更新部署
+```
+
+这个顺序只描述主系统仓库。外部 agent 的同步边界是：
+
+```text
+用户 sandbox agent 实验
+  -> 用户按需同步到对应 prod agent 运行目录
+
+其他开发者 dev agent 仓库
+  -> 对应开发者按服务流程同步到 prod agent 运行目录
 ```
 
 三个目录的职责：

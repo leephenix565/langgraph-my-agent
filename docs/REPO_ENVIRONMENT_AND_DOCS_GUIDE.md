@@ -23,6 +23,23 @@
 外部智能体服务由各自 owner 维护，主系统仓库只记录协议、接入、adapter、runbook
 和 readiness 证据，不把外部服务源码并入主系统。
 
+## External Agent Repository Ownership
+
+主系统目录规则不能直接套用到其他外部 agent 仓库：
+
+- `/sdb/dlut/dev/langgraph-my-agent` 是主系统 dev 权威目录。
+- `/sdb/dlut/dev/*` 下的其他 agent 仓库由对应开发者自己开发、修改和维护；
+  主系统维护者不能默认把这些仓库当作可随意改写的工作区。
+- `/sdb/dlut/sandbox/*` 是用户可自由试验、大改和验证的区域；如果用户在
+  sandbox 中修改了 agent，可以由用户按需要把验证后的改动同步到对应 prod 运行目录。
+- `/sdb/dlut/prod/*` 是运行目录。用户从 sandbox 同步到 prod 的 agent 改动，
+  和其他同学从各自 dev agent 仓库同步到 prod 的改动，是两条不同来源的流程。
+- 其他开发者在自己 dev agent 仓库中的修改，应由对应开发者按其服务流程同步到 prod；
+  主系统文档只记录协议、证据和交接要求，不替代外部 agent owner 的源码管理。
+
+因此，后续处理外部 agent 时必须先确认来源：这是用户的 sandbox 实验、用户要同步
+到 prod 的运行改动，还是其他开发者拥有的 dev agent 仓库改动。
+
 ## Directory Roles
 
 | Directory | Role | How To Use |
@@ -37,6 +54,16 @@
 sandbox 先试验
   -> dev 整理成正式代码、测试、文档、commit、push
   -> prod 从稳定 commit 更新部署
+```
+
+上面流程只描述主系统仓库。外部 agent 的运行同步另按 owner 和来源区分：
+
+```text
+用户 sandbox agent 实验
+  -> 用户按需同步到对应 prod agent 运行目录
+
+其他开发者 dev agent 仓库
+  -> 对应开发者按服务流程同步到 prod agent 运行目录
 ```
 
 通俗说：
@@ -158,4 +185,4 @@ docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md
 - 不证明 production readiness。
 - 不把 sandbox 实验结果直接等同于 production evidence。
 - 不把 prod 目录改动当作长期源码管理替代品。
-
+- 不把其他开发者维护的 dev agent 仓库当作主系统可直接改写的权威目录。
