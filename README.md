@@ -20,6 +20,12 @@ Repository operations now use an explicit three-directory convention:
 `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` for the directory roles, sync policy,
 and documentation authority map.
 
+The current next-phase roadmap is centralized in
+`docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md`. Use it as the first planning entry
+point for new Codex sessions: it summarizes current progress, A/B/C agent work
+classes, near-term end-to-end trace priorities, production compute/invoke
+boundaries, and which docs should be compacted later.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -344,10 +350,10 @@ introduced.
 
 - Branch: `reset/fixed-dag-v1`.
 - Reset base: `pre-fixed-dag-reset-20260604-1457`.
-- Current phase: R8-13G value L2 stance remediation over the existing
-  full/selected fixed DAG backend skeleton, R8-6B default-off internal LLM
-  placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
-  provider-free adapter seam, and v2.3.1 scaffold package.
+- Current phase: R8-13J documentation roadmap over the existing
+  full/selected fixed DAG backend skeleton, R8-12 default-off external compute
+  demo bridge, R8-12C/R8-12D evidence-bundle report synthesis, R8-13F
+  end-to-end trace restoration, and R8-13G value L2 stance remediation.
 - Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.

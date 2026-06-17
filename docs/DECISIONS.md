@@ -3,6 +3,28 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-062: R8-13J Adds A Next Phase Roadmap Without Runtime Change
+
+Status: accepted.
+
+Decision: the main-system docs now include
+`docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` as the current roadmap entry point. The
+roadmap consolidates current fixed DAG progress, A/B/C agent work classes,
+near-term demo trace and A-class remediation priorities, medium/long-term
+runtime preparation, and documentation cleanup guidance.
+
+Reason: the project accumulated accurate but distributed status across the
+readiness matrix, smoke log, demo runbooks, changelog, ADRs, and phase handoff
+docs. A new Codex session can understand the repository, but only after reading
+many files. The roadmap gives future sessions one planning-oriented entry point
+without deleting the audit trail.
+
+Consequence: future planning should start with the roadmap, then drill into the
+readiness matrix and smoke log for evidence. The roadmap is not runtime
+authority, does not modify `runtime_bindings.json`, does not set live flags,
+does not call endpoints, and does not promote demo evidence into production
+readiness.
+
 ## ADR-056: R8-13I Defines Dev Sandbox Prod Roles And Documentation Authority
 
 Status: accepted.

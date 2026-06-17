@@ -3,6 +3,26 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Phase R8-13J next phase roadmap
+
+### Changed
+
+- Added `docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` as the current roadmap entry
+  point for new Codex sessions and project planning.
+- Consolidated current progress, A/B/C agent work classes, P0/P1/P2/P3/P4
+  next work, medium/long-term runtime preparation, documentation cleanup
+  guidance, and a copy-ready new-session Codex prompt.
+- Updated README and docs index so the roadmap is discoverable alongside the
+  repository environment guide and readiness matrix.
+
+### Not Done
+
+- No runtime binding was enabled.
+- No live flags were set.
+- No endpoint was called.
+- No production service source was modified.
+- No phase-record document was deleted or archived.
+
 ## 2026-06-17 - Phase R8-13I repository environment and docs authority guide
 
 ### Changed
