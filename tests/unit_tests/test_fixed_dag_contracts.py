@@ -787,6 +787,22 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
         }
     ]
     dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    dimensions["value"].setdefault("provenance", {})["member_weight_summary"] = [
+        {
+            "agent_id": "value_ml_valuation",
+            "weight": 0.7,
+            "stance": 0.2,
+            "confidence": 0.66,
+            "status": "ok",
+        },
+        {
+            "agent_id": "value_research_synthesis",
+            "weight": 0.3,
+            "stance": 0.0,
+            "confidence": 0.3,
+            "status": "partial",
+        },
+    ]
     dimensions["risk"]["gate"] = "manual_review"
     dimensions["risk"]["veto"] = False
     decision = build_decision_result(dimensions, as_of="2026-06-04")
@@ -817,8 +833,38 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
     assert "单体智能体输入" in report["answer"]
     assert "综合智能体输入" in report["answer"]
     assert "机器学习企业估值" in report["answer"]
+    assert "主要成员：机器学习企业估值" in report["answer"]
+    assert "L3 输出" in report["answer"]
     assert "raw_response" not in rendered
     assert "must_not_leak" not in rendered
+
+
+def test_report_input_bundle_quality_summary_counts_l3_partial_outputs() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    for result in dimensions.values():
+        result["status"] = "partial"
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+    )
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    quality = bundle["agent_evidence_bundle"]["quality_summary"]
+
+    assert quality["l3_total"] == 4
+    assert quality["l3_complete"] == 0
+    assert quality["l3_partial"] == 4
+    assert quality["l3_error"] == 0
+    assert quality["l3_available"] == 4
+    assert "L3 输出 4/4，complete 0，partial 4，error 0" in report["answer"]
 
 
 def test_agent_task_v1_carries_l1_and_l2_upstream_context_safely() -> None:

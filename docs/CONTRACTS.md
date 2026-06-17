@@ -737,6 +737,8 @@ Runtime fields:
 - `schema_version`
 - `question`
 - `status`
+- `agent_task_summaries`
+- `agent_evidence_bundle`
 - `l2_agent_summaries`
 - `l3_composite_summaries`
 - `risk_gate`
@@ -749,6 +751,24 @@ Runtime fields:
 `display_name`, `dimension`, `stance`, `confidence`, `summary`, and source.
 `l3_composite_summaries[]` adds bounded composite-specific fields such as
 members, risk gate/risk score, macro regime, and value/market macro weights.
+`agent_evidence_bundle.l2_agent_outputs[]` and
+`agent_evidence_bundle.l3_composite_outputs[]` may include additive
+public-safe report material:
+
+- `evidence_items`: bounded fact/source/as-of evidence items.
+- `domain_metrics`: allowlisted business metrics from mapped external
+  `raw_output`, such as valuation bridges, model vote counts, risk scores,
+  regime details, member counts, or fair-value ranges.
+- `drivers`: allowlisted named drivers, model features, method assumptions,
+  rubric tables, member-weight summaries, warnings, or fusion details.
+- `research_points`: bounded deterministic research judgments with
+  `claim`, `support`, `interpretation`, `decision_implication`, and `caveat`.
+- `data_quality`: bounded coverage, data-source, anti-lookahead, cached,
+  missing-component, corpus, or composite-status notes.
+
+Fallback report rendering prefers the detailed `agent_evidence_bundle` entries
+when present. Compact summaries remain available for UI surfaces that only need
+a short status overview.
 The bundle is validated before report rendering and before
 `validate_dag_execution_result` accepts an execution result.
 
@@ -777,9 +797,17 @@ Runtime controls:
 - optional `Context.llm_report_synthesis_model`
 - optional `LLM_REPORT_SYNTHESIS_MODEL`
 
-Failure behavior: provider/model load failure, parse failure, invalid schema,
-or unsafe output returns the fallback template `report_result_v1`. The fallback
-must remain valid and public-safe.
+Failure behavior: invalid report input, provider/model load failure, missing
+known-provider credentials, parse failure, invalid schema, or unsafe output
+returns the fallback template `report_result_v1`. The fallback must remain
+valid and public-safe.
+
+Provider preflight: for known providers such as DeepSeek/OpenAI, the
+synthesizer records only secret-free readiness metadata such as `provider`,
+`model`, `credential_status`, `base_url_status`, and `preflight_status`. Missing
+credentials short-circuit before any provider invocation. Credential names,
+credential values, raw provider responses, and endpoint URLs must not enter
+graph state or public workflow.
 
 Safety rules:
 
@@ -789,6 +817,10 @@ Safety rules:
 - It must not store raw model output in graph state or public workflow.
 - It may set public workflow `providerInvoked=true` when the explicit synthesis
   flag actually invokes the configured model.
+- L3 composite agents may later use an LLM as a default-off language
+  explanation/conflict-summary layer only. The LLM must not override
+  deterministic fusion fields such as `stance`, `gate`, `risk_score`,
+  `dimension_weights`, member weights, or confidence.
 
 ## workflow_snapshot_v2
 
@@ -812,7 +844,10 @@ Public fields:
 `finalSource` is currently `reset_skeleton`.
 R8-12C may include optional `stepResults.agent_evidence` and
 `stepResults.composite_evidence` fields. They are public-safe report input
-summaries only, not raw external payloads.
+summaries only, not raw external payloads. These evidence objects may include
+`domain_metrics`, `drivers`, `research_points`, `data_quality`, bounded
+evidence items, and member previews when those fields were already present in
+the validated `report_input_bundle_v1`.
 `provenance` includes executor-oriented fields such as `executionStatus`,
 `fallbackUsed`, and `limitations` while keeping provider and external invocation
 flags false.

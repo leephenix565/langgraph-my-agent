@@ -464,6 +464,7 @@ async def run_smoke(question: str, as_of: str, artifact_root: Path) -> dict[str,
             external_compute_demo_allowlist=allowlist,
             enable_internal_llm_placeholders=True,
             enable_llm_report_synthesis=True,
+            fixed_dag_as_of=as_of,
         ),
     )
     dag_execution = result.get("dag_execution", {})

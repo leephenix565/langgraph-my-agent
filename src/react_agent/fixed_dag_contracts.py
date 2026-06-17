@@ -8,6 +8,7 @@ by graph nodes and public workflow mapping.
 
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Mapping
 from typing import Any, Literal, NotRequired, TypedDict, cast
@@ -1750,6 +1751,62 @@ def _safe_public_mapping(value: Any, *, allowed_keys: set[str]) -> dict[str, Any
     return result
 
 
+def _safe_public_detail_value(value: Any, *, depth: int = 0) -> Any:
+    if depth > 3:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return value
+    if isinstance(value, str):
+        return _safe_public_text(value, limit=240) or None
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, raw in list(value.items())[:14]:
+            text_key = _safe_public_text(key, limit=80)
+            if not text_key or text_key.lower() in REPORT_BUNDLE_UNSAFE_KEYS:
+                continue
+            bounded = _safe_public_detail_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                result[text_key] = bounded
+        return result or None
+    if isinstance(value, list):
+        items: list[Any] = []
+        for raw in value[:14]:
+            bounded = _safe_public_detail_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                items.append(bounded)
+        return items or None
+    return _safe_public_text(value, limit=160) or None
+
+
+def _safe_public_detail_mapping(value: Any, *, limit: int = 18) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        return {}
+    result: dict[str, Any] = {}
+    for key, raw in value.items():
+        text_key = _safe_public_text(key, limit=80)
+        if not text_key or text_key.lower() in REPORT_BUNDLE_UNSAFE_KEYS:
+            continue
+        bounded = _safe_public_detail_value(raw)
+        if bounded not in (None, "", [], {}):
+            result[text_key] = bounded
+        if len(result) >= limit:
+            break
+    return result
+
+
+def _safe_public_detail_list(value: Any, *, limit: int = 10) -> list[Any]:
+    if not isinstance(value, list):
+        return []
+    result: list[Any] = []
+    for raw in value[:limit]:
+        bounded = _safe_public_detail_value(raw)
+        if bounded not in (None, "", [], {}):
+            result.append(bounded)
+    return result
+
+
 def _target_from_question(question: str, *, default: str = "600519.SH") -> str:
     match = re.search(r"\b\d{6}\.(?:SH|SZ|BJ)\b", str(question or "").upper())
     if match:
@@ -2148,6 +2205,15 @@ def _l2_quality_notes(result: Mapping[str, Any]) -> list[str]:
         quality_keys = _safe_public_text_list(provenance.get("quality_keys"), limit=8)
         if quality_keys:
             notes.append(f"quality_keys={','.join(quality_keys)}")
+        domain_metrics = _safe_public_detail_mapping(provenance.get("domain_metrics"), limit=8)
+        if domain_metrics:
+            notes.append(f"domain_metrics_count={len(domain_metrics)}")
+        drivers = _safe_public_detail_list(provenance.get("drivers"), limit=6)
+        if drivers:
+            notes.append(f"drivers_count={len(drivers)}")
+        data_quality = _safe_public_detail_mapping(provenance.get("data_quality"), limit=8)
+        if data_quality:
+            notes.append(f"data_quality_count={len(data_quality)}")
         if provenance.get("adapter_failure") is True:
             notes.append("adapter_failure=true")
     evidence = result.get("evidence")
@@ -2232,16 +2298,20 @@ def _safe_member_summaries(result: Mapping[str, Any]) -> list[dict[str, Any]]:
             agent_id = _safe_public_text(item.get("agent_id"), limit=80)
             if not agent_id:
                 continue
-            members.append(
-                {
-                    "agent_id": agent_id,
-                    "display_name": AGENT_TITLE_LABELS.get(agent_id, agent_id),
-                    "weight": _safe_public_float(item.get("weight")),
-                    "stance": _safe_public_text(item.get("stance"), limit=80),
-                    "confidence": _safe_public_float(item.get("confidence")),
-                    "status": _safe_public_text(item.get("status"), limit=40),
-                }
-            )
+            member = {
+                "agent_id": agent_id,
+                "display_name": AGENT_TITLE_LABELS.get(agent_id, agent_id),
+                "stance": _safe_public_text(item.get("stance"), limit=80),
+                "status": _safe_public_text(item.get("status"), limit=40),
+                "summary": _safe_public_text(item.get("summary"), limit=160),
+            }
+            if "weight" in item and item.get("weight") is not None:
+                member["weight"] = _safe_public_float(item.get("weight"))
+            if "confidence" in item and item.get("confidence") is not None:
+                member["confidence"] = _safe_public_float(item.get("confidence"))
+            if "risk_score" in item and item.get("risk_score") is not None:
+                member["risk_score"] = _safe_public_float(item.get("risk_score"))
+            members.append(member)
     if members:
         return members
     contributing_agents = result.get("contributing_agents")
@@ -2302,6 +2372,18 @@ def _provenance_notes(provenance: Any) -> dict[str, Any]:
         values = _safe_public_text_list(provenance.get(key), limit=10, item_limit=80)
         if values:
             notes[key] = values
+    domain_metrics = _safe_public_detail_mapping(provenance.get("domain_metrics"), limit=18)
+    if domain_metrics:
+        notes["domain_metrics"] = domain_metrics
+    drivers = _safe_public_detail_list(provenance.get("drivers"), limit=10)
+    if drivers:
+        notes["drivers"] = drivers
+    research_points = _safe_public_detail_list(provenance.get("research_points"), limit=8)
+    if research_points:
+        notes["research_points"] = research_points
+    data_quality = _safe_public_detail_mapping(provenance.get("data_quality"), limit=14)
+    if data_quality:
+        notes["data_quality"] = data_quality
     if provenance.get("adapter_failure") is True:
         notes["adapter_failure"] = True
     if provenance.get("risk_score") is not None:
@@ -2312,13 +2394,17 @@ def _provenance_notes(provenance: Any) -> dict[str, Any]:
 def _l2_agent_evidence_detail(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any]:
     summary = _l2_agent_summary(agent_id, result)
     provenance = result.get("provenance", {})
+    provenance_notes = _provenance_notes(provenance)
     detail: dict[str, Any] = {
         **summary,
         "received_output_schema": _safe_public_text(result.get("schema"), limit=80),
         "required_output_schema": "agent_conclusion_v1",
         "evidence_items": _safe_evidence_detail_items(result.get("evidence")),
-        "provenance_notes": _provenance_notes(provenance),
+        "provenance_notes": provenance_notes,
     }
+    for key in ("domain_metrics", "drivers", "research_points", "data_quality"):
+        if key in provenance_notes:
+            detail[key] = provenance_notes[key]
     output_routes = result.get("output_routes")
     if isinstance(output_routes, list):
         detail["output_routes"] = _safe_public_text_list(output_routes, limit=6, item_limit=80)
@@ -2329,6 +2415,7 @@ def _l3_composite_evidence_detail(result: Mapping[str, Any]) -> dict[str, Any]:
     summary = _l3_composite_summary(result)
     provenance = result.get("provenance", {})
     evidence_refs = result.get("evidence_refs")
+    provenance_notes = _provenance_notes(provenance)
     detail: dict[str, Any] = {
         **summary,
         "received_output_schema": _safe_public_text(result.get("schema"), limit=80),
@@ -2345,8 +2432,11 @@ def _l3_composite_evidence_detail(result: Mapping[str, Any]) -> dict[str, Any]:
         ]
         if isinstance(evidence_refs, list)
         else [],
-        "provenance_notes": _provenance_notes(provenance),
+        "provenance_notes": provenance_notes,
     }
+    for key in ("domain_metrics", "drivers", "research_points", "data_quality"):
+        if key in provenance_notes:
+            detail[key] = provenance_notes[key]
     return detail
 
 
@@ -2458,6 +2548,11 @@ def build_agent_evidence_bundle(
             ),
             "l3_total": len(l3_items),
             "l3_complete": sum(1 for item in l3_items if item.get("status") == "complete"),
+            "l3_partial": sum(1 for item in l3_items if item.get("status") == "partial"),
+            "l3_error": sum(1 for item in l3_items if item.get("status") == "error"),
+            "l3_available": sum(
+                1 for item in l3_items if item.get("status") in {"complete", "partial"}
+            ),
         },
         "provenance": {
             "source": "fixed_dag_agent_evidence_bundle",
@@ -2595,6 +2690,124 @@ def _format_confidence(value: Any) -> str:
         return "n/a"
 
 
+def _format_public_detail_value(value: Any, *, limit: int = 160) -> str:
+    if isinstance(value, int | float | bool):
+        return str(value)
+    if isinstance(value, Mapping | list):
+        text = json.dumps(value, ensure_ascii=False, sort_keys=True)
+    else:
+        text = str(value or "")
+    return _safe_public_text(text, limit=limit)
+
+
+def _format_public_detail_mapping(
+    value: Any,
+    *,
+    limit: int = 5,
+    value_limit: int = 80,
+) -> str:
+    if not isinstance(value, Mapping):
+        return ""
+    parts: list[str] = []
+    for key, raw in list(value.items())[:limit]:
+        key_text = _safe_public_text(key, limit=40)
+        value_text = _format_public_detail_value(raw, limit=value_limit)
+        if key_text and value_text:
+            parts.append(f"{key_text}={value_text}")
+    return "；".join(parts)
+
+
+def _format_driver_details(value: Any, *, limit: int = 3) -> str:
+    if not isinstance(value, list):
+        return ""
+    parts: list[str] = []
+    for raw in value[:limit]:
+        if isinstance(raw, Mapping):
+            name = _safe_public_text(raw.get("name"), limit=40)
+            driver_value = _format_public_detail_value(raw.get("value"), limit=120)
+            if name and driver_value:
+                parts.append(f"{name}={driver_value}")
+        else:
+            text = _format_public_detail_value(raw, limit=120)
+            if text:
+                parts.append(text)
+    return "；".join(parts)
+
+
+def _format_evidence_items(value: Any, *, limit: int = 3) -> str:
+    if not isinstance(value, list):
+        return ""
+    facts: list[str] = []
+    for raw in value[:limit]:
+        if not isinstance(raw, Mapping):
+            continue
+        fact = _safe_public_text(raw.get("fact"), limit=180)
+        source = _safe_public_text(raw.get("source"), limit=60)
+        data_as_of = _safe_public_text(raw.get("data_as_of"), limit=40)
+        if not fact:
+            continue
+        suffix_parts = []
+        if source:
+            suffix_parts.append(source)
+        if data_as_of:
+            suffix_parts.append(data_as_of)
+        suffix = f"（{', '.join(suffix_parts)}）" if suffix_parts else ""
+        facts.append(f"{fact}{suffix}")
+    return "；".join(facts)
+
+
+def _format_research_points(value: Any, *, limit: int = 3) -> str:
+    if not isinstance(value, list):
+        return ""
+    points: list[str] = []
+    for raw in value[:limit]:
+        if not isinstance(raw, Mapping):
+            continue
+        fragments: list[str] = []
+        claim = _safe_public_text(raw.get("claim"), limit=180)
+        support = _safe_public_text(raw.get("support"), limit=220)
+        interpretation = _safe_public_text(raw.get("interpretation"), limit=220)
+        decision_implication = _safe_public_text(raw.get("decision_implication"), limit=220)
+        caveat = _safe_public_text(raw.get("caveat"), limit=220)
+        if claim:
+            fragments.append(f"判断：{claim}")
+        if support:
+            fragments.append(f"依据：{support}")
+        if interpretation:
+            fragments.append(f"解释：{interpretation}")
+        if decision_implication:
+            fragments.append(f"含义：{decision_implication}")
+        if caveat:
+            fragments.append(f"边界：{caveat}")
+        if fragments:
+            points.append("；".join(fragments))
+    return " | ".join(points)
+
+
+def _format_business_context(item: Mapping[str, Any]) -> str:
+    parts: list[str] = []
+    research_text = _format_research_points(item.get("research_points"), limit=3)
+    if research_text:
+        parts.append(f"研究判断：{research_text}")
+    evidence_text = _format_evidence_items(item.get("evidence_items"), limit=3)
+    if evidence_text:
+        parts.append(f"关键证据：{evidence_text}")
+    metrics_text = _format_public_detail_mapping(item.get("domain_metrics"), limit=5)
+    if metrics_text:
+        parts.append(f"核心指标：{metrics_text}")
+    drivers_text = _format_driver_details(item.get("drivers"), limit=3)
+    if drivers_text:
+        parts.append(f"驱动因素：{drivers_text}")
+    quality_text = _format_public_detail_mapping(
+        item.get("data_quality"),
+        limit=5,
+        value_limit=60,
+    )
+    if quality_text:
+        parts.append(f"数据质量：{quality_text}")
+    return " ".join(parts)
+
+
 def _format_l2_summary_line(item: Mapping[str, Any]) -> str:
     display_name = _safe_public_text(item.get("display_name"), limit=80)
     stance = _safe_public_text(item.get("stance") or "not_evaluated", limit=80)
@@ -2610,7 +2823,42 @@ def _format_l2_summary_line(item: Mapping[str, Any]) -> str:
         ]
         if notes:
             note_text = f" 证据质量：{'；'.join(notes)}。"
-    return f"- {display_name}：信号 {stance}，置信度 {confidence}。{summary}{note_text}"
+    business_context = _format_business_context(item)
+    business_text = f" {business_context}" if business_context else ""
+    return f"- {display_name}：信号 {stance}，置信度 {confidence}。{summary}{note_text}{business_text}"
+
+
+def _format_l3_member_preview(value: Any, *, limit: int = 4) -> str:
+    if not isinstance(value, list):
+        return ""
+    parts: list[str] = []
+    for raw in value[:limit]:
+        if not isinstance(raw, Mapping):
+            continue
+        name = _safe_public_text(raw.get("display_name") or raw.get("agent_id"), limit=60)
+        if not name:
+            continue
+        fragments = [name]
+        if "weight" in raw and raw.get("weight") is not None:
+            weight = _safe_public_float(raw.get("weight"))
+            fragments.append(f"w={weight}")
+        stance = _safe_public_text(raw.get("stance"), limit=50)
+        if "risk_score" in raw and raw.get("risk_score") is not None:
+            risk_score = _safe_public_float(raw.get("risk_score"))
+            fragments.append(f"risk={risk_score}")
+        elif stance:
+            fragments.append(f"stance={stance}")
+        if "confidence" in raw and raw.get("confidence") is not None:
+            confidence = _safe_public_float(raw.get("confidence"))
+            fragments.append(f"conf={confidence}")
+        status = _safe_public_text(raw.get("status"), limit=40)
+        if status:
+            fragments.append(f"status={status}")
+        if len(fragments) > 1:
+            parts.append(f"{fragments[0]}({','.join(fragments[1:])})")
+        else:
+            parts.append(fragments[0])
+    return "；".join(parts)
 
 
 def _format_l3_summary_line(item: Mapping[str, Any]) -> str:
@@ -2627,11 +2875,17 @@ def _format_l3_summary_line(item: Mapping[str, Any]) -> str:
         ]
         if notes:
             note_text = f" 证据质量：{'；'.join(notes)}。"
+    members = item.get("members", [])
+    member_count = len(members) if isinstance(members, list) else 0
+    member_text = _format_l3_member_preview(members)
+    member_context = f" 主要成员：{member_text}。" if member_text else ""
     if dimension == "risk":
+        business_context = _format_business_context(item)
+        business_text = f" {business_context}" if business_context else ""
         return (
             f"- {display_name}：风险门 {item.get('gate', 'not_evaluated')}，"
             f"风险分 {_format_confidence(item.get('risk_score'))}，置信度 {confidence}。"
-            f"{note_text}"
+            f"{note_text}{member_context}{business_text}"
         )
     if dimension == "macro":
         weights = item.get("dimension_weights", {})
@@ -2640,17 +2894,19 @@ def _format_l3_summary_line(item: Mapping[str, Any]) -> str:
             weight_text = "，".join(
                 f"{key}={value}" for key, value in weights.items() if key in {"value", "market"}
             )
+        business_context = _format_business_context(item)
+        business_text = f" {business_context}" if business_context else ""
         return (
             f"- {display_name}：宏观状态 {item.get('regime', 'not_evaluated')}，"
             f"value/market 权重 {weight_text or 'n/a'}，置信度 {confidence}。"
-            f"{note_text}"
+            f"{note_text}{member_context}{business_text}"
         )
     stance = _safe_public_text(item.get("stance") or "not_evaluated", limit=80)
-    members = item.get("members", [])
-    member_count = len(members) if isinstance(members, list) else 0
+    business_context = _format_business_context(item)
+    business_text = f" {business_context}" if business_context else ""
     return (
         f"- {display_name}：综合信号 {stance}，成员 {member_count} 个，"
-        f"置信度 {confidence}。{note_text}"
+        f"置信度 {confidence}。{note_text}{member_context}{business_text}"
     )
 
 
@@ -2683,6 +2939,21 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         if isinstance(item, Mapping)
     ]
     evidence_bundle = report_input_bundle.get("agent_evidence_bundle", {})
+    if isinstance(evidence_bundle, Mapping):
+        l2_detail_items = evidence_bundle.get("l2_agent_outputs")
+        if isinstance(l2_detail_items, list):
+            l2_items = [
+                cast(dict[str, Any], item)
+                for item in l2_detail_items
+                if isinstance(item, Mapping)
+            ]
+        l3_detail_items = evidence_bundle.get("l3_composite_outputs")
+        if isinstance(l3_detail_items, list):
+            l3_items = [
+                cast(dict[str, Any], item)
+                for item in l3_detail_items
+                if isinstance(item, Mapping)
+            ]
     quality_summary = (
         evidence_bundle.get("quality_summary", {})
         if isinstance(evidence_bundle, Mapping)
@@ -2709,13 +2980,17 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
     quality_lines: list[str] = []
     if isinstance(quality_summary, Mapping):
         quality_lines.append(
-            "L2 完成 {complete}/{total}，partial {partial}，error {error}，无可读证据 {thin}；L3 完成 {l3_complete}/{l3_total}。".format(
+            "L2 完成 {complete}/{total}，partial {partial}，error {error}，无可读证据 {thin}；"
+            "L3 输出 {l3_available}/{l3_total}，complete {l3_complete}，partial {l3_partial}，error {l3_error}。".format(
                 complete=int(quality_summary.get("l2_complete") or 0),
                 total=int(quality_summary.get("l2_total") or 0),
                 partial=int(quality_summary.get("l2_partial") or 0),
                 error=int(quality_summary.get("l2_error") or 0),
                 thin=int(quality_summary.get("l2_without_readable_evidence") or 0),
+                l3_available=int(quality_summary.get("l3_available") or 0),
                 l3_complete=int(quality_summary.get("l3_complete") or 0),
+                l3_partial=int(quality_summary.get("l3_partial") or 0),
+                l3_error=int(quality_summary.get("l3_error") or 0),
                 l3_total=int(quality_summary.get("l3_total") or 0),
             )
         )

@@ -11,6 +11,7 @@ public-safe evidence bundle without changing runtime bindings or live flags.
 from __future__ import annotations
 
 import json
+import os
 from collections.abc import Mapping
 from typing import Any, TypedDict, cast
 
@@ -57,6 +58,52 @@ class LLMReportSynthesisOutcome(TypedDict):
     attempted: bool
     provider_invoked: bool
     fallback_reason: str
+    provider_config: dict[str, Any]
+
+
+def _provider_model_parts(model_name: str) -> tuple[str, str]:
+    if "/" not in model_name:
+        return "", model_name
+    provider, model = model_name.split("/", maxsplit=1)
+    return provider.strip().lower(), model.strip()
+
+
+def provider_config_status(model_name: str) -> dict[str, Any]:
+    """Return secret-free provider readiness metadata for report synthesis."""
+    provider, model = _provider_model_parts(model_name)
+    status: dict[str, Any] = {
+        "provider": provider or "invalid",
+        "model": model,
+        "known_provider": provider in {"deepseek", "openai"},
+        "credential_status": "not_checked",
+        "base_url_status": "not_checked",
+        "preflight_status": "ok",
+    }
+    if not provider:
+        return {
+            **status,
+            "credential_status": "missing",
+            "base_url_status": "not_checked",
+            "preflight_status": "invalid_model_name",
+        }
+    if provider == "deepseek":
+        credential_present = bool(os.getenv("DEEPSEEK_API_KEY") or os.getenv("OPENAI_API_KEY"))
+        base_url_present = bool(os.getenv("DEEPSEEK_BASE_URL") or os.getenv("OPENAI_BASE_URL"))
+        return {
+            **status,
+            "credential_status": "present" if credential_present else "missing",
+            "base_url_status": "present" if base_url_present else "default",
+            "preflight_status": "ok" if credential_present else "missing_credential",
+        }
+    if provider == "openai":
+        credential_present = bool(os.getenv("OPENAI_API_KEY"))
+        return {
+            **status,
+            "credential_status": "present" if credential_present else "missing",
+            "base_url_status": "present" if os.getenv("OPENAI_BASE_URL") else "default",
+            "preflight_status": "ok" if credential_present else "missing_credential",
+        }
+    return status
 
 
 def _content_from_model_response(response: Any) -> str:
@@ -175,7 +222,20 @@ def build_llm_report_prompt(
     return (
         "你是固定 DAG 主系统的报告生成智能体。"
         "请只基于 report_input_bundle_v1 中的结构化输入写最终中文研判报告。"
+        "其中 agent_evidence_bundle_v1 是最重要的证据输入，包含每个 agent 收到的任务、"
+        "L1 证据状态、L2 单体输出、L3 综合输出、证据条目、质量诊断和失败原因。"
+        "对每个已完成或 partial 的真实 agent，优先读取并使用 research_points、"
+        "evidence_items、domain_metrics、drivers、data_quality，而不是只复述 summary。"
+        "research_points 是 agent 基于自身确定性材料生成的可报告化研究判断，"
+        "包含 claim、support、interpretation、decision_implication 和 caveat；"
+        "domain_metrics 是从外部 raw_output 中白名单抽取的 public-safe 业务指标；"
+        "drivers 是 public-safe 的模型驱动/归因/成员解释；"
+        "data_quality 是 public-safe 的覆盖率、校准、反前视、缓存或数据完整性说明。"
         "你需要理解各个 L2 单体智能体输入、L3 综合智能体输入、风险门、宏观调节和决策上下文。"
+        "每个主要维度至少引用两条可用的结构化证据；证据不足时说明缺口。"
+        "报告必须解释 agent 之间的冲突、数据时点差异、权重/降权原因和 partial 对结论的影响。"
+        "遇到 status=error、partial、placeholder 或证据为空时，必须在报告中明确说明其影响，"
+        "不要把占位或失败输出当作强业务结论。"
         "不要编造未给出的实时数据、目标价、收益率、财报数字、新闻或外部来源。"
         "不要输出接口地址、密钥、错误栈、原始外部响应或内部推理草稿。"
         "请输出一个 JSON 对象，字段必须为 title、answer、sections、evidence_cards、limitations。"
@@ -238,10 +298,18 @@ def _fallback_outcome(
     attempted: bool,
     provider_invoked: bool,
     reason: str,
+    provider_config: Mapping[str, Any] | None = None,
 ) -> LLMReportSynthesisOutcome:
     fallback = dict(fallback_report_result)
     limitations = list(fallback.get("limitations", []) or [])
-    notice = "大模型报告综合未通过校验，已回退到模板报告。"
+    if reason.startswith("provider_configuration_missing"):
+        notice = "大模型报告综合 provider 未配置或不可用，已回退到模板报告。"
+    elif reason.startswith("invalid_report_input_bundle:"):
+        notice = "大模型报告综合输入未通过校验，已回退到模板报告。"
+    elif reason.startswith("synthesis_failed:"):
+        notice = "大模型报告综合输出未通过解析或校验，已回退到模板报告。"
+    else:
+        notice = "大模型报告综合未完成，已回退到模板报告。"
     if notice not in limitations:
         limitations.append(notice)
     fallback["limitations"] = limitations
@@ -251,6 +319,7 @@ def _fallback_outcome(
         "attempted": attempted,
         "provider_invoked": provider_invoked,
         "fallback_reason": reason,
+        "provider_config": dict(provider_config or {}),
     }
 
 
@@ -274,12 +343,22 @@ def synthesize_report_result_with_llm(
             attempted=False,
             provider_invoked=False,
             reason=f"invalid_report_input_bundle:{reason}",
+            provider_config={},
         )
     model_name = str(
         getattr(context, "llm_report_synthesis_model", "")
         or getattr(context, "model", "")
         or "deepseek/deepseek-chat"
     )
+    config_status = provider_config_status(model_name)
+    if config_status.get("preflight_status") in {"invalid_model_name", "missing_credential"}:
+        return _fallback_outcome(
+            fallback_report_result=fallback_report_result,
+            attempted=True,
+            provider_invoked=False,
+            reason=f"provider_configuration_missing:{config_status['preflight_status']}",
+            provider_config=config_status,
+        )
     try:
         model = load_chat_model(model_name)
     except Exception:
@@ -287,7 +366,8 @@ def synthesize_report_result_with_llm(
             fallback_report_result=fallback_report_result,
             attempted=True,
             provider_invoked=False,
-            reason="provider_configuration_missing",
+            reason="provider_configuration_missing:loader_error",
+            provider_config={**config_status, "preflight_status": "loader_error"},
         )
     prompt = build_llm_report_prompt(
         question=question,
@@ -307,6 +387,7 @@ def synthesize_report_result_with_llm(
             attempted=True,
             provider_invoked=provider_invoked,
             reason=f"synthesis_failed:{type(exc).__name__}",
+            provider_config=config_status,
         )
     return {
         "report_result": report,
@@ -314,4 +395,5 @@ def synthesize_report_result_with_llm(
         "attempted": True,
         "provider_invoked": provider_invoked,
         "fallback_reason": "",
+        "provider_config": config_status,
     }

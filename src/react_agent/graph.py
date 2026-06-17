@@ -86,8 +86,20 @@ def _completed_from_stage(plan: dict[str, Any], stage_key: str) -> list[str]:
     ]
 
 
-def _full_plan_with_selected_fallback_provenance(question: str, reason: str) -> dict[str, Any]:
-    plan = build_default_fixed_dag_plan(question)
+def _context_fixed_dag_as_of(context: Context | None) -> str | None:
+    if context is None:
+        return None
+    text = str(getattr(context, "fixed_dag_as_of", "") or "").strip()
+    return text or None
+
+
+def _full_plan_with_selected_fallback_provenance(
+    question: str,
+    reason: str,
+    *,
+    as_of: str | None = None,
+) -> dict[str, Any]:
+    plan = build_default_fixed_dag_plan(question, as_of=as_of)
     plan["provenance"] = {
         **plan["provenance"],
         "selected_routing_requested": True,
@@ -100,15 +112,17 @@ def _full_plan_with_selected_fallback_provenance(question: str, reason: str) -> 
 
 
 def _route_plan_for_context(question: str, context: Context | None) -> dict[str, Any]:
+    as_of = _context_fixed_dag_as_of(context)
     if context is None or not context.enable_selected_routing:
-        return build_default_fixed_dag_plan(question)
+        return build_default_fixed_dag_plan(question, as_of=as_of)
     try:
         route_intent = build_default_route_intent(question)
-        plan = compile_selected_fixed_dag_plan(route_intent, user_text=question)
+        plan = compile_selected_fixed_dag_plan(route_intent, user_text=question, as_of=as_of)
     except Exception as exc:
         return _full_plan_with_selected_fallback_provenance(
             question,
             f"selected_routing_compile_failed:{type(exc).__name__}",
+            as_of=as_of,
         )
     plan["provenance"] = {
         **plan["provenance"],

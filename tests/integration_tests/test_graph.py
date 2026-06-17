@@ -82,6 +82,12 @@ async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypa
     monkeypatch.setenv("ENABLE_LLM_REPORT_SYNTHESIS", "1")
     assert Context().enable_llm_report_synthesis is True
 
+    monkeypatch.delenv("FIXED_DAG_AS_OF", raising=False)
+    assert Context().fixed_dag_as_of == ""
+
+    monkeypatch.setenv("FIXED_DAG_AS_OF", "2026-06-05")
+    assert Context().fixed_dag_as_of == "2026-06-05"
+
 
 async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     def fail_provider(*args, **kwargs):
@@ -138,6 +144,30 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     assert res["multi_agent_bundle"]["schema"] == "fixed_dag_reset_bundle_v1"
     assert res["multi_agent_bundle"]["dag_execution"]["schema_version"] == "fixed_dag_execution_v1"
     assert res["multi_agent_bundle"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+
+
+async def test_fixed_dag_context_as_of_propagates_to_plan(monkeypatch) -> None:
+    def fail_provider(*args, **kwargs):
+        raise AssertionError("provider should not be called by R3 skeleton")
+
+    def fail_external_client(*args, **kwargs):
+        raise AssertionError("external HTTP should not be called by fixed DAG skeleton")
+
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
+    monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "请分析 600519.SH")]},  # type: ignore[arg-type]
+        context=Context(
+            model="deepseek/deepseek-chat",
+            system_prompt="inactive",
+            fixed_dag_as_of="2026-06-05",
+        ),
+    )
+
+    assert res["fixed_dag_plan"]["as_of"] == "2026-06-05"
+    assert res["dag_execution"]["agent_task_summaries"][0]["as_of"] == "2026-06-05"
+    assert res["report_input_bundle"]["agent_task_summaries"][0]["as_of"] == "2026-06-05"
     assert res.get("messages")
     assert "研判流程" in res["messages"][-1].content
     assert "layer_plan" not in res

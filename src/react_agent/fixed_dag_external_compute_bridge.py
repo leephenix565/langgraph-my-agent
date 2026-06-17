@@ -405,6 +405,17 @@ def _safe_upstream_output(agent_id: str, value: Any) -> dict[str, Any] | None:
     evidence = _safe_evidence_items(value.get("evidence"))
     if evidence:
         safe["evidence"] = evidence
+    provenance = value.get("provenance")
+    if (
+        "risk_score" not in safe
+        and (
+            safe.get("role") == "gate_member"
+            or safe.get("stance") == "risk_gate_member"
+        )
+        and isinstance(provenance, Mapping)
+        and provenance.get("risk_score") is not None
+    ):
+        safe["risk_score"] = provenance.get("risk_score")
     return safe
 
 

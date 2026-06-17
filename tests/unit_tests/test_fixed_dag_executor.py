@@ -486,6 +486,88 @@ def test_report_input_bundle_explains_thin_external_agent_evidence() -> None:
     assert "raw_output_keys=model_score,feature_count" in rendered
 
 
+def test_report_input_bundle_carries_first_batch_report_material() -> None:
+    payload = _agent_conclusion()
+    valuation_bridge = {
+        "current_market_value": 18000.0,
+        "fair_value_center_mv": 21000.0,
+        "undervalued_ratio": 0.1667,
+    }
+    model_vote_table = [
+        {"model": "xgb", "trend": "涨", "calibrated_probability": 0.62},
+        {"model": "catboost", "trend": "跌", "calibrated_probability": 0.47},
+    ]
+    rubric_score_table = [
+        {"name_cn": "风险揭示", "score": 38.0, "weight": 0.12},
+    ]
+    research_points = [
+        {
+            "claim": "估值显著低于合理价值中枢。",
+            "support": "合理市值中枢 21000 亿元，当前市值 18000 亿元。",
+            "interpretation": "折价幅度已经超过轻微偏离区间。",
+            "decision_implication": "估值端可作为较重要的正向输入。",
+            "caveat": "仍需复核同行估值和盈利敏感性。",
+        }
+    ]
+    payload["raw_output"] = {
+        "valuation_bridge": valuation_bridge,
+        "research_points": research_points,
+        "drivers": [
+            {"name": "valuation_bridge", "value": valuation_bridge},
+            {"name": "model_vote_table", "value": model_vote_table},
+            {"name": "rubric_score_table", "value": rubric_score_table},
+        ],
+        "endpoint": "http://example.invalid/v1/agent/invoke",
+    }
+    payload["quality"] = {
+        "dimension_coverage": 1.0,
+        "missing_components": [],
+        "corpus_notice": "本地演示/合成公告语料。",
+        "raw_response": "traceback",
+    }
+    mapped = map_external_response_to_fixed_dag_object(
+        _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+    )
+
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions={"value_ml_valuation": mapped},
+        dimension_results={},
+        decision_result={
+            "decision": "hold",
+            "score": 0.0,
+            "confidence": 0.1,
+            "status": "partial",
+        },
+    )
+    evidence_detail = bundle["agent_evidence_bundle"]["l2_agent_outputs"][0]
+    rendered = json.dumps(bundle, ensure_ascii=False)
+
+    assert evidence_detail["domain_metrics"]["valuation_bridge"] == valuation_bridge
+    assert evidence_detail["drivers"] == [
+        {"name": "valuation_bridge", "value": valuation_bridge},
+        {"name": "model_vote_table", "value": model_vote_table},
+        {"name": "rubric_score_table", "value": rubric_score_table},
+    ]
+    assert evidence_detail["research_points"] == research_points
+    assert evidence_detail["data_quality"]["dimension_coverage"] == 1.0
+    assert evidence_detail["data_quality"]["corpus_notice"] == "本地演示/合成公告语料。"
+    fallback = build_report_result(
+        {
+            "decision": "hold",
+            "score": 0.0,
+            "confidence": 0.1,
+            "status": "partial",
+        },
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    assert "研究判断：判断：估值显著低于合理价值中枢。" in fallback["answer"]
+    assert "依据：合理市值中枢 21000 亿元，当前市值 18000 亿元。" in fallback["answer"]
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
+
+
 def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) -> None:
     import react_agent.fixed_dag_external_compute_bridge as bridge
 
@@ -825,6 +907,7 @@ def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None
         question="请分析 600519.SH",
         as_of="2026-06-04",
         context=Context(
+            model="test/report-model",
             enable_external_compute_demo=True,
             external_compute_demo_allowlist=("value_ml_valuation", "risk_composite"),
             enable_llm_report_synthesis=True,
@@ -860,7 +943,7 @@ def test_llm_report_synthesis_failure_keeps_template_report(monkeypatch) -> None
         _plan(),
         question="q",
         as_of="2026-06-04",
-        context=Context(enable_llm_report_synthesis=True),
+        context=Context(model="test/report-model", enable_llm_report_synthesis=True),
     )
     valid, reason = validate_dag_execution_result(result)
     rendered = json.dumps(result, ensure_ascii=False).lower()
@@ -871,6 +954,45 @@ def test_llm_report_synthesis_failure_keeps_template_report(monkeypatch) -> None
     assert result["provenance"]["llm_report_synthesis_attempted"] is True
     assert "报告生成输入摘要" in result["report_result"]["answer"]
     assert "raw_response" not in rendered
+    assert "secret" not in rendered
+
+
+def test_llm_report_missing_credential_records_safe_provider_diagnostic(monkeypatch) -> None:
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("DEEPSEEK_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+
+    def fail_load(_model: str):
+        raise AssertionError("provider should not load without known credentials")
+
+    monkeypatch.setattr("react_agent.fixed_dag_report_synthesizer.load_chat_model", fail_load)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            enable_llm_report_synthesis=True,
+            llm_report_synthesis_model="deepseek/deepseek-chat",
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+    provider_config = result["provenance"]["llm_report_synthesis_provider_config"]
+
+    assert valid, reason
+    assert result["provenance"]["provider_invoked"] is False
+    assert result["provenance"]["llm_report_synthesis_used"] is False
+    assert result["provenance"]["llm_report_synthesis_attempted"] is True
+    assert (
+        result["provenance"]["llm_report_synthesis_fallback_reason"]
+        == "provider_configuration_missing:missing_credential"
+    )
+    assert provider_config["provider"] == "deepseek"
+    assert provider_config["credential_status"] == "missing"
+    assert provider_config["preflight_status"] == "missing_credential"
+    assert "api_key" not in rendered
     assert "secret" not in rendered
 
 

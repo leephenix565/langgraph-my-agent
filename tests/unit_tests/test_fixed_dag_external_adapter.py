@@ -203,6 +203,10 @@ def _dimension_conclusion_payload(
         "confidence": 0.7,
         "members": members,
         "method": "weighted_member_vote",
+        "dispersion": 0.12,
+        "fair_value_range": {"low": 1500.0, "mid": 1650.0, "high": 1800.0},
+        "valuation": {"method": "member_weighted", "fair_value_center": 1650.0},
+        "warnings": ["one member was partial"],
         "evidence": [
             {
                 "id": "dimension-evidence-1",
@@ -231,8 +235,25 @@ def _risk_conclusion_payload(*, gate: str = "pass") -> dict[str, object]:
         "penalty": 0.15,
         "confidence": 0.78,
         "contributing_agents": ["risk_identification", "risk_compliance_review"],
+        "members": [
+            {
+                "agent_id": "risk_identification",
+                "risk_score": 0.55,
+                "confidence": 0.62,
+                "weight": 0.4,
+                "status": "partial",
+            },
+            {
+                "agent_id": "risk_compliance_review",
+                "risk_score": 0.34,
+                "confidence": 0.86,
+                "weight": 0.6,
+                "status": "ok",
+            },
+        ],
         "triggered_flags": ["bounded_risk_flag"],
         "red_lines": ["manual review only if disclosure changes"],
+        "warnings": ["risk member partial"],
         "evidence": [
             {
                 "id": "risk-evidence-1",
@@ -260,6 +281,17 @@ def _macro_conclusion_payload() -> dict[str, object]:
         "dimension_weights": {"value": 0.55, "market": 0.45},
         "risk_sensitivity": 0.6,
         "style_bias": {"quality": 0.7, "defensive": 0.3},
+        "regime_detail": {"name": "neutral", "confidence": 0.69},
+        "members": {
+            "macro_analysis": {"confidence": 0.64, "status": "ok", "summary": "growth stable"},
+            "macro_commodity_pricing": {"confidence": 0.48, "status": "partial"},
+            "industry_hotspot": {
+                "name": "行业热点智能体（LLM 占位）",
+                "confidence": 0.5,
+                "status": "ok",
+            },
+        },
+        "warnings": ["macro commodity member partial"],
         "confidence": 0.69,
         "contributing_agents": ["macro_analysis", "macro_commodity_pricing"],
         "evidence": [
@@ -323,6 +355,15 @@ def test_dimension_conclusion_value_maps_to_dimension_composite_result() -> None
     assert mapped["evidence_refs"] == ["dimension-evidence-1"]
     assert mapped["vote_type"] == "weighted_member_vote"
     assert mapped["provenance"]["adapter_input_schema"] == "dimension_conclusion_v1"
+    assert mapped["provenance"]["domain_metrics"]["fair_value_range"] == {
+        "low": 1500.0,
+        "mid": 1650.0,
+        "high": 1800.0,
+    }
+    driver_names = {item["name"] for item in mapped["provenance"]["drivers"]}
+    assert {"fair_value_range", "valuation", "member_weight_summary"} <= driver_names
+    assert mapped["provenance"]["data_quality"]["composite_status"] == "ok"
+    assert mapped["provenance"]["data_quality"]["member_count"] == 2
     assert mapped["provenance"]["provider_invoked"] is False
     assert mapped["provenance"]["external_invoked"] is False
     _assert_safe_public_payload(mapped)
@@ -418,6 +459,8 @@ def test_risk_conclusion_gate_pass_maps_to_dimension_composite_result() -> None:
     assert mapped["veto"] is False
     assert mapped["risk_score"] == 0.42
     assert mapped["provenance"]["triggered_flags"] == ["bounded_risk_flag"]
+    assert mapped["provenance"]["member_weight_summary"][0]["risk_score"] == 0.55
+    assert mapped["provenance"]["data_quality"]["member_count"] == 2
     _assert_safe_public_payload(mapped)
 
 
@@ -458,6 +501,12 @@ def test_macro_conclusion_maps_with_value_market_dimension_weights_only() -> Non
     assert mapped["dimension_weights"] == {"value": 0.55, "market": 0.45}
     assert mapped["risk_sensitivity"] == 0.6
     assert mapped["provenance"]["style_bias"] == {"quality": 0.7, "defensive": 0.3}
+    assert mapped["provenance"]["member_weight_summary"][0]["agent_id"] == "macro_analysis"
+    assert mapped["provenance"]["member_weight_summary"][2]["status"] == "partial"
+    assert mapped["provenance"]["domain_metrics"]["regime_detail"] == {
+        "confidence": 0.69,
+        "name": "neutral",
+    }
     _assert_safe_public_payload(mapped)
 
 
@@ -622,6 +671,64 @@ def test_external_compute_envelope_unsafe_raw_content_does_not_leak() -> None:
     assert valid, reason
     assert mapped["provenance"]["raw_output_keys"] == ["safe_metric"]
     assert mapped["provenance"]["quality_keys"] == ["model_trust"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_agent_conclusion_extracts_first_batch_report_material() -> None:
+    tool_result = _sample("agent_conclusion.response.json")
+    valuation_bridge = {
+        "current_market_value": 18000.0,
+        "fair_value_center_mv": 21000.0,
+        "undervalued_ratio": 0.1667,
+    }
+    model_vote_table = [
+        {"model": "xgb", "trend": "涨", "calibrated_probability": 0.62},
+        {"model": "catboost", "trend": "跌", "calibrated_probability": 0.47},
+    ]
+    rubric_score_table = [
+        {"name_cn": "风险揭示", "score": 38.0, "weight": 0.12},
+    ]
+    research_points = [
+        {
+            "claim": "估值显著低于合理价值中枢。",
+            "support": "合理市值中枢 21000 亿元，当前市值 18000 亿元。",
+            "interpretation": "折价幅度已经超过轻微偏离区间。",
+            "decision_implication": "估值端可作为较重要的正向输入。",
+            "caveat": "仍需复核同行估值和盈利敏感性。",
+        }
+    ]
+    tool_result["raw_output"] = {
+        "valuation_bridge": valuation_bridge,
+        "model_vote_table": model_vote_table,
+        "rubric_score_table": rubric_score_table,
+        "research_points": research_points,
+        "drivers": [
+            {"name": "valuation_bridge", "value": valuation_bridge},
+            {"name": "model_vote_table", "value": model_vote_table},
+            {"name": "rubric_score_table", "value": rubric_score_table},
+        ],
+        "endpoint": "http://example.invalid/v1/agent/invoke",
+    }
+    tool_result["quality"] = {
+        "dimension_coverage": 1.0,
+        "missing_components": [],
+        "corpus_notice": "本地演示/合成公告语料。",
+        "raw_response": "traceback",
+    }
+
+    mapped = map_external_response_to_fixed_dag_object(_compute_envelope(tool_result))
+    valid, reason = validate_conclusion_object(mapped)
+
+    assert valid, reason
+    assert mapped["provenance"]["domain_metrics"]["valuation_bridge"] == valuation_bridge
+    assert mapped["provenance"]["drivers"] == [
+        {"name": "valuation_bridge", "value": valuation_bridge},
+        {"name": "model_vote_table", "value": model_vote_table},
+        {"name": "rubric_score_table", "value": rubric_score_table},
+    ]
+    assert mapped["provenance"]["research_points"] == research_points
+    assert mapped["provenance"]["data_quality"]["dimension_coverage"] == 1.0
+    assert mapped["provenance"]["data_quality"]["corpus_notice"] == "本地演示/合成公告语料。"
     _assert_safe_public_payload(mapped)
 
 

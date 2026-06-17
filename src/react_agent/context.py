@@ -137,6 +137,12 @@ class Context:
         default=20.0,
         metadata={"description": "Per-agent timeout for external compute demo calls."},
     )
+    fixed_dag_as_of: str = field(
+        default="",
+        metadata={
+            "description": "Optional fixed-DAG planning as_of date. Empty keeps the default reset value."
+        },
+    )
     run_id: str = field(
         default="",
         metadata={"description": "Optional run identifier for tracing/logging."},

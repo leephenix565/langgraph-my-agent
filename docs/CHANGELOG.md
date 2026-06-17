@@ -3,6 +3,74 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Phase R8-13K report material projection backfill
+
+### Changed
+
+- Backfilled the sandbox-proven main-system report material layer into dev.
+- Extended the fixed-DAG external adapter so mapped external L2/L3 outputs can
+  project bounded `domain_metrics`, `drivers`, `research_points`, and
+  `data_quality` into provenance without preserving raw external JSON.
+- Extended `agent_evidence_bundle_v1` and fallback report rendering so final
+  reports prefer detailed L2/L3 evidence bundle entries over compact summaries
+  and can display research judgments, key evidence, metrics, drivers, data
+  quality, and L3 member previews.
+- Added L3 quality counts for `partial`, `error`, and available outputs so
+  demo reports distinguish partial L3 availability from missing L3 output.
+- Added `Context.fixed_dag_as_of` and wired it through fixed-DAG plan creation
+  plus the R8-13A smoke runner.
+- Added secret-free LLM report provider preflight diagnostics; missing
+  DeepSeek/OpenAI credentials now short-circuit without provider invocation.
+- Fixed default-off demo bridge upstream projection for risk `gate_member`
+  outputs so bounded `provenance.risk_score` can reach `risk_composite`.
+- Added `docs/报告完善计划（中文）.md` documenting the report-material plan and
+  the boundary that L3 may use LLM only for language explanation/conflict
+  summarization, not deterministic fusion decisions.
+- Began Phase 2 sandbox service wrapper alignment by comparing prod and
+  sandbox copies of `value_traditional_valuation`, `market_stock_technical`,
+  and `risk_compliance_review`; preserved prod-only traditional valuation
+  top-level `stance` / `confidence` direction projection, `assumptions` /
+  `method_details` fields, and the related explanatory evidence in the
+  sandbox service copy.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/integration_tests/test_graph.py -q`
+- Static compilation of the three sandbox service wrapper files touched or
+  audited for Phase 2.
+- Sandbox service-local contract tests in isolated temporary environment
+  `/tmp/lma-service-test-venv`:
+  `传统企业估值智能体/tests/test_domain_contract_v1.py` (7 passed),
+  `个股技术分析智能体/tests/test_domain_contract_v1.py -k 'not invoke'`
+  (9 passed, 1 deselected), and
+  `公告合规审查智能体/announcement_compliance/agent/tests/test_domain_contract.py`
+  (11 passed).
+- Controlled sandbox compute demo artifact:
+  `/tmp/lma-phase3-sandbox-compute-demo/20260617T1510Z`.
+  The demo used dev main-system code plus sandbox service TestClient
+  `/v1/agent/compute` handlers for `value_traditional_valuation`,
+  `market_stock_technical`, and `risk_compliance_review`; all three mapped
+  into `agent_evidence_bundle_v1` with `research_points`, `domain_metrics`,
+  `drivers`, `data_quality`, and `evidence_items`.
+
+### Not Done
+
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No live runtime `/health` or `/v1/agent/invoke` endpoint was called.
+- No production external agent service source was modified in this phase.
+- No external `/v1/agent/invoke` was called; the technical-analysis service
+  `/invoke` TestClient case was explicitly deselected.
+- The controlled demo report remains `partial`: only 3/18 L2 are real complete
+  outputs, 15 L2 are placeholder/partial, and 0/4 L3 composites are available.
+- The controlled demo used provider-missing fallback report synthesis; it did
+  not prove a real LLM report provider.
+- This does not make placeholder agents real evidence.
+- This does not let LLM override L3 fusion fields such as gate, risk score,
+  stance, dimension weights, member weights, or confidence.
+
 ## 2026-06-17 - Documentation clarification for external agent repo ownership
 
 ### Changed

@@ -666,6 +666,10 @@ def _attach_report_input_bundle_to_step_results(
                         "evidence_count",
                         "detail_notes",
                         "evidence_items",
+                        "domain_metrics",
+                        "drivers",
+                        "research_points",
+                        "data_quality",
                         "provenance_notes",
                         "required_output_schema",
                         "received_output_schema",
@@ -708,6 +712,10 @@ def _attach_report_input_bundle_to_step_results(
                         "source",
                         "evidence_refs",
                         "detail_notes",
+                        "domain_metrics",
+                        "drivers",
+                        "research_points",
+                        "data_quality",
                         "provenance_notes",
                         "required_output_schema",
                         "received_output_schema",
@@ -1046,6 +1054,7 @@ def execute_fixed_dag_plan(
     llm_report_synthesis_attempted = False
     llm_report_synthesis_provider_invoked = False
     llm_report_synthesis_fallback_reason = ""
+    llm_report_synthesis_provider_config: dict[str, Any] = {}
     if llm_report_synthesis_enabled:
         from react_agent.fixed_dag_report_synthesizer import (  # noqa: PLC0415
             synthesize_report_result_with_llm,
@@ -1062,6 +1071,7 @@ def execute_fixed_dag_plan(
         llm_report_synthesis_attempted = bool(synthesis_outcome["attempted"])
         llm_report_synthesis_provider_invoked = bool(synthesis_outcome["provider_invoked"])
         llm_report_synthesis_fallback_reason = str(synthesis_outcome["fallback_reason"])
+        llm_report_synthesis_provider_config = dict(synthesis_outcome["provider_config"])
     internal_placeholder_count = sum(
         1
         for item in l2_conclusions.values()
@@ -1134,6 +1144,7 @@ def execute_fixed_dag_plan(
             "llm_report_synthesis_attempted": llm_report_synthesis_attempted,
             "llm_report_synthesis_used": llm_report_synthesis_used,
             "llm_report_synthesis_fallback_reason": llm_report_synthesis_fallback_reason,
+            "llm_report_synthesis_provider_config": llm_report_synthesis_provider_config,
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

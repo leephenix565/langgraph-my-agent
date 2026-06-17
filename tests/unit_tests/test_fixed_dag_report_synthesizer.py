@@ -12,6 +12,7 @@ from react_agent.fixed_dag_contracts import (
 )
 from react_agent.fixed_dag_report_synthesizer import (
     build_llm_report_prompt,
+    provider_config_status,
     synthesize_report_result_with_llm,
 )
 
@@ -80,6 +81,10 @@ def test_build_llm_report_prompt_uses_public_safe_bundle_only() -> None:
     assert "report_input_bundle_v1" in prompt
     assert "机器学习企业估值" in prompt
     assert "估值模型给出偏积极" in prompt
+    assert "research_points" in prompt
+    assert "domain_metrics" in prompt
+    assert "drivers" in prompt
+    assert "data_quality" in prompt
     assert "raw_response" not in prompt.lower()
     assert "/v1/agent/invoke" not in prompt
 
@@ -122,7 +127,7 @@ def test_synthesize_report_result_with_llm_success(monkeypatch) -> None:
         question=question,
         report_input_bundle=bundle,
         fallback_report_result=fallback,
-        context=Context(enable_llm_report_synthesis=True),
+        context=Context(model="test/report-model", enable_llm_report_synthesis=True),
     )
     report = outcome["report_result"]
     valid, reason = validate_report_result(report)
@@ -151,7 +156,7 @@ def test_synthesize_report_result_with_llm_invalid_output_falls_back(monkeypatch
         question=question,
         report_input_bundle=bundle,
         fallback_report_result=fallback,
-        context=Context(enable_llm_report_synthesis=True),
+        context=Context(model="test/report-model", enable_llm_report_synthesis=True),
     )
     rendered = json.dumps(outcome["report_result"], ensure_ascii=False).lower()
 
@@ -159,5 +164,82 @@ def test_synthesize_report_result_with_llm_invalid_output_falls_back(monkeypatch
     assert outcome["attempted"] is True
     assert outcome["provider_invoked"] is True
     assert "报告生成输入摘要" in outcome["report_result"]["answer"]
+    assert any(
+        "大模型报告综合输出未通过解析或校验" in item
+        for item in outcome["report_result"]["limitations"]
+    )
     assert "raw_response" not in rendered
     assert "secret" not in rendered
+
+
+def test_synthesize_report_result_with_llm_provider_missing_notice(monkeypatch) -> None:
+    question, bundle, fallback = _bundle_and_fallback()
+
+    def fail_load(_model: str):
+        raise RuntimeError("missing provider config")
+
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        fail_load,
+    )
+
+    outcome = synthesize_report_result_with_llm(
+        question=question,
+        report_input_bundle=bundle,
+        fallback_report_result=fallback,
+        context=Context(model="test/report-model", enable_llm_report_synthesis=True),
+    )
+
+    limitations = outcome["report_result"]["limitations"]
+    assert outcome["used_llm_report"] is False
+    assert outcome["attempted"] is True
+    assert outcome["provider_invoked"] is False
+    assert outcome["fallback_reason"] == "provider_configuration_missing:loader_error"
+    assert "大模型报告综合 provider 未配置或不可用，已回退到模板报告。" in limitations
+    assert "大模型报告综合未通过校验，已回退到模板报告。" not in limitations
+
+
+def test_synthesize_report_result_with_llm_missing_credential_preflight(monkeypatch) -> None:
+    question, bundle, fallback = _bundle_and_fallback()
+    monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
+    monkeypatch.delenv("OPENAI_API_KEY", raising=False)
+    monkeypatch.delenv("DEEPSEEK_BASE_URL", raising=False)
+    monkeypatch.delenv("OPENAI_BASE_URL", raising=False)
+
+    def fail_load(_model: str):
+        raise AssertionError("provider should not be loaded when known credential is missing")
+
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        fail_load,
+    )
+
+    outcome = synthesize_report_result_with_llm(
+        question=question,
+        report_input_bundle=bundle,
+        fallback_report_result=fallback,
+        context=Context(
+            enable_llm_report_synthesis=True,
+            llm_report_synthesis_model="deepseek/deepseek-chat",
+        ),
+    )
+    rendered = json.dumps(outcome, ensure_ascii=False).lower()
+
+    assert outcome["used_llm_report"] is False
+    assert outcome["provider_invoked"] is False
+    assert outcome["fallback_reason"] == "provider_configuration_missing:missing_credential"
+    assert outcome["provider_config"]["provider"] == "deepseek"
+    assert outcome["provider_config"]["credential_status"] == "missing"
+    assert outcome["provider_config"]["preflight_status"] == "missing_credential"
+    assert "api_key" not in rendered
+    assert "secret" not in rendered
+
+
+def test_provider_config_status_is_secret_free(monkeypatch) -> None:
+    monkeypatch.setenv("DEEPSEEK_API_KEY", "not_printed")
+    status = provider_config_status("deepseek/deepseek-chat")
+    rendered = json.dumps(status, ensure_ascii=False).lower()
+
+    assert status["credential_status"] == "present"
+    assert "not_printed" not in rendered
+    assert "api_key" not in rendered

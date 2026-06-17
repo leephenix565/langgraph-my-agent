@@ -309,6 +309,46 @@ def test_build_external_compute_request_includes_safe_upstream_outputs() -> None
     assert "traceback" not in rendered
 
 
+def test_build_external_compute_request_projects_gate_member_provenance_risk_score() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["risk_composite"]
+    agent_task = build_agent_task(
+        "risk_composite",
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+    )
+    upstream_outputs = {
+        "risk_compliance_review": {
+            "schema": "conclusion_object_v1",
+            "schema_version": "conclusion_object_v1",
+            "agent_id": "risk_compliance_review",
+            "dimension": "risk",
+            "status": "complete",
+            "stance": "risk_gate_member",
+            "confidence": 0.83,
+            "summary": "公告合规风险较低",
+            "provenance": {
+                "risk_score": 0.0646,
+                "raw_response": "must_not_leak",
+            },
+        }
+    }
+
+    request = build_external_compute_request(
+        entry,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        request_id="unit-risk-l3",
+        agent_task=agent_task,
+        upstream_outputs=upstream_outputs,
+    )
+    upstream = request["context"]["upstream_outputs"]["risk_compliance_review"]
+    rendered = json.dumps(request, ensure_ascii=False).lower()
+
+    assert upstream["risk_score"] == 0.0646
+    assert "must_not_leak" not in rendered
+    assert "raw_response" not in rendered
+
+
 def test_fake_l2_external_compute_maps_to_conclusion_object() -> None:
     entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
     calls = []
