@@ -95,8 +95,11 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   deterministic constructors and validators.
 - L2 produces normalized pending conclusion objects with `as_of`, `data_as_of`,
   optional generic `event_flags`, and no live invocation claims.
-- L3 produces deterministic dimension composite placeholders. Value and market
-  are direction-vote seams, risk is a gate seam, and macro is a regulator seam.
+- L3 produces deterministic dimension composites from available L2 outputs.
+  Value and market use confidence-weighted direction material, risk uses only
+  risk-member `risk_score` material, and macro keeps default value/market
+  weights unless usable macro members exist. Missing placeholder members remain
+  weight `0` and keep the composite `partial` or `pending_implementation`.
 - L4 produces deterministic decision and report placeholders with stable fields.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business

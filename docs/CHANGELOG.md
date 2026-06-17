@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Phase R8-13L deterministic L3 report material projection
+
+### Changed
+
+- Added deterministic L3 material projection from available L2 conclusions.
+  Value and market composites now expose confidence-weighted direction member
+  material; risk composite exposes a bounded risk gate from risk-member
+  `risk_score`; macro composite records missing macro coverage and keeps
+  default value/market weights when macro evidence is unavailable.
+- Added L3 `member_weight_summary`, `domain_metrics`, `drivers`,
+  `research_points`, and `data_quality` provenance for report input bundles.
+- Kept placeholder and pending members at weight `0`; L3 composites only become
+  `partial` or `complete` when selected L2 members have usable output.
+- Preserved the risk/sentiment boundary: `risk_composite` only reads risk L2
+  members and does not consume `sentiment_company_radar`.
+- Updated contracts, architecture notes, and the Chinese report-improvement
+  plan for the deterministic L3 projection boundary.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `.venv/bin/python scripts/quality/run_quality.py --mode mainline`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_contracts.py -q`
+- `.venv/bin/python -m pytest tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/integration_tests/test_graph.py -q`
+
+### Not Done
+
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No provider was invoked; L3 language explanation remains default-off future
+  work and cannot override deterministic fusion fields.
+- This does not make placeholder L2/L3 agents real evidence.
+
 ## 2026-06-17 - Phase R8-13K report material projection backfill
 
 ### Changed

@@ -745,6 +745,118 @@ def test_risk_composite_ignores_sentiment_even_if_present_in_input() -> None:
     assert "sentiment_company_radar" not in risk["contributing_agents"]
 
 
+def test_l3_composites_project_partial_research_material_from_available_l2() -> None:
+    conclusions = build_l2_conclusions(
+        build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    )
+    conclusions["value_traditional_valuation"].update(
+        {
+            "status": "complete",
+            "stance": "1",
+            "confidence": 0.8,
+            "evidence": [
+                {
+                    "id": "value-real",
+                    "fact": "传统估值给出正向估值线索。",
+                    "source": "unit_test",
+                }
+            ],
+            "provenance": {
+                **conclusions["value_traditional_valuation"]["provenance"],
+                "research_points": [
+                    {
+                        "claim": "估值显著低于合理价值中枢。",
+                        "support": "PE 法给出正向估值线索。",
+                    }
+                ],
+            },
+        }
+    )
+    conclusions["market_stock_technical"].update(
+        {
+            "status": "complete",
+            "stance": "0.54",
+            "confidence": 0.54,
+            "evidence": [
+                {
+                    "id": "market-real",
+                    "fact": "三模型投票偏上涨。",
+                    "source": "unit_test",
+                }
+            ],
+        }
+    )
+    conclusions["risk_compliance_review"].update(
+        {
+            "status": "complete",
+            "stance": "risk_gate_member",
+            "confidence": 0.75,
+            "evidence": [
+                {
+                    "id": "risk-real",
+                    "fact": "合规评分未触发风险否决。",
+                    "source": "unit_test",
+                }
+            ],
+            "provenance": {
+                **conclusions["risk_compliance_review"]["provenance"],
+                "risk_score": 0.18,
+            },
+        }
+    )
+
+    results = build_dimension_results(conclusions, as_of="2026-06-04")
+    value = results["value"]
+    market = results["market"]
+    risk = results["risk"]
+    macro = results["macro"]
+    value_provenance = value["provenance"]
+    risk_provenance = risk["provenance"]
+
+    assert value["status"] == "partial"
+    assert value["stance"] == "positive"
+    assert value["confidence"] == 0.2
+    assert value["evidence_refs"]
+    assert value_provenance["domain_metrics"]["coverage"] == 0.25
+    assert value_provenance["domain_metrics"]["weighted_stance_score"] == 1.0
+    assert value_provenance["research_points"][0]["caveat"].endswith("真实 evidence。")
+    assert any(
+        item["agent_id"] == "value_traditional_valuation" and item["weight"] == 1.0
+        for item in value_provenance["member_weight_summary"]
+    )
+    assert market["status"] == "partial"
+    assert market["stance"] == "positive"
+    assert risk["status"] == "partial"
+    assert risk["gate"] == "pass"
+    assert risk["risk_score"] == 0.18
+    assert risk["veto"] is False
+    assert "sentiment_company_radar" not in risk["contributing_agents"]
+    assert risk_provenance["domain_metrics"]["risk_member_count"] == 1
+    assert risk_provenance["data_quality"]["coverage"] == 0.25
+    assert macro["status"] == "pending_implementation"
+    assert macro["regime"] == "not_evaluated"
+    assert macro["dimension_weights"] == {"value": 0.5, "market": 0.5}
+
+    decision = build_decision_result(results, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=results,
+        decision_result=decision,
+    )
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    rendered = json.dumps({"bundle": bundle, "report": report}, ensure_ascii=False)
+
+    assert "综合智能体输入" in report["answer"]
+    assert "研究判断：判断：价值综合当前为 partial" in report["answer"]
+    assert "风险综合当前为 partial，风险门为 pass" in rendered
+    assert "raw_response" not in rendered
+
+
 def test_decision_result_validates_and_risk_veto_is_conservative() -> None:
     results = build_dimension_results({}, as_of="2026-06-04")
     results["risk"]["veto"] = True

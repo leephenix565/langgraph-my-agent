@@ -766,6 +766,15 @@ public-safe report material:
 - `data_quality`: bounded coverage, data-source, anti-lookahead, cached,
   missing-component, corpus, or composite-status notes.
 
+When external L3 services are not overlaid, the main-system deterministic L3
+projection may derive bounded composite material from already available L2
+outputs. It marks the composite `complete` only when all selected members are
+complete, `partial` when at least one selected member is complete/partial, and
+`pending_implementation` when no selected member is usable. Member weights are
+confidence-normalized among usable members; missing or placeholder members have
+weight `0`. Risk composites read only risk-dimension members and must not
+consume `sentiment_company_radar`.
+
 Fallback report rendering prefers the detailed `agent_evidence_bundle` entries
 when present. Compact summaries remain available for UI surfaces that only need
 a short status overview.

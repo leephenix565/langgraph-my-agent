@@ -435,18 +435,319 @@ def _status_for_expected(
     expected_agent_ids: tuple[str, ...],
     conclusions: Mapping[str, Any],
 ) -> ConclusionStatus:
-    present = [agent_id for agent_id in expected_agent_ids if agent_id in conclusions]
-    if not present:
+    member_statuses = [
+        _member_status(conclusions.get(agent_id))
+        for agent_id in expected_agent_ids
+        if agent_id in conclusions
+    ]
+    if not member_statuses:
         return "pending_implementation"
-    if len(present) < len(expected_agent_ids):
+    if any(status in {"complete", "partial"} for status in member_statuses):
+        if (
+            len(member_statuses) == len(expected_agent_ids)
+            and all(status == "complete" for status in member_statuses)
+        ):
+            return "complete"
         return "partial"
-    if any(
-        isinstance(conclusions.get(agent_id), Mapping)
-        and conclusions[agent_id].get("status") == "error"
-        for agent_id in present
-    ):
-        return "partial"
+    if all(status == "error" for status in member_statuses):
+        return "error"
     return "pending_implementation"
+
+
+def _member_status(result: Any) -> ConclusionStatus:
+    if not isinstance(result, Mapping):
+        return "pending_implementation"
+    status = str(result.get("status") or "pending_implementation")
+    if status in {"pending_implementation", "partial", "complete", "error"}:
+        return cast(ConclusionStatus, status)
+    return "pending_implementation"
+
+
+def _bounded_composite_text(value: Any, *, limit: int = 180) -> str:
+    text = str(value or "").strip().replace("\n", " ").replace("\r", " ")
+    lowered = text.lower()
+    unsafe_tokens = (
+        "api_key",
+        "secret",
+        "token",
+        "password",
+        "authorization",
+        "endpoint",
+        "raw_response",
+        "raw_provider_response",
+        "raw_external_json",
+        "traceback",
+        "chain-of-thought",
+        "/v1/agent/invoke",
+    )
+    if any(token in lowered for token in unsafe_tokens):
+        return ""
+    if len(text) > limit:
+        return text[: max(limit - 3, 0)].rstrip() + "..."
+    return text
+
+
+def _bounded_composite_float(value: Any, *, default: float = 0.0) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(0.0, min(1.0, number))
+
+
+def _bounded_direction_score(value: Any) -> float | None:
+    if isinstance(value, int | float):
+        return max(-1.0, min(1.0, float(value)))
+    text = str(value or "").strip().lower()
+    if not text:
+        return None
+    try:
+        return max(-1.0, min(1.0, float(text)))
+    except ValueError:
+        pass
+    positive_tokens = ("positive", "bullish", "buy", "up", "上涨", "看多", "偏多", "涨")
+    negative_tokens = ("negative", "bearish", "sell", "down", "下跌", "看空", "偏空", "跌")
+    neutral_tokens = ("neutral", "hold", "flat", "mixed", "中性", "震荡", "观望")
+    if "cautious_positive" in text or "slightly_positive" in text:
+        return 0.35
+    if "cautious_negative" in text or "slightly_negative" in text:
+        return -0.35
+    if any(token in text for token in positive_tokens):
+        return 0.6
+    if any(token in text for token in negative_tokens):
+        return -0.6
+    if any(token in text for token in neutral_tokens):
+        return 0.0
+    return None
+
+
+def _direction_label(score: float | None) -> str:
+    if score is None:
+        return "not_evaluated"
+    if score >= 0.2:
+        return "positive"
+    if score <= -0.2:
+        return "negative"
+    return "neutral"
+
+
+def _macro_regime_label(score: float | None) -> str:
+    if score is None:
+        return "not_evaluated"
+    if score >= 0.2:
+        return "supportive"
+    if score <= -0.2:
+        return "restrictive"
+    return "neutral"
+
+
+def _member_risk_score(result: Mapping[str, Any]) -> float | None:
+    if result.get("risk_score") is not None:
+        return _bounded_composite_float(result.get("risk_score"))
+    provenance = result.get("provenance", {})
+    if isinstance(provenance, Mapping):
+        if provenance.get("risk_score") is not None:
+            return _bounded_composite_float(provenance.get("risk_score"))
+        domain_metrics = provenance.get("domain_metrics")
+        if isinstance(domain_metrics, Mapping) and domain_metrics.get("risk_score") is not None:
+            return _bounded_composite_float(domain_metrics.get("risk_score"))
+    return None
+
+
+def _member_summary_text(agent_id: str, result: Mapping[str, Any]) -> str:
+    provenance = result.get("provenance", {})
+    if isinstance(provenance, Mapping):
+        research_points = provenance.get("research_points")
+        if isinstance(research_points, list):
+            for point in research_points:
+                if not isinstance(point, Mapping):
+                    continue
+                text = _bounded_composite_text(
+                    point.get("claim") or point.get("support"),
+                    limit=160,
+                )
+                if text:
+                    return text
+    evidence = result.get("evidence")
+    if isinstance(evidence, list):
+        for item in evidence:
+            if not isinstance(item, Mapping):
+                continue
+            text = _bounded_composite_text(item.get("fact"), limit=160)
+            if text:
+                return text
+    stance = _bounded_composite_text(result.get("stance") or "not_evaluated", limit=80)
+    confidence = _bounded_composite_float(result.get("confidence"))
+    return f"{AGENT_TITLE_LABELS.get(agent_id, agent_id)} 输出 {stance} 信号，置信度 {confidence:.2f}。"
+
+
+def _member_evidence_refs(agent_id: str, result: Mapping[str, Any]) -> list[str]:
+    refs: list[str] = []
+    evidence = result.get("evidence")
+    if isinstance(evidence, list):
+        for item in evidence[:3]:
+            if not isinstance(item, Mapping):
+                continue
+            fact = _bounded_composite_text(item.get("fact"), limit=180)
+            if fact:
+                refs.append(f"{AGENT_TITLE_LABELS.get(agent_id, agent_id)}：{fact}")
+    if not refs:
+        summary = _member_summary_text(agent_id, result)
+        if summary:
+            refs.append(f"{AGENT_TITLE_LABELS.get(agent_id, agent_id)}：{summary}")
+    return refs[:3]
+
+
+def _member_weight_summary(
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+    weights: Mapping[str, float],
+) -> list[dict[str, Any]]:
+    members: list[dict[str, Any]] = []
+    for agent_id in expected_agent_ids:
+        raw_result = conclusions.get(agent_id)
+        status = _member_status(raw_result)
+        member: dict[str, Any] = {
+            "agent_id": agent_id,
+            "status": status,
+            "weight": round(_bounded_composite_float(weights.get(agent_id)), 4),
+        }
+        if isinstance(raw_result, Mapping):
+            member["stance"] = _bounded_composite_text(
+                raw_result.get("stance") or "not_evaluated",
+                limit=80,
+            )
+            member["confidence"] = round(
+                _bounded_composite_float(raw_result.get("confidence")),
+                4,
+            )
+            summary = _member_summary_text(agent_id, raw_result)
+            if summary:
+                member["summary"] = summary
+            risk_score = _member_risk_score(raw_result)
+            if risk_score is not None:
+                member["risk_score"] = round(risk_score, 4)
+        else:
+            member["stance"] = "not_evaluated"
+            member["confidence"] = 0.0
+            member["summary"] = "本轮没有收到该成员的可用输出。"
+        members.append(member)
+    return members
+
+
+def _composite_candidates(
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+) -> list[tuple[str, Mapping[str, Any], float]]:
+    candidates: list[tuple[str, Mapping[str, Any], float]] = []
+    for agent_id in expected_agent_ids:
+        result = conclusions.get(agent_id)
+        if not isinstance(result, Mapping):
+            continue
+        if _member_status(result) not in {"complete", "partial"}:
+            continue
+        confidence = _bounded_composite_float(result.get("confidence"))
+        if confidence <= 0.0:
+            continue
+        candidates.append((agent_id, result, confidence))
+    return candidates
+
+
+def _direction_candidates(
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+) -> list[tuple[str, Mapping[str, Any], float, float]]:
+    candidates: list[tuple[str, Mapping[str, Any], float, float]] = []
+    for agent_id, result, confidence in _composite_candidates(expected_agent_ids, conclusions):
+        score = _bounded_direction_score(result.get("stance"))
+        if score is None:
+            continue
+        candidates.append((agent_id, result, confidence, score))
+    return candidates
+
+
+def _normalized_weights(
+    candidates: list[tuple[str, Mapping[str, Any], float]]
+    | list[tuple[str, Mapping[str, Any], float, float]]
+) -> dict[str, float]:
+    total = sum(max(float(item[2]), 0.0) for item in candidates)
+    if total <= 0.0:
+        return {}
+    return {item[0]: max(float(item[2]), 0.0) / total for item in candidates}
+
+
+def _coverage(expected_agent_ids: tuple[str, ...], available_count: int) -> float:
+    if not expected_agent_ids:
+        return 0.0
+    return round(available_count / len(expected_agent_ids), 4)
+
+
+def _weighted_confidence(
+    candidates: list[tuple[str, Mapping[str, Any], float]]
+    | list[tuple[str, Mapping[str, Any], float, float]],
+    *,
+    expected_count: int,
+) -> float:
+    if not candidates or expected_count <= 0:
+        return 0.0
+    average_confidence = sum(float(item[2]) for item in candidates) / len(candidates)
+    return round(max(0.0, min(1.0, average_confidence * len(candidates) / expected_count)), 4)
+
+
+def _weighted_direction_score(
+    candidates: list[tuple[str, Mapping[str, Any], float, float]]
+) -> float | None:
+    weights = _normalized_weights(candidates)
+    if not weights:
+        return None
+    score = sum(float(score) * weights[agent_id] for agent_id, _result, _confidence, score in candidates)
+    return round(max(-1.0, min(1.0, score)), 4)
+
+
+def _base_composite_provenance(
+    *,
+    dimension: DimensionName,
+    status: ConclusionStatus,
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+    candidates: list[tuple[str, Mapping[str, Any], float]]
+    | list[tuple[str, Mapping[str, Any], float, float]],
+    weights: Mapping[str, float],
+    domain_metrics: Mapping[str, Any],
+    drivers: list[dict[str, Any]],
+    research_points: list[dict[str, Any]],
+    data_quality: Mapping[str, Any],
+) -> dict[str, Any]:
+    missing_components = [
+        AGENT_TITLE_LABELS.get(agent_id, agent_id)
+        for agent_id in expected_agent_ids
+        if agent_id not in {item[0] for item in candidates}
+    ]
+    return {
+        "source": "fixed_dag_deterministic_l3_projection",
+        "provider_invoked": False,
+        "external_invoked": False,
+        "dimension": dimension,
+        "member_weight_summary": _member_weight_summary(expected_agent_ids, conclusions, weights),
+        "domain_metrics": {
+            "expected_member_count": len(expected_agent_ids),
+            "available_member_count": len(candidates),
+            "coverage": _coverage(expected_agent_ids, len(candidates)),
+            "missing_components": missing_components,
+            **dict(domain_metrics),
+        },
+        "drivers": drivers,
+        "research_points": research_points,
+        "data_quality": {
+            "composite_status": status,
+            "member_count": len(expected_agent_ids),
+            "upstream_outputs_consumed": len(candidates),
+            "coverage": _coverage(expected_agent_ids, len(candidates)),
+            "missing_components": missing_components,
+            "llm_subjective": False,
+            **dict(data_quality),
+        },
+    }
 
 
 def _step(
@@ -1460,39 +1761,224 @@ def _build_dimension_composite(
     *,
     as_of: str,
 ) -> DimensionCompositeResult:
+    status = _status_for_expected(expected_agent_ids, conclusions)
+    available_candidates = _composite_candidates(expected_agent_ids, conclusions)
+    direction_candidates = _direction_candidates(expected_agent_ids, conclusions)
+    direction_weights = _normalized_weights(direction_candidates)
+    all_weights = _normalized_weights(available_candidates)
+    weighted_score = _weighted_direction_score(direction_candidates)
+    evidence_refs: list[str] = []
+    for agent_id, result, *_rest in available_candidates:
+        evidence_refs.extend(_member_evidence_refs(agent_id, result))
+    evidence_refs = evidence_refs[:8]
+
+    missing_names = [
+        AGENT_TITLE_LABELS.get(agent_id, agent_id)
+        for agent_id in expected_agent_ids
+        if agent_id not in {item[0] for item in available_candidates}
+    ]
+    coverage = _coverage(expected_agent_ids, len(available_candidates))
+    expected_count = len(expected_agent_ids)
+
     result: DimensionCompositeResult = {
         "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "agent_id": DIMENSION_COMPOSITE_AGENT_IDS[dimension],
         "dimension": dimension,
-        "stance": "not_evaluated",
-        "confidence": 0.0,
-        "status": _status_for_expected(expected_agent_ids, conclusions),
+        "stance": _direction_label(weighted_score) if dimension in {"value", "market"} else "not_evaluated",
+        "confidence": _weighted_confidence(
+            direction_candidates if dimension in {"value", "market", "macro"} else available_candidates,
+            expected_count=expected_count,
+        ),
+        "status": status,
         "contributing_agents": list(expected_agent_ids),
-        "evidence_refs": [],
+        "evidence_refs": evidence_refs,
         "as_of": as_of,
         "data_as_of": _data_as_of_for(as_of),
     }
     if dimension in {"value", "market"}:
-        result["vote_type"] = "direction_vote_placeholder"
+        result["vote_type"] = "weighted_member_vote" if direction_candidates else "direction_vote_placeholder"
+        direction_label = _direction_label(weighted_score)
+        result["provenance"] = _base_composite_provenance(
+            dimension=dimension,
+            status=status,
+            expected_agent_ids=expected_agent_ids,
+            conclusions=conclusions,
+            candidates=direction_candidates,
+            weights=direction_weights,
+            domain_metrics={
+                "weighted_stance_score": weighted_score,
+                "direction": direction_label,
+                "vote_type": result["vote_type"],
+            },
+            drivers=[
+                {
+                    "name": "member_weight_summary",
+                    "value": _member_weight_summary(expected_agent_ids, conclusions, direction_weights),
+                },
+                {
+                    "name": "coverage",
+                    "value": {
+                        "available": len(available_candidates),
+                        "directional": len(direction_candidates),
+                        "expected": expected_count,
+                        "coverage": coverage,
+                    },
+                },
+                {"name": "missing_components", "value": missing_names},
+            ],
+            research_points=[
+                {
+                    "claim": f"{DIMENSION_TITLE_LABELS[dimension]}当前为 {status}：{len(available_candidates)}/{expected_count} 个成员有可用输出。",
+                    "support": (
+                        f"方向成员 {len(direction_candidates)} 个，综合方向 {direction_label}，"
+                        f"加权分 {weighted_score if weighted_score is not None else 'n/a'}。"
+                    ),
+                    "interpretation": "L3 只对 complete/partial 且具备可读方向的成员赋权，pending/placeholder 成员权重为 0。",
+                    "decision_implication": "该综合信号可作为本维度局部线索，但在成员覆盖不足时不能代表完整维度结论。",
+                    "caveat": "未调用 LLM 或外部服务；没有把缺失成员包装成真实 evidence。",
+                }
+            ],
+            data_quality={
+                "scoring_method": "confidence_weighted_direction_from_available_l2",
+                "missing_components": missing_names,
+                "directional_member_count": len(direction_candidates),
+            },
+        )
     if dimension == "risk":
+        risk_candidates: list[tuple[str, Mapping[str, Any], float]] = []
+        weighted_risk_score = 0.0
+        for agent_id, candidate_result, confidence in available_candidates:
+            if _member_risk_score(candidate_result) is not None:
+                risk_candidates.append((agent_id, candidate_result, confidence))
+        risk_weights = _normalized_weights(risk_candidates)
+        if risk_weights:
+            weighted_risk_score = round(
+                sum(
+                    (_member_risk_score(candidate_result) or 0.0) * risk_weights[agent_id]
+                    for agent_id, candidate_result, _confidence in risk_candidates
+                ),
+                4,
+            )
+            gate = "pass"
+            if weighted_risk_score >= 0.7:
+                gate = "veto"
+            elif weighted_risk_score >= 0.35:
+                gate = "manual_review"
+        elif available_candidates:
+            gate = "manual_review"
+        else:
+            gate = "not_evaluated"
+        penalty = 0.0 if gate in {"pass", "not_evaluated"} else weighted_risk_score
         result.update(
             {
-                "gate": "not_evaluated",
-                "veto": False,
-                "penalty": 0.0,
-                "risk_score": 0.0,
+                "stance": "risk_gate" if available_candidates else "not_evaluated",
+                "confidence": _weighted_confidence(risk_candidates or available_candidates, expected_count=expected_count),
+                "gate": gate,
+                "veto": gate == "veto",
+                "penalty": penalty,
+                "risk_score": weighted_risk_score,
+                "provenance": _base_composite_provenance(
+                    dimension=dimension,
+                    status=status,
+                    expected_agent_ids=expected_agent_ids,
+                    conclusions=conclusions,
+                    candidates=risk_candidates or available_candidates,
+                    weights=risk_weights or all_weights,
+                    domain_metrics={
+                        "gate": gate,
+                        "risk_score": weighted_risk_score,
+                        "penalty": penalty,
+                        "risk_member_count": len(risk_candidates),
+                    },
+                    drivers=[
+                        {
+                            "name": "member_weight_summary",
+                            "value": _member_weight_summary(
+                                expected_agent_ids,
+                                conclusions,
+                                risk_weights or all_weights,
+                            ),
+                        },
+                        {
+                            "name": "risk_gate_rule",
+                            "value": "risk_score < 0.35 pass; 0.35-0.70 manual_review; >= 0.70 veto.",
+                        },
+                        {"name": "missing_components", "value": missing_names},
+                    ],
+                    research_points=[
+                        {
+                            "claim": f"风险综合当前为 {status}，风险门为 {gate}。",
+                            "support": (
+                                f"{len(risk_candidates)}/{expected_count} 个风险成员提供 risk_score，"
+                                f"加权风险分 {weighted_risk_score:.4f}。"
+                            ),
+                            "interpretation": "风险综合只读取风险维成员；企业舆情雷达不会进入 risk_composite。",
+                            "decision_implication": "gate 为 pass 时不触发风险否决；manual_review/veto 时应限制后续决策强度。",
+                            "caveat": "成员缺失或未给出 risk_score 时会降低覆盖率，不作为低风险证明。",
+                        }
+                    ],
+                    data_quality={
+                        "scoring_method": "confidence_weighted_risk_score_from_available_l2",
+                        "missing_components": missing_names,
+                        "risk_score_member_count": len(risk_candidates),
+                    },
+                ),
             }
         )
     if dimension == "macro":
+        regime = _macro_regime_label(weighted_score)
         result.update(
             {
-                "regime": "not_evaluated",
+                "stance": regime,
+                "confidence": _weighted_confidence(direction_candidates, expected_count=expected_count),
+                "regime": regime,
                 "dimension_weights": {
                     "value": 0.5,
                     "market": 0.5,
                 },
-                "risk_sensitivity": "not_evaluated",
+                "risk_sensitivity": "normal" if direction_candidates else "not_evaluated",
+                "provenance": _base_composite_provenance(
+                    dimension=dimension,
+                    status=status,
+                    expected_agent_ids=expected_agent_ids,
+                    conclusions=conclusions,
+                    candidates=direction_candidates,
+                    weights=direction_weights,
+                    domain_metrics={
+                        "regime": regime,
+                        "weighted_stance_score": weighted_score,
+                        "dimension_weights": {"value": 0.5, "market": 0.5},
+                    },
+                    drivers=[
+                        {
+                            "name": "member_weight_summary",
+                            "value": _member_weight_summary(expected_agent_ids, conclusions, direction_weights),
+                        },
+                        {
+                            "name": "dimension_weight_policy",
+                            "value": "保持 value/market 默认 0.5/0.5，直到真实宏观成员覆盖足以支持调权。",
+                        },
+                        {"name": "missing_components", "value": missing_names},
+                    ],
+                    research_points=[
+                        {
+                            "claim": f"宏观综合当前为 {status}，regime={regime}。",
+                            "support": (
+                                f"{len(direction_candidates)}/{expected_count} 个宏观成员提供可读方向；"
+                                "value/market 权重保持默认 0.5/0.5。"
+                            ),
+                            "interpretation": "宏观调节器不会在宏观成员缺失时主动改变价值/市场权重。",
+                            "decision_implication": "当前宏观层只能提示覆盖缺口，不能作为独立调权依据。",
+                            "caveat": "未调用 LLM 或外部宏观服务；缺失宏观成员不被包装成真实 macro evidence。",
+                        }
+                    ],
+                    data_quality={
+                        "scoring_method": "default_equal_weights_until_macro_coverage",
+                        "missing_components": missing_names,
+                        "directional_member_count": len(direction_candidates),
+                    },
+                ),
             }
         )
     return result
