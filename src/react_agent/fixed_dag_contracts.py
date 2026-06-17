@@ -3408,6 +3408,71 @@ def _format_agent_task_summary_line(item: Mapping[str, Any]) -> str:
     )
 
 
+def _count_task_layers(task_items: list[dict[str, Any]]) -> dict[str, int]:
+    counts = {"L2": 0, "L3": 0, "L4": 0}
+    for item in task_items:
+        layer = _safe_public_text(item.get("layer"), limit=20)
+        if layer in counts:
+            counts[layer] += 1
+    return counts
+
+
+def _format_agent_task_overview(task_items: list[dict[str, Any]]) -> str:
+    counts = _count_task_layers(task_items)
+    total = counts["L2"] + counts["L3"] + counts["L4"]
+    if total <= 0:
+        return "本轮没有可展示的 agent_task_v1 任务摘要。"
+    return (
+        "本轮生成 agent_task_v1："
+        f"L2 {counts['L2']} 个，L3 {counts['L3']} 个，L4 {counts['L4']} 个。"
+        "每个任务携带 target、as_of、required_output_schema 和 public-safe upstream 摘要；"
+        "完整任务保留在 report_input_bundle/workflow trace 中，fallback 报告不逐条展开模板化任务指令。"
+    )
+
+
+def _has_report_material(item: Mapping[str, Any]) -> bool:
+    for key in ("research_points", "evidence_items", "domain_metrics", "drivers"):
+        value = item.get(key)
+        if isinstance(value, Mapping) and value:
+            return True
+        if isinstance(value, list) and value:
+            return True
+    if _safe_public_float(item.get("evidence_count")) > 0:
+        return True
+    return _safe_public_text(item.get("status"), limit=40) == "error"
+
+
+def _placeholder_l2_notice(
+    *,
+    visible_items: list[dict[str, Any]],
+    all_items: list[dict[str, Any]],
+) -> str:
+    hidden = [item for item in all_items if item not in visible_items]
+    if not hidden:
+        return ""
+    by_dimension: dict[str, int] = {}
+    for item in hidden:
+        dimension = _safe_public_text(item.get("dimension") or "unknown", limit=40)
+        by_dimension[dimension] = by_dimension.get(dimension, 0) + 1
+    labels = {
+        "value": "估值维",
+        "market": "市场维",
+        "risk": "风险维",
+        "macro": "宏观维",
+        "unknown": "未知维",
+    }
+    parts = [
+        f"{labels.get(dimension, dimension)}{count} 个"
+        for dimension, count in by_dimension.items()
+        if count > 0
+    ]
+    return (
+        f"未展开无可读证据的 L2：{len(hidden)} 个"
+        f"（{'，'.join(parts)}）。"
+        "这些 agent 仍保留在 report_input_bundle 中，但不在最终报告中伪装成真实研究材料。"
+    )
+
+
 def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict[str, str]]:
     task_items = [
         cast(dict[str, Any], item)
@@ -3445,7 +3510,8 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         if isinstance(evidence_bundle, Mapping)
         else {}
     )
-    by_dimension = _summaries_by_dimension(l2_items)
+    visible_l2_items = [item for item in l2_items if _has_report_material(item)]
+    by_dimension = _summaries_by_dimension(visible_l2_items)
     l2_lines: list[str] = []
     for dimension, label in (
         ("value", "估值维"),
@@ -3457,12 +3523,13 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
             continue
         l2_lines.append(f"{label}单体智能体：")
         l2_lines.extend(_format_l2_summary_line(item) for item in by_dimension[dimension])
+    placeholder_notice = _placeholder_l2_notice(
+        visible_items=visible_l2_items,
+        all_items=l2_items,
+    )
+    if placeholder_notice:
+        l2_lines.append(placeholder_notice)
     l3_lines = [_format_l3_summary_line(item) for item in l3_items]
-    task_lines = [
-        _format_agent_task_summary_line(item)
-        for item in task_items
-        if item.get("layer") in {"L2", "L3", "L4"}
-    ][:24]
     quality_lines: list[str] = []
     if isinstance(quality_summary, Mapping):
         quality_lines.append(
@@ -3489,7 +3556,7 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         {
             "id": "agent_task_orchestration",
             "title": "智能体任务编排(agent_task_v1)",
-            "content": "\n".join(task_lines) or "本轮没有可展示的 agent_task_v1 任务摘要。",
+            "content": _format_agent_task_overview(task_items),
         },
         {
             "id": "l2_agent_evidence",

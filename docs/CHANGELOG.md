@@ -3,6 +3,28 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Phase R8-13M fallback report evidence-focused rendering
+
+### Changed
+
+- Tightened fallback report rendering so the final Chinese report expands only
+  L2 outputs with public-safe report material or error status.
+- Kept no-evidence placeholder/pending L2 entries in `report_input_bundle_v1`
+  and workflow trace, but summarized them as missing coverage instead of
+  rendering each placeholder as a pseudo research line.
+- Replaced the long per-agent task-instruction dump in fallback reports with a
+  compact `agent_task_v1` orchestration overview. Full task summaries remain in
+  `report_input_bundle_v1`.
+- Updated contracts and the Chinese report-improvement plan for the new report
+  rendering boundary.
+
+### Not Done
+
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No `/v1/agent/invoke` endpoint was called.
+- No placeholder agent was promoted to real evidence.
+
 ## 2026-06-17 - Phase R8-13L deterministic L3 report material projection
 
 ### Changed

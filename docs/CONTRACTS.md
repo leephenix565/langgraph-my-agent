@@ -776,8 +776,12 @@ weight `0`. Risk composites read only risk-dimension members and must not
 consume `sentiment_company_radar`.
 
 Fallback report rendering prefers the detailed `agent_evidence_bundle` entries
-when present. Compact summaries remain available for UI surfaces that only need
-a short status overview.
+when present. It expands L2 entries only when they have public-safe report
+material or error status; no-evidence placeholder/pending L2 entries are kept in
+`report_input_bundle_v1` and workflow trace but are summarized as a missing
+coverage count instead of being rendered as fake research material. Compact
+summaries remain available for UI surfaces that only need a short status
+overview.
 The bundle is validated before report rendering and before
 `validate_dag_execution_result` accepts an execution result.
 

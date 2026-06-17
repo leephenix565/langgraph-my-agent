@@ -483,7 +483,8 @@ def test_report_input_bundle_explains_thin_external_agent_evidence() -> None:
     assert evidence_detail["provenance_notes"]["raw_output_keys"] == ["model_score", "feature_count"]
     assert evidence_detail["provenance_notes"]["quality_keys"] == ["coverage", "sample_size"]
     assert "证据质量" in rendered
-    assert "raw_output_keys=model_score,feature_count" in rendered
+    assert "未展开无可读证据的 L2" in rendered
+    assert "raw_output_keys=model_score,feature_count" not in rendered
 
 
 def test_report_input_bundle_carries_first_batch_report_material() -> None:

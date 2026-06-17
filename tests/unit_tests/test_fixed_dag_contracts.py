@@ -945,6 +945,8 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
     assert "单体智能体输入" in report["answer"]
     assert "综合智能体输入" in report["answer"]
     assert "机器学习企业估值" in report["answer"]
+    assert "未展开无可读证据的 L2" in report["answer"]
+    assert "传统企业估值 输出 not_evaluated 信号" not in report["answer"]
     assert "主要成员：机器学习企业估值" in report["answer"]
     assert "L3 输出" in report["answer"]
     assert "raw_response" not in rendered
@@ -1061,6 +1063,8 @@ def test_report_input_bundle_includes_agent_task_summaries() -> None:
     )
     assert "智能体任务编排" in rendered
     assert "agent_task_v1" in rendered
+    assert "本轮生成 agent_task_v1" in rendered
+    assert "你是机器学习企业估值智能体" not in rendered
 
 
 def test_workflow_snapshot_v2_has_no_legacy_public_fields() -> None:
