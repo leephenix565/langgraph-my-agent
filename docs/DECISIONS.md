@@ -3,6 +3,29 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-056: R8-13I Defines Dev Sandbox Prod Roles And Documentation Authority
+
+Status: accepted.
+
+Decision: the main-system repository now documents a three-directory operating
+model on this server. `/sdb/dlut/dev/langgraph-my-agent` is the source-controlled
+development authority, `/sdb/dlut/sandbox/langgraph-my-agent-r8-a-class` is an
+experiment area, and `/sdb/dlut/prod/langgraph-my-agent` is a runtime/deployment
+copy. The docs index points to `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` as the
+current guide for directory roles, sync policy, and documentation authority.
+
+Reason: recent R8-12/R8-13 work used all three directories. Without an explicit
+operating model, it is easy to mistake sandbox experiments or prod runtime
+copies for the long-term source of truth. The project also accumulated many
+phase-specific documents; deleting them would lose audit and rollback context,
+but leaving them unclassified makes the current authority hard to find.
+
+Consequence: future main-system work should be committed and pushed from dev,
+sandbox work should be backfilled into dev before it becomes authoritative, and
+prod should be updated from stable pushed commits. Phase documents remain
+historical records until a dedicated docs-compaction phase merges them into
+current authority documents.
+
 ## ADR-055: R8-13H Tests A-Class L1/L2 Bridge In Sandbox Before Prod Backfill
 
 Status: accepted for sandbox validation.

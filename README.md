@@ -13,6 +13,13 @@ and it adds sandbox registry entries for macro L2 `macro_commodity_pricing` and
 call `/v1/agent/invoke`, does not modify `runtime_bindings.json`, does not set
 live flags, and does not enable default external invocation.
 
+Repository operations now use an explicit three-directory convention:
+`/sdb/dlut/dev/langgraph-my-agent` is the main-system development authority,
+`/sdb/dlut/sandbox/langgraph-my-agent-r8-a-class` is an experiment area, and
+`/sdb/dlut/prod/langgraph-my-agent` is the runtime/deployment copy. See
+`docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` for the directory roles, sync policy,
+and documentation authority map.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

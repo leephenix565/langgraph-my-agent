@@ -16,6 +16,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/QUALITY.md` | R6-B reset mainline, frontend repo-external build gate, and manual/live/archived quality boundaries. |
 | `docs/DECISIONS.md` | Reset architecture decisions. |
 | `docs/CHANGELOG.md` | Reset branch changelog. |
+| `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` | Main-system dev/prod/sandbox directory roles, sync policy, documentation authority, and docs compaction guidance. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
 | `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md` | R7-C readiness ladder from docs-only review to explicit live invocation approval. |
@@ -122,6 +123,11 @@ reach the same allowlisted server-hosted production agents through SSH
 same-port forwards bound to `127.0.0.1`. The tunnel scripts are demo/dev
 helpers only; they do not expose production ports publicly and do not replace
 runtime bindings.
+R8-13I documents the server directory model for the main system:
+`dev` is the source-controlled development authority, `sandbox` is an
+experiment area, and `prod` is a runtime/deployment copy. It also records which
+docs are current authority, which docs are phase records, and which docs should
+be merged only in a later docs-compaction phase.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.

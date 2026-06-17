@@ -3,6 +3,27 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-17 - Phase R8-13I repository environment and docs authority guide
+
+### Changed
+
+- Added `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` to define the main-system
+  `dev`, `sandbox`, and `prod` directory roles on this server.
+- Documented the expected sync flow: sandbox experiments are reviewed and
+  backfilled into dev, dev commits are pushed to GitHub, and prod is updated
+  from a stable pushed commit.
+- Added a documentation authority map that separates current authority docs
+  from phase-record docs and future merge candidates.
+- Updated README and docs index so the new environment/docs guide is discoverable.
+
+### Not Done
+
+- No runtime binding was enabled.
+- No live flags were set.
+- No `/v1/agent/invoke` evidence was created.
+- No external production agent service source was moved into the main-system
+  repository.
+
 ## 2026-06-12 - Phase R8-13H sandbox A-class L1/L2 bridge integration
 
 ### Changed
