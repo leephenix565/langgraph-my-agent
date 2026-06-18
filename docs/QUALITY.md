@@ -157,6 +157,19 @@ bindings or live flags. A live demo may combine this flag with the R8-12
 external compute demo flag, but that remains manual demo acceptance, not a
 default quality gate.
 
+## R8-13N L3 Explanation Static Coverage
+
+R8-13N adds a default-off L3 LLM explanation seam. The default static quality
+gate includes both the implementation module and its unit tests:
+
+```powershell
+python scripts/quality/run_quality.py --mode static
+```
+
+This static gate still uses fake model transports or provider-missing preflight
+only. It must not call a real provider, production agent endpoint, demo stack,
+or `/v1/agent/invoke`, and it must not change runtime bindings or live flags.
+
 ## R8-13D Sandbox L3 Backfill Handoff Boundary
 
 R8-13D is a packaging and documentation gate. It may read sandbox artifacts,

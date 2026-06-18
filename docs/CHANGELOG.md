@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-18 - Phase R8-13N-QA static target closure
+
+### Changed
+
+- Added the R8-13N L3 explanation synthesizer and its unit test to
+  `scripts/quality/run_quality.py --mode static` ruff targets.
+- Added quality-runner regression coverage so the L3 explanation surface stays
+  in the maintained static gate.
+- Updated quality documentation for the R8-13N static coverage boundary.
+
+### Validated
+
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `.venv/bin/python -m pytest tests/unit_tests/test_quality_runner_codespell.py -q`
+
+### Not Done
+
+- No runtime behavior changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No provider, `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint
+  was called.
+
 ## 2026-06-18 - Phase R8-13N default-off L3 explanation synthesis
 
 ### Added

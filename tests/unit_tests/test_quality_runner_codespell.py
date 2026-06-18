@@ -19,6 +19,17 @@ def test_static_quality_targets_exist() -> None:
     assert missing == []
 
 
+def test_static_quality_includes_l3_explanation_surface() -> None:
+    assert (
+        "src/react_agent/fixed_dag_l3_explanation_synthesizer.py"
+        in run_quality.STATIC_RUFF_TARGETS
+    )
+    assert (
+        "tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py"
+        in run_quality.STATIC_RUFF_TARGETS
+    )
+
+
 def _patch_codespell_env(
     monkeypatch: pytest.MonkeyPatch,
     *,
