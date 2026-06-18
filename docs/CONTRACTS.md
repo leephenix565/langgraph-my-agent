@@ -119,6 +119,15 @@ output fails closed back to the template report from R8-12C. This is a
 main-system model call, not an external agent `/v1/agent/invoke` call, and it
 does not change runtime bindings or live flags.
 
+R8-13N adds `fixed_dag_l3_explanation_synthesizer.py` as a default-off L3
+language explanation seam. When `enable_llm_l3_explanation` is true, it reads
+only public-safe L2 conclusions and deterministic L3 composite results, then
+may prepend bounded L3 `research_points` and add `provenance.llm_explanation`.
+It must not override deterministic fusion fields such as `stance`, `gate`,
+`risk_score`, `dimension_weights`, member weights, confidence, status, or
+contributing agents. Invalid, unsafe, or unavailable model output fails closed
+to the original deterministic L3 results.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
@@ -830,10 +839,50 @@ Safety rules:
 - It must not store raw model output in graph state or public workflow.
 - It may set public workflow `providerInvoked=true` when the explicit synthesis
   flag actually invokes the configured model.
-- L3 composite agents may later use an LLM as a default-off language
-  explanation/conflict-summary layer only. The LLM must not override
-  deterministic fusion fields such as `stance`, `gate`, `risk_score`,
-  `dimension_weights`, member weights, or confidence.
+
+## L3 LLM explanation seam
+
+Purpose: allow a default-off language layer to explain deterministic L3
+composites, member conflicts, missing coverage, and decision implications
+without making the LLM responsible for fusion.
+
+Runtime controls:
+
+- `Context.enable_llm_l3_explanation`
+- `ENABLE_LLM_L3_EXPLANATION=1`
+- optional `Context.llm_l3_explanation_model`
+- optional `LLM_L3_EXPLANATION_MODEL`
+
+Input: the seam receives only bounded public-safe snapshots of current-run L2
+conclusions and deterministic L3 composite results. Prompt construction strips
+raw external JSON, endpoint URLs, secrets, traceback text, raw provider
+responses, and internal reasoning drafts.
+
+Output: valid model output may add bounded Chinese `research_points` to L3
+`provenance` and attach `provenance.llm_explanation` with
+`language_only=true` and `fusion_fields_overridden=false`. These fields flow
+into `report_input_bundle_v1.agent_evidence_bundle.l3_composite_outputs[]` and
+can be rendered by fallback or LLM report synthesis.
+
+Non-overrides: after applying model output, the executor preserves deterministic
+L3 `stance`, `confidence`, `status`, `gate`, `veto`, `penalty`, `risk_score`,
+`regime`, `risk_sensitivity`, `dimension_weights`, and contributing agents. A
+validator failure discards the explanation and keeps the deterministic result.
+
+Failure behavior: invalid model names, missing known-provider credentials,
+model load failure, unsafe output, non-JSON output, schema mismatch, or invalid
+post-application L3 result returns the original deterministic L3 results. Known
+provider credential checks short-circuit before invocation and record only
+secret-free readiness metadata.
+
+Safety rules:
+
+- The seam must not call external agent `/v1/agent/invoke`.
+- It must not store raw model output in graph state or public workflow.
+- It must not change runtime bindings or live flags.
+- It must not turn placeholder or partial members into complete evidence.
+- It may set public workflow `providerInvoked=true` when the explicit L3
+  explanation flag actually invokes the configured model.
 
 ## workflow_snapshot_v2
 

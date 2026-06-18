@@ -930,6 +930,93 @@ def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None
     assert "/v1/agent/invoke" not in rendered
 
 
+def test_llm_l3_explanation_enriches_l3_without_overriding_fusion(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    class FakeL3ExplanationModel:
+        def __init__(self) -> None:
+            self.prompts: list[str] = []
+
+        def invoke(self, prompt: str):
+            self.prompts.append(prompt)
+            return json.dumps(
+                {
+                    "dimensions": [
+                        {
+                            "dimension": "value",
+                            "research_points": [
+                                {
+                                    "claim": "价值综合只读取到机器学习估值，覆盖不足但方向偏正。",
+                                    "support": "value_ml_valuation 提供 demo_positive 信号，其余价值成员仍缺失。",
+                                    "interpretation": "该解释只能说明当前可用成员贡献，不能替代完整价值维。",
+                                    "decision_implication": "最终报告应把价值维写成 partial 支持，而不是强结论。",
+                                    "caveat": "LLM 解释层不改变 deterministic L3 stance、confidence 或权重。",
+                                }
+                            ],
+                            "notes": ["language-only explanation"],
+                        }
+                    ]
+                },
+                ensure_ascii=False,
+            )
+
+    fake_model = FakeL3ExplanationModel()
+
+    def fake_invoke(entry, **_kwargs):
+        if entry.agent_id != "value_ml_valuation":
+            raise AssertionError(f"unexpected demo agent {entry.agent_id}")
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_l3_explanation_synthesizer.load_chat_model",
+        lambda _model: fake_model,
+    )
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            model="test/l3-model",
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+            enable_llm_l3_explanation=True,
+        ),
+    )
+    valid, reason = validate_dag_execution_result(result)
+    rendered = json.dumps(result, ensure_ascii=False).lower()
+    value = result["dimension_results"]["value"]
+    l3_outputs = result["report_input_bundle"]["agent_evidence_bundle"]["l3_composite_outputs"]
+    value_detail = next(item for item in l3_outputs if item["dimension"] == "value")
+
+    assert valid, reason
+    assert fake_model.prompts
+    assert result["provenance"]["provider_invoked"] is True
+    assert result["provenance"]["llm_l3_explanation_used"] is True
+    assert result["provenance"]["llm_report_synthesis_used"] is False
+    assert value["status"] == "partial"
+    assert value["provenance"]["llm_explanation"]["language_only"] is True
+    assert value["provenance"]["llm_explanation"]["fusion_fields_overridden"] is False
+    assert value["provenance"]["research_points"][0]["claim"].startswith("价值综合只读取到")
+    assert value_detail["research_points"][0]["claim"].startswith("价值综合只读取到")
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
+
+
 def test_llm_report_synthesis_failure_keeps_template_report(monkeypatch) -> None:
     class BadReportModel:
         def invoke(self, _prompt: str):

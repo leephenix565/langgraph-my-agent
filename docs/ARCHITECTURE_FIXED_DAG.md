@@ -100,6 +100,11 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   risk-member `risk_score` material, and macro keeps default value/market
   weights unless usable macro members exist. Missing placeholder members remain
   weight `0` and keep the composite `partial` or `pending_implementation`.
+- A default-off L3 explanation seam may run after deterministic L3 construction
+  and before L4 decision/report generation. It can add public-safe Chinese
+  `research_points` and `provenance.llm_explanation` to L3 outputs, but it must
+  not change fusion fields such as `stance`, `confidence`, `gate`, `risk_score`,
+  `dimension_weights`, member weights, status, or contributing agents.
 - L4 produces deterministic decision and report placeholders with stable fields.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business

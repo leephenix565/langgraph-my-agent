@@ -924,6 +924,9 @@ def execute_fixed_dag_plan(
     llm_report_synthesis_enabled = bool(
         getattr(context, "enable_llm_report_synthesis", False)
     )
+    llm_l3_explanation_enabled = bool(
+        getattr(context, "enable_llm_l3_explanation", False)
+    )
     external_l1_run: Mapping[str, Any] = {}
     external_l2_run: Mapping[str, Any] = {}
     external_l3_run: Mapping[str, Any] = {}
@@ -1013,6 +1016,28 @@ def execute_fixed_dag_plan(
             external_l2_run,
             external_l3_run,
         )
+    llm_l3_explanation_used = False
+    llm_l3_explanation_attempted = False
+    llm_l3_explanation_provider_invoked = False
+    llm_l3_explanation_fallback_reason = ""
+    llm_l3_explanation_provider_config: dict[str, Any] = {}
+    if llm_l3_explanation_enabled:
+        from react_agent.fixed_dag_l3_explanation_synthesizer import (  # noqa: PLC0415
+            synthesize_l3_explanations,
+        )
+
+        l3_explanation_outcome = synthesize_l3_explanations(
+            question=question,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            context=context,
+        )
+        dimension_results = cast(dict[str, Any], l3_explanation_outcome["dimension_results"])
+        llm_l3_explanation_used = bool(l3_explanation_outcome["used_llm_explanation"])
+        llm_l3_explanation_attempted = bool(l3_explanation_outcome["attempted"])
+        llm_l3_explanation_provider_invoked = bool(l3_explanation_outcome["provider_invoked"])
+        llm_l3_explanation_fallback_reason = str(l3_explanation_outcome["fallback_reason"])
+        llm_l3_explanation_provider_config = dict(l3_explanation_outcome["provider_config"])
     decision_result = build_decision_result(dimension_results, as_of=as_of)
     agent_tasks = build_agent_tasks_for_plan(
         execution_plan,
@@ -1104,6 +1129,16 @@ def execute_fixed_dag_plan(
             limitations.append(
                 "大模型报告综合开关已开启，但未生成有效报告，已回退到模板报告。"
             )
+    if llm_l3_explanation_enabled:
+        if llm_l3_explanation_used:
+            limitations.append(
+                "已在显式演示开关下使用大模型补充 L3 综合解释；"
+                "该解释不覆盖确定性 L3 stance、gate、risk_score、权重或状态。"
+            )
+        else:
+            limitations.append(
+                "L3 大模型解释开关已开启，但未生成有效解释，已保留确定性 L3 结果。"
+            )
     if fallback_used:
         limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")
 
@@ -1126,7 +1161,10 @@ def execute_fixed_dag_plan(
         "limitations": limitations,
         "provenance": {
             "source": "fixed_dag_executor",
-            "provider_invoked": llm_report_synthesis_provider_invoked,
+            "provider_invoked": (
+                llm_report_synthesis_provider_invoked
+                or llm_l3_explanation_provider_invoked
+            ),
             "external_invoked": False,
             "internal_llm_placeholders_enabled": internal_placeholders_enabled,
             "internal_llm_placeholder_conclusions": internal_placeholder_count,
@@ -1145,6 +1183,11 @@ def execute_fixed_dag_plan(
             "llm_report_synthesis_used": llm_report_synthesis_used,
             "llm_report_synthesis_fallback_reason": llm_report_synthesis_fallback_reason,
             "llm_report_synthesis_provider_config": llm_report_synthesis_provider_config,
+            "llm_l3_explanation_enabled": llm_l3_explanation_enabled,
+            "llm_l3_explanation_attempted": llm_l3_explanation_attempted,
+            "llm_l3_explanation_used": llm_l3_explanation_used,
+            "llm_l3_explanation_fallback_reason": llm_l3_explanation_fallback_reason,
+            "llm_l3_explanation_provider_config": llm_l3_explanation_provider_config,
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

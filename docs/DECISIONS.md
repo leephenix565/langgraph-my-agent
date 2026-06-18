@@ -1707,3 +1707,38 @@ Non-consequence: R8-13G does not call `/v1/agent/invoke`, does not change
 `invoke_enabled_by_default=true`, does not enable default graph calls to
 production services, and does not change valuation models, feature
 engineering, scoring algorithms, data files, or deployment configuration.
+
+## ADR-062: R8-13N Keeps L3 LLM Use Language-Only and Default-Off
+
+Status: accepted for main-system report-material enrichment.
+
+Decision: R8-13N adds a default-off main-system L3 explanation synthesizer
+behind `Context.enable_llm_l3_explanation` /
+`ENABLE_LLM_L3_EXPLANATION=1`. The seam may read public-safe current-run L2
+conclusions and deterministic L3 composite results, then add bounded Chinese
+`research_points` and `provenance.llm_explanation` to L3 outputs before
+decision/report generation. It must preserve deterministic L3 fusion fields:
+`stance`, `confidence`, `status`, `gate`, `veto`, `penalty`, `risk_score`,
+`regime`, `risk_sensitivity`, `dimension_weights`, member weights, and
+contributing agents.
+
+Reason: final reports need better L3 conflict explanation, but L3 fusion must
+remain auditable, deterministic, and contract-valid. Letting an LLM recompute
+weights, gates, risk scores, or statuses would make the graph hard to verify
+and would blur placeholder/partial evidence boundaries. A language-only layer
+lets reports explain available material while keeping the fixed-DAG math and
+quality gates owned by deterministic builders or external composite services.
+
+Consequence: when explicitly enabled and successfully invoked, public workflow
+`providerInvoked` may be true even if final report synthesis remains on the
+fallback path, because the L3 explanation layer used a provider. The execution
+provenance separately records `llm_l3_explanation_*` and
+`llm_report_synthesis_*` fields so traces can distinguish the two provider
+uses. Missing provider credentials, unsafe output, invalid JSON, schema
+mismatch, or failed post-application validation keeps the original
+deterministic L3 results.
+
+Non-consequence: R8-13N does not call external agent `/v1/agent/invoke`, does
+not change `runtime_bindings.json`, does not set `live_verified=true`, does not
+set `invoke_enabled_by_default=true`, does not make provider use default, does
+not store raw model output, and does not make placeholder agents real evidence.

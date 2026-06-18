@@ -126,6 +126,20 @@ class Context:
             "If empty, report synthesis uses `model`."
         },
     )
+    enable_llm_l3_explanation: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable default-off LLM explanation of fixed-DAG L3 composites. "
+            "This may add public-safe research_points but must not override fusion fields."
+        },
+    )
+    llm_l3_explanation_model: str = field(
+        default="",
+        metadata={
+            "description": "Optional override model for LLM L3 explanation. "
+            "If empty, L3 explanation uses `model`."
+        },
+    )
     external_compute_demo_allowlist: tuple[str, ...] = field(
         default=(),
         metadata={
@@ -187,6 +201,7 @@ class Context:
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
             "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
             "enable_llm_report_synthesis": "ENABLE_LLM_REPORT_SYNTHESIS",
+            "enable_llm_l3_explanation": "ENABLE_LLM_L3_EXPLANATION",
         }
         for field_name, env_name in bool_envs.items():
             field_obj = next((f for f in fields(self) if f.name == field_name), None)

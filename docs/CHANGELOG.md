@@ -3,6 +3,53 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-18 - Phase R8-13N default-off L3 explanation synthesis
+
+### Added
+
+- Added `fixed_dag_l3_explanation_synthesizer.py` as a default-off L3 language
+  explanation seam. It reads only public-safe L2 conclusions and deterministic
+  L3 composite results, then may add bounded Chinese `research_points` and
+  `provenance.llm_explanation` to L3 outputs.
+- Added `Context.enable_llm_l3_explanation` /
+  `ENABLE_LLM_L3_EXPLANATION=1` and optional
+  `Context.llm_l3_explanation_model` / `LLM_L3_EXPLANATION_MODEL`.
+- Wired the explanation step after deterministic/external-overlaid L3 results
+  and before decision/report generation so `report_input_bundle_v1` can carry
+  the L3 explanation material.
+- Added unit coverage for default-off env behavior, public-safe prompt
+  construction, language-only L3 enrichment, missing-credential preflight, and
+  executor propagation into the report input bundle.
+
+### Changed
+
+- Execution provenance now records `llm_l3_explanation_*` fields separately
+  from `llm_report_synthesis_*` fields. Public `provider_invoked` remains true
+  only when an explicit model-backed seam actually invokes the configured
+  provider.
+- Updated contracts, architecture notes, ADRs, and the Chinese report plan to
+  make L3 LLM usage language-only and non-authoritative for fusion.
+
+### Validated
+
+- `python3 -m pytest tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py tests/unit_tests/test_fixed_dag_executor.py::test_llm_l3_explanation_enriches_l3_without_overriding_fusion -q`
+- `python3 -m pytest tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py tests/unit_tests/test_fixed_dag_executor.py::test_llm_l3_explanation_enriches_l3_without_overriding_fusion tests/unit_tests/test_fixed_dag_executor.py::test_llm_report_synthesis_reads_external_agent_evidence tests/unit_tests/test_fixed_dag_contracts.py::test_l3_composites_project_partial_research_material_from_available_l2 -q`
+- `python3 -m pytest tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_fixed_dag_contracts.py tests/integration_tests/test_graph.py -q`
+- `.venv/bin/python scripts/quality/run_quality.py --mode static`
+- `.venv/bin/python -m ruff check src/react_agent/fixed_dag_l3_explanation_synthesizer.py tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py src/react_agent/context.py src/react_agent/fixed_dag_executor.py tests/unit_tests/test_fixed_dag_executor.py`
+
+### Not Done
+
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No real provider was invoked in this phase; tests use fake models or
+  missing-credential preflight.
+- The L3 explanation layer does not override deterministic `stance`,
+  `confidence`, `status`, `gate`, `risk_score`, `dimension_weights`, member
+  weights, or contributing agents.
+- This does not make placeholder agents real evidence.
+
 ## 2026-06-17 - Phase R8-13M fallback report evidence-focused rendering
 
 ### Changed
