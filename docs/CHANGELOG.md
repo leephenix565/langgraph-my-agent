@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-18 - Phase R8-13N provider validation record
+
+### Changed
+
+- Recorded the controlled R8-13N real-provider validation for default-off L3
+  explanation synthesis and default-off final LLM report synthesis.
+- Updated the controlled smoke log and Chinese report-improvement plan with the
+  sanitized artifact path and validation outcome.
+
+### Evidence
+
+- Artifact directory:
+  `/tmp/lma-r8-13n-l3-real-provider-demo/20260618T061151Z`.
+- Model: `openai/deepseek-v4-flash`.
+- L3 explanation: `attempted=true`, `provider_invoked=true`,
+  `used_llm_explanation=true`.
+- Final report synthesis: `attempted=true`, `provider_invoked=true`,
+  `used_llm_report=true`.
+- `report_input_bundle_v1` validation: pass.
+- `report_result_v1` validation: pass.
+
+### Not Done
+
+- No runtime behavior changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No raw provider response, credentials, endpoint URLs, or raw graph messages
+  were stored in the repository.
+- This does not make placeholder agents real evidence.
+
 ## 2026-06-18 - Phase R8-13N-QA static target closure
 
 ### Changed

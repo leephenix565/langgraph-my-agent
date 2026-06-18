@@ -9,6 +9,48 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-18 - R8-13N L3 explanation and report provider validation
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13N |
+| Artifact directory | `/tmp/lma-r8-13n-l3-real-provider-demo/20260618T061151Z` |
+| Main-system mode | default-off L3 explanation synthesis + default-off LLM report synthesis |
+| Provider model | `openai/deepseek-v4-flash` |
+| Endpoint calls | none |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Raw provider response stored | no |
+
+R8-13N validates the main-system L3 language explanation seam and final LLM
+report synthesis seam with the configured provider. The validation uses local
+public-safe fixture conclusions for four L2 agents, builds deterministic L3
+composites, then lets the L3 explanation layer add bounded `research_points`
+before `report_input_bundle_v1` and final report synthesis.
+
+Sanitized QA result:
+
+- L3 explanation attempted: yes.
+- L3 provider invoked: yes.
+- L3 explanation used: yes.
+- Final report synthesis attempted: yes.
+- Final report provider invoked: yes.
+- Final LLM report used: yes.
+- `report_input_bundle_v1` validation: pass.
+- `report_result_v1` validation: pass.
+
+Non-claims:
+
+- This is not external agent endpoint readiness.
+- This does not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`.
+- This does not enable runtime bindings or default provider use.
+- This does not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not make placeholder agents real evidence.
+- This does not store raw provider output, credentials, endpoint URLs, or raw
+  graph messages in the repo.
+
 ## 2026-06-12 - R8-13G value L2 stance remediation and re-smoke
 
 | Field | Value |
