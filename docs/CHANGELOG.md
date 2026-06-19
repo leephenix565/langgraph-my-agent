@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-19 - Pre-backfill audit documentation
+
+### Changed
+
+- Added `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md` as the current pre-backfill
+  ledger for what changed in the main system, what remains sandbox-only, what
+  already reached prod service directories, and which agents should or should
+  not be backfilled next.
+- Updated `docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` from the older R8-13I snapshot
+  to the current R8-13Q state, including the L4 compute-only default runtime
+  exception and non-L4 runtime boundaries.
+- Added the pre-backfill ledger to `docs/INDEX.md`,
+  `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md`, and the suggested new-session
+  reading list.
+
+### Not Done
+
+- No source code was changed.
+- No `.env` file was changed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No external service backfill was applied.
+- No runtime binding or live flag was changed.
+
 ## 2026-06-19 - L4 external compute default runtime
 
 ### Changed

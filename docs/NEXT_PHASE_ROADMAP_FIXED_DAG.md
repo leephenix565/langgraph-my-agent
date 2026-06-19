@@ -24,7 +24,7 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 
 ## Current Snapshot
 
-截至 R8-13I：
+截至 R8-13Q：
 
 - 主系统已经是固定 DAG 架构，27 个 formal agent id 由
   `config/fixed_dag/agent_catalog.json` 定义。
@@ -41,13 +41,22 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   demo flag 下用 LLM 重新整理 agent 输出，失败时回退到模板报告。
 - R8-13F/R8-13G 已恢复端到端 agent_task/evidence trace，并修复三个价值估值
   agent 的 top-level direction stance。
+- R8-13N 增加默认关闭的 L3 LLM 解释层；它只能补 public-safe 语言解释，
+  不能改 L3 融合字段。
+- R8-13Q 已把两个 L4 agent 正式切到 compute-only 默认路径：
+  `decision_synthesizer` 和 `report_generator` 使用
+  `external_compute_default` runtime binding，分别指向 production-source
+  `/v1/agent/compute` 端口 `10025` / `10026`。
+- backfill 前的当前总账见 `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md`。
 
 重要边界：
 
-- `runtime_bindings.json` 没有启用外部 production agent。
-- 没有设置 `live_verified=true`。
-- 没有设置 `invoke_enabled_by_default=true`。
-- production compute pass 不等于 production default invocation。
+- `runtime_bindings.json` 只启用了两个 L4 的 `external_compute_default`。
+- L4 两个 `live_verified=true` 只代表 R8-13Q `/v1/agent/compute`
+  default runtime smoke 通过，不代表 `/invoke`，也不代表 L1/L2/L3。
+- 所有 L4 和非 L4 的 `invoke_enabled_by_default` 都仍必须保持 false。
+- production compute pass 不等于 production default invocation；当前唯一例外是
+  已批准的 L4 compute-only default path。
 - demo bridge 不是生产运行时默认路径。
 
 ## Directory Operating Model
@@ -125,7 +134,7 @@ resmoke、allowlist、协议细节或把现有补丁回填到正式服务仓库�
 | L2 | macro | 宏观情绪感知智能体 `macro_sentiment` | 当前偏 placeholder 或 regulator-style 语义；需要明确是否输出 L2 `agent_conclusion_v1`。 |
 | L2 | macro | 行业热点洞悉智能体 `macro_industry_hotspot` | 当前偏 placeholder，且历史上存在 id/dimension 漂移；需要 owner 明确 L2 宏观信号输出。 |
 
-### C Class: Framework/Internal Or Future L4 Work
+### C Class: Framework/Internal Or Runtime Work
 
 这些不是普通 L2/L3 服务修补项，而是主系统编排、L4 决策/报告或 runtime
 enablement 问题。
@@ -133,8 +142,8 @@ enablement 问题。
 | Layer | Agent | Current Issue |
 | --- | --- | --- |
 | L1 | 任务路由规划智能体 `route_planner` | 主系统内部 planner 可用；外部 route service 不是当前默认路径。 |
-| L4 | 综合研判智能体 `decision_synthesizer` | dev 主系统已有 default-off compute handoff；仍缺受控生产 L4 服务 evidence 和 runtime review。 |
-| L4 | 报告生成智能体 `report_generator` | dev 主系统已有 default-off compute handoff；当前仍不是生产默认报告智能体服务。 |
+| L4 | 综合研判智能体 `decision_synthesizer` | R8-13Q 已启用 compute-only default runtime；后续重点是监控、回滚边界和上游 evidence 质量。 |
+| L4 | 报告生成智能体 `report_generator` | R8-13Q 已启用 compute-only default runtime；报告质量主要受 L1/L2/L3 真实材料厚度限制。 |
 
 ## Near-Term Roadmap
 
@@ -150,7 +159,8 @@ DoD:
   或 gate/regulator 字段。
 - 最终报告读取 evidence bundle，而不是只读模板字段。
 - 无法接入的 agent 明确显示为 placeholder/未启用/未成熟，不伪装成真实结论。
-- 仍然 default-off，不改 runtime bindings，不设置 live flags。
+- 除 R8-13Q 已批准的 L4 compute-default runtime 外，其余外部服务仍然
+  default-off；不顺手改非 L4 runtime bindings，不设置新的 live flags。
 
 建议目录：
 
@@ -202,10 +212,11 @@ DoD:
 4. 记录 sanitized evidence。
 5. 仍不改 runtime bindings，不设置 live flags。
 
-### P4: Validate Real L4 Decision And Report Agents
+### P4: Monitor L4 Decision And Report Agents
 
-目标：在已完成 dev 主系统 default-off L4 compute handoff 的基础上，验证真实
-`decision_synthesizer` 和 `report_generator` 服务路径。
+目标：在 R8-13Q 已启用 L4 compute-only default runtime 的基础上，监控
+`decision_synthesizer` 和 `report_generator` 的默认路径，并继续保持 rollback 和
+public transcript 安全边界。
 
 需要继续明确和验证：
 
@@ -215,8 +226,8 @@ DoD:
 - `report_generator` 如何消费 bounded `report_input_bundle_v1` 并返回
   public-safe `report_result_v1`。
 - 哪些内容允许进入 public transcript，哪些必须只在 private trace。
-- controlled `/health` + `/v1/agent/compute` evidence 是否通过；仍不调用
-  `/v1/agent/invoke`，不改 runtime bindings，不设置 live flags。
+- controlled runtime smoke 是否持续通过；仍不调用 `/v1/agent/invoke`，
+  不把 L4 compute evidence 扩展成 L1/L2/L3 默认 runtime。
 
 这部分不应混在 L2 接入修复里做。
 
@@ -226,11 +237,12 @@ DoD:
 
 1. 完成 A 类 agent 的 production compute 和 adapter mapping coverage。
 2. 完成更多低风险 agent 的 controlled invoke smoke。
-3. 把 production 服务端临时补丁回填到各服务正式源码仓库。
+3. 按 `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md` 把 production/sandbox 服务端临时补丁
+   回填到各服务正式源码仓库。
 4. 固化 `agent_task_v1` 输入合同，让自然语言任务、L1 evidence、上游结果都能
    被 L2/L3/L4 理解。
 5. 建立可重复运行的 sanitized trace artifact 格式。
-6. 设计 runtime binding prepare checklist，但不自动启用。
+6. 设计非 L4 runtime binding prepare checklist，但不自动启用。
 
 ## Long-Term Roadmap
 
@@ -242,7 +254,8 @@ DoD:
 4. L3 综合 agent 读取对应维度 L2 输出，输出综合结论、风险门或宏观调节器。
 5. L4 decision synthesizer 做冲突消解、风险门处理、宏观调权和最终判断。
 6. L4 report generator 读取完整 bounded evidence bundle 后生成中文研判报告。
-7. 经过 invoke audit、runtime binding prepare、审批后，才考虑默认生产启用。
+7. 非 L4 外部服务必须经过 invoke audit、runtime binding prepare 和审批后，
+   才考虑默认生产启用。
 
 ## Documentation Cleanup Plan
 
@@ -261,8 +274,10 @@ DoD:
 - 不把 dev evidence 升级成 production evidence。
 - 不把 compute pass 写成 invoke pass。
 - 不把 invoke pass 写成 runtime binding enablement。
-- 不自动修改 `runtime_bindings.json`。
-- 不设置 `live_verified=true`。
+- 不自动修改 `runtime_bindings.json`。R8-13Q 的两个 L4 行是已完成的显式批准例外；
+  后续 backfill 不得顺手改其他 runtime binding。
+- 不把 `live_verified=true` 推广到非 L4。当前两个 L4 live flag 只代表 compute-default
+  smoke。
 - 不设置 `invoke_enabled_by_default=true`。
 - 不把 placeholder agent 伪装成真实生产智能体。
 - 不把外部服务源码并入主系统仓库。
@@ -286,6 +301,7 @@ README.md
 docs/INDEX.md
 docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md
 docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md
+docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md
 docs/SYSTEM_MAP.md
 docs/ARCHITECTURE_FIXED_DAG.md
 docs/CONTRACTS.md

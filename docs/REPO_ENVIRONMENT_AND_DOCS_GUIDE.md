@@ -132,6 +132,7 @@ git pull --ff-only origin reset/fixed-dag-v1
 | `README.md` | 主系统阶段摘要和关键 non-claims。 |
 | `docs/INDEX.md` | 文档地图和权威入口。 |
 | `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` | dev/prod/sandbox 目录职责、同步方式和文档整理策略。 |
+| `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md` | Backfill 前总账：说明主系统已合入内容、sandbox agent 实验、prod 运行目录状态、L4 compute-default runtime 和后续回填边界。 |
 | `docs/SYSTEM_MAP.md` | 当前主系统运行拓扑。 |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | 固定 DAG 架构和 27-agent 结构。 |
 | `docs/CONTRACTS.md` | 主系统 contract、adapter 和 public/runtime 边界。 |
@@ -178,8 +179,10 @@ docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md
 
 本文只是主系统目录和文档管理说明：
 
-- 不启用 runtime bindings。
-- 不设置 `live_verified=true`。
+- 不额外启用 runtime bindings。R8-13Q 已批准的两个 L4
+  `external_compute_default` 行是当前事实，不代表本文又启用了新 runtime。
+- 不额外设置 `live_verified=true`。当前两个 L4 live flag 只表示
+  `/v1/agent/compute` default runtime smoke。
 - 不设置 `invoke_enabled_by_default=true`。
 - 不调用 `/v1/agent/invoke`。
 - 不证明 production readiness。
