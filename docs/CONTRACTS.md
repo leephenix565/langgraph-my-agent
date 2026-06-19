@@ -735,6 +735,12 @@ Runtime fields:
 
 Seams: `build_report_result`, `validate_report_result`.
 
+`report_result_v1.sections`, `evidence_cards`, and `limitations` are now
+preserved through `build_final_emit_payload`, `build_emitted_bundle`, and the
+public assistant answer card. The public transcript still remains a single
+assistant answer; these fields are structured report material for UI rendering
+and artifacts, not raw graph messages or raw agent JSON.
+
 ## report_input_bundle_v1
 
 Purpose: describe the structured L2 and L3 evidence that the report generator
@@ -774,6 +780,36 @@ public-safe report material:
   `claim`, `support`, `interpretation`, `decision_implication`, and `caveat`.
 - `data_quality`: bounded coverage, data-source, anti-lookahead, cached,
   missing-component, corpus, or composite-status notes.
+
+The public-safe allowlist can grow for service-owned report material without
+creating a new payload family. The June 18 sandbox wrapper pass added projection
+support for financial-fraud bridges (`fraud_risk_bridge`, `model_context`,
+`feature_diagnostics`, `risk_gate_rule`) and macro-cycle bridges
+(`macro_regime_bridge`, `macro_signal_table`, `asset_allocation_view`,
+`sector_rotation_summary`, `macro_data_window`, `zeping_crosscheck_context`).
+These fields remain bounded report inputs only; they do not make `/compute`
+evidence into `/invoke` evidence, enable runtime bindings, or set live flags.
+
+The June 19 L3 material pass extends the same boundary to service-owned
+composite research packets. Default-off external L3 compute requests may receive
+bounded current-run L2 report material in `context.upstream_outputs` and
+`agent_task_v1.upstream_results`, including `domain_metrics`, `drivers`,
+`research_points`, `data_quality`, and bounded evidence. The bridge must strip
+endpoint URLs, secrets, raw responses, tracebacks, and internal reasoning
+drafts before sending this context. External L3 payloads may then expose
+report-facing `composite_research_packet`, `composite_quality`,
+`conflict_summary`, `dominant_signals`, `missing_or_degraded_members`,
+`final_implication`, and `limitations`. These fields explain already-computed
+fusion outputs; they must not override stable fields such as `stance`,
+`confidence`, `gate`, `risk_score`, `dimension_weights`, member weights,
+`status`, or `contributing_agents`.
+
+For deterministic L3 risk composites, member-level warnings and model/data
+boundaries may also be summarized as `member_boundary_summary` inside L3
+`drivers` and `data_quality`. This is report-facing material only: it does not
+change `risk_score`, `gate`, member weights, or L2 source values. Its purpose is
+to keep caveats such as model-vintage limits or missing text evidence visible
+after L3 compression.
 
 When external L3 services are not overlaid, the main-system deterministic L3
 projection may derive bounded composite material from already available L2
@@ -839,6 +875,45 @@ Safety rules:
 - It must not store raw model output in graph state or public workflow.
 - It may set public workflow `providerInvoked=true` when the explicit synthesis
   flag actually invokes the configured model.
+
+## L4 external compute handoff seam
+
+Purpose: allow `decision_synthesizer` and `report_generator` to be tested as
+formal L4 agent ids through the same default-off compute-only bridge used by
+the rest of the fixed DAG.
+
+Runtime controls:
+
+- `Context.enable_external_compute_demo`
+- `ENABLE_EXTERNAL_COMPUTE_DEMO=1`
+- explicit `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` entries for
+  `decision_synthesizer` and/or `report_generator`
+
+Input:
+
+- `decision_synthesizer` receives bounded current-run `dimension_results`
+  under `context.dimension_results`.
+- `report_generator` receives bounded current-run `decision_result` and
+  `report_input_bundle_v1` under `context`.
+- Requests remain `/v1/agent/compute` requests. The bridge never calls external
+  `/v1/agent/invoke`.
+
+Output:
+
+- `decision_synthesizer` must return `decision_result_v1`.
+- `report_generator` must return `report_result_v1`.
+- The main-system adapter validates both payloads and strips unsafe text such
+  as secrets, endpoint URLs, raw provider responses, raw external JSON,
+  tracebacks, and internal reasoning drafts.
+
+Boundary:
+
+- This seam is default-off and allowlist-only.
+- It does not modify runtime bindings, set `live_verified`, or set
+  `invoke_enabled_by_default`.
+- It does not make sandbox L4 services production-default.
+- When an external `report_generator` result is mapped, the internal LLM report
+  synthesis seam must not overwrite it in the same execution.
 
 ## L3 LLM explanation seam
 

@@ -5,8 +5,10 @@ from pathlib import Path
 from react_agent.fixed_dag_contracts import (
     validate_conclusion_object,
     validate_data_bundle,
+    validate_decision_result,
     validate_dimension_composite_result,
     validate_entity_relation_bundle,
+    validate_report_result,
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
@@ -123,6 +125,137 @@ def test_external_compute_envelope_maps_agent_conclusion_tool_result() -> None:
     assert mapped["provenance"]["provider_invoked"] is False
     assert mapped["provenance"]["external_invoked"] is False
     _assert_safe_public_payload(mapped)
+
+
+def test_report_material_allowlist_maps_financial_fraud_and_macro_context() -> None:
+    fraud_payload = _compute_envelope(
+        {
+            "schema_version": "agent_conclusion_v1",
+            "agent_id": "risk_financial_fraud",
+            "external_agent_id": "financial_fraud_agent",
+            "dimension": "risk",
+            "role": "gate_member",
+            "target": "600519.SH",
+            "scope": "stock",
+            "as_of": "2024-12-31",
+            "data_as_of": "2024-12-31",
+            "risk_score": 0.25,
+            "confidence": 0.73,
+            "raw_output": {
+                "risk_score": 25,
+                "risk_level": "low",
+                "fraud_risk_bridge": {"risk_score": 25, "gate_action": "pass"},
+                "model_context": {"model_available": True, "threshold": 0.5},
+                "feature_diagnostics": {"financial_report_period": "2024", "coverage": 1.0},
+                "risk_gate_rule": {"pass": "0-39", "selected_action": "pass"},
+                "research_points": [
+                    {
+                        "claim": "财务造假风险闸门为 pass。",
+                        "support": "风险分数 25/100，模型和本地特征均可用。",
+                        "interpretation": "作为风险闸门材料，不直接给出买卖结论。",
+                    }
+                ],
+                "drivers": [
+                    {"name": "fraud_risk_bridge", "value": {"risk_score": 25}},
+                    {"name": "model_context", "value": {"model_available": True}},
+                ],
+            },
+            "quality": {
+                "anti_lookahead_passed": True,
+                "feature_data_anti_lookahead_passed": True,
+                "model_available": True,
+                "financial_report_period": "2024",
+                "financial_publish_time": "2025-04-30",
+                "annual_feature_available_after": "2025-04-30",
+            },
+            "evidence": [
+                {
+                    "fact": "财务造假风险分数为 25/100，闸门 action=pass。",
+                    "source": "financial_fraud_risk_gate",
+                    "as_of": "2024-12-31",
+                    "data_as_of": "2024-12-31",
+                }
+            ],
+            "status": "ok",
+        }
+    )
+    fraud_payload["agent_id"] = "risk_financial_fraud"
+    fraud_payload["external_agent_id"] = "financial_fraud_agent"
+
+    fraud_mapped = map_external_response_to_fixed_dag_object(fraud_payload)
+    valid, reason = validate_conclusion_object(fraud_mapped)
+    assert valid, reason
+    fraud_provenance = fraud_mapped["provenance"]
+    assert fraud_provenance["domain_metrics"]["fraud_risk_bridge"]["gate_action"] == "pass"
+    assert fraud_provenance["domain_metrics"]["model_context"]["model_available"] is True
+    assert fraud_provenance["domain_metrics"]["feature_diagnostics"]["financial_report_period"] == "2024"
+    assert any(item["name"] == "fraud_risk_bridge" for item in fraud_provenance["drivers"])
+    assert fraud_provenance["research_points"][0]["claim"] == "财务造假风险闸门为 pass。"
+    assert fraud_provenance["data_quality"]["annual_feature_available_after"] == "2025-04-30"
+    _assert_safe_public_payload(fraud_mapped)
+
+    macro_payload = _compute_envelope(
+        {
+            "schema_version": "agent_conclusion_v1",
+            "agent_id": "macro_analysis",
+            "external_agent_id": "macro_analysis",
+            "dimension": "macro",
+            "role": "direction",
+            "target": "A股权益",
+            "scope": "macro",
+            "as_of": "2024-12-31",
+            "data_as_of": "2024-12-31",
+            "stance": 0.6,
+            "confidence": 0.8,
+            "raw_output": {
+                "macro_regime_bridge": {"quadrant_label": "宽货币·宽信用", "stance": 0.6},
+                "macro_signal_table": {"growth": {"signal": "up", "pmi": 51.0}},
+                "asset_allocation_view": {"best_asset_class": "股票"},
+                "sector_rotation_summary": {"available": True, "industry_recommend": ["电子"]},
+                "macro_data_window": {"as_of": "20241231", "knowledge_version": "2026-05-27"},
+                "zeping_crosscheck_context": {"agree": True, "zeping_phase": "复苏"},
+                "research_points": [
+                    {
+                        "claim": "宏观周期判断为宽货币·宽信用 / 复苏。",
+                        "support": "stance=0.6，行业推荐包含电子。",
+                    }
+                ],
+                "drivers": [
+                    {"name": "macro_regime_bridge", "value": {"stance": 0.6}},
+                    {"name": "macro_signal_table", "value": {"growth": {"signal": "up"}}},
+                ],
+            },
+            "quality": {
+                "anti_lookahead_passed": True,
+                "macro_data_window": {"as_of": "20241231", "data_as_of": "20241231"},
+                "release_dates": {"growth": "2024-12-01"},
+                "knowledge_version": "2026-05-27",
+                "sector_rotation_available": True,
+            },
+            "evidence": [
+                {
+                    "fact": "宏观周期=宽货币·宽信用 / 复苏，stance=0.6。",
+                    "source": "macro_regime_bridge",
+                    "as_of": "2024-12-31",
+                    "data_as_of": "2024-12-31",
+                }
+            ],
+            "status": "ok",
+        }
+    )
+    macro_payload["agent_id"] = "macro_analysis"
+    macro_payload["external_agent_id"] = "macro_analysis"
+
+    macro_mapped = map_external_response_to_fixed_dag_object(macro_payload)
+    valid, reason = validate_conclusion_object(macro_mapped)
+    assert valid, reason
+    macro_provenance = macro_mapped["provenance"]
+    assert macro_provenance["domain_metrics"]["macro_regime_bridge"]["stance"] == 0.6
+    assert macro_provenance["domain_metrics"]["sector_rotation_summary"]["industry_recommend"] == ["电子"]
+    assert any(item["name"] == "macro_signal_table" for item in macro_provenance["drivers"])
+    assert macro_provenance["research_points"][0]["claim"].startswith("宏观周期判断")
+    assert macro_provenance["data_quality"]["knowledge_version"] == "2026-05-27"
+    _assert_safe_public_payload(macro_mapped)
 
 
 def test_external_compute_envelope_maps_data_bundle_tool_result() -> None:
@@ -366,6 +499,63 @@ def test_dimension_conclusion_value_maps_to_dimension_composite_result() -> None
     assert mapped["provenance"]["data_quality"]["member_count"] == 2
     assert mapped["provenance"]["provider_invoked"] is False
     assert mapped["provenance"]["external_invoked"] is False
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_projects_l3_research_packet() -> None:
+    payload = _dimension_conclusion_payload()
+    payload.update(
+        {
+            "composite_research_packet": {
+                "consensus": "价值成员整体偏正面",
+                "dominant_member": "value_meta_valuation",
+                "conflict": "ML 估值弱于传统与研报综合",
+            },
+            "composite_quality": {
+                "coverage": 1.0,
+                "partial_members": [],
+            },
+            "conflict_summary": {
+                "level": "medium",
+                "reason": "ML 与研报方向不同",
+            },
+            "dominant_signals": [
+                "研报综合目标价上修",
+                "元学习估值高于当前市值",
+            ],
+            "missing_or_degraded_members": [],
+            "final_implication": "估值维度可以支持关注，但不能覆盖市场维度冲突。",
+            "limitations": [
+                "估值口径来自成员模型，不是新的外部报价。",
+            ],
+            "research_points": [
+                {
+                    "claim": "价值综合不是简单平均，而是由研报与元学习估值主导。",
+                    "support": "两个高权重成员给出正向估值线索。",
+                    "interpretation": "ML 估值偏弱构成维度内冲突。",
+                    "decision_implication": "L4 应保留关注但降低确定性。",
+                    "caveat": "不把成员模型分歧包装成一致结论。",
+                }
+            ],
+            "quality": {
+                "composite_quality": {"coverage": 1.0},
+                "conflict_summary": {"level": "medium"},
+                "missing_or_degraded_members": [],
+            },
+        }
+    )
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+    provenance = mapped["provenance"]
+
+    assert valid, reason
+    assert provenance["domain_metrics"]["composite_research_packet"]["dominant_member"] == "value_meta_valuation"
+    assert provenance["domain_metrics"]["conflict_summary"]["level"] == "medium"
+    assert any(item["name"] == "composite_research_packet" for item in provenance["drivers"])
+    assert provenance["research_points"][0]["claim"].startswith("价值综合不是简单平均")
+    assert provenance["data_quality"]["composite_quality"]["coverage"] == 1.0
+    assert provenance["data_quality"]["conflict_summary"]["level"] == "medium"
     _assert_safe_public_payload(mapped)
 
 
@@ -699,6 +889,8 @@ def test_agent_conclusion_extracts_first_batch_report_material() -> None:
     ]
     tool_result["raw_output"] = {
         "valuation_bridge": valuation_bridge,
+        "financial_report_period": "20240930",
+        "financial_publish_time": "20241026",
         "model_vote_table": model_vote_table,
         "rubric_score_table": rubric_score_table,
         "research_points": research_points,
@@ -711,6 +903,8 @@ def test_agent_conclusion_extracts_first_batch_report_material() -> None:
     }
     tool_result["quality"] = {
         "dimension_coverage": 1.0,
+        "financial_report_period": "20240930",
+        "financial_publish_time": "20241026",
         "missing_components": [],
         "corpus_notice": "本地演示/合成公告语料。",
         "raw_response": "traceback",
@@ -721,6 +915,8 @@ def test_agent_conclusion_extracts_first_batch_report_material() -> None:
 
     assert valid, reason
     assert mapped["provenance"]["domain_metrics"]["valuation_bridge"] == valuation_bridge
+    assert mapped["provenance"]["domain_metrics"]["financial_report_period"] == "20240930"
+    assert mapped["provenance"]["domain_metrics"]["financial_publish_time"] == "20241026"
     assert mapped["provenance"]["drivers"] == [
         {"name": "valuation_bridge", "value": valuation_bridge},
         {"name": "model_vote_table", "value": model_vote_table},
@@ -728,6 +924,8 @@ def test_agent_conclusion_extracts_first_batch_report_material() -> None:
     ]
     assert mapped["provenance"]["research_points"] == research_points
     assert mapped["provenance"]["data_quality"]["dimension_coverage"] == 1.0
+    assert mapped["provenance"]["data_quality"]["financial_report_period"] == "20240930"
+    assert mapped["provenance"]["data_quality"]["financial_publish_time"] == "20241026"
     assert mapped["provenance"]["data_quality"]["corpus_notice"] == "本地演示/合成公告语料。"
     _assert_safe_public_payload(mapped)
 
@@ -745,7 +943,86 @@ def test_health_payload_is_not_treated_as_adapter_success() -> None:
     assert mapped["reason"] == "unsupported_schema_version"
 
 
+def test_l4_decision_compute_envelope_maps_to_decision_result() -> None:
+    payload = _compute_envelope(
+        {
+            "schema": "decision_result_v1",
+            "schema_version": "decision_result_v1",
+            "decision": "defensive_observe",
+            "score": -0.31,
+            "target_price_range": {"low": None, "mid": None, "high": None},
+            "dimension_views": {
+                "value": {"stance": "0.12", "confidence": 0.7, "status": "complete"},
+                "market": {"stance": "-0.6", "confidence": 0.8, "status": "partial"},
+            },
+            "reasoning_trace": [
+                {"stage": "dimension_induction", "summary": "价值偏正，市场偏负。"},
+                {"stage": "macro_risk_adjustment", "summary": "风险闸门通过但维持扣分。"},
+                {"stage": "conflict_resolution", "summary": "冲突下选择防御观察。"},
+            ],
+            "confidence": 0.48,
+            "status": "partial",
+            "as_of": "2026-06-05",
+        }
+    )
+    payload["agent_id"] = "decision_synthesizer"
+    payload["external_agent_id"] = "l4_decision_synthesizer"
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_decision_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "decision_result_v1"
+    assert mapped["decision"] == "defensive_observe"
+    assert mapped["score"] == -0.31
+    _assert_safe_public_payload(mapped)
+
+
+def test_l4_report_compute_envelope_maps_to_report_result() -> None:
+    payload = _compute_envelope(
+        {
+            "schema": "report_result_v1",
+            "schema_version": "report_result_v1",
+            "title": "固定 DAG 研判报告",
+            "answer": "研判流程报告：价值和市场信号存在冲突，最终维持防御观察。",
+            "status": "complete",
+            "sections": [
+                {
+                    "id": "decision",
+                    "title": "综合结论",
+                    "content": "L4 报告服务读取 decision_result_v1 后生成报告。",
+                }
+            ],
+            "evidence_cards": [
+                {"title": "L4 决策", "note": "decision=defensive_observe。"}
+            ],
+            "limitations": ["显式 compute-only L4 路径。"],
+        }
+    )
+    payload["agent_id"] = "report_generator"
+    payload["external_agent_id"] = "l4_report_generator"
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_report_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "report_result_v1"
+    assert mapped["sections"][0]["title"] == "综合结论"
+    assert any("显式计算白名单路径" in item for item in mapped["limitations"])
+    assert not any("compute-only" in item for item in mapped["limitations"])
+    _assert_safe_public_payload(mapped)
+
+
 def test_risk_gate_member_maps_to_validator_legal_conclusion() -> None:
+    model_vintage_boundary = {
+        "feature_data_anti_lookahead_passed": True,
+        "production_model_trained_through_feature_year": 2024,
+        "as_of_market_feature_year": 2023,
+        "target_feature_year": 2023,
+        "model_vintage_caveat": True,
+        "boundary_type": "model_vintage",
+        "interpretation": "特征按 as_of 截断；这是模型版本 caveat。",
+    }
     payload = {
         "schema_version": "agent_conclusion_v1",
         "agent_id": "risk_crash",
@@ -769,6 +1046,18 @@ def test_risk_gate_member_maps_to_validator_legal_conclusion() -> None:
         "as_of": "2026-06-06",
         "data_as_of": "20260605",
         "status": "ok",
+        "raw_output": {
+            "risk_score": 0.64,
+            "model_vintage_boundary": model_vintage_boundary,
+            "drivers": [
+                {"name": "model_vintage_boundary", "value": model_vintage_boundary}
+            ],
+        },
+        "quality": {
+            "anti_lookahead_passed": True,
+            "feature_data_anti_lookahead_passed": True,
+            "model_vintage_caveat": True,
+        },
     }
 
     mapped = map_external_agent_conclusion_to_conclusion_object(payload)
@@ -781,7 +1070,16 @@ def test_risk_gate_member_maps_to_validator_legal_conclusion() -> None:
     assert mapped["status"] == "complete"
     assert mapped["data_as_of"] == "2026-06-05"
     assert mapped["provenance"]["risk_score"] == 0.64
+    assert mapped["provenance"]["domain_metrics"]["model_vintage_boundary"] == (
+        model_vintage_boundary
+    )
+    assert mapped["provenance"]["drivers"] == [
+        {"name": "model_vintage_boundary", "value": model_vintage_boundary}
+    ]
+    assert mapped["provenance"]["data_quality"]["feature_data_anti_lookahead_passed"] is True
+    assert mapped["provenance"]["data_quality"]["model_vintage_caveat"] is True
     assert "sentiment_company_radar" not in json.dumps(mapped)
+    _assert_safe_public_payload(mapped)
 
 
 def test_scaffold_unknown_risk_member_returns_controlled_failure() -> None:

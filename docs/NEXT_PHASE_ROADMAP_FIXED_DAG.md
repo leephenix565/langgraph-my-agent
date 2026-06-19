@@ -133,8 +133,8 @@ enablement 问题。
 | Layer | Agent | Current Issue |
 | --- | --- | --- |
 | L1 | 任务路由规划智能体 `route_planner` | 主系统内部 planner 可用；外部 route service 不是当前默认路径。 |
-| L4 | 综合研判智能体 `decision_synthesizer` | 真实冲突消解、风险门、宏观调权决策仍未作为独立外部服务完成。 |
-| L4 | 报告生成智能体 `report_generator` | 当前报告由主系统 evidence bundle + optional LLM synthesizer 生成，不是独立生产报告智能体服务。 |
+| L4 | 综合研判智能体 `decision_synthesizer` | dev 主系统已有 default-off compute handoff；仍缺受控生产 L4 服务 evidence 和 runtime review。 |
+| L4 | 报告生成智能体 `report_generator` | dev 主系统已有 default-off compute handoff；当前仍不是生产默认报告智能体服务。 |
 
 ## Near-Term Roadmap
 
@@ -202,17 +202,21 @@ DoD:
 4. 记录 sanitized evidence。
 5. 仍不改 runtime bindings，不设置 live flags。
 
-### P4: Design Real L4 Decision And Report Agents
+### P4: Validate Real L4 Decision And Report Agents
 
-目标：把当前主系统内部 L4 seam 升级成明确的 L4 决策和报告合同。
+目标：在已完成 dev 主系统 default-off L4 compute handoff 的基础上，验证真实
+`decision_synthesizer` 和 `report_generator` 服务路径。
 
-需要先定义：
+需要继续明确和验证：
 
 - `decision_synthesizer` 如何处理 value/market/risk/macro 冲突。
 - risk gate 的 `manual_review`、`veto`、`penalty` 如何影响最终结论。
 - macro regulator 的 `dimension_weights` 如何影响 value/market 权重。
-- `report_generator` 接收什么 bounded evidence bundle。
+- `report_generator` 如何消费 bounded `report_input_bundle_v1` 并返回
+  public-safe `report_result_v1`。
 - 哪些内容允许进入 public transcript，哪些必须只在 private trace。
+- controlled `/health` + `/v1/agent/compute` evidence 是否通过；仍不调用
+  `/v1/agent/invoke`，不改 runtime bindings，不设置 live flags。
 
 这部分不应混在 L2 接入修复里做。
 

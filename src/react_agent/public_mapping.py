@@ -24,6 +24,7 @@ from react_agent.public_contracts import (
     FinalSource,
     PublicThreadDetail,
     PublicTurn,
+    ReportSectionModel,
     StructuredInputModel,
     WorkflowModel,
     WorkflowProvenanceModel,
@@ -211,6 +212,28 @@ def _derive_citations(cards: Iterable[EvidenceCardModel]) -> List[CitationModel]
     return citations[:3]
 
 
+def _normalize_report_sections(raw: Any) -> List[ReportSectionModel]:
+    if not isinstance(raw, list):
+        return []
+    sections: List[ReportSectionModel] = []
+    for idx, item in enumerate(raw, start=1):
+        if not isinstance(item, dict):
+            continue
+        title = _coerce_str(item.get("title")) or _coerce_str(item.get("id")) or f"Section {idx}"
+        content = _coerce_str(item.get("content"))
+        if not content:
+            continue
+        section_id = _coerce_str(item.get("id")) or f"section_{idx}"
+        sections.append(ReportSectionModel(id=section_id, title=title, content=content))
+    return sections
+
+
+def _normalize_limitations(raw: Any) -> List[str]:
+    if not isinstance(raw, list):
+        return []
+    return [_coerce_str(item) for item in raw if _coerce_str(item)]
+
+
 def build_user_turn(text: str, structured_input: StructuredInputModel | None = None) -> PublicTurn:
     normalized_text = text.strip()
     normalized_structured = None
@@ -353,13 +376,17 @@ def build_assistant_turn(state: dict[str, Any], continuity_mode: ContinuityMode)
     if not answer:
         raise ValueError("emitted_bundle.answer missing from completed state")
     evidence_cards = _normalize_evidence_cards(bundle.get("evidence_cards", []))
+    sections = _normalize_report_sections(bundle.get("sections", []))
+    limitations = _normalize_limitations(bundle.get("limitations", []))
     answer_card = AnswerCardModel(
         answer=answer,
         finalSource=_normalize_final_source(state.get("final_answer_source")),
         confidence=_confidence_label(bundle.get("confidence")),
+        sections=sections,
         evidenceCards=evidence_cards,
         citations=_derive_citations(evidence_cards),
         evidenceCount=len(evidence_cards),
+        limitations=limitations,
     )
     run_id = _coerce_str(state.get("run_id")) or None
     return PublicTurn(

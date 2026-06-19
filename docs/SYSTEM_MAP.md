@@ -53,6 +53,12 @@ This file is the reset branch operational map for Phase R8-12D.
   With that flag enabled, the main system may load the configured chat model
   and generate the final report from `report_input_bundle_v1`; invalid or
   unsafe output falls back to the template report.
+  The dev L4 handoff phase adds compute-only adapter and bridge support for
+  `decision_synthesizer` (`decision_result_v1`) and `report_generator`
+  (`report_result_v1`). These L4 ids can be overlaid only through the explicit
+  default-off external compute demo allowlist; this does not modify runtime
+  bindings, set live flags, call `/v1/agent/invoke`, or make sandbox L4
+  services production-default.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,

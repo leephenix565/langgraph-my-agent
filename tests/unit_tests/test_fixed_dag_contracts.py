@@ -801,6 +801,20 @@ def test_l3_composites_project_partial_research_material_from_available_l2() -> 
             "provenance": {
                 **conclusions["risk_compliance_review"]["provenance"],
                 "risk_score": 0.18,
+                "domain_metrics": {
+                    "model_vintage_boundary": {
+                        "feature_data_anti_lookahead_passed": True,
+                        "production_model_trained_through_feature_year": 2024,
+                        "as_of_market_feature_year": 2023,
+                        "model_vintage_caveat": True,
+                        "interpretation": "特征按 as_of 截断；这是历史 as_of 使用当前生产模型版本的 caveat。",
+                    }
+                },
+                "data_quality": {
+                    "warnings": [
+                        "模型版本边界:历史 as_of 使用当前生产模型版本,不表示输入特征晚于 as_of。"
+                    ]
+                },
             },
         }
     )
@@ -833,6 +847,16 @@ def test_l3_composites_project_partial_research_material_from_available_l2() -> 
     assert "sentiment_company_radar" not in risk["contributing_agents"]
     assert risk_provenance["domain_metrics"]["risk_member_count"] == 1
     assert risk_provenance["data_quality"]["coverage"] == 0.25
+    boundary_driver = next(
+        item for item in risk_provenance["drivers"] if item["name"] == "member_boundary_summary"
+    )
+    assert boundary_driver["value"][0]["agent_id"] == "risk_compliance_review"
+    assert "模型版本边界" in boundary_driver["value"][0]["caveats"][0]
+    assert risk_provenance["data_quality"]["member_boundary_summary"] == boundary_driver["value"]
+    assert any(
+        point["claim"] == "风险门通过不等于成员边界消失。"
+        for point in risk_provenance["research_points"]
+    )
     assert macro["status"] == "pending_implementation"
     assert macro["regime"] == "not_evaluated"
     assert macro["dimension_weights"] == {"value": 0.5, "market": 0.5}
@@ -953,6 +977,112 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
     assert "must_not_leak" not in rendered
 
 
+def test_report_input_bundle_projects_financial_fraud_and_macro_report_material() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    conclusions["risk_financial_fraud"].update(
+        {
+            "status": "complete",
+            "confidence": 0.73,
+            "risk_score": 0.25,
+            "evidence": [
+                {
+                    "fact": "财务造假风险分数为 25/100，闸门 action=pass。",
+                    "source": "financial_fraud_risk_gate",
+                    "data_as_of": "2024-12-31",
+                }
+            ],
+            "provenance": {
+                **conclusions["risk_financial_fraud"]["provenance"],
+                "domain_metrics": {
+                    "fraud_risk_bridge": {"risk_score": 25, "gate_action": "pass"},
+                    "model_context": {"model_available": True, "threshold": 0.5},
+                    "feature_diagnostics": {"financial_report_period": "2024"},
+                },
+                "drivers": [
+                    {"name": "fraud_risk_bridge", "value": {"risk_score": 25}},
+                    {"name": "risk_gate_rule", "value": {"selected_action": "pass"}},
+                ],
+                "research_points": [
+                    {
+                        "claim": "财务造假风险闸门为 pass。",
+                        "support": "风险分数 25/100，模型和本地特征均可用。",
+                    }
+                ],
+                "data_quality": {
+                    "financial_report_period": "2024",
+                    "annual_feature_available_after": "2025-04-30",
+                },
+            },
+        }
+    )
+    conclusions["macro_analysis"].update(
+        {
+            "status": "complete",
+            "stance": "0.6",
+            "confidence": 0.8,
+            "evidence": [
+                {
+                    "fact": "宏观周期=宽货币·宽信用 / 复苏，stance=0.6。",
+                    "source": "macro_regime_bridge",
+                    "data_as_of": "2024-12-31",
+                }
+            ],
+            "provenance": {
+                **conclusions["macro_analysis"]["provenance"],
+                "domain_metrics": {
+                    "macro_regime_bridge": {"quadrant_label": "宽货币·宽信用", "stance": 0.6},
+                    "macro_signal_table": {"growth": {"signal": "up"}},
+                    "sector_rotation_summary": {"available": True, "industry_recommend": ["电子"]},
+                },
+                "drivers": [
+                    {"name": "macro_regime_bridge", "value": {"stance": 0.6}},
+                    {"name": "macro_signal_table", "value": {"growth": {"signal": "up"}}},
+                ],
+                "research_points": [
+                    {
+                        "claim": "宏观周期判断为宽货币·宽信用 / 复苏。",
+                        "support": "stance=0.6，行业推荐包含电子。",
+                    }
+                ],
+                "data_quality": {
+                    "knowledge_version": "2026-05-27",
+                    "release_dates": {"growth": "2024-12-01"},
+                },
+            },
+        }
+    )
+
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+    )
+    valid, reason = validate_report_input_bundle(bundle)
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    l2_outputs = {
+        item["agent_id"]: item
+        for item in bundle["agent_evidence_bundle"]["l2_agent_outputs"]
+    }
+    rendered = json.dumps({"bundle": bundle, "report": report}, ensure_ascii=False)
+
+    assert valid, reason
+    assert l2_outputs["risk_financial_fraud"]["domain_metrics"]["fraud_risk_bridge"]["risk_score"] == 25
+    assert l2_outputs["risk_financial_fraud"]["research_points"][0]["claim"] == "财务造假风险闸门为 pass。"
+    assert l2_outputs["macro_analysis"]["domain_metrics"]["sector_rotation_summary"]["industry_recommend"] == ["电子"]
+    assert l2_outputs["macro_analysis"]["research_points"][0]["claim"].startswith("宏观周期判断")
+    assert "财务造假风险闸门为 pass" in report["answer"]
+    assert "宏观周期判断为宽货币·宽信用 / 复苏" in report["answer"]
+    assert "raw_response" not in rendered
+
+
 def test_report_input_bundle_quality_summary_counts_l3_partial_outputs() -> None:
     plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
     conclusions = build_l2_conclusions(plan)
@@ -988,6 +1118,31 @@ def test_agent_task_v1_carries_l1_and_l2_upstream_context_safely() -> None:
     conclusions = build_l2_conclusions(plan)
     conclusions["value_ml_valuation"]["status"] = "complete"
     conclusions["value_ml_valuation"]["stance"] = "slightly_positive"
+    conclusions["value_ml_valuation"]["evidence"] = [
+        {
+            "fact": "ML 估值给出偏正面信号。",
+            "source": "unit_test",
+            "data_as_of": "2026-06-04",
+        }
+    ]
+    conclusions["value_ml_valuation"]["provenance"] = {
+        **conclusions["value_ml_valuation"]["provenance"],
+        "domain_metrics": {
+            "valuation_bridge": {"fair_value_center": 1650.0, "upside_pct": 18.0},
+        },
+        "drivers": [
+            {"name": "valuation_bridge", "value": {"fair_value_center": 1650.0}},
+        ],
+        "research_points": [
+            {
+                "claim": "ML 估值与研报目标价方向一致。",
+                "support": "合理价值中枢高于当前价格。",
+            }
+        ],
+        "data_quality": {
+            "financial_report_period": "20240930",
+        },
+    }
     dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
 
     l2_task = build_agent_task(
@@ -1019,6 +1174,12 @@ def test_agent_task_v1_carries_l1_and_l2_upstream_context_safely() -> None:
     assert "机器学习企业估值智能体" in l2_task["task_instruction"]
     assert l3_task["required_output_schema"] == "dimension_conclusion_v1"
     assert "value_ml_valuation" in l3_task["upstream_results"]
+    ml_upstream = l3_task["upstream_results"]["value_ml_valuation"]
+    assert ml_upstream["evidence_items"][0]["fact"] == "ML 估值给出偏正面信号。"
+    assert ml_upstream["domain_metrics"]["valuation_bridge"]["fair_value_center"] == 1650.0
+    assert ml_upstream["drivers"][0]["name"] == "valuation_bridge"
+    assert ml_upstream["research_points"][0]["claim"] == "ML 估值与研报目标价方向一致。"
+    assert ml_upstream["data_quality"]["financial_report_period"] == "20240930"
     assert "raw_response" not in rendered
     assert "must_not_leak" not in rendered
 

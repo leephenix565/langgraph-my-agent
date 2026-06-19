@@ -3,6 +3,43 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-063: L4 Decision And Report Agents Use Default-Off Compute Handoff Before Runtime Enablement
+
+Status: accepted for dev main-system handoff and controlled validation.
+
+Decision: the main system now treats `decision_synthesizer` and
+`report_generator` as formal L4 agent ids that can be overlaid through the
+default-off external compute demo bridge. `decision_synthesizer` consumes a
+bounded view of the current-run L3 dimension results and returns
+`decision_result_v1`; `report_generator` consumes the bounded decision result
+plus `report_input_bundle_v1` and returns `report_result_v1`. Both mappings are
+compute-only, allowlist-only, and validated by the main-system adapter before
+they can replace deterministic fallback outputs.
+
+Reason: the fixed DAG roster has always included two L4 agents, but keeping
+them only as internal deterministic seams made it impossible to validate the
+teacher-facing requirement that final decision synthesis and final report
+generation can be owned by agents with the same status as the other DAG nodes.
+At the same time, L4 is the public transcript boundary, so direct runtime
+enablement would be unsafe without an explicit bounded-contract handoff first.
+
+Consequence: controlled sandbox or dev validation can run L4 as external
+`/v1/agent/compute` services without changing runtime bindings or live flags.
+If an external `report_generator` result maps successfully, the executor must
+not overwrite it with the internal LLM report synthesis seam in the same run.
+The public answer card may carry structured report sections, evidence cards,
+and limitations from `report_result_v1`, but it must not expose raw graph
+messages, raw agent JSON, raw provider output, endpoint URLs, tracebacks,
+secrets, or internal reasoning drafts.
+
+Non-consequence: this does not make L4 production-ready, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, does not
+modify `config/fixed_dag/runtime_bindings.json`, does not call external
+`/v1/agent/invoke`, and does not turn demo `/compute` evidence into invoke or
+production readiness evidence. Production L4 readiness still requires a
+separate service-owner path, controlled `/health` + `/v1/agent/compute`
+evidence, adapter mapping review, and explicit runtime-binding review.
+
 ## ADR-062: R8-13J Adds A Next Phase Roadmap Without Runtime Change
 
 Status: accepted.

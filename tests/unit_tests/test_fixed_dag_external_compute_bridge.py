@@ -4,6 +4,9 @@ import json
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_agent_task,
+    build_default_fixed_dag_plan,
+    build_decision_result,
+    build_report_input_bundle,
     build_route_intent,
     compile_selected_fixed_dag_plan,
 )
@@ -145,6 +148,48 @@ def _entity_relation_bundle() -> dict[str, object]:
     }
 
 
+def _decision_result() -> dict[str, object]:
+    return {
+        "schema": "decision_result_v1",
+        "schema_version": "decision_result_v1",
+        "decision": "defensive_observe",
+        "score": -0.25,
+        "target_price_range": {"low": None, "mid": None, "high": None},
+        "dimension_views": {
+            "value": {"stance": "0.2", "confidence": 0.7, "status": "complete"}
+        },
+        "reasoning_trace": [
+            {"stage": "dimension_induction", "summary": "价值维温和偏正。"},
+            {"stage": "macro_risk_adjustment", "summary": "风险和宏观维度降低置信度。"},
+            {"stage": "conflict_resolution", "summary": "信息不完整时维持防御观察。"},
+        ],
+        "confidence": 0.44,
+        "status": "partial",
+        "as_of": "2026-06-05",
+    }
+
+
+def _report_result() -> dict[str, object]:
+    return {
+        "schema": "report_result_v1",
+        "schema_version": "report_result_v1",
+        "title": "固定 DAG 研判报告",
+        "answer": "研判流程报告：L4 报告服务读取结构化决策后生成中文报告。",
+        "status": "complete",
+        "sections": [
+            {
+                "id": "decision",
+                "title": "综合结论",
+                "content": "当前决策为 defensive_observe。",
+            }
+        ],
+        "evidence_cards": [
+            {"title": "L4 决策", "note": "score=-0.25，confidence=0.44。"}
+        ],
+        "limitations": ["显式 compute-only L4 路径。"],
+    }
+
+
 def _compute_envelope(agent_id: str, external_agent_id: str, tool_result: dict[str, object]):
     return {
         "schema_version": "external_agent_compute_v0",
@@ -215,18 +260,36 @@ def test_demo_entry_rejects_non_loopback_and_invoke_path() -> None:
     assert reason == "compute_path_not_allowed"
 
 
-def test_demo_base_url_env_override_is_loopback_only(monkeypatch) -> None:
+def test_l4_report_generator_uses_provider_sized_default_timeout() -> None:
     import react_agent.fixed_dag_external_compute_bridge as bridge
 
+    entry = bridge.DEMO_COMPUTE_SERVICE_REGISTRY["report_generator"]
+    context = Context(enable_external_compute_demo=True)
+
+    assert entry.timeout_seconds == 120.0
+    assert bridge._timeout_from_context(context, entry) == 120.0
+
+
+def test_demo_base_url_env_override_is_loopback_only_for_l2_and_l3(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    monkeypatch.setenv(
+        "EXTERNAL_COMPUTE_DEMO_URL_VALUE_ML_VALUATION",
+        "http://127.0.0.1:19001",
+    )
     monkeypatch.setenv(
         "EXTERNAL_COMPUTE_DEMO_URL_VALUE_COMPOSITE",
         "http://127.0.0.1:19015",
     )
     reloaded = importlib.reload(bridge)
-    entry = reloaded.DEMO_COMPUTE_SERVICE_REGISTRY["value_composite"]
+    l2_entry = reloaded.DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
+    l3_entry = reloaded.DEMO_COMPUTE_SERVICE_REGISTRY["value_composite"]
 
-    assert entry.base_url == "http://127.0.0.1:19015"
-    assert reloaded.validate_demo_entry(entry) == (True, "ok")
+    assert l2_entry.base_url == "http://127.0.0.1:19001"
+    assert l3_entry.base_url == "http://127.0.0.1:19015"
+    assert reloaded.validate_demo_entry(l2_entry) == (True, "ok")
+    assert reloaded.validate_demo_entry(l3_entry) == (True, "ok")
+    monkeypatch.delenv("EXTERNAL_COMPUTE_DEMO_URL_VALUE_ML_VALUATION", raising=False)
     monkeypatch.delenv("EXTERNAL_COMPUTE_DEMO_URL_VALUE_COMPOSITE", raising=False)
     importlib.reload(reloaded)
 
@@ -285,6 +348,36 @@ def test_build_external_compute_request_includes_safe_upstream_outputs() -> None
                     "raw_response": "must_not_leak",
                 }
             ],
+            "provenance": {
+                "domain_metrics": {
+                    "valuation_bridge": {
+                        "fair_value_center": 1650.0,
+                        "upside_pct": 18.0,
+                    },
+                    "provider_endpoint": "raw_response must_not_leak",
+                },
+                "drivers": [
+                    {
+                        "name": "valuation_bridge",
+                        "value": {"fair_value_center": 1650.0},
+                    },
+                    {
+                        "name": "raw_response",
+                        "value": "must_not_leak",
+                    },
+                ],
+                "research_points": [
+                    {
+                        "claim": "ML 估值与研报目标价方向一致。",
+                        "support": "合理价值中枢高于当前价格。",
+                        "caveat": "raw_response must_not_leak",
+                    }
+                ],
+                "data_quality": {
+                    "financial_report_period": "20240930",
+                    "traceback": "must_not_leak",
+                },
+            },
             "raw_response": "must_not_leak",
             "traceback": "must_not_leak",
         }
@@ -303,10 +396,68 @@ def test_build_external_compute_request_includes_safe_upstream_outputs() -> None
 
     assert upstream["summary"] == "ML 估值偏正面"
     assert upstream["evidence"][0]["fact"] == "安全证据"
+    assert upstream["domain_metrics"]["valuation_bridge"]["fair_value_center"] == 1650.0
+    assert upstream["drivers"][0]["name"] == "valuation_bridge"
+    assert upstream["research_points"][0]["claim"] == "ML 估值与研报目标价方向一致。"
+    assert "caveat" not in upstream["research_points"][0]
+    assert upstream["data_quality"]["financial_report_period"] == "20240930"
     assert request["context"]["upstream_output_schema"] == "fixed_dag_mapped_outputs_v1"
     assert "must_not_leak" not in rendered
+    assert "provider_endpoint" not in rendered
     assert "raw_response" not in rendered
     assert "traceback" not in rendered
+
+
+def test_build_l4_decision_compute_request_allows_llm_and_carries_dimensions() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["decision_synthesizer"]
+    dimension_results = {
+        "value": {
+            "schema": "dimension_composite_result_v1",
+            "agent_id": "value_composite",
+            "dimension": "value",
+            "stance": "0.2",
+            "confidence": 0.7,
+            "status": "complete",
+        }
+    }
+    request = build_external_compute_request(
+        entry,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        request_id="unit-l4-decision",
+        dimension_results=dimension_results,
+    )
+
+    assert request["agent_id"] == "decision_synthesizer"
+    assert request["options"]["allow_llm"] is True
+    assert request["context"]["dimension_results"]["value"]["agent_id"] == "value_composite"
+    assert request["context"]["dimension_results_schema"] == "dimension_composite_result_map_v1"
+    assert "/v1/agent/invoke" not in json.dumps(request).lower()
+
+
+def test_build_l4_report_compute_request_allows_llm_and_carries_report_bundle() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["report_generator"]
+    decision = _decision_result()
+    report_input_bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions={},
+        dimension_results={},
+        decision_result=decision,
+    )
+    request = build_external_compute_request(
+        entry,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        request_id="unit-l4-report",
+        decision_result=decision,
+        report_input_bundle=report_input_bundle,
+    )
+
+    assert request["agent_id"] == "report_generator"
+    assert request["options"]["allow_llm"] is True
+    assert request["context"]["decision_result"]["decision"] == "defensive_observe"
+    assert request["context"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+    assert "raw_provider_response" not in json.dumps(request, ensure_ascii=False).lower()
 
 
 def test_build_external_compute_request_projects_gate_member_provenance_risk_score() -> None:
@@ -454,6 +605,54 @@ def test_fake_l3_external_compute_maps_to_dimension_result() -> None:
     assert result["status"] == "pass"
     assert result["mapped"]["schema"] == "dimension_composite_result_v1"
     assert result["mapped"]["agent_id"] == "value_composite"
+
+
+def test_fake_l4_decision_external_compute_maps_to_decision_result() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["decision_synthesizer"]
+
+    def transport(_entry, _request, _timeout):
+        return _compute_envelope(
+            "decision_synthesizer",
+            "l4_decision_synthesizer",
+            _decision_result(),
+        )
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2026-06-05",
+        request_id="unit-l4-decision",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "pass"
+    assert result["mapped"]["schema"] == "decision_result_v1"
+    assert result["mapped"]["decision"] == "defensive_observe"
+
+
+def test_fake_l4_report_external_compute_maps_to_report_result() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["report_generator"]
+
+    def transport(_entry, _request, _timeout):
+        return _compute_envelope(
+            "report_generator",
+            "l4_report_generator",
+            _report_result(),
+        )
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2026-06-05",
+        request_id="unit-l4-report",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "pass"
+    assert result["mapped"]["schema"] == "report_result_v1"
+    assert result["mapped"]["sections"][0]["title"] == "综合结论"
 
 
 def test_invoke_external_compute_sends_upstream_outputs_to_l3() -> None:
@@ -622,3 +821,79 @@ def test_run_external_compute_for_plan_updates_l1_bundles_before_l2() -> None:
     assert result["data_bundle"]["sources"]
     assert result["entity_relation_bundle"]["status"] == "complete"
     assert len(result["entity_relation_bundle"]["entities"]) == 2
+
+
+def test_run_external_compute_for_plan_can_overlay_l4_decision_result() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", "2026-06-05")
+    called = []
+
+    def transport(entry, request, _timeout):
+        called.append((entry.agent_id, request))
+        return _compute_envelope(
+            "decision_synthesizer",
+            "l4_decision_synthesizer",
+            _decision_result(),
+        )
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("decision_synthesizer",),
+        ),
+        l2_conclusions={},
+        dimension_results={"value": {"agent_id": "value_composite", "stance": "0.2"}},
+        decision_result=build_decision_result({}),
+        stages=("decision",),
+        transport=transport,
+    )
+
+    assert [item[0] for item in called] == ["decision_synthesizer"]
+    assert called[0][1]["options"]["allow_llm"] is True
+    assert result["mapped_agents"] == ["decision_synthesizer"]
+    assert result["decision_result"]["decision"] == "defensive_observe"
+    assert result["step_updates"]["decision_synthesizer"]["status"] == "complete"
+
+
+def test_run_external_compute_for_plan_can_overlay_l4_report_result() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", "2026-06-05")
+    decision = _decision_result()
+    report_input_bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions={},
+        dimension_results={},
+        decision_result=decision,
+    )
+
+    def transport(entry, request, _timeout):
+        assert entry.agent_id == "report_generator"
+        assert request["context"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+        return _compute_envelope(
+            "report_generator",
+            "l4_report_generator",
+            _report_result(),
+        )
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("report_generator",),
+        ),
+        l2_conclusions={},
+        dimension_results={},
+        decision_result=decision,
+        report_result={},
+        report_input_bundle=report_input_bundle,
+        stages=("report",),
+        transport=transport,
+    )
+
+    assert result["mapped_agents"] == ["report_generator"]
+    assert result["report_result"]["schema"] == "report_result_v1"
+    assert result["report_result"]["sections"][0]["title"] == "综合结论"
+    assert result["step_updates"]["report_generator"]["status"] == "complete"

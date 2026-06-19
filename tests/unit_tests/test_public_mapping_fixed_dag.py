@@ -5,7 +5,7 @@ from react_agent.fixed_dag_contracts import (
     build_default_fixed_dag_plan,
 )
 from react_agent.fixed_dag_executor import execute_fixed_dag_plan
-from react_agent.public_mapping import build_workflow_snapshot
+from react_agent.public_mapping import build_assistant_turn, build_workflow_snapshot
 
 
 def test_public_workflow_fallback_uses_fixed_dag_snapshot_contract() -> None:
@@ -54,3 +54,38 @@ def test_public_workflow_preserves_execution_batches_and_step_results() -> None:
     assert payload["provenance"]["executionStatus"] == "complete"
     assert payload["provenance"]["fallbackUsed"] is False
     assert payload["completedSteps"] == list(execution["step_results"])
+
+
+def test_public_assistant_turn_preserves_report_sections_and_limitations() -> None:
+    turn = build_assistant_turn(
+        {
+            "final_answer_source": "reset_skeleton",
+            "emitted_bundle": {
+                "answer": "主回答",
+                "confidence": 0.8,
+                "sections": [
+                    {
+                        "id": "value",
+                        "title": "价值分析",
+                        "content": "估值细节",
+                    },
+                    {
+                        "id": "empty",
+                        "title": "空章节",
+                        "content": "",
+                    },
+                ],
+                "evidence_cards": [{"title": "估值证据", "note": "PE"}],
+                "limitations": ["显式开关路径。"],
+            },
+        },
+        "replay",
+    )
+    payload = turn.model_dump(mode="json", by_alias=True)
+
+    assert payload["text"] == "主回答"
+    assert payload["answerCard"]["sections"] == [
+        {"id": "value", "title": "价值分析", "content": "估值细节"}
+    ]
+    assert payload["answerCard"]["limitations"] == ["显式开关路径。"]
+    assert payload["answerCard"]["evidenceCards"][0]["title"] == "估值证据"

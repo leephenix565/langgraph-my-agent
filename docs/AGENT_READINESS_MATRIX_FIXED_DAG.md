@@ -90,8 +90,10 @@ in dev.
 - No production service code was modified by R8-8P or R8-8P-DOCS-QA.
 - `sentiment_company_radar` remains market-only and must not be routed into
   `risk_composite`.
-- L3 and L4 remain deterministic seams until a separate adapter/runtime design
-  phase owns them.
+- L3 and L4 remain disabled by default. Dev main-system now has default-off
+  compute handoff support for L4 `decision_result_v1` / `report_result_v1`,
+  but this is not production external readiness and does not change runtime
+  bindings or live flags.
 - R8-10B L3 adapter tests are not live readiness and do not enable external L3
   runtime execution.
 - R8-12 demo mode is default-off. It does not make any external service a
@@ -155,7 +157,7 @@ Excluded from the demo allowlist until a later remediation or design phase:
 | Production semantic deferred | 3 | Not safe to force into L2 production mapping |
 | Production identity mismatch | 1 | `market_fund_manager_behavior` remains unresolved |
 | Internal deterministic | 1 | `route_planner` |
-| L3/L4 deferred | 6 | 4 composites plus decision/report |
+| L4 production deferred | 2 | Decision/report have dev main-system default-off compute handoff, but no accepted production L4 service evidence |
 | Production invoke audit candidates | 17 | Based only on production health + compute + adapter mapping pass |
 
 Layer coverage:
@@ -168,7 +170,7 @@ Layer coverage:
 | L2 risk | 4/4 production adapter pass |
 | L2 macro | 1/5 production adapter pass; commodity failed and three macro candidates remain deferred |
 | L3 | 4/4 production adapter pass; compute evidence only, no active runtime enablement |
-| L4 | 0/2 external production readiness; deterministic internal seams only |
+| L4 | 0/2 external production readiness; dev main-system default-off compute handoff exists, with deterministic fallback and no runtime/live enablement |
 
 ## Production Health+Compute+Adapter Pass Candidates
 
@@ -648,14 +650,19 @@ payload pass.
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external service; deterministic internal
   seam remains.
-- Problem type: L4 adapter/runtime design not started.
-- Failure reason: decision synthesis has separate L4 semantics and public safety
-  requirements.
+- Problem type: production L4 external service readiness still deferred.
+- Failure reason: dev main-system adapter/bridge handoff exists, but no
+  production external L4 `/health` + `/v1/agent/compute` evidence has been
+  accepted.
 - Impact: no external production L4 evidence.
-- Solution: future L4 adapter design for decision payloads.
-- Service owner action: none until L4 scope is approved.
-- Main-system maintainer action: keep deterministic seam.
-- Retest method: future L4 phase only.
+- Solution: run controlled L4 compute smoke only after the L4 service owner path
+  is ready, then review runtime binding separately.
+- Service owner action: provide controlled loopback L4 service evidence when
+  ready.
+- Main-system maintainer action: keep deterministic fallback and default-off
+  bridge boundary.
+- Retest method: future controlled L4 `/health` + `/v1/agent/compute` smoke; no
+  `/v1/agent/invoke`.
 - Prompt: `PROMPT-PROD-L4-ADAPTER-DESIGN`.
 
 ### report_generator
@@ -663,14 +670,18 @@ payload pass.
 - Current status: `production_l3_l4_deferred`.
 - Production test result: not tested as external service; deterministic internal
   seam remains.
-- Problem type: L4 adapter/runtime design not started.
-- Failure reason: report output has public transcript constraints and is not an
-  L2/L3 compute wrapper.
+- Problem type: production L4 external service readiness still deferred.
+- Failure reason: dev main-system adapter/bridge handoff exists, but no
+  production external L4 report service evidence has been accepted.
 - Impact: no external production L4 evidence.
-- Solution: future L4 adapter design for report payloads and public-safe output.
-- Service owner action: none until L4 scope is approved.
-- Main-system maintainer action: keep deterministic seam and transcript safety.
-- Retest method: future L4 phase only.
+- Solution: run controlled L4 compute smoke only after the report service owner
+  path is ready, then review runtime binding separately.
+- Service owner action: provide public-safe `report_result_v1` service evidence
+  when ready.
+- Main-system maintainer action: keep deterministic fallback, public transcript
+  safety, and default-off bridge boundary.
+- Retest method: future controlled L4 `/health` + `/v1/agent/compute` smoke; no
+  `/v1/agent/invoke`.
 - Prompt: `PROMPT-PROD-L4-ADAPTER-DESIGN`.
 
 ## Full 27-Agent Production Matrix
@@ -681,29 +692,29 @@ payload pass.
 | `financial_data_service` | L1 | l1 | `data_bundle_v1` | `127.0.0.1:11000` | fail | skipped | skipped | `production_health_failed` | `/health` invalid JSON | Fix structured production health, then compute wrapper | Production health fix and resmoke | `PROMPT-PROD-HEALTH-FIX-DATA-SERVICE` |
 | `entity_relation_extractor` | L1 | l1 | `entity_relation_bundle_v1` | missing | skipped | skipped | skipped | `production_endpoint_missing` | No production endpoint | Deploy/register prod endpoint and entity wrapper | Endpoint + wrapper deployment | `PROMPT-PROD-ENDPOINT-MISSING-ENTITY` |
 | `value_traditional_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10000` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing` | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Backfill service patch to formal repo; review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `value_ml_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10001` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing`; sandbox wrapper carries report material, adapter-verified top-level stance, and a service-owned local financial CSV fallback that uses `ann_date <= as_of` | Backfill service patch and service-owned financial cache/data path to formal repo/prod | Invoke audit prep only after prod owned data path is confirmed | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_meta_valuation` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10002` | pass | pass | pass | `production_compute_pass` | R8-13G remediated top-level direction stance after R8-13F exposed `direction_stance_missing`; sandbox wrapper carries report material and adapter-verified top-level stance | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `value_research_synthesis` | L2 | value | `conclusion_object_v1` | `127.0.0.1:10006` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper carries analyst consensus report material | Backfill service patch to formal repo; review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
 | `market_stock_technical` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10009` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_fund_manager_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10007` | pass | pass | fail | `production_identity_mismatch` | Service metadata incomplete | Confirm owner/id and wrapper | Discovery + identity fix | `PROMPT-PROD-FUND-SERVICE-DISCOVERY` |
 | `market_ipo_investor_behavior` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10008` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated market dimension wrapper | Backfill shared market subagent patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10020` | pass | pass | pass | `production_compute_pass` | R8-8Q confirmed market-only production endpoint and wrapper | Preserve market-only routing | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
-| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
-| `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper now carries model drivers/research points and a model-vintage caveat that distinguishes feature anti-lookahead from production-model training-window limits; main-system `risk_composite` preserves the caveat as report-facing member boundary material | Review runtime binding prepare boundary; run full endpoint contract after local TestClient compatibility issue is resolved | Runtime binding prepare review; keep disabled | n/a |
+| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper now carries financial-fraud bridge/model-context/feature-diagnostic report material without changing HyFormer scoring | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
+| `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper now carries rule-margin/MD&A-hit risk drivers and research points; sandbox 600519.SH snapshot has 2024Q3 numeric period with explicit MD&A-missing warning | Review runtime binding prepare boundary; service owner must provide full snapshot refresh pipeline before production freshness advancement | Runtime binding prepare review; keep disabled | n/a |
 | `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
-| `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
+| `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke; sandbox wrapper now carries macro-regime/signal-table/sector-rotation report material without changing deterministic cycle rules | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | fail | skipped | skipped | `production_health_failed` | Fixed DAG health identity missing; compute wrapper not verified | Fix production health identity and compute wrapper | Health/compute fix + resmoke | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` |
-| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Macro signal not owner-confirmed | Owner semantic decision | Owner decision then wrapper | `PROMPT-PROD-MACRO-INDEX-OWNER` |
+| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | skipped | skipped | skipped | `production_semantic_deferred` | Owner approval exists in service repo, but production matrix not resmoked; sandbox wrapper carries macro report material | Keep production disabled until owner-led restart/resmoke | Owner decision follow-up, compute resmoke, then runtime review | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
 | `value_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10015` | pass | pass | pass | `production_compute_pass` | R8-10F remediated production health identity and verified L3 value compute mapping | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `market_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10023` | pass | pass | pass | `production_compute_pass` | L3 compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10016` | pass | pass | pass | `production_compute_pass` | L3 risk gate compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10024` | pass | pass | pass | `production_compute_pass` | L3 macro regulator compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
-| `report_generator` | L4 | l4 | `report_result_v1` | n/a | n/a | n/a | n/a | `production_l3_l4_deferred` | L4 adapter not designed | Future L4 adapter/runtime design | Keep deterministic | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
+| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | `127.0.0.1:10025` | skipped | skipped | skipped | `production_l3_l4_deferred` | Dev main-system compute handoff exists; no accepted production L4 compute evidence | Controlled L4 compute smoke when service owner path is ready | Keep deterministic fallback and default-off bridge | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
+| `report_generator` | L4 | l4 | `report_result_v1` | `127.0.0.1:10026` | skipped | skipped | skipped | `production_l3_l4_deferred` | Dev main-system compute handoff exists; no accepted production L4 report evidence | Controlled L4 compute smoke when service owner path is ready | Keep deterministic fallback and default-off bridge | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 
 ## Developer Execution Order
 

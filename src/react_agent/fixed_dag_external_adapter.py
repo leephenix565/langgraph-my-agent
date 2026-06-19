@@ -15,21 +15,27 @@ from react_agent.fixed_dag_contracts import (
     AGENT_DIMENSIONS,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
     DATA_BUNDLE_SCHEMA_VERSION,
+    DECISION_RESULT_SCHEMA_VERSION,
     DIMENSION_COMPOSITE_AGENT_IDS,
     DIMENSION_COMPOSITE_SCHEMA_VERSION,
     DIMENSION_GROUPS,
     ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
+    REPORT_RESULT_SCHEMA_VERSION,
     SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES,
     ConclusionObject,
     ConclusionStatus,
     DataBundle,
+    DecisionResult,
     DimensionCompositeResult,
     EntityRelationBundle,
+    ReportResult,
     validate_conclusion_object,
     validate_data_bundle,
+    validate_decision_result,
     validate_dimension_composite_result,
     validate_entity_relation_bundle,
+    validate_report_result,
 )
 
 EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION = "external_agent_response_v0"
@@ -78,8 +84,11 @@ _ALLOWED_EVIDENCE_FIELDS = {
 }
 _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "agent_id",
+    "aggregate_gate",
     "as_of_date",
     "asset_class_ranking",
+    "asset_allocation_view",
+    "belief_distribution",
     "best_asset_class",
     "channel_votes",
     "china_out_influence",
@@ -88,7 +97,11 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "ci_low",
     "code",
     "compliance_score",
+    "composite_quality",
+    "composite_research_packet",
     "components",
+    "conflict_level",
+    "conflict_summary",
     "current_market_value",
     "current_mv",
     "current_price",
@@ -97,7 +110,9 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "diagnosis",
     "dimension_weights",
     "direction",
+    "dominant_signals",
     "down_votes",
+    "effective_gate",
     "eps",
     "fair_value",
     "fair_value_center",
@@ -107,20 +122,34 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "fair_value_range",
     "fair_value_range_mv",
     "feature_available",
+    "feature_diagnostics",
     "feature_drivers",
+    "financial_publish_time",
+    "financial_report_period",
     "foreign_in_influence",
     "forecast_horizon",
+    "fraud_risk_bridge",
     "gate",
     "growth",
     "industry_adjustment",
+    "final_implication",
     "horizon_days",
     "index_valuation_level",
     "latest_pe_ttm",
+    "limitations",
     "margins",
+    "member_boundary_summary",
     "member_count",
+    "member_override_gate",
     "method",
+    "missing_or_degraded_members",
+    "macro_data_window",
+    "macro_regime_bridge",
+    "macro_signal_table",
     "model_available",
+    "model_context",
     "model_confidence",
+    "model_vintage_boundary",
     "momentum_20d",
     "n_china_to_foreign_pairs",
     "n_contributors",
@@ -139,6 +168,7 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "regulator_suggestion",
     "report_count",
     "requested_target",
+    "risk_gate_rule",
     "risk_flags",
     "risk_level",
     "risk_score",
@@ -146,6 +176,7 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "roe",
     "sample_size",
     "sector_rotation",
+    "sector_rotation_summary",
     "selection_v2",
     "sentiment_level",
     "sentiment_pct",
@@ -171,35 +202,60 @@ _PUBLIC_SAFE_DOMAIN_METRIC_KEYS = {
     "valuation_view",
     "value_basis",
     "verdict",
+    "zeping_crosscheck_context",
 }
 _PUBLIC_SAFE_DRIVER_KEYS = {
     "asset_class_ranking",
+    "aggregate_gate",
+    "asset_allocation_view",
     "backtest_context",
+    "belief_distribution",
     "channel_votes",
+    "composite_quality",
+    "composite_research_packet",
     "components",
+    "conflict_level",
+    "conflict_summary",
     "confidence_factors",
     "data_nowcast",
     "diagnosis",
+    "dominant_signals",
     "drivers",
+    "effective_gate",
     "fair_value_range",
     "feature_drivers",
+    "feature_diagnostics",
     "finding_summary",
+    "final_implication",
+    "fraud_risk_bridge",
     "fusion",
     "hits",
     "industry_adjustment",
+    "limitations",
     "margins",
+    "member_boundary_summary",
     "member_weight_summary",
+    "member_override_gate",
     "members",
     "method",
     "method_assumptions",
+    "missing_or_degraded_members",
+    "feature_snapshot",
+    "macro_data_window",
+    "macro_regime_bridge",
+    "macro_signal_table",
+    "model_context",
+    "model_vintage_boundary",
     "model_vote_table",
     "normalized",
     "regime",
     "regime_detail",
     "regulator_suggestion",
+    "risk_gate_rule",
     "risk_flags",
     "rubric_score_table",
     "sector_rotation",
+    "sector_rotation_summary",
     "selection_v2",
     "shap",
     "shap_values",
@@ -212,16 +268,21 @@ _PUBLIC_SAFE_DRIVER_KEYS = {
     "valuation_bridge",
     "warnings",
     "weakest_dimensions",
+    "zeping_crosscheck_context",
 }
 _PUBLIC_SAFE_QUALITY_KEYS = {
+    "annual_feature_available_after",
     "anti_lookahead_passed",
     "available_features",
     "business_core_changed",
     "cached",
     "calibrated",
+    "composite_quality",
     "composite_status",
     "contract_ok",
     "corpus_notice",
+    "conflict_level",
+    "conflict_summary",
     "coverage",
     "data_completeness",
     "data_nowcast",
@@ -231,20 +292,31 @@ _PUBLIC_SAFE_QUALITY_KEYS = {
     "dimension_coverage",
     "expected_features",
     "feature_available",
+    "feature_data_anti_lookahead_passed",
+    "financial_publish_time",
+    "financial_report_period",
     "freshness",
+    "limitations",
     "llm_subjective",
+    "member_boundary_summary",
     "member_count",
     "method",
     "method_details",
     "missing_components",
     "missing_dimensions",
+    "missing_or_degraded_members",
+    "model_available",
     "model",
+    "model_vintage_caveat",
     "model_trust",
     "n_cross_market_pairs",
     "n_slices",
     "price_date",
+    "knowledge_version",
+    "macro_data_window",
     "report_ann_date",
     "report_period",
+    "release_dates",
     "sample_size",
     "scoring_method",
     "sector_rotation_available",
@@ -1686,6 +1758,254 @@ def map_external_macro_conclusion_to_dimension_composite_result(
     return cast(dict[str, Any], result)
 
 
+def _safe_l4_text(value: Any, *, limit: int = 700) -> str:
+    text = str(value or "").strip().replace("\r\n", "\n").replace("\r", "\n")
+    if not text or _contains_unsafe_text(text):
+        return ""
+    if len(text) > limit:
+        return f"{text[:limit].rstrip()}..."
+    return text
+
+
+def _safe_l4_float(
+    value: Any,
+    *,
+    default: float = 0.0,
+    minimum: float = 0.0,
+    maximum: float = 1.0,
+) -> float:
+    try:
+        number = float(value)
+    except (TypeError, ValueError):
+        return default
+    return max(minimum, min(maximum, number))
+
+
+def _contains_l4_unsafe_text(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        return any(_contains_l4_unsafe_text(key) or _contains_l4_unsafe_text(item) for key, item in value.items())
+    if isinstance(value, list):
+        return any(_contains_l4_unsafe_text(item) for item in value)
+    if isinstance(value, str):
+        return _contains_unsafe_text(value)
+    return False
+
+
+def _safe_l4_target_range(value: Any) -> dict[str, float | None]:
+    if not isinstance(value, Mapping):
+        return {"low": None, "mid": None, "high": None}
+    result: dict[str, float | None] = {}
+    for key in ("low", "mid", "high"):
+        raw = value.get(key)
+        if raw is None or raw == "":
+            result[key] = None
+            continue
+        try:
+            result[key] = float(raw)
+        except (TypeError, ValueError):
+            result[key] = None
+    return result
+
+
+def _safe_l4_detail(value: Any, *, depth: int = 0) -> Any:
+    if depth > 3 or _contains_l4_unsafe_text(value):
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return value
+    if isinstance(value, str):
+        return _safe_l4_text(value, limit=240) or None
+    if isinstance(value, Mapping):
+        result: dict[str, Any] = {}
+        for key, raw in list(value.items())[:16]:
+            safe_key = _safe_l4_text(key, limit=80)
+            if not safe_key:
+                continue
+            bounded = _safe_l4_detail(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                result[safe_key] = bounded
+        return result or None
+    if isinstance(value, list):
+        items: list[Any] = []
+        for raw in value[:12]:
+            bounded = _safe_l4_detail(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                items.append(bounded)
+        return items or None
+    return _safe_l4_text(value, limit=160) or None
+
+
+def map_external_decision_result_to_decision_result(
+    payload: Mapping[str, Any],
+    *,
+    envelope: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Map a L4 decision_result_v1 payload from an external compute service."""
+    external_agent_id = str(
+        envelope.get("external_agent_id") if isinstance(envelope, Mapping) else ""
+    )
+    if payload.get("schema") != DECISION_RESULT_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_decision_result_schema",
+            agent_id="decision_synthesizer",
+            external_agent_id=external_agent_id,
+            schema_version=str(payload.get("schema") or payload.get("schema_version") or ""),
+        )
+    if payload.get("schema_version", DECISION_RESULT_SCHEMA_VERSION) != DECISION_RESULT_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_decision_result_schema_version",
+            agent_id="decision_synthesizer",
+            external_agent_id=external_agent_id,
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    if _contains_l4_unsafe_text(payload):
+        return _adapter_failure(
+            "unsafe_decision_result",
+            agent_id="decision_synthesizer",
+            external_agent_id=external_agent_id,
+            schema_version=DECISION_RESULT_SCHEMA_VERSION,
+        )
+    dimension_views = _safe_l4_detail(payload.get("dimension_views"))
+    reasoning_trace = _safe_l4_detail(payload.get("reasoning_trace"))
+    decision: DecisionResult = {
+        "schema": DECISION_RESULT_SCHEMA_VERSION,
+        "schema_version": DECISION_RESULT_SCHEMA_VERSION,
+        "decision": _safe_l4_text(payload.get("decision"), limit=80) or "partial_review",
+        "score": _safe_l4_float(payload.get("score"), minimum=-1.0, maximum=1.0),
+        "target_price_range": _safe_l4_target_range(payload.get("target_price_range")),
+        "dimension_views": dict(dimension_views) if isinstance(dimension_views, Mapping) else {},
+        "reasoning_trace": list(reasoning_trace) if isinstance(reasoning_trace, list) else [],
+        "confidence": _safe_l4_float(payload.get("confidence")),
+        "status": _safe_code(payload.get("status") or "partial"),
+        "as_of": _safe_l4_text(payload.get("as_of"), limit=40),
+    }
+    valid, reason = validate_decision_result(decision)
+    if not valid:
+        return _adapter_failure(
+            f"decision_result_invalid:{reason}",
+            agent_id="decision_synthesizer",
+            external_agent_id=external_agent_id,
+            schema_version=DECISION_RESULT_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], decision)
+
+
+def _safe_report_sections(value: Any) -> list[dict[str, str]]:
+    sections: list[dict[str, str]] = []
+    if not isinstance(value, list):
+        return sections
+    for index, item in enumerate(value[:8]):
+        if not isinstance(item, Mapping):
+            continue
+        title = _safe_l4_text(item.get("title"), limit=80)
+        content = _safe_l4_text(item.get("content"), limit=1400)
+        if title and content:
+            section_id = _safe_code(item.get("id") or f"section_{index + 1}")
+            sections.append({"id": section_id, "title": title, "content": content})
+    return sections
+
+
+def _safe_report_cards(value: Any) -> list[dict[str, str]]:
+    cards: list[dict[str, str]] = []
+    if not isinstance(value, list):
+        return cards
+    for item in value[:10]:
+        if not isinstance(item, Mapping):
+            continue
+        title = _safe_l4_text(item.get("title"), limit=80)
+        note = _safe_l4_text(item.get("note"), limit=320)
+        if title and note:
+            cards.append({"title": title, "note": note})
+    return cards
+
+
+_L4_REPORT_BOUNDARY = (
+    "L4 报告生成智能体仅在显式计算白名单路径下运行，"
+    "不改变默认运行配置，也不代表生产默认启用。"
+)
+_L4_REPORT_BOUNDARY_MARKERS = (
+    "L4 report_generator",
+    "L4 报告生成智能体",
+    "compute-only",
+    "compute allowlist",
+    "显式计算白名单路径",
+)
+
+
+def _safe_l4_report_limitations(value: Any) -> list[str]:
+    limitations: list[str] = []
+    seen: set[str] = set()
+    if isinstance(value, list):
+        for item in value:
+            text = _safe_l4_text(item, limit=220)
+            if not text:
+                continue
+            if any(marker in text for marker in _L4_REPORT_BOUNDARY_MARKERS):
+                continue
+            key = " ".join(text.strip().split())
+            if key in seen:
+                continue
+            seen.add(key)
+            limitations.append(text)
+    limitations.append(_L4_REPORT_BOUNDARY)
+    return limitations
+
+
+def map_external_report_result_to_report_result(
+    payload: Mapping[str, Any],
+    *,
+    envelope: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
+    """Map a L4 report_result_v1 payload from an external compute service."""
+    external_agent_id = str(
+        envelope.get("external_agent_id") if isinstance(envelope, Mapping) else ""
+    )
+    if payload.get("schema") != REPORT_RESULT_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_report_result_schema",
+            agent_id="report_generator",
+            external_agent_id=external_agent_id,
+            schema_version=str(payload.get("schema") or payload.get("schema_version") or ""),
+        )
+    if payload.get("schema_version", REPORT_RESULT_SCHEMA_VERSION) != REPORT_RESULT_SCHEMA_VERSION:
+        return _adapter_failure(
+            "invalid_report_result_schema_version",
+            agent_id="report_generator",
+            external_agent_id=external_agent_id,
+            schema_version=str(payload.get("schema_version") or ""),
+        )
+    if _contains_l4_unsafe_text(payload):
+        return _adapter_failure(
+            "unsafe_report_result",
+            agent_id="report_generator",
+            external_agent_id=external_agent_id,
+            schema_version=REPORT_RESULT_SCHEMA_VERSION,
+        )
+    answer = _safe_l4_text(payload.get("answer"), limit=7000)
+    if answer and "研判流程" not in answer:
+        answer = f"研判流程报告：\n{answer}"
+    report: ReportResult = {
+        "schema": REPORT_RESULT_SCHEMA_VERSION,
+        "schema_version": REPORT_RESULT_SCHEMA_VERSION,
+        "title": _safe_l4_text(payload.get("title"), limit=80) or "固定 DAG 研判报告",
+        "answer": answer,
+        "status": _safe_code(payload.get("status") or "partial"),
+        "sections": _safe_report_sections(payload.get("sections")),
+        "evidence_cards": _safe_report_cards(payload.get("evidence_cards")),
+        "limitations": _safe_l4_report_limitations(payload.get("limitations")),
+    }
+    valid, reason = validate_report_result(report)
+    if not valid:
+        return _adapter_failure(
+            f"report_result_invalid:{reason}",
+            agent_id="report_generator",
+            external_agent_id=external_agent_id,
+            schema_version=REPORT_RESULT_SCHEMA_VERSION,
+        )
+    return cast(dict[str, Any], report)
+
+
 def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]) -> dict[str, Any]:
     """Map a compute endpoint envelope to a supported internal fixed-DAG object."""
     valid, reason = validate_external_compute_envelope(payload)
@@ -1719,6 +2039,10 @@ def map_external_compute_envelope_to_fixed_dag_object(payload: Mapping[str, Any]
             tool_result,
             envelope=payload,
         )
+    if schema_version == DECISION_RESULT_SCHEMA_VERSION:
+        return map_external_decision_result_to_decision_result(tool_result, envelope=payload)
+    if schema_version == REPORT_RESULT_SCHEMA_VERSION:
+        return map_external_report_result_to_report_result(tool_result, envelope=payload)
     return _adapter_failure(
         "unsupported_compute_tool_result_schema",
         agent_id=str(payload.get("agent_id") or ""),
@@ -1761,6 +2085,10 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
                 tool_result,
                 envelope=payload,
             )
+        if schema_version == DECISION_RESULT_SCHEMA_VERSION:
+            return map_external_decision_result_to_decision_result(tool_result, envelope=payload)
+        if schema_version == REPORT_RESULT_SCHEMA_VERSION:
+            return map_external_report_result_to_report_result(tool_result, envelope=payload)
         return _adapter_failure(
             "unsupported_tool_result_schema",
             agent_id=str(payload.get("agent_id") or ""),
@@ -1784,6 +2112,10 @@ def map_external_response_to_fixed_dag_object(payload: Mapping[str, Any]) -> dic
         return map_external_risk_conclusion_to_dimension_composite_result(payload)
     if schema_version == EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION:
         return map_external_macro_conclusion_to_dimension_composite_result(payload)
+    if schema_version == DECISION_RESULT_SCHEMA_VERSION:
+        return map_external_decision_result_to_decision_result(payload)
+    if schema_version == REPORT_RESULT_SCHEMA_VERSION:
+        return map_external_report_result_to_report_result(payload)
     return _adapter_failure("unsupported_schema_version", schema_version=str(schema_version or ""))
 
 
@@ -1799,9 +2131,11 @@ __all__ = [
     "map_external_compute_envelope_to_fixed_dag_object",
     "map_external_agent_conclusion_to_conclusion_object",
     "map_external_data_bundle_to_data_bundle",
+    "map_external_decision_result_to_decision_result",
     "map_external_dimension_conclusion_to_dimension_composite_result",
     "map_external_entity_relation_bundle_to_entity_relation_bundle",
     "map_external_macro_conclusion_to_dimension_composite_result",
+    "map_external_report_result_to_report_result",
     "map_external_response_to_fixed_dag_object",
     "map_external_risk_conclusion_to_dimension_composite_result",
     "safe_adapter_failure_conclusion",

@@ -635,6 +635,65 @@ def _member_weight_summary(
     return members
 
 
+def _member_boundary_summary(
+    expected_agent_ids: tuple[str, ...],
+    conclusions: Mapping[str, dict[str, Any]],
+    *,
+    limit: int = 8,
+) -> list[dict[str, Any]]:
+    """Collect member-level report caveats that should survive L3 compression."""
+    rows: list[dict[str, Any]] = []
+    for agent_id in expected_agent_ids:
+        raw_result = conclusions.get(agent_id)
+        if not isinstance(raw_result, Mapping):
+            continue
+        provenance = raw_result.get("provenance")
+        if not isinstance(provenance, Mapping):
+            continue
+        caveats: list[str] = []
+        data_quality = provenance.get("data_quality")
+        if isinstance(data_quality, Mapping):
+            warnings = data_quality.get("warnings")
+            if isinstance(warnings, list):
+                for warning in warnings:
+                    text = _bounded_composite_text(warning, limit=260)
+                    if text and text not in caveats:
+                        caveats.append(text)
+                    if len(caveats) >= 3:
+                        break
+        domain_metrics = provenance.get("domain_metrics")
+        if isinstance(domain_metrics, Mapping):
+            boundary = domain_metrics.get("model_vintage_boundary")
+            if isinstance(boundary, Mapping) and boundary.get("model_vintage_caveat") is True:
+                interpretation = _bounded_composite_text(
+                    boundary.get("interpretation"),
+                    limit=260,
+                )
+                train_year = boundary.get("production_model_trained_through_feature_year")
+                market_year = boundary.get("as_of_market_feature_year")
+                if interpretation:
+                    text = f"模型版本边界：{interpretation}"
+                else:
+                    text = (
+                        "模型版本边界：生产模型训练上界="
+                        f"{train_year}，as_of 市场可见特征年={market_year}。"
+                    )
+                text = _bounded_composite_text(text, limit=300)
+                if text and text not in caveats:
+                    caveats.append(text)
+        if caveats:
+            rows.append(
+                {
+                    "agent_id": agent_id,
+                    "status": _member_status(raw_result),
+                    "caveats": caveats[:4],
+                }
+            )
+        if len(rows) >= limit:
+            break
+    return rows
+
+
 def _composite_candidates(
     expected_agent_ids: tuple[str, ...],
     conclusions: Mapping[str, dict[str, Any]],
@@ -1851,6 +1910,7 @@ def _build_dimension_composite(
         for agent_id, candidate_result, confidence in available_candidates:
             if _member_risk_score(candidate_result) is not None:
                 risk_candidates.append((agent_id, candidate_result, confidence))
+        member_boundaries = _member_boundary_summary(expected_agent_ids, conclusions)
         risk_weights = _normalized_weights(risk_candidates)
         if risk_weights:
             weighted_risk_score = round(
@@ -1870,6 +1930,50 @@ def _build_dimension_composite(
         else:
             gate = "not_evaluated"
         penalty = 0.0 if gate in {"pass", "not_evaluated"} else weighted_risk_score
+        risk_drivers = [
+            {
+                "name": "member_weight_summary",
+                "value": _member_weight_summary(
+                    expected_agent_ids,
+                    conclusions,
+                    risk_weights or all_weights,
+                ),
+            },
+            {
+                "name": "risk_gate_rule",
+                "value": "risk_score < 0.35 pass; 0.35-0.70 manual_review; >= 0.70 veto.",
+            },
+            {"name": "missing_components", "value": missing_names},
+        ]
+        if member_boundaries:
+            risk_drivers.append({"name": "member_boundary_summary", "value": member_boundaries})
+        risk_research_points = [
+            {
+                "claim": f"风险综合当前为 {status}，风险门为 {gate}。",
+                "support": (
+                    f"{len(risk_candidates)}/{expected_count} 个风险成员提供 risk_score，"
+                    f"加权风险分 {weighted_risk_score:.4f}。"
+                ),
+                "interpretation": "风险综合只读取风险维成员；企业舆情雷达不会进入 risk_composite。",
+                "decision_implication": "gate 为 pass 时不触发风险否决；manual_review/veto 时应限制后续决策强度。",
+                "caveat": "成员缺失或未给出 risk_score 时会降低覆盖率，不作为低风险证明。",
+            }
+        ]
+        if member_boundaries:
+            first_boundary = member_boundaries[0]
+            first_caveat = ""
+            caveats = first_boundary.get("caveats")
+            if isinstance(caveats, list) and caveats:
+                first_caveat = _bounded_composite_text(caveats[0], limit=240)
+            risk_research_points.append(
+                {
+                    "claim": "风险门通过不等于成员边界消失。",
+                    "support": first_caveat or f"{len(member_boundaries)} 个风险成员带有数据或模型边界说明。",
+                    "interpretation": "L3 风险分只聚合成员 risk_score；成员的数据时点、模型版本和缺失文本仍应进入报告限制。",
+                    "decision_implication": "最终报告可以维持 gate=pass，但必须同步呈现这些 caveat，避免把低风险写成无条件结论。",
+                    "caveat": "边界说明不改写成员原始分数，也不把 caveat 当作新的风险事件。",
+                }
+            )
         result.update(
             {
                 "stance": "risk_gate" if available_candidates else "not_evaluated",
@@ -1891,37 +1995,13 @@ def _build_dimension_composite(
                         "penalty": penalty,
                         "risk_member_count": len(risk_candidates),
                     },
-                    drivers=[
-                        {
-                            "name": "member_weight_summary",
-                            "value": _member_weight_summary(
-                                expected_agent_ids,
-                                conclusions,
-                                risk_weights or all_weights,
-                            ),
-                        },
-                        {
-                            "name": "risk_gate_rule",
-                            "value": "risk_score < 0.35 pass; 0.35-0.70 manual_review; >= 0.70 veto.",
-                        },
-                        {"name": "missing_components", "value": missing_names},
-                    ],
-                    research_points=[
-                        {
-                            "claim": f"风险综合当前为 {status}，风险门为 {gate}。",
-                            "support": (
-                                f"{len(risk_candidates)}/{expected_count} 个风险成员提供 risk_score，"
-                                f"加权风险分 {weighted_risk_score:.4f}。"
-                            ),
-                            "interpretation": "风险综合只读取风险维成员；企业舆情雷达不会进入 risk_composite。",
-                            "decision_implication": "gate 为 pass 时不触发风险否决；manual_review/veto 时应限制后续决策强度。",
-                            "caveat": "成员缺失或未给出 risk_score 时会降低覆盖率，不作为低风险证明。",
-                        }
-                    ],
+                    drivers=risk_drivers,
+                    research_points=risk_research_points,
                     data_quality={
                         "scoring_method": "confidence_weighted_risk_score_from_available_l2",
                         "missing_components": missing_names,
                         "risk_score_member_count": len(risk_candidates),
+                        **({"member_boundary_summary": member_boundaries} if member_boundaries else {}),
                     },
                 ),
             }
@@ -2407,7 +2487,7 @@ def _bounded_task_value(value: Any, *, depth: int = 0) -> Any:
 
 def _l2_task_upstream_result(agent_id: str, result: Mapping[str, Any]) -> dict[str, Any]:
     item = _l2_agent_summary(agent_id, result)
-    return {
+    upstream = {
         key: item[key]
         for key in (
             "agent_id",
@@ -2425,6 +2505,14 @@ def _l2_task_upstream_result(agent_id: str, result: Mapping[str, Any]) -> dict[s
         )
         if key in item
     }
+    evidence_items = _safe_evidence_detail_items(result.get("evidence"), limit=4)
+    if evidence_items:
+        upstream["evidence_items"] = evidence_items
+    provenance_notes = _provenance_notes(result.get("provenance"))
+    for key in ("domain_metrics", "drivers", "research_points", "data_quality"):
+        if key in provenance_notes:
+            upstream[key] = provenance_notes[key]
+    return upstream
 
 
 def _l3_task_upstream_result(result: Mapping[str, Any]) -> dict[str, Any]:
@@ -3900,7 +3988,14 @@ def build_final_emit_payload(report_result: Mapping[str, Any]) -> dict[str, Any]
     answer = str(report_result.get("answer") or "").strip()
     if not answer:
         answer = "研判流程已完成，但没有报告正文。"
-    return {"source": RESET_SOURCE, "status": "complete", "answer": answer}
+    return {
+        "source": RESET_SOURCE,
+        "status": "complete",
+        "answer": answer,
+        "sections": list(report_result.get("sections", []) or []),
+        "evidence_cards": list(report_result.get("evidence_cards", []) or []),
+        "limitations": list(report_result.get("limitations", []) or []),
+    }
 
 
 def build_emitted_bundle(report_result: Mapping[str, Any]) -> dict[str, Any]:
@@ -3908,7 +4003,9 @@ def build_emitted_bundle(report_result: Mapping[str, Any]) -> dict[str, Any]:
         "answer": str(report_result.get("answer") or ""),
         "summary_source": RESET_SOURCE,
         "confidence": 0.0,
+        "sections": list(report_result.get("sections", []) or []),
         "evidence_cards": list(report_result.get("evidence_cards", []) or []),
+        "limitations": list(report_result.get("limitations", []) or []),
         "provider_invoked": False,
         "external_invoked": False,
     }

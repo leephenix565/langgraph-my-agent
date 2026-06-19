@@ -1,10 +1,9 @@
 """Default-off LLM report synthesis for fixed DAG evidence bundles.
 
-This module is the R8-12D main-system fallback/demo seam. It is intentionally
-not the formal external ``report_generator`` agent integration: that future
-path should accept ``report_input_bundle_v1`` over the external-agent contract
-and return ``report_result_v1`` through the fixed DAG adapter/runtime boundary.
-Keeping the current synthesizer as a bounded fallback lets demos use the same
+This module is the R8-12D main-system fallback/demo seam. The dev main system
+also has a default-off external ``report_generator`` compute handoff, but that
+path still requires explicit allowlisting and controlled service evidence. This
+local synthesizer remains the bounded fallback so demos can use the same
 public-safe evidence bundle without changing runtime bindings or live flags.
 """
 
@@ -232,10 +231,27 @@ def build_llm_report_prompt(
         "drivers 是 public-safe 的模型驱动/归因/成员解释；"
         "data_quality 是 public-safe 的覆盖率、校准、反前视、缓存或数据完整性说明。"
         "你需要理解各个 L2 单体智能体输入、L3 综合智能体输入、风险门、宏观调节和决策上下文。"
+        "如果 L3 输出包含 composite_quality_v1，必须使用其中的 representativeness、coverage、"
+        "complete_coverage、dominant_member_weight、blocking_caveats 来说明该维度是可用、"
+        "带边界可用、证据薄，还是薄且被单一成员主导。"
+        "如果 risk_composite 同时包含 aggregate_gate、member_override_gate、override_triggered、"
+        "aggregate_risk_score 或 max_member_risk_score，必须区分加权综合风险和单成员 override："
+        "不要把 aggregate_gate=pass 写成无条件低风险；若 member_override_gate=manual_review，"
+        "必须说明触发成员和人工复核含义。"
         "每个主要维度至少引用两条可用的结构化证据；证据不足时说明缺口。"
         "报告必须解释 agent 之间的冲突、数据时点差异、权重/降权原因和 partial 对结论的影响。"
         "遇到 status=error、partial、placeholder 或证据为空时，必须在报告中明确说明其影响，"
         "不要把占位或失败输出当作强业务结论。"
+        "最终报告面向业务用户，正文、sections、evidence_cards 和 limitations 不要直接暴露 "
+        "stance/status/partial/placeholder/state=complete/report_input_bundle_v1 等 schema 字段名；"
+        "应分别写成综合倾向、证据不完整、未接入真实数据的占位输出、已返回结构化结果、"
+        "结构化报告输入包等自然中文。"
+        "也不要直接输出 positive_watch、research_hold、defensive_observe、manual_review、"
+        "risk_blocked、pass 等枚举值；应写成积极关注、研究观察、防御观察、人工复核、"
+        "风险阻断、通过等中文业务表达。"
+        "如果 L1 金融数据服务未在本轮真实计算白名单中映射，不要写成“待实施”或"
+        "“所有模型未使用数据”，应写成“本轮未纳入真实 L1 计算路径，L2 使用各自内部或快照数据”。"
+        "compute-only、allowlist、default-off 等运行边界只在 limitations 中简要说明，不要写进主体研判。"
         "不要编造未给出的实时数据、目标价、收益率、财报数字、新闻或外部来源。"
         "不要输出接口地址、密钥、错误栈、原始外部响应或内部推理草稿。"
         "请输出一个 JSON 对象，字段必须为 title、answer、sections、evidence_cards、limitations。"

@@ -8,6 +8,12 @@ The public chat remains a single user and assistant transcript. Internal DAG
 execution belongs in a workflow inspector, not in separate public agent chat
 lanes.
 
+The assistant answer card may include structured `sections`, `evidenceCards`,
+and `limitations` copied from `report_result_v1`. These fields are public-safe
+report rendering material. They must not expose raw graph messages, raw agent
+JSON, endpoint URLs, provider raw responses, or secrets, and they do not create
+separate public agent chat lanes.
+
 ## Current R5-B2 Workflow Inspector Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:

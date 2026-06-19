@@ -15,13 +15,21 @@ export interface EvidenceCardModel {
   note: string;
 }
 
+export interface ReportSectionModel {
+  id: string;
+  title: string;
+  content: string;
+}
+
 export interface AnswerCardModel {
   answer: string;
   finalSource: FinalSource;
   confidence?: string;
+  sections?: ReportSectionModel[];
   citations?: CitationModel[];
   evidenceCards?: EvidenceCardModel[];
   evidenceCount?: number;
+  limitations?: string[];
 }
 
 export interface StructuredInputModel {

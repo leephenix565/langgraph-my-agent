@@ -930,6 +930,8 @@ def execute_fixed_dag_plan(
     external_l1_run: Mapping[str, Any] = {}
     external_l2_run: Mapping[str, Any] = {}
     external_l3_run: Mapping[str, Any] = {}
+    external_l4_decision_run: Mapping[str, Any] = {}
+    external_l4_report_run: Mapping[str, Any] = {}
     external_demo_summary: Mapping[str, Any] = {
         "called_agents": [],
         "mapped_agents": [],
@@ -1049,6 +1051,34 @@ def execute_fixed_dag_plan(
         dimension_results=dimension_results,
         decision_result=decision_result,
     )
+    if external_compute_demo_enabled:
+        external_l4_decision_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            agent_tasks=agent_tasks,
+            stages=("decision",),
+        )
+        decision_result = cast(
+            dict[str, Any],
+            external_l4_decision_run.get("decision_result") or decision_result,
+        )
+        agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+        )
     report_input_bundle = build_report_input_bundle(
         question=question,
         l2_conclusions=l2_conclusions,
@@ -1075,12 +1105,45 @@ def execute_fixed_dag_plan(
             dimension_results=dimension_results,
             demo_summary=external_demo_summary,
         )
+        external_l4_report_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            report_result=report_result,
+            report_input_bundle=report_input_bundle,
+            agent_tasks=agent_tasks,
+            stages=("report",),
+        )
+        report_result = cast(
+            dict[str, Any],
+            external_l4_report_run.get("report_result") or report_result,
+        )
+        _apply_external_compute_step_updates(
+            step_results,
+            external_l4_decision_run,
+            external_l4_report_run,
+        )
+        external_demo_summary = merge_external_compute_demo_runs(
+            external_demo_summary,
+            external_l4_decision_run,
+            external_l4_report_run,
+        )
     llm_report_synthesis_used = False
     llm_report_synthesis_attempted = False
     llm_report_synthesis_provider_invoked = False
     llm_report_synthesis_fallback_reason = ""
     llm_report_synthesis_provider_config: dict[str, Any] = {}
-    if llm_report_synthesis_enabled:
+    external_l4_report_mapped = (
+        isinstance(external_l4_report_run, Mapping)
+        and "report_generator" in set(external_l4_report_run.get("mapped_agents", []))
+    )
+    if llm_report_synthesis_enabled and not external_l4_report_mapped:
         from react_agent.fixed_dag_report_synthesizer import (  # noqa: PLC0415
             synthesize_report_result_with_llm,
         )
@@ -1124,6 +1187,11 @@ def execute_fixed_dag_plan(
             limitations.append(
                 "已在显式演示开关下使用大模型读取结构化报告输入包生成最终报告；"
                 "这不是默认运行配置变更。"
+            )
+        elif external_l4_report_mapped:
+            limitations.append(
+                "外部 L4 report_generator 已在显式 compute allowlist 下生成报告；"
+                "主系统内置 LLM report synthesizer 未重复覆盖该结果。"
             )
         else:
             limitations.append(

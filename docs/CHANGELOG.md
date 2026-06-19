@@ -3,6 +3,405 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-19 - Dev main-system L4 compute/report handoff
+
+### Changed
+
+- Added main-system mapping support for external `decision_result_v1` and
+  `report_result_v1` payloads returned through the default-off
+  `/v1/agent/compute` bridge. The adapter validates the mapped L4 objects and
+  strips unsafe text such as secrets, endpoint URLs, raw provider responses,
+  tracebacks, and internal reasoning drafts.
+- Added default-off bridge registry and request context support for
+  `decision_synthesizer` and `report_generator`. L4 compute requests can carry
+  bounded `dimension_results`, `decision_result`, and
+  `report_input_bundle_v1`; only these two L4 ids may request
+  `options.allow_llm=true`, and they still use compute-only loopback entries.
+- Documented loopback-only `EXTERNAL_COMPUTE_DEMO_URL_<AGENT_ID>` overrides so
+  controlled sandbox/prod port comparison can select local service ports without
+  changing runtime bindings or production-default routing.
+- Updated the executor so an explicit external compute demo allowlist can
+  overlay L4 decision and report results. A mapped external `report_generator`
+  result is not overwritten by the internal LLM report synthesis seam.
+- Added a default-off L4 decision synthesis helper used by the sandbox L4
+  service path. It can ask a configured model for language-level decision
+  synthesis, but deterministic `build_decision_result` remains the fallback and
+  risk gates still guard optimistic model output.
+- Exposed `report_result_v1.sections`, `evidence_cards`, and `limitations`
+  through `final_emit_payload`, `emitted_bundle`, and public assistant answer
+  cards. The R8-13A smoke runner now writes a full `final_report.md` rendered
+  from the structured report, not only the final answer string.
+- Strengthened the report synthesis prompt so final Chinese reports explain L3
+  quality packets, risk override details, and enum values in business Chinese
+  instead of leaking internal schema wording.
+- Aligned L4 documentation and frontend TypeScript public types with the dev
+  handoff state: L4 remains production-deferred, but the main system now has a
+  default-off compute handoff; `AnswerCardModel` accepts optional `sections`
+  and `limitations` from the backend public contract.
+- Recorded the L4 handoff as `ADR-063` and updated the developer L4 prompt so
+  service-owner follow-up uses controlled compute evidence instead of the older
+  design-only wording.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ...` passed for the modified
+  L4 adapter, bridge, executor, contracts, public mapping, report synthesizer,
+  smoke runner, and focused tests.
+- Focused L4/public tests passed:
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q ...` returned 16 passed.
+- Existing bridge/executor/report/public regression slice passed:
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_mainline_bundle_seam_ff1.py`
+  returned 57 passed.
+- Broader related regression slice passed:
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_l4_decision_synthesizer.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_mainline_bundle_seam_ff1.py tests/unit_tests/test_run_r8_13a_e2e_smoke.py`
+  returned 138 passed.
+- Offline R8-13A smoke passed without live endpoints:
+  `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src python3 scripts/dev/run_r8_13a_e2e_smoke.py --artifact-root /tmp/lma-dev-l4-offline-smoke-20260619`.
+  The artifact rendered a full `final_report.md` with 7 sections, 5 evidence
+  cards, and 4 limitations. The offline fake bridge now accepts the same L4
+  context kwargs as the real bridge and has safe L4 fixtures for
+  `decision_result_v1` / `report_result_v1`.
+- Frontend contract type check passed via
+  `npm --prefix apps/web run build`; the app has no separate `typecheck`
+  script.
+
+### Not Done
+
+- No external agent service repository was modified in this dev phase.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No live HTTP `/health`, `/compute`, or `/invoke` endpoint was called.
+- This does not make the demo bridge production-default, and it does not turn
+  `/compute` evidence into `/invoke` evidence.
+
+## 2026-06-19 - Sandbox L3 research packet material pass
+
+### Changed
+
+- Extended the default-off external compute bridge so allowlisted external L3
+  compute requests receive bounded public-safe L2 report material, not only
+  summary/stance/confidence. The safe upstream context may now include
+  `domain_metrics`, `drivers`, `research_points`, `data_quality`, and bounded
+  evidence while still stripping endpoint URLs, secrets, raw responses,
+  tracebacks, and internal reasoning drafts.
+- Extended `agent_task_v1.upstream_results` with the same public-safe L2 report
+  material so L3 services can read richer context from either the request
+  context or the task object.
+- Extended the external adapter allowlist for L3 service-owned research packet
+  fields: `composite_research_packet`, `composite_quality`,
+  `conflict_summary`, `dominant_signals`, `missing_or_degraded_members`,
+  `final_implication`, and `limitations`.
+- Enhanced the sandbox `value_composite`, `market_composite`,
+  `risk_composite`, and `macro_composite` service wrappers with deterministic
+  service-owned research packets. These packets explain member consensus,
+  dominant signals, conflicts, coverage, partial members, and decision
+  implications without changing `stance`, `confidence`, `gate`, `risk_score`,
+  `dimension_weights`, member weights, or status.
+
+### Validated
+
+- Main-system focused tests passed:
+  `PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py`
+  returned 88 passed.
+- Sandbox L3 service `py_compile` passed for the modified value, market, risk,
+  and macro service files plus their focused tests.
+- Sandbox L3 focused tests passed:
+  `tests/test_fixed_dag_l3_wrapper.py` returned 5 passed,
+  `tests/test_service.py::test_fixed_dag_market_upstream_adds_research_packet`
+  returned 1 passed, `tests/test_fixed_dag_upstream_wrapper.py` returned
+  1 passed, and
+  `tests/test_synthesis.py::test_fixed_dag_macro_conclusion_merges_upstream_outputs`
+  returned 1 passed.
+
+### Not Done
+
+- No production service file was modified.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No live HTTP `/health`, `/compute`, or `/invoke` endpoint was called in this
+  phase. The value L3 focused test suite still includes its existing in-process
+  FastAPI TestClient compute-handler regression.
+
+## 2026-06-18 - Sandbox L2 report-material wrapper progress
+
+### Changed
+
+- Enhanced the sandbox `risk_crash` service wrapper report material without
+  retraining the model or changing runtime bindings. The wrapper now projects
+  existing crash-risk model outputs into bounded public-safe `drivers`,
+  `research_points`, thicker `evidence`, and `quality` material for downstream
+  fixed-DAG report input bundles.
+- Refined the sandbox `risk_crash` model-vintage boundary. Its warning and
+  report material now distinguish input-feature anti-lookahead from the
+  separate caveat that a historical `as_of` run uses the current production
+  model version trained through a later feature year.
+- Enhanced deterministic `risk_composite` report material so member-level
+  warnings and model/data boundaries are retained as `member_boundary_summary`
+  in L3 `drivers`, `research_points`, and `data_quality`. This keeps caveats
+  visible after L3 compression without changing `risk_score`, `gate`, or member
+  weights.
+- Documented the current P0 L2 wrapper state for
+  `value_research_synthesis`, `risk_crash`, and `macro_index_valuation`.
+  `value_research_synthesis` and `macro_index_valuation` already had sandbox
+  report-material wrappers from the prior experiment; this phase filled the
+  missing `risk_crash` gap.
+- Audited the next P1 L2 candidates. `value_ml_valuation` and
+  `value_meta_valuation` already carry sandbox report material. Enhanced the
+  sandbox `risk_identification` wrapper so its existing rule-margin/MD&A-hit
+  risk outputs are projected into public-safe risk tables, drivers,
+  `research_points`, thicker `evidence`, and `quality` material.
+- Enhanced the sandbox `risk_financial_fraud` wrapper without retraining its
+  HyFormer model, changing risk-gate thresholds, or adding LLM usage. The wrapper
+  now projects existing model probability, threshold, feature availability,
+  annual feature timing, gate action, and evidence context into public-safe
+  `fraud_risk_bridge`, `model_context`, `feature_diagnostics`,
+  `risk_gate_rule`, `drivers`, `research_points`, thicker `evidence`, and
+  `quality`.
+- Enhanced the sandbox `macro_analysis` wrapper without changing macro-cycle
+  rules, nowcast thresholds, or `/compute` LLM behavior. The wrapper now projects
+  existing macro signals, investment-clock regime, asset allocation view, sector
+  rotation ledger, macro data window, and Zeping crosscheck material into
+  public-safe `macro_regime_bridge`, `macro_signal_table`,
+  `asset_allocation_view`, `sector_rotation_summary`, `macro_data_window`,
+  `zeping_crosscheck_context`, `drivers`, `research_points`, thicker
+  `evidence`, and `quality`.
+- Fixed sandbox `value_ml_valuation` and `value_meta_valuation` direction
+  wrappers to expose top-level `stance` and `confidence` alongside
+  `normalized`, so the main-system adapter can consume their existing report
+  material without `direction_stance_missing`.
+- Extended dev and sandbox-main adapter allowlists so the financial-fraud and
+  macro-analysis report material can enter `provenance.domain_metrics`,
+  `drivers`, `research_points`, `data_quality`, and
+  `report_input_bundle_v1.agent_evidence_bundle.l2_agent_outputs[]`.
+- Updated the readiness matrix to keep production status unchanged while noting
+  the sandbox-only report-material progress.
+
+### Validated
+
+- `PYTHONPYCACHEPREFIX=/tmp/lma-risk-crash-pycache /tmp/lma-service-test-venv/bin/python -m py_compile crash_risk_model/agent/compute_core.py crash_risk_model/agent/tests/test_report_material.py`
+- `PYTHONPYCACHEPREFIX=/tmp/lma-risk-crash-pycache /tmp/lma-service-test-venv/bin/python -m pytest crash_risk_model/agent/tests/test_report_material.py -q -p no:cacheprovider --basetemp /tmp/lma-risk-crash-report-material-tests-final`
+- Direct `risk_crash` compute-core validation completed in 2.59s and returned
+  `agent_conclusion_v1` with 5 `research_points` and the expected model-driver
+  names.
+- Direct `risk_crash` endpoint-handler validation completed in 3.48s without
+  TestClient/HTTP and preserved 5 `research_points` after fixed-DAG
+  `gate_member` projection.
+- `value_research_synthesis` report-material test passed:
+  `tests/test_domain_payload.py::test_domain_payload_adds_analyst_report_material_without_llm`.
+  This is an offline fixture/material projection test, not live data evidence.
+- Direct `macro_index_valuation` compute-core + domain-attach validation
+  completed in 0.70s and returned `agent_conclusion_v1` with 4
+  `research_points` and the expected macro-driver names.
+- Direct `macro_index_valuation` endpoint-handler validation completed in 0.73s
+  without TestClient/HTTP and preserved the same report material.
+- Ran a P0 direct sandbox bundle check with no live HTTP, no TestClient, and no
+  `/invoke`; artifact:
+  `/tmp/lma-p0-direct-bundle-check/20260618T070209Z`.
+- The direct bundle check mapped all three P0 L2 outputs through the main-system
+  adapter, built `report_input_bundle_v1`, and built fallback `report_result_v1`.
+  Both validators returned `ok`; fallback report text contained the three P0
+  L2 sections and the `研究判断` marker.
+  `value_research_synthesis` and `risk_crash` used `600519.SH` with
+  `as_of=2026-06-17`; `macro_index_valuation` used `000300.SH` with the same
+  as-of date as macro context.
+- Main-system fixed-DAG material/report tests passed locally:
+  `PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_fixed_dag_report_synthesizer.py tests/unit_tests/test_fixed_dag_l3_explanation_synthesizer.py`
+  returned 104 passed.
+- `risk_identification` sandbox report-material code and test passed
+  `py_compile`.
+- `risk_identification`新增纯本地 report-material 单测 2 passed; tests call
+  `MarketRiskCore.compute()` and app-layer fixed-DAG projection directly, with
+  no HTTP and no TestClient request.
+- `risk_financial_fraud` sandbox report-material code and tests passed:
+  `PYTHONPYCACHEPREFIX=/tmp/lma-financial-fraud-pycache python3 -m py_compile app/agent/core.py tests/test_report_material.py`
+  and
+  `PYTHONPYCACHEPREFIX=/tmp/lma-financial-fraud-pycache python3 -m pytest -q tests/test_report_material.py -p no:cacheprovider --basetemp /tmp/lma-financial-fraud-report-material-tests`
+  returned 2 passed. The tests call `compute_core()` and app-layer fixed-DAG
+  projection directly, with no HTTP, no `/invoke`, and no provider.
+- `macro_analysis` sandbox report-material code and tests passed:
+  `PYTHONPYCACHEPREFIX=/tmp/lma-macro-analysis-pycache python3 -m py_compile service.py tests/test_report_material.py`
+  and
+  `PYTHONPYCACHEPREFIX=/tmp/lma-macro-analysis-pycache python3 -m pytest -q tests/test_report_material.py -p no:cacheprovider --basetemp /tmp/lma-macro-analysis-report-material-tests`
+  returned 2 passed. The tests call `compute_core()` directly and validate both
+  nowcast and explicit-scenario report-material paths, with no HTTP,
+  no `/invoke`, and no provider.
+- Existing sandbox `value_ml_valuation` tests passed: `py_compile` plus
+  `tests/test_domain_contract_v1.py`, `tests/test_service_contract.py`, and
+  `tests/test_v21_compliance.py` returned 22 passed.
+- Existing sandbox `value_meta_valuation` tests passed: `py_compile` plus
+  `tests/test_domain_contract_v1.py` and `tests/test_v21_compliance.py`
+  returned 8 passed.
+- Direct `risk_identification` fixed-DAG handler validation returned
+  `agent_id=risk_identification`, `role=gate_member`, `risk_score=0.0171`,
+  5 `research_points`, 7 drivers, and 10 evidence items for `600519.SH` at
+  `as_of=2024-12-31`.
+- Main-system adapter projection for the same direct `risk_identification`
+  payload returned `conclusion_object_v1` with 5 `research_points`, 9 drivers,
+  10 evidence items, no adapter failure, and public-safe `risk_score` in
+  provenance/domain metrics.
+- After the top-level stance fix, direct adapter projection for
+  `value_ml_valuation` returned `partial` with 4 `research_points`, 6 drivers,
+  and 7 evidence items; `value_meta_valuation` returned `complete` with 3
+  `research_points`, 6 drivers, and 6 evidence items.
+- Ran a 6-agent direct sandbox bundle check with no live HTTP, no TestClient,
+  and no `/invoke`; artifact:
+  `/tmp/lma-6agent-direct-bundle-check/20260618T073557Z`.
+- The 6-agent bundle check mapped
+  `value_research_synthesis`, `value_ml_valuation`, `value_meta_valuation`,
+  `risk_crash`, `risk_identification`, and `macro_index_valuation` through the
+  main-system adapter and built a validated `report_input_bundle_v1` plus
+  fallback `report_result_v1`. Result: 5 complete L2, 1 partial L2, 0 adapter
+  failures, 0 L2 without readable evidence, and fallback report answer length
+  11138 characters.
+- Ran default-off real LLM report synthesis from the 6-agent
+  `report_input_bundle_v1`; artifact:
+  `/tmp/lma-6agent-real-llm-report-synthesis/20260618T075202Z`.
+- The real LLM synthesis used `deepseek/deepseek-chat` through the report
+  synthesizer only. It did not call live agent HTTP, TestClient, or `/invoke`,
+  and did not store raw provider response. The sanitized `report_result_v1`
+  validated successfully with `status=complete`, 5 sections, 7 evidence cards,
+  and 7 limitations.
+- Rebuilt the same 6-agent direct L2 artifact through the main-system
+  deterministic L3 builders and default-off LLM report synthesis; artifact:
+  `/tmp/lma-6agent-l3-llm-report-synthesis/20260618T075647Z`.
+- The L3-enriched report input validated with 6 L2 outputs and 3 L3 outputs:
+  `value` partial, `risk` complete with `gate=pass` and `risk_score=0.0949`,
+  and `macro` complete with `regime=neutral`. Quality summary was
+  L2 complete 5/6, L2 partial 1/6, L3 complete 2/3, L3 partial 1/3.
+- The L3-enriched LLM report used `deepseek/deepseek-chat` through the
+  report synthesizer only. It validated as `report_result_v1` with
+  `status=complete`, 3 sections, 4 evidence cards, and 5 limitations, and
+  no longer described L3 as missing.
+- The L3-enriched report exposed the next material-quality gaps:
+  `value_ml_valuation` remains partial because the sandbox run lacked a
+  financial snapshot, and `risk_identification` carries an older data date
+  than the shared `as_of`.
+- Added a sandbox-only local financial-cache fallback for
+  `value_ml_valuation`. The wrapper can now read a configured
+  `VALUATION_FINANCIAL_CACHE_DIR` or service-local `_pe_train_cache`, select
+  the latest financial row with `ann_date <= as_of`, join `rd_exp` from the
+  matching local income cache, and surface `financial_report_period` plus
+  `financial_publish_time` in public-safe report material.
+- Extended the main-system external adapter public-safe allowlist so
+  `financial_report_period` and `financial_publish_time` can enter
+  `domain_metrics` and `data_quality`.
+- Extended the main-system external adapter public-safe allowlist so
+  `model_vintage_boundary`, `feature_data_anti_lookahead_passed`, and
+  `model_vintage_caveat` can enter report-facing provenance without preserving
+  raw external JSON.
+- Rebuilt the 6-agent bundle by reusing the five existing direct mapped L2
+  artifacts and rerunning sandbox `value_ml_valuation` with the configured
+  local financial cache; artifact:
+  `/tmp/lma-6agent-ml-financial-cache-l3-llm/20260618T080604Z`.
+- The rebuilt bundle validated with L2 complete 6/6 and L3 complete 3/3.
+  `value_ml_valuation` returned `status=ok`,
+  `financial_data_source=local_financial_cache`,
+  `financial_report_period=20240930`, `financial_publish_time=20241026`,
+  ROE `26.833`, growth `16.9078`, valuation center `1813.801`, and upside
+  `19.0158`.
+- The rebuilt LLM report validated with `status=complete`, 6 sections, 4
+  evidence cards, and 6 limitations. It now treats value L3 as complete while
+  still explaining the conflict between sell-side/research synthesis,
+  machine-learning valuation, and peer meta valuation.
+- Added a sandbox `risk_identification` 2024Q3 numeric period for 600519.SH in
+  its local `companies.json` snapshot. The numeric features were derived from
+  existing local parquet/csv/pkl snapshots, use `report_period=2024-09-30` and
+  `ann_date=2024-10-26`, and intentionally leave `mda_text` empty because the
+  corresponding MD&A source text was not available in local evidence.
+- Updated the sandbox `risk_identification` as-of leakage test so
+  `as_of=2024-12-31` now expects the 2024Q3 period instead of the older 2023
+  annual period.
+- Rebuilt the 6-agent bundle again after refreshing `risk_identification`;
+  artifact: `/tmp/lma-6agent-ml-risk-current-l3-llm/20260618T081227Z`.
+- The refreshed risk output returned `status=ok`, `data_as_of=2024-10-26`,
+  `report_period=2024-09-30`, `risk_score=0.019`, confidence `0.765`, and a
+  public warning that MD&A text was unavailable so text `_hit` features were
+  zeroed.
+- The latest bundle remained L2 complete 6/6 and L3 complete 3/3. The risk L3
+  stayed `gate=pass` with composite `risk_score=0.1036`. The latest LLM report
+  validated with `status=complete`, 4 sections, 4 evidence cards, and 5
+  limitations.
+- Promoted the sandbox `value_ml_valuation` financial snapshot from a temporary
+  read-only dev-cache dependency to a service-owned CSV cache under
+  `data/cache/financial/`. The service now treats local cache files as
+  `available()` data and can read `fina_indicator_*.csv` / `income_*.csv`
+  alongside pickle snapshots.
+- Added service-owned 600519.SH financial CSV rows for 2024Q3 and 2024 annual
+  report. The as-of picker still selects 2024Q3 for `as_of=2024-12-31` because
+  the annual report has `ann_date=2025-04-03`.
+- Rebuilt the 6-agent bundle using the service-owned `value_ml_valuation`
+  financial CSV path and the refreshed `risk_identification` 2024Q3 snapshot;
+  artifact: `/tmp/lma-6agent-service-owned-cache-l3-llm/20260618T082145Z`.
+- The service-owned-cache bundle validated with L2 complete 6/6 and L3 complete
+  3/3. The default-off LLM report validated with `status=complete`, 5 sections,
+  7 evidence cards, and 5 limitations.
+- Focused `risk_crash` model-vintage validation passed:
+  `crash_risk_model/agent/tests/test_report_material.py` plus
+  `test_asof_leakage_probe.py` returned 8 passed. Direct handler validation
+  for `600519.SH`, `as_of=2024-12-31` returned `risk_score=0.2079`,
+  `confidence=0.62`, `feature_data_anti_lookahead_passed=true`, and
+  `model_vintage_caveat=true`; the main-system adapter preserved
+  `model_vintage_boundary` in `provenance.domain_metrics` and `drivers`.
+- Main-system adapter focused tests passed in both dev and sandbox main copies:
+  dev returned 35 passed and sandbox main returned 38 passed.
+- Main-system financial-fraud/macro report-material projection tests passed
+  after this extension: dev `test_fixed_dag_external_adapter.py` returned
+  36 passed, dev `test_fixed_dag_contracts.py` returned 36 passed, and sandbox
+  main `test_fixed_dag_external_adapter.py` + `test_fixed_dag_contracts.py`
+  returned 76 passed.
+- A direct sandbox material check called `risk_financial_fraud` app-layer
+  `compute_payload()` and `macro_analysis.compute_core()` directly, then mapped
+  both outputs through the sandbox main adapter into `report_input_bundle_v1`
+  and fallback `report_result_v1`. It did not use live HTTP, `/invoke`,
+  TestClient, or providers. Results: both mapped conclusions validated; the
+  bundle and fallback report validated; `risk_financial_fraud` entered
+  `l2_agent_outputs` with 4 `research_points`, 6 drivers, and 5 evidence items;
+  `macro_analysis` entered with 5 `research_points`, 10 drivers, and 8 evidence
+  items.
+- Rebuilt the 6-agent report after the L3 risk boundary change; artifact:
+  `/tmp/lma-6agent-risk-l3-boundary-l3-llm/20260618T084040Z`.
+  The run reused five mapped L2 artifacts, reran sandbox `risk_crash` by direct
+  handler, built deterministic L3 with `member_boundary_summary`, and ran
+  default-off `deepseek/deepseek-chat` report synthesis. It did not call live
+  agent HTTP or `/invoke`.
+- The rebuilt report validated with L2 complete 6/6 and L3 complete 3/3. The
+  final LLM report had `status=complete`, 5 sections, 9 evidence cards, and 7
+  limitations; it no longer used the old "training-data forward-looking" phrase
+  and explicitly surfaced the risk model-version boundary.
+
+### Not Done
+
+- No production service file was modified.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No live HTTP `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`
+  endpoint was called.
+- A direct `value_research_synthesis` handler smoke with the default current
+  date attempted its internal live quote lookup and received a sandbox network
+  permission warning; that smoke is not counted as live evidence.
+- No placeholder agent was treated as real evidence.
+- Full TestClient endpoint suites were not completed in this session. Direct
+  compute-core calls were fast, but in-process TestClient requests stalled in
+  the local Python 3.14 Starlette/httpx/anyio portal path and were interrupted,
+  so they are not counted as validation evidence.
+- `value_research_synthesis` needed one same-process direct retry in the
+  6-agent bundle because its first cold-start compute attempt can return the
+  service's own timeout downgrade.
+- Optional tracing export attempted by the provider stack returned a 403 during
+  the LLM report run; the report synthesis itself completed and validated.
+- The L3-enriched run still used direct mapped L2 artifacts and deterministic
+  main-system L3 builders; it did not call external L3 services or prove live
+  L3 `/invoke` readiness.
+- The earlier `value_ml_valuation` financial-cache validation used a read-only
+  dev external-agent cache path supplied through process environment. The
+  later service-owned-cache run no longer requires that env override, but
+  production still needs the same owned cache/data path copied, mounted, or
+  replaced by a formal data service feed.
+- The `risk_identification` 2024Q3 update is a sandbox snapshot enhancement
+  for 600519.SH only. It does not solve full-universe snapshot freshness or
+  provide 2024Q3 MD&A text; production should replace the local demo snapshot
+  through the service owner's data pipeline before readiness advancement.
+
 ## 2026-06-18 - Phase R8-13N provider validation record
 
 ### Changed

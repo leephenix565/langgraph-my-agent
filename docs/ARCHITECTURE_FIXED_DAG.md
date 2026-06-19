@@ -67,8 +67,8 @@ DAG topology and does not enable external invocation.
 | market_composite | L3 | market | market dimension composite |
 | risk_composite | L3 | risk | risk dimension composite |
 | macro_composite | L3 | macro | macro dimension composite |
-| decision_synthesizer | L4 | decision | integrated decision placeholder |
-| report_generator | L4 | report | final report placeholder |
+| decision_synthesizer | L4 | decision | deterministic decision seam; optional default-off compute overlay |
+| report_generator | L4 | report | deterministic report seam; optional default-off compute overlay |
 
 The company sentiment radar output route is `market_composite` only. Generic
 event flags may still exist in conclusion contracts, but the radar is not a
@@ -105,7 +105,12 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   `research_points` and `provenance.llm_explanation` to L3 outputs, but it must
   not change fusion fields such as `stance`, `confidence`, `gate`, `risk_score`,
   `dimension_weights`, member weights, status, or contributing agents.
-- L4 produces deterministic decision and report placeholders with stable fields.
+- L4 produces deterministic decision and report outputs with stable fields.
+  When the default-off external compute demo bridge is explicitly enabled and
+  the L4 ids are allowlisted, `decision_synthesizer` may overlay
+  `decision_result_v1` from a loopback compute service and `report_generator`
+  may overlay `report_result_v1`. This does not change runtime bindings, live
+  flags, or the compute-only boundary.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.

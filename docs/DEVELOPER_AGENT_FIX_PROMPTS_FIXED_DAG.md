@@ -1401,46 +1401,46 @@ G) 非声明：未调用 /invoke、未设置 live flags、未改 runtime binding
 ## PROMPT-PROD-L4-ADAPTER-DESIGN
 
 ```text
-你是 fixed DAG L4 adapter/runtime design 助手。
+你是 fixed DAG L4 decision/report 服务化验证助手。
 
 目标：
-为 decision_synthesizer 和 report_generator 设计未来 L4 adapter/runtime 或继续保持 deterministic seam。
+把 decision_synthesizer 和 report_generator 按正式 L4 agent 的身份接入 default-off /v1/agent/compute 验证路径。主系统 dev 已有 adapter/bridge/executor handoff；本 prompt 负责服务 owner 或主系统维护者做受控服务 evidence，而不是默认启用 runtime。
 
 背景：
-R8-8P 没有把 L4 当 production external L2 service。L4 涉及 decision_result_v1、report_result_v1 和 public transcript safety。
+R8-8P 没有把 L4 当 production external L2 service。R8-12D 先提供了主系统内部 default-off LLM report synthesis fallback。R8-13 L4 handoff 后，主系统可以在显式 demo flag + allowlist 下把 decision_synthesizer 映射为 decision_result_v1，把 report_generator 映射为 report_result_v1。L4 仍是 public transcript safety 边界；没有 production /health + /compute evidence 之前，matrix 状态仍是 production_l3_l4_deferred。
 
 适用 agent_id：
 decision_synthesizer, report_generator
 
 production endpoint：
-当前不适用；不要访问 production L4 endpoints。
+候选 loopback 端口为 decision_synthesizer=http://127.0.0.1:10025，report_generator=http://127.0.0.1:10026。只有在用户明确批准 controlled L4 smoke 时才访问；不要把 sandbox loopback 当生产默认 runtime。
 
 fixed DAG id 规则：
 decision_synthesizer 和 report_generator 保持 fixed DAG ids。
 
 external_agent_id 规则：
-未来 external id 只能作为 provenance，不得覆盖 primary id。
+external id 只能作为 provenance，不得覆盖 primary fixed DAG id。
 
 禁止项：
-不调用 /invoke；不改 runtime_bindings；不设置 live flags；不输出 raw graph messages、raw agent JSON、manager internals、provider raw responses；不把 L4 report raw text直接变成 public transcript。
+不调用 /invoke；不改 runtime_bindings；不设置 live_verified=true；不设置 invoke_enabled_by_default=true；不把 /compute evidence 当 /invoke evidence；不输出 raw graph messages、raw agent JSON、manager internals、provider raw responses、traceback、endpoint URLs 或 secret；不把 L4 report raw text 直接变成 public transcript。
 
 允许改动范围：
-设计文档、contract proposal、public-safety policy、sample fixtures、unit tests；实现需另开批准 phase。
+L4 service wrapper、compute-only request/response builder、contract tests、sample fixtures、public-safety policy、main-system adapter/contract tests、docs/changelog/ADR。runtime binding enablement 必须另开批准 phase。
 
 需要审计的文件：
-fixed_dag_contracts.py、public_mapping.py、public_api.py、docs/CONTRACTS.md、docs/FRONTEND_V2.md、current report/decision deterministic seams。
+fixed_dag_external_adapter.py、fixed_dag_external_compute_bridge.py、fixed_dag_executor.py、fixed_dag_contracts.py、fixed_dag_report_synthesizer.py、fixed_dag_l4_decision_synthesizer.py、public_mapping.py、public_contracts.py、docs/CONTRACTS.md、docs/FRONTEND_V2.md、current report/decision deterministic seams。
 
 需要修复的字段：
-本 prompt 是设计，不直接修字段。设计必须覆盖 decision/report schema、public-safe summary、provenance、redaction、status/failure behavior。
+decision_synthesizer 必须返回 decision_result_v1，包含 decision/action、confidence、rationale、dimension impacts、risk guard/override context、status、as_of/data_as_of。report_generator 必须返回 report_result_v1，包含 public-safe title、answer、sections、evidence_cards、limitations、status、as_of/data_as_of。所有字段都必须通过 main-system validator 和 unsafe-text filter。
 
 需要运行的本地测试：
-future phase 应跑 public API tests、adapter/contract tests、frontend public-safety tests。当前设计阶段不跑 live endpoints。
+py_compile；adapter mapping tests；bridge allowlist/context tests；executor overlay tests；public mapping tests；report_result/final_emit payload tests；frontend public type/build check if public fields changed。controlled service smoke 只在用户批准后运行 /health + /v1/agent/compute，禁止 /invoke。
 
 重新部署要求：
-无 production deployment；这是 main-system design 预备。
+如果是服务 owner 实现，必须提供服务 root、端口、启动命令、版本、health JSON、compute sample、contract test 结果。主系统 dev handoff 合入不等于 production deployment。
 
 production re-smoke 边界：
-未来 L4 phase 单独定义；当前禁止 /invoke 和 production L4 smoke。
+只允许 controlled /health + /v1/agent/compute + main-system adapter mapping。必须显式 allowlist decision_synthesizer/report_generator。禁止 /invoke；禁止改 runtime bindings；禁止设置 live flags。通过后仍只说明 L4 compute evidence，不自动进入 runtime enabled。
 
 最终回传格式：
 A) 修改范围

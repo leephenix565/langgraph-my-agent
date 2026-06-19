@@ -270,11 +270,23 @@ def _entity_relation_bundle(
 def _dimension_conclusion(entry: bridge.ExternalComputeDemoEntry, as_of: str) -> dict[str, Any]:
     members = (
         [
-            {"agent_id": "value_ml_valuation", "weight": 1.0, "stance": "positive", "confidence": 0.66},
+            {
+                "agent_id": "value_ml_valuation",
+                "weight": 1.0,
+                "stance": "positive",
+                "confidence": 0.66,
+                "status": "ok",
+            },
         ]
         if entry.agent_id == "value_composite"
         else [
-            {"agent_id": "market_stock_technical", "weight": 1.0, "stance": "neutral", "confidence": 0.61},
+            {
+                "agent_id": "market_stock_technical",
+                "weight": 1.0,
+                "stance": "neutral",
+                "confidence": 0.61,
+                "status": "ok",
+            },
         ]
     )
     return {
@@ -359,6 +371,54 @@ def _macro_conclusion(entry: bridge.ExternalComputeDemoEntry, as_of: str) -> dic
     }
 
 
+def _decision_result(as_of: str) -> dict[str, Any]:
+    return {
+        "schema": "decision_result_v1",
+        "schema_version": "decision_result_v1",
+        "decision": "defensive_observe",
+        "score": -0.18,
+        "target_price_range": {"low": None, "mid": None, "high": None},
+        "dimension_views": {
+            "value": {"stance": "positive", "confidence": 0.66, "status": "partial"},
+            "market": {"stance": "neutral", "confidence": 0.62, "status": "partial"},
+            "risk": {"stance": "risk_gate", "gate": "pass", "confidence": 0.73, "status": "complete"},
+            "macro": {"stance": "macro_regulator", "confidence": 0.69, "status": "complete"},
+        },
+        "reasoning_trace": [
+            {"stage": "dimension_induction", "summary": "估值样例信号偏正，市场样例信号偏中性。"},
+            {"stage": "macro_risk_adjustment", "summary": "风险门通过但宏观调节保持均衡。"},
+            {"stage": "conflict_resolution", "summary": "离线 fixture 不代表真实业务结论，因此维持防御观察。"},
+        ],
+        "confidence": 0.42,
+        "status": "partial",
+        "as_of": as_of,
+    }
+
+
+def _report_result(as_of: str) -> dict[str, Any]:
+    return {
+        "schema": "report_result_v1",
+        "schema_version": "report_result_v1",
+        "title": "R8-13A L4 离线研判报告",
+        "answer": (
+            "研判流程报告：L4 report_generator 离线 fixture 已读取结构化决策和报告输入，"
+            "生成 public-safe 中文报告。该报告只验证主系统 L4 handoff，不代表真实业务结论。"
+        ),
+        "status": "complete",
+        "sections": [
+            {
+                "id": "decision",
+                "title": "综合结论",
+                "content": "当前离线 fixture 维持防御观察，原因是证据来自 fake compute。",
+            }
+        ],
+        "evidence_cards": [
+            {"title": "L4 离线路径", "note": f"report_result_v1 mapped at as_of={as_of}。"}
+        ],
+        "limitations": ["离线 smoke fixture，不调用生产服务接口。"],
+    }
+
+
 def fake_invoke_external_compute(
     entry: bridge.ExternalComputeDemoEntry,
     *,
@@ -368,9 +428,23 @@ def fake_invoke_external_compute(
     timeout_seconds: float,
     agent_task: Mapping[str, Any] | None = None,
     upstream_outputs: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+    report_result: Mapping[str, Any] | None = None,
+    report_input_bundle: Mapping[str, Any] | None = None,
     transport: bridge.Transport | None = None,
 ) -> dict[str, Any]:
-    del question, request_id, timeout_seconds, upstream_outputs, transport
+    del (
+        question,
+        request_id,
+        timeout_seconds,
+        upstream_outputs,
+        dimension_results,
+        decision_result,
+        report_result,
+        report_input_bundle,
+        transport,
+    )
     if entry.expected_payload == "agent_conclusion_v1":
         tool_result = _l2_conclusion(entry, as_of)
     elif entry.expected_payload == "data_bundle_v1":
@@ -383,6 +457,10 @@ def fake_invoke_external_compute(
         tool_result = _risk_conclusion(entry, as_of)
     elif entry.expected_payload == "macro_conclusion_v1":
         tool_result = _macro_conclusion(entry, as_of)
+    elif entry.expected_payload == "decision_result_v1":
+        tool_result = _decision_result(as_of)
+    elif entry.expected_payload == "report_result_v1":
+        tool_result = _report_result(as_of)
     else:
         return {
             "agent_id": entry.agent_id,
@@ -435,6 +513,61 @@ def _summary_from_l3(dimension: str, item: Mapping[str, Any]) -> dict[str, Any]:
         "dimension_weights": item.get("dimension_weights"),
         "source": _source(item),
     }
+
+
+def _markdown_text(value: Any) -> str:
+    return str(value or "").strip()
+
+
+def _render_report_markdown(report: Mapping[str, Any], final_answer: Any) -> str:
+    """Render the full report_result_v1 as a human-readable artifact."""
+    title = _markdown_text(report.get("title")) or "Fixed DAG report"
+    status = _markdown_text(report.get("status"))
+    answer = _markdown_text(report.get("answer")) or _markdown_text(final_answer)
+    lines: list[str] = [f"# {title}"]
+    if status:
+        lines.extend(["", f"Status: `{status}`"])
+    if answer:
+        lines.extend(["", answer])
+
+    sections = report.get("sections", [])
+    if isinstance(sections, list) and sections:
+        lines.extend(["", "## Sections"])
+        for section in sections:
+            if not isinstance(section, Mapping):
+                continue
+            section_title = _markdown_text(section.get("title"))
+            section_id = _markdown_text(section.get("id"))
+            section_content = _markdown_text(section.get("content"))
+            heading = section_title or section_id or "Section"
+            if section_id and section_title:
+                heading = f"{section_title} (`{section_id}`)"
+            lines.extend(["", f"### {heading}"])
+            if section_content:
+                lines.extend(["", section_content])
+
+    evidence_cards = report.get("evidence_cards", [])
+    if isinstance(evidence_cards, list) and evidence_cards:
+        lines.extend(["", "## Evidence Cards"])
+        for card in evidence_cards:
+            if not isinstance(card, Mapping):
+                continue
+            card_title = _markdown_text(card.get("title")) or "Evidence"
+            note = _markdown_text(card.get("note"))
+            if note:
+                lines.append(f"- **{card_title}**: {note}")
+            else:
+                lines.append(f"- **{card_title}**")
+
+    limitations = report.get("limitations", [])
+    if isinstance(limitations, list) and limitations:
+        lines.extend(["", "## Limitations"])
+        for limitation in limitations:
+            text = _markdown_text(limitation)
+            if text:
+                lines.append(f"- {text}")
+
+    return "\n".join(lines).strip() + "\n"
 
 
 def _assert_no_forbidden_markers(payload: Mapping[str, Any]) -> None:
@@ -539,6 +672,7 @@ async def run_smoke(question: str, as_of: str, artifact_root: Path) -> dict[str,
             "status": report.get("status"),
             "answer": report.get("answer"),
             "sections": report.get("sections", []),
+            "evidence_cards": report.get("evidence_cards", []),
             "limitations": report.get("limitations", []),
         },
         "workflow_step_count": len(workflow_snapshot.get("stepResults", {}))
@@ -546,7 +680,12 @@ async def run_smoke(question: str, as_of: str, artifact_root: Path) -> dict[str,
         else 0,
         "final_answer": result.get("messages", [SimpleNamespace(content="")])[-1].content,
     }
+    final_report_markdown = _render_report_markdown(
+        report if isinstance(report, Mapping) else {},
+        summary["final_answer"],
+    )
     _assert_no_forbidden_markers(summary)
+    _assert_no_forbidden_markers({"final_report": final_report_markdown})
     _assert_no_forbidden_markers(agent_evidence_bundle if isinstance(agent_evidence_bundle, Mapping) else {})
     _assert_no_forbidden_markers(workflow_snapshot if isinstance(workflow_snapshot, Mapping) else {})
     artifact_root.mkdir(parents=True, exist_ok=True)
@@ -567,7 +706,7 @@ async def run_smoke(question: str, as_of: str, artifact_root: Path) -> dict[str,
         encoding="utf-8",
     )
     (artifact_root / "final_report.md").write_text(
-        str(summary["final_answer"]),
+        final_report_markdown,
         encoding="utf-8",
     )
     return summary
@@ -598,7 +737,7 @@ def main() -> int:
         f"{summary['provenance'].get('internal_llm_placeholder_conclusions', 0)}"
     )
     print("final_report:")
-    print(summary["final_answer"])
+    print(_render_report_markdown(summary["report_result"], summary["final_answer"]))
     return 0
 
 

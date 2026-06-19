@@ -25,6 +25,12 @@ model to read `report_input_bundle_v1` and write the final report. The model
 does not receive raw external responses or endpoint URLs, and failure falls
 back to the template report.
 
+The dev L4 handoff phase adds compute-only registry support for
+`decision_synthesizer` and `report_generator`. These two L4 ids can be included
+in an explicit demo allowlist when controlled sandbox L4 services are running.
+They remain default-off: this is not production runtime binding enablement and
+does not call external `/v1/agent/invoke`.
+
 ## Required Flags
 
 Both the boolean flag and the allowlist must be set. With only the boolean flag
@@ -70,6 +76,28 @@ Example experimental sandbox allowlist:
 ```bash
 EXTERNAL_COMPUTE_DEMO_ALLOWLIST=financial_data_service,entity_relation_extractor,macro_commodity_pricing,macro_index_valuation,value_traditional_valuation,value_ml_valuation,value_meta_valuation,value_research_synthesis,market_stock_technical,market_capital_flow_chip,sentiment_company_radar,risk_identification,risk_compliance_review,risk_financial_fraud,risk_crash,macro_analysis,value_composite,market_composite,risk_composite,macro_composite
 ```
+
+If testing the sandbox L4 services as well, append the L4 ids explicitly:
+
+```bash
+EXTERNAL_COMPUTE_DEMO_ALLOWLIST=...,decision_synthesizer,report_generator
+```
+
+Use this only for controlled local/sandbox validation. The L4 registry entries
+do not set live flags and do not make the demo bridge production-default.
+
+For sandbox/prod port comparison, individual demo endpoints may be overridden
+with loopback-only environment variables:
+
+```bash
+EXTERNAL_COMPUTE_DEMO_URL_VALUE_ML_VALUATION=http://127.0.0.1:19001
+EXTERNAL_COMPUTE_DEMO_URL_VALUE_COMPOSITE=http://127.0.0.1:19015
+```
+
+The override name is `EXTERNAL_COMPUTE_DEMO_URL_<AGENT_ID>`, where
+`<AGENT_ID>` is upper-case. The bridge still rejects non-loopback hosts and any
+path other than `/v1/agent/compute`; these variables are for controlled local
+port selection only, not production-default routing.
 
 Do not treat that allowlist as production readiness. In the latest audit,
 `macro_commodity_pricing` and `macro_index_valuation` have service-local
@@ -129,12 +157,17 @@ compute evidence exists:
 - `market_fund_manager_behavior`
 - `macro_sentiment`
 - `macro_industry_hotspot`
-- L4 agents
 
 R8-13H moves `financial_data_service`, `entity_relation_extractor`,
 `macro_commodity_pricing`, and `macro_index_valuation` into experimental
 default-off allowlist support. They still require separate controlled
 production re-smoke before docs may describe them as production pass.
+
+`decision_synthesizer` and `report_generator` now have dev main-system
+compute-only handoff support. They may be allowlisted only when a controlled
+loopback L4 service is intentionally running. A mapped external
+`report_generator` result is the final `report_result_v1` for that execution
+and should not be overwritten by the internal LLM report synthesis seam.
 
 `sentiment_company_radar` is market-only and must not be routed into risk.
 
@@ -152,6 +185,10 @@ The answer should be Chinese and should include:
 
 The answer must not expose raw JSON, endpoint URLs, secrets, tracebacks,
 chain-of-thought, or provider raw output.
+
+The smoke artifact `final_report.md` should render the full structured
+`report_result_v1`: title, status, answer, sections, evidence cards, and
+limitations.
 
 ## Non-Claims
 

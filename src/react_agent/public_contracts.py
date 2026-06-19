@@ -56,13 +56,21 @@ class EvidenceCardModel(PublicBaseModel):
     note: str = ""
 
 
+class ReportSectionModel(PublicBaseModel):
+    id: str
+    title: str
+    content: str
+
+
 class AnswerCardModel(PublicBaseModel):
     answer: str
     finalSource: FinalSource
     confidence: str | None = None
+    sections: List[ReportSectionModel] = Field(default_factory=list)
     citations: List[CitationModel] = Field(default_factory=list)
     evidenceCards: List[EvidenceCardModel] = Field(default_factory=list)
     evidenceCount: int | None = None
+    limitations: List[str] = Field(default_factory=list)
 
 
 class StructuredInputModel(PublicBaseModel):

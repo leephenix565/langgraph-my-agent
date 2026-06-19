@@ -20,10 +20,12 @@ from react_agent.fixed_dag_contracts import (
     AGENT_TASK_SCHEMA_VERSION,
     CONCLUSION_OBJECT_SCHEMA_VERSION,
     DATA_BUNDLE_SCHEMA_VERSION,
+    DECISION_RESULT_SCHEMA_VERSION,
     DIMENSION_COMPOSITE_AGENT_IDS,
     DIMENSION_COMPOSITE_SCHEMA_VERSION,
     ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
+    REPORT_RESULT_SCHEMA_VERSION,
     validate_agent_task,
 )
 from react_agent.fixed_dag_external_adapter import (
@@ -36,6 +38,32 @@ EXTERNAL_AGENT_REQUEST_SCHEMA_VERSION = "external_agent_request_v0"
 EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION = "external_agent_compute_v0"
 COMPUTE_PATH = "/v1/agent/compute"
 MAX_RESPONSE_BYTES = 2_000_000
+_UPSTREAM_UNSAFE_TEXT_TOKENS = (
+    "api_key",
+    "apikey",
+    "secret",
+    "token",
+    "password",
+    "authorization",
+    "cookie",
+    "set-cookie",
+    "endpoint",
+    "default_url",
+    "raw_response",
+    "raw_provider_response",
+    "raw_external_json",
+    "traceback",
+    "chain_of_thought",
+    "chain-of-thought",
+    "cot",
+)
+_UPSTREAM_RESEARCH_POINT_TEXT_KEYS = (
+    "claim",
+    "support",
+    "interpretation",
+    "decision_implication",
+    "caveat",
+)
 
 
 @dataclass(frozen=True)
@@ -82,7 +110,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "value_traditional_valuation": ExternalComputeDemoEntry(
         agent_id="value_traditional_valuation",
-        base_url="http://127.0.0.1:10000",
+        base_url=_demo_base_url("value_traditional_valuation", "http://127.0.0.1:10000"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="value",
@@ -90,7 +118,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "value_ml_valuation": ExternalComputeDemoEntry(
         agent_id="value_ml_valuation",
-        base_url="http://127.0.0.1:10001",
+        base_url=_demo_base_url("value_ml_valuation", "http://127.0.0.1:10001"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="value",
@@ -98,7 +126,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "value_meta_valuation": ExternalComputeDemoEntry(
         agent_id="value_meta_valuation",
-        base_url="http://127.0.0.1:10002",
+        base_url=_demo_base_url("value_meta_valuation", "http://127.0.0.1:10002"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="value",
@@ -106,7 +134,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "value_research_synthesis": ExternalComputeDemoEntry(
         agent_id="value_research_synthesis",
-        base_url="http://127.0.0.1:10006",
+        base_url=_demo_base_url("value_research_synthesis", "http://127.0.0.1:10006"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="value",
@@ -114,7 +142,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "market_stock_technical": ExternalComputeDemoEntry(
         agent_id="market_stock_technical",
-        base_url="http://127.0.0.1:10009",
+        base_url=_demo_base_url("market_stock_technical", "http://127.0.0.1:10009"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="market",
@@ -122,7 +150,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "market_capital_flow_chip": ExternalComputeDemoEntry(
         agent_id="market_capital_flow_chip",
-        base_url="http://127.0.0.1:10022",
+        base_url=_demo_base_url("market_capital_flow_chip", "http://127.0.0.1:10022"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="market",
@@ -130,7 +158,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "sentiment_company_radar": ExternalComputeDemoEntry(
         agent_id="sentiment_company_radar",
-        base_url="http://127.0.0.1:10020",
+        base_url=_demo_base_url("sentiment_company_radar", "http://127.0.0.1:10020"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="market",
@@ -138,7 +166,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "market_ipo_investor_behavior": ExternalComputeDemoEntry(
         agent_id="market_ipo_investor_behavior",
-        base_url="http://127.0.0.1:10008",
+        base_url=_demo_base_url("market_ipo_investor_behavior", "http://127.0.0.1:10008"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="market",
@@ -146,7 +174,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "risk_identification": ExternalComputeDemoEntry(
         agent_id="risk_identification",
-        base_url="http://127.0.0.1:10010",
+        base_url=_demo_base_url("risk_identification", "http://127.0.0.1:10010"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="risk",
@@ -154,7 +182,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "risk_compliance_review": ExternalComputeDemoEntry(
         agent_id="risk_compliance_review",
-        base_url="http://127.0.0.1:10011",
+        base_url=_demo_base_url("risk_compliance_review", "http://127.0.0.1:10011"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="risk",
@@ -162,7 +190,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "risk_financial_fraud": ExternalComputeDemoEntry(
         agent_id="risk_financial_fraud",
-        base_url="http://127.0.0.1:10013",
+        base_url=_demo_base_url("risk_financial_fraud", "http://127.0.0.1:10013"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="risk",
@@ -170,7 +198,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "risk_crash": ExternalComputeDemoEntry(
         agent_id="risk_crash",
-        base_url="http://127.0.0.1:10012",
+        base_url=_demo_base_url("risk_crash", "http://127.0.0.1:10012"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="risk",
@@ -178,7 +206,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "macro_analysis": ExternalComputeDemoEntry(
         agent_id="macro_analysis",
-        base_url="http://127.0.0.1:10014",
+        base_url=_demo_base_url("macro_analysis", "http://127.0.0.1:10014"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="macro",
@@ -187,7 +215,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "macro_commodity_pricing": ExternalComputeDemoEntry(
         agent_id="macro_commodity_pricing",
-        base_url="http://127.0.0.1:10004",
+        base_url=_demo_base_url("macro_commodity_pricing", "http://127.0.0.1:10004"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="macro",
@@ -196,7 +224,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
     ),
     "macro_index_valuation": ExternalComputeDemoEntry(
         agent_id="macro_index_valuation",
-        base_url="http://127.0.0.1:10003",
+        base_url=_demo_base_url("macro_index_valuation", "http://127.0.0.1:10003"),
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="macro",
@@ -235,6 +263,23 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
         dimension="macro",
         external_agent_id="macro_synthesis_service",
         default_target="CN_A_SHARE_MACRO",
+    ),
+    "decision_synthesizer": ExternalComputeDemoEntry(
+        agent_id="decision_synthesizer",
+        base_url=_demo_base_url("decision_synthesizer", "http://127.0.0.1:10025"),
+        compute_path=COMPUTE_PATH,
+        expected_payload=DECISION_RESULT_SCHEMA_VERSION,
+        dimension="l4",
+        external_agent_id="l4_decision_synthesizer",
+    ),
+    "report_generator": ExternalComputeDemoEntry(
+        agent_id="report_generator",
+        base_url=_demo_base_url("report_generator", "http://127.0.0.1:10026"),
+        compute_path=COMPUTE_PATH,
+        expected_payload=REPORT_RESULT_SCHEMA_VERSION,
+        dimension="l4",
+        external_agent_id="l4_report_generator",
+        timeout_seconds=120.0,
     ),
 }
 
@@ -277,6 +322,83 @@ def _target_for_entry(entry: ExternalComputeDemoEntry, question: str) -> str:
     return entry.default_target
 
 
+def _safe_context_value(value: Any, *, depth: int = 0) -> Any:
+    if depth > 4:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return value
+    if isinstance(value, str):
+        text = value.strip()
+        lowered = text.lower()
+        if any(
+            marker in lowered
+            for marker in (
+                "api_key",
+                "secret",
+                "password",
+                "authorization",
+                "cookie",
+                "endpoint",
+                "base_url",
+                "provider_endpoint",
+                "provider_url",
+                "raw_response",
+                "raw_provider_response",
+                "traceback",
+                "chain-of-thought",
+                "/v1/agent/invoke",
+                ".env",
+            )
+        ):
+            return None
+        return text[:1200]
+    if isinstance(value, Mapping):
+        safe: dict[str, Any] = {}
+        for key, raw in list(value.items())[:60]:
+            text_key = str(key or "").strip()
+            if not text_key:
+                continue
+            if text_key.lower() in {
+                "api_key",
+                "secret",
+                "token",
+                "password",
+                "authorization",
+                "cookie",
+                "endpoint",
+                "base_url",
+                "provider_endpoint",
+                "provider_url",
+                "invoke_url",
+                "raw_response",
+                "raw_provider_response",
+                "raw_external_json",
+                "traceback",
+            }:
+                continue
+            bounded = _safe_context_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                safe[text_key[:120]] = bounded
+        return safe or None
+    if isinstance(value, list):
+        items: list[Any] = []
+        for raw in value[:24]:
+            bounded = _safe_context_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                items.append(bounded)
+        return items or None
+    return str(value or "")[:300] or None
+
+
+def _safe_context_mapping(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        return {}
+    safe = _safe_context_value(value)
+    return dict(safe) if isinstance(safe, Mapping) else {}
+
+
 def validate_demo_entry(entry: ExternalComputeDemoEntry) -> tuple[bool, str]:
     """Validate that a demo entry can only target loopback compute endpoints."""
     parsed = urlsplit(entry.base_url)
@@ -305,6 +427,9 @@ def build_external_compute_request(
     request_id: str,
     agent_task: Mapping[str, Any] | None = None,
     upstream_outputs: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+    report_input_bundle: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Build a production compute request for an allowlisted demo agent."""
     target = _target_for_entry(entry, question)
@@ -336,7 +461,7 @@ def build_external_compute_request(
             "smoke": False,
             "demo": True,
             "environment": "production",
-            "allow_llm": False,
+            "allow_llm": entry.agent_id in {"decision_synthesizer", "report_generator"},
             "return_tool_result": True,
         },
     }
@@ -351,6 +476,18 @@ def build_external_compute_request(
     if safe_upstream_outputs:
         request["context"]["upstream_outputs"] = safe_upstream_outputs
         request["context"]["upstream_output_schema"] = "fixed_dag_mapped_outputs_v1"
+    if entry.agent_id == "decision_synthesizer":
+        safe_dimensions = _safe_context_mapping(dimension_results)
+        if safe_dimensions:
+            request["context"]["dimension_results"] = safe_dimensions
+            request["context"]["dimension_results_schema"] = "dimension_composite_result_map_v1"
+    if entry.agent_id == "report_generator":
+        safe_decision = _safe_context_mapping(decision_result)
+        safe_report_input = _safe_context_mapping(report_input_bundle)
+        if safe_decision:
+            request["context"]["decision_result"] = safe_decision
+        if safe_report_input:
+            request["context"]["report_input_bundle"] = safe_report_input
     return request
 
 
@@ -377,6 +514,142 @@ def _safe_evidence_items(value: Any, *, limit: int = 4) -> list[dict[str, Any]]:
         if safe_item:
             items.append(safe_item)
     return items
+
+
+def _contains_unsafe_upstream_text(value: Any) -> bool:
+    lowered = str(value or "").lower()
+    return any(token in lowered for token in _UPSTREAM_UNSAFE_TEXT_TOKENS)
+
+
+def _safe_upstream_string(value: Any, *, limit: int = 240) -> str:
+    if _contains_unsafe_upstream_text(value):
+        return ""
+    text = str(value or "").strip()
+    if len(text) <= limit:
+        return text
+    return text[: limit - 3] + "..."
+
+
+def _safe_upstream_detail_value(value: Any, *, depth: int = 0) -> Any:
+    if depth > 3:
+        return None
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, int | float):
+        return value
+    if isinstance(value, str):
+        return _safe_upstream_string(value, limit=240) or None
+    if isinstance(value, Mapping):
+        safe: dict[str, Any] = {}
+        for key, raw in list(value.items())[:16]:
+            field = _safe_upstream_string(key, limit=80)
+            if not field:
+                continue
+            bounded = _safe_upstream_detail_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                safe[field] = bounded
+        return safe or None
+    if isinstance(value, list | tuple):
+        items: list[Any] = []
+        for raw in list(value)[:16]:
+            bounded = _safe_upstream_detail_value(raw, depth=depth + 1)
+            if bounded not in (None, "", [], {}):
+                items.append(bounded)
+        return items or None
+    return _safe_upstream_string(value, limit=160) or None
+
+
+def _safe_upstream_detail_mapping(value: Any, *, limit: int = 16) -> dict[str, Any]:
+    if not isinstance(value, Mapping):
+        return {}
+    safe: dict[str, Any] = {}
+    for key, raw in value.items():
+        field = _safe_upstream_string(key, limit=80)
+        if not field:
+            continue
+        bounded = _safe_upstream_detail_value(raw)
+        if bounded not in (None, "", [], {}):
+            safe[field] = bounded
+        if len(safe) >= limit:
+            break
+    return safe
+
+
+def _safe_upstream_driver_details(value: Any, *, limit: int = 10) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    drivers: list[dict[str, Any]] = []
+    seen_names: set[str] = set()
+    for raw in value[:limit]:
+        if isinstance(raw, Mapping):
+            raw_name_values = [
+                raw.get(key)
+                for key in ("name", "driver", "type")
+                if raw.get(key) not in (None, "")
+            ]
+            safe_name = next(
+                (
+                    name
+                    for name in (
+                        _safe_upstream_string(raw.get("name"), limit=80),
+                        _safe_upstream_string(raw.get("driver"), limit=80),
+                        _safe_upstream_string(raw.get("type"), limit=80),
+                    )
+                    if name
+                ),
+                "",
+            )
+            if raw_name_values and not safe_name:
+                continue
+            name = safe_name or f"driver_{len(drivers) + 1}"
+            raw_value = (
+                raw.get("value")
+                if "value" in raw
+                else {
+                    key: item
+                    for key, item in raw.items()
+                    if key not in {"name", "driver", "type"}
+                }
+            )
+        else:
+            name = f"driver_{len(drivers) + 1}"
+            raw_value = raw
+        bounded = _safe_upstream_detail_value(raw_value)
+        if not name or name in seen_names or bounded in (None, "", [], {}):
+            continue
+        drivers.append({"name": name, "value": bounded})
+        seen_names.add(name)
+    return drivers
+
+
+def _safe_upstream_research_points(value: Any, *, limit: int = 8) -> list[dict[str, Any]]:
+    if not isinstance(value, list):
+        return []
+    points: list[dict[str, Any]] = []
+    for raw in value[:limit]:
+        if not isinstance(raw, Mapping):
+            continue
+        point: dict[str, Any] = {}
+        for key in _UPSTREAM_RESEARCH_POINT_TEXT_KEYS:
+            text = _safe_upstream_string(raw.get(key), limit=360)
+            if text:
+                point[key] = text
+        if raw.get("confidence") is not None:
+            confidence = _safe_upstream_detail_value(raw.get("confidence"))
+            if isinstance(confidence, int | float):
+                point["confidence"] = confidence
+        evidence_refs = raw.get("evidence_refs")
+        if isinstance(evidence_refs, list):
+            refs = [
+                _safe_upstream_string(item, limit=120)
+                for item in evidence_refs[:6]
+                if _safe_upstream_string(item, limit=120)
+            ]
+            if refs:
+                point["evidence_refs"] = refs
+        if point.get("claim") or point.get("support"):
+            points.append(point)
+    return points
 
 
 def _safe_upstream_output(agent_id: str, value: Any) -> dict[str, Any] | None:
@@ -406,6 +679,28 @@ def _safe_upstream_output(agent_id: str, value: Any) -> dict[str, Any] | None:
     if evidence:
         safe["evidence"] = evidence
     provenance = value.get("provenance")
+    if isinstance(provenance, Mapping):
+        domain_metrics = _safe_upstream_detail_mapping(
+            provenance.get("domain_metrics"),
+            limit=18,
+        )
+        if domain_metrics:
+            safe["domain_metrics"] = domain_metrics
+        drivers = _safe_upstream_driver_details(provenance.get("drivers"), limit=10)
+        if drivers:
+            safe["drivers"] = drivers
+        research_points = _safe_upstream_research_points(
+            provenance.get("research_points"),
+            limit=8,
+        )
+        if research_points:
+            safe["research_points"] = research_points
+        data_quality = _safe_upstream_detail_mapping(
+            provenance.get("data_quality"),
+            limit=14,
+        )
+        if data_quality:
+            safe["data_quality"] = data_quality
     if (
         "risk_score" not in safe
         and (
@@ -498,6 +793,9 @@ def invoke_external_compute(
     timeout_seconds: float,
     agent_task: Mapping[str, Any] | None = None,
     upstream_outputs: Mapping[str, Any] | None = None,
+    dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+    report_input_bundle: Mapping[str, Any] | None = None,
     transport: Transport | None = None,
 ) -> dict[str, Any]:
     """Call one allowlisted compute endpoint and map its response safely."""
@@ -511,6 +809,9 @@ def invoke_external_compute(
         request_id=request_id,
         agent_task=agent_task,
         upstream_outputs=upstream_outputs,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+        report_input_bundle=report_input_bundle,
     )
     try:
         response = (
@@ -555,6 +856,8 @@ def _timeout_from_context(context: Any, entry: ExternalComputeDemoEntry) -> floa
         return entry.timeout_seconds
     if timeout <= 0:
         return entry.timeout_seconds
+    if timeout == 20.0 and entry.timeout_seconds != 20.0 and "EXTERNAL_COMPUTE_DEMO_TIMEOUT_SECONDS" not in os.environ:
+        return entry.timeout_seconds
     return timeout
 
 
@@ -566,6 +869,8 @@ def _apply_mapped_result(
     entity_relation_bundle: dict[str, Any] | None,
     l2_conclusions: dict[str, Any],
     dimension_results: dict[str, Any],
+    decision_result: dict[str, Any],
+    report_result: dict[str, Any],
 ) -> tuple[bool, str]:
     schema = mapped.get("schema")
     if agent_id == "financial_data_service":
@@ -601,6 +906,20 @@ def _apply_mapped_result(
         dimension_results[dimension] = dict(mapped)
         return True, "ok"
 
+    if agent_id == "decision_synthesizer":
+        if schema != DECISION_RESULT_SCHEMA_VERSION:
+            return False, "mapped_decision_schema_mismatch"
+        decision_result.clear()
+        decision_result.update(dict(mapped))
+        return True, "ok"
+
+    if agent_id == "report_generator":
+        if schema != REPORT_RESULT_SCHEMA_VERSION:
+            return False, "mapped_report_schema_mismatch"
+        report_result.clear()
+        report_result.update(dict(mapped))
+        return True, "ok"
+
     return False, "unsupported_demo_agent"
 
 
@@ -614,6 +933,9 @@ def run_external_compute_for_plan(
     data_bundle: Mapping[str, Any] | None = None,
     entity_relation_bundle: Mapping[str, Any] | None = None,
     dimension_results: Mapping[str, Any] | None = None,
+    decision_result: Mapping[str, Any] | None = None,
+    report_result: Mapping[str, Any] | None = None,
+    report_input_bundle: Mapping[str, Any] | None = None,
     agent_tasks: Mapping[str, Any] | None = None,
     stages: tuple[str, ...] = ("l2_analysis", "dimension_composite"),
     transport: Transport | None = None,
@@ -633,11 +955,15 @@ def run_external_compute_for_plan(
         str(dimension): dict(value)
         for dimension, value in (dimension_results or {}).items()
     }
+    updated_decision = dict(decision_result or {})
+    updated_report = dict(report_result or {})
     result = {
         "data_bundle": updated_data_bundle,
         "entity_relation_bundle": updated_entity_relation_bundle,
         "l2_conclusions": updated_l2,
         "dimension_results": updated_dimensions,
+        "decision_result": updated_decision,
+        "report_result": updated_report,
         "step_updates": {},
         "called_agents": [],
         "mapped_agents": [],
@@ -684,6 +1010,9 @@ def run_external_compute_for_plan(
             timeout_seconds=timeout,
             agent_task=agent_task,
             upstream_outputs=upstream_outputs,
+            dimension_results=updated_dimensions if stage == "decision" else None,
+            decision_result=updated_decision if stage == "report" else None,
+            report_input_bundle=report_input_bundle if stage == "report" else None,
             transport=transport,
         )
         result["called_agents"].append(agent_id)
@@ -702,6 +1031,8 @@ def run_external_compute_for_plan(
             entity_relation_bundle=updated_entity_relation_bundle,
             l2_conclusions=updated_l2,
             dimension_results=updated_dimensions,
+            decision_result=updated_decision,
+            report_result=updated_report,
         )
         if not applied:
             warning = f"external_compute_demo_failed:{_safe_code(reason)}"
