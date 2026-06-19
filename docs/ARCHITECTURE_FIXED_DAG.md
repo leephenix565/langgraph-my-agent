@@ -110,7 +110,22 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   the L4 ids are allowlisted, `decision_synthesizer` may overlay
   `decision_result_v1` from a loopback compute service and `report_generator`
   may overlay `report_result_v1`. This does not change runtime bindings, live
-  flags, or the compute-only boundary.
+  flags, or the compute-only boundary. R8-13J provider-backed L4 compute pass
+  proves the external service contract, not default runtime readiness; R8-13L
+  keeps external L4 runtime binding review as a separate checklist-gated phase.
+  R8-13M adds a metadata-only L4 runtime dry run that can report missing
+  prerequisites without changing active graph behavior. R8-13N packages the
+  required runtime-review evidence as safe local metadata before any explicit
+  runtime-binding phase may be opened. R8-13O records the candidate package
+  with compute, transcript-safety, and rollback evidence passing while operator
+  approval remains pending. R8-13P preflights the binding phase and keeps
+  config edits blocked until runtime schema and executor support an external L4
+  compute-default path. R8-13Q adds that schema/executor support, switches only
+  the two L4 runtime bindings to `external_compute_default`, and validates a
+  controlled default run against production-source `/v1/agent/compute` ports
+  `10025`/`10026`. This L4 default path is compute-only, does not call
+  `/v1/agent/invoke`, and can be disabled for rollback/tests through
+  `disable_external_compute_default`.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.

@@ -58,7 +58,21 @@ This file is the reset branch operational map for Phase R8-12D.
   (`report_result_v1`). These L4 ids can be overlaid only through the explicit
   default-off external compute demo allowlist; this does not modify runtime
   bindings, set live flags, call `/v1/agent/invoke`, or make sandbox L4
-  services production-default.
+  services production-default. R8-13J verifies provider-backed production-source
+  L4 `/v1/agent/compute`, and R8-13K/R8-13L add transcript-safety and runtime
+  review gates, but the active runtime bindings still use the deterministic L4
+  seams as the default graph path. R8-13M adds a metadata-only
+  `build_l4_runtime_binding_dry_run` helper so maintainers can inspect future
+  L4 runtime prerequisites without editing runtime bindings. R8-13N adds a
+  local `build_l4_runtime_review_evidence_package` helper that packages safe
+  provider-compute, transcript-safety, rollback, and operator-approval evidence
+  before any explicit runtime-binding phase may be opened. R8-13O records the
+  current candidate evidence package and leaves operator approval as the only
+  remaining runtime-review evidence blocker. R8-13P adds a non-mutating phase
+  preflight and records that schema/executor support for an external L4
+  compute-default path is still required before any config edit. R8-13Q adds
+  that support and switches the two L4 runtime bindings to compute-only
+  external defaults on ports `10025` and `10026`.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
@@ -83,6 +97,10 @@ This file is the reset branch operational map for Phase R8-12D.
   R8-12C lets selected workflow step details render `agent_evidence` and
   `composite_evidence` when present, so the Web view can show the bounded
   public summaries that the report generator consumed.
+  R8-13Q changes only the L4 runtime default: `decision_synthesizer` and
+  `report_generator` are now compute-only external defaults backed by
+  production-source `/v1/agent/compute` services. This is not an invoke path and
+  does not enable external runtime defaults for L1, L2, or L3 services.
 
 ## Current Runtime Entry
 
@@ -169,6 +187,10 @@ Active skeleton properties:
 - No provider call on the default path.
 - No search call.
 - No external `/v1/agent/invoke` call.
+- L4 may call production-source `/v1/agent/compute` by default through the
+  approved R8-13Q `external_compute_default` bindings for
+  `decision_synthesizer` and `report_generator`; this can be disabled with
+  `disable_external_compute_default` / `DISABLE_EXTERNAL_COMPUTE_DEFAULT=1`.
 - No A01 contract consumption.
 - No mode-based Manager dispatch.
 - No Fair Fusion or baseline sidecar active graph branch.
@@ -184,8 +206,10 @@ Active skeleton properties:
   when `Context.enable_internal_llm_placeholders` /
   `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` is explicitly enabled. Provider failures
   fail soft to deterministic pending conclusions.
-- `fixed_dag_external_adapter.py` is not in the active graph path. It is an
-  offline pure mapping seam for later controlled external readiness work.
+- `fixed_dag_external_adapter.py` is active only for approved compute mappings:
+  the default-off demo bridge and the R8-13Q L4 `external_compute_default`
+  path. It is still not an `/invoke` client and it rejects unsafe public
+  payload material.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
   is registry evidence only and does not trigger provider or external calls.
 - R4-C isolates legacy aNN registry/bootstrap so active `react_agent.graph`

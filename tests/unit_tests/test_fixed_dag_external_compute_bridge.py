@@ -9,14 +9,17 @@ from react_agent.fixed_dag_contracts import (
     build_report_input_bundle,
     build_route_intent,
     compile_selected_fixed_dag_plan,
+    validate_report_input_bundle,
 )
 from react_agent.fixed_dag_external_compute_bridge import (
     COMPUTE_PATH,
     DEMO_COMPUTE_SERVICE_REGISTRY,
+    EXTERNAL_COMPUTE_DEFAULT_SOURCE,
     ExternalComputeDemoEntry,
     build_external_compute_request,
     invoke_external_compute,
     normalize_demo_allowlist,
+    runtime_compute_entries_from_bindings,
     run_external_compute_for_plan,
     validate_demo_entry,
 )
@@ -457,6 +460,8 @@ def test_build_l4_report_compute_request_allows_llm_and_carries_report_bundle() 
     assert request["options"]["allow_llm"] is True
     assert request["context"]["decision_result"]["decision"] == "defensive_observe"
     assert request["context"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+    valid_bundle, reason = validate_report_input_bundle(request["context"]["report_input_bundle"])
+    assert valid_bundle, reason
     assert "raw_provider_response" not in json.dumps(request, ensure_ascii=False).lower()
 
 
@@ -870,6 +875,8 @@ def test_run_external_compute_for_plan_can_overlay_l4_report_result() -> None:
     def transport(entry, request, _timeout):
         assert entry.agent_id == "report_generator"
         assert request["context"]["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+        valid_bundle, reason = validate_report_input_bundle(request["context"]["report_input_bundle"])
+        assert valid_bundle, reason
         return _compute_envelope(
             "report_generator",
             "l4_report_generator",
@@ -897,3 +904,43 @@ def test_run_external_compute_for_plan_can_overlay_l4_report_result() -> None:
     assert result["report_result"]["schema"] == "report_result_v1"
     assert result["report_result"]["sections"][0]["title"] == "综合结论"
     assert result["step_updates"]["report_generator"]["status"] == "complete"
+
+
+def test_runtime_default_compute_uses_non_demo_request_and_default_warning() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", "2026-06-05")
+    called_requests = []
+
+    def transport(entry, request, _timeout):
+        called_requests.append(request)
+        assert entry.agent_id == "decision_synthesizer"
+        return _compute_envelope(
+            "decision_synthesizer",
+            "l4_decision_synthesizer",
+            _data_bundle(),
+        )
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2026-06-05",
+        context=Context(),
+        l2_conclusions={},
+        dimension_results={},
+        decision_result=build_decision_result({}),
+        stages=("decision",),
+        allowlist_override=("decision_synthesizer",),
+        entry_registry=runtime_compute_entries_from_bindings(),
+        runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        transport=transport,
+    )
+
+    assert called_requests[0]["context"]["demo"] is False
+    assert called_requests[0]["context"]["runtime_default"] is True
+    assert called_requests[0]["options"]["demo"] is False
+    assert result["failed_agents"] == ["decision_synthesizer"]
+    assert result["warnings"] == [
+        "external_compute_default_failed:mapped_decision_schema_mismatch"
+    ]
+    assert result["step_updates"]["decision_synthesizer"]["warning"] == (
+        "external_compute_default_failed:mapped_decision_schema_mismatch"
+    )

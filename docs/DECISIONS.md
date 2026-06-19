@@ -3,6 +3,173 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-069: L4 Default Runtime Uses Compute-Only External Bindings
+
+Status: accepted for R8-13Q runtime enablement.
+
+Decision: `decision_synthesizer` and `report_generator` now use
+`external_compute_default` runtime bindings. The executor reads these bindings
+and calls the L4 services through `/v1/agent/compute` without enabling the
+default-off demo bridge and without calling `/v1/agent/invoke`.
+
+Reason: the L4 services were implemented and validated as compute-only
+decision/report services. Reusing invoke-oriented fields or the demo bridge as
+the default runtime path would blur the evidence boundary and make rollback
+unclear.
+
+Consequence: L4 default runtime is now controlled by `runtime_bindings.json`.
+`disable_external_compute_default` can disable the default path for tests or
+rollback while keeping deterministic L4 behavior available.
+
+Non-consequence: this does not enable `/v1/agent/invoke`, does not modify
+`.env`, and does not make non-L4 external candidates default runtime services.
+
+## ADR-068: L4 Runtime Binding Needs Schema and Executor Support Before Config Edit
+
+Status: accepted for R8-13P preflight.
+
+Decision: R8-13P adds `build_l4_runtime_binding_phase_plan` as a non-mutating
+preflight. Even with a fully ready runtime-review evidence package, the plan
+does not allow a direct edit to `config/fixed_dag/runtime_bindings.json`.
+Current runtime bindings only model deterministic L4 seams and disabled
+external HTTP candidates; they do not model an enabled external L4
+`/v1/agent/compute` default path.
+
+Reason: changing the JSON alone would either violate the existing validator or
+misuse invoke-oriented fields for compute-only L4 services. The correct next
+implementation phase must extend the runtime binding schema and teach the
+executor how to use an external compute default path for the two L4 ids.
+
+Consequence: the next implementation work is not a blind config edit. It is a
+scoped runtime schema/executor phase with rollback tests. The current preflight
+still reports `runtime_bindings_changed=false` and `config_edit_allowed=false`.
+
+Non-consequence: this does not call endpoints, does not edit `.env`, does not
+edit runtime bindings, does not set live/default flags, and does not enable
+external L4 by default.
+
+## ADR-067: R8-13O Candidate Evidence Still Requires Operator Approval
+
+Status: accepted for R8-13O evidence closure.
+
+Decision: R8-13O adds `build_l4_runtime_review_candidate_package` as the
+repo-recorded L4 runtime review evidence package. It marks provider compute
+evidence, transcript safety evidence, and rollback-plan evidence as passing
+based on current repository artifacts. It deliberately keeps
+`operator_approval` failing until a user explicitly approves opening a runtime
+binding phase.
+
+Reason: three of the four runtime-review prerequisites can be backed by current
+files and tests, but runtime binding approval is an operator decision. Treating
+a generic "continue" instruction as approval to edit runtime configuration would
+collapse the safety boundary established in R8-13L through R8-13N.
+
+Consequence: the project can now show a concrete candidate package whose only
+remaining blocker is `operator_approval_missing`. This makes the next gate
+clear without editing `config/fixed_dag/runtime_bindings.json`.
+
+Non-consequence: this does not call endpoints, does not modify `.env`, does not
+edit runtime bindings, does not set live/default flags, and does not make L4
+external services the default graph path.
+
+## ADR-066: L4 Runtime Review Evidence Package Is Required Before Binding Phase
+
+Status: accepted for R8-13N review packaging.
+
+Decision: R8-13N adds `fixed_dag_l4_runtime_review_evidence_package_v1` through
+`build_l4_runtime_review_evidence_package`. The package requires four safe
+evidence records before it can report
+`ready_for_explicit_runtime_binding_phase`: provider compute pass, transcript
+safety pass, rollback plan readiness, and operator approval. Each record must
+pass and include a safe artifact reference; unsafe text or missing references
+keep the package blocked.
+
+Reason: L4 provider-backed compute is now possible, but changing default runtime
+behavior requires a stricter handoff than an ad hoc checklist. The evidence
+package makes the review repeatable and prevents runtime binding changes from
+being justified by vague or unsafe evidence.
+
+Consequence: maintainers can assemble evidence without calling endpoints or
+editing config. The package embeds the R8-13M dry run and keeps the same
+non-actions: no endpoint call, no `.env` change, no runtime binding edit, no
+live flag change, and no default invoke change.
+
+Non-consequence: `ready_for_explicit_runtime_binding_phase` is not runtime
+approval and does not modify `config/fixed_dag/runtime_bindings.json`. A
+separate user-approved runtime-binding phase must still own any actual config
+edit.
+
+## ADR-065: L4 Runtime Binding Dry Run Is Metadata Only
+
+Status: accepted for R8-13M dry-run design.
+
+Decision: R8-13M adds `fixed_dag_l4_runtime_binding_dry_run_v1` through
+`build_l4_runtime_binding_dry_run`. The dry run reads current deterministic L4
+runtime bindings and produces a review plan for `decision_synthesizer` and
+`report_generator`, including proposed compute URLs, readiness booleans,
+blocking reasons, and next action. It never writes
+`config/fixed_dag/runtime_bindings.json` and always reports
+`runtime_bindings_changed=false`, `default_runtime_enabled=false`, and
+`invoke_endpoint_required=false`.
+Current L4 binding flags are explicitly scoped as
+`deterministic_internal_l4_seam`; proposed external L4 flags remain false in the
+dry-run output.
+
+Reason: after R8-13J/R8-13K/R8-13L, the project has provider-backed L4 compute
+evidence, transcript-safety regression tests, and a runtime review checklist.
+The next useful step is to make the future runtime review executable as a
+repeatable metadata check before any configuration edit.
+
+Consequence: maintainers can tell whether missing prerequisites are
+`provider_compute_pass`, `transcript_safety_pass`, `rollback_plan_ready`, or
+`operator_approval` without touching runtime config. Even when all booleans are
+true, the output is only `ready_for_runtime_binding_review`; a separate phase
+must still own any real runtime binding edit.
+
+Non-consequence: this does not call endpoints, does not modify `.env`, does not
+edit `config/fixed_dag/runtime_bindings.json`, does not set `live_verified=true`
+or `invoke_enabled_by_default=true`, does not call `/v1/agent/invoke`, and does
+not make external L4 services default graph dependencies.
+
+## ADR-064: L4 Provider Compute Pass Does Not Enable Runtime Binding
+
+Status: accepted for R8-13L runtime review preparation.
+
+Decision: R8-13J provider-backed `/v1/agent/compute` pass for
+`decision_synthesizer` and `report_generator` is accepted as L4 compute
+readiness evidence, but not as default runtime enablement. The active
+`runtime_bindings.json` rows for these ids remain deterministic L4 seams:
+`deterministic_decision` and `deterministic_report`, with no external agent id,
+environment variable, or default URL. Any future move to a default external L4
+runtime path requires a separate runtime-binding phase.
+
+Runtime review checklist:
+
+- public answer safety: mapped `report_result_v1.answer`, sections, evidence
+  cards, and limitations must remain free of raw provider output, secrets,
+  endpoint URLs, tracebacks, raw external JSON, and chain-of-thought markers;
+- workflow detail safety: public workflow step results must not expose provider
+  raw responses, endpoint URLs, credentials, or internal LLM drafts;
+- fallback and rollback: provider timeout, invalid JSON, unsafe output, or
+  adapter failure must fall back to deterministic L4 results without breaking
+  final answer emission;
+- operator control: runtime binding changes must be reviewable, reversible, and
+  scoped only to the two L4 ids;
+- provider hygiene: credentials stay in process environment or secret storage,
+  never in docs, logs, runtime bindings, public payloads, or test artifacts;
+- evidence separation: `/v1/agent/compute` evidence must not be described as
+  `/v1/agent/invoke` evidence.
+
+Consequence: R8-13K/R8-13L can strengthen tests and documentation while
+leaving active runtime behavior unchanged. Provider-backed L4 compute can be
+used only through explicit default-off allowlists until a later phase owns
+runtime binding edits.
+
+Non-consequence: this ADR does not call endpoints, does not modify `.env`, does
+not edit `config/fixed_dag/runtime_bindings.json`, does not set
+`live_verified=true`, does not set `invoke_enabled_by_default=true`, and does
+not make external L4 services default graph dependencies.
+
 ## ADR-063: L4 Decision And Report Agents Use Default-Off Compute Handoff Before Runtime Enablement
 
 Status: accepted for dev main-system handoff and controlled validation.
@@ -1779,3 +1946,36 @@ Non-consequence: R8-13N does not call external agent `/v1/agent/invoke`, does
 not change `runtime_bindings.json`, does not set `live_verified=true`, does not
 set `invoke_enabled_by_default=true`, does not make provider use default, does
 not store raw model output, and does not make placeholder agents real evidence.
+
+## ADR-063: R8-13Q Enables L4 Compute-Default Runtime Only
+
+Status: accepted for approved L4 runtime binding phase.
+
+Decision: R8-13Q introduces an explicit `external_compute_default` runtime kind
+for L4 services and switches only `decision_synthesizer` and `report_generator`
+to production-source `/v1/agent/compute` defaults on ports `10025` and
+`10026`. The executor first builds deterministic L4 fallback payloads, then
+uses the runtime binding to call the L4 compute service and accepts the result
+only after adapter validation. `invoke_enabled_by_default` remains false, and
+the runtime registry rejects `/v1/agent/invoke` URLs for this runtime kind.
+
+Reason: the L4 decision/report services now have provider-backed compute
+evidence, transcript-safety regression coverage, a rollback plan, and explicit
+operator approval to proceed with the runtime phase. A compute-only default
+lets the main system treat decision and report as formal L4 agents while still
+keeping the higher-risk `/invoke` path and all lower-layer external defaults
+out of scope.
+
+Consequence: default fixed-DAG runs may call production-source L4
+`/v1/agent/compute` services without enabling the R8-12 demo bridge. Workflow
+provenance records this as `external_compute_default_*`, not as public
+`external_invoked=true`. `Context.disable_external_compute_default` and
+`DISABLE_EXTERNAL_COMPUTE_DEFAULT=1` remain the rollback/test controls for
+restoring deterministic L4 behavior.
+
+Non-consequence: R8-13Q does not call `/v1/agent/invoke`, does not modify
+`.env`, does not enable any L1/L2/L3 external default, does not turn compute
+evidence into invoke evidence, does not claim incomplete upstream agents are
+production-complete, and does not expose raw provider output, credentials, raw
+graph messages, traceback text, endpoints, or chain-of-thought in public
+transcripts.

@@ -57,6 +57,7 @@ from react_agent.fixed_dag_llm_placeholders import (
 from react_agent.fixed_dag_runtime_registry import (
     annotate_step_result_with_binding,
     binding_by_agent_id,
+    external_compute_default_agent_ids,
 )
 
 FIXED_DAG_EXECUTION_SCHEMA_VERSION = "fixed_dag_execution_v1"
@@ -921,6 +922,19 @@ def execute_fixed_dag_plan(
     external_compute_demo_enabled = bool(
         getattr(context, "enable_external_compute_demo", False)
     )
+    external_compute_default_disabled = context is None or bool(
+        getattr(context, "disable_external_compute_default", False)
+    )
+    external_compute_default_ids = (
+        set()
+        if external_compute_default_disabled
+        else set(external_compute_default_agent_ids())
+    )
+    l4_compute_default_ids = external_compute_default_ids & {
+        "decision_synthesizer",
+        "report_generator",
+    }
+    external_l4_compute_default_enabled = bool(l4_compute_default_ids)
     llm_report_synthesis_enabled = bool(
         getattr(context, "enable_llm_report_synthesis", False)
     )
@@ -932,6 +946,12 @@ def execute_fixed_dag_plan(
     external_l3_run: Mapping[str, Any] = {}
     external_l4_decision_run: Mapping[str, Any] = {}
     external_l4_report_run: Mapping[str, Any] = {}
+    external_l4_compute_default_summary: Mapping[str, Any] = {
+        "called_agents": [],
+        "mapped_agents": [],
+        "failed_agents": [],
+        "warnings": [],
+    }
     external_demo_summary: Mapping[str, Any] = {
         "called_agents": [],
         "mapped_agents": [],
@@ -1051,7 +1071,50 @@ def execute_fixed_dag_plan(
         dimension_results=dimension_results,
         decision_result=decision_result,
     )
-    if external_compute_demo_enabled:
+    if "decision_synthesizer" in l4_compute_default_ids:
+        from react_agent.fixed_dag_external_compute_bridge import (  # noqa: PLC0415
+            EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+            merge_external_compute_demo_runs,
+            run_external_compute_for_plan,
+            runtime_compute_entries_from_bindings,
+        )
+
+        external_l4_decision_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            agent_tasks=agent_tasks,
+            stages=("decision",),
+            allowlist_override=("decision_synthesizer",),
+            entry_registry=runtime_compute_entries_from_bindings(),
+            runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        )
+        decision_result = cast(
+            dict[str, Any],
+            external_l4_decision_run.get("decision_result") or decision_result,
+        )
+        _apply_external_compute_step_updates(step_results, external_l4_decision_run)
+        external_l4_compute_default_summary = merge_external_compute_demo_runs(
+            external_l4_compute_default_summary,
+            external_l4_decision_run,
+        )
+        agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+        )
+    elif external_compute_demo_enabled:
         external_l4_decision_run = run_external_compute_for_plan(
             execution_plan,
             question=question,
@@ -1098,7 +1161,42 @@ def execute_fixed_dag_plan(
         question=question,
         report_input_bundle=report_input_bundle,
     )
-    if external_compute_demo_enabled:
+    if "report_generator" in l4_compute_default_ids:
+        from react_agent.fixed_dag_external_compute_bridge import (  # noqa: PLC0415
+            EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+            merge_external_compute_demo_runs,
+            run_external_compute_for_plan,
+            runtime_compute_entries_from_bindings,
+        )
+
+        external_l4_report_run = run_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+            decision_result=decision_result,
+            report_result=report_result,
+            report_input_bundle=report_input_bundle,
+            agent_tasks=agent_tasks,
+            stages=("report",),
+            allowlist_override=("report_generator",),
+            entry_registry=runtime_compute_entries_from_bindings(),
+            runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        )
+        report_result = cast(
+            dict[str, Any],
+            external_l4_report_run.get("report_result") or report_result,
+        )
+        _apply_external_compute_step_updates(step_results, external_l4_report_run)
+        external_l4_compute_default_summary = merge_external_compute_demo_runs(
+            external_l4_compute_default_summary,
+            external_l4_report_run,
+        )
+    elif external_compute_demo_enabled:
         report_result = _augment_report_with_external_compute_demo(
             report_result,
             l2_conclusions=l2_conclusions,
@@ -1197,6 +1295,17 @@ def execute_fixed_dag_plan(
             limitations.append(
                 "大模型报告综合开关已开启，但未生成有效报告，已回退到模板报告。"
             )
+    if external_l4_compute_default_enabled:
+        if external_l4_compute_default_summary.get("mapped_agents"):
+            limitations.append(
+                "L4 决策/报告已通过 runtime binding 默认 /compute 路径生成；"
+                "未调用 /v1/agent/invoke。"
+            )
+        else:
+            limitations.append(
+                "L4 runtime binding 默认 /compute 路径已启用，但未完成有效映射；"
+                "执行已回退到确定性 L4 结果。"
+            )
     if llm_l3_explanation_enabled:
         if llm_l3_explanation_used:
             limitations.append(
@@ -1234,6 +1343,17 @@ def execute_fixed_dag_plan(
                 or llm_l3_explanation_provider_invoked
             ),
             "external_invoked": False,
+            "external_compute_default_disabled": external_compute_default_disabled,
+            "external_compute_default_enabled": external_l4_compute_default_enabled,
+            "external_compute_default_called_agents": list(
+                external_l4_compute_default_summary.get("called_agents", [])
+            ),
+            "external_compute_default_mapped_agents": list(
+                external_l4_compute_default_summary.get("mapped_agents", [])
+            ),
+            "external_compute_default_failed_agents": list(
+                external_l4_compute_default_summary.get("failed_agents", [])
+            ),
             "internal_llm_placeholders_enabled": internal_placeholders_enabled,
             "internal_llm_placeholder_conclusions": internal_placeholder_count,
             "external_compute_demo_enabled": external_compute_demo_enabled,

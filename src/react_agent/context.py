@@ -151,6 +151,12 @@ class Context:
         default=20.0,
         metadata={"description": "Per-agent timeout for external compute demo calls."},
     )
+    disable_external_compute_default: bool = field(
+        default=False,
+        metadata={
+            "description": "Disable runtime-binding external compute defaults for tests or rollback."
+        },
+    )
     fixed_dag_as_of: str = field(
         default="",
         metadata={
@@ -200,6 +206,7 @@ class Context:
             "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
             "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
+            "disable_external_compute_default": "DISABLE_EXTERNAL_COMPUTE_DEFAULT",
             "enable_llm_report_synthesis": "ENABLE_LLM_REPORT_SYNTHESIS",
             "enable_llm_l3_explanation": "ENABLE_LLM_L3_EXPLANATION",
         }

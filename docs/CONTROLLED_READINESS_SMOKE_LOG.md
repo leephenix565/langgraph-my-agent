@@ -9,6 +9,220 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-19 - R8-13Q L4 runtime-binding default compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13Q |
+| Runtime path | `runtime_bindings.json` external L4 compute default |
+| Demo bridge enabled | no |
+| Agents called | `decision_synthesizer`, `report_generator` |
+| Endpoint calls | controlled `/v1/agent/compute` for L4 decision/report only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | yes, L4 rows only |
+| L4 live verification flag | yes, L4 compute-default smoke only |
+| `.env` changed | no |
+
+Result summary:
+
+| Field | Value |
+| --- | --- |
+| Execution validation | pass, `validate_dag_execution_result=ok` |
+| Default-called agents | `decision_synthesizer`, `report_generator` |
+| Default-mapped agents | `decision_synthesizer`, `report_generator` |
+| Failed agents | none |
+| Decision schema | `decision_result_v1` |
+| Decision | `research_hold` |
+| Decision status | `pending_implementation` |
+| Report schema | `report_result_v1` |
+| Report status | `complete` |
+| Report title | `贵州茅台(600519.SH) 固定流程投资研判报告` |
+| Report sections / evidence cards | 5 / 5 |
+
+Non-claims:
+
+- This did not call `/v1/agent/invoke`.
+- This did not modify `.env`.
+- The L4 `live_verified=true` fields mean the compute-default runtime smoke
+  passed for the two L4 `/v1/agent/compute` bindings only; they are not
+  `/invoke` evidence and do not apply to L1/L2/L3 services.
+- This did not expose raw provider output, credentials, endpoint URLs, raw graph
+  messages, traceback text, or chain-of-thought.
+- The public `external_invoked` transcript claim remains false; the runtime
+  compute-default evidence is recorded under bounded
+  `external_compute_default_*` provenance fields.
+
+## 2026-06-19 - R8-13J L4 provider-backed controlled compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13J |
+| Production service roots | `/sdb/dlut/prod/决策融合智能体`, `/sdb/dlut/prod/报告生成智能体` |
+| Production ports | `decision_synthesizer=10025`, `report_generator=10026` |
+| Endpoint calls | controlled `/health` and `/v1/agent/compute` for L4 decision/report only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider raw response stored | no |
+
+R8-13J restarts the production L4 service processes with provider credentials
+loaded from the existing production main-system `.env` into the process
+environment. The `.env` file itself was not modified and no credential values
+were printed. The smoke validates the provider-backed L4 compute path through
+the default-off main-system bridge and a direct metadata check.
+
+Health result:
+
+| Agent | Port | Source version | Health | Provider preflight |
+| --- | ---: | --- | --- | --- |
+| `decision_synthesizer` | 10025 | `0.1.0-production-source` | pass | `ok` |
+| `report_generator` | 10026 | `0.1.0-production-source` | pass | `ok` |
+
+Default-off bridge compute result:
+
+| Agent | Mapping | Result schema | Result status | Public result |
+| --- | --- | --- | --- | --- |
+| `decision_synthesizer` | pass | `decision_result_v1` | `partial` | `decision=manual_review`, `reasoning_trace` count 4 |
+| `report_generator` | pass | `report_result_v1` | `complete` | 5 sections, 5 evidence cards in the bridge smoke |
+
+Direct service metadata check:
+
+| Agent | Provider invoked | LLM output used | Warnings |
+| --- | --- | --- | ---: |
+| `decision_synthesizer` | true | true | 0 |
+| `report_generator` | true | true | 0 |
+
+Sanitized report result:
+
+- Title: `贵州茅台（600519.SH）综合研判报告（2026-06-19）`.
+- Final decision context: `manual_review`.
+- The report names the main conflict: positive value signal versus weaker
+  market signal, macro valuation pressure, and risk manual-review gate.
+- The report keeps limitations visible: no L1 real-time data path, incomplete
+  non-value dimensions, risk manual review, and default-off L4 compute boundary.
+
+Non-claims:
+
+- This does not call `/v1/agent/invoke`.
+- This does not set `live_verified=true`.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not modify `config/fixed_dag/runtime_bindings.json`.
+- This does not make the default graph path depend on L4 services.
+- This does not store raw provider output, credentials, endpoint URLs, or raw
+  graph messages in the repository.
+
+## 2026-06-19 - R8-13I L4 production-source controlled smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13I |
+| Production service roots | `/sdb/dlut/prod/决策融合智能体`, `/sdb/dlut/prod/报告生成智能体` |
+| Development candidate roots | `/sdb/dlut/sandbox/r8-13a/services/prod/决策融合智能体`, `/sdb/dlut/sandbox/r8-13a/services/prod/报告生成智能体` |
+| Production ports | `decision_synthesizer=10025`, `report_generator=10026` |
+| Development ports | `decision_synthesizer=8025`, `report_generator=8026` |
+| Endpoint calls | controlled `/health` and `/v1/agent/compute` for L4 decision/report only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider raw response stored | no |
+
+R8-13I formalizes the L4 service source under `/sdb/dlut/prod` and restarts
+the production ports from those service roots. The production services import
+the production main-system tree, with a minimal L4 helper backfill in
+`/sdb/dlut/prod/langgraph-my-agent/src/react_agent/`. Development candidate
+ports remain on the sandbox service roots.
+
+Health result:
+
+| Environment | Agent | Port | Source version | Health | Provider preflight |
+| --- | --- | ---: | --- | --- | --- |
+| production source | `decision_synthesizer` | 10025 | `0.1.0-production-source` | pass | `missing_credential` |
+| production source | `report_generator` | 10026 | `0.1.0-production-source` | pass | `missing_credential` |
+| development candidate | `decision_synthesizer` | 8025 | `0.1.0-sandbox` | pass | `missing_credential` |
+| development candidate | `report_generator` | 8026 | `0.1.0-sandbox` | pass | `missing_credential` |
+
+Compute + adapter mapping result:
+
+| Environment | Decision mapping | Report mapping | Decision status | Report status | Report shape | Notes |
+| --- | --- | --- | --- | --- | --- | --- |
+| production source ports 10025/10026 | pass | pass | `pending_implementation` | `pending_implementation` | 6 sections, 5 evidence cards | Provider credentials absent, so both services used deterministic fallback. |
+| development candidate ports 8025/8026 | pass | pass | `pending_implementation` | `pending_implementation` | 6 sections, 5 evidence cards | Same request path with loopback URL overrides. |
+
+Sanitized details:
+
+- `decision_synthesizer` mapped to `decision_result_v1`.
+- `report_generator` mapped to `report_result_v1`.
+- `report_input_bundle_v1` validation passed before each report request.
+- Production port process cwd now points at `/sdb/dlut/prod/决策融合智能体`
+  and `/sdb/dlut/prod/报告生成智能体`.
+- Development port process cwd remains under the sandbox service tree.
+
+Non-claims:
+
+- This does not call `/v1/agent/invoke`.
+- This does not set `live_verified=true`.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not modify `config/fixed_dag/runtime_bindings.json`.
+- This does not make the default graph path depend on L4 services.
+- This does not verify provider-backed LLM decision/report behavior, because
+  provider credentials were unavailable.
+
+## 2026-06-19 - R8-13H L4 service controlled smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | R8-13H |
+| Service roots | `/sdb/dlut/sandbox/r8-13a/services/prod/决策融合智能体`, `/sdb/dlut/sandbox/r8-13a/services/prod/报告生成智能体` |
+| Production candidate ports | `decision_synthesizer=10025`, `report_generator=10026` |
+| Development candidate ports | `decision_synthesizer=8025`, `report_generator=8026` |
+| Endpoint calls | controlled `/health` and `/v1/agent/compute` for L4 decision/report only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider raw response stored | no |
+
+R8-13H starts sandbox L4 service wrappers on both production-candidate and
+development-candidate loopback ports, then validates the default-off
+main-system compute bridge with an explicit L4 allowlist. The services are
+still sourced from sandbox directories, so this smoke is candidate-port
+evidence and not formal production service-source readiness.
+
+Health result:
+
+| Environment | Agent | Port | Health | Provider preflight |
+| --- | --- | ---: | --- | --- |
+| production candidate | `decision_synthesizer` | 10025 | pass | `missing_credential` |
+| production candidate | `report_generator` | 10026 | pass | `missing_credential` |
+| development candidate | `decision_synthesizer` | 8025 | pass | `missing_credential` |
+| development candidate | `report_generator` | 8026 | pass | `missing_credential` |
+
+Compute + adapter mapping result:
+
+| Environment | Decision mapping | Report mapping | Decision status | Report status | Notes |
+| --- | --- | --- | --- | --- | --- |
+| production candidate ports 10025/10026 | pass | pass | `pending_implementation` | `pending_implementation` | Provider credentials absent, so both services used deterministic fallback. |
+| development candidate ports 8025/8026 | pass | pass | `pending_implementation` | `pending_implementation` | Same request path with loopback URL overrides. |
+
+Sanitized details:
+
+- `decision_synthesizer` mapped to `decision_result_v1`.
+- `report_generator` mapped to `report_result_v1`.
+- `report_input_bundle_v1` validation passed before the L4 report request.
+- The mapped report contained 6 sections and 5 evidence cards in both runs.
+- The L4 report limitation states that the L4 report service is only running
+  through the explicit compute allowlist and does not change default runtime
+  configuration.
+
+Non-claims:
+
+- This does not call `/v1/agent/invoke`.
+- This does not set `live_verified=true`.
+- This does not set `invoke_enabled_by_default=true`.
+- This does not modify `config/fixed_dag/runtime_bindings.json`.
+- This does not make the default graph path depend on L4 services.
+- This does not prove formal production service-source readiness, because the
+  service roots remain under the sandbox tree.
+
 ## 2026-06-18 - R8-13N L3 explanation and report provider validation
 
 | Field | Value |

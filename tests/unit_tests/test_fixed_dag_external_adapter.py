@@ -1013,6 +1013,81 @@ def test_l4_report_compute_envelope_maps_to_report_result() -> None:
     _assert_safe_public_payload(mapped)
 
 
+def test_l4_provider_backed_report_rejects_raw_provider_artifacts() -> None:
+    payload = _compute_envelope(
+        {
+            "schema": "report_result_v1",
+            "schema_version": "report_result_v1",
+            "title": "固定 DAG 研判报告",
+            "answer": "研判流程报告：raw_provider_response should never reach transcript.",
+            "status": "complete",
+            "sections": [
+                {
+                    "id": "decision",
+                    "title": "综合结论",
+                    "content": "traceback endpoint secret",
+                }
+            ],
+            "evidence_cards": [
+                {"title": "L4 决策", "note": "api_key must_not_leak"}
+            ],
+            "limitations": ["显式计算白名单路径。"],
+        }
+    )
+    payload["agent_id"] = "report_generator"
+    payload["external_agent_id"] = "l4_report_generator"
+    payload["metadata"] = {
+        "provider_invoked": True,
+        "used_llm_report": True,
+        "raw_provider_response": "secret",
+    }
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "unsafe_report_result"
+    _assert_safe_public_payload(mapped)
+
+
+def test_l4_provider_backed_decision_rejects_raw_provider_artifacts() -> None:
+    payload = _compute_envelope(
+        {
+            "schema": "decision_result_v1",
+            "schema_version": "decision_result_v1",
+            "decision": "manual_review",
+            "score": 0.0,
+            "target_price_range": {"low": None, "mid": None, "high": None},
+            "dimension_views": {
+                "value": {"stance": "0.24", "confidence": 0.78, "status": "complete"}
+            },
+            "reasoning_trace": [
+                {
+                    "stage": "dimension_induction",
+                    "summary": "chain-of-thought raw_response should fail",
+                },
+                {"stage": "macro_risk_adjustment", "summary": "宏观压力。"},
+                {"stage": "conflict_resolution", "summary": "人工复核。"},
+            ],
+            "confidence": 0.0,
+            "status": "partial",
+            "as_of": "2026-06-19",
+        }
+    )
+    payload["agent_id"] = "decision_synthesizer"
+    payload["external_agent_id"] = "l4_decision_synthesizer"
+    payload["metadata"] = {
+        "provider_invoked": True,
+        "used_llm_decision": True,
+        "provider_endpoint": "https://example.invalid",
+    }
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "unsafe_decision_result"
+    _assert_safe_public_payload(mapped)
+
+
 def test_risk_gate_member_maps_to_validator_legal_conclusion() -> None:
     model_vintage_boundary = {
         "feature_data_anti_lookahead_passed": True,

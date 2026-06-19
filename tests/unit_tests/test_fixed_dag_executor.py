@@ -2,6 +2,8 @@ import copy
 import json
 from types import SimpleNamespace
 
+import pytest
+
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     MACRO_AGENT_IDS,
@@ -9,6 +11,7 @@ from react_agent.fixed_dag_contracts import (
     RESET_RUNTIME_AGENT_IDS,
     RISK_AGENT_IDS,
     VALUE_AGENT_IDS,
+    build_decision_result,
     build_default_fixed_dag_plan,
     build_report_input_bundle,
     build_report_result,
@@ -29,6 +32,11 @@ from react_agent.fixed_dag_executor import (
 from react_agent.fixed_dag_external_adapter import (
     map_external_response_to_fixed_dag_object,
 )
+
+
+@pytest.fixture(autouse=True)
+def _disable_external_compute_default_for_unit_tests(monkeypatch):
+    monkeypatch.setenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", "1")
 
 
 def _plan():
@@ -588,6 +596,82 @@ def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) ->
     assert result["provenance"]["external_compute_demo_called_agents"] == []
     assert result["provenance"]["external_invoked"] is False
     assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "pending_implementation"
+
+
+def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    monkeypatch.delenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+    called = []
+
+    def fake_invoke(entry, **kwargs):
+        called.append((entry.agent_id, kwargs.get("demo")))
+        if entry.agent_id == "decision_synthesizer":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "decision_synthesizer",
+                    "l4_decision_synthesizer",
+                    {
+                        **build_decision_result({}, as_of="2026-06-04"),
+                        "decision": "manual_review",
+                        "status": "partial",
+                    },
+                )
+            )
+        elif entry.agent_id == "report_generator":
+            assert kwargs["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "report_generator",
+                    "l4_report_generator",
+                    {
+                        **build_report_result(
+                            build_decision_result({}, as_of="2026-06-04"),
+                            question="q",
+                        ),
+                        "title": "外部 L4 默认报告",
+                        "answer": "外部 L4 默认 /compute 已生成报告。",
+                        "status": "complete",
+                    },
+                )
+            )
+        else:
+            raise AssertionError(f"unexpected runtime default agent {entry.agent_id}")
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(),
+    )
+    valid, reason = validate_dag_execution_result(result)
+
+    assert valid, reason
+    assert called == [
+        ("decision_synthesizer", False),
+        ("report_generator", False),
+    ]
+    assert result["provenance"]["external_compute_demo_enabled"] is False
+    assert result["provenance"]["external_compute_default_enabled"] is True
+    assert result["provenance"]["external_compute_default_mapped_agents"] == [
+        "decision_synthesizer",
+        "report_generator",
+    ]
+    assert result["provenance"]["external_invoked"] is False
+    assert result["decision_result"]["decision"] == "manual_review"
+    assert result["report_result"]["title"] == "外部 L4 默认报告"
+    assert result["step_results"]["decision_synthesizer"]["status"] == "complete"
+    assert result["step_results"]["report_generator"]["status"] == "complete"
+    assert "external_compute_default_runtime_binding" in result["step_results"]["report_generator"]["warnings"]
 
 
 def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:

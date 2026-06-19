@@ -103,6 +103,52 @@ in dev.
   services now expose top-level `agent_conclusion_v1.stance` in addition to
   `normalized.stance`, so their production compute outputs map as usable value
   evidence instead of `direction_stance_missing` adapter errors.
+- R8-13H adds controlled L4 candidate-port evidence for sandbox-sourced
+  `decision_synthesizer` and `report_generator` services on production
+  candidate ports `10025`/`10026` and dev candidate ports `8025`/`8026`.
+  This is `/health` + `/v1/agent/compute` evidence only, uses deterministic
+  fallback because provider credentials were unavailable, and does not promote
+  either L4 service to production readiness.
+- R8-13I formalizes production service roots for L4 decision/report under
+  `/sdb/dlut/prod`, restarts production ports `10025`/`10026` from those roots,
+  and verifies production-source `/health` + `/v1/agent/compute` + adapter
+  mapping. Provider credentials were still unavailable, so LLM-backed L4
+  behavior remains deferred and runtime bindings remain unchanged.
+- R8-13J restarts production L4 services with provider credentials loaded into
+  the process environment, verifies `llm_preflight_status=ok`, and validates
+  provider-backed L4 `/v1/agent/compute` for decision and report. Runtime
+  bindings and live flags remain unchanged, and `/v1/agent/invoke` is still out
+  of scope.
+- R8-13K completes the L4 runtime/public-transcript audit without calling
+  endpoints. It adds regression coverage that provider-backed L4 outputs
+  containing raw provider artifacts, secrets, endpoints, tracebacks, raw
+  external JSON, or chain-of-thought markers are rejected by the adapter before
+  public transcript emission.
+- R8-13L adds the L4 runtime binding review checklist and a runtime-registry
+  regression proving that `decision_synthesizer` and `report_generator` remain
+  deterministic L4 seams in `runtime_bindings.json`, with no external agent id,
+  env var, or default URL.
+- R8-13M adds a metadata-only L4 runtime binding dry run for
+  `decision_synthesizer` and `report_generator`. It can report proposed
+  production compute URLs, missing runtime-review prerequisites, and next
+  action, but it never edits `runtime_bindings.json` or enables external L4 by
+  default.
+- R8-13N adds a safe local L4 runtime review evidence package. It requires
+  provider-compute evidence, transcript-safety evidence, rollback-plan evidence,
+  and operator approval before recommending that a separate runtime-binding
+  phase be opened.
+- R8-13O records the current L4 runtime-review candidate package. Provider
+  compute, transcript safety, and rollback plan evidence pass; operator
+  approval remains pending, so runtime binding stays deferred.
+- R8-13P preflights the actual runtime binding phase and finds that a direct
+  JSON edit is not valid yet: the runtime schema/executor must first support an
+  external L4 compute-default path.
+- R8-13Q completes that approved L4 runtime phase for the two L4 services only:
+  `decision_synthesizer` and `report_generator` now use
+  `external_compute_default` runtime bindings pointed at production-source
+  `/v1/agent/compute` ports `10025`/`10026`. The executor calls those compute
+  endpoints without enabling the demo bridge, still never calls
+  `/v1/agent/invoke`, and keeps non-L4 runtime bindings unchanged.
 
 ## R8-12 Demo Bridge Allowlist Boundary
 
@@ -138,8 +184,16 @@ Excluded from the demo allowlist until a later remediation or design phase:
 - `macro_index_valuation`
 - `macro_sentiment`
 - `macro_industry_hotspot`
+
+Optional controlled L4 allowlist after R8-13J:
+
 - `decision_synthesizer`
 - `report_generator`
+
+These L4 services must be run in explicit `decision` / `report` bridge stages.
+After R8-13Q they are also the only approved `external_compute_default` runtime
+bindings. This default path is still compute-only and does not imply
+`/v1/agent/invoke` enablement for L4 or any lower-layer service.
 
 ## Production Coverage Summary
 
@@ -148,16 +202,16 @@ Excluded from the demo allowlist until a later remediation or design phase:
 | Total fixed DAG agents | 27 | Full catalog roster |
 | External-service candidates | 20 | L1 evidence services and L2 analysis services |
 | Production endpoint known | 19 | Confirmed production listener or production port/cwd |
-| Production health pass | 18 | Latest matrix count across production candidates with structured health, including L3 evidence |
-| Production compute pass | 18 | Production `/v1/agent/compute` HTTP 2xx structured JSON across current evidence set |
-| Production adapter mapping pass | 17 | 13 L1/L2 candidates plus 4 L3 composites mapped through provider-free adapter |
+| Production health pass | 20 | Latest matrix count across production candidates with structured health, including L3 and L4 production-source evidence |
+| Production compute pass | 20 | Production `/v1/agent/compute` HTTP 2xx structured JSON across current evidence set, including L4 provider-backed compute |
+| Production adapter mapping pass | 19 | 13 L1/L2 candidates, 4 L3 composites, and 2 L4 production-source provider-backed results mapped through the adapter |
 | Controlled production invoke pass | 5 | R8-11B tiny allowlist with `allow_llm=false` and adapter mapping pass |
 | Production failed bucket | 7 | Remaining failed/deferred production items in the current matrix, excluding internal deterministic/L4 |
 | Production endpoint missing | 1 | `entity_relation_extractor` remains without confirmed production compute evidence in this matrix |
 | Production semantic deferred | 3 | Not safe to force into L2 production mapping |
 | Production identity mismatch | 1 | `market_fund_manager_behavior` remains unresolved |
 | Internal deterministic | 1 | `route_planner` |
-| L4 production deferred | 2 | Decision/report have dev main-system default-off compute handoff, but no accepted production L4 service evidence |
+| L4 compute-default runtime enabled | 2 | Decision/report are the only `external_compute_default` bindings; both use production-source `/v1/agent/compute`, not `/v1/agent/invoke` |
 | Production invoke audit candidates | 17 | Based only on production health + compute + adapter mapping pass |
 
 Layer coverage:
@@ -170,7 +224,7 @@ Layer coverage:
 | L2 risk | 4/4 production adapter pass |
 | L2 macro | 1/5 production adapter pass; commodity failed and three macro candidates remain deferred |
 | L3 | 4/4 production adapter pass; compute evidence only, no active runtime enablement |
-| L4 | 0/2 external production readiness; dev main-system default-off compute handoff exists, with deterministic fallback and no runtime/live enablement |
+| L4 | 2/2 production-source provider-backed compute/adapter pass; R8-13Q enables compute-default runtime for L4 only, with `/v1/agent/invoke` still disabled |
 
 ## Production Health+Compute+Adapter Pass Candidates
 
@@ -647,40 +701,54 @@ payload pass.
 
 ### decision_synthesizer
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external service; deterministic internal
-  seam remains.
-- Problem type: production L4 external service readiness still deferred.
-- Failure reason: dev main-system adapter/bridge handoff exists, but no
-  production external L4 `/health` + `/v1/agent/compute` evidence has been
-  accepted.
-- Impact: no external production L4 evidence.
-- Solution: run controlled L4 compute smoke only after the L4 service owner path
-  is ready, then review runtime binding separately.
-- Service owner action: provide controlled loopback L4 service evidence when
-  ready.
-- Main-system maintainer action: keep deterministic fallback and default-off
-  bridge boundary.
-- Retest method: future controlled L4 `/health` + `/v1/agent/compute` smoke; no
+- Current status: `production_l4_external_compute_default_enabled`.
+- Production test result: R8-13J controlled production-source smoke passed for
+  `/health` and provider-backed `/v1/agent/compute` on production port `10025`.
+  R8-13Q then validated the default runtime path through the
+  `external_compute_default` binding on production port `10025`.
+- Problem type: L4 compute-default runtime is enabled; `/v1/agent/invoke`
+  remains disabled and lower-layer runtime bindings remain out of scope.
+- Failure reason: none for the L4 compute-default smoke; the current smoke
+  produced a conservative `research_hold` decision because upstream evidence is
+  still incomplete.
+- Impact: the default fixed-DAG run now obtains `decision_result_v1` from the
+  production-source L4 compute service when external compute default is not
+  disabled by context/env rollback.
+- Solution: keep the compute-only runtime boundary and continue improving
+  upstream L1/L2/L3 evidence before interpreting L4 decisions as final
+  production investment judgments.
+- Service owner action: maintain production-owned L4 service source/runbook and
+  provider configuration hygiene.
+- Main-system maintainer action: keep `external_compute_default` limited to L4
+  and preserve deterministic rollback via `disable_external_compute_default`.
+- Retest method: controlled L4 runtime-default `/v1/agent/compute` smoke; no
   `/v1/agent/invoke`.
 - Prompt: `PROMPT-PROD-L4-ADAPTER-DESIGN`.
 
 ### report_generator
 
-- Current status: `production_l3_l4_deferred`.
-- Production test result: not tested as external service; deterministic internal
-  seam remains.
-- Problem type: production L4 external service readiness still deferred.
-- Failure reason: dev main-system adapter/bridge handoff exists, but no
-  production external L4 report service evidence has been accepted.
-- Impact: no external production L4 evidence.
-- Solution: run controlled L4 compute smoke only after the report service owner
-  path is ready, then review runtime binding separately.
-- Service owner action: provide public-safe `report_result_v1` service evidence
-  when ready.
-- Main-system maintainer action: keep deterministic fallback, public transcript
-  safety, and default-off bridge boundary.
-- Retest method: future controlled L4 `/health` + `/v1/agent/compute` smoke; no
+- Current status: `production_l4_external_compute_default_enabled`.
+- Production test result: R8-13J controlled production-source smoke passed for
+  `/health` and provider-backed `/v1/agent/compute` on production port `10026`.
+  R8-13Q then validated the default runtime path through the
+  `external_compute_default` binding on production port `10026`.
+- Problem type: L4 compute-default runtime is enabled; `/v1/agent/invoke`
+  remains disabled and public transcript safety still depends on adapter
+  validation.
+- Failure reason: none for the L4 compute-default smoke; the current report
+  explicitly says evidence is insufficient where upstream bundles are thin.
+- Impact: the default fixed-DAG run now obtains `report_result_v1` from the
+  production-source L4 compute service when external compute default is not
+  disabled by context/env rollback.
+- Solution: keep the compute-only runtime boundary, preserve public-safe
+  transcript validation, and improve upstream evidence thickness before
+  judging report quality.
+- Service owner action: maintain production-owned `report_result_v1` service
+  source/runbook and provider configuration hygiene.
+- Main-system maintainer action: keep `external_compute_default` limited to L4,
+  preserve deterministic rollback, and keep unsafe provider artifacts out of
+  public workflow/report payloads.
+- Retest method: controlled L4 runtime-default `/v1/agent/compute` smoke; no
   `/v1/agent/invoke`.
 - Prompt: `PROMPT-PROD-L4-ADAPTER-DESIGN`.
 
@@ -713,8 +781,8 @@ payload pass.
 | `market_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10023` | pass | pass | pass | `production_compute_pass` | L3 compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10016` | pass | pass | pass | `production_compute_pass` | L3 risk gate compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10024` | pass | pass | pass | `production_compute_pass` | L3 macro regulator compute evidence only, no invoke/default runtime | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
-| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | `127.0.0.1:10025` | skipped | skipped | skipped | `production_l3_l4_deferred` | Dev main-system compute handoff exists; no accepted production L4 compute evidence | Controlled L4 compute smoke when service owner path is ready | Keep deterministic fallback and default-off bridge | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
-| `report_generator` | L4 | l4 | `report_result_v1` | `127.0.0.1:10026` | skipped | skipped | skipped | `production_l3_l4_deferred` | Dev main-system compute handoff exists; no accepted production L4 report evidence | Controlled L4 compute smoke when service owner path is ready | Keep deterministic fallback and default-off bridge | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
+| `decision_synthesizer` | L4 | l4 | `decision_result_v1` | `127.0.0.1:10025` | pass | pass | pass | `production_l4_external_compute_default_enabled` | R8-13J production-source provider-backed compute passed; R8-13K/R8-13L/R8-13M/R8-13N/R8-13O/R8-13P completed transcript, evidence, rollback, and schema preflight gates; R8-13Q switches this L4 row to `external_compute_default` and validates controlled default `/v1/agent/compute` execution | Keep compute-only L4 runtime default monitored; improve upstream evidence before relying on decision quality | `/v1/agent/invoke` remains disabled; deterministic rollback available via `disable_external_compute_default` | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
+| `report_generator` | L4 | l4 | `report_result_v1` | `127.0.0.1:10026` | pass | pass | pass | `production_l4_external_compute_default_enabled` | R8-13J production-source provider-backed compute passed; R8-13K/R8-13L/R8-13M/R8-13N/R8-13O/R8-13P completed transcript, evidence, rollback, and schema preflight gates; R8-13Q switches this L4 row to `external_compute_default` and validates controlled default `/v1/agent/compute` execution | Keep compute-only L4 runtime default monitored; improve upstream report materials before judging final report richness | `/v1/agent/invoke` remains disabled; deterministic rollback available via `disable_external_compute_default` | `PROMPT-PROD-L4-ADAPTER-DESIGN` |
 
 ## Developer Execution Order
 
@@ -743,7 +811,8 @@ P2 work should not be forced into L2:
 
 1. `macro_index_valuation`: owner decision on macro semantics.
 2. `macro_sentiment` and `macro_industry_hotspot`: L2 vs L3 classification.
-3. L4 adapter/runtime design for decision and report.
+3. L4 runtime-default monitoring after R8-13Q; this is compute-only L4 default
+   execution, not `/v1/agent/invoke` enablement.
 
 ## Dev Historical Evidence Appendix
 

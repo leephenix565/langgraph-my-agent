@@ -27,6 +27,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | R8-8P-DOCS-QA production remediation prompt catalog with copy-ready Chinese Codex / Claude Code prompts for service owners and maintainers. |
 | `docs/DEMO_EXTERNAL_COMPUTE_DAG_RUNBOOK.md` | R8-12 default-off external compute demo runbook: flags, allowlist, API/Web launch commands, and non-claims. |
 | `docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md` | R8-12B local remote-agent demo runbook: SSH tunnel helpers, local API/Web startup, security boundaries, troubleshooting, and shutdown. |
+| `docs/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md` | R8-13O/R8-13P L4 runtime review evidence package and phase preflight, retained with the R8-13Q post-approval compute-default runtime status. |
 | `docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md` | R8-13D sandbox demo trace and L3 production backfill handoff package: patch inventory, service-by-service modification summary, safe apply procedure, validation, rollback, and non-claims. |
 | `docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md` | R8-13E production L3 backfill and controlled smoke record: changed service files, backup path, restart result, `/health` + `/compute` evidence, rollback, and non-claims. |
 | `docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md` | R8-13F end-to-end production compute trace QA: agent_task/evidence bundle propagation, L3 upstream outputs, mapped agents, final report behavior, and remaining remediation. |

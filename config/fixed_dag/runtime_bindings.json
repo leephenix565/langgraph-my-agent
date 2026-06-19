@@ -467,35 +467,35 @@
     },
     {
       "agent_id": "decision_synthesizer",
-      "runtime_kind": "deterministic_decision",
-      "implementation_status": "deterministic_skeleton",
-      "invoke_enabled_by_default": true,
+      "runtime_kind": "external_compute_default",
+      "implementation_status": "external_compute_default_enabled",
+      "invoke_enabled_by_default": false,
       "live_verified": true,
       "legacy_agent_id": "",
-      "external_agent_id": "",
-      "env_var": "",
-      "default_url": "",
+      "external_agent_id": "l4_decision_synthesizer",
+      "env_var": "L4_DECISION_SYNTHESIZER_COMPUTE_URL",
+      "default_url": "http://127.0.0.1:10025/v1/agent/compute",
       "input_contract": "dimension_composite_result_v1[]",
       "output_contract": "decision_result_v1",
       "routes_to": [
         "report_generator"
       ],
-      "notes": "Deterministic decision synthesis seam."
+      "notes": "External L4 compute-default decision synthesis path; compute-only and no /invoke default."
     },
     {
       "agent_id": "report_generator",
-      "runtime_kind": "deterministic_report",
-      "implementation_status": "deterministic_skeleton",
-      "invoke_enabled_by_default": true,
+      "runtime_kind": "external_compute_default",
+      "implementation_status": "external_compute_default_enabled",
+      "invoke_enabled_by_default": false,
       "live_verified": true,
       "legacy_agent_id": "a25_report_center",
-      "external_agent_id": "",
-      "env_var": "",
-      "default_url": "",
+      "external_agent_id": "l4_report_generator",
+      "env_var": "L4_REPORT_GENERATOR_COMPUTE_URL",
+      "default_url": "http://127.0.0.1:10026/v1/agent/compute",
       "input_contract": "decision_result_v1",
       "output_contract": "report_result_v1",
       "routes_to": [],
-      "notes": "Deterministic report generation seam. Legacy a25 is retained as a migration note, not as an ordinary replacement."
+      "notes": "External L4 compute-default report generation path; compute-only and no /invoke default. Legacy a25 is retained as a migration note, not as an ordinary replacement."
     }
   ]
 }

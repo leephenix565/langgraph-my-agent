@@ -25,8 +25,10 @@ from react_agent.fixed_dag_contracts import (
     DIMENSION_COMPOSITE_SCHEMA_VERSION,
     ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
     L2_CONCLUSION_AGENT_IDS,
+    REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
     REPORT_RESULT_SCHEMA_VERSION,
     validate_agent_task,
+    validate_report_input_bundle,
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
@@ -34,6 +36,7 @@ from react_agent.fixed_dag_external_adapter import (
 )
 
 EXTERNAL_COMPUTE_DEMO_SOURCE = "external_compute_demo_bridge"
+EXTERNAL_COMPUTE_DEFAULT_SOURCE = "external_compute_default_runtime"
 EXTERNAL_AGENT_REQUEST_SCHEMA_VERSION = "external_agent_request_v0"
 EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION = "external_agent_compute_v0"
 COMPUTE_PATH = "/v1/agent/compute"
@@ -399,6 +402,26 @@ def _safe_context_mapping(value: Mapping[str, Any] | None) -> dict[str, Any]:
     return dict(safe) if isinstance(safe, Mapping) else {}
 
 
+def _safe_report_input_bundle(value: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Preserve a validated report_input_bundle_v1 for L4 report services.
+
+    ``report_input_bundle_v1`` is built by the main system as a bounded
+    public-safe package.  Re-running the generic context sanitizer on it can
+    truncate required nested evidence fields and make the package fail the
+    service-side validator, causing the L4 report service to fall back to a
+    template report.  Validate the package first and pass it intact only when it
+    remains on the public-safe contract.
+    """
+    if not isinstance(value, Mapping):
+        return {}
+    valid, _reason = validate_report_input_bundle(value)
+    if not valid:
+        return {}
+    if value.get("schema") != REPORT_INPUT_BUNDLE_SCHEMA_VERSION:
+        return {}
+    return dict(value)
+
+
 def validate_demo_entry(entry: ExternalComputeDemoEntry) -> tuple[bool, str]:
     """Validate that a demo entry can only target loopback compute endpoints."""
     parsed = urlsplit(entry.base_url)
@@ -425,6 +448,7 @@ def build_external_compute_request(
     question: str,
     as_of: str,
     request_id: str,
+    demo: bool = True,
     agent_task: Mapping[str, Any] | None = None,
     upstream_outputs: Mapping[str, Any] | None = None,
     dimension_results: Mapping[str, Any] | None = None,
@@ -449,7 +473,8 @@ def build_external_compute_request(
             "fixed_dag_id": entry.agent_id,
             "dimension": entry.dimension,
             "environment": "production",
-            "demo": True,
+            "demo": demo,
+            "runtime_default": not demo,
             "user_question": question,
             "task_instruction": (
                 safe_agent_task.get("task_instruction", "")
@@ -459,7 +484,7 @@ def build_external_compute_request(
         },
         "options": {
             "smoke": False,
-            "demo": True,
+            "demo": demo,
             "environment": "production",
             "allow_llm": entry.agent_id in {"decision_synthesizer", "report_generator"},
             "return_tool_result": True,
@@ -483,7 +508,7 @@ def build_external_compute_request(
             request["context"]["dimension_results_schema"] = "dimension_composite_result_map_v1"
     if entry.agent_id == "report_generator":
         safe_decision = _safe_context_mapping(decision_result)
-        safe_report_input = _safe_context_mapping(report_input_bundle)
+        safe_report_input = _safe_report_input_bundle(report_input_bundle)
         if safe_decision:
             request["context"]["decision_result"] = safe_decision
         if safe_report_input:
@@ -791,6 +816,7 @@ def invoke_external_compute(
     as_of: str,
     request_id: str,
     timeout_seconds: float,
+    demo: bool = True,
     agent_task: Mapping[str, Any] | None = None,
     upstream_outputs: Mapping[str, Any] | None = None,
     dimension_results: Mapping[str, Any] | None = None,
@@ -807,6 +833,7 @@ def invoke_external_compute(
         question=question,
         as_of=as_of,
         request_id=request_id,
+        demo=demo,
         agent_task=agent_task,
         upstream_outputs=upstream_outputs,
         dimension_results=dimension_results,
@@ -938,12 +965,19 @@ def run_external_compute_for_plan(
     report_input_bundle: Mapping[str, Any] | None = None,
     agent_tasks: Mapping[str, Any] | None = None,
     stages: tuple[str, ...] = ("l2_analysis", "dimension_composite"),
+    allowlist_override: tuple[str, ...] | None = None,
+    entry_registry: Mapping[str, ExternalComputeDemoEntry] | None = None,
+    runtime_source: str = EXTERNAL_COMPUTE_DEMO_SOURCE,
     transport: Transport | None = None,
 ) -> dict[str, Any]:
     """Run demo compute calls for allowlisted agents present in a plan."""
     allowlist = normalize_demo_allowlist(
-        getattr(context, "external_compute_demo_allowlist", ())
+        allowlist_override
+        if allowlist_override is not None
+        else getattr(context, "external_compute_demo_allowlist", ())
     )
+    registry = dict(entry_registry or DEMO_COMPUTE_SERVICE_REGISTRY)
+    is_runtime_default = runtime_source == EXTERNAL_COMPUTE_DEFAULT_SOURCE
     updated_l2 = {str(agent_id): dict(value) for agent_id, value in l2_conclusions.items()}
     updated_data_bundle = dict(data_bundle) if isinstance(data_bundle, Mapping) else {}
     updated_entity_relation_bundle = (
@@ -982,7 +1016,7 @@ def run_external_compute_for_plan(
         agent_id = str(step.get("agent_id") or "")
         if agent_id not in allowed:
             continue
-        entry = DEMO_COMPUTE_SERVICE_REGISTRY.get(agent_id)
+        entry = registry.get(agent_id)
         step_id = str(step.get("id") or agent_id)
         agent_task = {}
         if isinstance(agent_tasks, Mapping):
@@ -1006,8 +1040,13 @@ def run_external_compute_for_plan(
             entry,
             question=question,
             as_of=as_of,
-            request_id=f"r8-12-demo-{agent_id}",
+            request_id=(
+                f"runtime-default-{agent_id}"
+                if is_runtime_default
+                else f"r8-12-demo-{agent_id}"
+            ),
             timeout_seconds=timeout,
+            demo=not is_runtime_default,
             agent_task=agent_task,
             upstream_outputs=upstream_outputs,
             dimension_results=updated_dimensions if stage == "decision" else None,
@@ -1019,6 +1058,11 @@ def run_external_compute_for_plan(
         mapped = mapped_result.get("mapped")
         if mapped_result.get("status") != "pass" or not isinstance(mapped, Mapping):
             warning = str(mapped_result.get("warning") or "external_compute_demo_failed")
+            if is_runtime_default:
+                warning = warning.replace(
+                    "external_compute_demo_failed",
+                    "external_compute_default_failed",
+                )
             result["warnings"].append(warning)
             result["failed_agents"].append(agent_id)
             result["step_updates"][step_id] = {"warning": warning}
@@ -1036,6 +1080,11 @@ def run_external_compute_for_plan(
         )
         if not applied:
             warning = f"external_compute_demo_failed:{_safe_code(reason)}"
+            if is_runtime_default:
+                warning = warning.replace(
+                    "external_compute_demo_failed",
+                    "external_compute_default_failed",
+                )
             result["warnings"].append(warning)
             result["failed_agents"].append(agent_id)
             result["step_updates"][step_id] = {"warning": warning}
@@ -1044,12 +1093,58 @@ def run_external_compute_for_plan(
         result["mapped_agents"].append(agent_id)
         result["step_updates"][step_id] = {
             "status": "complete",
-            "summary": "演示模式已读取生产 /compute 结构化结果并完成固定 DAG 适配映射。",
-            "warning": "external_compute_demo_default_off_not_runtime_binding",
+            "summary": (
+                "运行时默认 L4 /compute 路径已返回结构化结果并完成固定 DAG 适配映射。"
+                if is_runtime_default
+                else "演示模式已读取生产 /compute 结构化结果并完成固定 DAG 适配映射。"
+            ),
+            "warning": (
+                "external_compute_default_runtime_binding"
+                if is_runtime_default
+                else "external_compute_demo_default_off_not_runtime_binding"
+            ),
             "agent_task": agent_task,
         }
 
     return result
+
+
+def runtime_compute_entries_from_bindings(
+    bindings: Mapping[str, Any] | None = None,
+) -> dict[str, ExternalComputeDemoEntry]:
+    """Build compute entries for runtime-default external L4 bindings."""
+    from react_agent.fixed_dag_runtime_registry import (  # noqa: PLC0415
+        external_compute_default_bindings,
+    )
+
+    entries: dict[str, ExternalComputeDemoEntry] = {}
+    for binding in external_compute_default_bindings(bindings):
+        agent_id = binding["agent_id"]
+        template = DEMO_COMPUTE_SERVICE_REGISTRY.get(agent_id)
+        if template is None:
+            continue
+        parsed = urlsplit(binding["default_url"])
+        if (
+            parsed.scheme != "http"
+            or parsed.hostname != "127.0.0.1"
+            or parsed.port is None
+            or parsed.path != COMPUTE_PATH
+            or parsed.query
+            or parsed.fragment
+        ):
+            continue
+        base_url = f"{parsed.scheme}://{parsed.hostname}:{parsed.port}"
+        entries[agent_id] = ExternalComputeDemoEntry(
+            agent_id=agent_id,
+            base_url=base_url,
+            compute_path=COMPUTE_PATH,
+            expected_payload=template.expected_payload,
+            dimension=template.dimension,
+            external_agent_id=binding["external_agent_id"],
+            default_target=template.default_target,
+            timeout_seconds=template.timeout_seconds,
+        )
+    return entries
 
 
 def merge_external_compute_demo_runs(*runs: Mapping[str, Any]) -> dict[str, Any]:
@@ -1073,11 +1168,13 @@ __all__ = [
     "COMPUTE_PATH",
     "DEMO_COMPUTE_SERVICE_REGISTRY",
     "EXTERNAL_COMPUTE_DEMO_SOURCE",
+    "EXTERNAL_COMPUTE_DEFAULT_SOURCE",
     "ExternalComputeDemoEntry",
     "build_external_compute_request",
     "invoke_external_compute",
     "merge_external_compute_demo_runs",
     "normalize_demo_allowlist",
+    "runtime_compute_entries_from_bindings",
     "run_external_compute_for_plan",
     "validate_demo_entry",
 ]

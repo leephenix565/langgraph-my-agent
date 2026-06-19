@@ -128,6 +128,18 @@ It must not override deterministic fusion fields such as `stance`, `gate`,
 contributing agents. Invalid, unsafe, or unavailable model output fails closed
 to the original deterministic L3 results.
 
+R8-13Q adds the approved L4 compute-default runtime boundary. Only
+`decision_synthesizer` and `report_generator` may use
+`runtime_kind=external_compute_default`, and only with loopback
+`/v1/agent/compute` URLs. The executor reads those bindings after the
+deterministic L4 fallback payloads are built, calls the L4 compute service, maps
+the result through the same public-safe adapter, and records bounded
+`external_compute_default_*` provenance. This path is not the R8-12 demo bridge,
+does not call `/v1/agent/invoke`, and does not enable any L1/L2/L3 external
+service by default. `Context.disable_external_compute_default` or
+`DISABLE_EXTERNAL_COMPUTE_DEFAULT=1` restores deterministic L4 behavior for
+rollback and offline tests.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
@@ -197,11 +209,13 @@ the same provider-free adapter boundary to L3 composite payloads:
   `macro_composite`. `dimension_weights` are restricted to `value` and
   `market`; `risk` remains the independent gate and `macro` remains the
   regulator.
-- `raw_output` and `quality` do not enter graph state; at most bounded key
-  summaries may appear in provenance.
-- `decision_conclusion_v1`, `eval_record_v1`, `fixed_dag_plan_v1`, active L3
-  runtime execution, L4 decision/report, and executor integration remain later
-  work.
+- `raw_output` and `quality` do not enter graph state verbatim; bounded
+  public-safe report material may appear in provenance/report bundles after
+  adapter validation.
+- `decision_result_v1` and `report_result_v1` map through the L4 adapter path
+  for the R8-13Q compute-default runtime. `decision_conclusion_v1`,
+  `eval_record_v1`, `fixed_dag_plan_v1`, and non-L4 active external runtime
+  execution remain later work.
 
 ## fixed_dag_agent_catalog_v1
 
@@ -272,15 +286,21 @@ Each binding includes:
 - `notes`
 
 Allowed `runtime_kind` values are deterministic system/composite/decision/report
-seams, disabled external HTTP candidates, and pending placeholders. External
-HTTP candidates must have `invoke_enabled_by_default=false` and
-`live_verified=false` in R4-B. Legacy aNN ids may appear only in
-`legacy_agent_id`; primary `agent_id` values must be fixed DAG `snake_case` ids.
+seams, disabled external HTTP candidates, external compute defaults, and
+pending placeholders. External HTTP candidates must have
+`invoke_enabled_by_default=false` and `live_verified=false`. External compute
+defaults are currently limited to the two L4 ids and must use
+`/v1/agent/compute`, not `/v1/agent/invoke`. For those two approved L4 rows,
+`live_verified=true` means the compute-default runtime path passed the R8-13Q
+controlled smoke; `invoke_enabled_by_default` must still remain false. Legacy
+aNN ids may appear only in `legacy_agent_id`; primary `agent_id` values must be
+fixed DAG `snake_case` ids.
 
 Validation rejects duplicate ids, ids that do not exactly match the fixed DAG
 catalog, legacy aNN primary ids, `value_financial_analysis`, enabled external
 candidates, live-verified external candidates, mismatched legacy wrapper
-metadata, sentiment-to-risk routing, and contract/route drift from the catalog.
+metadata, sentiment-to-risk routing, non-L4 external compute defaults, compute
+defaults with invoke URLs, and contract/route drift from the catalog.
 R4-C validates legacy external mapping through `external_http_config.py`, a
 configuration-only module, so fixed-DAG binding checks do not import HTTP
 wrapper implementation code.
@@ -905,6 +925,11 @@ Output:
 - The main-system adapter validates both payloads and strips unsafe text such
   as secrets, endpoint URLs, raw provider responses, raw external JSON,
   tracebacks, and internal reasoning drafts.
+- R8-13K adds a regression requirement for provider-backed L4 output: if a
+  `decision_result_v1` or `report_result_v1` contains raw provider artifacts,
+  secrets, endpoint URLs, tracebacks, raw external JSON, or chain-of-thought
+  markers anywhere in the public-facing payload, the adapter must return an
+  adapter failure instead of allowing the payload into the final transcript.
 
 Boundary:
 
@@ -914,6 +939,126 @@ Boundary:
 - It does not make sandbox L4 services production-default.
 - When an external `report_generator` result is mapped, the internal LLM report
   synthesis seam must not overwrite it in the same execution.
+- Provider-backed `/v1/agent/compute` pass was not runtime enablement by
+  itself. R8-13Q later completed the separate runtime/public-transcript review
+  and config phase for the two L4 ids only.
+- Minimum runtime review checklist before any external-L4 default path:
+  public answer safety, workflow detail safety, deterministic fallback and
+  rollback, explicit operator control for the two L4 ids only, provider
+  credential hygiene, and separation of `/compute` evidence from `/invoke`
+  evidence.
+
+## fixed_dag_l4_runtime_binding_dry_run_v1
+
+Purpose: simulate whether the two L4 ids could enter a later external default
+runtime-binding review without editing `runtime_bindings.json`.
+
+Runtime fields:
+
+- `schema_version`
+- `status`
+- `runtime_bindings_changed`
+- `default_runtime_enabled`
+- `invoke_endpoint_required`
+- `agents`
+- `readiness`
+- `blocking_reasons`
+- `recommended_next_action`
+
+Seam: `build_l4_runtime_binding_dry_run`.
+
+The dry run is metadata-only. Before R8-13Q it read deterministic L4 bindings,
+showed the proposed compute URLs for `decision_synthesizer` and
+`report_generator`, and reported missing requirements such as rollback plan or
+operator approval. After R8-13Q it detects the current
+`external_compute_default` bindings and reports the default path as already
+configured. It never calls endpoints and `invoke_endpoint_required` remains
+false.
+
+## fixed_dag_l4_runtime_review_evidence_package_v1
+
+Purpose: package the evidence required to decide whether an explicit external
+L4 runtime-binding phase may be opened. This is still local metadata and does
+not call endpoints or edit configuration.
+
+Seam: `build_l4_runtime_review_evidence_package`.
+
+Current repo-recorded candidate seam:
+
+- `build_l4_runtime_review_candidate_package`
+
+Required evidence records:
+
+- `provider_compute_pass`
+- `transcript_safety_pass`
+- `rollback_plan_ready`
+- `operator_approval`
+
+Each evidence record must be a mapping with `passed=true` and a safe
+`reference`. Optional safe fields are `summary`, `validated_by`, and
+`validated_at`. Unknown fields are ignored. Unsafe references or text, including
+raw provider artifacts, secrets, endpoint URLs, tracebacks, raw external JSON,
+or chain-of-thought markers, are not preserved and cannot satisfy the evidence
+requirement.
+
+Output:
+
+- `schema_version`
+- `status`
+- `runtime_bindings_changed`
+- `default_runtime_enabled`
+- `invoke_endpoint_required`
+- `required_evidence`
+- `missing_evidence`
+- `dry_run`
+- `non_actions`
+- `recommended_next_action`
+
+Status values:
+
+- `blocked_pending_evidence`: at least one required record is missing, invalid,
+  unsafe, or not passing.
+- `ready_for_explicit_runtime_binding_phase`: all four required records are
+  passing and safe. This means only that a separate runtime-binding phase may be
+  opened; it does not edit runtime bindings.
+
+The package remains metadata-only: it does not call endpoints or edit
+configuration. R8-13O recorded a candidate package with provider compute,
+transcript safety, and rollback-plan evidence passing while
+`operator_approval` was pending. R8-13Q records operator approval for the L4
+runtime goal and uses the same evidence gate before the runtime binding phase.
+`invoke_endpoint_required` remains false.
+
+## fixed_dag_l4_runtime_binding_phase_plan_v1
+
+Purpose: describe the intended external-L4 runtime binding phase without
+editing runtime bindings.
+
+Seam: `build_l4_runtime_binding_phase_plan`.
+
+The preflight consumes an L4 runtime review evidence package and returns:
+
+- `schema_version`
+- `status`
+- `runtime_bindings_changed`
+- `config_edit_allowed`
+- `current_schema_allows_external_l4_default`
+- `missing_evidence`
+- `planned_agent_changes`
+- `required_work`
+- `recommended_next_action`
+
+Current status:
+
+- R8-13Q configures the two L4 rows as `external_compute_default`.
+- The executor calls L4 `/v1/agent/compute` from runtime bindings without
+  enabling the default-off demo bridge and without calling `/v1/agent/invoke`.
+- `disable_external_compute_default` can be used as a rollback/test control to
+  restore deterministic L4 behavior without editing `.env`.
+
+The phase-plan preflight now reports `runtime_binding_configured_pending_smoke`
+after the config edit, and the controlled smoke evidence is recorded in
+`docs/CONTROLLED_READINESS_SMOKE_LOG.md`.
 
 ## L3 LLM explanation seam
 

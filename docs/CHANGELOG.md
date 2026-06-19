@@ -3,6 +3,359 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-19 - L4 external compute default runtime
+
+### Changed
+
+- Added `external_compute_default` runtime binding support for L4
+  compute-only services.
+- Switched `decision_synthesizer` and `report_generator` in
+  `config/fixed_dag/runtime_bindings.json` from deterministic L4 seams to
+  external compute-default bindings on ports `10025` and `10026`.
+- Taught the fixed-DAG executor to call L4 `/v1/agent/compute` from runtime
+  bindings without enabling the demo bridge and without calling `/invoke`.
+- Added `disable_external_compute_default` as a rollback/test context control.
+- Synchronized the L4 `决策融合智能体` and `报告生成智能体` service directories
+  from sandbox to both `/sdb/dlut/dev` and `/sdb/dlut/prod`.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_reset_docs.py tests/unit_tests/test_fixed_dag_contracts.py`
+  returned 151 passed.
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q /sdb/dlut/dev/决策融合智能体/tests/test_l4_decision_service.py /sdb/dlut/dev/报告生成智能体/tests/test_l4_report_service.py`
+  returned 9 passed.
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q /sdb/dlut/prod/决策融合智能体/tests/test_l4_decision_service.py /sdb/dlut/prod/报告生成智能体/tests/test_l4_report_service.py`
+  returned 9 passed.
+- Controlled runtime-default smoke validated a full fixed-DAG execution with
+  `external_compute_demo_enabled=false`, default-called/mapped agents
+  `decision_synthesizer` and `report_generator`, no failed L4 agents, a mapped
+  `decision_result_v1`, and a complete mapped `report_result_v1` titled
+  `贵州茅台(600519.SH) 固定流程投资研判报告`.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` file was changed.
+- Non-L4 service owner backfill remains a separate follow-up.
+
+## 2026-06-19 - L4 runtime binding phase preflight
+
+### Changed
+
+- Added `build_l4_runtime_binding_phase_plan` as a non-mutating preflight for a
+  future external-L4 runtime binding phase.
+- The preflight proves that current `runtime_bindings.json` schema does not yet
+  represent a default external L4 compute path: existing external HTTP
+  candidates are explicitly disabled, and L4 default compute requires a schema
+  and executor phase before any config edit.
+- The plan still lists the intended compute-only target for
+  `decision_synthesizer` and `report_generator`, but returns
+  `config_edit_allowed=false` and `runtime_bindings_changed=false`.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py`
+  returned 20 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_reset_docs.py`
+  returned 88 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called
+  for this preflight.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- External L4 default runtime remains deferred.
+
+## 2026-06-19 - L4 runtime review candidate package
+
+### Changed
+
+- Added `build_l4_runtime_review_candidate_package` as the repo-recorded R8-13O
+  L4 runtime review package.
+- Added `docs/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md` with the candidate evidence,
+  rollback plan, non-claims, and remaining operator-approval gate.
+- The candidate package marks provider compute, transcript safety, and rollback
+  plan evidence as passing from current repository artifacts, while keeping
+  `operator_approval` pending.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py`
+  returned 18 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_reset_docs.py`
+  returned 86 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called
+  for R8-13O.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- External L4 runtime binding remains deferred until explicit operator approval
+  and a separate runtime binding phase.
+
+## 2026-06-19 - L4 runtime review evidence package seam
+
+### Changed
+
+- Added `build_l4_runtime_review_evidence_package` and
+  `fixed_dag_l4_runtime_review_evidence_package_v1` as a local, side-effect-free
+  package builder for the explicit L4 runtime review.
+- The package requires four safe evidence records before it can report
+  `ready_for_explicit_runtime_binding_phase`: provider compute pass,
+  transcript safety pass, rollback plan readiness, and operator approval.
+- Evidence records only preserve bounded safe fields: `reference`, `summary`,
+  `validated_by`, and `validated_at`. Missing references, unsafe references,
+  unsafe text, or non-passing records keep the package blocked.
+- The package embeds the R8-13M dry run and preserves the same non-actions:
+  no endpoint call, no `.env` edit, no runtime binding edit, no live flag
+  change, and no default invoke change.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py`
+  returned 17 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_reset_docs.py`
+  returned 85 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called
+  for R8-13N.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- The evidence package does not itself grant runtime approval; it only tells
+  maintainers whether the explicit runtime binding phase can be opened.
+
+## 2026-06-19 - L4 runtime binding dry-run seam
+
+### Changed
+
+- Added `build_l4_runtime_binding_dry_run` and
+  `fixed_dag_l4_runtime_binding_dry_run_v1` as a metadata-only runtime review
+  seam for the two L4 ids: `decision_synthesizer` and `report_generator`.
+- The dry run reports current deterministic runtime-binding state, proposed
+  production compute URLs, prerequisite booleans, blocking reasons, and the
+  recommended next action without editing runtime config.
+- Per-agent dry-run rows explicitly scope existing `live_verified` and
+  `invoke_enabled_by_default` flags to the deterministic internal L4 seam, and
+  keep proposed external L4 live/default flags false.
+- Documented the dry-run contract and decision in `docs/CONTRACTS.md`,
+  `docs/SYSTEM_MAP.md`, `docs/ARCHITECTURE_FIXED_DAG.md`, and
+  `docs/DECISIONS.md`.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py`
+  returned 14 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_reset_docs.py`
+  returned 82 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called
+  for R8-13M.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- The dry run can report `ready_for_runtime_binding_review`, but even that
+  state is not a runtime binding edit and does not enable external L4 by
+  default.
+
+## 2026-06-19 - L4 runtime binding review checklist
+
+### Changed
+
+- Added ADR-064 documenting that R8-13J provider-backed L4 `/v1/agent/compute`
+  pass does not enable default external L4 runtime binding.
+- Documented the minimum external-L4 runtime review checklist in
+  `docs/CONTRACTS.md`, `docs/SYSTEM_MAP.md`, and
+  `docs/ARCHITECTURE_FIXED_DAG.md`.
+- Added a runtime registry regression test that keeps
+  `decision_synthesizer` and `report_generator` as deterministic L4 seams with
+  no external agent id, env var, or default URL until a later explicit runtime
+  review changes `runtime_bindings.json`.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_runtime_registry.py`
+  returned 12 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No external L4 service was made a default graph dependency.
+
+## 2026-06-19 - L4 runtime and transcript readiness audit
+
+### Changed
+
+- Documented the R8-13K L4 runtime/public-transcript gate in `docs/CONTRACTS.md`:
+  provider-backed `/v1/agent/compute` pass does not imply runtime binding
+  enablement, and a future runtime phase must separately review public answer
+  safety, workflow detail safety, rollback behavior, and runtime binding edits.
+- Added adapter regression tests proving that provider-backed L4
+  `decision_result_v1` and `report_result_v1` payloads containing raw provider
+  artifacts, secrets, endpoint URLs, tracebacks, raw external JSON, or
+  chain-of-thought markers are rejected as adapter failures instead of entering
+  the final transcript path.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_adapter.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_public_mapping_fixed_dag.py`
+  returned 66 passed.
+
+### Not Done
+
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called
+  for R8-13K.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- Runtime binding review remains a later explicit phase.
+
+## 2026-06-19 - L4 provider-backed compute smoke
+
+### Changed
+
+- Restarted production L4 service processes on ports 10025 and 10026 with
+  provider credentials loaded from the existing production main-system `.env`
+  into the process environment. The `.env` file was not modified and credential
+  values were not printed.
+
+### Validated
+
+- Controlled `/health` smoke for `decision_synthesizer` and `report_generator`
+  returned `llm_preflight_status=ok` with production-source service versions.
+- Controlled default-off `/v1/agent/compute` bridge smoke mapped
+  `decision_synthesizer` to a valid `decision_result_v1` with
+  `decision=manual_review`, `status=partial`, and four reasoning trace entries.
+- Controlled default-off `/v1/agent/compute` bridge smoke mapped
+  `report_generator` to a valid `report_result_v1` with `status=complete`,
+  title `贵州茅台（600519.SH）综合研判报告（2026-06-19）`, 5 sections, and 5
+  evidence cards.
+- Direct service metadata check confirmed `provider_invoked=true` and
+  `used_llm_* = true` for both L4 services, with zero service warnings.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No raw provider response, credential value, endpoint URL, or raw graph message
+  was stored in the repository.
+- Runtime binding review remains separate; provider-backed compute pass does
+  not make L4 a default runtime dependency.
+
+## 2026-06-19 - L4 production-source service smoke
+
+### Changed
+
+- Formalized production service directories for the L4
+  `decision_synthesizer` and `report_generator` under
+  `/sdb/dlut/prod/决策融合智能体` and `/sdb/dlut/prod/报告生成智能体`.
+- Backfilled the minimal L4 main-system helpers required by those production
+  services into `/sdb/dlut/prod/langgraph-my-agent/src/react_agent/`:
+  `fixed_dag_l4_decision_synthesizer.py` and the provider-preflight-aware
+  `fixed_dag_report_synthesizer.py`.
+- Updated the L4 service wrappers to resolve the nearest
+  `langgraph-my-agent/src` tree, so the same source can run from sandbox,
+  development, or production service roots.
+- Updated L4 service READMEs to remove sandbox-only wording and document both
+  production-candidate and development-candidate loopback ports.
+- Restarted production L4 ports from production service roots:
+  `decision_synthesizer=10025` and `report_generator=10026`. Development
+  candidate ports `8025` and `8026` remain sourced from the sandbox service
+  roots.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ...` passed for the
+  production L4 service files, their tests, and the two production main-system
+  helper files.
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q /sdb/dlut/prod/决策融合智能体/tests/test_l4_decision_service.py /sdb/dlut/prod/报告生成智能体/tests/test_l4_report_service.py`
+  returned 9 passed.
+- Controlled `/health` smoke passed for production ports 10025/10026 and
+  development ports 8025/8026. Production services reported
+  `0.1.0-production-source`; development services reported `0.1.0-sandbox`.
+- Controlled `/v1/agent/compute` smoke through the default-off main-system
+  bridge passed for production-source ports 10025/10026 and development
+  candidate ports 8025/8026. Both runs mapped `decision_synthesizer` to
+  `decision_result_v1` and `report_generator` to `report_result_v1`; the report
+  contained 6 sections and 5 evidence cards.
+- Provider credentials were unavailable in the service environment, so both L4
+  services used deterministic fallback and returned `pending_implementation`
+  status.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- Provider-backed LLM decision/report behavior is still not verified; the
+  production-source smoke proves compute contract reachability and deterministic
+  fallback only.
+
+## 2026-06-19 - Sandbox L4 service contract test prep
+
+### Changed
+
+- Hardened the sandbox-only L4 `decision_synthesizer` and `report_generator`
+  service wrappers under `/sdb/dlut/sandbox/r8-13a/services/prod/` by replacing
+  mutable request defaults with Pydantic `Field(default_factory=dict)`.
+- Changed both sandbox L4 service health payloads to report secret-free provider
+  preflight metadata instead of hard-coding `llm_configured=true`.
+- Added offline service contract tests for the sandbox L4 decision and report
+  services. The tests call the in-process handler functions directly and cover
+  health payload safety, deterministic fallback, fake valid LLM output, invalid
+  LLM-output fallback, report boundary normalization, and public-safe text
+  normalization.
+- Updated both sandbox L4 service READMEs with local contract-test commands,
+  provider-preflight boundaries, and compute-only/no-invoke test scope.
+- Fixed the default-off compute bridge's L4 report request path so a validated
+  `report_input_bundle_v1` is passed intact to `report_generator` instead of
+  being truncated by the generic context sanitizer. This prevents the L4 report
+  service from falling back to a template report despite receiving a valid
+  public-safe report bundle.
+- Fixed the sandbox L4 report service boundary normalization so machine fields
+  such as `schema`, `schema_version`, and `status` remain contract enums while
+  public-facing text is translated into business Chinese.
+- Started sandbox L4 services on production-candidate ports 10025/10026 and
+  development-candidate ports 8025/8026 for controlled smoke.
+
+### Validated
+
+- `PYTHONDONTWRITEBYTECODE=1 python3 -m py_compile ...` passed for the two
+  sandbox L4 service files and their new tests.
+- `PYTHONDONTWRITEBYTECODE=1 pytest -q /sdb/dlut/sandbox/r8-13a/services/prod/决策融合智能体/tests/test_l4_decision_service.py /sdb/dlut/sandbox/r8-13a/services/prod/报告生成智能体/tests/test_l4_report_service.py`
+  returned 9 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_fixed_dag_external_compute_bridge.py`
+  returned 22 passed in both dev main and sandbox main.
+- In-process bridge regression passed by replacing the bridge transport with
+  direct calls to the sandbox L4 `compute()` handlers. The run mapped
+  `decision_synthesizer` to `decision_result_v1` with `decision=positive_watch`
+  and mapped `report_generator` to `report_result_v1` with
+  `status=complete`, 2 sections, and 2 evidence cards. No live HTTP endpoint
+  was called.
+- Controlled health smoke passed for ports 10025, 10026, 8025, and 8026. Each
+  endpoint returned `external_agent_health_v0` with the expected fixed DAG id
+  and secret-free `llm_preflight_status=missing_credential`.
+- Controlled compute smoke passed for production-candidate ports 10025/10026
+  and development-candidate ports 8025/8026 through the default-off main-system
+  compute bridge. Both runs mapped `decision_synthesizer` to
+  `decision_result_v1` and `report_generator` to `report_result_v1`; provider
+  credentials were absent, so both services used deterministic fallback.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` or `config/fixed_dag/runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- The L4 services are still sourced from sandbox directories; the controlled
+  health/compute smoke is candidate-port evidence, not formal production
+  service-source readiness or default runtime enablement.
+
 ## 2026-06-19 - Search fallback metadata test fix
 
 ### Changed
