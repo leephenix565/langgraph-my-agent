@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-19 - Search fallback metadata test fix
+
+### Changed
+
+- Preserved normalized `max_results` metadata on the fail-soft Tavily search
+  fallback tool when optional `langchain_tavily` is unavailable or cannot be
+  initialized.
+
+### Validated
+
+- Broad local test run initially exposed
+  `tests/unit_tests/test_tools.py::test_build_tavily_search_max_results` failing
+  in this environment because `langchain_tavily` is not installed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests/test_tools.py`
+  returned 2 passed.
+- `PYTHONDONTWRITEBYTECODE=1 PYTHONPATH=src pytest -q tests/unit_tests tests/integration_tests`
+  returned 366 passed.
+
+### Not Done
+
+- No search provider was called.
+- No `.env` or runtime binding file was changed.
+
 ## 2026-06-19 - Dev main-system L4 compute/report handoff
 
 ### Changed
