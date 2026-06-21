@@ -3,6 +3,57 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-21 - Phase BG4 post-backfill full-DAG E2E QA
+
+### Validated
+
+- Ran a post-BG2/BG3 full fixed-DAG QA for the question:
+  "请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH 当前是否值得关注。"
+- Used the default-off external compute demo bridge with an explicit L2/L3
+  allowlist. The run called allowlisted production `/v1/agent/compute` paths
+  only and did not call any external agent invoke path.
+- Preserved the current L4 `external_compute_default` runtime path. Both L4
+  compute-default services were attempted and failed closed because their
+  production ports were not listening, so the executor kept the fallback
+  decision/report path.
+- Wrote sanitized QA artifacts under
+  `/tmp/lma-bg4-post-backfill-e2e-20260621_151711`: `qa_summary.json`,
+  `report_input_bundle.json`, `agent_evidence_bundle.json`,
+  `workflow_trace.json`, `report_result.json`, and `final_report.md`.
+- The QA mapped `13` default-off demo compute agents and recorded `4`
+  demo failures. The mapped set included `risk_crash`,
+  `risk_compliance_review`, `risk_financial_fraud`, and
+  `macro_index_valuation`.
+
+### Report Material
+
+- `risk_crash`: `7` evidence items, `5` research points, and `6` drivers
+  reached `agent_evidence_bundle_v1`.
+- `risk_compliance_review`: `3` evidence items, `3` research points, and `4`
+  drivers reached `agent_evidence_bundle_v1`.
+- `risk_financial_fraud`: `4` evidence items, `3` research points, and `6`
+  drivers reached `agent_evidence_bundle_v1`; the agent remains `partial`
+  because the HyFormer feature/model path was unavailable for the requested
+  `as_of`.
+- `macro_index_valuation`: `6` evidence items, `4` research points, and `7`
+  drivers reached `agent_evidence_bundle_v1`.
+- `risk_composite` consumed the three enhanced risk L2 members, including the
+  low-weight `risk_financial_fraud` partial member. `macro_composite` consumed
+  `macro_index_valuation` as an owner-approved macro L2 direction input.
+
+### Not Done
+
+- No external agent invoke endpoint was called.
+- No `.env` value was inspected or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No production service code was modified.
+- No raw service response, provider raw response, credential, traceback text,
+  or chain-of-thought was stored in the repository.
+- The final report used the fallback report path because L4 compute-default
+  services were unavailable and configured LLM report synthesis lacked
+  credentials in the current process environment.
+
 ## 2026-06-21 - Phase BG3 B2C duo report-material backfill
 
 ### Changed

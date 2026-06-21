@@ -9,6 +9,72 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-21 - Phase BG4 post-backfill full-DAG E2E QA
+
+| Field | Value |
+| --- | --- |
+| Phase | BG4 |
+| Question | `请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH 当前是否值得关注。` |
+| Execution path | fixed DAG full graph with default-off external compute demo bridge |
+| Endpoint calls | allowlisted production `/v1/agent/compute` only; no `/health` in this phase |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Production service code changed | no |
+| L4 runtime-default path | preserved; `decision_synthesizer` and `report_generator` attempted and failed closed |
+| Artifact root | `/tmp/lma-bg4-post-backfill-e2e-20260621_151711` |
+
+The BG4 QA run saved sanitized `report_input_bundle_v1`,
+`agent_evidence_bundle_v1`, `workflow_snapshot_v2`, `report_result_v1`, and
+final report artifacts. It did not write raw service responses to the
+repository.
+
+Result summary:
+
+| Item | Result |
+| --- | --- |
+| Demo compute called | 17 allowlisted L2/L3 agents |
+| Demo compute mapped | 13 agents |
+| Demo compute failed | `market_capital_flow_chip`, `sentiment_company_radar`, `value_composite`, `market_composite` |
+| L4 compute-default mapped | none |
+| L4 compute-default failed | `decision_synthesizer`, `report_generator` |
+| `report_input_bundle_v1` validation | pass |
+| `report_result_v1` validation | pass |
+| Artifact unsafe scan | pass |
+
+Enhanced-material summary:
+
+| Agent | Status in bundle | Evidence | Research points | Drivers | Notes |
+| --- | --- | --- | --- | --- | --- |
+| `risk_crash` | complete | 7 | 5 | 6 | Consumed by `risk_composite`. |
+| `risk_compliance_review` | complete | 3 | 3 | 4 | Consumed by `risk_composite`. |
+| `risk_financial_fraud` | partial | 4 | 3 | 6 | Consumed by `risk_composite` with low weight because the feature/model path was unavailable for the requested `as_of`. |
+| `macro_index_valuation` | complete | 6 | 4 | 7 | Consumed by `macro_composite` as an owner-approved macro L2 direction signal. |
+
+Report quality notes:
+
+- The fallback final report expanded valuation, market, risk, compliance,
+  financial-fraud, crash-risk, macro-analysis, and macro-index valuation
+  material from `agent_evidence_bundle_v1`.
+- The report remained a fallback report, not an external L4 or real-provider
+  report: the L4 compute-default services were unavailable and configured LLM
+  report synthesis had no credential available in the current process
+  environment.
+- Market coverage remained partial because market flow, sentiment, and market
+  composite endpoints did not map in this run.
+
+Non-claims:
+
+- This is default-off demo QA, not default runtime enablement.
+- This is not invoke evidence.
+- This did not inspect or change `.env` values.
+- This did not modify `config/fixed_dag/runtime_bindings.json`.
+- This did not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not change production readiness counts.
+- Raw service responses, credentials, traceback text, provider raw responses,
+  and chain-of-thought were not stored in the repository.
+
 ## 2026-06-21 - Phase BG3 B2C duo report-material controlled compute smoke
 
 | Field | Value |

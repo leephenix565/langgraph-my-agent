@@ -247,6 +247,36 @@ touch model, scoring, feature, training, data, dependency, or deployment files.
 Sanitized artifact root: `/tmp/lma-bg3-b2c-duo-20260621_145721`.
 Backup root: `/sdb/dlut/prod/backups/bg3_20260621_145721`.
 
+### BG4 status update: post-backfill full-DAG E2E QA
+
+Phase BG4 did not apply any service patch. It ran one full fixed-DAG QA trace
+with the default-off external compute demo bridge and an explicit L2/L3
+allowlist to verify whether the BG2/BG3 report-material backfills reached the
+final report chain.
+
+| Check | Result |
+| --- | --- |
+| Artifact root | `/tmp/lma-bg4-post-backfill-e2e-20260621_151711` |
+| Demo compute calls | 17 allowlisted production `/v1/agent/compute` attempts |
+| Demo mapped agents | 13 |
+| Demo failed agents | `market_capital_flow_chip`, `sentiment_company_radar`, `value_composite`, `market_composite` |
+| L4 compute-default | Preserved; `decision_synthesizer` and `report_generator` both failed closed because the production ports were unavailable. |
+| Report input validation | `report_input_bundle_v1` pass |
+| Report output validation | `report_result_v1` pass |
+| Unsafe artifact scan | pass |
+
+BG4 confirmed that the four enhanced agents reached
+`agent_evidence_bundle_v1`: `risk_crash` (`7` evidence, `5` research points,
+`6` drivers), `risk_compliance_review` (`3` evidence, `3` research points,
+`4` drivers), `risk_financial_fraud` (`4` evidence, `3` research points,
+`6` drivers, still `partial`), and `macro_index_valuation` (`6` evidence,
+`4` research points, `7` drivers). `risk_composite` consumed the three
+enhanced risk members; `macro_composite` consumed `macro_index_valuation`.
+
+This remains default-off demo QA only. It did not call external agent invoke,
+did not modify runtime bindings or live flags, did not modify production
+service code, and does not change production readiness counts.
+
 ## 为什么不能直接 rsync sandbox 到 prod
 
 1. prod 可能已经包含其他开发者从各自 dev agent 仓库同步过来的改动。
@@ -260,7 +290,10 @@ Backup root: `/sdb/dlut/prod/backups/bg3_20260621_145721`.
 ## 下一轮 backfill 的推荐顺序
 
 BG3 已完成 `risk_financial_fraud` 和 `macro_index_valuation` 的 B2C
-report-material backfill。其他 BG1 候选仍需 owner/manual merge。
+report-material backfill。BG4 confirmed those materials reached the full-DAG
+report chain, but also found market-side endpoint failures and unavailable L4
+compute-default services during this QA run. Other BG1 candidates still need
+owner/manual merge.
 
 ### 第一批：需要重新确认后再进入
 

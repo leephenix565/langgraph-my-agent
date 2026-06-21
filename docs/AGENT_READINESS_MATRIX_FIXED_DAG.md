@@ -170,6 +170,7 @@ Recommended full-DAG demo allowlist:
 - `risk_financial_fraud`
 - `risk_crash`
 - `macro_analysis`
+- `macro_index_valuation`
 - `value_composite`
 - `market_composite`
 - `risk_composite`
@@ -181,9 +182,13 @@ Excluded from the demo allowlist until a later remediation or design phase:
 - `entity_relation_extractor`
 - `market_fund_manager_behavior`
 - `macro_commodity_pricing`
-- `macro_index_valuation`
 - `macro_sentiment`
 - `macro_industry_hotspot`
+
+`macro_index_valuation` was excluded in earlier ledgers pending owner
+semantic confirmation. BG2/BG3 recorded the owner-approved macro L2 role and
+production compute evidence, and BG4 included it in a default-off full-DAG QA
+allowlist. This does not make it a default runtime binding.
 
 Optional controlled L4 allowlist after R8-13J:
 
@@ -819,6 +824,38 @@ then refreshed controlled production compute and adapter evidence:
 
 This is not `/v1/agent/invoke` evidence, not default runtime enablement, and
 does not change `live_verified` or `invoke_enabled_by_default`.
+
+## 2026-06-21 Phase BG4 Post-Backfill Full-DAG QA Note
+
+Phase BG4 ran one full fixed-DAG QA trace with the default-off external compute
+demo bridge and an explicit L2/L3 allowlist. It did not modify production
+service code, did not change runtime bindings or live flags, and did not call
+external agent invoke.
+
+BG4 result summary:
+
+- Demo compute called 17 allowlisted L2/L3 agents, mapped 13, and failed 4:
+  `market_capital_flow_chip`, `sentiment_company_radar`, `value_composite`,
+  and `market_composite`.
+- L4 `external_compute_default` remained enabled in the graph. The run
+  attempted `decision_synthesizer` and `report_generator`; both failed closed
+  because the production ports were unavailable, so the executor kept fallback
+  decision/report behavior.
+- `report_input_bundle_v1`, `agent_evidence_bundle_v1`, `workflow_snapshot_v2`,
+  `report_result_v1`, and `final_report.md` were saved as sanitized artifacts
+  under `/tmp/lma-bg4-post-backfill-e2e-20260621_151711`.
+- The four enhanced agents reached `agent_evidence_bundle_v1`:
+  `risk_crash` (`7` evidence, `5` research points, `6` drivers),
+  `risk_compliance_review` (`3` evidence, `3` research points, `4` drivers),
+  `risk_financial_fraud` (`4` evidence, `3` research points, `6` drivers,
+  still partial), and `macro_index_valuation` (`6` evidence, `4` research
+  points, `7` drivers).
+- `risk_composite` consumed `risk_crash`, `risk_compliance_review`, and
+  `risk_financial_fraud`; `macro_composite` consumed `macro_index_valuation`.
+
+This note is QA evidence only. It does not change the matrix production
+readiness counts, does not create invoke evidence, and does not promote any
+L1/L2/L3 agent into default runtime execution.
 
 ## Full 27-Agent Production Matrix
 
