@@ -752,6 +752,21 @@ payload pass.
   `/v1/agent/invoke`.
 - Prompt: `PROMPT-PROD-L4-ADAPTER-DESIGN`.
 
+## 2026-06-21 Phase B3 Risk Report-Material Refresh Note
+
+Phase B3 refreshed production compute and adapter evidence for the two
+file-level backfilled risk L2 report-material wrappers:
+
+- `risk_crash`: controlled restart on production port `10012`, production
+  `/health` pass, fixed-DAG `/v1/agent/compute` pass, adapter mapping to
+  `conclusion_object_v1` pass.
+- `risk_compliance_review`: controlled restart on production port `10011`,
+  production `/health` pass, fixed-DAG `/v1/agent/compute` pass, adapter
+  mapping to `conclusion_object_v1` pass.
+
+This is not `/v1/agent/invoke` evidence, not default runtime enablement, and
+does not change `live_verified` or `invoke_enabled_by_default`.
+
 ## Full 27-Agent Production Matrix
 
 | agent_id | layer | dimension | expected_payload_or_contract | production_endpoint | production_health_status | production_compute_status | production_adapter_mapping_status | production_status | problem_summary | solution_summary | next_action | developer_prompt_id |

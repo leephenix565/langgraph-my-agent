@@ -3,6 +3,88 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-21 - Phase B3 risk report-material controlled restart smoke
+
+### Changed
+
+- Restarted only the two Phase B2A/B2B backfilled production risk L2 services:
+  `risk_crash` on port `10012` and `risk_compliance_review` on port `10011`.
+- Ran controlled production `/health` and fixed-DAG `/v1/agent/compute` smoke
+  for both services.
+- Verified provider-free main-system adapter mapping to `conclusion_object_v1`
+  for both backfilled wrappers.
+- Recorded sanitized smoke evidence in
+  `docs/CONTROLLED_READINESS_SMOKE_LOG.md`.
+
+### Validated
+
+- `risk_crash`: health passed, compute returned fixed-DAG
+  `agent_conclusion_v1` with `agent_id=risk_crash`, and adapter mapping passed
+  with report-facing evidence, research points, drivers, and data-quality
+  material.
+- `risk_compliance_review`: health passed, compute returned fixed-DAG
+  `agent_conclusion_v1` with `agent_id=risk_compliance_review`, and adapter
+  mapping passed with report-facing evidence, research points, drivers, and
+  data-quality material.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` file was read or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No model, scoring, rubric, feature, data, dependency, or deployment file was
+  changed.
+
+## 2026-06-21 - Phase B2B risk_compliance_review production file-level backfill
+
+### Changed
+
+- Backfilled the public-safe report-material wrapper and `as_of` alias support
+  for `risk_compliance_review` from the audited sandbox service files into the
+  prod running service directory.
+- The wrapper projects existing deterministic compliance outputs into bounded
+  rubric tables, weakest dimensions, finding summaries, top terms, slice
+  summaries, corpus notices, `drivers`, `research_points`, thicker `evidence`,
+  and `quality` material.
+- Added prod-local focused contract coverage for the fixed-DAG `as_of` alias
+  and report-material projection.
+
+### Not Done
+
+- No scoring, rubric, text-analysis, data, dependency, or deployment file was
+  changed.
+- No service restart was performed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No `.env` file was read or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- At B2B closeout, controlled smoke was deferred to Phase B3; the separate B3
+  entry above records the later controlled restart and smoke.
+
+## 2026-06-21 - Phase B2A risk_crash production file-level backfill
+
+### Changed
+
+- Backfilled the public-safe report-material wrapper for `risk_crash` from the
+  audited sandbox service file into the prod running service directory.
+- Added the prod-local `risk_crash` report-material focused test copied from
+  the audited sandbox service.
+- The wrapper only projects existing crash-risk outputs into bounded
+  `drivers`, `research_points`, thicker `evidence`, and `quality` material.
+
+### Not Done
+
+- No model, scoring, feature engineering, data, dependency, or deployment
+  file was changed.
+- No service restart was performed.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was called.
+- No `.env` file was read or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- At B2A closeout, controlled smoke was deferred to Phase B3; the separate B3
+  entry above records the later controlled restart and smoke.
+
 ## 2026-06-19 - Pre-backfill audit documentation
 
 ### Changed

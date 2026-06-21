@@ -131,6 +131,44 @@ agent 已有计算结果整理成 public-safe `domain_metrics`、`drivers`、`da
 | P1 | `risk_financial_fraud` | HyFormer 概率、规则降级、年度特征可得日、风险门和证据线索。 | `/compute` 不调用 provider；新闻文本 LLM 路径属于 `/invoke`，不能混为 compute 证据。 |
 | P1 | `macro_analysis` | 宏观 regime、信号表、资产配置视图、行业轮动、观点交叉验证。 | 不改 nowcast 规则和阈值；LLM 仅属于 `/invoke` 解析/润色。 |
 
+### B2A status update: `risk_crash`
+
+Phase B2A has backfilled the audited `risk_crash` public-safe report-material
+wrapper into the prod running service directory as a file-level change. The
+change only thickens report-facing `drivers`, `research_points`, `evidence`,
+and `quality` material from existing crash-risk outputs. It is not model,
+scoring, feature, data, dependency, deployment, runtime binding, `/compute`, or
+`/invoke` evidence. No service restart or live endpoint smoke was run in B2A;
+at B2A closeout, controlled `/health` + `/v1/agent/compute` smoke was deferred
+to Phase B3.
+
+Phase B3 has since activated this file-level backfill with a controlled restart
+of the production `risk_crash` process and a production `/health` +
+fixed-DAG `/v1/agent/compute` smoke. The main-system adapter mapped the
+compute result to `conclusion_object_v1`. This is refreshed production compute
+and adapter evidence for the report-material wrapper; it is still not
+`/invoke` evidence, not default runtime enablement, and not a live-flag change.
+
+### B2B status update: `risk_compliance_review`
+
+Phase B2B has backfilled the audited `risk_compliance_review` public-safe
+report-material wrapper and fixed-DAG `as_of` alias into the prod running
+service directory as a file-level change. The change only thickens
+report-facing rubric tables, weakest dimensions, finding summaries, top terms,
+slice summaries, corpus notices, `drivers`, `research_points`, `evidence`, and
+`quality` material from existing deterministic compliance outputs. It is not
+scoring, rubric, text-analysis, data, dependency, deployment, runtime binding,
+`/compute`, or `/invoke` evidence. No service restart or live endpoint smoke
+was run in B2B; at B2B closeout, controlled `/health` +
+`/v1/agent/compute` smoke was deferred to Phase B3.
+
+Phase B3 has since activated this file-level backfill with a controlled restart
+of the production `risk_compliance_review` process and a production `/health` +
+fixed-DAG `/v1/agent/compute` smoke. The main-system adapter mapped the
+compute result to `conclusion_object_v1`. This is refreshed production compute
+and adapter evidence for the report-material wrapper; it is still not
+`/invoke` evidence, not default runtime enablement, and not a live-flag change.
+
 ### C. 暂不 backfill 或必须等 owner 的项
 
 | Agent | 原因 |

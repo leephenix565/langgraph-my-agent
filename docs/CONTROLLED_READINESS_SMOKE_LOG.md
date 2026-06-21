@@ -9,6 +9,44 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-21 - Phase B3 risk report-material controlled restart + compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | B3 |
+| Production service roots | `/sdb/dlut/prod/股价崩盘风险智能体`, `/sdb/dlut/prod/公告合规审查智能体` |
+| Production ports | `risk_crash=10012`, `risk_compliance_review=10011` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Restart artifact root | `/tmp/lma-b3-risk-report-material-restart-20260621_132817` |
+| Smoke artifact root | `/tmp/lma-b3-risk-report-material-smoke-20260621_133101` |
+
+Phase B3 restarted only the two B2A/B2B backfilled risk L2 services from their
+production roots and then exercised their fixed-DAG `/v1/agent/compute` request
+shape. The smoke did not write raw service responses to the repository.
+
+Result summary:
+
+| Agent | Health | Compute | Adapter mapping | Report material |
+| --- | --- | --- | --- | --- |
+| `risk_crash` | pass, `external_agent_health_v0`, service id `crash_risk`, fixed DAG id `risk_crash` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=risk_crash`, `role=gate_member` | pass, `conclusion_object_v1`, `status=complete` | 7 evidence items, 5 research points, 6 drivers |
+| `risk_compliance_review` | pass, `external_agent_health_v0`, service id `announcement_compliance` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=risk_compliance_review`, `role=gate_member` | pass, `conclusion_object_v1`, `status=complete` | 3 evidence items, 3 research points, 5 drivers |
+
+Non-claims:
+
+- This did not call `/v1/agent/invoke`.
+- This did not modify `.env`.
+- This did not modify `config/fixed_dag/runtime_bindings.json`.
+- This did not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not make either risk L2 service a default runtime binding.
+- This does not claim model, scoring, rubric, feature, data, dependency, or
+  deployment changes.
+- Raw service responses, credentials, traceback text, provider raw responses,
+  and chain-of-thought were not stored in the repository.
+
 ## 2026-06-19 - R8-13Q L4 runtime-binding default compute smoke
 
 | Field | Value |
