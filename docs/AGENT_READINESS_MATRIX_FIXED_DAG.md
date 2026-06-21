@@ -767,6 +767,25 @@ file-level backfilled risk L2 report-material wrappers:
 This is not `/v1/agent/invoke` evidence, not default runtime enablement, and
 does not change `live_verified` or `invoke_enabled_by_default`.
 
+## 2026-06-21 Phase BG1 Backfill Gate Review
+
+Phase BG1 rechecked five next-batch sandbox-to-prod backfill candidates before
+any production file write, restart, or endpoint call. No candidate met the full
+BG1 implementation gate, so the production readiness counts below do not
+change.
+
+| Agent | BG1 gate status | Current boundary |
+| --- | --- | --- |
+| `risk_financial_fraud` | `blocked_no_prod_process` | Audited prod and sandbox wrapper files already matched for the checked paths, but no production listener/process was present on port `10013`; BG1 did not start a missing service. |
+| `market_capital_flow_chip` | `blocked_process_missing_manual_merge` | No production listener/process was present on port `10022`, and sandbox/prod/dev service and schema files have three-way drift that requires owner-aware merge review. |
+| `macro_index_valuation` | `blocked_semantic_and_service_drift` | Production process exists on port `10003`, but sandbox/prod/dev `service.py` differ and the macro-index semantic-deferred boundary still needs owner confirmation before wrapper backfill. |
+| `value_traditional_valuation` | `blocked_data_path_scope` | Production process exists on port `10000`, but sandbox changes include service wrapper material plus `tools/data_loader.py` local finance-cache/data-path behavior, outside BG1 wrapper-only scope. |
+| `value_meta_valuation` | `blocked_prod_only_preserve` | Production process exists on port `10002`, but sandbox/prod/dev drift spans service, SPTS store, valuation adapter, meta agent, historical valuation, and cache/test files; prod-only model-context explanations must be preserved before any merge. |
+
+BG1 did not call `/health`, `/v1/agent/compute`, or `/v1/agent/invoke`; did not
+modify runtime bindings or live flags; and did not change model, scoring,
+feature, training, data, dependency, or deployment files.
+
 ## Full 27-Agent Production Matrix
 
 | agent_id | layer | dimension | expected_payload_or_contract | production_endpoint | production_health_status | production_compute_status | production_adapter_mapping_status | production_status | problem_summary | solution_summary | next_action | developer_prompt_id |

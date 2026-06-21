@@ -3,6 +3,57 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-21 - Phase BG1 backfill preflight blocker batch
+
+### Changed
+
+- Recorded the BG1 sandbox-to-prod backfill preflight for the next priority
+  candidates:
+  `risk_financial_fraud`, `market_capital_flow_chip`,
+  `macro_index_valuation`, `value_traditional_valuation`, and
+  `value_meta_valuation`.
+- No candidate met the full BG1 implementation gate. Each candidate was
+  skipped before file writes, restart, or endpoint smoke.
+- Added blocker cards to the pre-backfill ledger and readiness matrix so later
+  work does not confuse sandbox report-material experiments with production
+  backfill readiness.
+- Lightly reviewed the non-write watchlist without endpoint calls:
+  `value_ml_valuation`, `value_research_synthesis`, `market_stock_technical`,
+  `risk_identification`, `macro_analysis`, `financial_data_service`,
+  `macro_commodity_pricing`, and `entity_relation_extractor`.
+
+### Blocked / Skipped
+
+- `risk_financial_fraud`: production files already match the audited sandbox
+  wrapper files for the checked paths, but no production listener/process was
+  present on port `10013`; BG1 did not start a missing service.
+- `market_capital_flow_chip`: no production listener/process was present on
+  port `10022`, and `service.py` / `compute_core.py` / `schemas.py` differ
+  across sandbox, prod, and owner-dev, requiring manual merge planning.
+- `macro_index_valuation`: production process exists on port `10003`, but
+  `service.py` differs across sandbox, prod, and owner-dev while readiness
+  documentation still carries semantic-deferred risk for owner-led confirmation.
+- `value_traditional_valuation`: production process exists on port `10000`,
+  but sandbox changes include a `tools/data_loader.py` local finance-cache
+  fallback in addition to report-material wrapper changes, which is outside the
+  BG1 wrapper-only write scope.
+- `value_meta_valuation`: production process exists on port `10002`, but
+  sandbox/prod drift spans `service.py`, `spts_store.py`, adapter/agent code,
+  data-cache behavior, and tests; sandbox also omits prod-only model-context
+  explanations that must be preserved.
+
+### Not Done
+
+- No production service file was modified.
+- No service was restarted or started.
+- No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was
+  called.
+- No `.env` file was read or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No model, scoring, feature, training, data, dependency, or deployment file
+  was changed.
+
 ## 2026-06-21 - Phase B3 risk report-material controlled restart smoke
 
 ### Changed

@@ -181,6 +181,39 @@ and adapter evidence for the report-material wrapper; it is still not
 | `macro_sentiment` | 语义更像 placeholder/regulator-style，需先定 L2 vs L3。 |
 | `macro_industry_hotspot` | placeholder/语义未定，不能包装成真实宏观 L2。 |
 
+### BG1 status update: next-batch backfill preflight
+
+Phase BG1 rechecked the next priority sandbox-to-prod candidates before any
+file write, restart, or endpoint smoke. None of the five candidates met the
+full implementation gate:
+
+| Agent | BG1 status | Blocker |
+| --- | --- | --- |
+| `risk_financial_fraud` | `blocked_no_prod_process` | Checked sandbox/prod paths already match for the audited wrapper files, but no production listener/process was present on port `10013`. BG1 did not start a missing service. |
+| `market_capital_flow_chip` | `blocked_process_missing_manual_merge` | No production listener/process was present on port `10022`; `service.py`, `compute_core.py`, and `schemas.py` differ across sandbox, prod, and owner-dev. |
+| `macro_index_valuation` | `blocked_semantic_and_service_drift` | Production process exists on port `10003`, but `service.py` differs across sandbox, prod, and owner-dev, and the current readiness matrix still carries semantic-deferred risk requiring owner-led confirmation/resmoke. |
+| `value_traditional_valuation` | `blocked_data_path_scope` | Production process exists on port `10000`, but sandbox differences include `tools/data_loader.py` local finance-cache fallback plus cache/security-master drift, not only report-material wrapper changes. |
+| `value_meta_valuation` | `blocked_prod_only_preserve` | Production process exists on port `10002`, but sandbox/prod drift spans service, `spts_store.py`, adapter/agent code, data-cache behavior, and tests; sandbox would also omit prod-only model-context explanations that must be preserved. |
+
+No BG1 production service code was modified. No service was restarted or
+started. No `/health`, `/v1/agent/compute`, or `/v1/agent/invoke` endpoint was
+called. No runtime binding or live flag changed.
+
+BG1 also performed a lightweight read-only review of the non-write watchlist.
+This did not inspect service responses and does not create compute or invoke
+evidence:
+
+| Agent | Read-only observation | Boundary |
+| --- | --- | --- |
+| `value_ml_valuation` | Production listener observed on port `10001` with cwd `/sdb/dlut/prod/机器学习企业估值智能体`. | No write, restart, endpoint call, or adapter evidence. |
+| `value_research_synthesis` | Production listener observed on port `10006` with cwd `/sdb/dlut/prod/分析师研报与观点集成智能体`. | No write, restart, endpoint call, or adapter evidence. |
+| `market_stock_technical` | Production listener observed on port `10009` with cwd `/sdb/dlut/prod/个股技术分析智能体`. | No write, restart, endpoint call, or adapter evidence. |
+| `risk_identification` | Candidate-like listener observed on port `10010` with cwd `/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体`, while runtime binding remains placeholder. | Identity was not endpoint-verified; no write, restart, endpoint call, or adapter evidence. |
+| `macro_analysis` | Production listener observed on port `10014` with cwd `/sdb/dlut/prod/宏观分析智能体`. | No write, restart, endpoint call, or adapter evidence. |
+| `financial_data_service` | Production listener observed on port `11000` with cwd `/sdb/dlut/prod/金融数据服务智能体/pg-ops-agent/backend`. | No write, restart, endpoint call, or adapter evidence. |
+| `macro_commodity_pricing` | Production listener observed on port `10004` with cwd `/sdb/dlut/prod/商品定价分析智能体/agent协议`. | No write, restart, endpoint call, or adapter evidence. |
+| `entity_relation_extractor` | No production listener or prod/sandbox service root was confirmed by the lightweight directory/port check; owner-dev root exists. | Endpoint and owner deployment remain unverified. |
+
 ## 为什么不能直接 rsync sandbox 到 prod
 
 1. prod 可能已经包含其他开发者从各自 dev agent 仓库同步过来的改动。
@@ -193,23 +226,31 @@ and adapter evidence for the report-material wrapper; it is still not
 
 ## 下一轮 backfill 的推荐顺序
 
-### 第一批：低风险、收益高
+BG1 后不能再把下列候选当作可直接回填对象。下一轮应先解决
+`blocked_*` 条件，再重新生成 patch plan。
+
+### 第一批：需要重新确认后再进入
 
 1. `value_traditional_valuation`
 2. `market_stock_technical`
 3. `risk_compliance_review`
 
-理由：三者已在最早的 sandbox demo 中验证过进入报告包，业务算法不需要大改，主要是
-report material wrapper 和证据边界。
+理由：`risk_compliance_review` 已在 B2B/B3 完成 prod file-level backfill 和
+controlled compute smoke；`value_traditional_valuation` 在 BG1 被判定为
+`blocked_data_path_scope`，必须先拆清 data-loader fallback 与 report-material
+wrapper；`market_stock_technical` 未在 BG1 写入，需要单独复核当前 prod/dev
+状态后再进 patch plan。
 
-### 第二批：当前报告质量提升明显
+### 第二批：当前报告质量提升明显，但有明确阻塞
 
 4. `value_research_synthesis`
 5. `risk_crash`
 6. `macro_index_valuation`
 
-理由：这三者对 value/risk/macro 三个维度的材料厚度影响很大，但需要更小心区分
-模型版本、宏观语义和 target normalization。
+理由：`risk_crash` 已在 B2A/B3 完成 prod file-level backfill 和 controlled
+compute smoke；`macro_index_valuation` 在 BG1 被判定为
+`blocked_semantic_and_service_drift`，需要 owner-led confirmation/resmoke；
+`value_research_synthesis` 需要单独确认 `/compute` 不引入 LLM/provider。
 
 ### 第三批：数据路径或 owner 责任更重
 
@@ -220,7 +261,9 @@ report material wrapper 和证据边界。
 11. `macro_analysis`
 
 理由：这些 agent 的 wrapper 增强已有验证，但部分依赖服务自有数据、period 快照、
-HyFormer/nowcast 边界或 owner 数据管线。
+HyFormer/nowcast 边界或 owner 数据管线。`value_meta_valuation` 和
+`risk_financial_fraud` 在 BG1 均未满足实施 gate：前者有 prod-only
+上下文需要保留，后者缺 production listener/process。
 
 ## 每个 agent backfill 前必须做的审计
 
