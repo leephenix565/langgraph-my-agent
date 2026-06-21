@@ -803,6 +803,23 @@ BG2 did not call `/v1/agent/invoke`; did not modify runtime bindings or live
 flags; and did not change service code, model, scoring, feature, training,
 data, dependency, or deployment files.
 
+## 2026-06-21 Phase BG3 B2C Duo Report-Material Refresh
+
+Phase BG3 file-level backfilled the two BG2-ready report-material wrappers and
+then refreshed controlled production compute and adapter evidence:
+
+- `risk_financial_fraud`: production `app/agent/core.py` report-material
+  projection plus `tests/test_report_material.py`; controlled compute now
+  maps to `conclusion_object_v1` with 4 evidence items, 3 research points, and
+  6 adapter drivers.
+- `macro_index_valuation`: production `service.py` report-material projection
+  plus `tests/test_domain_payload_agent.py`; controlled compute now maps to
+  `conclusion_object_v1` with 6 evidence items, 4 research points, and 7
+  adapter drivers.
+
+This is not `/v1/agent/invoke` evidence, not default runtime enablement, and
+does not change `live_verified` or `invoke_enabled_by_default`.
+
 ## Full 27-Agent Production Matrix
 
 | agent_id | layer | dimension | expected_payload_or_contract | production_endpoint | production_health_status | production_compute_status | production_adapter_mapping_status | production_status | problem_summary | solution_summary | next_action | developer_prompt_id |
@@ -820,12 +837,12 @@ data, dependency, or deployment files.
 | `market_capital_flow_chip` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10022` | pass | pass | pass | `production_compute_pass` | R8-8Q remediated envelope external id and market dimension | Backfill service patch to formal repo | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `sentiment_company_radar` | L2 | market | `conclusion_object_v1` | `127.0.0.1:10020` | pass | pass | pass | `production_compute_pass` | R8-8Q confirmed market-only production endpoint and wrapper | Preserve market-only routing | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `risk_crash` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10012` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper now carries model drivers/research points and a model-vintage caveat that distinguishes feature anti-lookahead from production-model training-window limits; main-system `risk_composite` preserves the caveat as report-facing member boundary material | Review runtime binding prepare boundary; run full endpoint contract after local TestClient compatibility issue is resolved | Runtime binding prepare review; keep disabled | n/a |
-| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; BG2 restored the production process and refreshed compute/adapter evidence, but current production output remains report-material thin until the audited wrapper backfill is applied | B2C report-material wrapper patch plan; keep runtime disabled | Runtime binding prepare review; keep disabled | n/a |
+| `risk_financial_fraud` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10013` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; BG2 restored the production process; BG3 backfilled public-safe report material without changing HyFormer scoring, thresholds, feature data, or provider paths | Report-material wrapper backfilled; keep runtime disabled | Runtime binding prepare review; keep disabled | n/a |
 | `risk_identification` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10010` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping; sandbox wrapper now carries rule-margin/MD&A-hit risk drivers and research points; sandbox 600519.SH snapshot has 2024Q3 numeric period with explicit MD&A-missing warning | Review runtime binding prepare boundary; service owner must provide full snapshot refresh pipeline before production freshness advancement | Runtime binding prepare review; keep disabled | n/a |
 | `risk_compliance_review` | L2 | risk | `conclusion_object_v1` | `127.0.0.1:10011` | pass | pass | pass | `controlled_invoke_pass` | R8-11B controlled invoke smoke passed with adapter mapping | Review runtime binding prepare boundary | Runtime binding prepare review; keep disabled | n/a |
 | `macro_analysis` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10014` | pass | pass | pass | `production_compute_pass` | Compute evidence only, no invoke; sandbox wrapper now carries macro-regime/signal-table/sector-rotation report material without changing deterministic cycle rules | Prepare read-only invoke audit | Invoke audit prep only | `PROMPT-PROD-INVOKE-AUDIT-PREP` |
 | `macro_commodity_pricing` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10004` | fail | skipped | skipped | `production_health_failed` | Fixed DAG health identity missing; compute wrapper not verified | Fix production health identity and compute wrapper | Health/compute fix + resmoke | `PROMPT-PROD-COMMODITY-COMPUTE-FIX` |
-| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | pass | pass | pass | `production_compute_pass` | Owner approval exists in service repo; BG2 refreshed controlled production compute and adapter evidence, while sandbox wrapper still carries thicker macro report material not yet backfilled | B2C report-material wrapper patch plan; keep runtime disabled | Invoke audit prep only after wrapper backfill and owner review | `PROMPT-PROD-MACRO-INDEX-OWNER` |
+| `macro_index_valuation` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10003` | pass | pass | pass | `production_compute_pass` | Owner approval exists in service repo; BG2 refreshed controlled production compute and adapter evidence; BG3 backfilled public-safe macro-index report material without changing percentile/statistical core, target normalization, data, or deploy files | Report-material wrapper backfilled; keep runtime disabled | Invoke audit prep only after owner review; no default runtime enablement | `PROMPT-PROD-MACRO-INDEX-OWNER` |
 | `macro_sentiment` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10018` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-SENTIMENT-L2-OR-L3` |
 | `macro_industry_hotspot` | L2 | macro | `conclusion_object_v1` | `127.0.0.1:10019` | skipped | skipped | skipped | `production_semantic_deferred` | Likely L3/regulator semantics | Classify L2 vs L3 | Classification before smoke | `PROMPT-PROD-MACRO-HOTSPOT-L2-OR-L3` |
 | `value_composite` | L3 | composite | `dimension_composite_result_v1` | `127.0.0.1:10015` | pass | pass | pass | `production_compute_pass` | R8-10F remediated production health identity and verified L3 value compute mapping | Prepare L3 invoke audit planning later | Keep runtime disabled until invoke audit | `PROMPT-PROD-INVOKE-AUDIT-PREP` |

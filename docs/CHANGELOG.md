@@ -3,6 +3,46 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-21 - Phase BG3 B2C duo report-material backfill
+
+### Changed
+
+- Backfilled public-safe report-material wrappers for the two BG2-unlocked
+  candidates: `risk_financial_fraud` and `macro_index_valuation`.
+- `risk_financial_fraud`: updated the production `app/agent/core.py`
+  report-material projection and added a focused service-local
+  `tests/test_report_material.py`.
+- `macro_index_valuation`: updated the production `service.py`
+  report-material projection and expanded
+  `tests/test_domain_payload_agent.py`.
+- Restarted only the two target production services after local validation:
+  `risk_financial_fraud` on port `10013` and `macro_index_valuation` on port
+  `10003`.
+- Ran controlled production `/health` and fixed-DAG `/v1/agent/compute` smoke
+  for both services, then verified provider-free main-system adapter mapping to
+  `conclusion_object_v1`.
+
+### Validated
+
+- `risk_financial_fraud`: local `py_compile` passed; focused pytest passed
+  `10` tests; controlled compute returned `4` evidence items, `3` research
+  points, and `5` raw drivers; adapter mapping preserved `4` evidence items,
+  `3` research points, and `6` drivers.
+- `macro_index_valuation`: local `py_compile` passed; focused pytest passed
+  `5` compute-path tests with the invoke test deselected; controlled compute
+  returned `6` evidence items, `4` research points, and `6` raw drivers;
+  adapter mapping preserved `6` evidence items, `4` research points, and `7`
+  drivers.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` value was inspected or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No model, scoring, feature, training, data, dependency, or deployment file
+  was changed.
+
 ## 2026-06-21 - Phase BG2 blocker unlock smoke
 
 ### Changed

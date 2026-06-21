@@ -9,6 +9,45 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-21 - Phase BG3 B2C duo report-material controlled compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | BG3 |
+| Production service roots | `/sdb/dlut/prod/财务造假风险智能体`, `/sdb/dlut/prod/股票指数估值智能体` |
+| Production ports | `risk_financial_fraud=10013`, `macro_index_valuation=10003` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Backup root | `/sdb/dlut/prod/backups/bg3_20260621_145721` |
+| Smoke artifact root | `/tmp/lma-bg3-b2c-duo-20260621_145721` |
+
+Phase BG3 applied only file-level public-safe report-material wrapper changes
+for the two target services, restarted only those services, and then exercised
+their fixed-DAG `/v1/agent/compute` request shape. The smoke did not write raw
+service responses to the repository.
+
+Result summary:
+
+| Agent | Health | Compute | Adapter mapping | Report material |
+| --- | --- | --- | --- | --- |
+| `risk_financial_fraud` | pass, `external_agent_health_v0`, service id `financial_fraud_agent` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=risk_financial_fraud`, `role=gate_member`, `status=partial` | pass, `conclusion_object_v1`, `status=partial` | 4 evidence items, 3 research points, 6 adapter drivers |
+| `macro_index_valuation` | pass, `external_agent_health_v0`, service id `macro_index_valuation`, external id `valuation_index` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=macro_index_valuation`, `dimension=macro`, `status=ok` | pass, `conclusion_object_v1`, `status=complete` | 6 evidence items, 4 research points, 7 adapter drivers |
+
+Non-claims:
+
+- This did not call `/v1/agent/invoke`.
+- This did not inspect or change `.env` values.
+- This did not modify `config/fixed_dag/runtime_bindings.json`.
+- This did not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not make either L2 service a default runtime binding.
+- This does not claim model, scoring, feature, training, data, dependency, or
+  deployment changes.
+- Raw service responses, credentials, traceback text, provider raw responses,
+  and chain-of-thought were not stored in the repository.
+
 ## 2026-06-21 - Phase BG2 blocker-unlock controlled compute smoke
 
 | Field | Value |

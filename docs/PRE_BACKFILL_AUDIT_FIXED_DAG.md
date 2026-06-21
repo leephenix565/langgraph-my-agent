@@ -233,6 +233,20 @@ BG2 called production `/health` and `/v1/agent/compute` only for
 change service code, model, scoring, feature, training, data, dependency, or
 deployment files.
 
+### BG3 status update: B2C duo report-material backfill
+
+Phase BG3 applied file-level public-safe report-material backfills only for the
+two BG2-unlocked candidates. It did not apply any directory copy and did not
+touch model, scoring, feature, training, data, dependency, or deployment files.
+
+| Agent | BG3 status | Files changed | Validation | Boundary |
+| --- | --- | --- | --- | --- |
+| `risk_financial_fraud` | `implemented_smoke_passed` | Production `app/agent/core.py`; added production `tests/test_report_material.py`. | Local `py_compile` passed; focused pytest passed `10` tests; controlled `/health`, `/v1/agent/compute`, and adapter mapping passed. Adapter material now carries 4 evidence items, 3 research points, and 6 drivers. | Still compute evidence only; no `/invoke`, no runtime binding, no live flag, and no HyFormer scoring/threshold/feature/data/deploy change. |
+| `macro_index_valuation` | `implemented_smoke_passed` | Production `service.py`; production `tests/test_domain_payload_agent.py`. | Local `py_compile` passed; focused pytest passed `5` compute-path tests with invoke deselected; controlled `/health`, `/v1/agent/compute`, and adapter mapping passed. Adapter material now carries 6 evidence items, 4 research points, and 7 drivers. | Owner-approved macro L2 direction special case; still compute evidence only, no `/invoke`, no runtime binding, no live flag, and no percentile/statistics/data/deploy change. |
+
+Sanitized artifact root: `/tmp/lma-bg3-b2c-duo-20260621_145721`.
+Backup root: `/sdb/dlut/prod/backups/bg3_20260621_145721`.
+
 ## 为什么不能直接 rsync sandbox 到 prod
 
 1. prod 可能已经包含其他开发者从各自 dev agent 仓库同步过来的改动。
@@ -245,8 +259,8 @@ deployment files.
 
 ## 下一轮 backfill 的推荐顺序
 
-BG2 后只有 `risk_financial_fraud` 和 `macro_index_valuation` 达到下一轮
-B2C patch-plan 准入。其他 BG1 候选仍需 owner/manual merge。
+BG3 已完成 `risk_financial_fraud` 和 `macro_index_valuation` 的 B2C
+report-material backfill。其他 BG1 候选仍需 owner/manual merge。
 
 ### 第一批：需要重新确认后再进入
 
@@ -268,10 +282,8 @@ wrapper；`market_stock_technical` 未在 BG1 写入，需要单独复核当前 
 7. `risk_financial_fraud`
 
 理由：`risk_crash` 已在 B2A/B3 完成 prod file-level backfill 和 controlled
-compute smoke；`macro_index_valuation` 在 BG2 已完成 owner-semantic
-确认口径和 controlled compute smoke，可进入 B2C report-material wrapper
-patch-plan；`risk_financial_fraud` 在 BG2 已恢复 production process 并完成
-controlled compute smoke，可进入 B2C report-material wrapper patch-plan；
+compute smoke；`macro_index_valuation` 和 `risk_financial_fraud` 已在 BG3
+完成 B2C report-material wrapper backfill 和 controlled compute smoke；
 `value_research_synthesis` 需要单独确认 `/compute` 不引入 LLM/provider。
 
 ### 第三批：数据路径或 owner 责任更重
