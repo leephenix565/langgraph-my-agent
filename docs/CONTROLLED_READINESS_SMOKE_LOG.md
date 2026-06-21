@@ -9,6 +9,44 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-21 - Phase BG2 blocker-unlock controlled compute smoke
+
+| Field | Value |
+| --- | --- |
+| Phase | BG2 |
+| Production service roots | `/sdb/dlut/prod/财务造假风险智能体`, `/sdb/dlut/prod/股票指数估值智能体` |
+| Production ports | `risk_financial_fraud=10013`, `macro_index_valuation=10003` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| `/v1/agent/invoke` called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Smoke artifact root | `/tmp/lma-bg2-blocker-unlock-20260621_143632` |
+
+Phase BG2 restored the missing `risk_financial_fraud` production process from
+its prod service root, then exercised only compute-path readiness for
+`risk_financial_fraud` and `macro_index_valuation`. The smoke did not write raw
+service responses to the repository.
+
+Result summary:
+
+| Agent | Health | Compute | Adapter mapping | Report material |
+| --- | --- | --- | --- | --- |
+| `risk_financial_fraud` | pass, `external_agent_health_v0`, service id `financial_fraud_agent` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=risk_financial_fraud`, `role=gate_member`, `status=partial` | pass, `conclusion_object_v1`, `status=partial` | 1 evidence item, 0 research points, 1 driver |
+| `macro_index_valuation` | pass, `external_agent_health_v0`, service id `macro_index_valuation`, external id `valuation_index` | pass, `external_agent_compute_v0`, `agent_conclusion_v1`, `agent_id=macro_index_valuation`, `dimension=macro`, `status=ok` | pass, `conclusion_object_v1`, `status=complete` | 3 evidence items, 0 research points, 0 drivers |
+
+Non-claims:
+
+- This did not call `/v1/agent/invoke`.
+- This did not modify `.env`.
+- This did not modify `config/fixed_dag/runtime_bindings.json`.
+- This did not set `live_verified=true` or
+  `invoke_enabled_by_default=true`.
+- This does not make either L2 service a default runtime binding.
+- This does not claim model, scoring, feature, training, data, dependency, or
+  deployment changes.
+- Raw service responses, credentials, traceback text, provider raw responses,
+  and chain-of-thought were not stored in the repository.
+
 ## 2026-06-21 - Phase B3 risk report-material controlled restart + compute smoke
 
 | Field | Value |

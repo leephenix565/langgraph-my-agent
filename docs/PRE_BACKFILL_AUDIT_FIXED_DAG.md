@@ -214,6 +214,25 @@ evidence:
 | `macro_commodity_pricing` | Production listener observed on port `10004` with cwd `/sdb/dlut/prod/商品定价分析智能体/agent协议`. | No write, restart, endpoint call, or adapter evidence. |
 | `entity_relation_extractor` | No production listener or prod/sandbox service root was confirmed by the lightweight directory/port check; owner-dev root exists. | Endpoint and owner deployment remain unverified. |
 
+### BG2 status update: blocker unlock smoke
+
+Phase BG2 did not apply any sandbox-to-prod file patch. It resolved only the
+blockers that could be resolved without service code changes:
+
+| Agent | BG2 status | Evidence | Next action |
+| --- | --- | --- | --- |
+| `risk_financial_fraud` | `started_smoke_passed_ready_for_B2C` | Production process restored on port `10013` from the prod service root using the documented command; controlled `/health`, `/v1/agent/compute`, and adapter mapping passed. Sanitized artifact: `/tmp/lma-bg2-blocker-unlock-20260621_143632/risk_financial_fraud`. | Generate B2C file-level patch plan for sandbox report-material wrapper only; current production output remains thin with 1 evidence item, 0 research points, and 1 adapter driver. |
+| `market_capital_flow_chip` | `blocked_local_contract_failure` | No production listener was present on port `10022`; focused local contract tests fail because service-local validation still expects legacy Chinese dimension labels while the fixed-DAG output uses `market`. | Owner fixes contract/test boundary or supplies an updated wrapper before any start/smoke. |
+| `macro_index_valuation` | `owner_semantic_approved_smoke_passed_ready_for_B2C` | Owner service docs approve the macro L2 role; existing production process on port `10003` passed controlled `/health`, `/v1/agent/compute`, and adapter mapping. Sanitized artifact: `/tmp/lma-bg2-blocker-unlock-20260621_143632/macro_index_valuation`. | Generate B2C file-level patch plan for sandbox report-material wrapper only; current production output has 3 evidence items but 0 research points and 0 drivers. |
+| `value_traditional_valuation` | `blocked_model_data_scope` | Diff audit found sandbox changes in valuation fusion, adapter assumptions, and data-loader/cache behavior, not only report-material wrapper changes. | Owner-aware manual merge plan; do not use BG2 automatic wrapper path. |
+| `value_meta_valuation` | `blocked_output_semantics_scope` | Diff audit found sandbox changes that affect valuation output behavior, including historical valuation safety-floor semantics, not only report-material wrapper changes. | Owner-aware manual merge plan; do not use BG2 automatic wrapper path. |
+
+BG2 called production `/health` and `/v1/agent/compute` only for
+`risk_financial_fraud` and `macro_index_valuation`. It did not call
+`/v1/agent/invoke`, did not modify runtime bindings or live flags, and did not
+change service code, model, scoring, feature, training, data, dependency, or
+deployment files.
+
 ## 为什么不能直接 rsync sandbox 到 prod
 
 1. prod 可能已经包含其他开发者从各自 dev agent 仓库同步过来的改动。
@@ -226,8 +245,8 @@ evidence:
 
 ## 下一轮 backfill 的推荐顺序
 
-BG1 后不能再把下列候选当作可直接回填对象。下一轮应先解决
-`blocked_*` 条件，再重新生成 patch plan。
+BG2 后只有 `risk_financial_fraud` 和 `macro_index_valuation` 达到下一轮
+B2C patch-plan 准入。其他 BG1 候选仍需 owner/manual merge。
 
 ### 第一批：需要重新确认后再进入
 
@@ -246,10 +265,13 @@ wrapper；`market_stock_technical` 未在 BG1 写入，需要单独复核当前 
 4. `value_research_synthesis`
 5. `risk_crash`
 6. `macro_index_valuation`
+7. `risk_financial_fraud`
 
 理由：`risk_crash` 已在 B2A/B3 完成 prod file-level backfill 和 controlled
-compute smoke；`macro_index_valuation` 在 BG1 被判定为
-`blocked_semantic_and_service_drift`，需要 owner-led confirmation/resmoke；
+compute smoke；`macro_index_valuation` 在 BG2 已完成 owner-semantic
+确认口径和 controlled compute smoke，可进入 B2C report-material wrapper
+patch-plan；`risk_financial_fraud` 在 BG2 已恢复 production process 并完成
+controlled compute smoke，可进入 B2C report-material wrapper patch-plan；
 `value_research_synthesis` 需要单独确认 `/compute` 不引入 LLM/provider。
 
 ### 第三批：数据路径或 owner 责任更重

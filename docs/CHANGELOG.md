@@ -3,6 +3,56 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-21 - Phase BG2 blocker unlock smoke
+
+### Changed
+
+- Ran the BG2 blocker-unlock pass for the next backfill candidates:
+  `risk_financial_fraud`, `market_capital_flow_chip`,
+  `macro_index_valuation`, `value_traditional_valuation`, and
+  `value_meta_valuation`.
+- Restored the missing `risk_financial_fraud` production process on port
+  `10013` using the documented prod service command, without changing service
+  code.
+- Ran controlled production `/health` and `/v1/agent/compute` smoke for
+  `risk_financial_fraud` and `macro_index_valuation`, then verified
+  provider-free main-system adapter mapping to `conclusion_object_v1`.
+- Recorded sanitized BG2 smoke evidence in
+  `docs/CONTROLLED_READINESS_SMOKE_LOG.md`.
+
+### Unblocked
+
+- `risk_financial_fraud`: production process restored on port `10013`; health,
+  compute, and adapter mapping passed. The current production output is still
+  report-material thin, so the sandbox report-material wrapper is the next B2C
+  patch-plan candidate.
+- `macro_index_valuation`: owner semantic approval is present in the service
+  repo; production process on port `10003` passed health, compute, and adapter
+  mapping. The sandbox report-material wrapper is the next B2C patch-plan
+  candidate.
+
+### Still Blocked
+
+- `market_capital_flow_chip`: no production listener was present on port
+  `10022`, and focused local contract tests still fail on the service-local
+  dimension validator expecting legacy Chinese dimension labels while the
+  fixed-DAG output uses `market`.
+- `value_traditional_valuation`: sandbox/prod drift includes valuation fusion,
+  adapter assumptions, and data-loader/cache behavior, not only report-material
+  wrapper changes.
+- `value_meta_valuation`: sandbox/prod drift changes valuation output behavior,
+  including historical valuation safety-floor semantics, not only wrapper
+  changes.
+
+### Not Done
+
+- No `/v1/agent/invoke` endpoint was called.
+- No `.env` file was read or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No production service code, model, scoring, feature, training, data,
+  dependency, or deployment file was changed.
+
 ## 2026-06-21 - Phase BG1 backfill preflight blocker batch
 
 ### Changed
