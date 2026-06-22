@@ -62,9 +62,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   `market_fund_manager_behavior`, plus semantic macro services.
 - BF-COMPLETE-X completed the two remaining sandbox-to-prod backfill units for
   `entity_relation_extractor` and `sentiment_company_radar`. The change-unit
-  ledger now reports 31/31 complete, but the phase did not claim
-  `backfill_complete` because the final controlled trace mapped 20/21 demo
-  agents after an existing `value_traditional_valuation` timeout.
+  ledger now reports 31/31 complete. BF-CLOSE-R1 revalidated the transient
+  `value_traditional_valuation` timeout; the 21-agent trace mapped 21/21, so
+  backfill scope is closed as `backfill_complete`.
 
 重要边界：
 

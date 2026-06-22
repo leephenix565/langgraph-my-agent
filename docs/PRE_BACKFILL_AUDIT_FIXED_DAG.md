@@ -400,7 +400,16 @@ complete units: 31
 completion ratio: 100%
 ```
 
-The phase acceptance remains blocked by final controlled trace validation:
-`value_traditional_valuation` timed out in that run, so the phase cannot be
-recorded as `backfill_complete` until the trace is revalidated. This blocker is
-not a remaining sandbox-to-prod backfill unit.
+BF-CLOSE-R1 later revalidated the transient `value_traditional_valuation`
+timeout. The single-service 20-second diagnostic passed and the final 21-agent
+trace mapped 21/21. The correct closure state is:
+
+```text
+backfill_scope_status: complete
+integrated_trace_status: pass
+acceptance: backfill_complete
+```
+
+Backfill completeness and post-backfill runtime validation remain separate
+status dimensions; owner durability also remains outside the backfill
+denominator.

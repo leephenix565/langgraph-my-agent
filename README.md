@@ -74,9 +74,10 @@ source/owner blockers.
 BF-COMPLETE-X closes the two sandbox-to-prod backfill change-unit gaps for
 `entity_relation_extractor` and `sentiment_company_radar`. The final ledger now
 counts 31/31 current-relevant integration sandbox change units as present in
-production by exact, equivalent, or stricter behavior, while phase acceptance
-remains blocked by a final-trace timeout in the pre-existing
-`value_traditional_valuation` service. See
+production by exact, equivalent, or stricter behavior. BF-CLOSE-R1 then
+revalidated the transient `value_traditional_valuation` timeout without service
+or runtime changes; the 21-agent trace mapped 21/21. Backfill scope is now
+closed as `backfill_complete`. See
 `docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md`.
 
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase

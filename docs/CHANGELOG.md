@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - BF-CLOSE-R1 backfill completion trace revalidation
+
+### Changed
+
+- Updated backfill closure docs to separate `backfill_scope_status` from
+  `integrated_trace_status`.
+- Recorded BF-CLOSE-R1 correction artifacts under
+  `/tmp/lma-backfill-closure-revalidation-20260622T143215Z`.
+
+### Validated
+
+- BF-COMPLETE-X artifact SHA verification passed.
+- The final sandbox-to-prod ledger remains 31/31 complete with zero unresolved
+  units.
+- `value_traditional_valuation` passed a single 20-second compute diagnostic
+  using the current bridge-built request; the 60-second diagnostic was not
+  needed.
+- The final 21-agent trace called 21, mapped 21, failed 0, mapped both L1
+  external bundles and both L4 compute-default agents, and passed PublicTurn
+  plus unsafe-scan checks.
+
+### Not Done
+
+- No service code, runtime source, runtime binding, live flag, provider path,
+  invoke path, owner-dev repo, model, scoring, feature, training, data-source,
+  or fusion algorithm was changed.
+
 ## 2026-06-22 - BF-COMPLETE-X sandbox-to-prod backfill completion wave
 
 ### Changed
@@ -26,9 +53,10 @@ Historical changelog entries before this reset branch are preserved by tag
 
 ### Not Done
 
-- Acceptance is `backfill_completion_validation_failed`, not
-  `backfill_complete`, because the final controlled trace timed out on existing
-  `value_traditional_valuation` and therefore mapped 20/21 demo agents.
+- BF-COMPLETE-X itself ended with `backfill_completion_validation_failed`
+  because the final controlled trace timed out on existing
+  `value_traditional_valuation` and therefore mapped 20/21 demo agents. That
+  was later revalidated and closed by BF-CLOSE-R1.
 - No `/v1/agent/invoke`, provider call, runtime-binding change, live flag,
   owner-dev repo write, or model/scoring/feature/training/fusion change was
   made.

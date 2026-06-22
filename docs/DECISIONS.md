@@ -18,7 +18,9 @@ workstreams and misstates sandbox-to-prod backfill progress.
 
 Consequence: BF-COMPLETE-X keeps the denominator at the audited 31 units,
 closes the two remaining entity/sentiment units, and records final-trace
-validation separately from the ledger ratio.
+validation separately from the ledger ratio. BF-CLOSE-R1 then revalidated the
+transient `value_traditional_valuation` timeout, so backfill scope status is
+`complete` and integrated trace status is recorded separately as `pass`.
 
 Non-consequence: this does not authorize copying entire sandbox directories,
 changing runtime bindings, or treating owner-dev acceptance as a prerequisite

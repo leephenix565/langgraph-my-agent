@@ -1,4 +1,4 @@
-# BF-COMPLETE-X Backfill Completion Wave With Validation Blocker
+# Full Sandbox-To-Prod Backfill Closure
 
 Date: 2026-06-22
 
@@ -39,7 +39,7 @@ and service-local tests. The main-system demo bridge was corrected from
 not changed. The wrapper remains market-only and rejects fixed-DAG risk
 subtasks.
 
-## Validation
+## BF-COMPLETE-X Validation
 
 Local py-compile passed for changed service wrapper files. Controlled live
 health and compute checks were run once per service, with a second sentiment
@@ -52,14 +52,31 @@ service timed out during the trace. Both L4 compute-default agents mapped, the
 report input/result validators passed, PublicTurn validation passed, and the
 pre-scrub unsafe scan was empty.
 
+## BF-CLOSE-R1 Revalidation
+
+BF-CLOSE-R1 separates backfill scope from post-backfill runtime validation.
+The `value_traditional_valuation` timeout was rechecked without modifying
+service code or global timeouts:
+
+- `GET /health`: pass.
+- `POST /v1/agent/compute` with the current bridge-built request and a
+  20-second budget: pass within budget.
+- 60-second diagnostic request: not needed.
+- Final 21-agent trace: called 21, mapped 21, failed 0.
+- L1 external mapped count: 2.
+- L4 compute-default mapped both decision/report agents.
+- PublicTurn validation passed and the pre-scrub unsafe scan was empty.
+
 ## Final Ledger Status
 
 The final change-unit ledger marks all 31 in-scope backfill units as completed
-by exact, equivalent, or superseding production behavior. However, the phase
-acceptance is not `backfill_complete` because the required final trace did not
-reach 21/21 mapped demo agents.
+by exact, equivalent, or superseding production behavior.
 
-Acceptance: `backfill_completion_validation_failed`.
+Backfill scope status: `complete`.
+
+Integrated trace status after BF-CLOSE-R1: `pass`.
+
+Acceptance: `backfill_complete`.
 
 ## Non-Claims
 
