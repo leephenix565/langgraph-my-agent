@@ -371,3 +371,36 @@ owner dev agent repo
 只有 diff 和验证计划清楚后，才进入实际 backfill。第一批建议从
 `value_traditional_valuation`、`market_stock_technical`、`risk_compliance_review`
 开始。
+
+## 2026-06-22 BF-COMPLETE-X follow-up
+
+BF-COMPLETE-X supersedes the narrow four-agent progress wording with a
+change-unit ledger. The denominator is current-relevant integration changes
+that originated in sandbox services and are still required in production. It is
+not the 27-agent readiness count, not health-pass coverage, and not owner-dev
+durability.
+
+The final BF-COMPLETE-X ledger closes the two remaining sandbox-to-prod
+backfill units:
+
+- `entity_relation_extractor__entity_relation_bundle_v1`
+- `sentiment_company_radar__market_only_wrapper`
+
+Both were deployed as minimal production wrapper packages with file-level
+backups, controlled health/compute checks, and main-system adapter mapping.
+`sentiment_company_radar` uses formal fixed-DAG id
+`sentiment_company_radar`, service-local external id `company_radar_agent`,
+and routes only to `market_composite`.
+
+The ledger result is:
+
+```text
+in-scope change units: 31
+complete units: 31
+completion ratio: 100%
+```
+
+The phase acceptance remains blocked by final controlled trace validation:
+`value_traditional_valuation` timed out in that run, so the phase cannot be
+recorded as `backfill_complete` until the trace is revalidated. This blocker is
+not a remaining sandbox-to-prod backfill unit.

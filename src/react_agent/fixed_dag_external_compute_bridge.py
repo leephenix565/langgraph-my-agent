@@ -167,7 +167,7 @@ DEMO_COMPUTE_SERVICE_REGISTRY: dict[str, ExternalComputeDemoEntry] = {
         compute_path=COMPUTE_PATH,
         expected_payload="agent_conclusion_v1",
         dimension="market",
-        external_agent_id="company_sentiment_radar",
+        external_agent_id="company_radar_agent",
     ),
     "market_ipo_investor_behavior": ExternalComputeDemoEntry(
         agent_id="market_ipo_investor_behavior",

@@ -71,6 +71,14 @@ artifacts live under
 `sentiment_company_radar`, and `market_fund_manager_behavior` remain explicit
 source/owner blockers.
 
+BF-COMPLETE-X closes the two sandbox-to-prod backfill change-unit gaps for
+`entity_relation_extractor` and `sentiment_company_radar`. The final ledger now
+counts 31/31 current-relevant integration sandbox change units as present in
+production by exact, equivalent, or stricter behavior, while phase acceptance
+remains blocked by a final-trace timeout in the pre-existing
+`value_traditional_valuation` service. See
+`docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

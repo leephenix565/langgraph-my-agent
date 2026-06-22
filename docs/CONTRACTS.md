@@ -81,6 +81,19 @@ must not emit `evidence_refs`, and must not be described as a main contributor
 in public report text. Partial members with real bounded business material may
 contribute positive weight and must remain labeled partial/degraded.
 
+BF-COMPLETE-X records the final sandbox-to-prod backfill contract closure for
+the remaining L1/L2 sandbox units. `entity_relation_extractor` production
+compute returns `external_agent_compute_v0` with
+`tool_result.schema_version=entity_relation_bundle_v1`,
+`tool_result.agent_id=entity_relation_extractor`, bounded entities/relations,
+and request-bounded `as_of` / `data_as_of`. `sentiment_company_radar` keeps
+formal fixed-DAG id `sentiment_company_radar`, uses service-local
+`external_agent_id=company_radar_agent`, emits `agent_conclusion_v1` with
+`dimension=market`, `role=direction`, and `output_routes=["market_composite"]`,
+and remains invalid for risk routing. These service closures do not relax
+compute adapter identity rules, do not change runtime bindings, and do not
+enable external invoke.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

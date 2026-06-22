@@ -62,6 +62,12 @@ CS1-C3R adds a portable copy of the same handoff material under:
 This portable bundle is easier to move off-server for owner review. It still
 does not modify owner-dev repos and does not imply owner acceptance.
 
+BF-COMPLETE-X records a separate sandbox-to-prod backfill rule: if a
+current-relevant integration fix was formed and validated in sandbox service
+work, production may satisfy it by exact, semantically equivalent, or stricter
+verified behavior. Owner-dev durability remains recorded separately and is not
+part of the sandbox-to-prod completion denominator.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

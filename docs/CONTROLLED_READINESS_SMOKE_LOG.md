@@ -9,6 +9,56 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - BF-COMPLETE-X sandbox-to-prod backfill completion wave
+
+| Field | Value |
+| --- | --- |
+| Phase | BF-COMPLETE-X |
+| Artifact root | `/tmp/lma-full-backfill-completion-20260622T135236Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, scoped `entity_relation_extractor` and `sentiment_company_radar` wrapper files |
+
+Backfill ledger:
+
+- Initial full-audit baseline: `29/31` in-scope change units complete.
+- BF-COMPLETE-X closes `entity_relation_extractor__entity_relation_bundle_v1`
+  and `sentiment_company_radar__market_only_wrapper`.
+- Final ledger: `31/31` in-scope sandbox-to-prod backfill units complete.
+
+Controlled service evidence:
+
+- `entity_relation_extractor` on production port `10017` returned
+  `external_agent_health_v0`, mapped compute to `entity_relation_bundle_v1`,
+  and propagated the external entity bundle into the controlled graph trace.
+- `sentiment_company_radar` on production port `10020` returned
+  `external_agent_health_v0`, mapped compute to market
+  `conclusion_object_v1`, preserved `external_agent_id=company_radar_agent`,
+  and routed only to `market_composite`.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Demo compute called `21` allowlisted agents, mapped `20`, and failed
+  `value_traditional_valuation` because that endpoint timed out.
+- L1 external mapped count: `2`.
+- L4 compute-default mapped both `decision_synthesizer` and
+  `report_generator`.
+- PublicTurn validation passed and the original public object passed unsafe
+  scan before artifact scrub.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not call a provider.
+- This does not change business models, scoring, training, data sources, or
+  fusion algorithms.
+
 ## 2026-06-22 - CS1-C3R remaining evidence and durability recovery
 
 | Field | Value |

@@ -688,6 +688,14 @@ def test_fake_l1_entity_external_compute_maps_to_entity_relation_bundle() -> Non
     assert "raw_response" not in rendered
 
 
+def test_sentiment_company_radar_uses_service_local_external_id() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["sentiment_company_radar"]
+
+    assert entry.agent_id == "sentiment_company_radar"
+    assert entry.dimension == "market"
+    assert entry.external_agent_id == "company_radar_agent"
+
+
 def test_fake_l3_external_compute_maps_to_dimension_result() -> None:
     entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_composite"]
 

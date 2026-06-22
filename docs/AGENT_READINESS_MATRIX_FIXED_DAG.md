@@ -95,6 +95,15 @@ called/mapped `19` demo compute agents plus both L4 compute-default agents.
 `market_fund_manager_behavior` remain source/owner blockers, not failed
 production endpoint evidence from this phase.
 
+BF-COMPLETE-X follows C3R with a sandbox-to-prod backfill completion wave.
+It closes the two remaining in-scope backfill change units:
+`entity_relation_extractor__entity_relation_bundle_v1` and
+`sentiment_company_radar__market_only_wrapper`. The final change-unit ledger is
+`31/31` complete, while the phase acceptance is still validation-blocked by a
+final trace timeout from `value_traditional_valuation`. This ledger result is
+not a runtime-binding change, not live-flag enablement, not external invoke
+readiness, and not owner-dev durability acceptance.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.
@@ -407,46 +416,39 @@ payload pass.
 
 ### entity_relation_extractor
 
-- Current status: `production_endpoint_missing`.
-- Production test result: no confirmed production endpoint was found; dev
-  `8101` is not production evidence.
-- Problem type: production deployment / endpoint missing.
-- Failure reason: production service root, port, and externally reachable local
-  production endpoint are not confirmed for the fixed DAG id.
-- Impact: L1 `entity_relation_bundle_v1` production evidence is absent.
-- Solution: service owner must provide and deploy a production endpoint with
-  `/health` and `/v1/agent/compute`; compute should return
-  `external_agent_compute_v0.tool_result.entity_relation_bundle_v1`.
-- Service owner action: publish production service root, port,
-  `external_agent_id`, health schema, compute wrapper, tests, and deployment
-  runbook.
-- Main-system maintainer action: keep endpoint status missing until production
-  endpoint discovery and production resmoke pass.
-- Retest method: production endpoint discovery, production health, production
-  compute, adapter mapping to `entity_relation_bundle_v1`; no dev endpoint
-  substitution.
-- Prompt: `PROMPT-PROD-ENDPOINT-MISSING-ENTITY`.
+- Current status: production backfill closed in BF-COMPLETE-X, with phase
+  acceptance still validation-blocked by an unrelated final-trace timeout.
+- Production test result: production `10017` returned
+  `external_agent_health_v0`, returned `external_agent_compute_v0`, and mapped
+  to `entity_relation_bundle_v1` with request-bounded dates.
+- Problem type before BF-COMPLETE-X: production deployment / endpoint missing.
+- Solution applied: audited sandbox entity-relation wrapper files were deployed
+  as a minimal production package with formal id `entity_relation_extractor`
+  and service-local external id `entity_relation_agent`; dev `8101` was not
+  counted as production evidence.
+- Retest method: production `/health`, production `/v1/agent/compute`, adapter
+  mapping to `entity_relation_bundle_v1`, and graph propagation before L2 task
+  construction; no `/v1/agent/invoke`.
+- Prompt: follow-up only if the final-trace timeout validation blocker recurs.
 
 ### sentiment_company_radar
 
-- Current status: `production_compute_pass` after R8-8Q.
-- Production test result: production `10020` passed `/health`, passed
-  `/v1/agent/compute`, and mapped to `conclusion_object_v1`.
-- Problem type: resolved production endpoint and market-dimension wrapper gap.
-- Failure reason before R8-8Q: production evidence was missing and the market
-  subagent wrapper emitted a Chinese dimension value that the main-system
-  adapter intentionally rejected.
-- Impact: this service can now enter `/invoke` audit planning as market-only
-  evidence, but it is still not live/default runtime.
-- Solution applied: the shared market subagent protocol wrapper now emits
-  adapter-facing `dimension=market` while preserving
-  `external_agent_id=company_sentiment_radar`.
-- Service owner action: backfill the wrapper patch into the formal service
-  source repository and preserve market-only routing.
-- Main-system maintainer action: keep the sentiment-to-risk guard and do not
-  relax runtime bindings.
-- Retest method: production `/health` + `/compute` + adapter mapping only; no
-  `/v1/agent/invoke` until a later audit phase.
+- Current status: production backfill closed in BF-COMPLETE-X as market-only
+  evidence.
+- Production test result: production `10020` returned
+  `external_agent_health_v0`, returned `external_agent_compute_v0`, and mapped
+  to market `conclusion_object_v1`.
+- Problem type: resolved production endpoint and market-only wrapper gap.
+- Solution applied: the service keeps formal fixed-DAG id
+  `sentiment_company_radar`, uses service-local
+  `external_agent_id=company_radar_agent`, emits `dimension=market`,
+  `role=direction`, and `output_routes=["market_composite"]`, and remains
+  rejected for risk routing.
+- Main-system maintainer action: keep the sentiment-to-risk guard, keep runtime
+  bindings disabled, and do not relax compute adapter identity.
+- Retest method: production `/health` + `/compute` + adapter mapping and
+  market/risk routing assertions only; no `/v1/agent/invoke` until a later
+  audit phase.
 - Prompt: `PROMPT-PROD-INVOKE-AUDIT-PREP`.
 
 ### value_traditional_valuation

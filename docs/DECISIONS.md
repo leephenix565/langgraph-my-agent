@@ -3,6 +3,27 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-077: Backfill Completeness Is A Change-Unit Ledger
+
+Status: accepted for BF-COMPLETE-X.
+
+Decision: sandbox-to-prod backfill completeness is measured by
+current-relevant integration change units, not by agent readiness, health-pass
+counts, or owner-dev durability. A unit is complete when production has exact,
+semantic-equivalent, or stricter verified behavior for the sandbox integration
+fix.
+
+Reason: using 27-agent coverage or owner-dev source status conflates separate
+workstreams and misstates sandbox-to-prod backfill progress.
+
+Consequence: BF-COMPLETE-X keeps the denominator at the audited 31 units,
+closes the two remaining entity/sentiment units, and records final-trace
+validation separately from the ledger ratio.
+
+Non-consequence: this does not authorize copying entire sandbox directories,
+changing runtime bindings, or treating owner-dev acceptance as a prerequisite
+for production backfill completion.
+
 ## ADR-076: L3 Real Contributors Are Not The Same As Formal Slots
 
 Status: accepted for CS1-C3R evidence integrity closure.

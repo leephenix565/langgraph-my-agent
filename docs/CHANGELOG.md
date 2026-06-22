@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - BF-COMPLETE-X sandbox-to-prod backfill completion wave
+
+### Changed
+
+- Added the production `entity_relation_extractor` wrapper package for
+  `entity_relation_bundle_v1` on port `10017`.
+- Completed the production `sentiment_company_radar` wrapper import closure on
+  port `10020` and kept it market-only.
+- Corrected the default-off demo bridge external id for
+  `sentiment_company_radar` to `company_radar_agent`.
+- Added `docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md`.
+
+### Validated
+
+- Service py-compile and controlled health/compute/adapter checks passed for
+  the two backfilled units with sanitized artifacts.
+- The final ledger counts 31/31 current-relevant sandbox-to-prod change units
+  as complete.
+- The final controlled trace passed report input/result validation, L4 mapping,
+  PublicTurn validation, and pre-scrub unsafe scan.
+
+### Not Done
+
+- Acceptance is `backfill_completion_validation_failed`, not
+  `backfill_complete`, because the final controlled trace timed out on existing
+  `value_traditional_valuation` and therefore mapped 20/21 demo agents.
+- No `/v1/agent/invoke`, provider call, runtime-binding change, live flag,
+  owner-dev repo write, or model/scoring/feature/training/fusion change was
+  made.
+
 ## 2026-06-22 - CS1-C3R remaining evidence and durability recovery
 
 ### Changed
