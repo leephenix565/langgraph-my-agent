@@ -803,6 +803,20 @@ def _safe_evidence_refs(value: Any, *, limit: int = 12) -> list[str]:
     return refs
 
 
+def _evidence_refs_member_ids(value: Any) -> set[str]:
+    member_ids: set[str] = set()
+    if not isinstance(value, list):
+        return member_ids
+    for item in value:
+        if not isinstance(item, Mapping):
+            continue
+        for key in ("agent_id", "source", "id"):
+            text = _safe_string(item.get(key), limit=160)
+            if text:
+                member_ids.add(text)
+    return member_ids
+
+
 def _numeric_in_range(value: Any, *, field: str, minimum: float = 0.0, maximum: float = 1.0) -> tuple[float, str]:
     try:
         number = float(value)
@@ -860,6 +874,89 @@ def _member_weight_summary(members: Any) -> list[dict[str, Any]]:
             member["summary"] = summary_text
         summary.append({key: value for key, value in member.items() if value != ""})
     return summary
+
+
+_NON_CONTRIBUTOR_MEMBER_STATUSES = {
+    "error",
+    "failed",
+    "missing",
+    "not_available",
+    "pending",
+    "pending_implementation",
+    "skipped",
+    "unavailable",
+}
+
+
+def _member_has_bounded_business_material(item: Mapping[str, Any]) -> bool:
+    if item.get("stance") not in (None, ""):
+        return True
+    if item.get("risk_score") not in (None, ""):
+        return True
+    if _safe_string(item.get("summary"), limit=180):
+        return True
+    for key in ("evidence", "research_points", "drivers", "domain_metrics"):
+        value = item.get(key)
+        if isinstance(value, Mapping) and value:
+            return True
+        if isinstance(value, list) and value:
+            return True
+    return False
+
+
+def _l3_member_real_contributor(item: Mapping[str, Any]) -> bool:
+    status = _safe_code(item.get("status"))
+    if status in _NON_CONTRIBUTOR_MEMBER_STATUSES:
+        return False
+    confidence = _bounded_float(item.get("confidence"), default=0.0)
+    if confidence <= 0.0:
+        return False
+    return _member_has_bounded_business_material(item)
+
+
+def _non_contributor_weight_reason(item: Mapping[str, Any]) -> str:
+    status = _safe_code(item.get("status"))
+    if status in {
+        "missing",
+        "not_available",
+        "pending",
+        "pending_implementation",
+        "skipped",
+        "unavailable",
+    }:
+        return "positive_weight_pending_member"
+    if status in {"error", "failed"}:
+        return "positive_weight_error_member"
+    return "positive_weight_no_evidence_member"
+
+
+def _validate_l3_real_contributors(
+    *,
+    members: list[Mapping[str, Any]],
+    weights: Mapping[str, float],
+    declared_contributing_agents: Any,
+    evidence: Any,
+) -> tuple[list[str], str]:
+    real_contributors: list[str] = []
+    non_contributors: set[str] = set()
+    for item in members:
+        member_agent_id = str(item.get("agent_id") or "").strip()
+        if _l3_member_real_contributor(item):
+            real_contributors.append(member_agent_id)
+            continue
+        non_contributors.add(member_agent_id)
+        if weights.get(member_agent_id, 0.0) > 0.0:
+            return [], _non_contributor_weight_reason(item)
+
+    declared = _safe_string_list(declared_contributing_agents, limit=20)
+    if declared:
+        if not set(declared) <= set(real_contributors):
+            return [], "contributing_agent_not_real_contributor"
+
+    evidence_member_refs = _evidence_refs_member_ids(evidence)
+    if evidence_member_refs & non_contributors:
+        return [], "evidence_ref_from_non_contributor"
+    return real_contributors, ""
 
 
 def _bounded_float_mapping(value: Any, *, allowed_keys: set[str], require_exact_keys: bool) -> tuple[dict[str, float], str]:
@@ -1353,7 +1450,8 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
             schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
         )
     members: list[Mapping[str, Any]] = []
-    contributing_agents: list[str] = []
+    weights: dict[str, float] = {}
+    seen_members: set[str] = set()
     total_weight = 0.0
     allowed_agents = set(DIMENSION_GROUPS[dimension])
     for item in members_value:
@@ -1372,7 +1470,7 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
                 external_agent_id=external_agent_id,
                 schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
             )
-        if member_agent_id in contributing_agents:
+        if member_agent_id in seen_members:
             return _adapter_failure(
                 "duplicate_dimension_member",
                 agent_id=agent_id,
@@ -1388,11 +1486,25 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
                 schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
             )
         total_weight += weight
-        contributing_agents.append(member_agent_id)
+        weights[member_agent_id] = weight
+        seen_members.add(member_agent_id)
         members.append(item)
     if abs(total_weight - 1.0) > 0.01:
         return _adapter_failure(
             "dimension_member_weight_sum_mismatch",
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
+            )
+    contributing_agents, contribution_reason = _validate_l3_real_contributors(
+        members=members,
+        weights=weights,
+        declared_contributing_agents=payload.get("contributing_agents"),
+        evidence=payload.get("evidence"),
+    )
+    if contribution_reason:
+        return _adapter_failure(
+            contribution_reason,
             agent_id=agent_id,
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
@@ -1508,18 +1620,18 @@ def map_external_risk_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
         )
-    contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
-    if not contributing_agents:
+    declared_contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
+    if not declared_contributing_agents:
         return _adapter_failure(
             "contributing_agents_missing",
             agent_id=agent_id,
             external_agent_id=external_agent_id,
-            schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+                schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
         )
-    if not set(contributing_agents) <= set(DIMENSION_GROUPS["risk"]):
+    if not set(declared_contributing_agents) <= set(DIMENSION_GROUPS["risk"]):
         reason = (
             "risk_reads_sentiment"
-            if "sentiment_company_radar" in contributing_agents
+            if "sentiment_company_radar" in declared_contributing_agents
             else "contributing_agents_mismatch"
         )
         return _adapter_failure(
@@ -1528,6 +1640,29 @@ def map_external_risk_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
         )
+    contributing_agents = declared_contributing_agents
+    members_value = payload.get("members")
+    if isinstance(members_value, list):
+        member_items = [item for item in members_value if isinstance(item, Mapping)]
+        weights: dict[str, float] = {}
+        for item in member_items:
+            member_agent_id = str(item.get("agent_id") or "").strip()
+            if member_agent_id in DIMENSION_GROUPS["risk"]:
+                weights[member_agent_id] = _bounded_float(item.get("weight"), default=0.0)
+        real_contributors, contribution_reason = _validate_l3_real_contributors(
+            members=member_items,
+            weights=weights,
+            declared_contributing_agents=declared_contributing_agents,
+            evidence=payload.get("evidence"),
+        )
+        if contribution_reason:
+            return _adapter_failure(
+                contribution_reason,
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
+            )
+        contributing_agents = real_contributors
     risk_score, reason = _numeric_in_range(payload.get("risk_score"), field="risk_score")
     if reason:
         return _adapter_failure(
@@ -1660,15 +1795,15 @@ def map_external_macro_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
         )
-    contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
-    if not contributing_agents:
+    declared_contributing_agents = _safe_string_list(payload.get("contributing_agents"), limit=12)
+    if not declared_contributing_agents:
         return _adapter_failure(
             "contributing_agents_missing",
             agent_id=agent_id,
             external_agent_id=external_agent_id,
-            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+                schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
         )
-    if not set(contributing_agents) <= set(DIMENSION_GROUPS["macro"]):
+    if not set(declared_contributing_agents) <= set(DIMENSION_GROUPS["macro"]):
         return _adapter_failure(
             "contributing_agents_mismatch",
             agent_id=agent_id,
@@ -1683,6 +1818,7 @@ def map_external_macro_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
         )
+    contributing_agents = declared_contributing_agents
     dimension_weights, reason = _bounded_float_mapping(
         payload.get("dimension_weights"),
         allowed_keys={"value", "market"},
@@ -1727,6 +1863,36 @@ def map_external_macro_conclusion_to_dimension_composite_result(
         allowed_keys={"growth", "value", "quality", "defensive", "cyclical"},
         require_exact_keys=False,
     )
+    member_items: list[Mapping[str, Any]] = []
+    raw_members = payload.get("members")
+    if isinstance(raw_members, Mapping):
+        member_items = [
+            {**dict(value), "agent_id": str(member_id)}
+            for member_id, value in raw_members.items()
+            if isinstance(value, Mapping)
+        ]
+    elif isinstance(raw_members, list):
+        member_items = [item for item in raw_members if isinstance(item, Mapping)]
+    if member_items:
+        weights: dict[str, float] = {}
+        for item in member_items:
+            member_agent_id = str(item.get("agent_id") or "").strip()
+            if member_agent_id in DIMENSION_GROUPS["macro"]:
+                weights[member_agent_id] = _bounded_float(item.get("weight"), default=0.0)
+        real_contributors, contribution_reason = _validate_l3_real_contributors(
+            members=member_items,
+            weights=weights,
+            declared_contributing_agents=declared_contributing_agents,
+            evidence=payload.get("evidence"),
+        )
+        if contribution_reason:
+            return _adapter_failure(
+                contribution_reason,
+                agent_id=agent_id,
+                external_agent_id=external_agent_id,
+                schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+            )
+        contributing_agents = real_contributors
     result: DimensionCompositeResult = {
         "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,

@@ -53,6 +53,15 @@ current handoff root is:
 Those handoffs do not modify owner-dev repos. They are inputs for service
 owners to review, apply, test, or reject in their own repositories.
 
+CS1-C3R adds a portable copy of the same handoff material under:
+
+```text
+/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z/portable_owner_patches
+```
+
+This portable bundle is easier to move off-server for owner review. It still
+does not modify owner-dev repos and does not imply owner acceptance.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

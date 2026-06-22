@@ -73,6 +73,14 @@ Chinese names, and diagnostic stand-ins can remain service-private diagnostics,
 but they cannot be emitted as formal members or counted as real L2 evidence.
 Pending or partial formal macro members must not contribute positive weight.
 
+CS1-C3R generalizes the L3 contributor invariant across dimensions. A formal
+member slot is not necessarily a real contributor. Pending, error,
+zero-confidence, no-evidence, deterministic placeholder, and external-failure
+fallback slots must carry zero weight, must not enter `contributing_agents`,
+must not emit `evidence_refs`, and must not be described as a main contributor
+in public report text. Partial members with real bounded business material may
+contribute positive weight and must remain labeled partial/degraded.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

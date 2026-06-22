@@ -3,6 +3,27 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-076: L3 Real Contributors Are Not The Same As Formal Slots
+
+Status: accepted for CS1-C3R evidence integrity closure.
+
+Decision: L3 composites may retain formal member slots for coverage tracking,
+but only members with current-run usable status, positive confidence, and
+bounded business material may be treated as real contributors. Pending, error,
+zero-confidence, no-evidence, deterministic-placeholder, or failed-external
+fallback slots must have zero weight and must not appear as contributors,
+evidence refs, or main report members.
+
+Reason: CS1-C3X showed market formal slots for `sentiment_company_radar` and
+`market_fund_manager_behavior` with zero confidence but positive weight and
+public report wording. That made missing evidence look like real contribution.
+
+Consequence: adapters, deterministic L3 builders, trace summaries, and report
+projection now separate formal coverage slots from real evidence contribution.
+
+Non-consequence: this does not change business fusion algorithms, model
+weights, features, scoring, training, data sources, or runtime bindings.
+
 ## ADR-075: Prod Wrapper Evidence Requires Owner-Source Durability
 
 Status: accepted for CS1-C3X source durability closure.

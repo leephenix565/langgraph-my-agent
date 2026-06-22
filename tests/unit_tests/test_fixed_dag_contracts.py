@@ -681,9 +681,14 @@ def test_dimension_composites_validate_and_preserve_sentiment_boundary() -> None
         build_default_fixed_dag_plan("q", as_of="2026-06-04")
     )
     results = build_dimension_results(conclusions, as_of="2026-06-04")
+    market_members = {
+        item["agent_id"]
+        for item in results["market"]["provenance"]["member_weight_summary"]
+    }
 
     assert set(results) == set(DIMENSION_GROUPS)
-    assert "sentiment_company_radar" in results["market"]["contributing_agents"]
+    assert "sentiment_company_radar" in market_members
+    assert "sentiment_company_radar" not in results["market"]["contributing_agents"]
     assert "sentiment_company_radar" not in results["risk"]["contributing_agents"]
     assert {"gate", "veto", "penalty", "risk_score"} <= set(results["risk"])
     assert {"regime", "dimension_weights", "risk_sensitivity"} <= set(results["macro"])
@@ -741,7 +746,7 @@ def test_risk_composite_ignores_sentiment_even_if_present_in_input() -> None:
     )
     risk = build_risk_composite(conclusions, as_of="2026-06-04")
 
-    assert risk["contributing_agents"] == list(RISK_AGENT_IDS)
+    assert risk["contributing_agents"] == []
     assert "sentiment_company_radar" not in risk["contributing_agents"]
 
 
@@ -975,6 +980,95 @@ def test_report_input_bundle_projects_l2_and_l3_public_summaries() -> None:
     assert "L3 输出" in report["answer"]
     assert "raw_response" not in rendered
     assert "must_not_leak" not in rendered
+
+
+def test_report_projection_does_not_name_pending_l3_members_as_main_contributors() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    dimensions["market"].setdefault("provenance", {})["member_weight_summary"] = [
+        {
+            "agent_id": "market_stock_technical",
+            "weight": 1.0,
+            "stance": -0.2,
+            "confidence": 0.6,
+            "status": "complete",
+        },
+        {
+            "agent_id": "sentiment_company_radar",
+            "weight": 0.0,
+            "stance": 0.0,
+            "confidence": 0.0,
+            "status": "pending_implementation",
+        },
+        {
+            "agent_id": "market_fund_manager_behavior",
+            "weight": 0.0,
+            "stance": 0.0,
+            "confidence": 0.0,
+            "status": "pending_implementation",
+        },
+    ]
+    dimensions["market"]["contributing_agents"] = ["market_stock_technical"]
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+    )
+    report = build_report_result(
+        decision,
+        question="请分析 600519.SH",
+        report_input_bundle=bundle,
+    )
+    l3_section = next(
+        section
+        for section in report["sections"]
+        if section["id"] == "l3_composite_evidence"
+    )
+
+    assert "主要成员：个股技术分析" in l3_section["content"]
+    assert "主要成员：企业舆情雷达" not in l3_section["content"]
+    assert "主要成员：基金经理行为" not in l3_section["content"]
+
+
+def test_deterministic_l3_contributing_agents_are_real_contributors_only() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    conclusions["market_stock_technical"].update(
+        {
+            "status": "complete",
+            "stance": "negative",
+            "confidence": 0.6,
+            "evidence": [
+                {
+                    "id": "technical-evidence",
+                    "fact": "技术面偏弱。",
+                    "source": "unit_test",
+                }
+            ],
+        }
+    )
+
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    valid, reason = validate_dimension_composite_result(dimensions["market"])
+
+    assert valid, reason
+    assert dimensions["market"]["contributing_agents"] == ["market_stock_technical"]
+    assert "market_fund_manager_behavior" not in dimensions["market"]["contributing_agents"]
+
+
+def test_deterministic_l3_pending_without_real_contributors_remains_valid() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    valid, reason = validate_dimension_composite_result(dimensions["market"])
+
+    assert valid, reason
+    assert dimensions["market"]["status"] == "pending_implementation"
+    assert dimensions["market"]["contributing_agents"] == []
 
 
 def test_report_input_bundle_projects_financial_fraud_and_macro_report_material() -> None:

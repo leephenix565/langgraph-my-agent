@@ -80,3 +80,40 @@ def test_fake_invoke_accepts_l4_context_kwargs_and_maps_report() -> None:
     assert result["status"] == "pass"
     assert result["mapped"]["schema"] == "report_result_v1"
     assert result["mapped"]["sections"][0]["title"] == "综合结论"
+
+
+def test_summary_from_l3_projects_member_weight_summary() -> None:
+    runner = _load_runner()
+
+    summary = runner._summary_from_l3(
+        "market",
+        {
+            "agent_id": "market_composite",
+            "dimension": "market",
+            "status": "partial",
+            "contributing_agents": ["market_stock_technical"],
+            "provenance": {
+                "member_weight_summary": [
+                    {
+                        "agent_id": "market_stock_technical",
+                        "status": "complete",
+                        "weight": 1.0,
+                        "confidence": 0.6,
+                    },
+                    {
+                        "agent_id": "market_fund_manager_behavior",
+                        "status": "pending_implementation",
+                        "weight": 0.0,
+                        "confidence": 0.0,
+                    },
+                ],
+            },
+        },
+    )
+
+    assert summary["member_count"] == 2
+    assert [item["agent_id"] for item in summary["members"]] == [
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+    ]
+    assert summary["contributing_agents"] == ["market_stock_technical"]

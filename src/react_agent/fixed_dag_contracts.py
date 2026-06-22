@@ -1850,7 +1850,11 @@ def _build_dimension_composite(
             expected_count=expected_count,
         ),
         "status": status,
-        "contributing_agents": list(expected_agent_ids),
+        "contributing_agents": [
+            agent_id for agent_id, *_rest in direction_candidates
+        ]
+        if dimension in {"value", "market", "macro"}
+        else [agent_id for agent_id, *_rest in available_candidates],
         "evidence_refs": evidence_refs,
         "as_of": as_of,
         "data_as_of": _data_as_of_for(as_of),
@@ -1982,6 +1986,10 @@ def _build_dimension_composite(
                 "veto": gate == "veto",
                 "penalty": penalty,
                 "risk_score": weighted_risk_score,
+                "contributing_agents": [
+                    agent_id
+                    for agent_id, *_rest in (risk_candidates or available_candidates)
+                ],
                 "provenance": _base_composite_provenance(
                     dimension=dimension,
                     status=status,
@@ -2111,7 +2119,9 @@ def validate_dimension_composite_result(obj: Mapping[str, Any]) -> tuple[bool, s
         return False, "agent_dimension_mismatch"
     contributing_agents = list(obj.get("contributing_agents", []))
     if not contributing_agents:
-        return False, "contributing_agents_missing"
+        status = str(obj.get("status") or "")
+        if status not in {"pending_implementation", "error"}:
+            return False, "contributing_agents_missing"
     if not set(contributing_agents) <= set(DIMENSION_GROUPS[dimension]):
         return False, "contributing_agents_mismatch"
     if dimension == "risk" and "sentiment_company_radar" in contributing_agents:
@@ -3406,8 +3416,24 @@ def _format_l3_member_preview(value: Any, *, limit: int = 4) -> str:
     if not isinstance(value, list):
         return ""
     parts: list[str] = []
-    for raw in value[:limit]:
+    for raw in value:
         if not isinstance(raw, Mapping):
+            continue
+        status = _safe_public_text(raw.get("status"), limit=40).lower()
+        if status in {
+            "error",
+            "failed",
+            "missing",
+            "not_available",
+            "pending",
+            "pending_implementation",
+            "skipped",
+            "unavailable",
+        }:
+            continue
+        if "confidence" in raw and _safe_public_float(raw.get("confidence")) <= 0.0:
+            continue
+        if "weight" in raw and _safe_public_float(raw.get("weight")) <= 0.0:
             continue
         name = _safe_public_text(raw.get("display_name") or raw.get("agent_id"), limit=60)
         if not name:
@@ -3432,6 +3458,8 @@ def _format_l3_member_preview(value: Any, *, limit: int = 4) -> str:
             parts.append(f"{fragments[0]}({','.join(fragments[1:])})")
         else:
             parts.append(fragments[0])
+        if len(parts) >= limit:
+            break
     return "；".join(parts)
 
 

@@ -67,6 +67,13 @@ static/mainline quality. Service-local focused tests for production wrappers
 remain outside default mainline and must be run only in explicit controlled
 service phases.
 
+CS1-C3R adds a source-controlled phase artifact integrity helper and L3
+real-contributor regression tests. The helper writes relative-path SHA256
+manifests only after primary artifacts and validation files are finalized, and
+stores verification output separately. Controlled production market-composite
+health/compute and the final integrated trace remain manual readiness evidence
+and are not added to default mainline.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

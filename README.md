@@ -61,6 +61,16 @@ compute-only/source-durability phase: no external invoke, provider call,
 runtime binding change, live flag change, owner-dev repo write, or business
 model/scoring/fusion change.
 
+CS1-C3R follows up on C3X artifact and evidence-integrity gaps. It adds a
+phase artifact checksum helper, fixes maintained trace L3 member summaries,
+hardens real-contributor semantics across L3 adapters/report projection, and
+patches the production `market_composite` wrapper so pending market slots keep
+formal coverage but carry zero weight and no evidence contribution. Sanitized
+artifacts live under
+`/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z`. `entity_relation_extractor`,
+`sentiment_company_radar`, and `market_fund_manager_behavior` remain explicit
+source/owner blockers.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

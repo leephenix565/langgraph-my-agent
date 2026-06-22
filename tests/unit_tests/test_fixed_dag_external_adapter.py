@@ -417,7 +417,11 @@ def _macro_conclusion_payload() -> dict[str, object]:
         "regime_detail": {"name": "neutral", "confidence": 0.69},
         "members": {
             "macro_analysis": {"confidence": 0.64, "status": "ok", "summary": "growth stable"},
-            "macro_commodity_pricing": {"confidence": 0.48, "status": "partial"},
+            "macro_commodity_pricing": {
+                "confidence": 0.48,
+                "status": "partial",
+                "summary": "commodity signals are bounded but incomplete",
+            },
             "macro_industry_hotspot": {
                 "name": "macro_industry_hotspot",
                 "confidence": 0.0,
@@ -592,6 +596,150 @@ def test_dimension_conclusion_market_maps_and_allows_sentiment_company_radar() -
     _assert_safe_public_payload(mapped)
 
 
+def test_dimension_conclusion_rejects_pending_member_positive_weight() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": -0.2,
+                "confidence": 0.6,
+                "weight": 0.95,
+                "status": "ok",
+            },
+            {
+                "agent_id": "market_fund_manager_behavior",
+                "stance": 0.0,
+                "confidence": 0.0,
+                "weight": 0.05,
+                "status": "pending",
+            },
+        ],
+    )
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "positive_weight_pending_member"
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_zero_weight_pending_member_is_not_contributor() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": -0.2,
+                "confidence": 0.6,
+                "weight": 1.0,
+                "status": "ok",
+            },
+            {
+                "agent_id": "market_fund_manager_behavior",
+                "stance": 0.0,
+                "confidence": 0.0,
+                "weight": 0.0,
+                "status": "pending",
+            },
+        ],
+    )
+    payload["contributing_agents"] = ["market_stock_technical"]
+    payload["evidence"] = [
+        {
+            "id": "market-stock-evidence",
+            "source": "market_stock_technical",
+            "fact": "技术面提供当前轮次可读材料。",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        }
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["contributing_agents"] == ["market_stock_technical"]
+    assert "market_fund_manager_behavior" not in mapped["evidence_refs"]
+    assert mapped["provenance"]["member_weight_summary"][1]["weight"] == 0.0
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_rejects_noncontributor_evidence_ref() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": -0.2,
+                "confidence": 0.6,
+                "weight": 1.0,
+                "status": "ok",
+            },
+            {
+                "agent_id": "sentiment_company_radar",
+                "stance": 0.0,
+                "confidence": 0.0,
+                "weight": 0.0,
+                "status": "pending",
+            },
+        ],
+    )
+    payload["contributing_agents"] = ["market_stock_technical"]
+    payload["evidence"] = [
+        {
+            "id": "sentiment_company_radar",
+            "source": "sentiment_company_radar",
+            "fact": "pending slot must not emit evidence refs",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        }
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "evidence_ref_from_non_contributor"
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_allows_partial_member_with_real_material() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": -0.2,
+                "confidence": 0.6,
+                "weight": 0.8,
+                "status": "ok",
+            },
+            {
+                "agent_id": "market_capital_flow_chip",
+                "stance": 0.1,
+                "confidence": 0.2,
+                "weight": 0.2,
+                "status": "partial",
+                "summary": "资金面覆盖不足但仍有可读材料。",
+            },
+        ],
+    )
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["contributing_agents"] == [
+        "market_stock_technical",
+        "market_capital_flow_chip",
+    ]
+    _assert_safe_public_payload(mapped)
+
+
 def test_dimension_conclusion_value_rejects_sentiment_or_risk_member() -> None:
     payload = _dimension_conclusion_payload(
         members=[
@@ -652,6 +800,21 @@ def test_risk_conclusion_gate_pass_maps_to_dimension_composite_result() -> None:
     assert mapped["provenance"]["triggered_flags"] == ["bounded_risk_flag"]
     assert mapped["provenance"]["member_weight_summary"][0]["risk_score"] == 0.55
     assert mapped["provenance"]["data_quality"]["member_count"] == 2
+    _assert_safe_public_payload(mapped)
+
+
+def test_risk_conclusion_partial_member_with_real_material_still_maps() -> None:
+    payload = _risk_conclusion_payload()
+    payload["members"][0]["summary"] = "规则风险项有可读证据但覆盖不足。"
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["contributing_agents"] == [
+        "risk_identification",
+        "risk_compliance_review",
+    ]
     _assert_safe_public_payload(mapped)
 
 

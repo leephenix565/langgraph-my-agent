@@ -82,6 +82,19 @@ runtime-binding counts, or live flags. Source durability remains separate:
 owner-dev handoff patches were generated for prod-only wrapper/test drift under
 `/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs`.
 
+CS1-C3R adds a correction on top of C3X. The C3X checksum manifest is known to
+be inconsistent for `cs1c3x_validation.txt`; the old artifact is not modified,
+and C3R adds a reusable artifact-integrity helper for future phases. C3R also
+hardens real-contributor semantics across L3 paths: pending/error/no-evidence
+members can remain formal coverage slots, but they must have zero weight and
+must not be counted as contributors or evidence refs. `market_composite` was
+patched and re-smoked so absent `sentiment_company_radar` and
+`market_fund_manager_behavior` are zero-weight market slots. The C3R trace
+called/mapped `19` demo compute agents plus both L4 compute-default agents.
+`entity_relation_extractor`, `sentiment_company_radar`, and
+`market_fund_manager_behavior` remain source/owner blockers, not failed
+production endpoint evidence from this phase.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

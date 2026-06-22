@@ -500,7 +500,35 @@ def _summary_from_l2(agent_id: str, item: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+def _member_summaries_from_l3(item: Mapping[str, Any]) -> list[dict[str, Any]]:
+    provenance = item.get("provenance", {})
+    raw_members = (
+        provenance.get("member_weight_summary")
+        if isinstance(provenance, Mapping)
+        else None
+    )
+    if not isinstance(raw_members, list):
+        return []
+    members: list[dict[str, Any]] = []
+    for raw in raw_members:
+        if not isinstance(raw, Mapping):
+            continue
+        agent_id = str(raw.get("agent_id") or "").strip()
+        if not agent_id:
+            continue
+        member: dict[str, Any] = {
+            "agent_id": agent_id,
+            "status": raw.get("status"),
+        }
+        for key in ("weight", "confidence", "stance", "risk_score"):
+            if raw.get(key) is not None:
+                member[key] = raw.get(key)
+        members.append(member)
+    return members
+
+
 def _summary_from_l3(dimension: str, item: Mapping[str, Any]) -> dict[str, Any]:
+    members = _member_summaries_from_l3(item)
     return {
         "dimension": dimension,
         "agent_id": item.get("agent_id"),
@@ -511,6 +539,9 @@ def _summary_from_l3(dimension: str, item: Mapping[str, Any]) -> dict[str, Any]:
         "risk_score": item.get("risk_score"),
         "regime": item.get("regime"),
         "dimension_weights": item.get("dimension_weights"),
+        "members": members,
+        "member_count": len(members),
+        "contributing_agents": item.get("contributing_agents", []),
         "source": _source(item),
     }
 

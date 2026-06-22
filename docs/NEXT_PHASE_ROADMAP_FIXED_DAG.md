@@ -54,6 +54,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   wrapper 修复，`decision_synthesizer`、`report_generator` listener 已恢复。
 - CS1-C1X accelerated trace 对 2024-12-31 问题调用 17 个 default-off demo
   compute agent，mapped 12 个；L4 两个 compute-default agent 均 mapped。
+- CS1-C3R fixed the C3X checksum ordering issue for future phases, repaired L3
+  trace member summaries, and hardened the distinction between formal L3 member
+  slots and real contributors. The latest controlled trace still maps 19 demo
+  compute agents plus both L4 agents; remaining work is source/owner closure
+  for `entity_relation_extractor`, `sentiment_company_radar`, and
+  `market_fund_manager_behavior`, plus semantic macro services.
 
 重要边界：
 

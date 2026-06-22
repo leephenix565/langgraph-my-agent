@@ -9,6 +9,47 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - CS1-C3R remaining evidence and durability recovery
+
+| Field | Value |
+| --- | --- |
+| Phase | CS1-C3R |
+| Artifact root | `/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, `market_composite` wrapper/test files only |
+
+Controlled service result:
+
+- `market_composite` returned health ok, compute ok, and adapter partial after
+  a scoped restart of port `10023`.
+- Pending `sentiment_company_radar` and `market_fund_manager_behavior` slots
+  are retained as formal market coverage slots with `weight=0`, no
+  `contributing_agents` entry, and no `evidence_refs`.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Default-off demo compute called and mapped `19` allowlisted agents.
+- L4 compute-default called and mapped both `decision_synthesizer` and
+  `report_generator`.
+- L3 member summaries are nonempty: value `4`, market `5`, risk `4`, macro `5`.
+- Temporal rejected agents: none.
+- PublicTurn validation passed and the original public object passed unsafe
+  scan before artifact scrub.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not prove provider-backed report synthesis.
+- This does not change business models, scoring, training, data sources, or
+  fusion algorithms.
+
 ## 2026-06-22 - CS1-C3X source durability and macro contract closure
 
 | Field | Value |

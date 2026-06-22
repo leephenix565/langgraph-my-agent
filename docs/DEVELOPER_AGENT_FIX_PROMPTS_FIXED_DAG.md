@@ -49,6 +49,13 @@ CS1-C3X 生成了新的 owner handoff patch root：
 在自己的 dev repo 中应用。`market_stock_technical` 的 patch dry-run 当前失败，
 必须由 owner 手工处理上下文/行尾 drift。
 
+CS1-C3R copies those handoff artifacts into a portable output bundle:
+`/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z/portable_owner_patches`.
+Nine patches are `owner_patch_ready`; `market_stock_technical` remains
+`owner_patch_conflict` because current owner files have both line-ending and
+context drift. Eleven authority-unresolved services intentionally have no
+patch and require owner/source decisions first.
+
 默认边界：
 
 - 不调用 `/v1/agent/invoke`，除非单独批准 invoke smoke；R8-11B 只批准并执行了

@@ -3,6 +3,44 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - CS1-C3R remaining evidence and durability recovery
+
+### Changed
+
+- Added a phase artifact integrity helper and tests so closeout artifacts are
+  finalized before relative-path SHA256 manifests are generated and verified.
+- Hardened L3 real-contributor semantics in the external adapter and report
+  projection: pending, error, zero-confidence, or no-evidence members must not
+  carry positive weight, enter `contributing_agents`, or emit evidence refs.
+- Fixed the maintained trace runner so L3 member summaries are extracted from
+  `provenance.member_weight_summary` instead of a nonexistent top-level
+  `members` field.
+- Patched the production `market_composite` wrapper/test so pending
+  `sentiment_company_radar` and `market_fund_manager_behavior` slots retain
+  formal coverage with `weight=0` and no evidence contribution.
+- Copied portable owner handoff patches into the CS1-C3R artifact root.
+- Added `docs/CS1_C3R_REMAINING_EVIDENCE_AND_DURABILITY_RECOVERY.md`.
+
+### Validated
+
+- Focused main-system tests for adapter, contracts, trace runner, and artifact
+  integrity passed.
+- `market_composite` focused service tests passed, then controlled health and
+  compute smoke mapped through the main-system adapter.
+- The final controlled trace called and mapped `19` demo compute agents and
+  both L4 compute-default agents; L3 summaries are nonempty for all four
+  dimensions.
+- PublicTurn validation passed and unsafe scan before scrub was empty.
+
+### Not Done
+
+- No external agent invoke endpoint was called.
+- No provider was called.
+- No runtime binding, live flag, invoke-default flag, owner-dev repo, model,
+  scoring, feature, training, data-source, or fusion algorithm was changed.
+- `entity_relation_extractor`, `sentiment_company_radar`, and
+  `market_fund_manager_behavior` remain explicit owner/source blockers.
+
 ## 2026-06-22 - CS1-C3X source durability and macro contract closure
 
 ### Changed
