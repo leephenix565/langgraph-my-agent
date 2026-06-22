@@ -49,6 +49,18 @@ The sanitized trace artifacts live under
 controlled compute-only phase: no external invoke, provider call, runtime
 binding change, live flag change, or model/scoring/fusion change.
 
+CS1-C3X closes the macro L3 member-contract follow-up from C2X and records
+source durability for prod-only wrapper work. Macro composite outputs now fail
+closed unless members are unique formal macro L2 ids, and the production macro
+wrapper projects exactly five formal macro slots without exposing local
+stand-ins as public formal evidence. Owner handoff patches and durability
+artifacts live under `/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z` and
+sanitized closeout artifacts live under
+`/tmp/lma-cs1c3x-source-durability-20260622T103501Z`. This remains a controlled
+compute-only/source-durability phase: no external invoke, provider call,
+runtime binding change, live flag change, owner-dev repo write, or business
+model/scoring/fusion change.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

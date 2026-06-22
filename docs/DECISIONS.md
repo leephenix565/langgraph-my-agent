@@ -3,6 +3,47 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-075: Prod Wrapper Evidence Requires Owner-Source Durability
+
+Status: accepted for CS1-C3X source durability closure.
+
+Decision: a production wrapper patch is not considered durable merely because
+it passed live smoke. It must either be present in the owner-dev source or have
+a reviewable owner handoff patch with before/after hashes, dry-run apply
+status, test plan, and rollback notes.
+
+Reason: CS1-C1X and CS1-C2X intentionally patched production runtime copies
+for controlled readiness. Those runtime copies are nongit service directories
+and can drift away from service-owner repositories.
+
+Consequence: readiness docs now distinguish live production evidence from
+source durability. Owner handoff artifacts live outside the main-system repo
+under production backup roots.
+
+Non-consequence: this does not authorize modifying owner-dev repositories and
+does not copy external service source into the main-system repo.
+
+## ADR-074: External L3 Members Must Be Formal And Dimension-Scoped
+
+Status: accepted for CS1-C3X macro contract closure.
+
+Decision: external L3 composite member packets must use unique formal fixed-DAG
+member ids for their dimension. Service-local aliases, Chinese names, legacy
+ids, and local diagnostic stand-ins may not masquerade as formal DAG members.
+
+Reason: CS1-C2X exposed a macro packet where local `valuation_index` and
+`industry_hotspot` stand-ins were mixed with formal macro upstream outputs.
+That made report material look thicker than the formal DAG evidence actually
+was.
+
+Consequence: the macro adapter now fails closed on noncanonical or duplicate
+macro members, and the macro service wrapper projects only the five formal
+macro L2 slots. Missing formal members may remain pending/partial with zero
+weight.
+
+Non-consequence: this does not change macro regime, dimension weights, risk
+sensitivity, value/market/risk composites, or any business fusion algorithm.
+
 ## ADR-073: Public Trace Acceptance Requires Pre-Scrub Safety
 
 Status: accepted for CS1-C2X public boundary closure.

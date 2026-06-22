@@ -418,10 +418,11 @@ def _macro_conclusion_payload() -> dict[str, object]:
         "members": {
             "macro_analysis": {"confidence": 0.64, "status": "ok", "summary": "growth stable"},
             "macro_commodity_pricing": {"confidence": 0.48, "status": "partial"},
-            "industry_hotspot": {
-                "name": "行业热点智能体（LLM 占位）",
-                "confidence": 0.5,
-                "status": "ok",
+            "macro_industry_hotspot": {
+                "name": "macro_industry_hotspot",
+                "confidence": 0.0,
+                "status": "pending",
+                "weight": 0.0,
             },
         },
         "warnings": ["macro commodity member partial"],
@@ -692,7 +693,7 @@ def test_macro_conclusion_maps_with_value_market_dimension_weights_only() -> Non
     assert mapped["risk_sensitivity"] == 0.6
     assert mapped["provenance"]["style_bias"] == {"quality": 0.7, "defensive": 0.3}
     assert mapped["provenance"]["member_weight_summary"][0]["agent_id"] == "macro_analysis"
-    assert mapped["provenance"]["member_weight_summary"][2]["status"] == "partial"
+    assert mapped["provenance"]["member_weight_summary"][2]["status"] == "pending"
     assert mapped["provenance"]["domain_metrics"]["regime_detail"] == {
         "confidence": 0.69,
         "name": "neutral",
@@ -713,6 +714,60 @@ def test_macro_conclusion_rejects_dimension_weights_containing_risk_or_macro() -
 
     assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
     assert mapped["reason"] == "dimension_weights_invalid_keys"
+    _assert_safe_public_payload(mapped)
+
+
+def test_macro_conclusion_rejects_noncanonical_member_packet() -> None:
+    payload = _macro_conclusion_payload()
+    payload["members"] = [
+        {"agent_id": "macro_analysis", "status": "ok", "confidence": 0.8},
+        {"agent_id": "股票指数估值智能体", "status": "error", "confidence": 0.0},
+        {"agent_id": "macro_index_valuation", "status": "ok", "confidence": 0.9},
+        {
+            "agent_id": "行业热点智能体（LLM 占位）",
+            "status": "partial",
+            "confidence": 0.4,
+            "stance": 0.035,
+        },
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "macro_member_agent_mismatch"
+    _assert_safe_public_payload(mapped)
+
+
+def test_macro_conclusion_rejects_duplicate_formal_member() -> None:
+    payload = _macro_conclusion_payload()
+    payload["members"] = [
+        {"agent_id": "macro_analysis", "status": "ok", "confidence": 0.8},
+        {"agent_id": "macro_index_valuation", "status": "ok", "confidence": 0.9},
+        {"agent_id": "macro_index_valuation", "status": "partial", "confidence": 0.0},
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "duplicate_macro_member"
+    _assert_safe_public_payload(mapped)
+
+
+def test_macro_conclusion_rejects_pending_member_with_nonzero_weight() -> None:
+    payload = _macro_conclusion_payload()
+    payload["members"] = {
+        "macro_analysis": {"status": "ok", "confidence": 0.8},
+        "macro_industry_hotspot": {
+            "status": "pending",
+            "confidence": 0.0,
+            "weight": 0.2,
+        },
+    }
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+
+    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
+    assert mapped["reason"] == "macro_pending_member_weight_nonzero"
     _assert_safe_public_payload(mapped)
 
 

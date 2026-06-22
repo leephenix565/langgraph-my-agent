@@ -71,6 +71,17 @@ The C2X full logical trace called and mapped `19` demo compute agents plus both
 L4 compute-default agents, with no temporal rejects. This remains compute-only
 evidence and does not change runtime bindings, live flags, or invoke readiness.
 
+CS1-C3X closes a follow-up macro composite contract issue. `macro_composite`
+now emits a five-slot canonical macro member packet only:
+`macro_analysis`, `macro_commodity_pricing`, `macro_index_valuation`,
+`macro_sentiment`, and `macro_industry_hotspot`. The adapter rejects duplicate
+or noncanonical macro members, and local stand-ins are not counted as formal
+L2 evidence. The C3X trace again called/mapped `19` demo compute agents plus
+both L4 compute-default agents. This does not change invoke readiness,
+runtime-binding counts, or live flags. Source durability remains separate:
+owner-dev handoff patches were generated for prod-only wrapper/test drift under
+`/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs`.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

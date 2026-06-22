@@ -9,6 +9,51 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - CS1-C3X source durability and macro contract closure
+
+| Field | Value |
+| --- | --- |
+| Phase | CS1-C3X |
+| Artifact root | `/tmp/lma-cs1c3x-source-durability-20260622T103501Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, scoped wrapper/test files only |
+
+Controlled service result:
+
+- `macro_composite` returned health ok, compute ok, and adapter partial with
+  canonical macro members only:
+  `macro_analysis`, `macro_commodity_pricing`, `macro_index_valuation`,
+  `macro_sentiment`, and `macro_industry_hotspot`.
+- `market_capital_flow_chip` local contract drift tests were repaired and
+  focused tests passed; no restart was needed for that test/schema-only
+  contract closure.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Default-off demo compute called and mapped `19` allowlisted agents.
+- Temporal rejected agents: none.
+- L4 compute-default called and mapped both `decision_synthesizer` and
+  `report_generator`.
+- `macro_composite` emitted five formal macro slots; the two missing macro L2
+  services remained pending/partial with zero weight and were not counted as
+  real L2 evidence.
+- PublicTurn validation passed and the original public object passed unsafe
+  scan before artifact scrub.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not prove provider-backed report synthesis.
+- This does not change business models, scoring, training, data sources, or
+  fusion algorithms.
+
 ## 2026-06-22 - CS1-C2X temporal market public closure
 
 | Field | Value |

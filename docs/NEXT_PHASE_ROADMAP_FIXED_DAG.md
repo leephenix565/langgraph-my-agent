@@ -320,6 +320,21 @@ closure, especially `market_fund_manager_behavior`,
 - 不把外部服务源码并入主系统仓库。
 - 不在 public transcript 中暴露 raw response、secret、traceback 或 chain-of-thought。
 
+## CS1-C3X Current Follow-Up
+
+CS1-C3X closed the macro member contract issue and produced owner-source
+handoff patches for prod-only wrapper/test drift. The next safe phase should
+focus on source/owner blocked evidence paths, not another blanket backfill:
+
+1. `entity_relation_extractor`: establish production root/listener and
+   `entity_relation_bundle_v1` compute evidence without using dev 8101 as prod.
+2. `sentiment_company_radar`: establish a production market-only service that
+   routes only to `market_composite`.
+3. `market_fund_manager_behavior`: resolve formal source, owner, endpoint, and
+   business role before any deployment.
+4. Owner handoff review: apply or reject generated patches under
+   `/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs`.
+
 ## Suggested Prompt For A New Codex Session
 
 新开对话时可以让 Codex 先读这些入口：

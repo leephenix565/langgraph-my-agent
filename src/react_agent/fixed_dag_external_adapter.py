@@ -1675,6 +1675,14 @@ def map_external_macro_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
             schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
         )
+    members_failure = _validate_macro_member_packet(payload.get("members"))
+    if members_failure:
+        return _adapter_failure(
+            members_failure,
+            agent_id=agent_id,
+            external_agent_id=external_agent_id,
+            schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
+        )
     dimension_weights, reason = _bounded_float_mapping(
         payload.get("dimension_weights"),
         allowed_keys={"value", "market"},
@@ -1756,6 +1764,47 @@ def map_external_macro_conclusion_to_dimension_composite_result(
             schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
         )
     return cast(dict[str, Any], result)
+
+
+def _validate_macro_member_packet(members: Any) -> str:
+    if members in (None, ""):
+        return ""
+    allowed_agents = set(DIMENSION_GROUPS["macro"])
+    if isinstance(members, Mapping):
+        items = [
+            (str(agent_id or "").strip(), value if isinstance(value, Mapping) else {})
+            for agent_id, value in members.items()
+        ]
+    elif isinstance(members, list):
+        items = []
+        for item in members:
+            if not isinstance(item, Mapping):
+                return "invalid_macro_member"
+            items.append((str(item.get("agent_id") or "").strip(), item))
+    else:
+        return "invalid_macro_members"
+
+    seen: set[str] = set()
+    for member_agent_id, item in items:
+        if member_agent_id not in allowed_agents:
+            return "macro_member_agent_mismatch"
+        if member_agent_id in seen:
+            return "duplicate_macro_member"
+        seen.add(member_agent_id)
+
+        status = str(item.get("status") or "").strip()
+        if status in {"error", "partial", "pending", "not_available"}:
+            weight_value = item.get("weight")
+            if weight_value not in (None, ""):
+                weight, reason = _numeric_in_range(
+                    weight_value,
+                    field="member_weight",
+                )
+                if reason:
+                    return reason
+                if weight > 0.0:
+                    return "macro_pending_member_weight_nonzero"
+    return ""
 
 
 def _safe_l4_text(value: Any, *, limit: int = 700) -> str:

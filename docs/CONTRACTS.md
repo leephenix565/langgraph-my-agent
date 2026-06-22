@@ -64,6 +64,15 @@ CS1-C2X also clarifies public trace acceptance: the real PublicTurn and
 Workflow objects must pass unsafe scanning before artifact scrub. Scrubbed
 artifacts are not a substitute for a safe public contract.
 
+CS1-C3X adds a formal L3 member identity invariant for external composites.
+Macro composite payloads that include `members` must use unique formal macro L2
+ids only:
+`macro_analysis`, `macro_commodity_pricing`, `macro_index_valuation`,
+`macro_sentiment`, and `macro_industry_hotspot`. Service-local aliases,
+Chinese names, and diagnostic stand-ins can remain service-private diagnostics,
+but they cannot be emitted as formal members or counted as real L2 evidence.
+Pending or partial formal macro members must not contribute positive weight.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

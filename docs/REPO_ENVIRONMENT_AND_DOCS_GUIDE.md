@@ -40,6 +40,19 @@
 因此，后续处理外部 agent 时必须先确认来源：这是用户的 sandbox 实验、用户要同步
 到 prod 的运行改动，还是其他开发者拥有的 dev agent 仓库改动。
 
+CS1-C3X adds a durability rule for prod-only wrapper work: a successful
+production smoke is not the same as owner-source acceptance. When a production
+service runtime copy is patched before its owner-dev repository is updated, the
+phase must leave a reviewable handoff patch outside the main-system repo. The
+current handoff root is:
+
+```text
+/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs
+```
+
+Those handoffs do not modify owner-dev repos. They are inputs for service
+owners to review, apply, test, or reject in their own repositories.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

@@ -42,6 +42,13 @@ invoke evidence，不是 runtime binding enablement、live_verified 或默认图
 后续 prompt 仍应区分：已通过首批 invoke 的 agent 可以进入 runtime-binding
 prepare review；其余 compute-pass agent 仍需要只读 invoke audit 或 wrapper backfill。
 
+CS1-C3X 生成了新的 owner handoff patch root：
+`/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs`。这些 patch
+是 review handoff，不是 owner-dev 已接受的源码变更。服务 owner 应先阅读每个
+`manifest.json`、`apply_check.txt`、`test_plan.txt` 和 `rollback.txt`，再决定是否
+在自己的 dev repo 中应用。`market_stock_technical` 的 patch dry-run 当前失败，
+必须由 owner 手工处理上下文/行尾 drift。
+
 默认边界：
 
 - 不调用 `/v1/agent/invoke`，除非单独批准 invoke smoke；R8-11B 只批准并执行了

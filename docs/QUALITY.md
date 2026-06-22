@@ -60,6 +60,13 @@ mainline: mainline remains provider-free and external-endpoint-free. The C2X
 regression coverage that belongs in mainline is limited to source-controlled
 bridge, temporal guard, public mapping, executor, contracts, and docs tests.
 
+CS1-C3X controlled macro smoke and the final integrated trace are also manual
+readiness evidence. The durable mainline coverage is the source-controlled
+adapter regression for formal macro members, plus docs tests and standard
+static/mainline quality. Service-local focused tests for production wrappers
+remain outside default mainline and must be run only in explicit controlled
+service phases.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

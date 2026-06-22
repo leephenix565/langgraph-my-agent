@@ -21,6 +21,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md` | Pre-backfill audit ledger: what changed in the main system, which sandbox/prod agent-service changes exist, which agents are backfill candidates, and what must not be overwritten. |
 | `docs/CS1_C1X_ACCELERATED_BULK_REMEDIATION.md` | CS1-C1X implementation ledger: health identity policy, request-as-of temporal invariant, scoped production wrapper patches, L4 listener recovery, integrated trace, rollback, and non-claims. |
 | `docs/CS1_C2X_TEMPORAL_MARKET_PUBLIC_CLOSURE.md` | CS1-C2X implementation ledger: public-turn pre-scrub safety closure, temporal service fixes, IPO compute route, market listener recovery, controlled full logical trace, rollback, and remaining blockers. |
+| `docs/CS1_C3X_SOURCE_DURABILITY_AND_REMAINING_EVIDENCE.md` | CS1-C3X implementation ledger: macro formal-member contract closure, production wrapper/test drift closure, owner-source durability handoff, final controlled trace, rollback, and remaining blockers. |
 | `docs/报告完善计划（中文）.md` | Report-quality improvement plan: public-safe report material contract, L3 deterministic-fusion/LLM-explanation boundary, and staged L2/L3 enhancement sequence. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
@@ -157,3 +158,8 @@ compute-only listener recovery in `docs/CS1_C1X_ACCELERATED_BULK_REMEDIATION.md`
 The phase keeps compute identity strict, does not call external invoke, does
 not change runtime bindings, and does not promote non-L4 services into default
 runtime.
+CS1-C3X adds formal, dimension-scoped L3 member validation for macro composite
+outputs, removes service-local macro stand-ins from public formal evidence, and
+records owner-source handoff patches for prod-only wrapper/test drift. It does
+not change runtime bindings, live flags, invoke defaults, provider behavior, or
+business fusion algorithms.

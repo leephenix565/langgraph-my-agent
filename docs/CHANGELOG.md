@@ -3,6 +3,43 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - CS1-C3X source durability and macro contract closure
+
+### Changed
+
+- Added macro L3 member fail-closed validation in the external adapter:
+  `members` must be unique formal macro L2 ids, and pending/partial/error
+  formal members cannot carry positive weight.
+- Patched the production `macro_composite` wrapper so fixed-DAG responses
+  project exactly five formal macro slots and no service-local stand-in member
+  is emitted as public formal evidence.
+- Closed `market_capital_flow_chip` service-local contract drift by aligning
+  local schema/tests with canonical `dimension=market`.
+- Generated reviewable owner-dev handoff patches for production wrapper/test
+  drift and recorded source durability status in sanitized artifacts.
+- Added `docs/CS1_C3X_SOURCE_DURABILITY_AND_REMAINING_EVIDENCE.md`.
+
+### Validated
+
+- `macro_composite` health, compute, and adapter mapping passed after a scoped
+  restart of port `10024`.
+- The final default-off trace called and mapped `19` demo compute agents and
+  mapped both L4 compute-default agents.
+- Macro members in report input are now the canonical five-member packet:
+  `macro_analysis`, `macro_commodity_pricing`, `macro_index_valuation`,
+  `macro_sentiment`, and `macro_industry_hotspot`.
+- PublicTurn validation passed and the pre-scrub unsafe scan was empty.
+
+### Not Done
+
+- No external agent invoke endpoint was called.
+- No provider was called.
+- No runtime binding, live flag, invoke-default flag, model, scoring, feature,
+  training, data-source, or fusion algorithm was changed.
+- `entity_relation_extractor`, `sentiment_company_radar`, and
+  `market_fund_manager_behavior` remain explicit owner/source/listener
+  blockers.
+
 ## 2026-06-22 - CS1-C2X temporal market public closure
 
 ### Changed
