@@ -68,6 +68,12 @@ work, production may satisfy it by exact, semantically equivalent, or stricter
 verified behavior. Owner-dev durability remains recorded separately and is not
 part of the sandbox-to-prod completion denominator.
 
+POST-BF-B1X continues that separation. It applies scoped production wrapper
+readiness and latency fixes for runtime services while leaving owner-dev repos
+untouched. These prod runtime changes require backup, hash, restart, smoke, and
+owner handoff records; they do not make owner-dev durability complete and do not
+change the main-system default runtime.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

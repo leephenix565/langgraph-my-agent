@@ -3,6 +3,29 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-078: Production Readiness Is Separate From Runtime Activation
+
+Status: accepted for POST-BF-B1X.
+
+Decision: post-backfill production readiness may improve service liveness,
+contract readiness, data readiness, latency, and semantic gates without
+activating non-L4 agents in the default product runtime. The production
+activation candidate set is an input to a later orchestration phase, not a
+runtime binding edit.
+
+Reason: the backfill ledger is closed, but normal user requests still have only
+the two L4 `external_compute_default` services enabled. Controlled demo bridge
+evidence proves mappable compute paths, not default runtime behavior.
+
+Consequence: readiness docs now distinguish `service_alive`,
+`contract_available`, `compute_available`, `data_dependency_ready`, and
+`ready_for_default_runtime`. Entity and sentiment services can remain healthy
+but degraded and explicitly not default-ready.
+
+Non-consequence: this does not modify `runtime_bindings.json`, set live flags,
+enable external invoke, call providers, or change model/scoring/feature/training
+or fusion logic.
+
 ## ADR-077: Backfill Completeness Is A Change-Unit Ledger
 
 Status: accepted for BF-COMPLETE-X.

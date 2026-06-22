@@ -94,6 +94,17 @@ and remains invalid for risk routing. These service closures do not relax
 compute adapter identity rules, do not change runtime bindings, and do not
 enable external invoke.
 
+POST-BF-B1X adds readiness metadata as optional health fields for services that
+need to distinguish liveness from production-default readiness:
+`service_alive`, `contract_available`, `compute_available`,
+`data_dependency_ready`, `ready_for_default_runtime`, `readiness_status`, and
+`degraded_reason`. These fields are additive to `external_agent_health_v0` and
+do not change compute adapter identity rules. A service can be alive and
+compute-capable while still not ready for default runtime because data
+dependencies are unavailable. The sentiment wrapper also preserves the
+fixed-DAG contract name `stock_sentiment` while internally dispatching to the
+existing core `sentiments` implementation.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

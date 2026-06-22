@@ -65,6 +65,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   ledger now reports 31/31 complete. BF-CLOSE-R1 revalidated the transient
   `value_traditional_valuation` timeout; the 21-agent trace mapped 21/21, so
   backfill scope is closed as `backfill_complete`.
+- POST-BF-B1X keeps backfill frozen at 31/31 and starts production readiness
+  foundation work. Entity/sentiment now expose bounded readiness metadata,
+  sentiment fixed-DAG `stock_sentiment` dispatches to the current core
+  `sentiments` implementation, traditional valuation latency passes a
+  five-sample hot-path gate, and the next non-L4 activation candidate set is
+  recorded without enabling default runtime.
 
 重要边界：
 
@@ -75,6 +81,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 - production compute pass 不等于 production default invocation；当前唯一例外是
   已批准的 L4 compute-only default path。
 - demo bridge 不是生产运行时默认路径。
+- POST-BF-B1X 的 activation candidate set 只是下一轮 orchestration 输入；它
+  不修改 `runtime_bindings.json`，不设置 live flags，也不把非 L4 服务加入默认
+  用户路径。
 
 ## Directory Operating Model
 

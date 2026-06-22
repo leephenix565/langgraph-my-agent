@@ -9,6 +9,49 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - POST-BF-B1X production readiness foundation
+
+| Field | Value |
+| --- | --- |
+| Phase | POST-BF-B1X |
+| Artifact root | `/tmp/lma-post-bf-b1x-readiness-foundation-20260622T154013Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, scoped entity/sentiment readiness wrappers and traditional valuation timing/cache wrapper |
+
+Controlled service evidence:
+
+- `entity_relation_extractor` health is degraded with
+  `ready_for_default_runtime=false`; compute still maps partial
+  `entity_relation_bundle_v1`.
+- `sentiment_company_radar` health is degraded with
+  `ready_for_default_runtime=false`; fixed-DAG `stock_sentiment` now dispatches
+  to core `sentiments` and maps partial market `conclusion_object_v1`.
+- `value_traditional_valuation` passed warm-up plus five serial 20-second
+  compute samples, all mapping to complete value conclusions.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Default-off demo compute called and mapped `21` allowlisted agents.
+- L4 compute-default mapped both `decision_synthesizer` and
+  `report_generator`.
+- PublicTurn validation passed and the original public object passed unsafe
+  scan before artifact scrub.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not call a provider.
+- This does not perform a database write or migration.
+- This does not change business models, scoring, training, data sources, or
+  fusion algorithms.
+
 ## 2026-06-22 - BF-COMPLETE-X sandbox-to-prod backfill completion wave
 
 | Field | Value |

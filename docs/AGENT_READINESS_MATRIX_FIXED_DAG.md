@@ -104,6 +104,14 @@ final trace timeout from `value_traditional_valuation`. This ledger result is
 not a runtime-binding change, not live-flag enablement, not external invoke
 readiness, and not owner-dev durability acceptance.
 
+BF-CLOSE-R1 revalidates that timeout and closes backfill with a 21/21
+controlled trace. POST-BF-B1X then records production readiness foundation
+status: entity and sentiment are compute-capable but data-degraded and not
+default-runtime-ready; sentiment's `stock_sentiment` wrapper mismatch is fixed;
+traditional valuation clears the local 5-sample latency gate; and the remaining
+formal L2 agents (`market_fund_manager_behavior`, `macro_sentiment`,
+`macro_industry_hotspot`) remain semantic/source-gated pending slots.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

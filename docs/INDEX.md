@@ -24,6 +24,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/CS1_C3X_SOURCE_DURABILITY_AND_REMAINING_EVIDENCE.md` | CS1-C3X implementation ledger: macro formal-member contract closure, production wrapper/test drift closure, owner-source durability handoff, final controlled trace, rollback, and remaining blockers. |
 | `docs/CS1_C3R_REMAINING_EVIDENCE_AND_DURABILITY_RECOVERY.md` | CS1-C3R follow-up ledger: artifact checksum correction, real-contributor semantics, market pending-member zero-weight closure, portable owner patches, final trace, and remaining blockers. |
 | `docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md` | BF-COMPLETE-X/BF-CLOSE-R1 sandbox-to-prod backfill closure: final 31-unit ledger, entity/sentiment production backfill, trace revalidation, and non-claims. |
+| `docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md` | POST-BF-B1X post-backfill readiness foundation: dependency readiness semantics, sentiment subtask alignment, valuation latency stabilization, remaining L2 semantic decisions, activation candidates, and non-claims. |
 | `docs/报告完善计划（中文）.md` | Report-quality improvement plan: public-safe report material contract, L3 deterministic-fusion/LLM-explanation boundary, and staged L2/L3 enhancement sequence. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |
@@ -165,3 +166,10 @@ outputs, removes service-local macro stand-ins from public formal evidence, and
 records owner-source handoff patches for prod-only wrapper/test drift. It does
 not change runtime bindings, live flags, invoke defaults, provider behavior, or
 business fusion algorithms.
+CS1-C3R then hardens real-contributor semantics and artifact integrity for
+later phases. BF-COMPLETE-X/BF-CLOSE-R1 close the sandbox-to-prod backfill
+change-unit ledger at 31/31 and revalidate the 21-agent controlled trace.
+POST-BF-B1X keeps that backfill result frozen and starts production-readiness
+foundation work for dependency readiness, valuation latency, remaining L2
+semantics, and future non-L4 activation candidates without changing
+runtime bindings or default product runtime.

@@ -80,6 +80,17 @@ or runtime changes; the 21-agent trace mapped 21/21. Backfill scope is now
 closed as `backfill_complete`. See
 `docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md`.
 
+POST-BF-B1X starts post-backfill production readiness foundation work. It keeps
+the backfill ledger frozen at 31/31 and keeps the default product external
+runtime limited to the two L4 compute-default services. The phase adds bounded
+readiness metadata to entity/sentiment production wrappers, fixes the
+`sentiment_company_radar` fixed-DAG `stock_sentiment` wrapper mapping to the
+existing core `sentiments` subtask, adds private timing/caching stabilization
+for `value_traditional_valuation`, records the three remaining formal L2
+semantic blockers, and produces a non-L4 activation candidate set for a future
+orchestration phase. See
+`docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

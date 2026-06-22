@@ -74,6 +74,14 @@ stores verification output separately. Controlled production market-composite
 health/compute and the final integrated trace remain manual readiness evidence
 and are not added to default mainline.
 
+POST-BF-B1X keeps service health/compute measurements and the 21-agent
+controlled regression trace as explicit manual readiness evidence. Default
+mainline remains provider-free and external-endpoint-free. The durable repo
+coverage is documentation, contract, adapter, public-mapping, and graph tests;
+live service timing samples, readiness metadata checks, and production wrapper
+smokes stay outside default mainline unless a future phase creates fully mocked
+source-controlled fixtures.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

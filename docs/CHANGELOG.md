@@ -3,6 +3,39 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - POST-BF-B1X production readiness foundation
+
+### Changed
+
+- Added `docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md`.
+- Added bounded readiness metadata to production entity/sentiment health
+  wrappers without changing the primary `external_agent_health_v0` contract.
+- Aligned `sentiment_company_radar` fixed-DAG `stock_sentiment` wrapper
+  requests to the current core `sentiments` subtask while preserving
+  market-only routing.
+- Added bounded private timing and process-local immutable resource reuse for
+  `value_traditional_valuation` compute.
+- Recorded remaining formal L2 semantic blockers and a non-L4 activation
+  candidate set for a future orchestration phase.
+
+### Validated
+
+- Backfill remains `31/31`.
+- Default product external runtime remains L4-only.
+- Entity and sentiment health/compute mapped through the current adapter as
+  degraded/partial with explicit not-default-ready readiness state.
+- Traditional valuation warm-up plus five serial 20-second samples passed;
+  all five mapped through the adapter.
+- The controlled default-off demo regression trace called and mapped 21/21
+  agents, mapped both L4 compute-default agents, and passed PublicTurn plus
+  unsafe-scan checks.
+
+### Not Done
+
+- No `/v1/agent/invoke`, provider call, runtime-binding change, live flag,
+  default non-L4 activation, database write/migration, owner-dev repo write,
+  or model/scoring/feature/training/fusion change was made.
+
 ## 2026-06-22 - BF-CLOSE-R1 backfill completion trace revalidation
 
 ### Changed
