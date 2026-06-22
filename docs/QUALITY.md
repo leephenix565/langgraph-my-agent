@@ -54,6 +54,12 @@ These checks are not default reset mainline gates:
 - Router-SFT and RARP/route-prior: archived lineage only.
 - browser screenshot visual capture: manual frontend visual acceptance only.
 
+CS1-C2X controlled production health/compute and full logical trace artifacts
+are manual readiness evidence. They are intentionally not added to default
+mainline: mainline remains provider-free and external-endpoint-free. The C2X
+regression coverage that belongs in mainline is limited to source-controlled
+bridge, temporal guard, public mapping, executor, contracts, and docs tests.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

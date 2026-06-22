@@ -61,6 +61,16 @@ counted as 2024 evidence until their service-side date semantics are fixed:
 has canonical health identity, but its current production compute route remains
 blocked in the integrated trace.
 
+CS1-C2X closes those immediate C1X blockers. The four temporal-rejected
+services now pass controlled production compute and adapter mapping for
+`as_of=2024-12-31`, and `market_ipo_investor_behavior` now has a production
+compute route that maps to `conclusion_object_v1`. `market_capital_flow_chip`
+was restored on port `10022`; `market_composite` was restored on port `10023`
+and maps as partial while fund-manager and sentiment members remain absent.
+The C2X full logical trace called and mapped `19` demo compute agents plus both
+L4 compute-default agents, with no temporal rejects. This remains compute-only
+evidence and does not change runtime bindings, live flags, or invoke readiness.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

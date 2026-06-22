@@ -3,6 +3,48 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - CS1-C2X temporal market public closure
+
+### Changed
+
+- Projected requested `as_of` into top-level, context, and options aliases for
+  external compute requests so migrated production services consume the same
+  historical boundary.
+- Removed a literal external invoke endpoint string from L4 workflow
+  provenance limitations; the non-claim remains present without an unsafe
+  endpoint marker.
+- Patched production wrapper/protocol files for four temporal-rejected services:
+  `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, and `risk_crash`.
+- Added the production compute route wrapper for
+  `market_ipo_investor_behavior`.
+- Restored production listeners for `market_capital_flow_chip` and
+  `market_composite`.
+- Added `docs/CS1_C2X_TEMPORAL_MARKET_PUBLIC_CLOSURE.md` and ADR entries for
+  public-turn pre-scrub safety and real request-as-of data-window compliance.
+
+### Validated
+
+- Controlled health, compute, and adapter mapping passed for the six changed
+  service wrappers and the two recovered market services; `market_composite`
+  mapped as `partial` because fund-manager and sentiment members remain absent.
+- New full logical DAG trace called and mapped `19` default-off demo compute
+  services and mapped both L4 compute-default services.
+- Temporal rejected agents are now `[]` for the 2024-12-31 trace.
+- PublicTurn validation passed and the original public object passed unsafe
+  scan before artifact scrub.
+
+### Not Done
+
+- No external agent invoke endpoint was called.
+- No provider was called.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No model, scoring, threshold, feature, training, data-source, dependency, or
+  fusion algorithm was changed.
+- `market_fund_manager_behavior` and `sentiment_company_radar` remain explicit
+  blockers.
+
 ## 2026-06-22 - CS1-C1X accelerated bulk readiness convergence
 
 ### Changed

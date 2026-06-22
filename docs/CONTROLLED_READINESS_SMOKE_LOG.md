@@ -9,6 +9,48 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - CS1-C2X temporal market public closure
+
+| Field | Value |
+| --- | --- |
+| Phase | CS1-C2X |
+| Artifact root | `/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, scoped wrapper/protocol files only |
+
+Controlled service results:
+
+- `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `risk_crash`, `market_ipo_investor_behavior`, and
+  `market_capital_flow_chip` all returned health ok, compute ok, and adapter
+  complete for `as_of=2024-12-31`.
+- `market_composite` returned health ok, compute partial, and adapter partial;
+  this is expected while `market_fund_manager_behavior` and
+  `sentiment_company_radar` remain absent.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Default-off demo compute called and mapped `19` allowlisted agents.
+- Temporal rejected agents: none.
+- L4 compute-default called and mapped both `decision_synthesizer` and
+  `report_generator`.
+- PublicTurn validation passed.
+- Public object unsafe scan passed before artifact scrub.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not prove provider-backed report synthesis.
+- This does not change business models, scoring, training, data sources, or
+  fusion algorithms.
+
 ## 2026-06-22 - CS1-C1X accelerated bulk readiness convergence
 
 | Field | Value |

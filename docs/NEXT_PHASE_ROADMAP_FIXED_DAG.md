@@ -262,6 +262,25 @@ public transcript 安全边界。
 5. 建立可重复运行的 sanitized trace artifact 格式。
 6. 设计非 L4 runtime binding prepare checklist，但不自动启用。
 
+## CS1-C2X Update
+
+CS1-C2X closed the public-turn and temporal-readiness gaps left by CS1-C1X:
+
+- PublicTurn validation now uses the full graph state with replay continuity,
+  and the public object passes unsafe scanning before artifact scrub.
+- The external compute bridge projects requested `as_of` through compatible
+  aliases, while the temporal guard remains fail-closed.
+- `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `risk_crash`, `market_ipo_investor_behavior`, and
+  `market_capital_flow_chip` passed controlled production compute and adapter
+  mapping for `2024-12-31`.
+- `market_composite` is online and maps as partial while fund-manager and
+  sentiment members remain absent.
+
+Recommended next focus: source durability and remaining L1/market ownership
+closure, especially `market_fund_manager_behavior`,
+`sentiment_company_radar`, and owner-dev backfill for prod-only wrapper fixes.
+
 ## Long-Term Roadmap
 
 长期目标是进入真实多智能体生产工作流：

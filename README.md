@@ -39,6 +39,16 @@ recovers the two L4 compute-only listeners, and writes sanitized artifacts under
 invoke, does not change runtime bindings, does not set live flags, and does not
 change business models or scoring logic.
 
+CS1-C2X closes the C1X public-turn and temporal trace gaps. The external
+compute bridge now projects requested `as_of` through compatible aliases,
+workflow provenance avoids unsafe endpoint literals before artifact scrub, four
+temporal-rejected services and the IPO compute wrapper were repaired, and
+`market_capital_flow_chip` plus `market_composite` listeners were restored.
+The sanitized trace artifacts live under
+`/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z`. This remains a
+controlled compute-only phase: no external invoke, provider call, runtime
+binding change, live flag change, or model/scoring/fusion change.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

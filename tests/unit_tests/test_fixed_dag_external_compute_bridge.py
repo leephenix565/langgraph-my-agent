@@ -316,6 +316,12 @@ def test_build_external_compute_request_uses_compute_only_contract() -> None:
     assert request["agent_id"] == "value_ml_valuation"
     assert request["external_agent_id"] == "valuation_ml"
     assert request["target"] == "600519.SH"
+    assert request["as_of"] == "2026-06-05"
+    assert request["as_of_date"] == "2026-06-05"
+    assert request["context"]["as_of"] == "2026-06-05"
+    assert request["context"]["as_of_date"] == "2026-06-05"
+    assert request["options"]["as_of"] == "2026-06-05"
+    assert request["options"]["as_of_date"] == "2026-06-05"
     assert request["options"]["allow_llm"] is False
     assert request["options"]["return_tool_result"] is True
     assert request["agent_task"]["schema"] == "agent_task_v1"

@@ -1299,7 +1299,7 @@ def execute_fixed_dag_plan(
         if external_l4_compute_default_summary.get("mapped_agents"):
             limitations.append(
                 "L4 决策/报告已通过 runtime binding 默认 /compute 路径生成；"
-                "未调用 /v1/agent/invoke。"
+                "未调用外部智能体 invoke 接口。"
             )
         else:
             limitations.append(

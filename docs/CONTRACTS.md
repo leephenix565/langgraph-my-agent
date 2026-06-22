@@ -53,6 +53,17 @@ is adapter input only. It does not make compute envelopes graph state, does not
 call services, and does not wire L1 entity-relation services into active graph
 execution.
 
+CS1-C2X preserves the CS1-C1X temporal guard and adds an outbound request
+compatibility rule: the bridge projects the same requested fixed-DAG date into
+top-level `as_of`, top-level `as_of_date`, `context.as_of`,
+`context.as_of_date`, `options.as_of`, and `options.as_of_date`. Services may
+consume any of these aliases, but mapped date-bearing results must still pass
+the request-as-of guard before entering DAG state.
+
+CS1-C2X also clarifies public trace acceptance: the real PublicTurn and
+Workflow objects must pass unsafe scanning before artifact scrub. Scrubbed
+artifacts are not a substitute for a safe public contract.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

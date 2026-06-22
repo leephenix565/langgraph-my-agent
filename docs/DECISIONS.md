@@ -3,6 +3,47 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-073: Public Trace Acceptance Requires Pre-Scrub Safety
+
+Status: accepted for CS1-C2X public boundary closure.
+
+Decision: controlled trace runners must validate the real PublicTurn and
+Workflow objects before artifact scrub. Scrubbing remains defense in depth for
+stored artifacts, but it is not allowed to be the reason a public contract is
+safe.
+
+Reason: CS1-C1X produced a valid sanitized artifact but the unsanitized workflow
+still carried an unsafe endpoint literal in provenance limitations, and its
+runner called `build_assistant_turn` with the wrong argument shape.
+
+Consequence: future trace QA must call `build_assistant_turn(full_state,
+"replay")`, validate the PublicTurn/AnswerCard/Workflow models, and scan the
+original public object for unsafe markers before serialization.
+
+Non-consequence: this does not expose raw graph state, raw service responses,
+provider output, endpoints, or hidden reasoning in public transcript content.
+
+## ADR-072: Request-As-Of Requires Real Data-Window Compliance
+
+Status: accepted for CS1-C2X temporal service closure.
+
+Decision: service-side historical fixes must make the business data window
+respect requested `as_of`; changing only the response date label is not a valid
+fix. The main-system bridge projects the requested date through compatible
+aliases, and the temporal guard remains fail-closed if a service still returns
+future-dated material.
+
+Reason: CS1-C1X showed services that were reachable and adapter-compatible but
+ignored the requested historical boundary because they read different `as_of`
+field names or fell back to latest data.
+
+Consequence: controlled compute evidence for a historical request must show
+`as_of` and `data_as_of` no later than the request date before it can enter
+report input bundles.
+
+Non-consequence: this does not change service models, training vintages,
+scoring logic, feature engineering, or fusion algorithms.
+
 ## ADR-071: Request-As-Of Is A Hard Cross-Request Boundary
 
 Status: accepted for CS1-C1X readiness convergence.
