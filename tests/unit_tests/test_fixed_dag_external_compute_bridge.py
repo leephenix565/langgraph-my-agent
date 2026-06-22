@@ -4,8 +4,8 @@ import json
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_agent_task,
-    build_default_fixed_dag_plan,
     build_decision_result,
+    build_default_fixed_dag_plan,
     build_report_input_bundle,
     build_route_intent,
     compile_selected_fixed_dag_plan,
@@ -19,8 +19,8 @@ from react_agent.fixed_dag_external_compute_bridge import (
     build_external_compute_request,
     invoke_external_compute,
     normalize_demo_allowlist,
-    runtime_compute_entries_from_bindings,
     run_external_compute_for_plan,
+    runtime_compute_entries_from_bindings,
     validate_demo_entry,
 )
 
@@ -532,6 +532,100 @@ def test_fake_l2_external_compute_maps_to_conclusion_object() -> None:
     assert calls[0][0].compute_path == "/v1/agent/compute"
 
 
+def test_invoke_external_compute_allows_equal_and_earlier_response_dates() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
+
+    def transport(_entry, _request, _timeout):
+        payload = _agent_conclusion()
+        payload["as_of"] = "20241231"
+        payload["data_as_of"] = "20241230"
+        payload["evidence"][0]["as_of"] = "2024-12-31"
+        payload["evidence"][0]["data_as_of"] = "2024-12-30"
+        return _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2024-12-31",
+        request_id="unit-l2-temporal-pass",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "pass"
+    assert result["mapped"]["as_of"] == "2024-12-31"
+    assert result["mapped"]["data_as_of"] == "2024-12-30"
+
+
+def test_invoke_external_compute_rejects_response_as_of_after_requested_as_of() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
+
+    def transport(_entry, _request, _timeout):
+        payload = _agent_conclusion()
+        payload["as_of"] = "2025-01-01"
+        payload["data_as_of"] = "2024-12-31"
+        return _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2024-12-31",
+        request_id="unit-l2-temporal-fail",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure_code"] == "response_as_of_after_requested_as_of"
+    assert result["mapped"] is None
+
+
+def test_invoke_external_compute_rejects_response_data_as_of_after_requested_as_of() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
+
+    def transport(_entry, _request, _timeout):
+        payload = _agent_conclusion()
+        payload["as_of"] = "2024-12-31"
+        payload["data_as_of"] = "2025-01-01"
+        return _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2024-12-31",
+        request_id="unit-l2-data-temporal-fail",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure_code"] == "response_data_as_of_after_requested_as_of"
+    assert result["mapped"] is None
+
+
+def test_invoke_external_compute_rejects_invalid_response_as_of_for_requested_as_of() -> None:
+    entry = DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
+
+    def transport(_entry, _request, _timeout):
+        payload = _agent_conclusion()
+        payload["as_of"] = "2024-99-99"
+        payload["data_as_of"] = "2024-12-31"
+        return _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+
+    result = invoke_external_compute(
+        entry,
+        question="q",
+        as_of="2024-12-31",
+        request_id="unit-l2-invalid-date-fail",
+        timeout_seconds=3,
+        transport=transport,
+    )
+
+    assert result["status"] == "failed"
+    assert result["failure_code"] == "response_as_of_invalid_for_requested_as_of"
+    assert result["mapped"] is None
+
+
 def test_fake_l1_data_external_compute_maps_to_data_bundle() -> None:
     entry = DEMO_COMPUTE_SERVICE_REGISTRY["financial_data_service"]
 
@@ -766,6 +860,43 @@ def test_run_external_compute_for_selected_plan_only_calls_selected_allowlisted_
     assert result["l2_conclusions"]["value_ml_valuation"]["schema"] == "conclusion_object_v1"
 
 
+def test_run_external_compute_for_plan_does_not_store_temporal_rejected_l2() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2024-12-31")
+
+    def transport(_entry, _request, _timeout):
+        payload = _agent_conclusion()
+        payload["as_of"] = "2025-01-01"
+        payload["data_as_of"] = "2024-12-31"
+        return _compute_envelope("value_ml_valuation", "valuation_ml", payload)
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="q",
+        as_of="2024-12-31",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+        ),
+        l2_conclusions={},
+        stages=("l2_analysis",),
+        transport=transport,
+    )
+
+    assert result["mapped_agents"] == []
+    assert result["failed_agents"] == ["value_ml_valuation"]
+    assert "value_ml_valuation" not in result["l2_conclusions"]
+    assert result["warnings"] == [
+        "external_compute_demo_failed:response_as_of_after_requested_as_of"
+    ]
+
+
 def test_run_external_compute_for_plan_updates_l1_bundles_before_l2() -> None:
     plan = compile_selected_fixed_dag_plan(
         build_route_intent(
@@ -943,4 +1074,41 @@ def test_runtime_default_compute_uses_non_demo_request_and_default_warning() -> 
     ]
     assert result["step_updates"]["decision_synthesizer"]["warning"] == (
         "external_compute_default_failed:mapped_decision_schema_mismatch"
+    )
+
+
+def test_runtime_default_compute_rejects_l4_decision_after_requested_as_of() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", "2024-12-31")
+
+    def transport(_entry, _request, _timeout):
+        payload = _decision_result()
+        payload["as_of"] = "2025-01-01"
+        return _compute_envelope(
+            "decision_synthesizer",
+            "l4_decision_synthesizer",
+            payload,
+        )
+
+    result = run_external_compute_for_plan(
+        plan,
+        question="请分析 600519.SH",
+        as_of="2024-12-31",
+        context=Context(),
+        l2_conclusions={},
+        dimension_results={},
+        decision_result=build_decision_result({}),
+        stages=("decision",),
+        allowlist_override=("decision_synthesizer",),
+        entry_registry=runtime_compute_entries_from_bindings(),
+        runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        transport=transport,
+    )
+
+    assert result["mapped_agents"] == []
+    assert result["failed_agents"] == ["decision_synthesizer"]
+    assert result["warnings"] == [
+        "external_compute_default_failed:response_as_of_after_requested_as_of"
+    ]
+    assert result["step_updates"]["decision_synthesizer"]["warning"] == (
+        "external_compute_default_failed:response_as_of_after_requested_as_of"
     )

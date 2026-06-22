@@ -3,6 +3,51 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-071: Request-As-Of Is A Hard Cross-Request Boundary
+
+Status: accepted for CS1-C1X readiness convergence.
+
+Decision: external compute results that carry dates must satisfy
+`mapped.as_of <= requested_as_of` and
+`mapped.data_as_of <= requested_as_of` before they are allowed into fixed-DAG
+state or report bundles. The bridge owns this cross-request check because it
+has the requested `as_of`; the pure adapter continues to validate only payload
+internal consistency.
+
+Reason: CS1-B2X showed services returning 2026 dates for a 2024-12-31 request.
+Accepting those mapped objects would turn endpoint availability into
+look-ahead evidence. The correct behavior is fail-closed with a bounded reason
+and deterministic/pending fallback.
+
+Consequence: services with future-dated outputs can be health-compatible and
+still be rejected from evidence bundles for historical requests.
+
+Non-consequence: this does not change scoring, service models, runtime
+bindings, or public transcript contracts.
+
+## ADR-070: External Health Identity Has Migration Profiles
+
+Status: accepted for CS1-C1X readiness convergence.
+
+Decision: health identity validation is separated from compute adapter
+identity. Health may pass through `canonical`,
+`explicit_bridge_compatibility`, or `registered_legacy_compatibility` profiles
+only when ids and aliases are source-controlled and source/port ownership has
+been verified by the caller.
+
+Reason: CS1-B1/CS1-B2X showed multiple production services with fixed-DAG
+compatible compute wrappers but service-local health `agent_id` fields. Treating
+all such payloads as health failures was too strict for migration auditing, but
+loosening compute identity would be unsafe.
+
+Consequence: compatibility health pass is explicit migration debt. It may
+allow a controlled compute probe, but it is not canonical service-contract
+completion and does not prove compute/adapter/invoke/runtime readiness.
+
+Non-consequence: compute adapter identity remains strict. Fuzzy matching,
+Chinese-name matching, legacy `aNN` primary ids, and routing
+`sentiment_company_radar` to risk remain forbidden.
+
 ## ADR-069: L4 Default Runtime Uses Compute-Only External Bindings
 
 Status: accepted for R8-13Q runtime enablement.

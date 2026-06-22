@@ -48,6 +48,19 @@ turn active L2/L3 evidence into a natural Chinese final report when explicitly
 enabled, but it does not change which agents have production compute/invoke
 evidence and does not enable default runtime bindings.
 
+CS1-C1X adds the current health identity migration policy and request-as-of
+temporal guard. It also records scoped production wrapper fixes for
+`market_stock_technical`, `macro_analysis`, `market_ipo_investor_behavior`,
+and `value_composite`, plus controlled listener recovery for the two L4
+compute-default services. The CS1-C1X accelerated trace mapped `12` default-off
+demo compute agents and both L4 compute-default agents for a 2024-12-31
+question. Four services failed closed on future-dated outputs and must not be
+counted as 2024 evidence until their service-side date semantics are fixed:
+`value_traditional_valuation`, `value_ml_valuation`,
+`value_meta_valuation`, and `risk_crash`. `market_ipo_investor_behavior` now
+has canonical health identity, but its current production compute route remains
+blocked in the integrated trace.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.
@@ -67,6 +80,15 @@ evidence in this matrix, `market_fund_manager_behavior` remains a
 service-discovery/identity item, `macro_commodity_pricing` still fails the
 fixed-DAG health/compute gate, and three macro candidates remain semantic
 deferred.
+
+CS1-C1X supersedes parts of that older gap statement for the current server
+state: `financial_data_service`, `macro_commodity_pricing`, and
+`macro_index_valuation` mapped in the accelerated trace, while
+`market_stock_technical`, `macro_analysis`, `value_composite`,
+`decision_synthesizer`, and `report_generator` were revalidated after scoped
+wrapper or listener work. The matrix rows below retain older phase context and
+should be read together with the CS1-C1X note above until a later docs
+compaction updates row-by-row status text.
 
 This document converts those gaps into a production problem playbook. Service
 owners should use the matching prompt id in

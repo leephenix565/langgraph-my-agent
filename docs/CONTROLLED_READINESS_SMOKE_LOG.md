@@ -9,6 +9,62 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-22 - CS1-C1X accelerated bulk readiness convergence
+
+| Field | Value |
+| --- | --- |
+| Phase | CS1-C1X |
+| Artifact root | `/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z` |
+| Endpoint calls | controlled production `/health` and `/v1/agent/compute` only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | yes, scoped wrapper files only |
+| L4 runtime-default path | recovered listeners and mapped both compute-default services |
+
+Health re-audit:
+
+- Canonical health pass:
+  `market_ipo_investor_behavior`, `value_composite`,
+  `market_stock_technical`, `macro_analysis`, `decision_synthesizer`,
+  `report_generator`.
+- Compatibility health pass:
+  `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `risk_crash`, `risk_financial_fraud`,
+  `risk_identification`, `risk_compliance_review`,
+  `macro_commodity_pricing`, `risk_composite`, `macro_composite`.
+- Compatibility health pass remains migration debt and is not compute,
+  adapter, invoke, or runtime evidence.
+
+Integrated trace:
+
+- Fixed-DAG `as_of`: `2024-12-31`.
+- Default-off demo compute called `17` allowlisted L1/L2/L3 agents, mapped
+  `12`, and failed closed `5`.
+- Mapped demo agents:
+  `financial_data_service`, `value_research_synthesis`,
+  `market_stock_technical`, `risk_financial_fraud`, `risk_identification`,
+  `risk_compliance_review`, `macro_analysis`, `macro_commodity_pricing`,
+  `macro_index_valuation`, `value_composite`, `risk_composite`,
+  `macro_composite`.
+- Fail-closed demo agents:
+  `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, and `risk_crash` failed the request-as-of temporal
+  guard; `market_ipo_investor_behavior` remains a compute-route blocker.
+- L4 compute-default called and mapped both `decision_synthesizer` and
+  `report_generator`.
+- `report_input_bundle_v1` validation passed.
+
+Non-claims:
+
+- This is not external invoke evidence.
+- This does not enable non-L4 runtime bindings.
+- This does not set live flags.
+- This does not prove provider-backed report synthesis.
+- This does not count future-dated failed-closed service outputs as real
+  2024 evidence.
+
 ## 2026-06-21 - Phase BG4 post-backfill full-DAG E2E QA
 
 | Field | Value |

@@ -13,6 +13,7 @@ import os
 import re
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from datetime import date
 from typing import Any
 from urllib.parse import urlsplit
 
@@ -32,6 +33,7 @@ from react_agent.fixed_dag_contracts import (
 )
 from react_agent.fixed_dag_external_adapter import (
     ADAPTER_FAILURE_SCHEMA_VERSION,
+    _normalize_date_text,
     map_external_response_to_fixed_dag_object,
 )
 
@@ -307,6 +309,55 @@ def _safe_code(value: Any) -> str:
     text = str(value or "").strip().lower()
     text = re.sub(r"[^a-z0-9_:-]+", "_", text)
     return text[:120] or "external_compute_demo_failure"
+
+
+def _strict_date(value: Any) -> date | None:
+    normalized = _normalize_date_text(value)
+    if normalized in {"", "not_available"}:
+        return None
+    try:
+        return date.fromisoformat(normalized)
+    except ValueError:
+        return None
+
+
+def _date_fields_temporal_failure(payload: Mapping[str, Any], requested_as_of: str) -> str:
+    requested = _strict_date(requested_as_of)
+    if requested is None:
+        return ""
+
+    if "as_of" in payload:
+        mapped_as_of = _strict_date(payload.get("as_of"))
+        if mapped_as_of is None:
+            return "response_as_of_invalid_for_requested_as_of"
+        if mapped_as_of > requested:
+            return "response_as_of_after_requested_as_of"
+
+    if "data_as_of" in payload:
+        mapped_data_as_of = _strict_date(payload.get("data_as_of"))
+        if mapped_data_as_of is None:
+            return "response_as_of_invalid_for_requested_as_of"
+        if mapped_data_as_of > requested:
+            return "response_data_as_of_after_requested_as_of"
+
+    return ""
+
+
+def _raw_response_temporal_failure(response: Mapping[str, Any], requested_as_of: str) -> str:
+    tool_result = response.get("tool_result")
+    if not isinstance(tool_result, Mapping):
+        return ""
+    return _date_fields_temporal_failure(tool_result, requested_as_of)
+
+
+def _mapped_temporal_failure(mapped: Mapping[str, Any], requested_as_of: str) -> str:
+    """Fail closed when a mapped external result crosses the request as_of.
+
+    The pure adapter validates payload-internal chronology, while the bridge is
+    the first layer that has both the requested ``as_of`` and the mapped fixed
+    DAG object.  Keep report_result_v1 compatible because it has no date field.
+    """
+    return _date_fields_temporal_failure(mapped, requested_as_of)
 
 
 def _steps(plan: Mapping[str, Any]) -> list[Mapping[str, Any]]:
@@ -852,9 +903,15 @@ def invoke_external_compute(
         return _failed_entry(entry.agent_id, _safe_code(type(exc).__name__))
     if not isinstance(response, Mapping):
         return _failed_entry(entry.agent_id, "invalid_json")
+    temporal_failure = _raw_response_temporal_failure(response, as_of)
+    if temporal_failure:
+        return _failed_entry(entry.agent_id, temporal_failure)
     mapped = map_external_response_to_fixed_dag_object(response)
     if mapped.get("schema") == ADAPTER_FAILURE_SCHEMA_VERSION:
         return _failed_entry(entry.agent_id, f"adapter_mapping_failed:{mapped.get('reason')}")
+    temporal_failure = _mapped_temporal_failure(mapped, as_of)
+    if temporal_failure:
+        return _failed_entry(entry.agent_id, temporal_failure)
     return {
         "agent_id": entry.agent_id,
         "status": "pass",

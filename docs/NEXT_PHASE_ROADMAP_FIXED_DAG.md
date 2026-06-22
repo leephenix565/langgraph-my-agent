@@ -24,7 +24,7 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 
 ## Current Snapshot
 
-截至 R8-13Q：
+截至 CS1-C1X：
 
 - 主系统已经是固定 DAG 架构，27 个 formal agent id 由
   `config/fixed_dag/agent_catalog.json` 定义。
@@ -48,6 +48,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   `external_compute_default` runtime binding，分别指向 production-source
   `/v1/agent/compute` 端口 `10025` / `10026`。
 - backfill 前的当前总账见 `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md`。
+- CS1-C1X 增加 health identity migration policy 和 request-as-of
+  temporal guard；`market_stock_technical`、`macro_analysis`、
+  `market_ipo_investor_behavior`、`value_composite` 做了 scoped production
+  wrapper 修复，`decision_synthesizer`、`report_generator` listener 已恢复。
+- CS1-C1X accelerated trace 对 2024-12-31 问题调用 17 个 default-off demo
+  compute agent，mapped 12 个；L4 两个 compute-default agent 均 mapped。
 
 重要边界：
 
@@ -167,6 +173,18 @@ DoD:
 - 先在 sandbox 验证 trace 和报告质量。
 - 成熟后回填 dev，commit/push。
 - prod 只更新稳定提交并单独部署。
+
+CS1-C1X 后的 P0 重点已经收窄：
+
+1. 修复或隔离仍因 request-as-of 失败的 2024 trace 服务：
+   `value_traditional_valuation`, `value_ml_valuation`,
+   `value_meta_valuation`, `risk_crash`。
+2. 处理 `market_ipo_investor_behavior` 的 production compute-route blocker；
+   当前 health 已 canonical，但 compute 仍未进入 integrated trace。
+3. 继续保持 `entity_relation_extractor`, `market_fund_manager_behavior`,
+   `market_capital_flow_chip`, `sentiment_company_radar`, `macro_sentiment`,
+   `macro_industry_hotspot`, and `market_composite` 在明确 owner/source gate
+   前不进入加速 allowlist。
 
 ### P1: Finish A-Class Production Compute Coverage
 

@@ -212,6 +212,7 @@ async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) ->
         context=Context(
             enable_external_compute_demo=True,
             external_compute_demo_allowlist=("value_ml_valuation",),
+            disable_external_compute_default=True,
         ),
     )
     rendered = json.dumps(
@@ -307,6 +308,7 @@ async def test_graph_path_can_synthesize_llm_report_from_external_evidence(monke
             enable_external_compute_demo=True,
             external_compute_demo_allowlist=("value_ml_valuation",),
             enable_llm_report_synthesis=True,
+            disable_external_compute_default=True,
         ),
     )
     rendered = json.dumps(

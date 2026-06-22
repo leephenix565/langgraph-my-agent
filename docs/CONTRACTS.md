@@ -140,6 +140,21 @@ service by default. `Context.disable_external_compute_default` or
 `DISABLE_EXTERNAL_COMPUTE_DEFAULT=1` restores deterministic L4 behavior for
 rollback and offline tests.
 
+CS1-C1X adds a health-only identity validator in
+`fixed_dag_external_health.py`. Health validation accepts canonical formal ids,
+explicit bridge compatibility, or registered legacy compatibility when the
+alias is source-controlled and the caller has verified the expected port and
+source. Compatibility health pass is migration debt: it is not a canonical
+service contract, compute pass, adapter pass, invoke pass, runtime enablement,
+or live flag. The compute adapter identity rule remains strict.
+
+CS1-C1X also adds request-as-of temporal integrity to
+`fixed_dag_external_compute_bridge.py`. For date-bearing external compute
+results, mapped `as_of` and `data_as_of` must not be after the requested fixed
+DAG `as_of`. Failures use bounded reasons such as
+`response_as_of_after_requested_as_of` and remain fail-closed before results
+enter executor state or report bundles.
+
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
 - `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`

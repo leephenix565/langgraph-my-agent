@@ -3,6 +3,44 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-22 - CS1-C1X accelerated bulk readiness convergence
+
+### Changed
+
+- Added a main-system health identity validator with canonical and explicit
+  compatibility profiles in `fixed_dag_external_health.py`.
+- Added request-`as_of` temporal fail-closed checks to the external compute
+  bridge so future-dated external outputs cannot enter fixed-DAG state for a
+  historical request.
+- Patched production wrapper files for `market_stock_technical`,
+  `macro_analysis`, `market_ipo_investor_behavior`, and `value_composite`.
+- Recovered production listeners for L4 compute-only services
+  `decision_synthesizer` and `report_generator`.
+- Added `docs/CS1_C1X_ACCELERATED_BULK_REMEDIATION.md` and ADR entries for
+  health identity migration profiles and request-as-of temporal integrity.
+
+### Validated
+
+- Focused main-system tests passed: `166 passed`.
+- Service-local focused tests passed for the four patched production services.
+- Controlled health re-audit produced canonical pass for
+  `market_ipo_investor_behavior`, `value_composite`, `market_stock_technical`,
+  `macro_analysis`, `decision_synthesizer`, and `report_generator`; ten
+  additional agents passed under compatibility profiles.
+- Accelerated full-logical-DAG trace called `17` default-off demo compute
+  agents, mapped `12`, and failed closed `5`; L4 compute-default called and
+  mapped both `decision_synthesizer` and `report_generator`.
+
+### Not Done
+
+- No external agent invoke endpoint was called.
+- No `.env` value was inspected or changed.
+- No `runtime_bindings.json` field was changed.
+- No `live_verified` or `invoke_enabled_by_default` flag was changed.
+- No model, scoring, threshold, feature, training, data-source, dependency, or
+  deployment configuration was changed.
+- No provider call was made.
+
 ## 2026-06-21 - Phase BG4 post-backfill full-DAG E2E QA
 
 ### Validated

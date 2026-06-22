@@ -29,6 +29,16 @@ point for new Codex sessions: it summarizes current progress, A/B/C agent work
 classes, near-term end-to-end trace priorities, production compute/invoke
 boundaries, and which docs should be compacted later.
 
+CS1-C1X records the first accelerated post-backfill convergence wave. It adds
+a source-controlled health identity validator, enforces request-`as_of`
+anti-lookahead checks before external compute results enter DAG state, applies
+scoped production wrapper patches for `market_stock_technical`,
+`macro_analysis`, `market_ipo_investor_behavior`, and `value_composite`,
+recovers the two L4 compute-only listeners, and writes sanitized artifacts under
+`/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z`. It does not call external
+invoke, does not change runtime bindings, does not set live flags, and does not
+change business models or scoring logic.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
