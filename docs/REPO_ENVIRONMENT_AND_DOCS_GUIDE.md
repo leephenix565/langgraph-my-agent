@@ -295,4 +295,6 @@ initializes the durable artifact store. SYNC-OPS-2A-R3 makes
 its own plan, environment hash, approval request, and `STORE_METADATA.json`.
 Activation and rollback are a separate later approval bound to the real stage
 run and digest; stage-only approval cannot switch the active sandbox or update
-the pointer.
+the pointer. SYNC-OPS-2A-R4 tightens bootstrap rollback: store metadata records
+an ownership ledger, blocked rollback is a true zero-mutation no-op, and
+approval requests are not machine approvals.

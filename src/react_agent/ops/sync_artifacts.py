@@ -8,6 +8,7 @@ import os
 import shutil
 import tarfile
 import zipfile
+from collections.abc import Iterable
 from pathlib import Path, PurePosixPath
 from typing import Any
 
@@ -53,6 +54,35 @@ def validate_archive_member_names(path: Path) -> dict[str, Any]:
         "entry_count": len(entries),
         "all_archive_entries_posix": True,
         "entries": entries,
+    }
+
+
+def create_posix_zip_archive(source_root: Path, archive_path: Path, members: Iterable[Path] | None = None) -> dict[str, Any]:
+    """Create a ZIP archive with POSIX-safe relative entry names."""
+    source_root = source_root.resolve(strict=True)
+    candidates = list(members) if members is not None else [path for path in source_root.rglob("*") if path.is_file()]
+    seen: set[str] = set()
+    archive_path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as archive:
+        for path in sorted((item.resolve(strict=True) for item in candidates), key=lambda item: item.as_posix()):
+            if path.is_symlink():
+                raise ValueError("archive_symlink_entry_blocked")
+            if not path.is_file():
+                continue
+            try:
+                relative = path.relative_to(source_root)
+            except ValueError as exc:
+                raise ValueError("archive_entry_root_escape") from exc
+            name = PurePosixPath(relative.as_posix()).as_posix()
+            _validate_entry_name(name, seen)
+            archive.write(path, arcname=name)
+    validation = validate_archive_member_names(archive_path)
+    return {
+        **validation,
+        "backslash_entry_count": 0,
+        "absolute_entry_count": 0,
+        "traversal_entry_count": 0,
+        "duplicate_normalized_entry_count": 0,
     }
 
 

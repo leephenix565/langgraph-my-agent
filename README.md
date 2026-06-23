@@ -168,6 +168,14 @@ cannot stage. R3 only rehearses bootstrap under `/tmp`; it does not create the
 real store or execute P2S stage. See
 `docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md`.
 
+SYNC-OPS-2A-R4 closes bootstrap rollback atomicity and artifact archive
+portability. Bootstrap rollback now preflights the whole store before deleting
+anything, records per-path ownership in store metadata, returns true
+zero-mutation `noop_not_safe_to_remove` for non-empty or foreign stores, keeps
+approval requests distinct from machine approvals, and creates POSIX archive
+entries. It still does not create the real store or execute P2S stage. See
+`docs/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

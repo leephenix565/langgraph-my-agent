@@ -26,9 +26,11 @@ hash, approval scope, and exact action ids, then creates only the listed
 directories. It writes `STORE_METADATA.json` atomically in the store root with
 mode `0600` after the directory layout verifies.
 
-Rollback may remove only paths created by the same bootstrap run and only while
-they remain empty. A non-empty store is preserved and reported as not safe to
-remove.
+SYNC-OPS-2A-R4 tightened this rollback contract. Store metadata now includes a
+per-path ownership ledger, and rollback first preflights the entire store. If
+the store is non-empty, foreign, missing the ownership ledger, or contains
+unknown paths, rollback returns `noop_not_safe_to_remove` with
+`mutation_count=0` and does not delete empty sibling directories.
 
 ## Filesystem Boundary
 

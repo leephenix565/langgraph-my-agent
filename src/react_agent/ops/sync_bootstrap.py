@@ -26,8 +26,9 @@ BOOTSTRAP_PLAN_SCHEMA = "agent_sync_artifact_store_bootstrap_plan_v1"
 BOOTSTRAP_ENV_SCHEMA = "agent_sync_artifact_store_bootstrap_environment_v1"
 BOOTSTRAP_APPROVAL_SCHEMA = "agent_sync_artifact_store_bootstrap_approval_v1"
 STORE_METADATA_SCHEMA = "agent_sync_artifact_store_metadata_v1"
-BOOTSTRAP_TOOL_VERSION = "sync_ops_2a_r3_artifact_store_bootstrap"
+BOOTSTRAP_TOOL_VERSION = "sync_ops_2a_r4_artifact_store_bootstrap"
 DIRECTORY_SCHEMA_VERSION = "agent_sync_artifact_store_directory_layout_v1"
+OWNERSHIP_LEDGER_SCHEMA = "agent_sync_artifact_store_bootstrap_ownership_ledger_v1"
 STORE_METADATA_FILENAME = "STORE_METADATA.json"
 STORE_SUBDIRECTORIES = ("plans", "approvals", "runs", "locks", "baselines", "experiments", "backups", "indexes")
 
@@ -111,6 +112,43 @@ def _atomic_write_json(path: Path, payload: Mapping[str, Any], *, mode: int = 0o
         os.fsync(handle.fileno())
     os.replace(tmp, path)
     _fsync_dir(path.parent)
+
+
+def _path_identity(path: Path) -> dict[str, Any]:
+    try:
+        st = path.lstat()
+    except OSError:
+        return {"exists": False}
+    return {
+        "exists": True,
+        "mode": format(st.st_mode & 0o7777, "04o"),
+        "uid": st.st_uid,
+        "gid": st.st_gid,
+        "device": st.st_dev,
+        "inode": st.st_ino,
+        "type": "symlink" if path.is_symlink() else ("directory" if path.is_dir() else ("file" if path.is_file() else "special")),
+    }
+
+
+def _bootstrap_run_id(plan: Mapping[str, Any]) -> str:
+    return stable_id("bootstrap-run", str(plan.get("plan_id") or ""), str(plan.get("canonical_sha256") or ""))
+
+
+def _directory_action_by_path(plan: Mapping[str, Any]) -> dict[str, str]:
+    by_path: dict[str, str] = {}
+    for action in plan.get("directory_actions") or []:
+        if isinstance(action, Mapping):
+            by_path[str(Path(str(action.get("path") or "")).resolve(strict=False))] = str(action.get("action_id") or "")
+    return by_path
+
+
+def _planned_directory_paths(plan: Mapping[str, Any]) -> set[str]:
+    return set(_directory_action_by_path(plan))
+
+
+def _metadata_path(plan: Mapping[str, Any]) -> Path:
+    root = Path(str(plan.get("root") or ""))
+    return root / STORE_METADATA_FILENAME
 
 
 def bootstrap_plan_sha256(plan: Mapping[str, Any]) -> str:
@@ -400,7 +438,7 @@ def build_bootstrap_approval_request(plan: Mapping[str, Any], environment: Mappi
         "root": str(plan.get("root") or ""),
         "expires_at": str(plan.get("expires_at") or ""),
         "bootstrap_requested": True,
-        "approved_action_ids": [str(action.get("action_id") or "") for action in plan.get("directory_actions") or [] if isinstance(action, Mapping)]
+        "requested_action_ids": [str(action.get("action_id") or "") for action in plan.get("directory_actions") or [] if isinstance(action, Mapping)]
         + [str((plan.get("metadata_action") or {}).get("action_id") or "")],
         "requested_permissions": {
             "bootstrap": True,
@@ -413,6 +451,7 @@ def build_bootstrap_approval_request(plan: Mapping[str, Any], environment: Mappi
         "status": "awaiting_machine_approval",
         "approval_id": "",
         "approved_at": "",
+        "type_note": "approval request only; not a machine approval",
     }
 
 
@@ -471,6 +510,41 @@ def validate_bootstrap_approval(approval: Mapping[str, Any], plan: Mapping[str, 
     }
 
 
+def _build_ownership_ledger(root: Path, plan: Mapping[str, Any], created_dirs: list[str]) -> dict[str, Any]:
+    action_by_path = _directory_action_by_path(plan)
+    created_paths: list[dict[str, Any]] = []
+    for path_text in created_dirs:
+        path = Path(path_text)
+        created_paths.append(
+            {
+                "path": str(path),
+                "type": "directory",
+                "action_id": action_by_path.get(str(path.resolve(strict=False)), ""),
+                "created_by_this_run": True,
+                "preexisting_before_run": False,
+                "post_create_identity": _path_identity(path),
+            }
+        )
+    metadata_path = root / STORE_METADATA_FILENAME
+    created_paths.append(
+        {
+            "path": str(metadata_path),
+            "type": "file",
+            "action_id": str((plan.get("metadata_action") or {}).get("action_id") or ""),
+            "created_by_this_run": True,
+            "preexisting_before_run": False,
+            "post_create_identity": _path_identity(metadata_path),
+        }
+    )
+    return {
+        "schema_version": OWNERSHIP_LEDGER_SCHEMA,
+        "run_id": _bootstrap_run_id(plan),
+        "plan_id": str(plan.get("plan_id") or ""),
+        "plan_sha256": str(plan.get("canonical_sha256") or ""),
+        "created_paths": created_paths,
+    }
+
+
 def _write_metadata(root: Path, plan: Mapping[str, Any], approval: Mapping[str, Any], created_dirs: list[str]) -> dict[str, Any]:
     root_stat = root.stat()
     payload = {
@@ -482,7 +556,7 @@ def _write_metadata(root: Path, plan: Mapping[str, Any], approval: Mapping[str, 
         "root_realpath": str(root.resolve(strict=True)),
         "bootstrap_plan_id": str(plan.get("plan_id") or ""),
         "bootstrap_plan_sha256": str(plan.get("canonical_sha256") or ""),
-        "bootstrap_run_id": stable_id("bootstrap-run", str(plan.get("plan_id") or ""), str(plan.get("canonical_sha256") or "")),
+        "bootstrap_run_id": _bootstrap_run_id(plan),
         "bootstrap_approval_id": str(approval.get("approval_id") or ""),
         "mode": _mode_text(root),
         "uid": root_stat.st_uid,
@@ -492,6 +566,8 @@ def _write_metadata(root: Path, plan: Mapping[str, Any], approval: Mapping[str, 
         "created_directories": created_dirs,
         "no_secrets_declaration": True,
     }
+    _atomic_write_json(root / STORE_METADATA_FILENAME, payload, mode=0o600)
+    payload["ownership_ledger"] = _build_ownership_ledger(root, plan, created_dirs)
     _atomic_write_json(root / STORE_METADATA_FILENAME, payload, mode=0o600)
     return payload
 
@@ -582,6 +658,152 @@ def bootstrap_artifact_store(plan: Mapping[str, Any], approval: Mapping[str, Any
     }
 
 
+def _read_metadata_for_rollback(metadata_path: Path) -> dict[str, Any] | None:
+    if not metadata_path.exists():
+        return None
+    try:
+        payload = read_json(metadata_path)
+    except (OSError, json.JSONDecodeError):
+        return {"_invalid": True}
+    return payload if isinstance(payload, dict) else {"_invalid": True}
+
+
+def _relative_descendants(root: Path) -> list[Path]:
+    if not root.exists() or not root.is_dir() or root.is_symlink():
+        return []
+    return sorted(root.rglob("*"), key=lambda path: path.as_posix())
+
+
+def preflight_bootstrap_rollback(plan: Mapping[str, Any]) -> dict[str, Any]:
+    """Preflight bootstrap rollback without mutating the filesystem."""
+    root = Path(str(plan.get("root") or ""))
+    metadata_path = _metadata_path(plan)
+    planned_dirs = _planned_directory_paths(plan)
+    result: dict[str, Any] = {
+        "schema_version": "agent_sync_artifact_store_bootstrap_rollback_preflight_v1",
+        "root": str(root),
+        "safe_to_remove": False,
+        "owned_paths": [],
+        "preexisting_paths": [],
+        "nonempty_paths": [],
+        "unknown_paths": [],
+        "foreign_paths": [],
+        "metadata_state": "",
+        "delete_candidates": [],
+        "blocked": [],
+        "mutations_performed": 0,
+    }
+    if not root.exists():
+        result.update({"status": "noop_already_rolled_back", "metadata_state": "root_missing"})
+        return result
+    if root.is_symlink() or not root.is_dir():
+        result["blocked"].append(f"root_not_directory:{root}")
+        result.update({"status": "noop_not_safe_to_remove", "metadata_state": "root_invalid"})
+        return result
+
+    metadata = _read_metadata_for_rollback(metadata_path)
+    if metadata is None:
+        # Partial bootstrap before metadata write: only exact, empty plan dirs may be removed.
+        existing = {path for path in planned_dirs if Path(path).exists()}
+        existing.update(str(path.resolve(strict=False)) for path in _relative_descendants(root))
+        unknown = sorted(existing - planned_dirs)
+        for planned in sorted(existing & planned_dirs):
+            path = Path(planned)
+            if path.is_dir():
+                for child in path.iterdir():
+                    child_resolved = str(child.resolve(strict=False))
+                    if child_resolved not in planned_dirs and child_resolved not in existing:
+                        unknown.append(child_resolved)
+        nonempty = [
+            str(Path(path))
+            for path in existing & planned_dirs
+            if Path(path).is_dir()
+            and any(str(child.resolve(strict=False)) not in planned_dirs for child in Path(path).iterdir())
+        ]
+        result["metadata_state"] = "missing_partial_bootstrap"
+        result["unknown_paths"] = unknown
+        result["nonempty_paths"] = nonempty
+        result["blocked"] = [f"unknown_path:{path}" for path in unknown] + [f"not_empty:{path}" for path in nonempty]
+        if not result["blocked"]:
+            candidates = sorted(existing & planned_dirs, key=lambda item: len(Path(item).parts), reverse=True)
+            result.update(
+                {
+                    "safe_to_remove": True,
+                    "status": "safe_to_remove",
+                    "owned_paths": candidates,
+                    "delete_candidates": [{"path": item, "type": "directory"} for item in candidates],
+                }
+            )
+        else:
+            result["status"] = "noop_not_safe_to_remove"
+        return result
+
+    if metadata.get("_invalid"):
+        result["blocked"].append("metadata_invalid")
+        result.update({"status": "noop_not_safe_to_remove", "metadata_state": "invalid"})
+        return result
+    if metadata.get("bootstrap_plan_id") != plan.get("plan_id") or metadata.get("bootstrap_plan_sha256") != plan.get("canonical_sha256"):
+        result["blocked"].append("foreign_metadata_plan")
+        result["foreign_paths"].append(str(metadata_path))
+    if metadata.get("bootstrap_run_id") != _bootstrap_run_id(plan):
+        result["blocked"].append("foreign_metadata_run")
+        result["foreign_paths"].append(str(metadata_path))
+    ledger = metadata.get("ownership_ledger")
+    if not isinstance(ledger, Mapping):
+        result["blocked"].append("ownership_ledger_missing")
+    elif ledger.get("run_id") != _bootstrap_run_id(plan):
+        result["blocked"].append("ownership_ledger_foreign_run")
+    elif ledger.get("plan_id") != plan.get("plan_id") or ledger.get("plan_sha256") != plan.get("canonical_sha256"):
+        result["blocked"].append("ownership_ledger_plan_mismatch")
+
+    ledger_candidates: list[dict[str, Any]] = []
+    if isinstance(ledger, Mapping):
+        for item in ledger.get("created_paths") or []:
+            if not isinstance(item, Mapping):
+                result["blocked"].append("ownership_ledger_entry_invalid")
+                continue
+            path = Path(str(item.get("path") or ""))
+            if item.get("created_by_this_run") is True:
+                ledger_candidates.append({"path": str(path), "type": str(item.get("type") or "")})
+                result["owned_paths"].append(str(path))
+            else:
+                result["preexisting_paths"].append(str(path))
+
+    allowed_root_children = {STORE_METADATA_FILENAME, *STORE_SUBDIRECTORIES}
+    for child in root.iterdir():
+        if child.name not in allowed_root_children:
+            result["unknown_paths"].append(str(child))
+            result["blocked"].append(f"unknown_path:{child}")
+    for name in STORE_SUBDIRECTORIES:
+        path = root / name
+        if path.exists() and (path.is_symlink() or not path.is_dir()):
+            result["foreign_paths"].append(str(path))
+            result["blocked"].append(f"standard_path_not_directory:{path}")
+        elif path.exists() and any(path.iterdir()):
+            result["nonempty_paths"].append(str(path))
+            result["blocked"].append(f"not_empty:{path}")
+
+    if result["blocked"]:
+        result.update({"status": "noop_not_safe_to_remove", "metadata_state": "owned_metadata_with_blockers"})
+        result["safe_to_remove"] = False
+        result["delete_candidates"] = []
+        return result
+
+    ordered = sorted(
+        ledger_candidates,
+        key=lambda item: (0 if item["type"] == "file" else 1, -len(Path(str(item["path"])).parts)),
+    )
+    result.update(
+        {
+            "safe_to_remove": True,
+            "status": "safe_to_remove",
+            "metadata_state": "owned_metadata",
+            "delete_candidates": ordered,
+        }
+    )
+    return result
+
+
 def rollback_bootstrap(plan: Mapping[str, Any], approval: Mapping[str, Any], *, execute: bool) -> dict[str, Any]:
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
@@ -590,31 +812,79 @@ def rollback_bootstrap(plan: Mapping[str, Any], approval: Mapping[str, Any], *, 
     if not approval_result["valid"]:
         raise SyncPlannerError("bootstrap_rollback_approval_invalid", exit_code=4, details={"blockers": approval_result["blockers"]})
     root = Path(str(plan.get("root") or ""))
-    metadata_path = root / STORE_METADATA_FILENAME
-    blocked: list[str] = []
-    if metadata_path.exists():
-        metadata_path.unlink()
+    preflight = preflight_bootstrap_rollback(plan)
+    if preflight["status"] == "noop_already_rolled_back":
+        return {
+            "schema_version": "agent_sync_artifact_store_bootstrap_rollback_result_v1",
+            "root": str(root),
+            "preflight": preflight,
+            "removed_files": [],
+            "removed_directories": [],
+            "mutation_count": 0,
+            "blocked": [],
+            "status": "noop_already_rolled_back",
+            "exit_code": 0,
+        }
+    if not preflight["safe_to_remove"]:
+        return {
+            "schema_version": "agent_sync_artifact_store_bootstrap_rollback_result_v1",
+            "root": str(root),
+            "preflight": preflight,
+            "removed_files": [],
+            "removed_directories": [],
+            "mutation_count": 0,
+            "blocked": preflight["blocked"],
+            "status": "noop_not_safe_to_remove",
+            "exit_code": 7,
+        }
+    removed_files: list[str] = []
     removed: list[str] = []
-    for action in reversed(plan.get("directory_actions") or []):
-        if not isinstance(action, Mapping):
-            continue
-        path = Path(str(action.get("path") or ""))
-        if not path.exists():
-            continue
-        if path.is_symlink() or not path.is_dir():
-            blocked.append(f"not_directory:{path}")
-            continue
+    blocked: list[str] = []
+    mutation_count = 0
+    for candidate in preflight["delete_candidates"]:
+        path = Path(str(candidate.get("path") or ""))
+        kind = str(candidate.get("type") or "")
         try:
-            path.rmdir()
-            removed.append(str(path))
-        except OSError:
-            blocked.append(f"not_empty:{path}")
+            if not path.exists():
+                continue
+            if path.is_symlink():
+                blocked.append(f"symlink_replaced:{path}")
+                break
+            if kind == "file":
+                if not path.is_file():
+                    blocked.append(f"not_file:{path}")
+                    break
+                path.unlink()
+                _fsync_dir(path.parent)
+                removed_files.append(str(path))
+                mutation_count += 1
+            elif kind == "directory":
+                if not path.is_dir():
+                    blocked.append(f"not_directory:{path}")
+                    break
+                if any(path.iterdir()):
+                    blocked.append(f"not_empty:{path}")
+                    break
+                path.rmdir()
+                if path.parent.exists():
+                    _fsync_dir(path.parent)
+                removed.append(str(path))
+                mutation_count += 1
+            else:
+                blocked.append(f"unknown_candidate_type:{path}")
+                break
+        except OSError as exc:
+            blocked.append(f"rollback_exception:{path}:{exc.__class__.__name__}")
+            break
     return {
         "schema_version": "agent_sync_artifact_store_bootstrap_rollback_result_v1",
         "root": str(root),
+        "preflight": preflight,
+        "removed_files": removed_files,
         "removed_directories": removed,
+        "mutation_count": mutation_count,
         "blocked": blocked,
-        "status": "rolled_back" if not blocked else "noop_not_safe_to_remove",
+        "status": "rolled_back" if not blocked else "rollback_failed",
         "exit_code": 0 if not blocked else 7,
     }
 

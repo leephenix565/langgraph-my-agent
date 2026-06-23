@@ -9,7 +9,10 @@ from pathlib import Path
 
 import pytest
 
-from react_agent.ops.sync_artifacts import validate_archive_member_names
+from react_agent.ops.sync_artifacts import (
+    create_posix_zip_archive,
+    validate_archive_member_names,
+)
 from react_agent.ops.sync_plan import build_p2s_plan, validate_plan
 from react_agent.ops.sync_security import should_include_source_file
 
@@ -136,3 +139,29 @@ def test_archive_member_names_must_be_posix(tmp_path: Path) -> None:
         archive.writestr("a\\b.txt", "bad")
     with pytest.raises(ValueError, match="archive_entry_not_posix"):
         validate_archive_member_names(bad_zip)
+
+
+def test_posix_zip_archive_helper_normalizes_nested_entries(tmp_path: Path) -> None:
+    source = tmp_path / "source"
+    nested = source / "guard_inputs"
+    nested.mkdir(parents=True)
+    (nested / "blocked_p2s_plan.json").write_text("{}\n", encoding="utf-8")
+    (nested / "blocked_p2s_approval.json").write_text("{}\n", encoding="utf-8")
+    archive = tmp_path / "artifact.zip"
+
+    result = create_posix_zip_archive(source, archive)
+
+    assert result["entry_count"] == 2
+    assert result["backslash_entry_count"] == 0
+    assert result["absolute_entry_count"] == 0
+    assert result["traversal_entry_count"] == 0
+    assert result["duplicate_normalized_entry_count"] == 0
+    assert sorted(result["entries"]) == [
+        "guard_inputs/blocked_p2s_approval.json",
+        "guard_inputs/blocked_p2s_plan.json",
+    ]
+
+    outside = tmp_path / "outside.txt"
+    outside.write_text("outside\n", encoding="utf-8")
+    with pytest.raises(ValueError, match="archive_entry_root_escape"):
+        create_posix_zip_archive(source, tmp_path / "bad.zip", members=[outside])

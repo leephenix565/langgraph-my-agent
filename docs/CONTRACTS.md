@@ -1343,12 +1343,21 @@ SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
   SHA, bootstrap environment snapshot SHA, and action ids.
 - `STORE_METADATA.json` is the durable marker that makes the store usable by
   later P2S runs.
+- `STORE_METADATA.json` also carries a bootstrap ownership ledger. Bootstrap
+  rollback may remove only paths that ledger marks as created by the same run.
+- Bootstrap rollback is preflighted and all-or-nothing. Unsafe rollback returns
+  `noop_not_safe_to_remove` with zero mutations.
+- Bootstrap approval requests are distinct from approvals: requests use
+  `requested_action_ids`; executable approvals use `approved_action_ids`.
 - P2S plans generated while the store is missing or lacks metadata use
   `execution_status=blocked_artifact_store_not_ready`; stage/verify/activate/
   rollback reject before creating run artifacts.
 - Artifact-store atomic-write requirements are local to the store directory;
   sandbox activation atomic-rename requirements remain scoped to active,
   candidate, and archive paths.
+- Archive artifacts must use POSIX `/` entry names and reject backslashes,
+  absolute entries, traversal components, duplicate normalized entries, and
+  symlink entries.
 
 ## Public Exclusions
 

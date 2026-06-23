@@ -1004,3 +1004,24 @@ SYNC-OPS-2A-R3 adds bootstrap-specific quality coverage:
 Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
 sandbox, owner-dev, real approvals, real locks, real stages, endpoints,
 process state, or environment values.
+
+## SYNC-OPS-2A-R4 Bootstrap Rollback Atomicity Gate
+
+SYNC-OPS-2A-R4 extends bootstrap quality coverage with atomic rollback and
+archive portability regressions:
+
+- non-empty store rollback is a global no-op with `mutation_count=0`;
+- blocked rollback leaves before/after tree listings unchanged;
+- rollback deletes only paths present in the same-run ownership ledger;
+- unknown files, foreign metadata, missing ledgers, and populated standard
+  store directories all block rollback before any deletion;
+- approval requests cannot satisfy the machine approval validator;
+- approval requests use `requested_action_ids`, while approvals use
+  `approved_action_ids`;
+- ZIP/TAR artifact entry names are POSIX-only and reject backslashes,
+  absolute paths, traversal components, duplicate normalized names, and
+  symlink entries.
+
+Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
+sandbox, owner-dev, real approvals, real locks, real bootstrap state, real
+stages, endpoints, process state, or environment values.

@@ -92,7 +92,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   parity ledgers, and temp reconstruction. SYNC-OPS-2A adds only temp-root
   writer primitives. SYNC-OPS-2A-R1 closes source selection and proves the
   actual current plan with full-scale temp stage/verify/activate/rollback.
-  SYNC-OPS-2A-R3 separates durable artifact-store bootstrap from P2S stage.
+  SYNC-OPS-2A-R3 separates durable artifact-store bootstrap from P2S stage, and
+  SYNC-OPS-2A-R4 makes bootstrap rollback preflighted, all-or-nothing, and
+  ownership-ledger based while fixing POSIX artifact archive paths.
   The next sync implementation entry is SYNC-OPS-2B0 artifact-store bootstrap
   approval, followed by a regenerated P2S stage-ready plan and SYNC-OPS-2B1
   stage/verify approval.

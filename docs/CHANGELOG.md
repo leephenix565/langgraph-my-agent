@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A-R4 bootstrap rollback atomicity
+
+### Added
+
+- Added bootstrap ownership ledger metadata so rollback can remove only paths
+  created by the same bootstrap run.
+- Added two-phase bootstrap rollback preflight with zero-mutation
+  `noop_not_safe_to_remove` behavior for non-empty, foreign, or unknown store
+  content.
+- Added approval request/type separation: requests use `requested_action_ids`;
+  machine approvals use `approved_action_ids` and `status=approved`.
+- Added POSIX ZIP archive creation and validation coverage for portable
+  artifact entries.
+- Added `docs/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md` and ADRs
+  101-104.
+
+### Changed
+
+- Bootstrap rollback now refuses the whole rollback before any deletion if a
+  store contains later run/plan/approval/backup/lock/baseline/experiment/index
+  content or unknown files.
+- `noop_not_safe_to_remove` now means `mutation_count=0` with no removed files
+  or directories.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, bootstrap,
+  backup, stage, activation, endpoint, process, `.env`, provider, database, or
+  secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A-R3 artifact-store bootstrap contract
 
 ### Added

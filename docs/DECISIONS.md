@@ -3,6 +3,52 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-104: Sync Archives Use POSIX Entry Paths
+
+Status: accepted for SYNC-OPS-2A-R4.
+
+Decision: durable sync archives must use POSIX `/` entry names and reject
+backslashes, absolute paths, traversal components, normalized duplicates, and
+symlink entries unless a future protocol explicitly approves them.
+
+Reason: archive artifacts may be produced or inspected on multiple platforms.
+Portable entry names prevent hidden path rewriting and extraction ambiguity.
+
+## ADR-103: Approval Requests Are Not Machine Approvals
+
+Status: accepted for SYNC-OPS-2A-R4.
+
+Decision: bootstrap approval requests use `requested_action_ids` and
+`status=awaiting_machine_approval`. Machine approvals use
+`approved_action_ids`, `status=approved`, and the approval schema. A request
+object must never satisfy the approval validator.
+
+Reason: type confusion between a request and an approval could turn a planning
+artifact into execution authorization.
+
+## ADR-102: Bootstrap Ownership Is Per-Path
+
+Status: accepted for SYNC-OPS-2A-R4.
+
+Decision: `STORE_METADATA.json` records an ownership ledger for each path
+created by the bootstrap run. Rollback may only remove ledger paths marked
+`created_by_this_run=true`.
+
+Reason: path names alone cannot prove ownership. Durable rollback must not
+delete preexisting parents, foreign paths, or store content written after
+bootstrap.
+
+## ADR-101: Bootstrap Rollback Is All-Or-Nothing
+
+Status: accepted for SYNC-OPS-2A-R4.
+
+Decision: bootstrap rollback performs a full read-only preflight before any
+delete. If the store is non-empty, foreign, unknown, or otherwise unsafe,
+rollback returns `noop_not_safe_to_remove` with `mutation_count=0`.
+
+Reason: deleting empty sibling directories before discovering later store
+content partially damages the infrastructure root while reporting a no-op.
+
 ## ADR-100: P2S Plans Require Store Metadata Before Stage Approval
 
 Status: accepted for SYNC-OPS-2A-R3.
