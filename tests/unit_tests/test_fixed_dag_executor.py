@@ -855,6 +855,16 @@ def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
     assert result["l2_conclusions"]["value_traditional_valuation"]["status"] == "complete"
     assert result["dimension_results"]["value"]["agent_id"] == "value_composite"
     assert result["dimension_results"]["macro"]["agent_id"] == "macro_composite"
+    assert (
+        result["report_input_bundle"]["l2_agent_summaries"][0]["source"]
+        == "production_external_compute"
+    )
+    sources_by_agent = {
+        item["agent_id"]: item["source"]
+        for item in result["report_input_bundle"]["l3_composite_summaries"]
+    }
+    assert sources_by_agent["value_composite"] == "production_external_compute"
+    assert sources_by_agent["macro_composite"] == "production_external_compute"
     assert "production_external_compute" in result["step_results"]["dimension:value"]["warnings"]
 
 

@@ -149,6 +149,17 @@ def _normalize_warning(agent_id: str, mapped_result: Mapping[str, Any]) -> str:
     return f"{PRODUCTION_EXTERNAL_COMPUTE_FAILED_PREFIX}:{agent_id}:{code}"
 
 
+def _with_production_runtime_source(mapped: Mapping[str, Any]) -> dict[str, Any]:
+    """Tag mapped objects so report/evidence projection does not label them as demo."""
+    copied = dict(mapped)
+    provenance = copied.get("provenance")
+    copied["provenance"] = {
+        **(dict(provenance) if isinstance(provenance, Mapping) else {}),
+        "runtime_source": PRODUCTION_EXTERNAL_COMPUTE_STEP_WARNING,
+    }
+    return copied
+
+
 def _invoke_one(
     *,
     row: NonL4ExternalComputePolicyAgent,
@@ -356,7 +367,7 @@ def run_production_external_compute_for_plan(
 
             applied, apply_reason = apply_mapped_external_compute_result(
                 agent_id=agent_id,
-                mapped=cast(Mapping[str, Any], mapped),
+                mapped=_with_production_runtime_source(cast(Mapping[str, Any], mapped)),
                 data_bundle=result["data_bundle"],
                 entity_relation_bundle=result["entity_relation_bundle"],
                 l2_conclusions=result["l2_conclusions"],

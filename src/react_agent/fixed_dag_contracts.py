@@ -2823,6 +2823,9 @@ def _evidence_ref_summary(evidence_refs: Any) -> str:
 def _report_source_from_provenance(provenance: Any) -> str:
     if not isinstance(provenance, Mapping):
         return "fixed_dag_placeholder"
+    runtime_source = _safe_public_text(provenance.get("runtime_source"), limit=80)
+    if runtime_source:
+        return runtime_source
     if provenance.get("adapter_source"):
         return "external_compute_demo"
     if provenance.get("runtime_path") == "internal_llm_placeholder":
