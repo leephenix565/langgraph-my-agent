@@ -38,6 +38,15 @@ the same 27 target ids to deterministic seams, disabled external HTTP
 candidates, or pending placeholders. The binding registry does not change the
 DAG topology and does not enable external invocation.
 
+POST-BF-B2X adds a production non-L4 external compute policy that is separate
+from runtime bindings:
+`config/fixed_dag/non_l4_external_compute_policy.json`. The policy is loaded
+and validated by `src/react_agent/fixed_dag_non_l4_runtime_registry.py`, and
+the executor uses `src/react_agent/fixed_dag_production_external_compute.py` to
+overlay the approved non-L4 `/v1/agent/compute` results. This path does not
+modify `runtime_bindings.json`, does not use demo URL overrides, and does not
+call `/v1/agent/invoke`.
+
 ## Target IDs
 
 | target_id | runtime layer | dimension | role |

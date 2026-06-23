@@ -91,6 +91,16 @@ semantic blockers, and produces a non-L4 activation candidate set for a future
 orchestration phase. See
 `docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md`.
 
+POST-BF-B2X adds the initial production non-L4 external compute orchestration
+for the normal Web/API fixed-DAG path. It uses
+`config/fixed_dag/non_l4_external_compute_policy.json` and
+`src/react_agent/fixed_dag_production_external_compute.py`, not the demo bridge
+and not L4 runtime bindings. The required 9 B1X agents plus the optional
+degraded `macro_composite` now form the first production default non-L4 set;
+L1 external defaults remain zero, and L4 still uses the existing two
+`external_compute_default` bindings. See
+`docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

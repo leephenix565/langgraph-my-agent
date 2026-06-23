@@ -157,6 +157,24 @@ class Context:
             "description": "Disable runtime-binding external compute defaults for tests or rollback."
         },
     )
+    disable_non_l4_external_compute_default: bool = field(
+        default=False,
+        metadata={
+            "description": (
+                "Disable production non-L4 external compute defaults for tests or rollback. "
+                "This does not disable L4 external compute defaults."
+            )
+        },
+    )
+    non_l4_external_compute_optional_canary_allowlist: tuple[str, ...] = field(
+        default=(),
+        metadata={
+            "description": (
+                "Temporary canary-only optional non-L4 agent ids. Empty in normal production "
+                "requests; source-controlled policy decides final default enablement."
+            )
+        },
+    )
     fixed_dag_as_of: str = field(
         default="",
         metadata={
@@ -207,6 +225,9 @@ class Context:
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
             "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
             "disable_external_compute_default": "DISABLE_EXTERNAL_COMPUTE_DEFAULT",
+            "disable_non_l4_external_compute_default": (
+                "DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT"
+            ),
             "enable_llm_report_synthesis": "ENABLE_LLM_REPORT_SYNTHESIS",
             "enable_llm_l3_explanation": "ENABLE_LLM_L3_EXPLANATION",
         }

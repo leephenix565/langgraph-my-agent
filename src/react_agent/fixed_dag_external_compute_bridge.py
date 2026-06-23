@@ -904,6 +904,12 @@ def invoke_external_compute(
         )
     except TimeoutError:
         return _failed_entry(entry.agent_id, "timeout")
+    except RuntimeError as exc:
+        return _failed_entry(entry.agent_id, str(exc) or "runtime_error")
+    except ValueError as exc:
+        return _failed_entry(entry.agent_id, str(exc) or "invalid_response")
+    except (ConnectionError, OSError, http.client.HTTPException):
+        return _failed_entry(entry.agent_id, "connection_error")
     except Exception as exc:  # pragma: no cover - exact network failures are platform-specific.
         return _failed_entry(entry.agent_id, _safe_code(type(exc).__name__))
     if not isinstance(response, Mapping):
@@ -1010,6 +1016,35 @@ def _apply_mapped_result(
         return True, "ok"
 
     return False, "unsupported_demo_agent"
+
+
+def apply_mapped_external_compute_result(
+    *,
+    agent_id: str,
+    mapped: Mapping[str, Any],
+    data_bundle: dict[str, Any] | None,
+    entity_relation_bundle: dict[str, Any] | None,
+    l2_conclusions: dict[str, Any],
+    dimension_results: dict[str, Any],
+    decision_result: dict[str, Any],
+    report_result: dict[str, Any],
+) -> tuple[bool, str]:
+    """Apply a mapped external `/compute` result to fixed-DAG state containers.
+
+    This helper is source-neutral: demo, non-L4 production, and L4 runtime
+    default callers all need the same schema/identity checks before a mapped
+    object can enter executor state.
+    """
+    return _apply_mapped_result(
+        agent_id=agent_id,
+        mapped=mapped,
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_relation_bundle,
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+        report_result=report_result,
+    )
 
 
 def run_external_compute_for_plan(
@@ -1232,6 +1267,7 @@ __all__ = [
     "EXTERNAL_COMPUTE_DEMO_SOURCE",
     "EXTERNAL_COMPUTE_DEFAULT_SOURCE",
     "ExternalComputeDemoEntry",
+    "apply_mapped_external_compute_result",
     "build_external_compute_request",
     "invoke_external_compute",
     "merge_external_compute_demo_runs",

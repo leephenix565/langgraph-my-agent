@@ -71,6 +71,13 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   `sentiments` implementation, traditional valuation latency passes a
   five-sample hot-path gate, and the next non-L4 activation candidate set is
   recorded without enabling default runtime.
+- POST-BF-B2X closes the agent integration and productionization theme by
+  adding a dedicated non-L4 production external-compute orchestration that is
+  separate from the demo bridge and separate from the L4 runtime binding path.
+  The initial default production set is the B1X-approved required non-L4 subset
+  plus optional `macro_composite` only after canary validation. Remaining
+  excluded agents move to independent backlog items rather than another generic
+  integration phase.
 
 重要边界：
 
@@ -84,6 +91,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 - POST-BF-B1X 的 activation candidate set 只是下一轮 orchestration 输入；它
   不修改 `runtime_bindings.json`，不设置 live flags，也不把非 L4 服务加入默认
   用户路径。
+- POST-BF-B2X 的非 L4 production policy 是新的 source-controlled 默认编排
+  真源；`runtime_bindings.json` 仍只描述两个 L4 compute-default agent。Demo
+  mode 与非 L4 production default 互斥，rollback 只关闭非 L4，不关闭 L4。
 
 ## Directory Operating Model
 

@@ -3,6 +3,37 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-079: Non-L4 Production Compute Uses Dedicated Orchestration
+
+Status: accepted for POST-BF-B2X.
+
+Decision: initial non-L4 production external compute is implemented by a
+dedicated policy and orchestration path:
+`config/fixed_dag/non_l4_external_compute_policy.json`,
+`src/react_agent/fixed_dag_non_l4_runtime_registry.py`, and
+`src/react_agent/fixed_dag_production_external_compute.py`.
+
+The path is separate from the default-off demo bridge and separate from the L4
+`external_compute_default` runtime binding path. Demo mode suppresses
+production non-L4 for that run. Non-L4 rollback uses
+`DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1` and does not disable L4.
+
+Reason: controlled demo evidence proved mappability but was not a production
+runtime. Extending L4 runtime bindings to non-L4 would weaken the registry
+contract that currently limits `external_compute_default` to
+`decision_synthesizer` and `report_generator`.
+
+Consequence: the initial production default set is the explicit B1X readiness
+subset: 9 required agents plus optional degraded `macro_composite` after its
+canary. Required failures fail soft to existing deterministic/pending
+contracts and final answer emission continues. Public `externalInvoked` keeps
+its existing no-`/invoke` meaning; actual compute activity is recorded in
+private `production_external_compute_*` provenance.
+
+Non-consequence: this does not edit `runtime_bindings.json`, set live flags,
+enable `/v1/agent/invoke`, call providers, enable L1 external defaults, or
+activate excluded agents.
+
 ## ADR-078: Production Readiness Is Separate From Runtime Activation
 
 Status: accepted for POST-BF-B1X.

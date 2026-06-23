@@ -112,6 +112,17 @@ traditional valuation clears the local 5-sample latency gate; and the remaining
 formal L2 agents (`market_fund_manager_behavior`, `macro_sentiment`,
 `macro_industry_hotspot`) remain semantic/source-gated pending slots.
 
+POST-BF-B2X activates the first production-default non-L4 compute subset through
+a dedicated policy and orchestration path, not through the demo bridge and not
+through `runtime_bindings.json`. The required default non-L4 set is:
+`value_traditional_valuation`, `value_ml_valuation`,
+`value_meta_valuation`, `market_ipo_investor_behavior`,
+`market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
+`macro_index_valuation`, and `value_composite`. `macro_composite` is optional
+and may be enabled only when its degraded canary passes. L1 external defaults
+remain zero, excluded agents remain fallback/pending, and `/v1/agent/invoke`
+remains outside the default path.
+
 ## Current Conclusion
 
 R8-8P moved the readiness baseline from dev endpoints to production endpoints.

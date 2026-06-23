@@ -13,6 +13,7 @@ if str(SRC) not in sys.path:
 
 os.environ.setdefault("TAVILY_API_KEY", "test")
 os.environ.setdefault("OPENAI_API_KEY", "test")
+os.environ.setdefault("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", "1")
 
 
 @pytest.fixture(scope="session")

@@ -105,6 +105,15 @@ dependencies are unavailable. The sentiment wrapper also preserves the
 fixed-DAG contract name `stock_sentiment` while internally dispatching to the
 existing core `sentiments` implementation.
 
+POST-BF-B2X adds `fixed_dag_non_l4_external_compute_policy_v1` as the
+production non-L4 compute policy contract. It is source-controlled in
+`config/fixed_dag/non_l4_external_compute_policy.json`, validates the exact
+B1X required activation set, optional macro-only degraded candidate, loopback
+`/v1/agent/compute` path, per-agent timeout/failure policy, and excluded-agent
+boundary. The executor records actual non-L4 compute activity in private
+`production_external_compute_*` provenance while preserving the existing public
+`externalInvoked=false` no-`/invoke` claim.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

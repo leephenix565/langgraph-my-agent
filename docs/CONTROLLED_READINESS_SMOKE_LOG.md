@@ -9,6 +9,39 @@ R8-8G through R8-8M entries below are dev-only historical evidence unless a
 section explicitly says production. Dev evidence is useful for debugging and
 service backfill, but it is not production readiness.
 
+## 2026-06-23 - POST-BF-B2X non-L4 production runtime activation
+
+| Field | Value |
+| --- | --- |
+| Phase | POST-BF-B2X |
+| Artifact root | `/tmp/lma-post-bf-b2x-runtime-release-<UTC>` |
+| Endpoint calls | controlled production `/health` preflight and normal-path compute canaries only |
+| External agent invoke called | no |
+| Runtime bindings changed | no |
+| Live flags changed | no |
+| Provider called | no |
+| Production service code changed | no |
+
+Release scope:
+
+- Backfill remains closed at `31/31`.
+- A dedicated non-L4 production external-compute policy activates the
+  B1X-approved required set of nine non-L4 agents.
+- Demo mode remains default-off and suppresses production non-L4 compute for
+  that run.
+- L4 `decision_synthesizer` and `report_generator` continue to use the existing
+  `external_compute_default` binding path.
+- L1 external default count remains zero; local deterministic L1 fallback is
+  not real external L1 evidence.
+
+Non-claims:
+
+- This is not `/v1/agent/invoke` evidence.
+- This does not enable excluded source/data/semantic agents.
+- This does not call a provider.
+- This does not change models, scoring, training data, business data sources,
+  or fusion algorithms.
+
 ## 2026-06-22 - POST-BF-B1X production readiness foundation
 
 | Field | Value |

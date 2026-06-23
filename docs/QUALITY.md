@@ -82,6 +82,13 @@ live service timing samples, readiness metadata checks, and production wrapper
 smokes stay outside default mainline unless a future phase creates fully mocked
 source-controlled fixtures.
 
+POST-BF-B2X adds source-controlled tests for the non-L4 production external
+compute policy, validator, executor overlay, demo/production mutual exclusion,
+fallback behavior, and public-safe provenance. The three-run dev and prod
+canaries are release evidence and remain manual live gates; they are not added
+to default mainline. Mainline must still be provider-free and must not call
+`/v1/agent/invoke` or live external endpoints.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

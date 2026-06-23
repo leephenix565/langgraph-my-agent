@@ -2,6 +2,12 @@
 
 This runbook covers the R8-12 demo mode for the fixed DAG system.
 
+POST-BF-B2X adds a separate production non-L4 external-compute orchestration.
+That production path does not read demo allowlists or demo URL overrides, and
+demo mode suppresses production non-L4 compute for the current run. Keep this
+runbook for explicit demo validation only; do not use these flags as production
+runtime activation.
+
 ## Scope
 
 R8-12 adds a default-off bridge from the fixed DAG executor to selected

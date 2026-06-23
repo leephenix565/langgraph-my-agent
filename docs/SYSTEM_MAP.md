@@ -73,6 +73,14 @@ This file is the reset branch operational map for Phase R8-12D.
   compute-default path is still required before any config edit. R8-13Q adds
   that support and switches the two L4 runtime bindings to compute-only
   external defaults on ports `10025` and `10026`.
+  POST-BF-B2X adds a separate production non-L4 compute orchestration path
+  sourced from `config/fixed_dag/non_l4_external_compute_policy.json` and
+  implemented by `src/react_agent/fixed_dag_production_external_compute.py`.
+  It is not the demo bridge and not the L4 runtime binding path. Demo mode
+  suppresses production non-L4 for the run, and
+  `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1` rolls back only non-L4 defaults.
+  `runtime_bindings.json` remains unchanged with only the two L4
+  `external_compute_default` rows.
 - Active external developer handoff docs:
   `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
   `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,

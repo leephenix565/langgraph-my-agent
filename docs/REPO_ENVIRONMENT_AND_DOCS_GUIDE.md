@@ -74,6 +74,13 @@ untouched. These prod runtime changes require backup, hash, restart, smoke, and
 owner handoff records; they do not make owner-dev durability complete and do not
 change the main-system default runtime.
 
+POST-BF-B2X changes only the main-system production orchestration and release
+documentation. It does not modify owner-dev repositories or external service
+source trees, and it does not make excluded data/source/semantic agents part of
+the default path. Prod main should receive the pushed dev commit by ff-only
+deployment; rollback uses `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1` rather
+than editing runtime bindings.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

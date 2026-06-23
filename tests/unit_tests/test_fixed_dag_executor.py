@@ -118,6 +118,121 @@ def _risk_conclusion() -> dict[str, object]:
     }
 
 
+def _value_dimension_conclusion() -> dict[str, object]:
+    return {
+        "schema_version": "dimension_conclusion_v1",
+        "agent_id": "value_composite",
+        "external_agent_id": "composite_valuation",
+        "dimension": "value",
+        "role": "direction",
+        "target": "600519.SH",
+        "stance": 0.18,
+        "confidence": 0.72,
+        "members": [
+            {
+                "agent_id": "value_traditional_valuation",
+                "stance": 0.12,
+                "confidence": 0.7,
+                "weight": 0.34,
+                "status": "ok",
+            },
+            {
+                "agent_id": "value_ml_valuation",
+                "stance": 0.2,
+                "confidence": 0.72,
+                "weight": 0.33,
+                "status": "ok",
+            },
+            {
+                "agent_id": "value_meta_valuation",
+                "stance": 0.22,
+                "confidence": 0.74,
+                "weight": 0.33,
+                "status": "ok",
+            },
+            {
+                "agent_id": "value_research_synthesis",
+                "stance": 0.0,
+                "confidence": 0.0,
+                "weight": 0.0,
+                "status": "pending",
+            },
+        ],
+        "method": "weighted_member_vote",
+        "evidence": [
+            {
+                "id": "value-dimension-evidence",
+                "fact": "Value members are mildly positive.",
+                "source": "unit_test",
+                "as_of": "2026-06-04",
+                "data_as_of": "2026-06-04",
+            }
+        ],
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "status": "ok",
+    }
+
+
+def _macro_conclusion() -> dict[str, object]:
+    return {
+        "schema_version": "macro_conclusion_v1",
+        "agent_id": "macro_composite",
+        "external_agent_id": "macro_synthesis_service",
+        "dimension": "macro",
+        "role": "regulator",
+        "target": "CN_A_SHARE_MACRO",
+        "regime": "neutral_liquidity_watch",
+        "dimension_weights": {"value": 0.55, "market": 0.45},
+        "risk_sensitivity": 0.6,
+        "style_bias": {"quality": 0.7, "defensive": 0.3},
+        "regime_detail": {"name": "neutral", "confidence": 0.69},
+        "members": {
+            "macro_analysis": {
+                "confidence": 0.64,
+                "status": "ok",
+                "summary": "growth stable",
+            },
+            "macro_commodity_pricing": {
+                "confidence": 0.0,
+                "status": "pending",
+                "weight": 0.0,
+                "summary": "not activated",
+            },
+            "macro_index_valuation": {
+                "confidence": 0.65,
+                "status": "ok",
+                "summary": "index valuation bounded",
+            },
+            "macro_sentiment": {
+                "confidence": 0.0,
+                "status": "pending",
+                "weight": 0.0,
+            },
+            "macro_industry_hotspot": {
+                "confidence": 0.0,
+                "status": "pending",
+                "weight": 0.0,
+            },
+        },
+        "warnings": ["macro members pending"],
+        "confidence": 0.69,
+        "contributing_agents": ["macro_analysis", "macro_index_valuation"],
+        "evidence": [
+            {
+                "id": "macro-evidence-1",
+                "fact": "Macro regime supports balanced value and market weights.",
+                "source": "unit_test",
+                "as_of": "2026-06-04",
+                "data_as_of": "2026-06-04",
+            }
+        ],
+        "as_of": "2026-06-04",
+        "data_as_of": "2026-06-04",
+        "status": "partial",
+    }
+
+
 def _data_bundle() -> dict[str, object]:
     return {
         "schema_version": "data_bundle_v1",
@@ -672,6 +787,296 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
     assert result["step_results"]["decision_synthesizer"]["status"] == "complete"
     assert result["step_results"]["report_generator"]["status"] == "complete"
     assert "external_compute_default_runtime_binding" in result["step_results"]["report_generator"]["warnings"]
+
+
+def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
+    import react_agent.fixed_dag_production_external_compute as production
+
+    monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+    called = []
+
+    def fake_invoke(entry, **kwargs):
+        called.append((entry.agent_id, kwargs.get("demo")))
+        if entry.agent_id == "value_composite":
+            assert kwargs["upstream_outputs"]["value_traditional_valuation"]["agent_id"] == (
+                "value_traditional_valuation"
+            )
+            tool_result = _value_dimension_conclusion()
+        elif entry.agent_id == "macro_composite":
+            tool_result = _macro_conclusion()
+        else:
+            tool_result = _agent_conclusion(
+                agent_id=entry.agent_id,
+                external_agent_id=entry.external_agent_id,
+                dimension=entry.dimension,
+            )
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(entry.agent_id, entry.external_agent_id, tool_result)
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(production, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        context=Context(),
+    )
+    valid, reason = validate_dag_execution_result(result)
+
+    assert valid, reason
+    assert result["provenance"]["production_external_compute_enabled"] is True
+    assert result["provenance"]["production_external_compute_called_agents"] == [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "risk_crash",
+        "macro_analysis",
+        "macro_index_valuation",
+        "value_composite",
+        "macro_composite",
+    ]
+    assert result["provenance"]["production_external_compute_mapped_agents"] == (
+        result["provenance"]["production_external_compute_called_agents"]
+    )
+    assert result["provenance"]["production_external_compute_failed_agents"] == []
+    assert result["provenance"]["external_compute_demo_called_agents"] == []
+    assert result["provenance"]["external_invoked"] is False
+    assert all(demo is False for _agent_id, demo in called)
+    assert result["l2_conclusions"]["value_traditional_valuation"]["status"] == "complete"
+    assert result["dimension_results"]["value"]["agent_id"] == "value_composite"
+    assert result["dimension_results"]["macro"]["agent_id"] == "macro_composite"
+    assert "production_external_compute" in result["step_results"]["dimension:value"]["warnings"]
+
+
+def test_production_non_l4_is_suppressed_by_demo(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag_production_external_compute as production
+
+    monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+
+    def fail_production(*_args, **_kwargs):
+        raise AssertionError("production non-L4 should be suppressed by demo mode")
+
+    def fake_demo(entry, **_kwargs):
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(
+                "value_ml_valuation",
+                "valuation_ml",
+                _agent_conclusion(),
+            )
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(production, "invoke_external_compute", fail_production)
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_demo)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation",),
+        ),
+    )
+
+    assert result["provenance"]["external_compute_demo_called_agents"] == [
+        "value_ml_valuation"
+    ]
+    assert result["provenance"]["production_external_compute_called_agents"] == []
+    assert result["provenance"]["production_external_compute_demo_suppressed"] is True
+
+
+def test_production_non_l4_rollback_disables_only_non_l4(monkeypatch) -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag_production_external_compute as production
+
+    monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+    monkeypatch.delenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+
+    def fail_production(*_args, **_kwargs):
+        raise AssertionError("rollback should disable production non-L4 calls")
+
+    def fake_l4(entry, **kwargs):
+        if entry.agent_id == "decision_synthesizer":
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "decision_synthesizer",
+                    "l4_decision_synthesizer",
+                    build_decision_result({}, as_of="2026-06-04"),
+                )
+            )
+        elif entry.agent_id == "report_generator":
+            assert kwargs["report_input_bundle"]["schema"] == "report_input_bundle_v1"
+            mapped = map_external_response_to_fixed_dag_object(
+                _compute_envelope(
+                    "report_generator",
+                    "l4_report_generator",
+                    build_report_result(
+                        build_decision_result({}, as_of="2026-06-04"),
+                        question="q",
+                    ),
+                )
+            )
+        else:
+            raise AssertionError(f"unexpected L4 agent {entry.agent_id}")
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(production, "invoke_external_compute", fail_production)
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_l4)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(disable_non_l4_external_compute_default=True),
+    )
+
+    assert result["provenance"]["production_external_compute_called_agents"] == []
+    assert result["provenance"]["production_external_compute_rollback_disabled"] is True
+    assert result["provenance"]["external_compute_default_enabled"] is True
+    assert result["provenance"]["external_compute_default_mapped_agents"] == [
+        "decision_synthesizer",
+        "report_generator",
+    ]
+
+
+def test_production_non_l4_selected_plan_calls_only_selected_agents(monkeypatch) -> None:
+    import react_agent.fixed_dag_production_external_compute as production
+
+    monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+    intent = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=["value_ml_valuation"],
+        route_confidence=0.7,
+        fallback_reason="fallback to full DAG",
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
+
+    def fake_invoke(entry, **kwargs):
+        if entry.agent_id == "value_composite":
+            assert set(kwargs["upstream_outputs"]) == {"value_ml_valuation"}
+            tool_result = {
+                **_value_dimension_conclusion(),
+                "members": [
+                    {
+                        "agent_id": "value_ml_valuation",
+                        "stance": 0.2,
+                        "confidence": 0.72,
+                        "weight": 1.0,
+                        "status": "ok",
+                    }
+                ],
+            }
+        else:
+            tool_result = _agent_conclusion(
+                agent_id=entry.agent_id,
+                external_agent_id=entry.external_agent_id,
+                dimension=entry.dimension,
+            )
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(entry.agent_id, entry.external_agent_id, tool_result)
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(production, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        plan,
+        question="q",
+        as_of="2026-06-04",
+        context=Context(),
+    )
+
+    assert result["provenance"]["production_external_compute_called_agents"] == [
+        "value_ml_valuation",
+        "value_composite",
+    ]
+    assert set(result["l2_conclusions"]) == {"value_ml_valuation"}
+    assert set(result["dimension_results"]) == {"value"}
+
+
+def test_production_non_l4_required_failure_falls_back(monkeypatch) -> None:
+    import react_agent.fixed_dag_production_external_compute as production
+
+    monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
+
+    def fake_invoke(entry, **_kwargs):
+        if entry.agent_id == "value_ml_valuation":
+            return {
+                "agent_id": entry.agent_id,
+                "status": "failed",
+                "mapped": None,
+                "failure_code": "timeout",
+                "warning": "external_compute_failed:timeout",
+            }
+        if entry.agent_id == "value_composite":
+            tool_result = _value_dimension_conclusion()
+        elif entry.agent_id == "macro_composite":
+            tool_result = _macro_conclusion()
+        else:
+            tool_result = _agent_conclusion(
+                agent_id=entry.agent_id,
+                external_agent_id=entry.external_agent_id,
+                dimension=entry.dimension,
+            )
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(entry.agent_id, entry.external_agent_id, tool_result)
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(production, "invoke_external_compute", fake_invoke)
+
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(),
+    )
+
+    assert result["status"] == "degraded"
+    assert result["l2_conclusions"]["value_ml_valuation"]["status"] == "pending_implementation"
+    assert result["provenance"]["production_external_compute_required_failures"] == [
+        "value_ml_valuation"
+    ]
+    assert "production_external_compute_failed:value_ml_valuation:timeout" in (
+        result["step_results"]["l2:value_ml_valuation"]["warnings"]
+    )
 
 
 def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:

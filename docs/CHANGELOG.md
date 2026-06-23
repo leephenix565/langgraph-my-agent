@@ -3,6 +3,45 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - POST-BF-B2X non-L4 production runtime activation
+
+### Changed
+
+- Added `config/fixed_dag/non_l4_external_compute_policy.json` as the
+  source-controlled production policy for the initial non-L4 `/compute`
+  default set.
+- Added `src/react_agent/fixed_dag_non_l4_runtime_registry.py` to validate the
+  policy, activation artifact hash, exact required 9 ids, optional macro-only
+  set, loopback compute endpoints, and excluded-agent boundary.
+- Added `src/react_agent/fixed_dag_production_external_compute.py` for
+  stage-bounded production non-L4 orchestration, deterministic result ordering,
+  fail-soft fallback, and private provenance.
+- Added `Context.disable_non_l4_external_compute_default` for rollback without
+  disabling L4 `external_compute_default`.
+- Updated the fixed-DAG executor so demo mode suppresses production non-L4
+  calls, production non-L4 L2 overlays run before deterministic L3, production
+  L3 overlays consume the current-run L2 outputs, and L4 default remains
+  unchanged.
+- Added `docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md`.
+
+### Validated
+
+- Backfill remains `31/31`.
+- `runtime_bindings.json` remains unchanged and still enables only the two L4
+  compute-default rows.
+- Development required canary mapped 9/9 production non-L4 required agents and
+  mapped both L4 compute-default agents.
+- Optional `macro_composite` canary passed twice and is enabled as degraded
+  optional production non-L4 L3.
+- Final development probe mapped 10/10 production non-L4 agents and 2/2 L4
+  agents with demo disabled, provider false, and `external_invoked=false`.
+
+### Not Done
+
+- No `/v1/agent/invoke`, provider call, runtime-binding edit, live flag,
+  demo-bridge production enablement, database write/migration, owner-dev repo
+  write, or model/scoring/feature/training/fusion change was made.
+
 ## 2026-06-22 - POST-BF-B1X production readiness foundation
 
 ### Changed

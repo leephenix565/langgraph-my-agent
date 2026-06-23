@@ -587,6 +587,59 @@ def _apply_external_compute_step_updates(
                 }
 
 
+def _merge_production_external_compute_runs(*runs: Mapping[str, Any]) -> dict[str, Any]:
+    merged: dict[str, Any] = {
+        "called_agents": [],
+        "mapped_agents": [],
+        "failed_agents": [],
+        "fallback_agents": [],
+        "skipped_agents": [],
+        "warnings": [],
+        "latency_ms_by_agent": {},
+        "required_failures": [],
+        "optional_failures": [],
+        "policy_enabled": False,
+        "policy_version": "",
+        "demo_suppressed": False,
+        "rollback_disabled": False,
+    }
+    for run in runs:
+        if not isinstance(run, Mapping):
+            continue
+        for key in (
+            "called_agents",
+            "mapped_agents",
+            "failed_agents",
+            "fallback_agents",
+            "skipped_agents",
+            "warnings",
+            "required_failures",
+            "optional_failures",
+        ):
+            raw_items = run.get(key, [])
+            if not isinstance(raw_items, list):
+                continue
+            for item in raw_items:
+                text = str(item or "")
+                if text and text not in merged[key]:
+                    merged[key].append(text)
+        latencies = run.get("latency_ms_by_agent", {})
+        if isinstance(latencies, Mapping):
+            for agent_id, value in latencies.items():
+                try:
+                    merged["latency_ms_by_agent"][str(agent_id)] = int(value)
+                except (TypeError, ValueError):
+                    continue
+        merged["policy_enabled"] = bool(merged["policy_enabled"] or run.get("policy_enabled"))
+        merged["demo_suppressed"] = bool(merged["demo_suppressed"] or run.get("demo_suppressed"))
+        merged["rollback_disabled"] = bool(
+            merged["rollback_disabled"] or run.get("rollback_disabled")
+        )
+        if not merged["policy_version"] and run.get("policy_version"):
+            merged["policy_version"] = str(run["policy_version"])
+    return merged
+
+
 def _attach_report_input_bundle_to_step_results(
     step_results: dict[str, dict],
     report_input_bundle: Mapping[str, Any],
@@ -946,6 +999,25 @@ def execute_fixed_dag_plan(
     external_l3_run: Mapping[str, Any] = {}
     external_l4_decision_run: Mapping[str, Any] = {}
     external_l4_report_run: Mapping[str, Any] = {}
+    production_l2_run: Mapping[str, Any] = {}
+    production_l3_run: Mapping[str, Any] = {}
+    production_non_l4_summary: Mapping[str, Any] = {
+        "called_agents": [],
+        "mapped_agents": [],
+        "failed_agents": [],
+        "fallback_agents": [],
+        "skipped_agents": [],
+        "warnings": [],
+        "latency_ms_by_agent": {},
+        "required_failures": [],
+        "optional_failures": [],
+        "policy_enabled": False,
+        "policy_version": "",
+        "demo_suppressed": external_compute_demo_enabled,
+        "rollback_disabled": bool(
+            getattr(context, "disable_non_l4_external_compute_default", False)
+        ),
+    }
     external_l4_compute_default_summary: Mapping[str, Any] = {
         "called_agents": [],
         "mapped_agents": [],
@@ -1004,6 +1076,23 @@ def execute_fixed_dag_plan(
             stages=("l2_analysis",),
         )
         l2_conclusions = cast(dict[str, Any], external_l2_run["l2_conclusions"])
+    if not external_compute_demo_enabled:
+        from react_agent.fixed_dag_production_external_compute import (  # noqa: PLC0415
+            run_production_external_compute_for_plan,
+        )
+
+        production_l2_run = run_production_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            agent_tasks=l2_agent_tasks,
+            stages=("l2_analysis",),
+        )
+        l2_conclusions = cast(dict[str, Any], production_l2_run["l2_conclusions"])
     dimension_results = build_dimension_results(l2_conclusions, as_of=as_of)
     if external_compute_demo_enabled:
         l3_agent_tasks = build_agent_tasks_for_plan(
@@ -1037,6 +1126,49 @@ def execute_fixed_dag_plan(
             external_l1_run,
             external_l2_run,
             external_l3_run,
+        )
+    else:
+        l3_agent_tasks = build_agent_tasks_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions,
+            dimension_results=dimension_results,
+        )
+        include_optional_canary = tuple(
+            str(item)
+            for item in getattr(
+                context,
+                "non_l4_external_compute_optional_canary_allowlist",
+                (),
+            )
+            if str(item)
+        )
+        production_l3_run = run_production_external_compute_for_plan(
+            execution_plan,
+            question=question,
+            as_of=as_of,
+            context=context,
+            l2_conclusions=l2_conclusions,
+            data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle,
+            dimension_results=dimension_results,
+            agent_tasks=l3_agent_tasks,
+            stages=("dimension_composite",),
+            include_optional_canary=include_optional_canary,
+        )
+        l2_conclusions = cast(dict[str, Any], production_l3_run["l2_conclusions"])
+        dimension_results = cast(dict[str, Any], production_l3_run["dimension_results"])
+        _apply_external_compute_step_updates(
+            step_results,
+            production_l2_run,
+            production_l3_run,
+        )
+        production_non_l4_summary = _merge_production_external_compute_runs(
+            production_l2_run,
+            production_l3_run,
         )
     llm_l3_explanation_used = False
     llm_l3_explanation_attempted = False
@@ -1306,6 +1438,26 @@ def execute_fixed_dag_plan(
                 "L4 runtime binding 默认 /compute 路径已启用，但未完成有效映射；"
                 "执行已回退到确定性 L4 结果。"
             )
+    if production_non_l4_summary.get("policy_enabled"):
+        mapped_agents = list(production_non_l4_summary.get("mapped_agents", []))
+        required_failures = list(production_non_l4_summary.get("required_failures", []))
+        if mapped_agents:
+            limitations.append(
+                "已通过 production non-L4 /compute 默认编排读取部分 L2/L3 外部结构化结果；"
+                "L1 仍使用本地确定性输入，未调用 /invoke。"
+            )
+        if required_failures:
+            limitations.append(
+                "部分 required non-L4 外部 compute 未完成映射，已按固定 DAG 合同回退到本地 pending/确定性结果。"
+            )
+    elif production_non_l4_summary.get("rollback_disabled"):
+        limitations.append(
+            "production non-L4 默认编排已被回滚开关关闭；L4 默认 compute 不受影响。"
+        )
+    elif production_non_l4_summary.get("demo_suppressed"):
+        limitations.append(
+            "显式 external compute demo 模式开启时，production non-L4 默认编排不会重复调用。"
+        )
     if llm_l3_explanation_enabled:
         if llm_l3_explanation_used:
             limitations.append(
@@ -1319,10 +1471,15 @@ def execute_fixed_dag_plan(
     if fallback_used:
         limitations.append(f"无效计划已回退到确定性默认计划：{fallback_reason}。")
 
+    production_required_failures = list(
+        production_non_l4_summary.get("required_failures", [])
+        if isinstance(production_non_l4_summary, Mapping)
+        else []
+    )
     execution_core = {
         "schema_version": FIXED_DAG_EXECUTION_SCHEMA_VERSION,
         "plan_id": str(execution_plan.get("plan_id") or "reset-fixed-dag-plan-v1"),
-        "status": "degraded" if fallback_used else "complete",
+        "status": "degraded" if fallback_used or production_required_failures else "complete",
         "fallback_used": fallback_used,
         "fallback_reason": fallback_reason if fallback_used else "",
         "execution_batches": batches,
@@ -1343,6 +1500,42 @@ def execute_fixed_dag_plan(
                 or llm_l3_explanation_provider_invoked
             ),
             "external_invoked": False,
+            "production_external_compute_enabled": bool(
+                production_non_l4_summary.get("policy_enabled")
+            ),
+            "production_external_compute_policy_version": str(
+                production_non_l4_summary.get("policy_version") or ""
+            ),
+            "production_external_compute_called_agents": list(
+                production_non_l4_summary.get("called_agents", [])
+            ),
+            "production_external_compute_mapped_agents": list(
+                production_non_l4_summary.get("mapped_agents", [])
+            ),
+            "production_external_compute_failed_agents": list(
+                production_non_l4_summary.get("failed_agents", [])
+            ),
+            "production_external_compute_fallback_agents": list(
+                production_non_l4_summary.get("fallback_agents", [])
+            ),
+            "production_external_compute_skipped_agents": list(
+                production_non_l4_summary.get("skipped_agents", [])
+            ),
+            "production_external_compute_latency_ms_by_agent": dict(
+                production_non_l4_summary.get("latency_ms_by_agent", {})
+            ),
+            "production_external_compute_required_failures": list(
+                production_non_l4_summary.get("required_failures", [])
+            ),
+            "production_external_compute_optional_failures": list(
+                production_non_l4_summary.get("optional_failures", [])
+            ),
+            "production_external_compute_demo_suppressed": bool(
+                production_non_l4_summary.get("demo_suppressed")
+            ),
+            "production_external_compute_rollback_disabled": bool(
+                production_non_l4_summary.get("rollback_disabled")
+            ),
             "external_compute_default_disabled": external_compute_default_disabled,
             "external_compute_default_enabled": external_l4_compute_default_enabled,
             "external_compute_default_called_agents": list(
