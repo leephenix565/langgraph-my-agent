@@ -23,8 +23,13 @@ def test_p2s_plan_is_executable_contract_and_hash_valid() -> None:
     assert "read_only_plan_only" not in plan["global_preconditions"]
     assert plan["execution_contract"]["schema_version"] == "agent_sync_p2s_execution_contract_v1"
     assert plan["rollback_plan"]["executable"] is True
-    assert plan["approval_requirements"]["stage_approved"] is True
-    assert plan["approval_requirements"]["verify_approved"] is True
+    assert plan["execution_status"] in {"stage_ready", "blocked_artifact_store_not_ready"}
+    if plan["execution_status"] == "blocked_artifact_store_not_ready":
+        assert plan["approval_requirements"]["stage_approved"] is False
+        assert "artifact_store_not_bootstrapped" in plan["global_blockers"]
+    else:
+        assert plan["approval_requirements"]["stage_approved"] is True
+    assert plan["approval_requirements"]["verify_approved"] is plan["approval_requirements"]["stage_approved"]
     assert plan["approval_requirements"]["activate_approved"] is False
     assert plan["approval_requirements"]["rollback_approved"] is False
     assert plan["agents"]

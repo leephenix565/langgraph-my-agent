@@ -32,6 +32,12 @@ SCHEMA_FILES = {
     "agent_sync_result_v1": "sync_result_v1.schema.json",
     "agent_sync_lock_v1": "sync_lock_v1.schema.json",
     "agent_sync_artifact_index_v1": "artifact_index_v1.schema.json",
+    "agent_sync_environment_snapshot_v1": "environment_snapshot_v1.schema.json",
+    "agent_sync_artifact_store_preflight_v1": "artifact_store_preflight_v1.schema.json",
+    "agent_sync_artifact_store_bootstrap_plan_v1": "artifact_store_bootstrap_plan_v1.schema.json",
+    "agent_sync_artifact_store_bootstrap_environment_v1": "artifact_store_bootstrap_environment_v1.schema.json",
+    "agent_sync_artifact_store_bootstrap_approval_v1": "artifact_store_bootstrap_approval_v1.schema.json",
+    "agent_sync_artifact_store_metadata_v1": "artifact_store_metadata_v1.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {

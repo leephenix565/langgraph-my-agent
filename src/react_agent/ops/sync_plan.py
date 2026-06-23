@@ -39,8 +39,8 @@ POINTER_PATH = Path("/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.jso
 DEFAULT_PROD_ROOT = Path("/sdb/dlut/prod")
 DEFAULT_ACTIVE_SANDBOX = Path("/sdb/dlut/sandbox/r8-13a/services/prod")
 DEFAULT_VERSIONED_BASELINE = Path("/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services")
-P2S_EXECUTION_CONTRACT_VERSION = "sync_ops_2a_r2_p2s_execution_contract_v1"
-P2S_TOOL_VERSION = "sync_ops_2a_r2_executable_p2s_plan"
+P2S_EXECUTION_CONTRACT_VERSION = "sync_ops_2a_r3_p2s_execution_contract_v1"
+P2S_TOOL_VERSION = "sync_ops_2a_r3_executable_p2s_plan"
 READ_ONLY_PLAN_MARKERS = {
     "read_only_plan_only",
     "plan_only",
@@ -56,7 +56,7 @@ EXECUTABLE_P2S_PRECONDITIONS = [
     "registry_hash_match_required",
     "policy_hash_match_required",
     "catalog_hash_match_required",
-    "artifact_store_ready_or_initialization_approved",
+    "artifact_store_bootstrapped_or_plan_blocked",
     "global_lock_available",
     "transaction_locks_available",
     "stage_root_missing",
@@ -291,18 +291,22 @@ def stage_projection_digest_for_actions(actions: Sequence[Mapping[str, Any]]) ->
 
 
 def artifact_store_initialization_contract(preflight: Mapping[str, Any]) -> dict[str, Any]:
-    required = not bool(preflight.get("root_exists"))
+    bootstrap_required = not bool(preflight.get("ready"))
     return {
-        "required": required,
+        "required": False,
+        "bootstrap_required": bootstrap_required,
         "root": str(preflight.get("root") or DEFAULT_ARTIFACT_STORE_ROOT),
         "parent": str(preflight.get("parent") or DEFAULT_ARTIFACT_STORE_ROOT.parent),
-        "expected_root_state": "missing" if required else "present",
-        "recommended_mode": "inherit_parent_policy_or_0o770_if_parent_policy_absent",
-        "owner_strategy": "inherit_operator_or_parent_policy",
-        "group_strategy": "inherit_parent_or_recorded_ops_group",
+        "expected_root_state": "missing" if not bool(preflight.get("root_exists")) else "present",
+        "recommended_parent_mode": "0750",
+        "recommended_root_mode": "0700",
+        "recommended_internal_mode": "0700",
+        "owner_strategy": "current_operator",
+        "group_strategy": "normal_filesystem_inheritance",
         "create_parents": False,
-        "approval_required": required,
-        "rollback": "remove_only_if_empty_and_created_by_this_run",
+        "approval_required": False,
+        "bootstrap_plan_required": bootstrap_required,
+        "rollback": "handled_by_artifact_store_bootstrap_contract",
     }
 
 
@@ -373,7 +377,10 @@ def executable_plan_contract(
             "root": str(preflight.get("root") or DEFAULT_ARTIFACT_STORE_ROOT),
             "preflight": dict(preflight),
             "initialization": initialization,
-            "initialization_requires_approval": bool(initialization["required"]),
+            "bootstrap_required": bool(initialization["bootstrap_required"]),
+            "ready": bool(preflight.get("ready")),
+            "metadata_sha256": str(preflight.get("metadata_sha256") or ""),
+            "initialization_requires_approval": False,
         },
         "lock_requirements": {
             "global_lock": "global-cycle",
@@ -588,19 +595,21 @@ def _file_actions_from_diff(agent_diff: Mapping[str, Any], *, direction: str) ->
     return actions, blocked
 
 
-def build_p2s_plan() -> dict[str, Any]:
+def build_p2s_plan(*, artifact_store_root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[str, Any]:
     inventory = build_runtime_inventory(include_files=True)
     diff = diff_inventory(inventory)
     pointer = load_baseline_pointer()
     new_baseline_id = _baseline_id()
     stage_root = _stage_root_for(new_baseline_id)
-    store_preflight = artifact_store_preflight()
+    store_preflight = artifact_store_preflight(artifact_store_root)
+    store_ready = bool(store_preflight.get("ready"))
     plan = _base_plan("p2s")
     plan["tool_version"] = P2S_TOOL_VERSION
+    plan["execution_status"] = "stage_ready" if store_ready else "blocked_artifact_store_not_ready"
     plan["global_preconditions"] = list(EXECUTABLE_P2S_PRECONDITIONS)
-    plan["approval_requirements"]["stage_approved"] = True
-    plan["approval_requirements"]["verify_approved"] = True
-    plan["approval_requirements"]["artifact_store_initialize_approved"] = not bool(store_preflight.get("root_exists"))
+    plan["approval_requirements"]["stage_approved"] = store_ready
+    plan["approval_requirements"]["verify_approved"] = store_ready
+    plan["approval_requirements"]["artifact_store_initialize_approved"] = False
     plan["approval_requirements"]["activate_approved"] = False
     plan["approval_requirements"]["rollback_approved"] = False
     plan["approval_requirements"]["post_rollback_reactivate_approved"] = False
@@ -912,6 +921,8 @@ def build_p2s_plan() -> dict[str, Any]:
         plan["validation_profile"] = validation_profile
     if any(agent["blocked_actions"] for agent in agent_plans):
         plan["global_blockers"].append("p2s_blocked_actions_present")
+    if not store_ready:
+        plan["global_blockers"].append("artifact_store_not_bootstrapped")
     plan["canonical_sha256"] = canonical_sha256(plan)
     return plan
 
@@ -1047,6 +1058,7 @@ def validate_plan(
         execution_contract = plan.get("execution_contract") or {}
         rollback_plan = plan.get("rollback_plan") or {}
         approval_requirements = plan.get("approval_requirements") or {}
+        artifact_initialization = plan.get("artifact_store_initialization") or {}
         read_only_markers = {
             str(item)
             for item in plan.get("global_preconditions") or []
@@ -1071,6 +1083,13 @@ def validate_plan(
             and approval_requirements.get("rollback_approved") is True
         ):
             blockers.append("approval_phase_scope_too_broad")
+        if (
+            isinstance(artifact_initialization, Mapping)
+            and artifact_initialization.get("required") is True
+            and artifact_initialization.get("create_parents") is False
+            and (plan.get("artifact_store_preflight") or {}).get("parent_exists") is False
+        ):
+            blockers.append("artifact_store_init_parent_missing_without_bootstrap")
         if plan.get("summary"):
             if not summary_consistency(plan)["consistent"]:
                 blockers.append("p2s_summary_mismatch")

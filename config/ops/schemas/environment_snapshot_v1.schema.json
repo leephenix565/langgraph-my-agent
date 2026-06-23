@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/environment_snapshot_v1.schema.json",
+  "title": "agent_sync_environment_snapshot_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "registry_sha256",
+    "policy_sha256",
+    "catalog_sha256",
+    "plan_id",
+    "plan_sha256",
+    "environment_snapshot_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_environment_snapshot_v1"
+    },
+    "plan_id": {
+      "type": "string"
+    },
+    "plan_sha256": {
+      "type": "string"
+    },
+    "environment_snapshot_sha256": {
+      "type": "string",
+      "minLength": 64
+    }
+  }
+}

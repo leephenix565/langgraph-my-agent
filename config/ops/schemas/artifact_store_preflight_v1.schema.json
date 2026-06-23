@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/artifact_store_preflight_v1.schema.json",
+  "title": "agent_sync_artifact_store_preflight_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "root",
+    "parent",
+    "root_exists",
+    "parent_exists",
+    "creation_required",
+    "ready",
+    "blockers"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_artifact_store_preflight_v1"
+    },
+    "root": {
+      "type": "string"
+    },
+    "parent": {
+      "type": "string"
+    },
+    "root_exists": {
+      "type": "boolean"
+    },
+    "parent_exists": {
+      "type": "boolean"
+    },
+    "creation_required": {
+      "type": "boolean"
+    },
+    "ready": {
+      "type": "boolean"
+    },
+    "blockers": {
+      "type": "array"
+    }
+  }
+}

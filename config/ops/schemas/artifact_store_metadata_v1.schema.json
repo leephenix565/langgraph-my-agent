@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/artifact_store_metadata_v1.schema.json",
+  "title": "agent_sync_artifact_store_metadata_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "store_id",
+    "status",
+    "created_at",
+    "root",
+    "root_realpath",
+    "bootstrap_plan_id",
+    "bootstrap_plan_sha256",
+    "bootstrap_run_id",
+    "mode",
+    "uid",
+    "gid",
+    "tool_version",
+    "directory_schema_version",
+    "no_secrets_declaration"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_artifact_store_metadata_v1"
+    },
+    "store_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "bootstrapped",
+        "bootstrap_in_progress",
+        "rollback_in_progress",
+        "rolled_back"
+      ]
+    },
+    "root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "bootstrap_plan_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "no_secrets_declaration": {
+      "const": true
+    }
+  }
+}

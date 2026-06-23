@@ -289,7 +289,10 @@ active sandbox and pointer remain immutable inputs until a later approved
 execution phase.
 
 SYNC-OPS-2A-R2 freezes the executable plan contract and approval split. A real
-stage/verify run requires a stage-only machine approval and may initialize the
-approved artifact store if explicitly authorized. Activation and rollback are a
-separate later approval bound to the real stage run and digest; stage-only
-approval cannot switch the active sandbox or update the pointer.
+stage/verify run requires a stage-only machine approval, but it no longer
+initializes the durable artifact store. SYNC-OPS-2A-R3 makes
+`/sdb/dlut/ops-artifacts/agent-sync` a separate one-time bootstrap target with
+its own plan, environment hash, approval request, and `STORE_METADATA.json`.
+Activation and rollback are a separate later approval bound to the real stage
+run and digest; stage-only approval cannot switch the active sandbox or update
+the pointer.

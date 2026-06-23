@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A-R3 artifact-store bootstrap contract
+
+### Added
+
+- Added dedicated artifact-store bootstrap plan, environment, approval, and
+  metadata schemas.
+- Added bootstrap plan/validate/execute/verify/recover/rollback CLI commands.
+- Added temp-only bootstrap, idempotency, rollback, recovery, and P2S
+  pre-bootstrap guard tests.
+- Added `docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md` and ADRs 097-100.
+
+### Changed
+
+- P2S stage no longer implicitly creates a missing artifact-store root.
+- P2S plans generated before store metadata exists are blocked drafts, not
+  executable stage plans.
+- Artifact-store filesystem requirements are separated from sandbox activation
+  filesystem requirements.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, backup,
+  stage, activation, endpoint, process, `.env`, provider, database, or
+  secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A-R2 executable P2S plan contract
 
 ### Added

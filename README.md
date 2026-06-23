@@ -160,6 +160,14 @@ not create a real approval, lock, artifact-store run, stage, activation, or
 sandbox write. See
 `docs/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md`.
 
+SYNC-OPS-2A-R3 separates durable artifact-store bootstrap from P2S stage. The
+configured store `/sdb/dlut/ops-artifacts/agent-sync` now requires its own
+bootstrap plan and hash-bound approval before any P2S stage approval can be
+issued. P2S plans generated before that metadata exists are blocked drafts and
+cannot stage. R3 only rehearses bootstrap under `/tmp`; it does not create the
+real store or execute P2S stage. See
+`docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -942,3 +950,7 @@ readiness.
   activation/rollback approval. It still does not write prod, sandbox,
   owner-dev, real artifact-store, approval, lock, stage, activation, endpoint,
   process, or environment-value state.
+- SYNC-OPS-2A-R3 splits durable artifact-store bootstrap into its own
+  infrastructure approval. Until `/sdb/dlut/ops-artifacts/agent-sync` has valid
+  store metadata, P2S plans remain blocked drafts and `p2s stage` rejects them
+  before creating run artifacts.

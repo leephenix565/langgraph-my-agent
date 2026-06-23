@@ -34,9 +34,10 @@ available.
 ## Artifact Store
 
 The configured artifact root is `/sdb/dlut/ops-artifacts/agent-sync`.
-R2 performs only read-only preflight. If the root is missing, the plan records
-an explicit initialization action that requires machine approval. The phase does
-not create the root.
+R2 performed only read-only preflight. SYNC-OPS-2A-R3 supersedes the earlier
+idea that a normal P2S stage approval can initialize a missing store. Store
+bootstrap is now a separate one-time infrastructure plan and approval. A P2S
+plan generated before valid store metadata exists is a blocked draft.
 
 ## Rollback
 

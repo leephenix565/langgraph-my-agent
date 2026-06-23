@@ -77,7 +77,7 @@ def _fsync_parent(path: Path) -> None:
 
 def _mode_text(path: Path) -> str:
     try:
-        return oct(path.stat().st_mode & 0o777)
+        return format(path.stat().st_mode & 0o7777, "04o")
     except OSError:
         return ""
 
@@ -103,6 +103,8 @@ def artifact_store_preflight(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[s
     parent = root.parent
     root_exists = root.exists()
     parent_exists = parent.exists()
+    metadata_path = root / "STORE_METADATA.json"
+    metadata_exists = metadata_path.exists()
     probe = root if root_exists else parent
     try:
         stat_result = probe.stat() if probe.exists() else None
@@ -122,6 +124,8 @@ def artifact_store_preflight(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[s
         blockers.append("root_not_writable_by_mode")
     if not root_exists and parent_exists and not _writable_by_mode(parent):
         blockers.append("parent_not_writable_by_mode")
+    if root_exists and not metadata_exists:
+        blockers.append("store_metadata_missing")
     if stat_result is None:
         blockers.append("device_unavailable")
     payload = {
@@ -142,22 +146,27 @@ def artifact_store_preflight(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[s
         "free_bytes": free_bytes,
         "root_write_ready_by_mode": _writable_by_mode(root) if root_exists else False,
         "parent_write_ready_by_mode": _writable_by_mode(parent) if parent_exists else False,
+        "metadata_path": str(metadata_path),
+        "metadata_exists": metadata_exists,
+        "metadata_sha256": file_sha256(metadata_path) if metadata_exists and metadata_path.is_file() else "",
+        "bootstrapped": root_exists and metadata_exists,
         "creation_required": not root_exists,
         "expected_root_state": "present" if root_exists else "missing",
         "creation_deferred": True,
-        "ready": root_exists and not blockers,
+        "ready": root_exists and metadata_exists and not blockers,
         "blockers": blockers,
         "fs_policy": {
             "expected_root_state": "present" if root_exists else "missing",
             "creation_deferred": True,
-            "same_filesystem_required": True,
+            "same_filesystem_required": False,
+            "atomic_file_write_scope": "same_artifact_store_directory",
         },
         "init_action": {
             "required": not root_exists,
             "approval_required": not root_exists,
-            "creates": ["runs/<run_id>"],
-            "mode": "0700_for_run_subdirectories",
-            "journal_event": "run_initialized",
+            "creates": [],
+            "mode": "bootstrap_contract_required",
+            "journal_event": "artifact_store_bootstrap_required",
         },
     }
     return payload

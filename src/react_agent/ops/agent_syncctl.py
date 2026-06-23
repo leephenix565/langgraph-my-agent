@@ -11,6 +11,16 @@ from typing import Any, Sequence
 
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
+from react_agent.ops.sync_bootstrap import (
+    bootstrap_artifact_store,
+    build_bootstrap_approval_request,
+    build_bootstrap_environment_snapshot,
+    build_bootstrap_plan,
+    recover_bootstrap,
+    rollback_bootstrap,
+    validate_bootstrap_plan,
+    verify_artifact_store,
+)
 from react_agent.ops.sync_contracts import (
     EXAMPLES_DIR,
     READ_ONLY_UNSUPPORTED_COMMANDS,
@@ -404,6 +414,83 @@ def cmd_artifact_store_preflight(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_artifact_store_bootstrap_plan(args: argparse.Namespace) -> int:
+    plan = build_bootstrap_plan(Path(args.root))
+    environment = build_bootstrap_environment_snapshot(plan)
+    request = build_bootstrap_approval_request(plan, environment)
+    output = ensure_output_path(args.output)
+    maybe_write_json(output, plan)
+    payload = {
+        "summary_title": "agent-sync artifact-store bootstrap plan",
+        "plan": plan,
+        "environment": environment,
+        "approval_request": request,
+        "validation": validate_bootstrap_plan(plan),
+        "exit_code": 0,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"plan_id={plan['plan_id']}",
+            f"root={plan['root']}",
+            f"directory_actions={len(plan['directory_actions'])}",
+            f"status={request['status']}",
+        ],
+    )
+
+
+def cmd_artifact_store_bootstrap_validate(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    if not isinstance(plan, dict):
+        raise SyncPlannerError("bootstrap_plan_not_object", exit_code=2)
+    result = validate_bootstrap_plan(plan)
+    payload = {"summary_title": "agent-sync artifact-store bootstrap validate", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_artifact_store_bootstrap(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    plan = read_json(Path(args.plan))
+    approval = read_json(Path(args.approval))
+    if not isinstance(plan, dict) or not isinstance(approval, dict):
+        raise SyncPlannerError("bootstrap_input_not_object", exit_code=2)
+    result = bootstrap_artifact_store(plan, approval, execute=True)
+    payload = {"summary_title": "agent-sync artifact-store bootstrap", **result, "exit_code": 0}
+    return print_or_json(args, payload, [f"status={result['status']}", f"root={result['root']}"])
+
+
+def cmd_artifact_store_verify(args: argparse.Namespace) -> int:
+    root = Path(args.root)
+    if args.plan:
+        plan = read_json(Path(args.plan))
+        if isinstance(plan, dict):
+            root = Path(str(plan.get("root") or root))
+    result = verify_artifact_store(root)
+    payload = {"summary_title": "agent-sync artifact-store verify", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"bootstrapped={result['bootstrapped']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_artifact_store_recover(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    if not isinstance(plan, dict):
+        raise SyncPlannerError("bootstrap_plan_not_object", exit_code=2)
+    result = recover_bootstrap(plan)
+    payload = {"summary_title": "agent-sync artifact-store recover", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"recommended_action={result['recommended_action']}"])
+
+
+def cmd_artifact_store_bootstrap_rollback(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    plan = read_json(Path(args.plan))
+    approval = read_json(Path(args.approval))
+    if not isinstance(plan, dict) or not isinstance(approval, dict):
+        raise SyncPlannerError("bootstrap_input_not_object", exit_code=2)
+    result = rollback_bootstrap(plan, approval, execute=True)
+    payload = {"summary_title": "agent-sync artifact-store bootstrap rollback", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"status={result['status']}", f"removed={len(result['removed_directories'])}"])
+
+
 def cmd_p2s_stage(args: argparse.Namespace) -> int:
     _require_execute(args)
     result = p2s_stage(Path(args.plan), Path(args.approval), Path(args.artifact_root), execute=True)
@@ -594,6 +681,36 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_preflight.add_argument("--root", default="/sdb/dlut/ops-artifacts/agent-sync")
     _add_output_args(artifact_preflight)
     artifact_preflight.set_defaults(func=cmd_artifact_store_preflight)
+    artifact_bootstrap_plan = artifact_store_sub.add_parser("bootstrap-plan")
+    artifact_bootstrap_plan.add_argument("--root", default="/sdb/dlut/ops-artifacts/agent-sync")
+    artifact_bootstrap_plan.add_argument("--output")
+    _add_output_args(artifact_bootstrap_plan)
+    artifact_bootstrap_plan.set_defaults(func=cmd_artifact_store_bootstrap_plan)
+    artifact_bootstrap_validate = artifact_store_sub.add_parser("bootstrap-validate")
+    artifact_bootstrap_validate.add_argument("--plan", required=True)
+    _add_output_args(artifact_bootstrap_validate)
+    artifact_bootstrap_validate.set_defaults(func=cmd_artifact_store_bootstrap_validate)
+    artifact_bootstrap = artifact_store_sub.add_parser("bootstrap")
+    artifact_bootstrap.add_argument("--plan", required=True)
+    artifact_bootstrap.add_argument("--approval", required=True)
+    artifact_bootstrap.add_argument("--execute", action="store_true")
+    _add_output_args(artifact_bootstrap)
+    artifact_bootstrap.set_defaults(func=cmd_artifact_store_bootstrap)
+    artifact_verify = artifact_store_sub.add_parser("verify")
+    artifact_verify.add_argument("--root", default="/sdb/dlut/ops-artifacts/agent-sync")
+    artifact_verify.add_argument("--plan")
+    _add_output_args(artifact_verify)
+    artifact_verify.set_defaults(func=cmd_artifact_store_verify)
+    artifact_recover = artifact_store_sub.add_parser("recover")
+    artifact_recover.add_argument("--plan", required=True)
+    _add_output_args(artifact_recover)
+    artifact_recover.set_defaults(func=cmd_artifact_store_recover)
+    artifact_rollback = artifact_store_sub.add_parser("bootstrap-rollback")
+    artifact_rollback.add_argument("--plan", required=True)
+    artifact_rollback.add_argument("--approval", required=True)
+    artifact_rollback.add_argument("--execute", action="store_true")
+    _add_output_args(artifact_rollback)
+    artifact_rollback.set_defaults(func=cmd_artifact_store_bootstrap_rollback)
 
     lock = subparsers.add_parser("lock")
     lock_sub = lock.add_subparsers(dest="command", required=True)

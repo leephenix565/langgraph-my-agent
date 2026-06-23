@@ -92,10 +92,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   parity ledgers, and temp reconstruction. SYNC-OPS-2A adds only temp-root
   writer primitives. SYNC-OPS-2A-R1 closes source selection and proves the
   actual current plan with full-scale temp stage/verify/activate/rollback.
-  The next sync implementation entry is SYNC-OPS-2B real P2S execution, gated
-  by explicit machine approval, environment snapshot, locks, artifact-store
-  readiness, source-policy clean plan validation, and full-scale rehearsal
-  evidence.
+  SYNC-OPS-2A-R3 separates durable artifact-store bootstrap from P2S stage.
+  The next sync implementation entry is SYNC-OPS-2B0 artifact-store bootstrap
+  approval, followed by a regenerated P2S stage-ready plan and SYNC-OPS-2B1
+  stage/verify approval.
 
 重要边界：
 
@@ -385,15 +385,12 @@ validation, and temp-only reconstruction under `/tmp` before a machine approval
 request can be considered.
 
 SYNC-OPS-2A implements the writer contract but only exercises it in
-repo-external temporary roots. SYNC-OPS-2A-R2 splits the next real execution
-into SYNC-OPS-2B1 stage/verify approval and a later activation/rollback
-approval. Entry to 2B1 requires a fresh R2 executable plan, matching
-environment snapshot SHA, stage-only machine approval, explicit artifact-store
-initialization approval if needed, no runtime-required compile blockers,
-`not_scanned copy=0`, and full-scale temp rehearsal pass. 2B1 must not activate
-or roll back the active sandbox; S2P apply, endpoint smoke, process restart,
-and owner-dev writes remain out of scope unless a later phase explicitly owns
-them.
+repo-external temporary roots. SYNC-OPS-2A-R3 makes the next real step
+SYNC-OPS-2B0: machine approval for the artifact-store bootstrap plan. Only
+after valid store metadata exists should operators regenerate the P2S plan and
+request SYNC-OPS-2B1 stage/verify approval. 2B1 must not activate or roll back
+the active sandbox; S2P apply, endpoint smoke, process restart, and owner-dev
+writes remain out of scope unless a later phase explicitly owns them.
 
 ## Non-Goals
 

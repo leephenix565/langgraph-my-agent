@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/artifact_store_bootstrap_environment_v1.schema.json",
+  "title": "agent_sync_artifact_store_bootstrap_environment_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "tool_version",
+    "plan_id",
+    "plan_sha256",
+    "root",
+    "nearest_existing_ancestor",
+    "nearest_existing_ancestor_device",
+    "directory_action_states",
+    "operator_uid",
+    "operator_gid",
+    "environment_snapshot_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_artifact_store_bootstrap_environment_v1"
+    },
+    "tool_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nearest_existing_ancestor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nearest_existing_ancestor_device": {
+      "type": "string",
+      "minLength": 1
+    },
+    "directory_action_states": {
+      "type": "array"
+    },
+    "operator_uid": {
+      "type": "integer"
+    },
+    "operator_gid": {
+      "type": "integer"
+    },
+    "environment_snapshot_sha256": {
+      "type": "string",
+      "minLength": 64
+    }
+  }
+}

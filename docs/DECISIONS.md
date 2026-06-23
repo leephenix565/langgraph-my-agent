@@ -3,6 +3,51 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-100: P2S Plans Require Store Metadata Before Stage Approval
+
+Status: accepted for SYNC-OPS-2A-R3.
+
+Decision: a P2S plan generated before `/sdb/dlut/ops-artifacts/agent-sync`
+contains valid store metadata is a blocked draft. It cannot request executable
+stage approval, and writer commands reject it before creating run artifacts.
+
+Reason: stage writes need a durable, already bootstrapped artifact store for
+plans, approvals, journals, locks, validation, and closeout evidence.
+
+## ADR-099: Bootstrap Creates Only Exact Approved Paths
+
+Status: accepted for SYNC-OPS-2A-R3.
+
+Decision: artifact-store bootstrap can create only the exact directories listed
+in the bootstrap plan and write only `STORE_METADATA.json`. It never guesses
+ownership, recursively creates arbitrary parents, chowns, chgrps, or sets
+setuid/setgid bits.
+
+Reason: the current parent and root are missing. Safe initialization must be a
+reviewable infrastructure transaction, not a broad mkdir side effect.
+
+## ADR-098: Artifact Store And Sandbox Filesystem Rules Are Separate
+
+Status: accepted for SYNC-OPS-2A-R3.
+
+Decision: artifact-store atomic writes require temp files in the same artifact
+directory and fsync. Sandbox activation separately requires active, candidate,
+and archive paths to satisfy atomic rename constraints.
+
+Reason: coupling the artifact store to the sandbox filesystem would impose an
+unnecessary storage constraint and confuse evidence persistence with sandbox
+activation safety.
+
+## ADR-097: Artifact Store Bootstrap Is One-Time Infrastructure
+
+Status: accepted for SYNC-OPS-2A-R3.
+
+Decision: durable artifact-store bootstrap is a one-time approved
+infrastructure operation, not an implicit P2S stage side effect.
+
+Reason: every P2S run needs artifacts, but each run must not independently
+decide how to create the long-lived evidence root.
+
 ## ADR-096: Plan Metrics Use One Structured Summary Source
 
 Status: accepted for SYNC-OPS-2A-R2.

@@ -1334,6 +1334,22 @@ SYNC-OPS-2A-R2 freezes the executable P2S write contract:
   `agent_sync_p2s_summary_v1` object so logical materialization actions and
   physical writes are not conflated.
 
+SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
+
+- `agent_sync_artifact_store_bootstrap_plan_v1` lists exact directory actions
+  and a root metadata write. It cannot authorize wildcard parents, arbitrary
+  recursive creation, chown, chgrp, setuid, or setgid.
+- `agent_sync_artifact_store_bootstrap_approval_v1` binds exact bootstrap plan
+  SHA, bootstrap environment snapshot SHA, and action ids.
+- `STORE_METADATA.json` is the durable marker that makes the store usable by
+  later P2S runs.
+- P2S plans generated while the store is missing or lacks metadata use
+  `execution_status=blocked_artifact_store_not_ready`; stage/verify/activate/
+  rollback reject before creating run artifacts.
+- Artifact-store atomic-write requirements are local to the store directory;
+  sandbox activation atomic-rename requirements remain scoped to active,
+  candidate, and archive paths.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

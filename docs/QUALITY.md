@@ -986,3 +986,21 @@ SYNC-OPS-2A-R2 adds executable-plan and staged-approval regressions:
 Default gates still must not write real prod, sandbox, owner-dev, configured
 artifact-store, approval, lock, stage, activation, endpoint, process, or
 environment-value state.
+
+## SYNC-OPS-2A-R3 Artifact-Store Bootstrap Gate
+
+SYNC-OPS-2A-R3 adds bootstrap-specific quality coverage:
+
+- bootstrap plans contain only exact `mkdir_exact` actions and one metadata
+  write;
+- plan, approval, and environment hashes are checked before bootstrap;
+- bootstrap is idempotent when the store metadata is already valid;
+- rollback removes only empty paths created by the same bootstrap run;
+- non-empty store rollback is rejected;
+- P2S stage rejects unbootstrapped stores before run artifact creation;
+- temp rehearsal covers bootstrap, verify, idempotency, recovery, rollback,
+  and P2S before/after-bootstrap behavior.
+
+Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
+sandbox, owner-dev, real approvals, real locks, real stages, endpoints,
+process state, or environment values.

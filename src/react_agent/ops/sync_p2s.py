@@ -12,7 +12,14 @@ from pathlib import Path
 from typing import Any
 
 from react_agent.ops.sync_approval import load_approval, validate_approval
-from react_agent.ops.sync_artifacts import ArtifactRunStore
+from react_agent.ops.sync_artifacts import ArtifactRunStore, artifact_store_preflight
+from react_agent.ops.sync_bootstrap import (
+    bootstrap_artifact_store,
+    build_bootstrap_environment_snapshot,
+    build_bootstrap_plan,
+    build_temp_bootstrap_approval,
+    verify_artifact_store,
+)
 from react_agent.ops.sync_contracts import (
     SyncPlannerError,
     canonical_sha256,
@@ -29,7 +36,11 @@ from react_agent.ops.sync_materialize import (
     materialize_stage,
     secret_scan_stage,
 )
-from react_agent.ops.sync_plan import load_plan, validate_plan
+from react_agent.ops.sync_plan import (
+    artifact_store_initialization_contract,
+    load_plan,
+    validate_plan,
+)
 from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 
@@ -67,6 +78,27 @@ def _load_plan_approval(plan_path: Path, approval_path: Path, *, allow_existing_
     approval = load_approval(approval_path)
     environment = build_environment_snapshot(plan)
     return plan, approval, environment
+
+
+def _expected_artifact_root(plan: Mapping[str, Any]) -> Path:
+    contract = plan.get("execution_contract") or {}
+    artifact_store = contract.get("artifact_store") if isinstance(contract, Mapping) else {}
+    return Path(str((artifact_store or {}).get("root") or ""))
+
+
+def _require_bootstrapped_artifact_store(plan: Mapping[str, Any], artifact_root: Path) -> None:
+    if str(plan.get("execution_status") or "") == "blocked_artifact_store_not_ready":
+        raise SyncPlannerError("artifact_store_not_bootstrapped", exit_code=3)
+    expected = _expected_artifact_root(plan)
+    if expected and artifact_root.resolve(strict=False) != expected.resolve(strict=False):
+        raise SyncPlannerError(
+            "artifact_store_root_mismatch",
+            exit_code=3,
+            details={"expected_root": str(expected), "provided_root": str(artifact_root)},
+        )
+    verify = verify_artifact_store(artifact_root)
+    if not verify["bootstrapped"]:
+        raise SyncPlannerError("artifact_store_not_bootstrapped", exit_code=3, details={"blockers": verify["blockers"]})
 
 
 def _validate_approval_or_raise(
@@ -213,12 +245,13 @@ def p2s_stage(plan_path: Path, approval_path: Path, artifact_root: Path, *, exec
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path)
+    _require_bootstrapped_artifact_store(plan, artifact_root)
     _validate_approval_or_raise(
         approval,
         plan,
         environment,
         require_stage=True,
-        require_artifact_store_initialize=bool((plan.get("artifact_store_initialization") or {}).get("required")),
+        require_artifact_store_initialize=False,
     )
     run_id = _run_id(plan)
     store = ArtifactRunStore(artifact_root, run_id)
@@ -272,6 +305,7 @@ def p2s_verify(plan_path: Path, approval_path: Path, artifact_root: Path, *, exe
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path, allow_existing_stage=True)
+    _require_bootstrapped_artifact_store(plan, artifact_root)
     _validate_approval_or_raise(approval, plan, environment, require_verify=True)
     stage_root = _stage_root(plan)
     if not stage_root.exists():
@@ -303,6 +337,7 @@ def p2s_activate(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path, allow_existing_stage=True)
+    _require_bootstrapped_artifact_store(plan, artifact_root)
     _validate_approval_or_raise(approval, plan, environment, require_activate=True)
     stage_root = _stage_root(plan)
     active = _active_path(plan)
@@ -352,6 +387,7 @@ def p2s_rollback(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path, allow_existing_stage=True)
+    _require_bootstrapped_artifact_store(plan, artifact_root)
     _validate_approval_or_raise(approval, plan, environment, require_rollback=True)
     active = _active_path(plan)
     archive = _archive_path(plan)
@@ -438,37 +474,20 @@ def prepare_temp_rehearsal_plan(plan: Mapping[str, Any], temp_root: Path) -> dic
     decoded["baseline"]["pointer_sha256"] = file_sha256(pointer)
     decoded["stage_materialization"]["stage_root"] = str(stage_root)
     decoded["stage_materialization"]["expected_stage_root_state"] = "missing"
-    decoded["artifact_store_preflight"] = {
-        "schema_version": "agent_sync_artifact_store_preflight_v1",
-        "root": str(temp_root / "artifact-store"),
-        "parent": str(temp_root),
-        "root_exists": False,
-        "parent_exists": True,
-        "root_realpath": "",
-        "parent_realpath": str(temp_root.resolve(strict=False)),
-        "root_mode": "",
-        "parent_mode": "",
-        "filesystem_device_id": "temp",
-        "free_bytes": None,
-        "root_write_ready_by_mode": False,
-        "parent_write_ready_by_mode": True,
-        "creation_required": True,
-        "expected_root_state": "missing",
-        "creation_deferred": False,
-        "ready": False,
-        "blockers": ["root_missing"],
-    }
+    store_preflight = artifact_store_preflight(temp_root / "artifact-store")
+    decoded["artifact_store_preflight"] = store_preflight
+    decoded["execution_status"] = "stage_ready" if store_preflight.get("ready") else "blocked_artifact_store_not_ready"
     if isinstance(decoded.get("artifact_store_initialization"), dict):
-        decoded["artifact_store_initialization"]["root"] = str(temp_root / "artifact-store")
-        decoded["artifact_store_initialization"]["parent"] = str(temp_root)
-        decoded["artifact_store_initialization"]["expected_root_state"] = "missing"
-        decoded["artifact_store_initialization"]["required"] = True
+        decoded["artifact_store_initialization"] = artifact_store_initialization_contract(store_preflight)
     if isinstance(decoded.get("execution_contract"), dict):
         contract = decoded["execution_contract"]
         if isinstance(contract.get("artifact_store"), dict):
             contract["artifact_store"]["root"] = str(temp_root / "artifact-store")
             contract["artifact_store"]["preflight"] = decoded["artifact_store_preflight"]
-            contract["artifact_store"]["initialization_requires_approval"] = True
+            contract["artifact_store"]["bootstrap_required"] = not bool(store_preflight.get("ready"))
+            contract["artifact_store"]["ready"] = bool(store_preflight.get("ready"))
+            contract["artifact_store"]["metadata_sha256"] = str(store_preflight.get("metadata_sha256") or "")
+            contract["artifact_store"]["initialization_requires_approval"] = False
         if isinstance(contract.get("stage"), dict):
             contract["stage"]["stage_root"] = str(stage_root)
         if isinstance(contract.get("activation"), dict):
@@ -544,6 +563,11 @@ def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> di
     if temp_root.exists() and any(temp_root.iterdir()):
         raise SyncPlannerError("p2s_rehearsal_temp_root_not_empty", exit_code=2)
     temp_root.mkdir(parents=True, exist_ok=True)
+    artifact_root = temp_root / "artifact-store"
+    bootstrap_plan = build_bootstrap_plan(artifact_root)
+    bootstrap_environment = build_bootstrap_environment_snapshot(bootstrap_plan)
+    bootstrap_approval = build_temp_bootstrap_approval(bootstrap_plan, bootstrap_environment)
+    bootstrap_result = bootstrap_artifact_store(bootstrap_plan, bootstrap_approval, execute=True)
     rehearsal_plan = prepare_temp_rehearsal_plan(plan, temp_root)
     stage_approval = build_temp_rehearsal_approval(rehearsal_plan)
     activation_approval = build_temp_rehearsal_approval(
@@ -561,7 +585,6 @@ def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> di
     write_json(plan_path, rehearsal_plan)
     write_json(stage_approval_path, stage_approval)
     write_json(activation_approval_path, activation_approval)
-    artifact_root = temp_root / "artifact-store"
     stage = p2s_stage(plan_path, stage_approval_path, artifact_root, execute=True)
     verify = p2s_verify(plan_path, stage_approval_path, artifact_root, execute=True)
     try:
@@ -601,6 +624,7 @@ def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> di
         "plan_summary": plan_summary,
         "execution_summary": execution_summary,
         "stage": stage["stage"],
+        "bootstrap": bootstrap_result,
         "verify": verify,
         "stage_only_activate_rejection": stage_only_activate_rejection,
         "activate": activate,

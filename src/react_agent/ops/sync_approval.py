@@ -157,7 +157,7 @@ def validate_approval(
 
 
 def build_stage_approval_request(plan: Mapping[str, Any], environment_snapshot: Mapping[str, Any]) -> dict[str, Any]:
-    init_required = bool((plan.get("artifact_store_initialization") or {}).get("required"))
+    executable = str(plan.get("execution_status") or "") != "blocked_artifact_store_not_ready"
     return {
         "schema_version": "agent_sync_p2s_approval_request_v1",
         "plan_id": str(plan.get("plan_id") or ""),
@@ -175,20 +175,21 @@ def build_stage_approval_request(plan: Mapping[str, Any], environment_snapshot: 
             for action in agent.get("actions") or []
             if isinstance(action, Mapping)
         ],
-        "artifact_store_initialize_requested": init_required,
-        "stage_requested": True,
-        "verify_requested": True,
+        "artifact_store_initialize_requested": False,
+        "stage_requested": executable,
+        "verify_requested": executable,
         "activate_requested": False,
         "rollback_requested": False,
         "post_rollback_reactivate_requested": False,
-        "requested_stage_permission": True,
+        "requested_stage_permission": executable,
         "requested_activate_permission": False,
         "requested_rollback_permission": False,
         "delete_requested": False,
         "process_action_requested": False,
         "live_requested": False,
-        "operator_action_required": True,
-        "status": "awaiting_machine_approval",
+        "operator_action_required": executable,
+        "status": "awaiting_machine_approval" if executable else "blocked_artifact_store_not_ready",
+        "blockers": [] if executable else ["artifact_store_not_bootstrapped"],
         "approval_id": "",
         "approved_at": "",
     }

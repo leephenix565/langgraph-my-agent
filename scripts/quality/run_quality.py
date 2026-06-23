@@ -68,6 +68,7 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/ops/agent_syncctl.py",
     "src/react_agent/ops/sync_approval.py",
     "src/react_agent/ops/sync_artifacts.py",
+    "src/react_agent/ops/sync_bootstrap.py",
     "src/react_agent/ops/sync_contracts.py",
     "src/react_agent/ops/sync_diff.py",
     "src/react_agent/ops/sync_environment.py",
@@ -88,6 +89,7 @@ STATIC_RUFF_TARGETS = (
     "tests/integration_tests/test_public_api.py",
     "tests/integration_tests/test_graph.py",
     "tests/integration_tests/test_sync_ops_planner.py",
+    "tests/unit_tests/ops/test_sync_artifact_store_bootstrap.py",
     "tests/unit_tests/ops/test_sync_contracts.py",
     "tests/unit_tests/ops/test_sync_coverage_materialize.py",
     "tests/unit_tests/ops/test_sync_p2s_safety.py",
@@ -134,6 +136,7 @@ STATIC_CODESPELL_TARGETS = (
     "docs/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md",
     "docs/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md",
     "docs/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md",
+    "docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md",
 )
 
 

@@ -1,0 +1,166 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/artifact_store_bootstrap_plan_v1.schema.json",
+  "title": "agent_sync_artifact_store_bootstrap_plan_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "created_at",
+    "expires_at",
+    "root",
+    "nearest_existing_ancestor",
+    "environment_snapshot_sha256",
+    "directory_actions",
+    "metadata_action",
+    "serialization",
+    "verification",
+    "rollback",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_artifact_store_bootstrap_plan_v1"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "created_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expires_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "nearest_existing_ancestor": {
+      "type": "string",
+      "minLength": 1
+    },
+    "environment_snapshot_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "execution_status": {
+      "type": "string"
+    },
+    "directory_actions": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "$ref": "#/$defs/directory_action"
+      }
+    },
+    "metadata_action": {
+      "type": "object",
+      "required": [
+        "action_id",
+        "path",
+        "operation",
+        "mode",
+        "schema_version"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "const": "atomic_write_json"
+        },
+        "mode": {
+          "const": "0600"
+        },
+        "schema_version": {
+          "const": "agent_sync_artifact_store_metadata_v1"
+        }
+      },
+      "additionalProperties": true
+    },
+    "serialization": {
+      "type": "object",
+      "required": [
+        "strategy"
+      ],
+      "properties": {
+        "strategy": {
+          "const": "atomic_mkdir_root"
+        }
+      },
+      "additionalProperties": true
+    },
+    "verification": {
+      "type": "object"
+    },
+    "rollback": {
+      "type": "object"
+    },
+    "canonical_sha256": {
+      "type": "string",
+      "minLength": 64
+    }
+  },
+  "$defs": {
+    "directory_action": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "action_id",
+        "path",
+        "operation",
+        "expected_state",
+        "mode",
+        "owner_strategy",
+        "group_strategy",
+        "forbid_symlink",
+        "forbid_special_file"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "const": "mkdir_exact"
+        },
+        "expected_state": {
+          "enum": [
+            "missing"
+          ]
+        },
+        "mode": {
+          "enum": [
+            "0750",
+            "0700"
+          ]
+        },
+        "owner_strategy": {
+          "const": "current_operator"
+        },
+        "group_strategy": {
+          "const": "normal_filesystem_inheritance"
+        },
+        "forbid_symlink": {
+          "const": true
+        },
+        "forbid_special_file": {
+          "const": true
+        }
+      }
+    }
+  }
+}

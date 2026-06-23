@@ -10,6 +10,12 @@ import pytest
 
 from react_agent.ops.sync_approval import validate_approval
 from react_agent.ops.sync_artifacts import ArtifactRunStore
+from react_agent.ops.sync_bootstrap import (
+    bootstrap_artifact_store,
+    build_bootstrap_environment_snapshot,
+    build_bootstrap_plan,
+    build_temp_bootstrap_approval,
+)
 from react_agent.ops.sync_contracts import (
     SyncPlannerError,
     canonical_sha256,
@@ -272,6 +278,13 @@ def _approval(plan: dict[str, object], *, stage: bool = True, activate: bool = T
     }
 
 
+def _bootstrap_artifact_root(artifact_root: Path) -> None:
+    plan = build_bootstrap_plan(artifact_root)
+    environment = build_bootstrap_environment_snapshot(plan)
+    approval = build_temp_bootstrap_approval(plan, environment, rollback=True)
+    bootstrap_artifact_store(plan, approval, execute=True)
+
+
 def test_approval_exact_plan_environment_and_permissions(tmp_path: Path) -> None:
     plan = _temp_plan(tmp_path)
     approval = _approval(plan)
@@ -336,6 +349,7 @@ def test_temp_p2s_stage_verify_activate_rollback_and_recover(tmp_path: Path) -> 
     write_json(plan_path, plan)
     write_json(approval_path, approval)
     artifact_root = tmp_path / "artifact-store"
+    _bootstrap_artifact_root(artifact_root)
 
     stage = p2s_stage(plan_path, approval_path, artifact_root, execute=True)
     assert stage["stage"]["digest_match"] is True
@@ -366,12 +380,26 @@ def test_stage_only_approval_cannot_activate(tmp_path: Path) -> None:
     write_json(plan_path, plan)
     write_json(approval_path, stage_only)
     artifact_root = tmp_path / "artifact-store"
+    _bootstrap_artifact_root(artifact_root)
     p2s_stage(plan_path, approval_path, artifact_root, execute=True)
     p2s_verify(plan_path, approval_path, artifact_root, execute=True)
     with pytest.raises(SyncPlannerError) as exc:
         p2s_activate(plan_path, approval_path, artifact_root, execute=True)
     assert exc.value.exit_code == 4
     assert "activate_permission_missing" in exc.value.details["blockers"]
+
+
+def test_p2s_stage_rejects_unbootstrapped_artifact_store(tmp_path: Path) -> None:
+    plan = _temp_plan(tmp_path)
+    approval = _approval(plan)
+    plan_path = tmp_path / "plan.json"
+    approval_path = tmp_path / "approval.json"
+    write_json(plan_path, plan)
+    write_json(approval_path, approval)
+    with pytest.raises(SyncPlannerError) as exc:
+        p2s_stage(plan_path, approval_path, tmp_path / "artifact-store", execute=True)
+    assert exc.value.exit_code == 3
+    assert exc.value.reason == "artifact_store_not_bootstrapped"
 
 
 def test_legacy_read_only_plan_is_rejected() -> None:
