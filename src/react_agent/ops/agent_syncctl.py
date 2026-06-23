@@ -9,6 +9,7 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
+from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_contracts import (
     EXAMPLES_DIR,
     READ_ONLY_UNSUPPORTED_COMMANDS,
@@ -27,7 +28,16 @@ from react_agent.ops.sync_contracts import (
 )
 from react_agent.ops.sync_coverage import load_plan_and_build_ledgers
 from react_agent.ops.sync_diff import diff_inventory
+from react_agent.ops.sync_environment import build_environment_snapshot
 from react_agent.ops.sync_inventory import build_runtime_inventory
+from react_agent.ops.sync_lock import SyncLockManager
+from react_agent.ops.sync_p2s import (
+    p2s_activate,
+    p2s_recover,
+    p2s_rollback,
+    p2s_stage,
+    p2s_verify,
+)
 from react_agent.ops.sync_plan import (
     build_cycle_plan,
     build_experiment_template,
@@ -230,6 +240,75 @@ def cmd_schema_validate(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, [f"schemas={payload['schema_count']}", f"examples={payload['example_count']}"])
 
 
+def _require_execute(args: argparse.Namespace) -> None:
+    if not getattr(args, "execute", False):
+        raise SyncPlannerError("execute_required", exit_code=2)
+
+
+def cmd_approval_validate(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    approval = load_approval(Path(args.approval))
+    environment = build_environment_snapshot(plan)
+    result = validate_approval(
+        approval,
+        plan,
+        environment_snapshot=environment,
+        require_stage=args.require_stage,
+        require_activate=args.require_activate,
+        require_rollback=args.require_rollback,
+    )
+    payload = {"summary_title": "agent-sync approval validate", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_p2s_stage(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    result = p2s_stage(Path(args.plan), Path(args.approval), Path(args.artifact_root), execute=True)
+    payload = {"summary_title": "agent-sync p2s stage", **result, "exit_code": 0}
+    return print_or_json(args, payload, [f"run_id={result['run_id']}", f"status={result['status']}"])
+
+
+def cmd_p2s_verify(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    result = p2s_verify(Path(args.plan), Path(args.approval), Path(args.artifact_root), execute=True)
+    payload = {"summary_title": "agent-sync p2s verify", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"digest_match={result['digest_match']}"])
+
+
+def cmd_p2s_activate(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    result = p2s_activate(Path(args.plan), Path(args.approval), Path(args.artifact_root), execute=True)
+    payload = {"summary_title": "agent-sync p2s activate", **result, "exit_code": 0}
+    return print_or_json(args, payload, [f"status={result['status']}", f"hardlink_count={result['hardlink_count']}"])
+
+
+def cmd_p2s_rollback(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    result = p2s_rollback(Path(args.plan), Path(args.approval), Path(args.artifact_root), execute=True)
+    payload = {"summary_title": "agent-sync p2s rollback", **result, "exit_code": 0}
+    return print_or_json(args, payload, [f"status={result['status']}", f"archive_restored={result['archive_restored']}"])
+
+
+def cmd_run_status(args: argparse.Namespace) -> int:
+    artifact_root = Path(args.artifact_root)
+    run_root = artifact_root / "runs" / args.run_id
+    payload = {
+        "summary_title": "agent-sync run status",
+        "run_id": args.run_id,
+        "run_root": str(run_root),
+        "exists": run_root.exists(),
+        "events": p2s_recover(artifact_root, args.run_id),
+        "exit_code": 0,
+    }
+    return print_or_json(args, payload, [f"run_id={args.run_id}", f"exists={run_root.exists()}"])
+
+
+def cmd_run_recover(args: argparse.Namespace) -> int:
+    result = p2s_recover(Path(args.artifact_root), args.run_id)
+    payload = {"summary_title": "agent-sync run recover", **result, "exit_code": 0}
+    return print_or_json(args, payload, [f"run_id={args.run_id}", f"recommended_action={result['recommended_action']}"])
+
+
 def cmd_unsupported(group: str, command: str) -> int:
     payload = {
         "schema_version": "agent_sync_cli_error_v1",
@@ -289,9 +368,30 @@ def build_parser() -> argparse.ArgumentParser:
     p2s_coverage.add_argument("--plan", required=True)
     _add_output_args(p2s_coverage)
     p2s_coverage.set_defaults(func=cmd_p2s_coverage)
-    for unsupported in ("stage", "activate", "rollback"):
-        parser_unsupported = p2s_sub.add_parser(unsupported)
-        parser_unsupported.set_defaults(func=lambda _args, cmd=unsupported: cmd_unsupported("p2s", cmd))
+    for command_name, command_func in (
+        ("stage", cmd_p2s_stage),
+        ("verify", cmd_p2s_verify),
+        ("activate", cmd_p2s_activate),
+        ("rollback", cmd_p2s_rollback),
+    ):
+        p2s_command = p2s_sub.add_parser(command_name)
+        p2s_command.add_argument("--plan", required=True)
+        p2s_command.add_argument("--approval", required=True)
+        p2s_command.add_argument("--artifact-root", required=True)
+        p2s_command.add_argument("--execute", action="store_true")
+        _add_output_args(p2s_command)
+        p2s_command.set_defaults(func=command_func)
+
+    approval = subparsers.add_parser("approval")
+    approval_sub = approval.add_subparsers(dest="command", required=True)
+    approval_validate = approval_sub.add_parser("validate")
+    approval_validate.add_argument("--plan", required=True)
+    approval_validate.add_argument("--approval", required=True)
+    approval_validate.add_argument("--require-stage", action="store_true")
+    approval_validate.add_argument("--require-activate", action="store_true")
+    approval_validate.add_argument("--require-rollback", action="store_true")
+    _add_output_args(approval_validate)
+    approval_validate.set_defaults(func=cmd_approval_validate)
 
     s2p = subparsers.add_parser("s2p")
     s2p_sub = s2p.add_subparsers(dest="command", required=True)
@@ -332,21 +432,26 @@ def build_parser() -> argparse.ArgumentParser:
     lock = subparsers.add_parser("lock")
     lock_sub = lock.add_subparsers(dest="command", required=True)
     lock_show = lock_sub.add_parser("show")
+    lock_show.add_argument("--artifact-root", default="/sdb/dlut/ops-artifacts/agent-sync")
     _add_output_args(lock_show)
     lock_show.set_defaults(
-        func=lambda args: print_or_json(
-            args,
-            {
-                "summary_title": "agent-sync lock show",
-                "locks": [],
-                "note": "SYNC-OPS-1 does not acquire or persist locks",
-                "exit_code": 0,
-            },
-            ["locks=0", "read_only=true"],
-        )
+        func=lambda args: print_or_json(args, {"summary_title": "agent-sync lock show", **SyncLockManager(Path(args.artifact_root)).inspect(), "exit_code": 0}, ["lock_inspection=true"])
     )
     force = lock_sub.add_parser("force-release")
     force.set_defaults(func=lambda _args: cmd_unsupported("lock", "force-release"))
+
+    run = subparsers.add_parser("run")
+    run_sub = run.add_subparsers(dest="command", required=True)
+    run_status = run_sub.add_parser("status")
+    run_status.add_argument("--artifact-root", required=True)
+    run_status.add_argument("--run-id", required=True)
+    _add_output_args(run_status)
+    run_status.set_defaults(func=cmd_run_status)
+    run_recover = run_sub.add_parser("recover")
+    run_recover.add_argument("--artifact-root", required=True)
+    run_recover.add_argument("--run-id", required=True)
+    _add_output_args(run_recover)
+    run_recover.set_defaults(func=cmd_run_recover)
 
     return parser
 

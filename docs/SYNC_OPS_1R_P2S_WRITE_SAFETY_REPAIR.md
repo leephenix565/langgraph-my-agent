@@ -77,6 +77,10 @@ requested future permissions. It is not a machine approval record. Future write
 commands must still require a separate approval artifact bound to the exact
 plan SHA256.
 
+SYNC-OPS-2A later implements that approval loader and temp-root writer
+contract. Any SYNC-OPS-1R approval request remains superseded because it
+predates both recursive coverage and environment snapshot binding.
+
 ## Non-Claims
 
 SYNC-OPS-1R does not stage, activate, rollback, back up, lock, approve, copy,

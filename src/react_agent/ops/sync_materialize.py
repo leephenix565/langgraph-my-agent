@@ -14,7 +14,10 @@ from typing import Any
 from react_agent.ops.sync_contracts import SyncPlannerError, file_sha256
 from react_agent.ops.sync_plan import stage_projection_digest_for_actions
 from react_agent.ops.sync_registry import load_static_registry
-from react_agent.ops.sync_security import classify_sensitive_source, normalize_safe_relative_path
+from react_agent.ops.sync_security import (
+    classify_sensitive_source,
+    normalize_safe_relative_path,
+)
 
 
 def _require_tmp_root(root: Path) -> None:
@@ -65,7 +68,10 @@ def _write_action(action: Mapping[str, Any], temp_root: Path, roots: Mapping[str
             mode = 0o644
         destination.chmod(stat.S_IMODE(mode))
     elif operation in {"preserve_sanitized_derivative", "preserve_sandbox_metadata"}:
-        source = _source_for_preserved_action(action, roots)
+        if action.get("source_absolute_path"):
+            source = Path(str(action.get("source_absolute_path")))
+        else:
+            source = _source_for_preserved_action(action, roots)
         shutil.copyfile(source, destination)
         destination.chmod(0o644)
     else:
@@ -105,7 +111,7 @@ def compute_stage_digest(root: Path, planned_actions: list[Mapping[str, Any]]) -
     return stage_projection_digest_for_actions(actual_actions)
 
 
-def _secret_scan_temp(root: Path) -> dict[str, Any]:
+def secret_scan_stage(root: Path) -> dict[str, Any]:
     findings: list[dict[str, Any]] = []
     for path in sorted(root.rglob("*")):
         if not path.is_file() or path.name == "SANDBOX_SECRET_REQUIREMENTS.md":
@@ -117,25 +123,96 @@ def _secret_scan_temp(root: Path) -> dict[str, Any]:
     return {"pass": not findings, "finding_count": len(findings), "findings": findings}
 
 
-def _py_compile_temp(root: Path) -> dict[str, Any]:
+def compile_stage_with_profile(root: Path, profile: Mapping[str, str] | None = None) -> dict[str, Any]:
     py_files = sorted(path for path in root.rglob("*.py") if path.is_file())
     cache_root = Path("/tmp") / f"agent_sync_pycache_{os.getpid()}"
     previous = os.environ.get("PYTHONPYCACHEPREFIX")
     os.environ["PYTHONPYCACHEPREFIX"] = str(cache_root)
+    hard_classes = {
+        "runtime_required_python",
+        "startup_required_python",
+        "contract_test_python",
+        "offline_test_python",
+        "semantic_placeholder_python",
+    }
+    diagnostic_classes = {"legacy_reference_python", "archived_experiment_python", "excluded_python"}
     failures: list[dict[str, str]] = []
+    diagnostics: list[dict[str, str]] = []
     try:
         for path in py_files:
+            rel = normalize_safe_relative_path(path.relative_to(root))
+            profile_class = str((profile or {}).get(rel) or "runtime_required_python")
             try:
                 py_compile.compile(str(path), doraise=True)
             except py_compile.PyCompileError as exc:
-                failures.append({"relative_path": normalize_safe_relative_path(path.relative_to(root)), "reason": exc.exc_type_name})
+                row = {"relative_path": rel, "reason": exc.exc_type_name, "validation_profile": profile_class}
+                if profile_class in diagnostic_classes:
+                    diagnostics.append(row)
+                elif profile_class in hard_classes:
+                    failures.append(row)
+                else:
+                    failures.append(row)
     finally:
         if previous is None:
             os.environ.pop("PYTHONPYCACHEPREFIX", None)
         else:
             os.environ["PYTHONPYCACHEPREFIX"] = previous
         shutil.rmtree(cache_root, ignore_errors=True)
-    return {"pass": not failures, "file_count": len(py_files), "failure_count": len(failures), "failures": failures[:50]}
+    return {
+        "pass": not failures,
+        "file_count": len(py_files),
+        "failure_count": len(failures),
+        "diagnostic_count": len(diagnostics),
+        "failures": failures[:50],
+        "diagnostics": diagnostics[:50],
+    }
+
+
+def materialize_stage(plan: Mapping[str, Any], stage_root: Path, *, validation_profile: Mapping[str, str] | None = None) -> dict[str, Any]:
+    if stage_root.exists():
+        raise SyncPlannerError("stage_root_already_exists", exit_code=5, details={"stage_root": str(stage_root)})
+    stage_root.mkdir(parents=True)
+    roots = _registry_agent_roots()
+    actions = [
+        action
+        for agent in plan.get("agents") or []
+        if isinstance(agent, Mapping)
+        for action in agent.get("actions") or []
+        if isinstance(action, Mapping)
+    ]
+    seen_destinations: set[str] = set()
+    duplicate_destinations: list[str] = []
+    writes: list[dict[str, Any]] = []
+    for action in actions:
+        stage_rel = str(action.get("stage_relative_path") or "")
+        if stage_rel:
+            normalized = normalize_safe_relative_path(stage_rel)
+            if normalized in seen_destinations and str(action.get("operation") or "") != "noop_shared_transaction_member":
+                duplicate_destinations.append(normalized)
+            seen_destinations.add(normalized)
+        before_source = Path(str(action.get("source_absolute_path") or ""))
+        expected_sha = str(action.get("source_sha256") or "")
+        if before_source.exists() and expected_sha and file_sha256(before_source) != expected_sha:
+            raise SyncPlannerError("materialization_source_hash_drift", exit_code=5, details={"source": str(before_source)})
+        writes.append(_write_action(action, stage_root, roots))
+    expected_digest = str((plan.get("stage_materialization") or {}).get("expected_stage_projection_digest") or "")
+    actual_digest = compute_stage_digest(stage_root, actions)
+    secret_scan = secret_scan_stage(stage_root)
+    py_compile_result = compile_stage_with_profile(stage_root, validation_profile)
+    structural_pass = expected_digest == actual_digest and not duplicate_destinations and bool(secret_scan["pass"])
+    return {
+        "stage_root": str(stage_root),
+        "expected_projection_digest": expected_digest,
+        "actual_stage_digest": actual_digest,
+        "digest_match": expected_digest == actual_digest,
+        "structural_pass": structural_pass,
+        "action_count": len(actions),
+        "written_file_count": sum(1 for item in writes if item.get("written")),
+        "duplicate_destination_count": len(duplicate_destinations),
+        "duplicate_destinations": duplicate_destinations[:50],
+        "secret_scan": secret_scan,
+        "py_compile": py_compile_result,
+    }
 
 
 def reconstruct_temp_stage(plan: Mapping[str, Any], temp_root: Path) -> dict[str, Any]:
@@ -164,8 +241,8 @@ def reconstruct_temp_stage(plan: Mapping[str, Any], temp_root: Path) -> dict[str
         writes.append(_write_action(action, temp_root, roots))
     expected_digest = str((plan.get("stage_materialization") or {}).get("expected_stage_projection_digest") or "")
     actual_digest = compute_stage_digest(temp_root, actions)
-    secret_scan = _secret_scan_temp(temp_root)
-    py_compile_result = _py_compile_temp(temp_root)
+    secret_scan = secret_scan_stage(temp_root)
+    py_compile_result = compile_stage_with_profile(temp_root)
     structural_pass = expected_digest == actual_digest and not duplicate_destinations and bool(secret_scan["pass"])
     return {
         "temp_root": str(temp_root),

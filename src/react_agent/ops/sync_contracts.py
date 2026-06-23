@@ -35,9 +35,6 @@ SCHEMA_FILES = {
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {
-    ("p2s", "stage"),
-    ("p2s", "activate"),
-    ("p2s", "rollback"),
     ("s2p", "apply"),
     ("s2p", "smoke"),
     ("s2p", "rollback"),

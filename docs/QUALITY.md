@@ -931,3 +931,23 @@ Required assertions include:
 - temp reconstruction digest matches the plan projection digest;
 - duplicate stage destinations, raw secret findings, and backup/runtime-noise
   materialization are rejected.
+
+## SYNC-OPS-2A P2S Writer Dry-Run Gate
+
+SYNC-OPS-2A adds the writer contract to the maintained quality surface while
+keeping all real server paths out of default mainline. Tests may create
+repo-external `/tmp` approval, lock, artifact-store, stage, active, archive,
+and rollback fixtures. They must not create `/sdb/dlut/ops-artifacts`, write
+real prod/sandbox/owner-dev trees, call endpoints, or operate processes.
+
+Required assertions include:
+
+- approval records bind exact plan SHA and environment snapshot SHA;
+- stage, activate, and rollback approvals are checked independently;
+- global and transaction locks reject conflicts and wrong-owner release;
+- artifact writes are atomic, relative, hashed, and path-traversal safe;
+- P2S stage verifies planned source hashes, projection digest, secret scan, and
+  validation profile;
+- activation uses an independent candidate and reports zero hard links;
+- rollback restores the archive and preserves the failed active tree;
+- recovery journal state classifies resume versus rollback-required points.

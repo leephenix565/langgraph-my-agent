@@ -130,6 +130,19 @@ actions, and every Agent receives an explicit disposition. It is still
 read-only and does not create stages, approvals, locks, backups, or sandbox
 switches. See `docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md`.
 
+SYNC-OPS-1R2 repairs recursive source coverage and baseline parity. P2S plans
+now recurse through registered source/support subroots, explain every
+historical baseline row and current production inventory row, and reconstruct
+the expected safe tree under `/tmp` before any approval request is useful. See
+`docs/SYNC_OPS_1R2_RECURSIVE_COVERAGE_REPAIR.md`.
+
+SYNC-OPS-2A adds the P2S writer contract and temp-only transaction engine:
+machine approval validation, environment snapshot binding, global plus
+transaction locks, durable run artifacts, stage/verify/activate/rollback
+primitives, and recovery journal tests. It only writes repo-external temporary
+fixtures in this phase; real sandbox execution still requires a SYNC-OPS-2B
+approval. See `docs/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

@@ -1288,6 +1288,21 @@ SYNC-OPS-1R2 adds recursive coverage invariants to that contract:
 - `expected_stage_projection_digest` must match a temp-only reconstruction
   before any future approval request can be used.
 
+SYNC-OPS-2A adds write-run contracts without executing real server writes:
+
+- `agent_sync_approval_v1` must be `status=approved` and bind exact plan SHA
+  plus exact `agent_sync_environment_snapshot_v1` SHA.
+- Stage, activate, and rollback booleans are independent approval capabilities.
+- `agent_sync_environment_snapshot_v1` contains non-sensitive hashes and
+  filesystem boundary facts only; it excludes PID, command line, endpoint
+  response, credentials, and env values.
+- `agent_sync_lock_v1` records global and transaction lock scopes outside the
+  target tree. Stale locks are audited, not auto-deleted.
+- P2S activation builds an independent candidate and verifies zero hard links
+  before switching active sandbox state.
+- The recovery journal records stage, candidate, archive, pointer, rollback,
+  and closeout events so interrupted runs can classify resume versus rollback.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

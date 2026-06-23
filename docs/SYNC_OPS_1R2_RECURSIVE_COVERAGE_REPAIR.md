@@ -92,15 +92,17 @@ incomplete source coverage. A new approval request may be emitted only when:
 - duplicate destination count is zero;
 - secret scan passes.
 
-The request is still not an approval record. Future write automation must read
-a separate hash-bound machine approval artifact.
+The request is still not an approval record. SYNC-OPS-2A implements the
+hash-bound machine approval artifact and temp-root writer contract, but the
+1R2 request itself remains superseded by the 2A writer-contract plan.
 
 ## SYNC-OPS-2 Entry Conditions
 
-SYNC-OPS-2 may implement P2S automation only after this planner state is
+SYNC-OPS-2B may execute P2S automation only after the 2A writer state is
 accepted and after an operator supplies a real approval artifact for a fresh
-plan. Write automation still needs locks, backups, stage creation, activation,
-rollback, and artifact-store writes; none of those exist in SYNC-OPS-1R2.
+2A plan with matching environment snapshot SHA. The real artifact store,
+locks, stage creation, activation, and rollback are still not executed in
+SYNC-OPS-1R2.
 
 ## Non-Claims
 

@@ -30,6 +30,9 @@ POINTER_PATH = Path("/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.jso
 DEFAULT_PROD_ROOT = Path("/sdb/dlut/prod")
 DEFAULT_ACTIVE_SANDBOX = Path("/sdb/dlut/sandbox/r8-13a/services/prod")
 DEFAULT_VERSIONED_BASELINE = Path("/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services")
+KNOWN_LEGACY_DIAGNOSTIC_PYTHON = {
+    "risk_crash/part3_panelExp/core/base_funces/skmodels.py": "legacy_reference_python"
+}
 
 
 def now_utc() -> str:
@@ -310,6 +313,10 @@ def _base_plan(direction: str) -> dict[str, Any]:
         "global_blockers": [],
         "approval_requirements": {
             "approval_record_required": True,
+            "environment_snapshot_required": direction == "p2s",
+            "stage_approved": False,
+            "activate_approved": False,
+            "rollback_approved": False,
             "delete_actions_approved": False,
             "process_actions_approved": False,
             "live_validation_approved": False,
@@ -412,7 +419,10 @@ def build_p2s_plan() -> dict[str, Any]:
     new_baseline_id = _baseline_id()
     stage_root = _stage_root_for(new_baseline_id)
     plan = _base_plan("p2s")
-    plan["tool_version"] = "sync_ops_1r2_read_only_planner"
+    plan["tool_version"] = "sync_ops_2a_writer_contract_planner"
+    plan["approval_requirements"]["stage_approved"] = True
+    plan["approval_requirements"]["activate_approved"] = True
+    plan["approval_requirements"]["rollback_approved"] = True
     plan["baseline"] = pointer
     plan["target_snapshot"] = {
         "active_sandbox_path": pointer["active_path"],
@@ -433,6 +443,14 @@ def build_p2s_plan() -> dict[str, Any]:
         "stage_root_must_not_equal_current_versioned_baseline": True,
         "transactions": [],
         "action_counts": {},
+        "writer_contract": {
+            "approval_required": True,
+            "environment_snapshot_required": True,
+            "global_lock_required": True,
+            "transaction_locks_required": True,
+            "artifact_store_required": True,
+            "validation_profile_required": True,
+        },
     }
     plan["activation"] = {
         "old_active_sandbox_archive_path": f"/sdb/dlut/sandbox/r8-13a/services/prod-pre-syncops-{new_baseline_id}",
@@ -635,6 +653,19 @@ def build_p2s_plan() -> dict[str, Any]:
         "unresolved_file_count": total_unresolved,
         "coverage_ratio": 1.0 if total_unresolved == 0 else 0.0,
     }
+    stage_rel_paths = {
+        str(action.get("stage_relative_path") or "")
+        for agent in agent_plans
+        for action in agent.get("actions") or []
+        if isinstance(action, Mapping)
+    }
+    validation_profile = {
+        path: profile
+        for path, profile in KNOWN_LEGACY_DIAGNOSTIC_PYTHON.items()
+        if path in stage_rel_paths
+    }
+    if validation_profile:
+        plan["validation_profile"] = validation_profile
     if any(agent["blocked_actions"] for agent in agent_plans):
         plan["global_blockers"].append("p2s_blocked_actions_present")
     plan["canonical_sha256"] = canonical_sha256(plan)
@@ -745,7 +776,12 @@ def build_cycle_plan(s2p_plan: Mapping[str, Any]) -> dict[str, Any]:
     return plan
 
 
-def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = True) -> dict[str, Any]:
+def validate_plan(
+    plan: Mapping[str, Any],
+    *,
+    check_target_freshness: bool = True,
+    allow_existing_stage: bool = False,
+) -> dict[str, Any]:
     expected = canonical_sha256(plan)
     blockers: list[str] = []
     try:
@@ -779,13 +815,16 @@ def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = Tru
             active_resolved = Path(active_path).resolve(strict=False) if active_path else None
             current_versioned = Path(str(plan.get("baseline", {}).get("versioned_baseline_path") or "")).resolve(strict=False)
             allowed_root = Path("/sdb/dlut/sandbox/prod-baselines").resolve(strict=False)
+            temp_root = Path("/tmp").resolve(strict=False)
             if active_resolved and stage_path == active_resolved:
                 blockers.append("p2s_stage_root_is_active_sandbox")
             if stage_path == current_versioned:
                 blockers.append("p2s_stage_root_is_current_versioned_baseline")
-            if allowed_root not in [stage_path, *stage_path.parents]:
+            if allowed_root not in [stage_path, *stage_path.parents] and not (
+                plan.get("test_only_temp_roots") is True and temp_root in [stage_path, *stage_path.parents]
+            ):
                 blockers.append("p2s_stage_root_outside_allowed_namespace")
-            if stage_materialization.get("expected_stage_root_state") == "missing" and stage_path.exists():
+            if stage_materialization.get("expected_stage_root_state") == "missing" and stage_path.exists() and not allow_existing_stage:
                 blockers.append("blocked_stage_path_exists")
         elif stage_materialization:
             blockers.append("p2s_stage_root_missing")

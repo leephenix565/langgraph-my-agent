@@ -2470,3 +2470,88 @@ py_compile diagnostics. The real sandbox is not written in SYNC-OPS-1R2.
 Non-consequence: temp reconstruction is not P2S stage/activate. It does not
 create the versioned sandbox baseline, write the pointer, create backups,
 acquire locks, or approve a plan.
+
+## ADR-067: Write Execution Requires Plan Approval And Environment Snapshot
+
+Status: accepted for SYNC-OPS writer phases.
+
+Decision: P2S write execution requires an immutable plan, a file-based machine
+approval bound to the exact plan SHA, and an environment snapshot SHA that
+matches current non-sensitive execution facts.
+
+Reason: a plan can become stale after approval if prod source, active pointer,
+baseline tree, stage path, registry, policy, or catalog hashes drift.
+
+Consequence: stage, activate, and rollback commands refuse to run without
+`--plan`, `--approval`, `--execute`, exact hashes, and matching environment
+snapshot. Chat approval is never machine approval.
+
+Non-consequence: SYNC-OPS-2A does not create a real approval for the current
+server plan.
+
+## ADR-068: P2S Activates Independent Candidates Without Hard Links
+
+Status: accepted for SYNC-OPS writer phases.
+
+Decision: P2S keeps immutable versioned baselines and activates a separate
+candidate tree. The active sandbox must not share mutable hard-linked files
+with the versioned baseline.
+
+Reason: the versioned baseline is audit evidence and future experiment base
+state. Hard links would let later active-tree mutation alter the baseline.
+
+Consequence: activation copies or reflinks safely when available, verifies the
+candidate digest, checks hard-link count, archives old active, renames the
+candidate into place, and preserves both stage and archive.
+
+Non-consequence: SYNC-OPS-2A validates this only in temp fixtures.
+
+## ADR-069: Runtime Compile Failures Block Unless Proven Legacy
+
+Status: accepted for SYNC-OPS writer phases.
+
+Decision: runtime, startup, contract-test, offline-test, and semantic
+placeholder Python compile failures are hard blockers. Proven unreachable legacy
+Python may be retained as diagnostic-only evidence with explicit limitations.
+
+Reason: a syntax error in runtime closure means a baseline is not safe to
+activate. A non-runtime legacy file should not block all safe source capture
+once static reachability is proven.
+
+Consequence: validation profiles classify Python files before stage validation.
+The risk crash `skmodels.py` file is treated as an unreachable legacy reference
+and reported as diagnostic-only.
+
+Non-consequence: diagnostic-only does not mean the file is production healthy.
+
+## ADR-070: Writer Runs Use Global And Transaction Locks Plus Journal
+
+Status: accepted for SYNC-OPS writer phases.
+
+Decision: every write run uses a global coordinator lock, per-transaction locks,
+and an append-only recovery journal outside the target tree.
+
+Reason: P2S and S2P must not concurrently mutate the same target root or switch
+active sandbox state while another transaction is mid-flight.
+
+Consequence: stale locks are inspected but not auto-deleted; wrong-owner
+release is rejected; recovery reads journal events to classify resume, rollback,
+or manual-intervention states.
+
+Non-consequence: SYNC-OPS-2A acquires locks only in `/tmp` tests.
+
+## ADR-071: Stage Activate And Rollback Approval Are Separate
+
+Status: accepted for SYNC-OPS writer phases.
+
+Decision: machine approval grants stage, activate, and rollback independently.
+Delete, process action, and live validation remain separately denied by default.
+
+Reason: materializing a stage, switching the active sandbox, and restoring an
+archive carry different operational risk.
+
+Consequence: a valid stage approval cannot silently activate; a valid activate
+approval cannot silently roll back; rollback approval must be available before
+real execution.
+
+Non-consequence: SYNC-OPS-2A does not approve real stage, activate, or rollback.

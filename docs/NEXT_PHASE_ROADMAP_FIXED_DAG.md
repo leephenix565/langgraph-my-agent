@@ -88,10 +88,11 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 - SYNC-OPS-1 adds the read-only bidirectional external-agent sync Planner MVP.
   It freezes source-controlled ops registry/policy metadata, validates Draft
   2020-12 schemas, generates B/S/P/D diffs, and emits immutable P2S/S2P/cycle
-  plans. It does not stage, apply, activate, lock, back up, restart, smoke, or
-  write any prod/sandbox/owner-dev tree. The next sync implementation entry is
-  SYNC-OPS-2 P2S automation, gated by explicit artifact-store and approval
-  decisions.
+  plans. SYNC-OPS-1R/1R2 then harden P2S action safety, recursive coverage,
+  parity ledgers, and temp reconstruction. SYNC-OPS-2A adds only temp-root
+  writer primitives. The next sync implementation entry is SYNC-OPS-2B real
+  P2S execution, gated by explicit machine approval, environment snapshot,
+  locks, and artifact-store readiness.
 
 重要边界：
 
@@ -379,6 +380,14 @@ source/support-root coverage, historical baseline parity unresolved count of
 zero, current prod coverage unresolved count of zero, stage projection digest
 validation, and temp-only reconstruction under `/tmp` before a machine approval
 request can be considered.
+
+SYNC-OPS-2A implements the writer contract but only exercises it in
+repo-external temporary roots. The next safe phase is SYNC-OPS-2B, and its entry
+condition is a fresh 2A plan, matching environment snapshot SHA, explicit
+machine approval for stage/activate/rollback, writable approved artifact-store
+root, and no runtime-required compile blockers. SYNC-OPS-2B must still avoid
+S2P apply, endpoint smoke, process restart, and owner-dev writes unless a later
+phase explicitly owns them.
 
 ## Non-Goals
 

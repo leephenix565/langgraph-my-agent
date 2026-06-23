@@ -161,11 +161,14 @@ Implemented commands:
 - `agent-sync schema validate`
 - `agent-sync lock show`
 
-Unsupported write commands return exit code `2` with
-`command_not_available_before_sync_ops_2` after the SYNC-OPS-1R2 coverage
-repair:
+SYNC-OPS-2A later enables P2S writer commands behind exact machine approval,
+environment snapshot binding, and `--execute`. The SYNC-OPS-1 planner itself
+remains read-only.
 
-- `p2s stage`, `p2s activate`, `p2s rollback`
+Unsupported write commands return exit code `2` with
+`command_not_available_before_sync_ops_2` for commands still outside the
+implemented writer scope:
+
 - `s2p apply`, `s2p smoke`, `s2p rollback`
 - `cycle publish-and-rebase`
 - `lock force-release`
@@ -198,7 +201,7 @@ integration coverage.
 
 ## SYNC-OPS-2 Entry Conditions
 
-SYNC-OPS-2 may start only after:
+SYNC-OPS-2B real P2S execution may start only after:
 
 - planner registry, policy, schema, hash, inventory, diff, and plan tests pass;
 - the legacy unsafe P2S plan remains rejected by the SYNC-OPS-1R validator;

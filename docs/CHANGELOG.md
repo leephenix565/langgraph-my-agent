@@ -3,6 +3,35 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A P2S writer dry-run hardening
+
+### Added
+
+- Added machine approval validation bound to exact plan SHA and environment
+  snapshot SHA.
+- Added non-sensitive environment snapshots, global plus transaction file
+  locks, durable temp artifact-store helpers, and append-only recovery journals.
+- Added P2S stage, verify, activate, rollback, and recovery primitives.
+- Added validation profiles so runtime-required Python compile failures block
+  activation while proven unreachable legacy files are diagnostic-only.
+- Added temp-root end-to-end writer tests for stage/verify/activate/rollback,
+  lock conflicts, approval denial, artifact integrity, hard-link prevention,
+  and recovery state classification.
+
+### Changed
+
+- Current P2S plans now use the 2A writer-contract tool version and approval
+  requirements for stage, activate, rollback, locks, artifacts, and validation
+  profiles.
+- The SYNC-OPS-1R2 plan/request is superseded because it predates the writer
+  contract and environment binding.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, backup,
+  stage, activate, rollback, endpoint, process, `.env`, provider, model/data
+  bulk-copy, or secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-1R2 recursive P2S coverage repair
 
 ### Changed

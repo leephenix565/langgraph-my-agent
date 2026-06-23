@@ -273,3 +273,9 @@ SYNC-OPS-1R2 adds recursive source/support-root coverage and parity checks.
 The active sandbox is still immutable input; temp reconstruction is allowed only
 under repo-external `/tmp` and is used to prove the planned safe tree, not to
 create the real sandbox stage.
+
+SYNC-OPS-2A adds writer primitives but keeps execution in temporary fixtures.
+Real P2S stage, activate, and rollback require a separate machine approval,
+matching environment snapshot, locks, and approved artifact-store root. The
+configured durable artifact root remains `/sdb/dlut/ops-artifacts/agent-sync`,
+but SYNC-OPS-2A does not create or write it.

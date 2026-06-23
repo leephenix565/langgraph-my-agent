@@ -7,14 +7,109 @@
   "required": [
     "schema_version",
     "approval_id",
+    "status",
     "plan_id",
     "plan_sha256",
+    "environment_snapshot_sha256",
+    "approved_at",
+    "expires_at",
+    "execution_phase",
     "approved_agent_ids",
-    "approved_action_ids"
+    "approved_transaction_ids",
+    "approved_action_ids",
+    "stage_approved",
+    "activate_approved",
+    "rollback_approved",
+    "delete_approved",
+    "process_action_approved",
+    "live_validation_approved",
+    "partial_success_rebase_approved",
+    "operator_reference"
   ],
   "properties": {
     "schema_version": {
       "const": "agent_sync_approval_v1"
+    },
+    "approval_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "enum": [
+        "approved",
+        "rejected",
+        "draft"
+      ]
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "environment_snapshot_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "approved_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expires_at": {
+      "type": "string",
+      "minLength": 1
+    },
+    "execution_phase": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_agent_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approved_transaction_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approved_action_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "stage_approved": {
+      "type": "boolean"
+    },
+    "activate_approved": {
+      "type": "boolean"
+    },
+    "rollback_approved": {
+      "type": "boolean"
+    },
+    "delete_approved": {
+      "type": "boolean"
+    },
+    "process_action_approved": {
+      "type": "boolean"
+    },
+    "live_validation_approved": {
+      "type": "boolean"
+    },
+    "partial_success_rebase_approved": {
+      "type": "boolean"
+    },
+    "operator_reference": {
+      "type": "string",
+      "minLength": 1
+    },
+    "notes": {
+      "type": "string"
     }
   }
 }

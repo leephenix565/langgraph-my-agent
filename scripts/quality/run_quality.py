@@ -66,9 +66,15 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/fixed_dag_runtime_registry.py",
     "src/react_agent/graph.py",
     "src/react_agent/ops/agent_syncctl.py",
+    "src/react_agent/ops/sync_approval.py",
+    "src/react_agent/ops/sync_artifacts.py",
     "src/react_agent/ops/sync_contracts.py",
     "src/react_agent/ops/sync_diff.py",
+    "src/react_agent/ops/sync_environment.py",
     "src/react_agent/ops/sync_inventory.py",
+    "src/react_agent/ops/sync_lock.py",
+    "src/react_agent/ops/sync_materialize.py",
+    "src/react_agent/ops/sync_p2s.py",
     "src/react_agent/ops/sync_plan.py",
     "src/react_agent/ops/sync_registry.py",
     "src/react_agent/ops/sync_security.py",
@@ -87,6 +93,7 @@ STATIC_RUFF_TARGETS = (
     "tests/unit_tests/ops/test_sync_plan_cli.py",
     "tests/unit_tests/ops/test_sync_registry_diff.py",
     "tests/unit_tests/ops/test_sync_security_inventory.py",
+    "tests/unit_tests/ops/test_sync_writer_2a.py",
     "tests/unit_tests/test_fixed_dag_catalog.py",
     "tests/unit_tests/test_fixed_dag_contracts.py",
     "tests/unit_tests/test_fixed_dag_executor.py",
@@ -122,6 +129,7 @@ STATIC_CODESPELL_TARGETS = (
     "docs/SYNC_OPS_1_READ_ONLY_PLANNER.md",
     "docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md",
     "docs/SYNC_OPS_1R2_RECURSIVE_COVERAGE_REPAIR.md",
+    "docs/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md",
 )
 
 

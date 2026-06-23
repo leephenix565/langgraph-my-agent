@@ -1,23 +1,32 @@
 {
   "schema_version": "agent_sync_approval_v1",
   "approval_id": "approval-example-001",
+  "status": "approved",
   "plan_id": "plan-example-s2p",
   "plan_sha256": "e64ef8becbcaf3f4dcae0b7ad9e2438cbfeb282f8b45a2aace796dc25a3103ed",
+  "environment_snapshot_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
   "approved_at": "2026-06-23T00:05:00Z",
   "expires_at": "2026-06-24T00:05:00Z",
+  "execution_phase": "SYNC-OPS-2B",
   "approved_agent_ids": [
     "value_research_synthesis"
+  ],
+  "approved_transaction_ids": [
+    "txn-value-research"
   ],
   "approved_action_ids": [
     "act-001"
   ],
+  "stage_approved": true,
+  "activate_approved": false,
+  "rollback_approved": true,
   "approved_risk_classes": [
     "B_protocol_wrapper"
   ],
-  "delete_actions_approved": false,
-  "process_actions_approved": false,
+  "delete_approved": false,
+  "process_action_approved": false,
   "live_validation_approved": false,
-  "publish_and_rebase_approved": false,
+  "partial_success_rebase_approved": false,
   "operator_reference": "review-ticket-or-human-id",
   "notes": "example only; no credentials"
 }
