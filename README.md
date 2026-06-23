@@ -897,3 +897,9 @@ readiness.
 - R4-C isolates legacy registry/bootstrap but does not delete
   `config/agents/*.json` or live-verify external candidates.
 - No production auth, rate limit, HTTPS, deployment, or observability claim is made here.
+- SYNC-OPS-1R2 repairs the read-only P2S planner's recursive source coverage.
+  It adds full source/support-root inventory, historical baseline parity,
+  current production coverage ledgers, stage projection digests, and `/tmp`
+  reconstruction checks. It still does not write prod, sandbox, owner-dev,
+  approval, lock, backup, stage, activate, endpoint, process, or artifact-store
+  state.

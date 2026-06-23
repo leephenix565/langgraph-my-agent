@@ -268,3 +268,8 @@ activation. Observed diff rows are review evidence only; they are not file
 actions. Sanitized derivatives and sandbox-local secret-requirement metadata
 must remain explicitly modeled and must not be treated as raw production
 source.
+
+SYNC-OPS-1R2 adds recursive source/support-root coverage and parity checks.
+The active sandbox is still immutable input; temp reconstruction is allowed only
+under repo-external `/tmp` and is used to prove the planned safe tree, not to
+create the real sandbox stage.

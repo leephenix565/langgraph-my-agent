@@ -39,6 +39,8 @@ EXCLUDED_DIR_NAMES = {
     "datasets",
     "models",
     "weights",
+    "sample_requests.bak_v22_20260607_082218",
+    "tests.bak_v22_20260607_082218",
 }
 EXCLUDED_FILE_NAMES = {".env", ".env.local", ".env.production", ".env.dev"}
 SOURCE_EXTENSIONS = {
@@ -58,8 +60,11 @@ SOURCE_EXTENSIONS = {
     ".ts",
     ".tsx",
     ".jsx",
+    ".html",
+    ".css",
 }
 SOURCE_BASENAMES = {
+    ".gitignore",
     "Dockerfile",
     "docker-compose.yml",
     "docker-compose.yaml",
@@ -310,6 +315,19 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "large_asset_classification": large,
             "reason": "included_source_bearing",
         }
+    if not path.suffix:
+        try:
+            sample = path.read_bytes()[:4096]
+        except OSError:
+            sample = b"\x00"
+        if b"\x00" not in sample:
+            return {
+                "include": True,
+                "classification": "small_text_resource",
+                "sensitive_classification": sensitive,
+                "large_asset_classification": large,
+                "reason": "included_small_text_resource",
+            }
     return {
         "include": False,
         "classification": "excluded_non_source",

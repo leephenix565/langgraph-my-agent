@@ -25,6 +25,7 @@ from react_agent.ops.sync_contracts import (
     validate_schema_meta,
     write_json,
 )
+from react_agent.ops.sync_coverage import load_plan_and_build_ledgers
 from react_agent.ops.sync_diff import diff_inventory
 from react_agent.ops.sync_inventory import build_runtime_inventory
 from react_agent.ops.sync_plan import (
@@ -150,6 +151,28 @@ def cmd_p2s_plan(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, [f"plan_id={plan['plan_id']}", f"actions={action_count}", f"blocked={blocked_count}"])
 
 
+def cmd_p2s_coverage(args: argparse.Namespace) -> int:
+    ledgers = load_plan_and_build_ledgers(Path(args.plan))
+    historical = ledgers["historical_parity"]
+    current = ledgers["current_prod_coverage"]
+    valid = historical["unresolved_count"] == 0 and current["unresolved_count"] == 0
+    payload = {
+        "summary_title": "agent-sync p2s coverage",
+        "historical_parity": historical,
+        "current_prod_coverage": current,
+        "valid": valid,
+        "exit_code": 0 if valid else 7,
+    }
+    rows = [
+        f"historical_rows={historical['row_count']}",
+        f"historical_unresolved={historical['unresolved_count']}",
+        f"current_rows={current['row_count']}",
+        f"current_unresolved={current['unresolved_count']}",
+        f"safe_source_coverage_ratio={current['safe_source_coverage_ratio']:.6f}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
 def cmd_s2p_plan(args: argparse.Namespace) -> int:
     manifest = read_json(Path(args.experiment))
     plan = build_s2p_plan(manifest)
@@ -210,7 +233,7 @@ def cmd_schema_validate(args: argparse.Namespace) -> int:
 def cmd_unsupported(group: str, command: str) -> int:
     payload = {
         "schema_version": "agent_sync_cli_error_v1",
-        "reason": "command_not_available_in_sync_ops_1r",
+        "reason": "command_not_available_before_sync_ops_2",
         "command": f"{group} {command}",
         "exit_code": 2,
     }
@@ -262,6 +285,10 @@ def build_parser() -> argparse.ArgumentParser:
     p2s_plan.add_argument("--output")
     _add_output_args(p2s_plan)
     p2s_plan.set_defaults(func=cmd_p2s_plan)
+    p2s_coverage = p2s_sub.add_parser("coverage")
+    p2s_coverage.add_argument("--plan", required=True)
+    _add_output_args(p2s_coverage)
+    p2s_coverage.set_defaults(func=cmd_p2s_coverage)
     for unsupported in ("stage", "activate", "rollback"):
         parser_unsupported = p2s_sub.add_parser(unsupported)
         parser_unsupported.set_defaults(func=lambda _args, cmd=unsupported: cmd_unsupported("p2s", cmd))

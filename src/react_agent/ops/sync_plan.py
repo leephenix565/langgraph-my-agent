@@ -118,6 +118,9 @@ def _copy_action(
         "source_sha256": str(record.get("sha256") or ""),
         "source_mode": str(record.get("mode") or ""),
         "source_file_type": str(record.get("file_type") or ""),
+        "source_absolute_path": str(record.get("raw_path") or ""),
+        "source_executable": bool(record.get("executable")),
+        "source_symlink_target": str(record.get("symlink_target") or ""),
         "source_root_digest": source_root_digest,
         "destination_relative_path": rel,
         "stage_relative_path": f"{agent_id}/{rel}",
@@ -200,6 +203,43 @@ def _agent_disposition(agent: Mapping[str, Any], actions: Sequence[Mapping[str, 
     if all(action.get("operation") == "copy_from_prod" for action in actions):
         return "stage_from_prod"
     return "already_equal_but_rematerialized"
+
+
+def _action_projection_item(action: Mapping[str, Any]) -> dict[str, Any] | None:
+    operation = str(action.get("operation") or "")
+    if operation in {"copy_from_prod", "snapshot_semantic_placeholder"}:
+        return {
+            "stage_relative_path": str(action.get("stage_relative_path") or ""),
+            "operation": operation,
+            "file_type": str(action.get("source_file_type") or ""),
+            "sha256": str(action.get("source_sha256") or ""),
+            "executable": bool(action.get("source_executable")),
+            "symlink_target": str(action.get("source_symlink_target") or ""),
+        }
+    if operation == "preserve_sanitized_derivative":
+        return {
+            "stage_relative_path": str(action.get("stage_relative_path") or ""),
+            "operation": operation,
+            "file_type": "regular",
+            "sha256": str(action.get("derivative_sha256") or ""),
+            "executable": False,
+            "symlink_target": "",
+        }
+    if operation == "preserve_sandbox_metadata":
+        return {
+            "stage_relative_path": str(action.get("stage_relative_path") or ""),
+            "operation": operation,
+            "file_type": "regular",
+            "sha256": str(action.get("metadata_sha256") or ""),
+            "executable": False,
+            "symlink_target": "",
+        }
+    return None
+
+
+def stage_projection_digest_for_actions(actions: Sequence[Mapping[str, Any]]) -> str:
+    items = [item for action in actions if (item := _action_projection_item(action)) is not None]
+    return canonical_sha256(sorted(items, key=lambda item: str(item["stage_relative_path"])))
 
 
 def build_experiment_template(*, output_root: str = "/tmp/agent-sync-experiment") -> dict[str, Any]:
@@ -372,7 +412,7 @@ def build_p2s_plan() -> dict[str, Any]:
     new_baseline_id = _baseline_id()
     stage_root = _stage_root_for(new_baseline_id)
     plan = _base_plan("p2s")
-    plan["tool_version"] = "sync_ops_1r_read_only_planner"
+    plan["tool_version"] = "sync_ops_1r2_read_only_planner"
     plan["baseline"] = pointer
     plan["target_snapshot"] = {
         "active_sandbox_path": pointer["active_path"],
@@ -505,6 +545,18 @@ def build_p2s_plan() -> dict[str, Any]:
                 if rel == "SANDBOX_SECRET_REQUIREMENTS.md":
                     actions.append(_preserve_metadata_action(agent_id=agent_id, rel=rel, record=record))
         disposition = _agent_disposition(registry_agent, actions, blocked)
+        materialization_ops = {
+            "copy_from_prod",
+            "preserve_sanitized_derivative",
+            "preserve_sandbox_metadata",
+            "snapshot_semantic_placeholder",
+        }
+        materialized_count = sum(1 for action in actions if action.get("operation") in materialization_ops)
+        derivative_count = sum(1 for action in actions if action.get("operation") == "preserve_sanitized_derivative")
+        metadata_count = sum(1 for action in actions if action.get("operation") == "preserve_sandbox_metadata")
+        placeholder_count = sum(1 for action in actions if action.get("operation") == "snapshot_semantic_placeholder")
+        agent_projection_digest = stage_projection_digest_for_actions(actions)
+        shared_file_count = int(prod_root.get("included_count") or 0) if disposition == "shared_transaction_member" else 0
         for action in actions:
             op = str(action.get("operation") or "")
             action_counts[op] = action_counts.get(op, 0) + 1
@@ -515,6 +567,7 @@ def build_p2s_plan() -> dict[str, Any]:
                 "agent_id": agent_id,
                 "affected_agent_ids": affected,
                 "disposition": disposition,
+                "projection_digest": agent_projection_digest,
                 "actions": actions,
                 "blocked_actions": blocked,
             }
@@ -530,6 +583,18 @@ def build_p2s_plan() -> dict[str, Any]:
                 "prod_tree_sha256": prod_root["tree_digest"],
                 "baseline_tree_sha256": baseline_root["tree_digest"],
                 "disposition": disposition,
+                "recursive_inventory_file_count": len(prod_root.get("files") or []),
+                "current_safe_source_file_count": int(prod_root.get("included_count") or 0),
+                "planned_materialization_file_count": materialized_count,
+                "derivative_file_count": derivative_count,
+                "metadata_file_count": metadata_count,
+                "placeholder_file_count": placeholder_count,
+                "shared_transaction_file_count": shared_file_count,
+                "explicitly_excluded_file_count": int(prod_root.get("excluded_count") or 0),
+                "removed_from_prod_count": 0,
+                "unresolved_file_count": len(blocked),
+                "coverage_ratio": 1.0 if not blocked else 0.0,
+                "projection_digest": agent_projection_digest,
                 "actions": actions,
                 "blocked_actions": blocked,
                 "observed_diff_counts": diff_by_id.get(agent_id, {}).get("counts", {}),
@@ -545,7 +610,31 @@ def build_p2s_plan() -> dict[str, Any]:
     plan["agents"] = agent_plans
     plan["stage_materialization"]["transactions"] = transactions
     plan["stage_materialization"]["action_counts"] = action_counts
+    all_stage_actions = [
+        action
+        for agent in agent_plans
+        for action in agent["actions"]
+        if isinstance(action, Mapping)
+    ]
+    plan["stage_materialization"]["expected_stage_projection_digest"] = stage_projection_digest_for_actions(all_stage_actions)
     plan["diff_summary"] = diff["totals"]
+    total_unresolved = sum(int(agent.get("unresolved_file_count") or 0) for agent in agent_plans)
+    current_safe_total = sum(int(agent.get("current_safe_source_file_count") or 0) for agent in agent_plans)
+    materialized_total = sum(int(agent.get("planned_materialization_file_count") or 0) for agent in agent_plans)
+    shared_file_total = sum(int(agent.get("shared_transaction_file_count") or 0) for agent in agent_plans)
+    plan["coverage"] = {
+        "recursive_inventory_file_count": sum(int(agent.get("recursive_inventory_file_count") or 0) for agent in agent_plans),
+        "current_safe_source_file_count": current_safe_total,
+        "planned_materialization_file_count": materialized_total,
+        "derivative_file_count": sum(int(agent.get("derivative_file_count") or 0) for agent in agent_plans),
+        "metadata_file_count": sum(int(agent.get("metadata_file_count") or 0) for agent in agent_plans),
+        "placeholder_file_count": sum(int(agent.get("placeholder_file_count") or 0) for agent in agent_plans),
+        "shared_transaction_file_count": shared_file_total,
+        "explicitly_excluded_file_count": sum(int(agent.get("explicitly_excluded_file_count") or 0) for agent in agent_plans),
+        "removed_from_prod_count": 0,
+        "unresolved_file_count": total_unresolved,
+        "coverage_ratio": 1.0 if total_unresolved == 0 else 0.0,
+    }
     if any(agent["blocked_actions"] for agent in agent_plans):
         plan["global_blockers"].append("p2s_blocked_actions_present")
     plan["canonical_sha256"] = canonical_sha256(plan)
@@ -702,6 +791,26 @@ def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = Tru
             blockers.append("p2s_stage_root_missing")
         if activation and not activation.get("preconditions"):
             blockers.append("p2s_activation_preconditions_missing")
+        expected_projection = str(stage_materialization.get("expected_stage_projection_digest") or "")
+        stage_actions = [
+            action
+            for txn in stage_materialization.get("transactions") or []
+            if isinstance(txn, Mapping)
+            for action in txn.get("actions") or []
+            if isinstance(action, Mapping)
+        ]
+        if not expected_projection:
+            blockers.append("p2s_stage_projection_digest_missing")
+        elif expected_projection != stage_projection_digest_for_actions(stage_actions):
+            blockers.append("p2s_stage_projection_digest_mismatch")
+        coverage = plan.get("coverage") or {}
+        if not coverage:
+            blockers.append("p2s_coverage_missing")
+        else:
+            if int(coverage.get("unresolved_file_count") or 0) != 0:
+                blockers.append("p2s_coverage_unresolved_files")
+            if float(coverage.get("coverage_ratio") or 0.0) != 1.0:
+                blockers.append("p2s_coverage_ratio_not_one")
         stage_transaction_action_ids = {
             str(action.get("action_id") or "")
             for txn in stage_materialization.get("transactions") or []
@@ -725,6 +834,10 @@ def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = Tru
                 blockers.append("p2s_agent_active_sandbox_target_root")
             if not str(agent.get("target_before_tree_sha256") or ""):
                 blockers.append("p2s_agent_target_before_tree_sha256_missing")
+            if str(agent.get("projection_digest") or "") != stage_projection_digest_for_actions(
+                [action for action in agent.get("actions") or [] if isinstance(action, Mapping)]
+            ):
+                blockers.append("p2s_agent_projection_digest_mismatch")
         for action in agent.get("actions") or []:
             if not isinstance(action, Mapping):
                 blockers.append("action_not_mapping")
@@ -740,7 +853,7 @@ def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = Tru
                     blockers.append("p2s_legacy_add_replace_action")
                     if not str(action.get("source_sha256") or ""):
                         blockers.append("p2s_copy_source_sha256_missing")
-                if operation == "copy_from_prod":
+                if operation in {"copy_from_prod", "snapshot_semantic_placeholder"}:
                     if not str(action.get("source_sha256") or ""):
                         blockers.append("p2s_copy_source_sha256_missing")
                     if not str(action.get("source_mode") or ""):

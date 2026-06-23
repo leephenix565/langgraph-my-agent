@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import zipfile
+from functools import lru_cache
 from pathlib import Path
 
 import pytest
@@ -13,6 +14,11 @@ from react_agent.ops.sync_plan import build_p2s_plan, validate_plan
 from react_agent.ops.sync_security import should_include_source_file
 
 OLD_PLAN = Path("/tmp/lma-sync-ops-1-planner-mvp-20260623T090531Z/current_p2s_plan.json")
+
+
+@lru_cache(maxsize=1)
+def _current_plan() -> dict[str, object]:
+    return build_p2s_plan()
 
 
 def _actions(plan: dict[str, object]) -> list[dict[str, object]]:
@@ -38,7 +44,7 @@ def test_old_p2s_plan_is_rejected_with_bounded_reasons() -> None:
 
 
 def test_repaired_p2s_plan_has_no_active_sandbox_targets_or_empty_copy_hashes() -> None:
-    plan = build_p2s_plan()
+    plan = _current_plan()
     result = validate_plan(plan, check_target_freshness=False)
     assert result["valid"] is True
     actions = _actions(plan)
@@ -58,7 +64,7 @@ def test_repaired_p2s_plan_has_no_active_sandbox_targets_or_empty_copy_hashes() 
 
 
 def test_repaired_p2s_plan_preserves_derivatives_and_metadata() -> None:
-    plan = build_p2s_plan()
+    plan = _current_plan()
     actions = _actions(plan)
     derivative_actions = [
         action for action in actions if action["operation"] == "preserve_sanitized_derivative"
@@ -88,7 +94,7 @@ def test_repaired_p2s_plan_preserves_derivatives_and_metadata() -> None:
 
 
 def test_repaired_p2s_plan_has_26_dispositions_and_shared_member() -> None:
-    plan = build_p2s_plan()
+    plan = _current_plan()
     dispositions = {agent["agent_id"]: agent["disposition"] for agent in plan["agents"]}
     assert len(dispositions) == 26
     assert all(dispositions.values())
@@ -96,6 +102,18 @@ def test_repaired_p2s_plan_has_26_dispositions_and_shared_member() -> None:
     assert dispositions["macro_sentiment"] == "semantic_placeholder_snapshot"
     assert dispositions["macro_industry_hotspot"] == "semantic_placeholder_snapshot"
     assert all(agent["target_before_tree_sha256"] for agent in plan["agents"])
+
+
+def test_recursive_p2s_plan_repairs_previous_no_source_misclassifications() -> None:
+    plan = _current_plan()
+    by_id = {agent["agent_id"]: agent for agent in plan["agents"]}
+    assert by_id["financial_data_service"]["current_safe_source_file_count"] > 0
+    assert by_id["entity_relation_extractor"]["current_safe_source_file_count"] > 0
+    assert by_id["sentiment_company_radar"]["current_safe_source_file_count"] > 0
+    assert by_id["risk_crash"]["current_safe_source_file_count"] > 100
+    assert plan["coverage"]["coverage_ratio"] == 1.0
+    assert plan["coverage"]["shared_transaction_file_count"] > 0
+    assert plan["stage_materialization"]["expected_stage_projection_digest"]
 
 
 def test_backup_filename_policy_excludes_runtime_noise(tmp_path: Path) -> None:
@@ -118,4 +136,3 @@ def test_archive_member_names_must_be_posix(tmp_path: Path) -> None:
         archive.writestr("a\\b.txt", "bad")
     with pytest.raises(ValueError, match="archive_entry_not_posix"):
         validate_archive_member_names(bad_zip)
-

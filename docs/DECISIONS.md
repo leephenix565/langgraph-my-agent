@@ -2408,3 +2408,65 @@ evidence into invoke evidence, does not claim incomplete upstream agents are
 production-complete, and does not expose raw provider output, credentials, raw
 graph messages, traceback text, endpoints, or chain-of-thought in public
 transcripts.
+
+## ADR-064: P2S Inventory Recursively Covers Registered Source And Support Roots
+
+Status: accepted for SYNC-OPS planner phases.
+
+Decision: P2S planning must recurse through every registered source and support
+subroot while preserving the logical service-root relative path. If an Agent
+omits `source_subroots`, the logical root is scanned recursively. Inventory
+must prune excluded runtime/data/cache/model/log directories before descent and
+must not fall back to top-level-only scanning.
+
+Reason: the real P2S baseline contained nested packages, tests, configs, and
+runbooks that the initial planner missed. A nonrecursive inventory can produce
+a hash-valid but incomplete stage plan.
+
+Consequence: registry rows now distinguish logical root, source subroots,
+support subroots, transaction root, and stage prefix. Shared subroots are
+modeled as shared transactions instead of duplicate file actions.
+
+Non-consequence: recursive inventory is still source-policy bounded. It does
+not copy `.env`, credentials, logs, cache, virtualenvs, models, datasets,
+runtime output, or large assets by default.
+
+## ADR-065: Historical Baseline And Current Prod Files Need Explicit Parity Dispositions
+
+Status: accepted for SYNC-OPS P2S automation entry.
+
+Decision: a P2S plan is not eligible for future machine approval unless every
+historical baseline manifest row and every current production inventory row has
+a terminal disposition. `unresolved` must be zero in both parity ledgers.
+
+Reason: counts alone cannot distinguish legitimate prod deletions, sandbox
+metadata, sanitized derivatives, shared subtree compression, runtime-noise
+exclusion, or missed source files.
+
+Consequence: SYNC-OPS-1R2 emits `previous_baseline_to_new_plan_parity_v1` and
+`current_prod_to_new_plan_coverage_v1` ledgers. These ledgers are review and
+validation evidence, not write authority.
+
+Non-consequence: historical file count is not a mechanical copy target. The
+planner may record removed, stale, excluded, blocked, shared, or preserved
+files when current facts justify that disposition.
+
+## ADR-066: Valid P2S Plans Need Temp Reconstruction Before Machine Approval
+
+Status: accepted for SYNC-OPS P2S automation entry.
+
+Decision: a valid P2S plan must carry an expected stage projection digest and
+must be reconstructable in a repo-external `/tmp` tree before any future
+approval request is considered actionable.
+
+Reason: schema-valid action lists can still miss nested files, duplicate
+destinations, preserve the wrong derivative, or materialize a tree that does
+not match the planned digest.
+
+Consequence: the planner can perform a temp-only reconstruction, compare
+expected and actual projection digests, run a secret scan, and record bounded
+py_compile diagnostics. The real sandbox is not written in SYNC-OPS-1R2.
+
+Non-consequence: temp reconstruction is not P2S stage/activate. It does not
+create the versioned sandbox baseline, write the pointer, create backups,
+acquire locks, or approve a plan.

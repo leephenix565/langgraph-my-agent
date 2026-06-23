@@ -1274,6 +1274,20 @@ uses `preserve_sandbox_metadata`.
 is not an approval record and cannot authorize stage, activate, backup, lock,
 process, endpoint, or rollback actions.
 
+SYNC-OPS-1R2 adds recursive coverage invariants to that contract:
+
+- inventory must recurse through registered source and support subroots while
+  preserving logical-root relative paths;
+- every historical baseline manifest file must receive a terminal parity
+  disposition;
+- every current production inventory file must receive a terminal coverage
+  disposition;
+- current safe source-bearing files must be materialized, preserved,
+  explicitly omitted, excluded by policy, or resolved through a shared
+  transaction;
+- `expected_stage_projection_digest` must match a temp-only reconstruction
+  before any future approval request can be used.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

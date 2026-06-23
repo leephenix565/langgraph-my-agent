@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-1R2 recursive P2S coverage repair
+
+### Changed
+
+- Repaired source inventory to recurse through registered source and support
+  roots while preserving logical-root relative paths.
+- Added source-subroot, stage-prefix, and source-unit metadata to the static
+  Agent service registry.
+- Added P2S historical baseline parity and current production coverage ledgers
+  so files cannot silently disappear from plans.
+- Added stage projection digests and temp-only `/tmp` reconstruction checks for
+  planned P2S materialization.
+- Added the read-only `agent-sync p2s coverage` CLI command.
+
+### Validated
+
+- The three previously misclassified no-source agents now have nonzero
+  recursive safe source counts.
+- Current P2S plan validation includes projection digest and coverage checks.
+- Ops tests cover recursive traversal, support-root relative paths, parity,
+  coverage, temp reconstruction, and unsupported write commands.
+
+### Not Done
+
+- No production, sandbox, owner-dev, artifact-store, approval, lock, backup,
+  stage, activate, rollback, endpoint, process, `.env`, model/data bulk copy,
+  or secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-1R P2S write-safety repair
 
 ### Changed

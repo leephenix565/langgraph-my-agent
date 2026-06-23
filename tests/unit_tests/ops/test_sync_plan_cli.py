@@ -51,7 +51,7 @@ def test_cli_unsupported_write_command_returns_2() -> None:
         check=False,
     )
     assert result.returncode == 2
-    assert "command_not_available_in_sync_ops_1r" in result.stderr
+    assert "command_not_available_before_sync_ops_2" in result.stderr
 
 
 def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
@@ -66,3 +66,31 @@ def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
     assert result.returncode == 0
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["registry"]["formal_external_agent_count"] == 26
+
+
+def test_cli_p2s_coverage_uses_explicit_plan_file(tmp_path: Path) -> None:
+    plan_path = tmp_path / "plan.json"
+    coverage_path = tmp_path / "coverage.json"
+    plan = build_p2s_plan()
+    plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+    result = subprocess.run(
+        [
+            ".venv/bin/python",
+            "-m",
+            "react_agent.ops.agent_syncctl",
+            "p2s",
+            "coverage",
+            "--plan",
+            str(plan_path),
+            "--json-output",
+            str(coverage_path),
+        ],
+        cwd="/sdb/dlut/dev/langgraph-my-agent",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    payload = json.loads(coverage_path.read_text(encoding="utf-8"))
+    assert payload["historical_parity"]["unresolved_count"] == 0
+    assert payload["current_prod_coverage"]["safe_source_coverage_ratio"] == 1.0

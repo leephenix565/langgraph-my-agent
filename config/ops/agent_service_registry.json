@@ -53,7 +53,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "pg-ops-agent/README.md",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/金融数据服务智能体"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/financial_data_service",
@@ -62,7 +65,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "financial_data_service"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -88,7 +92,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/金融数据服务智能体",
-        "process_group_key": "port:11000"
+        "process_group_key": "port:11000",
+        "source_unit_ids": [
+          "financial_data_service"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -146,7 +153,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/实体关系抽取智能体"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/entity_relation_extractor",
@@ -155,7 +165,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "entity_relation_extractor"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -181,7 +192,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/实体关系抽取智能体",
-        "process_group_key": "port:10017"
+        "process_group_key": "port:10017",
+        "source_unit_ids": [
+          "entity_relation_extractor"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -239,6 +253,9 @@
           "test.py",
           "tests/test_domain_contract_v1.py",
           "tests/test_v21_compliance.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/传统企业估值智能体"
         ]
       },
       "sandbox": {
@@ -248,7 +265,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "value_traditional_valuation"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -274,7 +292,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/传统企业估值智能体",
-        "process_group_key": "port:10000"
+        "process_group_key": "port:10000",
+        "source_unit_ids": [
+          "value_traditional_valuation"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -329,6 +350,9 @@
           "tests/test_domain_contract_v1.py",
           "tests/test_service_contract.py",
           "tests/test_v21_compliance.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/机器学习企业估值智能体"
         ]
       },
       "sandbox": {
@@ -338,7 +362,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "value_ml_valuation"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -364,7 +389,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/机器学习企业估值智能体",
-        "process_group_key": "port:10001"
+        "process_group_key": "port:10001",
+        "source_unit_ids": [
+          "value_ml_valuation"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -420,6 +448,9 @@
           "test.py",
           "tests/test_domain_contract_v1.py",
           "tests/test_v21_compliance.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/元学习企业估值智能体"
         ]
       },
       "sandbox": {
@@ -429,7 +460,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "value_meta_valuation"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -455,7 +487,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/元学习企业估值智能体",
-        "process_group_key": "port:10002"
+        "process_group_key": "port:10002",
+        "source_unit_ids": [
+          "value_meta_valuation"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -517,6 +552,9 @@
           "tests/test_local_data_offline.py",
           "tests/test_response_time.py",
           "tests/test_result_cache.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/分析师研报与观点集成智能体"
         ]
       },
       "sandbox": {
@@ -532,7 +570,8 @@
           "build_stock_basic.py",
           "main5.py"
         ],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "value_research_synthesis"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -558,7 +597,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/分析师研报与观点集成智能体",
-        "process_group_key": "port:10006"
+        "process_group_key": "port:10006",
+        "source_unit_ids": [
+          "value_research_synthesis"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -622,6 +664,9 @@
           "tests/test_asof_leakage_probe.py",
           "tests/test_backtest.py",
           "tests/test_compute_endpoint.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/个股技术分析智能体"
         ]
       },
       "sandbox": {
@@ -631,7 +676,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "market_stock_technical"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -657,7 +703,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/个股技术分析智能体",
-        "process_group_key": "port:10009"
+        "process_group_key": "port:10009",
+        "source_unit_ids": [
+          "market_stock_technical"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -701,7 +750,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_fund_manager_behavior",
@@ -710,7 +762,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "market_fund_manager_behavior"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -736,7 +789,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
-        "process_group_key": "market_fund_manager_behavior"
+        "process_group_key": "market_fund_manager_behavior",
+        "source_unit_ids": [
+          "market_composite_shared_support"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -783,6 +839,9 @@
           "external_agent_scaffold/tests/test_ipo_v21.py",
           "external_agent_scaffold/tests/test_service_contract.py",
           "tests/test_health_identity.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/IPO投资者行为智能体"
         ]
       },
       "sandbox": {
@@ -792,7 +851,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "market_ipo_investor_behavior"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -818,7 +878,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/IPO投资者行为智能体",
-        "process_group_key": "port:10008"
+        "process_group_key": "port:10008",
+        "source_unit_ids": [
+          "market_ipo_investor_behavior"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -880,6 +943,9 @@
           "tests/test_compute_endpoint.py",
           "tests/test_confidence_semantics.py",
           "tests/test_domain_contract_v1.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/资金流智能体"
         ]
       },
       "sandbox": {
@@ -889,7 +955,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "market_capital_flow_chip"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -915,7 +982,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/资金流智能体",
-        "process_group_key": "port:10022"
+        "process_group_key": "port:10022",
+        "source_unit_ids": [
+          "market_capital_flow_chip"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -956,7 +1026,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/企业舆情雷达智能体"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/sentiment_company_radar",
@@ -965,7 +1038,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "sentiment_company_radar"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -991,7 +1065,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/企业舆情雷达智能体",
-        "process_group_key": "port:10020"
+        "process_group_key": "port:10020",
+        "source_unit_ids": [
+          "sentiment_company_radar"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1053,6 +1130,9 @@
           "crash_risk_model/agent/tests/test_response_time.py",
           "crash_risk_model/agent/tests/test_result_cache.py",
           "crash_risk_model/agent/tests/test_service_contract.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/股价崩盘风险智能体"
         ]
       },
       "sandbox": {
@@ -1062,7 +1142,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "risk_crash"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1088,7 +1169,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/股价崩盘风险智能体",
-        "process_group_key": "port:10012"
+        "process_group_key": "port:10012",
+        "source_unit_ids": [
+          "risk_crash"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1144,6 +1228,9 @@
           "tests/test_legacy_migrated_modules.py",
           "tests/test_protocol_contract.py",
           "tests/test_report_material.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/财务造假风险智能体"
         ]
       },
       "sandbox": {
@@ -1153,7 +1240,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "risk_financial_fraud"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1179,7 +1267,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/财务造假风险智能体",
-        "process_group_key": "port:10013"
+        "process_group_key": "port:10013",
+        "source_unit_ids": [
+          "risk_financial_fraud"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1234,6 +1325,9 @@
           "tests/test_response_time.py",
           "tests/test_result_cache.py",
           "tests/test_service_contract.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体"
         ]
       },
       "sandbox": {
@@ -1243,7 +1337,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "risk_identification"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1269,7 +1364,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
-        "process_group_key": "port:10010"
+        "process_group_key": "port:10010",
+        "source_unit_ids": [
+          "risk_identification"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1323,6 +1421,9 @@
           "announcement_compliance/agent/tests/test_response_time.py",
           "announcement_compliance/agent/tests/test_result_cache.py",
           "announcement_compliance/agent/tests/test_service_contract.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/公告合规审查智能体"
         ]
       },
       "sandbox": {
@@ -1332,7 +1433,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "risk_compliance_review"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1358,7 +1460,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/公告合规审查智能体",
-        "process_group_key": "port:10011"
+        "process_group_key": "port:10011",
+        "source_unit_ids": [
+          "risk_compliance_review"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1414,6 +1519,9 @@
           "tests/test_result_cache.py",
           "tests/test_scenario_parsing.py",
           "tests/test_service_contract.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/宏观分析智能体"
         ]
       },
       "sandbox": {
@@ -1423,7 +1531,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "macro_analysis"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1449,7 +1558,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/宏观分析智能体",
-        "process_group_key": "port:10014"
+        "process_group_key": "port:10014",
+        "source_unit_ids": [
+          "macro_analysis"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1496,6 +1608,9 @@
           "external_agent_scaffold_v2.3.1/tests/test_fixed_dag_payload_mapping.py",
           "external_agent_scaffold_v2.3.1/tests/test_service_contract.py",
           "external_agent_scaffold_v2.3.1/tests/test_v23_domain_payloads.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/商品定价分析智能体"
         ]
       },
       "sandbox": {
@@ -1505,7 +1620,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "macro_commodity_pricing"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1531,7 +1647,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/商品定价分析智能体",
-        "process_group_key": "port:10004"
+        "process_group_key": "port:10004",
+        "source_unit_ids": [
+          "macro_commodity_pricing"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1588,6 +1707,9 @@
           "tests/test_result_cache.py",
           "tests/test_service_contract.py",
           "tests/test_spts_adapter.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/股票指数估值智能体"
         ]
       },
       "sandbox": {
@@ -1599,7 +1721,8 @@
         "sanitized_derivative_files": [
           "config.py"
         ],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "macro_index_valuation"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1625,7 +1748,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/股票指数估值智能体",
-        "process_group_key": "port:10003"
+        "process_group_key": "port:10003",
+        "source_unit_ids": [
+          "macro_index_valuation"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1671,7 +1797,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_sentiment",
@@ -1680,7 +1809,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": true
+        "semantic_placeholder": true,
+        "stage_prefix": "macro_sentiment"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1706,7 +1836,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py",
-        "process_group_key": "port:10018"
+        "process_group_key": "port:10018",
+        "source_unit_ids": [
+          "macro_composite_placeholder"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1753,7 +1886,10 @@
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
         "startup_runbook": "",
-        "focused_tests": []
+        "focused_tests": [],
+        "source_subroots": [
+          "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py"
+        ]
       },
       "sandbox": {
         "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_industry_hotspot",
@@ -1762,7 +1898,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": true
+        "semantic_placeholder": true,
+        "stage_prefix": "macro_industry_hotspot"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1788,7 +1925,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py",
-        "process_group_key": "port:10019"
+        "process_group_key": "port:10019",
+        "source_unit_ids": [
+          "macro_composite_placeholder"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1834,6 +1974,9 @@
         "startup_runbook": "",
         "focused_tests": [
           "tests/test_fixed_dag_l3_wrapper.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/综合估值智能体"
         ]
       },
       "sandbox": {
@@ -1843,7 +1986,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "value_composite"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1869,7 +2013,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/综合估值智能体",
-        "process_group_key": "port:10015"
+        "process_group_key": "port:10015",
+        "source_unit_ids": [
+          "value_composite"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -1923,6 +2070,9 @@
           "tests/test_reliability_cap.py",
           "tests/test_service.py",
           "tests/test_subagent_scaffold_contract.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/市场面综合智能体"
         ]
       },
       "sandbox": {
@@ -1932,7 +2082,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "market_composite"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -1958,7 +2109,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/市场面综合智能体",
-        "process_group_key": "port:10023"
+        "process_group_key": "port:10023",
+        "source_unit_ids": [
+          "market_composite"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -2020,6 +2174,9 @@
           "tests/fixtures/fixed_dag_l3/value_composite.expected.json",
           "tests/fixtures/fixed_dag_l3/value_composite.input.json",
           "tests/test_asof_leakage_probe.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/综合风险智能体"
         ]
       },
       "sandbox": {
@@ -2029,7 +2186,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "risk_composite"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -2055,7 +2213,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/综合风险智能体",
-        "process_group_key": "port:10016"
+        "process_group_key": "port:10016",
+        "source_unit_ids": [
+          "risk_composite"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -2106,6 +2267,9 @@
           "tests/test_backtest.py",
           "tests/test_regime.py",
           "tests/test_synthesis.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/宏观综合智能体"
         ]
       },
       "sandbox": {
@@ -2115,7 +2279,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "macro_composite"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -2141,7 +2306,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/宏观综合智能体",
-        "process_group_key": "port:10024"
+        "process_group_key": "port:10024",
+        "source_unit_ids": [
+          "macro_composite"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -2184,6 +2352,9 @@
         "startup_runbook": "README.md",
         "focused_tests": [
           "tests/test_l4_decision_service.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/决策融合智能体"
         ]
       },
       "sandbox": {
@@ -2193,7 +2364,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "decision_synthesizer"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -2219,7 +2391,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/决策融合智能体",
-        "process_group_key": "port:10025"
+        "process_group_key": "port:10025",
+        "source_unit_ids": [
+          "decision_synthesizer"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",
@@ -2260,6 +2435,9 @@
         "startup_runbook": "README.md",
         "focused_tests": [
           "tests/test_l4_report_service.py"
+        ],
+        "source_subroots": [
+          "/sdb/dlut/prod/报告生成智能体"
         ]
       },
       "sandbox": {
@@ -2269,7 +2447,8 @@
         "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
         "sanitized_derivative": false,
         "sanitized_derivative_files": [],
-        "semantic_placeholder": false
+        "semantic_placeholder": false,
+        "stage_prefix": "report_generator"
       },
       "owner_dev": {
         "candidate_roots": [
@@ -2295,7 +2474,10 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/报告生成智能体",
-        "process_group_key": "port:10026"
+        "process_group_key": "port:10026",
+        "source_unit_ids": [
+          "report_generator"
+        ]
       },
       "evidence": [
         "config/fixed_dag/agent_catalog.json",

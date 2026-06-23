@@ -374,6 +374,12 @@ backup actions, and explicit stage/activate/rollback permissions. It should not
 include S2P apply, endpoint smoke, process restart, or owner-dev writes unless a
 later phase explicitly owns those actions.
 
+SYNC-OPS-1R2 tightens that entry condition: the P2S plan also needs recursive
+source/support-root coverage, historical baseline parity unresolved count of
+zero, current prod coverage unresolved count of zero, stage projection digest
+validation, and temp-only reconstruction under `/tmp` before a machine approval
+request can be considered.
+
 ## Non-Goals
 
 - 不把 dev evidence 升级成 production evidence。

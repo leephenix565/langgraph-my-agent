@@ -82,6 +82,8 @@ STATIC_RUFF_TARGETS = (
     "tests/integration_tests/test_graph.py",
     "tests/integration_tests/test_sync_ops_planner.py",
     "tests/unit_tests/ops/test_sync_contracts.py",
+    "tests/unit_tests/ops/test_sync_coverage_materialize.py",
+    "tests/unit_tests/ops/test_sync_p2s_safety.py",
     "tests/unit_tests/ops/test_sync_plan_cli.py",
     "tests/unit_tests/ops/test_sync_registry_diff.py",
     "tests/unit_tests/ops/test_sync_security_inventory.py",
@@ -118,6 +120,8 @@ STATIC_CODESPELL_TARGETS = (
     "docs/CHANGELOG.md",
     "docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md",
     "docs/SYNC_OPS_1_READ_ONLY_PLANNER.md",
+    "docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md",
+    "docs/SYNC_OPS_1R2_RECURSIVE_COVERAGE_REPAIR.md",
 )
 
 

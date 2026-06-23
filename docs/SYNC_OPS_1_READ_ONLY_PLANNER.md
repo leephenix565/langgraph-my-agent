@@ -151,6 +151,7 @@ Implemented commands:
 - `agent-sync experiment init`
 - `agent-sync experiment validate`
 - `agent-sync p2s plan`
+- `agent-sync p2s coverage --plan <path>`
 - `agent-sync s2p plan`
 - `agent-sync cycle plan`
 - `agent-sync plan show`
@@ -161,7 +162,8 @@ Implemented commands:
 - `agent-sync lock show`
 
 Unsupported write commands return exit code `2` with
-`command_not_available_in_sync_ops_1r` after the SYNC-OPS-1R safety repair:
+`command_not_available_before_sync_ops_2` after the SYNC-OPS-1R2 coverage
+repair:
 
 - `p2s stage`, `p2s activate`, `p2s rollback`
 - `s2p apply`, `s2p smoke`, `s2p rollback`
@@ -202,6 +204,9 @@ SYNC-OPS-2 may start only after:
 - the legacy unsafe P2S plan remains rejected by the SYNC-OPS-1R validator;
 - repaired P2S plans have no active-sandbox file targets, no empty copy source
   hashes, no backup actions, and complete Agent dispositions;
+- recursive source/support-root coverage and baseline parity ledgers have
+  `unresolved=0`;
+- a temp-only reconstruction matches the expected stage projection digest;
 - operator confirms the durable artifact-store root can be created;
 - write-phase lock and approval records are reviewed;
 - P2S automation has explicit permission to archive, stage, activate, and

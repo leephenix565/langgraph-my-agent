@@ -65,6 +65,11 @@ The P2S validator now rejects:
 The legacy SYNC-OPS-1 current P2S plan is therefore intentionally invalid under
 SYNC-OPS-1R.
 
+SYNC-OPS-1R2 supersedes the SYNC-OPS-1R current approval request because the
+1R plan still under-covered nested source packages and support roots. Any
+future approval request must be generated from a plan with recursive coverage,
+baseline parity, current prod coverage, and temp reconstruction validation.
+
 ## Approval Request
 
 The planner may emit a `p2s_approval_request.json` that names a plan hash and

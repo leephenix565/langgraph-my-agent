@@ -910,3 +910,24 @@ Required safety assertions include:
 Future P2S stage/activate, S2P apply, lock acquisition, process action, and
 endpoint smoke remain explicit live/write gates and are not part of default
 mainline.
+
+## SYNC-OPS-1R2 Recursive Coverage Gate
+
+SYNC-OPS-1R2 expands the planner quality surface with recursive source
+inventory, root/subroot preservation, historical baseline parity, current prod
+coverage, stage projection digest, and temp-only reconstruction tests. These
+tests may write repo-external `/tmp` materialization trees but must not write
+production, sandbox, owner-dev, configured artifact-store, approval, lock,
+backup, stage, activate, endpoint, or process state.
+
+Required assertions include:
+
+- nested packages, tests, configs, runbooks, `.gitignore`, HTML/CSS, and small
+  text resources are recursively included when policy-safe;
+- excluded directories are pruned before traversal;
+- every historical baseline row has a terminal disposition;
+- every current production inventory row has a terminal disposition;
+- unresolved coverage is zero before an approval request is emitted;
+- temp reconstruction digest matches the plan projection digest;
+- duplicate stage destinations, raw secret findings, and backup/runtime-noise
+  materialization are rejected.
