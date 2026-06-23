@@ -24,13 +24,17 @@ from react_agent.ops.sync_contracts import (
 
 BOOTSTRAP_PLAN_SCHEMA = "agent_sync_artifact_store_bootstrap_plan_v1"
 BOOTSTRAP_ENV_SCHEMA = "agent_sync_artifact_store_bootstrap_environment_v1"
+BOOTSTRAP_ENV_V2_SCHEMA = "agent_sync_execution_environment_v2"
 BOOTSTRAP_APPROVAL_SCHEMA = "agent_sync_artifact_store_bootstrap_approval_v1"
 STORE_METADATA_SCHEMA = "agent_sync_artifact_store_metadata_v1"
-BOOTSTRAP_TOOL_VERSION = "sync_ops_2a_r4_artifact_store_bootstrap"
+BOOTSTRAP_TOOL_VERSION = "sync_ops_2a_r5_stable_environment_binding"
 DIRECTORY_SCHEMA_VERSION = "agent_sync_artifact_store_directory_layout_v1"
 OWNERSHIP_LEDGER_SCHEMA = "agent_sync_artifact_store_bootstrap_ownership_ledger_v1"
 STORE_METADATA_FILENAME = "STORE_METADATA.json"
 STORE_SUBDIRECTORIES = ("plans", "approvals", "runs", "locks", "baselines", "experiments", "backups", "indexes")
+MINIMUM_BOOTSTRAP_FREE_BYTES = 64 * 1024 * 1024
+ESTIMATED_BOOTSTRAP_REQUIRED_BYTES = 1024 * 1024
+BOOTSTRAP_FREE_SPACE_MARGIN_BYTES = MINIMUM_BOOTSTRAP_FREE_BYTES - ESTIMATED_BOOTSTRAP_REQUIRED_BYTES
 
 
 def _utc_now() -> str:
@@ -39,6 +43,12 @@ def _utc_now() -> str:
 
 def _future(hours: int = 24) -> str:
     return (datetime.now(UTC) + timedelta(hours=hours)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _parse_utc(value: str) -> datetime:
+    if value.endswith("Z"):
+        value = value[:-1] + "+00:00"
+    return datetime.fromisoformat(value).astimezone(UTC)
 
 
 def _mode_text(path: Path) -> str:
@@ -50,6 +60,8 @@ def _mode_text(path: Path) -> str:
 
 def _nearest_existing_ancestor(path: Path) -> Path:
     current = path
+    while current.exists() and not current.is_dir() and current != current.parent:
+        current = current.parent
     while not current.exists() and current != current.parent:
         current = current.parent
     return current
@@ -84,6 +96,50 @@ def _operator_can_create(path: Path) -> bool:
     if st.st_gid in gids:
         return bool(mode & 0o030 == 0o030)
     return bool(mode & 0o003 == 0o003)
+
+
+def _access_basis(path: Path) -> dict[str, Any]:
+    try:
+        st = path.stat()
+    except OSError:
+        return {"access_basis": "none", "operator_can_create": False, "blockers": ["ancestor_missing"]}
+    uid = os.geteuid()
+    egid = os.getegid()
+    groups = set(os.getgroups()) | {egid}
+    mode = st.st_mode
+    has_acl = _has_unmodeled_posix_acl(path)
+    blockers: list[str] = []
+    if has_acl:
+        blockers.append("unmodeled_posix_acl")
+    if st.st_uid == uid and mode & 0o300 == 0o300:
+        basis = "owner"
+    elif st.st_gid in groups and mode & 0o030 == 0o030:
+        basis = "group"
+    elif mode & 0o003 == 0o003:
+        basis = "other"
+    else:
+        basis = "none"
+        blockers.append("operator_lacks_create_permission")
+    return {
+        "access_basis": basis,
+        "operator_can_create": basis != "none" and not has_acl,
+        "relevant_gid": st.st_gid if basis == "group" else None,
+        "operator_euid": uid,
+        "operator_egid": egid,
+        "operator_groups": sorted(groups),
+        "ancestor_uid": st.st_uid,
+        "ancestor_gid": st.st_gid,
+        "ancestor_mode": format(st.st_mode & 0o7777, "04o"),
+        "acl_modeled": not has_acl,
+        "blockers": blockers,
+    }
+
+
+def _has_unmodeled_posix_acl(path: Path) -> bool:
+    try:
+        return "system.posix_acl_access" in os.listxattr(path)
+    except OSError:
+        return False
 
 
 def _safe_absolute_path(path: Path, root: Path) -> None:
@@ -156,6 +212,8 @@ def bootstrap_plan_sha256(plan: Mapping[str, Any]) -> str:
     if isinstance(payload, dict):
         payload.pop("canonical_sha256", None)
         payload.pop("environment_snapshot_sha256", None)
+        payload.pop("environment_binding_sha256", None)
+        payload.pop("environment_observation_reference", None)
     return canonical_sha256(payload, exclude_hash_field=False)
 
 
@@ -215,6 +273,7 @@ def build_artifact_store_permission_audit(root: Path = DEFAULT_ARTIFACT_STORE_RO
     root_parent = root.parent
     parent_action_parent = _nearest_existing_ancestor(root_parent)
     nearest_stat = nearest.stat()
+    access = _access_basis(parent_action_parent)
     return {
         "schema_version": "agent_sync_artifact_store_permission_audit_v1",
         "root": str(root),
@@ -230,12 +289,15 @@ def build_artifact_store_permission_audit(root: Path = DEFAULT_ARTIFACT_STORE_RO
         "operator_uid": os.geteuid(),
         "operator_gid": os.getegid(),
         "operator_groups": os.getgroups(),
-        "operator_create_permission": _operator_can_create(parent_action_parent),
+        "operator_create_permission": access["operator_can_create"],
+        "access_basis": access["access_basis"],
+        "acl_modeled": access["acl_modeled"],
         "create_permission_basis": {
             "path": str(parent_action_parent),
             "mode": _mode_text(parent_action_parent),
             "uid": parent_action_parent.stat().st_uid,
             "gid": parent_action_parent.stat().st_gid,
+            "access_basis": access["access_basis"],
         },
         "free_bytes": _free_bytes(nearest),
         "recommended_modes": {
@@ -247,7 +309,7 @@ def build_artifact_store_permission_audit(root: Path = DEFAULT_ARTIFACT_STORE_RO
         "owner_strategy": "current_operator",
         "group_strategy": "normal_filesystem_inheritance",
         "chown_chgrp": "forbidden",
-        "blockers": [] if _operator_can_create(parent_action_parent) else ["operator_lacks_create_permission"],
+        "blockers": access["blockers"],
     }
 
 
@@ -266,12 +328,25 @@ def build_bootstrap_plan(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[str, 
         "parent": str(root.parent),
         "nearest_existing_ancestor": audit["nearest_existing_ancestor"],
         "environment_snapshot_sha256": "",
+        "environment_contract_version": BOOTSTRAP_ENV_V2_SCHEMA,
+        "environment_binding_sha256": "",
+        "execution_constraints": {
+            "estimated_required_bytes": ESTIMATED_BOOTSTRAP_REQUIRED_BYTES,
+            "safety_margin_bytes": BOOTSTRAP_FREE_SPACE_MARGIN_BYTES,
+            "minimum_free_bytes": MINIMUM_BOOTSTRAP_FREE_BYTES,
+            "required_access": ["write", "execute"],
+            "no_unmodeled_acl": True,
+            "plan_not_expired": True,
+            "path_state_drift_forbidden": True,
+        },
+        "environment_observation_reference": {},
         "execution_status": "bootstrap_ready" if not audit["blockers"] else "blocked_permission",
         "preconditions": [
             "schema_valid",
             "canonical_hash_valid",
             "exact_machine_approval_required",
-            "environment_snapshot_match_required",
+            "environment_binding_match_required",
+            "execution_constraints_pass_required",
             "nearest_existing_ancestor_unchanged",
             "exact_directory_actions_only",
             "no_chown_chgrp",
@@ -314,7 +389,13 @@ def build_bootstrap_plan(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[str, 
     }
     plan["canonical_sha256"] = bootstrap_plan_sha256(plan)
     environment = build_bootstrap_environment_snapshot(plan)
-    plan["environment_snapshot_sha256"] = environment["environment_snapshot_sha256"]
+    plan["environment_binding_sha256"] = environment["environment_binding_sha256"]
+    plan["environment_snapshot_sha256"] = environment["environment_binding_sha256"]
+    plan["environment_observation_reference"] = {
+        "schema_version": "agent_sync_environment_observation_reference_v1",
+        "observations_sha256": environment["observations_sha256"],
+        "diagnostic_only": True,
+    }
     plan["canonical_sha256"] = bootstrap_plan_sha256(plan)
     return plan
 
@@ -342,18 +423,87 @@ def build_bootstrap_environment_snapshot(plan: Mapping[str, Any]) -> dict[str, A
         uid = st.st_uid
         gid = st.st_gid
         device = str(st.st_dev)
+        inode = st.st_ino
         realpath = str(nearest.resolve(strict=True))
     except OSError:
         mode = ""
         uid = None
         gid = None
         device = "unavailable"
+        inode = None
         realpath = ""
+    access = _access_basis(nearest) if nearest.exists() else {"access_basis": "none", "operator_can_create": False, "blockers": ["ancestor_missing"]}
+    constraints = dict(plan.get("execution_constraints") or {})
+    current_free = _free_bytes(nearest) if nearest.exists() else None
+    approval_binding: dict[str, Any] = {
+        "schema_version": "agent_sync_execution_environment_approval_binding_v2",
+        "tool_version": BOOTSTRAP_TOOL_VERSION,
+        "operation": "artifact_store_bootstrap",
+        "plan_id": str(plan.get("plan_id") or ""),
+        "plan_sha256": bootstrap_plan_sha256(plan),
+        "root": str(root),
+        "parent": str(root.parent),
+        "nearest_existing_ancestor": str(nearest),
+        "nearest_existing_ancestor_realpath": realpath,
+        "nearest_existing_ancestor_device": device,
+        "nearest_existing_ancestor_inode": inode,
+        "nearest_existing_ancestor_uid": uid,
+        "nearest_existing_ancestor_mode": mode,
+        "operator_euid": os.geteuid(),
+        "operator_primary_gid": os.getegid(),
+        "access_basis": access.get("access_basis"),
+        "relevant_gid": access.get("relevant_gid"),
+        "directory_action_states": action_states,
+        "directory_action_contracts": [
+            {
+                "action_id": str(action.get("action_id") or ""),
+                "path": str(action.get("path") or ""),
+                "operation": str(action.get("operation") or ""),
+                "expected_state": str(action.get("expected_state") or ""),
+                "mode": str(action.get("mode") or ""),
+                "forbid_symlink": bool(action.get("forbid_symlink")),
+                "forbid_special_file": bool(action.get("forbid_special_file")),
+            }
+            for action in plan.get("directory_actions") or []
+            if isinstance(action, Mapping)
+        ],
+        "metadata_action": {
+            "action_id": str((plan.get("metadata_action") or {}).get("action_id") or ""),
+            "path": str((plan.get("metadata_action") or {}).get("path") or ""),
+            "mode": str((plan.get("metadata_action") or {}).get("mode") or ""),
+            "operation": str((plan.get("metadata_action") or {}).get("operation") or ""),
+        },
+        "target_root_expected_state": "missing",
+    }
+    if access.get("access_basis") == "group":
+        operator_group_values = access.get("operator_groups")
+        operator_groups = set(operator_group_values) if isinstance(operator_group_values, list) else set()
+        approval_binding["operator_relevant_group_member"] = access.get("relevant_gid") in operator_groups
+    observations = {
+        "schema_version": "agent_sync_execution_environment_observations_v2",
+        "generated_at": _utc_now(),
+        "current_free_bytes": current_free,
+        "nearest_existing_ancestor_gid": gid,
+        "operator_gid": os.getegid(),
+        "operator_groups": os.getgroups(),
+        "access_basis_diagnostics": access,
+        "free_space_floor": constraints.get("minimum_free_bytes", MINIMUM_BOOTSTRAP_FREE_BYTES),
+    }
+    binding_sha = canonical_sha256(approval_binding)
+    observations_sha = canonical_sha256(observations)
     snapshot: dict[str, Any] = {
-        "schema_version": BOOTSTRAP_ENV_SCHEMA,
+        "schema_version": BOOTSTRAP_ENV_V2_SCHEMA,
         "tool_version": BOOTSTRAP_TOOL_VERSION,
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": bootstrap_plan_sha256(plan),
+        "approval_binding": approval_binding,
+        "execution_constraints": constraints,
+        "observations": observations,
+        "environment_binding_sha256": binding_sha,
+        "observations_sha256": observations_sha,
+        # Compatibility fields retained for older CLI/report code. This value
+        # is the stable binding hash, not a full observation snapshot hash.
+        "environment_snapshot_sha256": binding_sha,
         "root": str(root),
         "root_expected_state": "missing" if not root.exists() else "present",
         "root_exists": root.exists(),
@@ -366,14 +516,54 @@ def build_bootstrap_environment_snapshot(plan: Mapping[str, Any]) -> dict[str, A
         "nearest_existing_ancestor_gid": gid,
         "nearest_existing_ancestor_device": device,
         "directory_action_states": action_states,
-        "free_bytes": _free_bytes(nearest) if nearest.exists() else None,
+        "free_bytes": current_free,
         "operator_uid": os.geteuid(),
         "operator_gid": os.getegid(),
         "operator_groups": os.getgroups(),
         "generated_at": str(plan.get("created_at") or ""),
     }
-    snapshot["environment_snapshot_sha256"] = canonical_sha256(snapshot)
     return snapshot
+
+
+def validate_bootstrap_environment_contract(plan: Mapping[str, Any], environment: Mapping[str, Any]) -> dict[str, Any]:
+    blockers: list[str] = []
+    diagnostics: list[str] = []
+    if plan.get("environment_contract_version") != BOOTSTRAP_ENV_V2_SCHEMA:
+        blockers.append("legacy_volatile_environment_snapshot_contract")
+    expected_binding = str(plan.get("environment_binding_sha256") or plan.get("environment_snapshot_sha256") or "")
+    actual_binding = str(environment.get("environment_binding_sha256") or environment.get("environment_snapshot_sha256") or "")
+    if expected_binding != actual_binding:
+        blockers.append("environment_binding_sha256_mismatch")
+    constraints_raw = environment.get("execution_constraints")
+    constraints: Mapping[str, Any] = constraints_raw if isinstance(constraints_raw, Mapping) else {}
+    observations_raw = environment.get("observations")
+    observations: Mapping[str, Any] = observations_raw if isinstance(observations_raw, Mapping) else {}
+    minimum_free = int(constraints.get("minimum_free_bytes") or MINIMUM_BOOTSTRAP_FREE_BYTES)
+    current_free = observations.get("current_free_bytes")
+    if current_free is None or int(current_free) < minimum_free:
+        blockers.append("insufficient_free_space")
+    access_diag_raw = observations.get("access_basis_diagnostics")
+    access_diag: Mapping[str, Any] = access_diag_raw if isinstance(access_diag_raw, Mapping) else {}
+    if access_diag.get("operator_can_create") is not True:
+        blockers.extend(str(item) for item in access_diag.get("blockers") or ["operator_lacks_create_permission"])
+    if access_diag.get("acl_modeled") is False:
+        blockers.append("unmodeled_posix_acl")
+    try:
+        if _parse_utc(str(plan.get("expires_at") or "")) <= datetime.now(UTC):
+            blockers.append("plan_expired")
+    except ValueError:
+        blockers.append("invalid_plan_expiry")
+    if environment.get("observations_sha256") != canonical_sha256(observations):
+        diagnostics.append("observations_sha256_changed_or_missing")
+    return {
+        "valid": not blockers,
+        "blockers": sorted(set(blockers)),
+        "diagnostics": sorted(set(diagnostics)),
+        "environment_binding_sha256": actual_binding,
+        "minimum_free_bytes": minimum_free,
+        "current_free_bytes": current_free,
+        "exit_code": 0 if not blockers else (5 if "environment_binding_sha256_mismatch" in blockers else 3),
+    }
 
 
 def validate_bootstrap_plan(plan: Mapping[str, Any], *, check_environment: bool = True) -> dict[str, Any]:
@@ -384,6 +574,10 @@ def validate_bootstrap_plan(plan: Mapping[str, Any], *, check_environment: bool 
         blockers.append(f"schema_{exc.reason}")
     if str(plan.get("canonical_sha256") or "") != bootstrap_plan_sha256(plan):
         blockers.append("canonical_hash_mismatch")
+    if plan.get("environment_contract_version") != BOOTSTRAP_ENV_V2_SCHEMA:
+        blockers.append("legacy_volatile_environment_snapshot_contract")
+    if not str(plan.get("environment_binding_sha256") or ""):
+        blockers.append("environment_binding_sha256_missing")
     root = Path(str(plan.get("root") or ""))
     if not root.is_absolute():
         blockers.append("root_not_absolute")
@@ -418,8 +612,8 @@ def validate_bootstrap_plan(plan: Mapping[str, Any], *, check_environment: bool 
         blockers.append("metadata_mode_not_0600")
     if check_environment:
         environment = build_bootstrap_environment_snapshot(plan)
-        if str(plan.get("environment_snapshot_sha256") or "") != str(environment.get("environment_snapshot_sha256") or ""):
-            blockers.append("environment_snapshot_sha256_mismatch")
+        contract = validate_bootstrap_environment_contract(plan, environment)
+        blockers.extend(contract["blockers"])
     return {
         "valid": not blockers,
         "blockers": sorted(set(blockers)),
@@ -434,7 +628,8 @@ def build_bootstrap_approval_request(plan: Mapping[str, Any], environment: Mappi
         "schema_version": "agent_sync_artifact_store_bootstrap_approval_request_v1",
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": str(plan.get("canonical_sha256") or ""),
-        "environment_snapshot_sha256": str(environment.get("environment_snapshot_sha256") or ""),
+        "environment_binding_sha256": str(environment.get("environment_binding_sha256") or ""),
+        "environment_snapshot_sha256": str(environment.get("environment_binding_sha256") or ""),
         "root": str(plan.get("root") or ""),
         "expires_at": str(plan.get("expires_at") or ""),
         "bootstrap_requested": True,
@@ -462,7 +657,8 @@ def build_temp_bootstrap_approval(plan: Mapping[str, Any], environment: Mapping[
         "status": "approved",
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": str(plan.get("canonical_sha256") or ""),
-        "environment_snapshot_sha256": str(environment.get("environment_snapshot_sha256") or ""),
+        "environment_binding_sha256": str(environment.get("environment_binding_sha256") or ""),
+        "environment_snapshot_sha256": str(environment.get("environment_binding_sha256") or ""),
         "approved_at": _utc_now(),
         "expires_at": _future(),
         "execution_phase": "SYNC-OPS-2B0",
@@ -475,7 +671,14 @@ def build_temp_bootstrap_approval(plan: Mapping[str, Any], environment: Mapping[
     }
 
 
-def validate_bootstrap_approval(approval: Mapping[str, Any], plan: Mapping[str, Any], environment: Mapping[str, Any], *, require_rollback: bool = False) -> dict[str, Any]:
+def validate_bootstrap_approval(
+    approval: Mapping[str, Any],
+    plan: Mapping[str, Any],
+    environment: Mapping[str, Any],
+    *,
+    require_rollback: bool = False,
+    check_environment_contract: bool = True,
+) -> dict[str, Any]:
     blockers: list[str] = []
     try:
         validate_by_schema_version(approval)
@@ -487,9 +690,14 @@ def validate_bootstrap_approval(approval: Mapping[str, Any], plan: Mapping[str, 
         blockers.append("approval_plan_id_mismatch")
     if str(approval.get("plan_sha256") or "") != str(plan.get("canonical_sha256") or ""):
         blockers.append("approval_plan_sha256_mismatch")
-    expected_environment_sha = str(plan.get("environment_snapshot_sha256") or environment.get("environment_snapshot_sha256") or "")
-    if str(approval.get("environment_snapshot_sha256") or "") != expected_environment_sha:
-        blockers.append("approval_environment_snapshot_sha256_mismatch")
+    expected_binding_sha = str(plan.get("environment_binding_sha256") or environment.get("environment_binding_sha256") or "")
+    if not str(approval.get("environment_binding_sha256") or ""):
+        blockers.append("approval_environment_binding_sha256_missing")
+    elif str(approval.get("environment_binding_sha256") or "") != expected_binding_sha:
+        blockers.append("approval_environment_binding_sha256_mismatch")
+    if check_environment_contract:
+        contract = validate_bootstrap_environment_contract(plan, environment)
+        blockers.extend(contract["blockers"])
     if approval.get("bootstrap_approved") is not True:
         blockers.append("bootstrap_permission_missing")
     if require_rollback and approval.get("rollback_approved") is not True:
@@ -639,15 +847,10 @@ def bootstrap_artifact_store(plan: Mapping[str, Any], approval: Mapping[str, Any
     if existing["bootstrapped"]:
         return {"status": "noop_success", "root": str(root), "idempotent": True, "verify": existing}
     environment = build_bootstrap_environment_snapshot(plan)
-    if str(environment.get("environment_snapshot_sha256") or "") != str(plan.get("environment_snapshot_sha256") or ""):
-        raise SyncPlannerError(
-            "bootstrap_environment_snapshot_mismatch",
-            exit_code=5,
-            details={
-                "expected": str(plan.get("environment_snapshot_sha256") or ""),
-                "actual": str(environment.get("environment_snapshot_sha256") or ""),
-            },
-        )
+    environment_contract = validate_bootstrap_environment_contract(plan, environment)
+    if not environment_contract["valid"]:
+        reason = "bootstrap_environment_binding_mismatch" if environment_contract["exit_code"] == 5 else "bootstrap_environment_constraint_failed"
+        raise SyncPlannerError(reason, exit_code=environment_contract["exit_code"], details={"blockers": environment_contract["blockers"]})
     approval_result = validate_bootstrap_approval(approval, plan, environment)
     if not approval_result["valid"]:
         raise SyncPlannerError("bootstrap_approval_invalid", exit_code=4, details={"blockers": approval_result["blockers"]})
@@ -831,7 +1034,7 @@ def rollback_bootstrap(plan: Mapping[str, Any], approval: Mapping[str, Any], *, 
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     environment = build_bootstrap_environment_snapshot(plan)
-    approval_result = validate_bootstrap_approval(approval, plan, environment, require_rollback=True)
+    approval_result = validate_bootstrap_approval(approval, plan, environment, require_rollback=True, check_environment_contract=False)
     if not approval_result["valid"]:
         raise SyncPlannerError("bootstrap_rollback_approval_invalid", exit_code=4, details={"blockers": approval_result["blockers"]})
     root = Path(str(plan.get("root") or ""))

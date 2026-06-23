@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A-R5 stable bootstrap environment binding
+
+### Added
+
+- Added `agent_sync_execution_environment_v2` with separate approval binding,
+  execution constraints, and diagnostic observations.
+- Added owner/group/other/ACL access-basis proof for artifact-store bootstrap
+  environments.
+- Added `agent-sync environment explain-binding` and
+  `agent-sync environment validate`.
+- Added `docs/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md` and ADRs
+  106-109.
+
+### Changed
+
+- Bootstrap approval requests now bind `environment_binding_sha256` instead of
+  exact volatile observations such as free bytes or unrelated supplementary
+  groups.
+- Free space is evaluated against `minimum_free_bytes` at execution time.
+- Security-critical drift still fails closed for path state, root identity,
+  uid, mode, device, inode, access basis, and relevant group membership.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, bootstrap,
+  backup, stage, activation, endpoint, process, `.env`, provider, database, or
+  secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2B0 artifact-store bootstrap stale guard
 
 ### Added

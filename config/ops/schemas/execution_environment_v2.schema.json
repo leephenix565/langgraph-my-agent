@@ -1,0 +1,52 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/execution_environment_v2.schema.json",
+  "title": "agent_sync_execution_environment_v2",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "tool_version",
+    "plan_id",
+    "plan_sha256",
+    "approval_binding",
+    "execution_constraints",
+    "observations",
+    "environment_binding_sha256",
+    "observations_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_execution_environment_v2"
+    },
+    "tool_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "approval_binding": {
+      "type": "object"
+    },
+    "execution_constraints": {
+      "type": "object"
+    },
+    "observations": {
+      "type": "object"
+    },
+    "environment_binding_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "observations_sha256": {
+      "type": "string",
+      "minLength": 64
+    }
+  }
+}

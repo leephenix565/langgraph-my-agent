@@ -67,4 +67,6 @@ repo-external temporary directories.
 SYNC-OPS-2B0 did not execute the R4 bootstrap request. The rebuilt environment
 snapshot no longer matched the R4 plan-bound environment SHA, so no machine
 approval was created and no real artifact-store write occurred. The R4 request
-must be treated as stale; a new bootstrap plan/request is required.
+must be treated as stale. SYNC-OPS-2A-R5 supersedes the R4/2B0 environment
+snapshot contract with a stable authorization binding plus execution
+constraints and diagnostic observations.

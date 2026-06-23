@@ -17,10 +17,15 @@ from react_agent.ops.sync_bootstrap import (
     build_temp_bootstrap_approval,
     rollback_bootstrap,
     validate_bootstrap_approval,
+    validate_bootstrap_environment_contract,
     validate_bootstrap_plan,
     verify_artifact_store,
 )
-from react_agent.ops.sync_contracts import SyncPlannerError, write_json
+from react_agent.ops.sync_contracts import (
+    SyncPlannerError,
+    canonical_sha256,
+    write_json,
+)
 from react_agent.ops.sync_plan import build_p2s_plan
 
 
@@ -47,7 +52,11 @@ def test_bootstrap_plan_uses_exact_actions_and_hash(tmp_path: Path) -> None:
     assert request["status"] == "awaiting_machine_approval"
     assert request["bootstrap_requested"] is True
     assert request["plan_sha256"] == plan["canonical_sha256"]
-    assert request["environment_snapshot_sha256"] == environment["environment_snapshot_sha256"]
+    assert request["environment_binding_sha256"] == environment["environment_binding_sha256"]
+    assert request["environment_snapshot_sha256"] == environment["environment_binding_sha256"]
+    assert environment["schema_version"] == "agent_sync_execution_environment_v2"
+    assert environment["observations"]["current_free_bytes"] == environment["free_bytes"]
+    assert "current_free_bytes" not in environment["approval_binding"]
     assert "requested_action_ids" in request
     assert "approved_action_ids" not in request
 
@@ -188,8 +197,69 @@ def test_bootstrap_rejects_environment_drift_before_write(tmp_path: Path) -> Non
         bootstrap_artifact_store(plan, approval, execute=True)
 
     assert exc.value.exit_code == 5
-    assert exc.value.reason == "bootstrap_environment_snapshot_mismatch"
+    assert exc.value.reason == "bootstrap_environment_binding_mismatch"
     assert not root.exists()
+
+
+def test_bootstrap_environment_binding_ignores_volatile_observations(tmp_path: Path) -> None:
+    root = tmp_path / "ops-artifacts" / "agent-sync"
+    plan = build_bootstrap_plan(root)
+    environment = build_bootstrap_environment_snapshot(plan)
+    approval = build_temp_bootstrap_approval(plan, environment)
+    mutated = json.loads(json.dumps(environment, ensure_ascii=False))
+    mutated["observations"]["current_free_bytes"] = max(int(environment["observations"]["current_free_bytes"] or 0) - 4096, 0)
+    if mutated["observations"]["current_free_bytes"] < mutated["execution_constraints"]["minimum_free_bytes"]:
+        mutated["observations"]["current_free_bytes"] = mutated["execution_constraints"]["minimum_free_bytes"]
+    mutated["observations"]["operator_groups"] = [65534, 1003]
+    mutated["observations_sha256"] = canonical_sha256(mutated["observations"])
+
+    validation = validate_bootstrap_approval(approval, plan, mutated)
+
+    assert validation["valid"] is True
+    assert mutated["environment_binding_sha256"] == environment["environment_binding_sha256"]
+
+
+def test_bootstrap_environment_constraint_failure_is_not_binding_drift(tmp_path: Path) -> None:
+    root = tmp_path / "ops-artifacts" / "agent-sync"
+    plan = build_bootstrap_plan(root)
+    environment = build_bootstrap_environment_snapshot(plan)
+    mutated = json.loads(json.dumps(environment, ensure_ascii=False))
+    mutated["observations"]["current_free_bytes"] = mutated["execution_constraints"]["minimum_free_bytes"] - 1
+    mutated["observations_sha256"] = canonical_sha256(mutated["observations"])
+
+    result = validate_bootstrap_environment_contract(plan, mutated)
+
+    assert result["valid"] is False
+    assert result["exit_code"] == 3
+    assert "insufficient_free_space" in result["blockers"]
+    assert "environment_binding_sha256_mismatch" not in result["blockers"]
+
+
+def test_bootstrap_environment_critical_binding_drift_fails_closed(tmp_path: Path) -> None:
+    root = tmp_path / "ops-artifacts" / "agent-sync"
+    plan = build_bootstrap_plan(root)
+    environment = build_bootstrap_environment_snapshot(plan)
+    mutated = json.loads(json.dumps(environment, ensure_ascii=False))
+    mutated["approval_binding"]["nearest_existing_ancestor_mode"] = "0777"
+    mutated["environment_binding_sha256"] = canonical_sha256(mutated["approval_binding"])
+    mutated["environment_snapshot_sha256"] = mutated["environment_binding_sha256"]
+
+    result = validate_bootstrap_environment_contract(plan, mutated)
+
+    assert result["valid"] is False
+    assert result["exit_code"] == 5
+    assert "environment_binding_sha256_mismatch" in result["blockers"]
+
+
+def test_legacy_volatile_environment_contract_is_rejected(tmp_path: Path) -> None:
+    root = tmp_path / "ops-artifacts" / "agent-sync"
+    plan = build_bootstrap_plan(root)
+    plan.pop("environment_contract_version")
+
+    result = validate_bootstrap_plan(plan)
+
+    assert result["valid"] is False
+    assert "legacy_volatile_environment_snapshot_contract" in result["blockers"]
 
 
 def test_p2s_plan_is_blocked_until_artifact_store_bootstrapped(tmp_path: Path) -> None:
@@ -254,6 +324,28 @@ def test_cli_bootstrap_commands_and_stage_guard(tmp_path: Path) -> None:
     )
     assert result.returncode == 0
     assert json.loads(result.stdout)["valid"] is True
+
+    result = subprocess.run(
+        [
+            ".venv/bin/python",
+            "-m",
+            "react_agent.ops.agent_syncctl",
+            "environment",
+            "explain-binding",
+            "--plan",
+            str(plan_path),
+            "--stdout-json",
+        ],
+        cwd="/sdb/dlut/dev/langgraph-my-agent",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    binding_payload = json.loads(result.stdout)
+    assert binding_payload["environment_contract_version"] == "agent_sync_execution_environment_v2"
+    assert "current_free_bytes" in binding_payload["diagnostic_only_fields"]
+    assert "current_free_bytes" not in binding_payload["exact_bound_fields"]
 
     approval_path = tmp_path / "approval.json"
     plan = json.loads(plan_path.read_text(encoding="utf-8"))

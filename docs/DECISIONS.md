@@ -3,18 +3,67 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-109: Environment Drift, Constraint Failure, And Diagnostics Are Distinct
+
+Status: accepted for SYNC-OPS-2A-R5.
+
+Decision: bootstrap execution reports stable authorization drift, execution
+constraint failure, and diagnostic observation changes as separate outcomes.
+
+Reason: exact identity, permission, and path-state drift must invalidate an
+approval. Free-space shortages should block execution without pretending that
+the approval hash changed, while diagnostic-only changes should remain
+reviewable without forcing reapproval.
+
+## ADR-108: Supplementary Groups Bind Only When Access Depends On Them
+
+Status: accepted for SYNC-OPS-2A-R5.
+
+Decision: supplementary groups are approval-bound only when the access basis is
+`group` and the relevant group membership is required. Owner-based and
+other-bit access record groups as observations.
+
+Reason: group listings may vary across execution contexts even when owner-based
+permission remains unchanged. Binding irrelevant groups caused false
+environment drift in SYNC-OPS-2B0.
+
+## ADR-107: Capacity Is An Execution Predicate
+
+Status: accepted for SYNC-OPS-2A-R5.
+
+Decision: bootstrap plans bind a deterministic `minimum_free_bytes` threshold,
+not the exact current `free_bytes` observation.
+
+Reason: disk free space naturally changes between approval and execution. The
+safe question is whether enough space remains, not whether the byte count is
+identical.
+
+## ADR-106: Machine Approval Binds Stable Security Facts
+
+Status: accepted for SYNC-OPS-2A-R5.
+
+Decision: bootstrap machine approval binds
+`environment_binding_sha256`, computed only from stable security facts. Dynamic
+observations such as generated time, free-space sample, irrelevant groups, and
+diagnostic stat details are excluded from that hash.
+
+Reason: machine approval should fail closed on root identity, mode, uid,
+device, inode, action path, path-state, symlink, access-basis, or relevant
+group drift, without being invalidated by unrelated operational noise.
+
 ## ADR-105: Bootstrap Execution Rechecks Plan-Bound Environment
 
 Status: accepted for SYNC-OPS-2B0.
 
 Decision: artifact-store bootstrap execution must rebuild the current
-environment snapshot immediately before writing and compare it to the
-plan-bound environment SHA. Any mismatch blocks execution and requires a new
-plan/request/approval cycle.
+environment immediately before writing and compare it to the plan-bound
+authorization hash. In SYNC-OPS-2B0 this used the full environment snapshot
+SHA; SYNC-OPS-2A-R5 supersedes that with stable
+`environment_binding_sha256`.
 
-Reason: the approved bootstrap plan binds ancestor, ownership, operator,
-device, path-state, and free-space facts. Updating the environment hash after
-approval would silently move the approval boundary.
+Reason: updating the environment hash after approval would silently move the
+approval boundary. R5 keeps that fail-closed rule for stable security facts and
+moves volatile capacity/diagnostic observations out of the approval hash.
 
 ## ADR-104: Sync Archives Use POSIX Entry Paths
 

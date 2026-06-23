@@ -12,6 +12,9 @@
     "root",
     "nearest_existing_ancestor",
     "environment_snapshot_sha256",
+    "environment_contract_version",
+    "environment_binding_sha256",
+    "execution_constraints",
     "directory_actions",
     "metadata_action",
     "serialization",
@@ -46,6 +49,49 @@
     "environment_snapshot_sha256": {
       "type": "string",
       "minLength": 64
+    },
+    "environment_contract_version": {
+      "const": "agent_sync_execution_environment_v2"
+    },
+    "environment_binding_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "execution_constraints": {
+      "type": "object",
+      "required": [
+        "estimated_required_bytes",
+        "safety_margin_bytes",
+        "minimum_free_bytes",
+        "required_access"
+      ],
+      "properties": {
+        "estimated_required_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "safety_margin_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "minimum_free_bytes": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "required_access": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "write",
+              "execute"
+            ]
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "environment_observation_reference": {
+      "type": "object"
     },
     "execution_status": {
       "type": "string"

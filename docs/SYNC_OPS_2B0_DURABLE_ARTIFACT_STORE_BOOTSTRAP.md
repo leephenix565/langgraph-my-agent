@@ -15,12 +15,19 @@ rebuilt the environment snapshot and found that the current environment SHA no
 longer matched the approved SHA. The mismatch invalidated the approval path, so
 no machine approval was created and no real artifact-store write occurred.
 
+SYNC-OPS-2A-R5 later classified that mismatch as a contract issue: the old
+environment SHA included volatile observations such as exact free bytes and
+irrelevant supplementary groups. Future bootstrap approval binds
+`environment_binding_sha256`, while free space and unrelated group observations
+are execution/diagnostic facts.
+
 ## Execution Guard
 
-The bootstrap executor now fails closed if the current environment snapshot
-does not match the plan-bound environment SHA. This duplicates the operator
-preflight inside the writer path so an approved bootstrap cannot proceed after
-ancestor, device, ownership, operator, path-state, or free-space drift.
+The bootstrap executor now fails closed if the current approval binding does
+not match the plan-bound binding SHA. This duplicates the operator preflight
+inside the writer path so an approved bootstrap cannot proceed after ancestor,
+device, ownership, operator, access-basis, path-state, or symlink drift.
+Free-space shortage is enforced separately as an execution constraint.
 
 `STORE_METADATA.json` is also prepared for a single final atomic replace. The
 ownership ledger is built before the final replace using the temp file identity,
@@ -36,9 +43,9 @@ so execution does not need a second persistent metadata overwrite.
 - P2S activation: not executed
 - baseline pointer: unchanged
 
-The next valid step is to regenerate a bootstrap plan and request for the
-current environment, then obtain a new machine approval for that exact plan and
-environment.
+The next valid step is to use the R5 stable-binding bootstrap plan/request,
+then obtain a new machine approval for that exact plan and binding. The R4 plan
+and the 2B0 drift-generated plan are superseded.
 
 ## Non-Claims
 

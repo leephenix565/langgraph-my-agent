@@ -1039,3 +1039,24 @@ quality surface:
 - stale bootstrap attempts leave real artifact-store, prod, sandbox,
   owner-dev, approval, lock, stage, endpoint, process, and environment-value
   state untouched.
+- SYNC-OPS-2A-R5 supersedes exact full-snapshot binding for future bootstrap
+  approvals with stable environment binding plus execution constraints.
+
+## SYNC-OPS-2A-R5 Stable Environment Binding Gate
+
+SYNC-OPS-2A-R5 adds bootstrap environment-binding regressions:
+
+- exact free-space changes above the configured threshold do not invalidate
+  approval;
+- free space below `minimum_free_bytes` fails as a constraint, not as binding
+  drift;
+- owner-based access ignores unrelated supplementary-group observation drift;
+- uid, mode, device, inode, path-state, symlink, access-basis, and relevant
+  group drift still fail closed;
+- legacy volatile environment snapshot contracts are rejected;
+- `agent-sync environment explain-binding` exposes exact-bound, constraint,
+  and diagnostic-only fields without writing real server paths.
+
+Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
+sandbox, owner-dev, real approvals, real locks, real bootstrap state, real
+stages, endpoints, process state, or environment values.

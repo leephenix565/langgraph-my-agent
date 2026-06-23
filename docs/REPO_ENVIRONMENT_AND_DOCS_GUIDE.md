@@ -299,5 +299,7 @@ the pointer. SYNC-OPS-2A-R4 tightens bootstrap rollback: store metadata records
 an ownership ledger, blocked rollback is a true zero-mutation no-op, and
 approval requests are not machine approvals. SYNC-OPS-2B0 attempted the first
 real bootstrap but stopped before approval because the current environment
-snapshot drifted from the approved snapshot. A new exact bootstrap plan/request
-is required before `/sdb/dlut/ops-artifacts/agent-sync` can be created.
+snapshot drifted from the approved snapshot. SYNC-OPS-2A-R5 replaces that
+volatile snapshot boundary with stable approval binding, execution
+constraints, and diagnostic observations. A new R5 bootstrap plan/request is
+required before `/sdb/dlut/ops-artifacts/agent-sync` can be created.

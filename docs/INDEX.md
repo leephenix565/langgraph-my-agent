@@ -36,6 +36,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md` | SYNC-OPS-2A-R3 artifact-store bootstrap contract: exact directory bootstrap plan, bootstrap approval request, store metadata, P2S pre-bootstrap guard, temp rehearsal, and non-claims. |
 | `docs/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md` | SYNC-OPS-2A-R4 bootstrap rollback atomicity: two-phase preflight, ownership ledger, true zero-mutation no-op, request/approval type separation, POSIX archive entries, and non-claims. |
 | `docs/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md` | SYNC-OPS-2B0 real artifact-store bootstrap attempt: exact plan authorization, environment drift rejection, no real bootstrap, writer drift guard, and non-claims. |
+| `docs/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md` | SYNC-OPS-2A-R5 bootstrap reapproval repair: stable approval binding, execution constraints, diagnostic observations, access-basis proof, free-space threshold, and non-claims. |
 | `docs/报告完善计划（中文）.md` | Report-quality improvement plan: public-safe report material contract, L3 deterministic-fusion/LLM-explanation boundary, and staged L2/L3 enhancement sequence. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |

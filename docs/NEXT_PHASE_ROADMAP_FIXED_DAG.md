@@ -97,9 +97,11 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   ownership-ledger based while fixing POSIX artifact archive paths.
   SYNC-OPS-2B0 attempted the first real bootstrap but stopped before approval
   because the current environment snapshot no longer matched the exact
-  approved R4 snapshot. The next sync implementation entry is a refreshed
-  artifact-store bootstrap plan/request, followed by real bootstrap approval,
-  a regenerated P2S stage-ready plan, and SYNC-OPS-2B1 stage/verify approval.
+  approved R4 snapshot. SYNC-OPS-2A-R5 repairs that boundary so approval binds
+  stable security facts while free space and unrelated group observations are
+  execution/diagnostic facts. The next sync implementation entry is R5
+  bootstrap reapproval, followed by real bootstrap approval, a regenerated P2S
+  stage-ready plan, and SYNC-OPS-2B1 stage/verify approval.
 
 重要边界：
 
@@ -389,12 +391,13 @@ validation, and temp-only reconstruction under `/tmp` before a machine approval
 request can be considered.
 
 SYNC-OPS-2A implements the writer contract but only exercises it in
-repo-external temporary roots. SYNC-OPS-2A-R3 makes the next real step
-SYNC-OPS-2B0: machine approval for the artifact-store bootstrap plan. Only
-after valid store metadata exists should operators regenerate the P2S plan and
-request SYNC-OPS-2B1 stage/verify approval. 2B1 must not activate or roll back
-the active sandbox; S2P apply, endpoint smoke, process restart, and owner-dev
-writes remain out of scope unless a later phase explicitly owns them.
+repo-external temporary roots. SYNC-OPS-2A-R5 now makes the next real step
+SYNC-OPS-2B0 reapproval: machine approval for the stable-binding
+artifact-store bootstrap plan. Only after valid store metadata exists should
+operators regenerate the P2S plan and request SYNC-OPS-2B1 stage/verify
+approval. 2B1 must not activate or roll back the active sandbox; S2P apply,
+endpoint smoke, process restart, and owner-dev writes remain out of scope
+unless a later phase explicitly owns them.
 
 ## Non-Goals
 

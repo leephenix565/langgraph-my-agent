@@ -1340,7 +1340,7 @@ SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
   and a root metadata write. It cannot authorize wildcard parents, arbitrary
   recursive creation, chown, chgrp, setuid, or setgid.
 - `agent_sync_artifact_store_bootstrap_approval_v1` binds exact bootstrap plan
-  SHA, bootstrap environment snapshot SHA, and action ids.
+  SHA, stable bootstrap environment binding SHA, and action ids.
 - `STORE_METADATA.json` is the durable marker that makes the store usable by
   later P2S runs.
 - `STORE_METADATA.json` also carries a bootstrap ownership ledger. Bootstrap
@@ -1361,14 +1361,29 @@ SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
 
 SYNC-OPS-2B0 confirms the bootstrap execution boundary:
 
-- a machine approval is created only after the current environment SHA exactly
-  matches the approved plan-bound SHA;
-- bootstrap execution repeats that environment comparison before creating any
+- a machine approval is created only after the current approved environment
+  binding matches the plan-bound binding SHA;
+- bootstrap execution repeats that binding comparison before creating any
   directory;
 - environment drift blocks execution with no machine approval, no real
   artifact-store write, and no P2S stage;
-- a drifted bootstrap requires a new plan, environment snapshot, request, and
+- a drifted bootstrap requires a new plan, environment binding, request, and
   machine approval.
+
+SYNC-OPS-2A-R5 repairs the bootstrap environment model:
+
+- `agent_sync_execution_environment_v2` separates `approval_binding`,
+  `execution_constraints`, and `observations`;
+- machine approval binds `environment_binding_sha256`, not exact free-space or
+  diagnostic observation samples;
+- free space is checked as `current_free_bytes >= minimum_free_bytes` at
+  execution time;
+- `access_basis=owner` binds ancestor uid/mode and operator euid while
+  supplementary groups and ancestor gid remain diagnostic;
+- `access_basis=group` binds the relevant gid and membership in that group;
+- unmodeled POSIX ACLs block until a canonical ACL digest is added;
+- root realpath/device/inode/uid/mode, path-state, symlink, action, access
+  basis, and relevant group drift remain fail-closed.
 
 ## Public Exclusions
 

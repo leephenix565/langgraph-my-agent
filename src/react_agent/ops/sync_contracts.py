@@ -36,6 +36,7 @@ SCHEMA_FILES = {
     "agent_sync_artifact_store_preflight_v1": "artifact_store_preflight_v1.schema.json",
     "agent_sync_artifact_store_bootstrap_plan_v1": "artifact_store_bootstrap_plan_v1.schema.json",
     "agent_sync_artifact_store_bootstrap_environment_v1": "artifact_store_bootstrap_environment_v1.schema.json",
+    "agent_sync_execution_environment_v2": "execution_environment_v2.schema.json",
     "agent_sync_artifact_store_bootstrap_approval_v1": "artifact_store_bootstrap_approval_v1.schema.json",
     "agent_sync_artifact_store_metadata_v1": "artifact_store_metadata_v1.schema.json",
 }

@@ -18,6 +18,7 @@ from react_agent.ops.sync_bootstrap import (
     build_bootstrap_plan,
     recover_bootstrap,
     rollback_bootstrap,
+    validate_bootstrap_environment_contract,
     validate_bootstrap_plan,
     verify_artifact_store,
 )
@@ -449,6 +450,58 @@ def cmd_artifact_store_bootstrap_validate(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
 
 
+def _environment_binding_payload(plan: dict[str, Any]) -> dict[str, Any]:
+    environment = build_bootstrap_environment_snapshot(plan)
+    contract = validate_bootstrap_environment_contract(plan, environment)
+    binding = environment.get("approval_binding") or {}
+    constraints = environment.get("execution_constraints") or {}
+    observations = environment.get("observations") or {}
+    return {
+        "summary_title": "agent-sync environment binding",
+        "plan_id": plan.get("plan_id"),
+        "plan_sha256": plan.get("canonical_sha256"),
+        "environment_contract_version": environment.get("schema_version"),
+        "environment_binding_sha256": environment.get("environment_binding_sha256"),
+        "access_basis": binding.get("access_basis"),
+        "exact_bound_fields": sorted(binding.keys()) if isinstance(binding, dict) else [],
+        "constraint_fields": sorted(constraints.keys()) if isinstance(constraints, dict) else [],
+        "diagnostic_only_fields": sorted(observations.keys()) if isinstance(observations, dict) else [],
+        "minimum_free_bytes": constraints.get("minimum_free_bytes") if isinstance(constraints, dict) else None,
+        "current_free_bytes": observations.get("current_free_bytes") if isinstance(observations, dict) else None,
+        "environment": environment,
+        "validation": contract,
+        "exit_code": contract["exit_code"],
+    }
+
+
+def cmd_environment_explain_binding(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    if not isinstance(plan, dict):
+        raise SyncPlannerError("bootstrap_plan_not_object", exit_code=2)
+    payload = _environment_binding_payload(plan)
+    rows = [
+        f"contract={payload['environment_contract_version']}",
+        f"binding_sha={payload['environment_binding_sha256']}",
+        f"access_basis={payload['access_basis']}",
+        f"minimum_free_bytes={payload['minimum_free_bytes']}",
+        f"current_free_bytes={payload['current_free_bytes']}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
+def cmd_environment_validate(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    if not isinstance(plan, dict):
+        raise SyncPlannerError("bootstrap_plan_not_object", exit_code=2)
+    payload = _environment_binding_payload(plan)
+    rows = [
+        f"valid={payload['validation']['valid']}",
+        f"blockers={len(payload['validation']['blockers'])}",
+        f"diagnostics={len(payload['validation']['diagnostics'])}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
 def cmd_artifact_store_bootstrap(args: argparse.Namespace) -> int:
     _require_execute(args)
     plan = read_json(Path(args.plan))
@@ -711,6 +764,17 @@ def build_parser() -> argparse.ArgumentParser:
     artifact_rollback.add_argument("--execute", action="store_true")
     _add_output_args(artifact_rollback)
     artifact_rollback.set_defaults(func=cmd_artifact_store_bootstrap_rollback)
+
+    environment = subparsers.add_parser("environment")
+    environment_sub = environment.add_subparsers(dest="command", required=True)
+    environment_explain = environment_sub.add_parser("explain-binding")
+    environment_explain.add_argument("--plan", required=True)
+    _add_output_args(environment_explain)
+    environment_explain.set_defaults(func=cmd_environment_explain_binding)
+    environment_validate = environment_sub.add_parser("validate")
+    environment_validate.add_argument("--plan", required=True)
+    _add_output_args(environment_validate)
+    environment_validate.set_defaults(func=cmd_environment_validate)
 
     lock = subparsers.add_parser("lock")
     lock_sub = lock.add_subparsers(dest="command", required=True)

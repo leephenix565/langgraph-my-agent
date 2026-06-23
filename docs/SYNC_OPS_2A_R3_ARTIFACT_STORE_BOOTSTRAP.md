@@ -21,10 +21,10 @@ chgrp, setuid, or setgid. The current target root is
 
 ## Bootstrap Sequence
 
-The approved bootstrap executor validates the plan hash, environment snapshot
-hash, approval scope, and exact action ids, then creates only the listed
-directories. It writes `STORE_METADATA.json` atomically in the store root with
-mode `0600` after the directory layout verifies.
+The approved bootstrap executor validates the plan hash, stable environment
+binding hash, approval scope, and exact action ids, then creates only the
+listed directories. It writes `STORE_METADATA.json` atomically in the store
+root with mode `0600` after the directory layout verifies.
 
 SYNC-OPS-2A-R4 tightened this rollback contract. Store metadata now includes a
 per-path ownership ledger, and rollback first preflights the entire store. If
@@ -50,7 +50,7 @@ approval request is emitted. `p2s stage`, `p2s verify`, `p2s activate`, and
 `p2s rollback` reject the plan before creating run artifacts.
 
 After a bootstrap run produces valid store metadata, operators must regenerate
-the P2S plan and environment snapshot before requesting stage-only approval.
+the P2S plan and environment binding before requesting stage-only approval.
 
 ## CLI
 

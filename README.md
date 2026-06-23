@@ -183,6 +183,15 @@ directory or metadata was written, and no P2S stage occurred. The bootstrap
 writer now fails closed on environment drift before any real write. See
 `docs/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
 
+SYNC-OPS-2A-R5 stabilizes that bootstrap approval boundary. Machine approval
+now binds stable security facts through `environment_binding_sha256`; free
+space is an execution threshold, and irrelevant supplementary-group or
+diagnostic observation changes do not invalidate owner-based approval. Root
+identity, path state, uid/mode/device/inode, access basis, symlink, and
+relevant group drift still fail closed. R5 generates a new awaiting-approval
+bootstrap request only; it does not create the real artifact store or run P2S
+stage. See `docs/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -969,3 +978,13 @@ readiness.
   infrastructure approval. Until `/sdb/dlut/ops-artifacts/agent-sync` has valid
   store metadata, P2S plans remain blocked drafts and `p2s stage` rejects them
   before creating run artifacts.
+- SYNC-OPS-2A-R4 makes artifact-store bootstrap rollback all-or-nothing with a
+  per-path ownership ledger and POSIX archive entries. It still does not create
+  the real artifact store.
+- SYNC-OPS-2B0 correctly blocked the first real bootstrap before approval or
+  write because the old environment snapshot no longer matched.
+- SYNC-OPS-2A-R5 replaces volatile full-snapshot authorization with stable
+  environment binding, execution constraints, and diagnostic observations. It
+  still does not create prod, sandbox, owner-dev, artifact-store, approval,
+  lock, backup, stage, activation, endpoint, process, or environment-value
+  state.
