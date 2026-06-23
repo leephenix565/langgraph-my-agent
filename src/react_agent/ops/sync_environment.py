@@ -30,6 +30,9 @@ def build_environment_snapshot(plan: Mapping[str, Any]) -> dict[str, Any]:
     target_snapshot = plan.get("target_snapshot") or {}
     stage = plan.get("stage_materialization") or {}
     activation = plan.get("activation") or {}
+    execution_contract = plan.get("execution_contract") or {}
+    artifact_store = execution_contract.get("artifact_store") if isinstance(execution_contract, Mapping) else {}
+    artifact_initialization = plan.get("artifact_store_initialization") or {}
     raw_preconditions = activation.get("preconditions") if isinstance(activation, Mapping) else {}
     preconditions: Mapping[str, Any] = raw_preconditions if isinstance(raw_preconditions, Mapping) else {}
     transaction_digests = [
@@ -61,6 +64,12 @@ def build_environment_snapshot(plan: Mapping[str, Any]) -> dict[str, Any]:
             "active_parent": _device_id(active_path),
         },
         "tool_version": str(plan.get("tool_version") or ""),
+        "writer_contract_version": str((execution_contract or {}).get("writer_contract_version") or ""),
+        "artifact_store": {
+            "root": str((artifact_store or {}).get("root") or artifact_initialization.get("root") or ""),
+            "expected_root_state": str(artifact_initialization.get("expected_root_state") or ""),
+            "initialization_required": bool(artifact_initialization.get("required")),
+        },
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": str(plan.get("canonical_sha256") or ""),
         "generated_at": str(plan.get("created_at") or ""),

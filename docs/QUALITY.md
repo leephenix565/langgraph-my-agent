@@ -968,3 +968,21 @@ regressions and full-scale temp rehearsal:
   no-hardlink check, secret scan, py_compile profile, and recovery in `/tmp`;
 - real prod, sandbox, owner-dev, artifact-store, approval, lock, backup, stage,
   activation, endpoint, process, and env-value state remain untouched.
+
+## SYNC-OPS-2A-R2 Executable Contract Gate
+
+SYNC-OPS-2A-R2 adds executable-plan and staged-approval regressions:
+
+- old read-only P2S plans fail validation with legacy marker and rollback
+  skeleton blockers;
+- new P2S plans include an executable writer contract and rollback contract;
+- stage-only approval validates stage and verify but is rejected by activate;
+- artifact-store preflight is read-only and exposes initialization blockers;
+- transaction actions and Agent actions must match;
+- one structured summary feeds plan, closeout, CLI, and terminal counts;
+- full-scale temp rehearsal proves stage, verify, stage-only activate
+  rejection, activation, rollback, no-hardlink, and digest checks.
+
+Default gates still must not write real prod, sandbox, owner-dev, configured
+artifact-store, approval, lock, stage, activation, endpoint, process, or
+environment-value state.

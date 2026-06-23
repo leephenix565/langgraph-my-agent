@@ -151,6 +151,15 @@ longer become a copy action. The current real plan is rehearsed at full scale
 under `/tmp` before a new awaiting-approval request is useful. See
 `docs/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md`.
 
+SYNC-OPS-2A-R2 freezes the executable P2S plan contract and staged approval
+boundary. P2S plans no longer retain read-only planner markers or rollback
+skeletons; the first real execution is split into a stage/verify approval, and
+activation/rollback require a later request bound to a real stage closeout. The
+phase only preflights the artifact store and rehearses under `/tmp`; it does
+not create a real approval, lock, artifact-store run, stage, activation, or
+sandbox write. See
+`docs/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -928,3 +937,8 @@ readiness.
   before real execution approval. It still does not write prod, sandbox,
   owner-dev, real artifact-store, approval, lock, backup, stage, activate,
   endpoint, process, or environment-value state.
+- SYNC-OPS-2A-R2 turns the P2S plan into an executable contract and splits
+  first real execution into stage/verify approval followed by a later
+  activation/rollback approval. It still does not write prod, sandbox,
+  owner-dev, real artifact-store, approval, lock, stage, activation, endpoint,
+  process, or environment-value state.

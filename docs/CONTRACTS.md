@@ -1317,6 +1317,23 @@ SYNC-OPS-2A-R1 adds source-selection invariants to P2S plans:
 - full-scale temp rehearsal of the actual plan is required before a real
   approval request can be considered actionable.
 
+SYNC-OPS-2A-R2 freezes the executable P2S write contract:
+
+- P2S plans include `execution_contract` with writer contract version,
+  artifact-store preflight, locks, stage, verify, activation, rollback, and
+  crash-recovery sections.
+- Executable P2S plans must not contain read-only planner markers or rollback
+  skeleton fields.
+- The first real request is stage-only: artifact-store initialization if
+  required, stage, and verify. It does not authorize active sandbox archive,
+  pointer update, activation, or rollback.
+- Activation approval is only a template until a real stage run id, artifact
+  index SHA, stage digest, validation SHA, and latest active pointer/tree are
+  available.
+- Plan, closeout, CLI, and terminal summaries use the same
+  `agent_sync_p2s_summary_v1` object so logical materialization actions and
+  physical writes are not conflated.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

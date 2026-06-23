@@ -11,12 +11,16 @@ from react_agent.ops.sync_contracts import file_sha256, stable_id, write_json
 from react_agent.ops.sync_inventory import inventory_root
 from react_agent.ops.sync_p2s import run_full_scale_p2s_rehearsal
 from react_agent.ops.sync_plan import (
+    P2S_TOOL_VERSION,
     build_p2s_plan,
+    executable_plan_contract,
+    executable_rollback_contract,
     stage_projection_digest_for_actions,
     validate_plan,
 )
 from react_agent.ops.sync_registry import load_static_registry
 from react_agent.ops.sync_security import should_include_source_file
+from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 OLD_PLAN_2A = Path("/tmp/lma-sync-ops-2a-p2s-writer-20260623T125001Z/new_current_p2s_plan.json")
 
@@ -159,6 +163,10 @@ def _small_rehearsal_plan(tmp_path: Path) -> dict[str, object]:
                 "disposition": "stage_from_prod" if actions else "already_equal_but_rematerialized",
                 "actions": actions,
                 "blocked_actions": [],
+                "rollback": {
+                    "transaction_rollback_id": stable_id("rollback", txn_id),
+                    "contract_ref": "execution_contract.rollback",
+                },
                 "expected_status": "stage_ready",
             }
         )
@@ -173,7 +181,7 @@ def _small_rehearsal_plan(tmp_path: Path) -> dict[str, object]:
         )
     plan = {
         "schema_version": "agent_sync_plan_v1",
-        "tool_version": "sync_ops_2a_r1_test",
+        "tool_version": P2S_TOOL_VERSION,
         "test_only_temp_roots": True,
         "plan_id": "p2s-r1-test",
         "direction": "p2s",
@@ -206,17 +214,42 @@ def _small_rehearsal_plan(tmp_path: Path) -> dict[str, object]:
             "preconditions": {"active_pointer_sha256": file_sha256(pointer), "active_baseline_tree_sha256": "active", "old_active_path": str(active), "expected_stage_root_state": "missing"},
             "rollback": {"restore_old_active_path": str(active)},
         },
+        "artifact_store_initialization": {
+            "required": True,
+            "root": str(tmp_path / "artifact-store"),
+            "parent": str(tmp_path),
+            "expected_root_state": "missing",
+            "recommended_mode": "inherit_parent_policy_or_0o770_if_parent_policy_absent",
+            "owner_strategy": "inherit_operator_or_parent_policy",
+            "group_strategy": "inherit_parent_or_recorded_ops_group",
+            "create_parents": False,
+            "approval_required": True,
+            "rollback": "remove_only_if_empty_and_created_by_this_run",
+        },
+        "execution_contract": executable_plan_contract(
+            plan_id="p2s-r1-test",
+            stage_root=tmp_path / "stage",
+            active_path=str(active),
+            preflight={"root": str(tmp_path / "artifact-store"), "parent": str(tmp_path), "root_exists": False, "parent_exists": True},
+        ),
         "coverage": {"unresolved_file_count": 0, "coverage_ratio": 1.0},
         "source_selection": {"not_scanned_copy_count": 0, "unknown_blocked_count": 0, "sensitive_copy_count": 0},
         "agents": agents,
-        "global_preconditions": [],
+        "global_preconditions": ["plan_schema_valid", "canonical_hash_valid", "exact_machine_approval_required", "stage_root_missing"],
         "global_blockers": [],
-        "approval_requirements": {"stage_approved": True, "activate_approved": True, "rollback_approved": True},
-        "rollback_plan": {},
+        "approval_requirements": {
+            "stage_approved": True,
+            "verify_approved": True,
+            "artifact_store_initialize_approved": True,
+            "activate_approved": False,
+            "rollback_approved": False,
+        },
+        "rollback_plan": executable_rollback_contract("p2s-r1-test"),
         "canonical_sha256": "",
     }
     from react_agent.ops.sync_contracts import canonical_sha256
 
+    plan["summary"] = p2s_summary_from_plan(plan)
     plan["canonical_sha256"] = canonical_sha256(plan)
     return plan
 

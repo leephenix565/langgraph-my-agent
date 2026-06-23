@@ -141,6 +141,59 @@
         }
       }
     },
+    "execution_contract": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "schema_version",
+        "writer_contract_version",
+        "execution_enabled",
+        "artifact_store",
+        "lock_requirements",
+        "stage",
+        "verify",
+        "activation",
+        "rollback",
+        "crash_recovery"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "agent_sync_p2s_execution_contract_v1"
+        },
+        "writer_contract_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "execution_enabled": {
+          "type": "boolean"
+        },
+        "artifact_store": {
+          "type": "object"
+        },
+        "lock_requirements": {
+          "type": "object"
+        },
+        "stage": {
+          "type": "object"
+        },
+        "verify": {
+          "type": "object"
+        },
+        "activation": {
+          "type": "object"
+        },
+        "rollback": {
+          "type": "object"
+        },
+        "crash_recovery": {
+          "type": "object"
+        }
+      }
+    },
+    "rollback_plan": {
+      "type": "object",
+      "additionalProperties": true
+    },
     "agents": {
       "type": "array",
       "items": {
@@ -171,7 +224,9 @@
           "target_snapshot",
           "observed_diff",
           "stage_materialization",
-          "activation"
+          "activation",
+          "execution_contract",
+          "rollback_plan"
         ]
       }
     }

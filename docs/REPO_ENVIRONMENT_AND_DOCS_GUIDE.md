@@ -287,3 +287,9 @@ sandbox baseline by default. The actual current P2S plan must pass full-scale
 stage/verify/activate/rollback rehearsal under repo-external `/tmp`; the real
 active sandbox and pointer remain immutable inputs until a later approved
 execution phase.
+
+SYNC-OPS-2A-R2 freezes the executable plan contract and approval split. A real
+stage/verify run requires a stage-only machine approval and may initialize the
+approved artifact store if explicitly authorized. Activation and rollback are a
+separate later approval bound to the real stage run and digest; stage-only
+approval cannot switch the active sandbox or update the pointer.

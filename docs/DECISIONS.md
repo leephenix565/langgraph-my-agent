@@ -3,6 +3,62 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-096: Plan Metrics Use One Structured Summary Source
+
+Status: accepted for SYNC-OPS-2A-R2.
+
+Decision: P2S plan, closeout, CLI, and terminal metrics use the same structured
+summary object for safe source, materialization, physical write, shared noop,
+excluded, runtime asset, unresolved, and coverage counts.
+
+Reason: earlier summaries mixed logical action counts with physical file writes.
+A single summary prevents release notes and approval requests from drifting.
+
+## ADR-095: Activation Approval Binds The Real Stage Closeout
+
+Status: accepted for SYNC-OPS-2A-R2.
+
+Decision: activation approval cannot be derived from the pre-stage plan alone.
+It must bind the real stage run id, artifact index SHA, stage digest, validation
+SHA, latest active pointer/tree, candidate path, and archive path.
+
+Reason: activation mutates the active sandbox and pointer. It must be tied to
+the stage that actually passed verification, not to a stale planned state.
+
+## ADR-094: Artifact-Store Initialization Is An Approved Write Action
+
+Status: accepted for SYNC-OPS-2A-R2.
+
+Decision: if `/sdb/dlut/ops-artifacts/agent-sync` is missing, its
+initialization is explicitly represented in the P2S execution contract and
+requires stage approval.
+
+Reason: creating the durable artifact store is a real filesystem write even
+though it is not a sandbox baseline write.
+
+## ADR-093: Executable Plans Cannot Retain Planner-Only Markers
+
+Status: accepted for SYNC-OPS-2A-R2.
+
+Decision: an executable P2S plan must not contain read-only planner markers,
+rollback skeletons, or future-phase placeholders. The validator fails closed on
+legacy markers.
+
+Reason: the writer consumes the plan as a transaction contract. Planner-only
+markers make the artifact ambiguous and unsafe for machine approval.
+
+## ADR-092: First Real P2S Execution Uses Staged Approval
+
+Status: accepted for SYNC-OPS-2A-R2.
+
+Decision: the first real P2S run is split into stage/verify approval and a
+later activation/rollback approval. Stage-only approval cannot archive the
+active sandbox, switch the active path, update the pointer, or roll back active
+state.
+
+Reason: stage writes and active-sandbox mutation have different blast radii.
+The second approval must be based on the real verified stage output.
+
 ## ADR-091: Backup And Deployment Artifacts Are Excluded From P2S
 
 Status: accepted for SYNC-OPS-1R.

@@ -18,8 +18,11 @@
     "act-001"
   ],
   "stage_approved": true,
+  "verify_approved": true,
+  "artifact_store_initialize_approved": true,
   "activate_approved": false,
   "rollback_approved": true,
+  "post_rollback_reactivate_approved": false,
   "approved_risk_classes": [
     "B_protocol_wrapper"
   ],

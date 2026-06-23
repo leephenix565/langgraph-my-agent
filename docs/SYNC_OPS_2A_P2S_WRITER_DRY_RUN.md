@@ -85,21 +85,26 @@ The current risk crash file
 unreachable legacy reference. Its compile error is diagnostic-only and does not
 block the current P2S plan.
 
-## SYNC-OPS-2B Entry
+## Superseded Entry Note
 
-SYNC-OPS-2A-R1 supersedes the 2A current plan/request with a stricter source
-selection policy and a full-scale temp rehearsal requirement. SYNC-OPS-2B may
-begin only with:
+SYNC-OPS-2A-R1 superseded the 2A current plan/request with a stricter source
+selection policy and a full-scale temp rehearsal requirement. SYNC-OPS-2A-R2
+then superseded the R1 request because the executable plan contract and staged
+approval split were not yet frozen. Real execution must now begin with a
+stage-only SYNC-OPS-2B1 approval, not an all-permission approval.
 
-- a fresh current P2S plan from the 2A-R1 tool version;
+SYNC-OPS-2B1 may begin only with:
+
+- a fresh current P2S plan from the R2 executable-contract tool version;
 - matching environment snapshot SHA;
-- a real machine approval file with stage/activate/rollback scopes explicitly
-  set;
-- writable approved artifact-store root;
+- a real machine approval file with artifact-store initialization if needed,
+  stage, and verify only;
+- approved artifact-store initialization if the root is still missing;
 - clean target drift checks;
 - no runtime-required compile blockers.
 - `not_scanned copy=0`, unknown blocked count `0`, sensitive copy count `0`,
-  and full-scale temp stage/verify/activate/rollback pass.
+  and full-scale temp stage/verify/stage-only-activate-reject/activate/rollback
+  pass.
 
 ## Non-Claims
 

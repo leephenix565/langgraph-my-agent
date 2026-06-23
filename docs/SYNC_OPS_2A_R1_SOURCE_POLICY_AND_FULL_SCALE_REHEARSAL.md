@@ -67,19 +67,27 @@ tree, then runs:
 The real prod tree is read-only source input. The real sandbox, pointer,
 artifact store, approval, locks, and processes are not modified.
 
-## SYNC-OPS-2B Entry
+## Superseded Entry Note
 
-SYNC-OPS-2B can request real execution approval only if a fresh plan has:
+SYNC-OPS-2A-R2 supersedes the R1 plan/request for execution approval because
+the executable plan contract and staged approval boundary are now explicit.
+The R1 source policy remains active, but real execution starts with
+SYNC-OPS-2B1 stage/verify approval rather than a combined
+stage/activate/rollback approval.
+
+SYNC-OPS-2B1 can request real stage execution approval only if a fresh R2 plan
+has:
 
 - `not_scanned copy=0`;
 - `unknown_blocked=0`;
 - `sensitive copy=0`;
 - no hidden/local/backup/generated copy actions;
 - full coverage ratio `1.0`;
-- full-scale temp stage/verify/activate/rollback pass;
+- full-scale temp stage/verify/stage-only-activate-reject/activate/rollback
+  pass;
 - expected and actual projection digests equal;
 - hardlink count `0`;
-- a new approval request with `status=awaiting_machine_approval`.
+- a stage-only approval request with `status=awaiting_machine_approval`.
 
 ## Non-Claims
 

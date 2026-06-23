@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A-R2 executable P2S plan contract
+
+### Added
+
+- Added executable P2S plan contract metadata for artifact-store readiness,
+  lock requirements, stage, verify, activation, rollback, and crash recovery.
+- Added stage-only approval requests and activation approval templates.
+- Added artifact-store read-only preflight and `agent-sync plan
+  explain-execution`.
+- Added a structured P2S summary source for plan, closeout, CLI, and terminal
+  counts.
+- Added `docs/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md` and ADRs
+  092-096.
+
+### Changed
+
+- P2S plans now reject read-only planner markers, rollback skeletons,
+  future-phase activation rollback placeholders, broad stage+activate+rollback
+  approval scope, and transaction/agent action drift.
+- Stage and verify approval are independent from activation and rollback.
+- Full-scale temp rehearsal proves stage-only approval cannot activate.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, stage,
+  activation, rollback, endpoint, process, `.env`, provider, database, or
+  secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A-R1 P2S source-policy closure
 
 ### Added

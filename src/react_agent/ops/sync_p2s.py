@@ -30,6 +30,7 @@ from react_agent.ops.sync_materialize import (
     secret_scan_stage,
 )
 from react_agent.ops.sync_plan import load_plan, validate_plan
+from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 
 def _all_actions(plan: Mapping[str, Any]) -> list[Mapping[str, Any]]:
@@ -74,6 +75,8 @@ def _validate_approval_or_raise(
     environment: Mapping[str, Any],
     *,
     require_stage: bool = False,
+    require_verify: bool = False,
+    require_artifact_store_initialize: bool = False,
     require_activate: bool = False,
     require_rollback: bool = False,
 ) -> dict[str, Any]:
@@ -82,6 +85,8 @@ def _validate_approval_or_raise(
         plan,
         environment_snapshot=environment,
         require_stage=require_stage,
+        require_verify=require_verify,
+        require_artifact_store_initialize=require_artifact_store_initialize,
         require_activate=require_activate,
         require_rollback=require_rollback,
     )
@@ -191,11 +196,30 @@ def _stage_digest(plan: Mapping[str, Any], root: Path) -> str:
     return compute_stage_digest(root, _all_actions(plan))
 
 
+def _load_verified_stage_result(store: ArtifactRunStore, plan: Mapping[str, Any]) -> dict[str, Any]:
+    verify_path = store.resolve("validation/verify_result.json")
+    if not verify_path.exists():
+        raise SyncPlannerError("stage_verify_result_missing", exit_code=7)
+    result = read_json(verify_path)
+    if not isinstance(result, dict) or result.get("valid") is not True:
+        raise SyncPlannerError("stage_verify_result_not_valid", exit_code=7)
+    expected = str((plan.get("stage_materialization") or {}).get("expected_stage_projection_digest") or "")
+    if str(result.get("actual_stage_digest") or "") != expected:
+        raise SyncPlannerError("stage_verify_digest_mismatch", exit_code=7)
+    return result
+
+
 def p2s_stage(plan_path: Path, approval_path: Path, artifact_root: Path, *, execute: bool) -> dict[str, Any]:
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path)
-    _validate_approval_or_raise(approval, plan, environment, require_stage=True)
+    _validate_approval_or_raise(
+        approval,
+        plan,
+        environment,
+        require_stage=True,
+        require_artifact_store_initialize=bool((plan.get("artifact_store_initialization") or {}).get("required")),
+    )
     run_id = _run_id(plan)
     store = ArtifactRunStore(artifact_root, run_id)
     store.initialize()
@@ -248,7 +272,7 @@ def p2s_verify(plan_path: Path, approval_path: Path, artifact_root: Path, *, exe
     if not execute:
         raise SyncPlannerError("execute_required", exit_code=2)
     plan, approval, environment = _load_plan_approval(plan_path, approval_path, allow_existing_stage=True)
-    _validate_approval_or_raise(approval, plan, environment, require_stage=True)
+    _validate_approval_or_raise(approval, plan, environment, require_verify=True)
     stage_root = _stage_root(plan)
     if not stage_root.exists():
         raise SyncPlannerError("stage_root_missing", exit_code=7)
@@ -291,6 +315,7 @@ def p2s_activate(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
         raise SyncPlannerError("active_sandbox_missing", exit_code=7)
     store = ArtifactRunStore(artifact_root, _run_id(plan))
     store.initialize()
+    _load_verified_stage_result(store, plan)
     copy_result = _copy_tree_no_hardlinks(stage_root, candidate)
     if copy_result["hardlink_count"] != 0:
         raise SyncPlannerError("activation_candidate_has_hardlinks", exit_code=7)
@@ -413,6 +438,41 @@ def prepare_temp_rehearsal_plan(plan: Mapping[str, Any], temp_root: Path) -> dic
     decoded["baseline"]["pointer_sha256"] = file_sha256(pointer)
     decoded["stage_materialization"]["stage_root"] = str(stage_root)
     decoded["stage_materialization"]["expected_stage_root_state"] = "missing"
+    decoded["artifact_store_preflight"] = {
+        "schema_version": "agent_sync_artifact_store_preflight_v1",
+        "root": str(temp_root / "artifact-store"),
+        "parent": str(temp_root),
+        "root_exists": False,
+        "parent_exists": True,
+        "root_realpath": "",
+        "parent_realpath": str(temp_root.resolve(strict=False)),
+        "root_mode": "",
+        "parent_mode": "",
+        "filesystem_device_id": "temp",
+        "free_bytes": None,
+        "root_write_ready_by_mode": False,
+        "parent_write_ready_by_mode": True,
+        "creation_required": True,
+        "expected_root_state": "missing",
+        "creation_deferred": False,
+        "ready": False,
+        "blockers": ["root_missing"],
+    }
+    if isinstance(decoded.get("artifact_store_initialization"), dict):
+        decoded["artifact_store_initialization"]["root"] = str(temp_root / "artifact-store")
+        decoded["artifact_store_initialization"]["parent"] = str(temp_root)
+        decoded["artifact_store_initialization"]["expected_root_state"] = "missing"
+        decoded["artifact_store_initialization"]["required"] = True
+    if isinstance(decoded.get("execution_contract"), dict):
+        contract = decoded["execution_contract"]
+        if isinstance(contract.get("artifact_store"), dict):
+            contract["artifact_store"]["root"] = str(temp_root / "artifact-store")
+            contract["artifact_store"]["preflight"] = decoded["artifact_store_preflight"]
+            contract["artifact_store"]["initialization_requires_approval"] = True
+        if isinstance(contract.get("stage"), dict):
+            contract["stage"]["stage_root"] = str(stage_root)
+        if isinstance(contract.get("activation"), dict):
+            contract["activation"]["active_path"] = str(active)
     decoded["activation"]["old_active_sandbox_archive_path"] = str(archive)
     decoded["activation"]["new_versioned_baseline_path"] = str(stage_root)
     decoded["activation"]["pointer_candidate"]["path"] = str(pointer)
@@ -430,11 +490,19 @@ def prepare_temp_rehearsal_plan(plan: Mapping[str, Any], temp_root: Path) -> dic
     return decoded
 
 
-def build_temp_rehearsal_approval(plan: Mapping[str, Any]) -> dict[str, Any]:
+def build_temp_rehearsal_approval(
+    plan: Mapping[str, Any],
+    *,
+    approval_id: str = "temp-rehearsal-stage-approval",
+    stage: bool = True,
+    verify: bool = True,
+    activate: bool = False,
+    rollback: bool = False,
+) -> dict[str, Any]:
     environment = build_environment_snapshot(plan)
     return {
         "schema_version": "agent_sync_approval_v1",
-        "approval_id": "temp-rehearsal-approval",
+        "approval_id": approval_id,
         "status": "approved",
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": str(plan.get("canonical_sha256") or ""),
@@ -445,14 +513,17 @@ def build_temp_rehearsal_approval(plan: Mapping[str, Any]) -> dict[str, Any]:
         "approved_agent_ids": _agent_ids(plan),
         "approved_transaction_ids": _transaction_ids(plan),
         "approved_action_ids": _all_action_ids(plan),
-        "stage_approved": True,
-        "activate_approved": True,
-        "rollback_approved": True,
+        "stage_approved": stage,
+        "verify_approved": verify,
+        "artifact_store_initialize_approved": stage,
+        "activate_approved": activate,
+        "rollback_approved": rollback,
+        "post_rollback_reactivate_approved": False,
         "delete_approved": False,
         "process_action_approved": False,
         "live_validation_approved": False,
         "partial_success_rebase_approved": False,
-        "operator_reference": "sync-ops-2a-r1-temp-rehearsal",
+        "operator_reference": "sync-ops-2a-r2-temp-rehearsal",
         "notes": "temp-only approval fixture; not valid for real server roots",
     }
 
@@ -474,19 +545,50 @@ def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> di
         raise SyncPlannerError("p2s_rehearsal_temp_root_not_empty", exit_code=2)
     temp_root.mkdir(parents=True, exist_ok=True)
     rehearsal_plan = prepare_temp_rehearsal_plan(plan, temp_root)
-    approval = build_temp_rehearsal_approval(rehearsal_plan)
+    stage_approval = build_temp_rehearsal_approval(rehearsal_plan)
+    activation_approval = build_temp_rehearsal_approval(
+        rehearsal_plan,
+        approval_id="temp-rehearsal-activation-approval",
+        stage=False,
+        verify=False,
+        activate=True,
+        rollback=True,
+    )
     input_root = temp_root / "input"
     plan_path = input_root / "plan.json"
-    approval_path = input_root / "approval.json"
+    stage_approval_path = input_root / "stage_approval.json"
+    activation_approval_path = input_root / "activation_approval.json"
     write_json(plan_path, rehearsal_plan)
-    write_json(approval_path, approval)
+    write_json(stage_approval_path, stage_approval)
+    write_json(activation_approval_path, activation_approval)
     artifact_root = temp_root / "artifact-store"
-    stage = p2s_stage(plan_path, approval_path, artifact_root, execute=True)
-    verify = p2s_verify(plan_path, approval_path, artifact_root, execute=True)
-    activate = p2s_activate(plan_path, approval_path, artifact_root, execute=True)
+    stage = p2s_stage(plan_path, stage_approval_path, artifact_root, execute=True)
+    verify = p2s_verify(plan_path, stage_approval_path, artifact_root, execute=True)
+    try:
+        p2s_activate(plan_path, stage_approval_path, artifact_root, execute=True)
+        stage_only_activate_rejection = {"rejected": False, "reason": "", "blockers": []}
+    except SyncPlannerError as exc:
+        stage_only_activate_rejection = {
+            "rejected": True,
+            "reason": exc.reason,
+            "exit_code": exc.exit_code,
+            "blockers": list(exc.details.get("blockers", [])),
+        }
+    activate = p2s_activate(plan_path, activation_approval_path, artifact_root, execute=True)
     recover = p2s_recover(artifact_root, str(stage["run_id"]))
-    rollback = p2s_rollback(plan_path, approval_path, artifact_root, execute=True)
+    rollback = p2s_rollback(plan_path, activation_approval_path, artifact_root, execute=True)
     stage_root = _stage_root(rehearsal_plan)
+    plan_summary = p2s_summary_from_plan(rehearsal_plan)
+    execution_summary = {
+        "planned_action_total": plan_summary["materialization_total"],
+        "physical_write_total": plan_summary["physical_write_total"],
+        "shared_noop_total": plan_summary["shared_noop_total"],
+        "written_file_total": int(stage["stage"].get("written_file_count") or 0),
+        "byte_count": _tree_byte_count(stage_root),
+        "hardlink_count": int(activate.get("hardlink_count") or 0),
+        "stage_only_activate_rejected": bool(stage_only_activate_rejection.get("rejected")),
+        "event_count": int(recover.get("event_count") or 0),
+    }
     return {
         "schema_version": "agent_sync_p2s_full_scale_temp_rehearsal_v1",
         "temp_root": str(temp_root),
@@ -495,9 +597,12 @@ def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> di
         "environment_snapshot_sha256": build_environment_snapshot(rehearsal_plan)["environment_snapshot_sha256"],
         "planned_action_count": len(_all_actions(rehearsal_plan)),
         "written_action_count": int(stage["stage"].get("written_file_count") or 0),
-        "byte_count": _tree_byte_count(stage_root),
+        "byte_count": execution_summary["byte_count"],
+        "plan_summary": plan_summary,
+        "execution_summary": execution_summary,
         "stage": stage["stage"],
         "verify": verify,
+        "stage_only_activate_rejection": stage_only_activate_rejection,
         "activate": activate,
         "rollback": rollback,
         "crash_recovery": recover,

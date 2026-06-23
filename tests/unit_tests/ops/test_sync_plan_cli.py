@@ -15,11 +15,18 @@ from react_agent.ops.sync_plan import (
 )
 
 
-def test_p2s_plan_is_read_only_and_hash_valid() -> None:
+def test_p2s_plan_is_executable_contract_and_hash_valid() -> None:
     plan = build_p2s_plan()
     validation = validate_plan(plan, check_target_freshness=False)
     assert validation["valid"] is True
     assert plan["direction"] == "p2s"
+    assert "read_only_plan_only" not in plan["global_preconditions"]
+    assert plan["execution_contract"]["schema_version"] == "agent_sync_p2s_execution_contract_v1"
+    assert plan["rollback_plan"]["executable"] is True
+    assert plan["approval_requirements"]["stage_approved"] is True
+    assert plan["approval_requirements"]["verify_approved"] is True
+    assert plan["approval_requirements"]["activate_approved"] is False
+    assert plan["approval_requirements"]["rollback_approved"] is False
     assert plan["agents"]
     assert plan["canonical_sha256"] == validation["canonical_sha256"]
     assert all(agent["process_actions"] == [] for agent in plan["agents"])
@@ -94,3 +101,53 @@ def test_cli_p2s_coverage_uses_explicit_plan_file(tmp_path: Path) -> None:
     payload = json.loads(coverage_path.read_text(encoding="utf-8"))
     assert payload["historical_parity"]["unresolved_count"] == 0
     assert payload["current_prod_coverage"]["safe_source_coverage_ratio"] == 1.0
+
+
+def test_cli_artifact_store_preflight_and_execution_explain(tmp_path: Path) -> None:
+    preflight_path = tmp_path / "preflight.json"
+    result = subprocess.run(
+        [
+            ".venv/bin/python",
+            "-m",
+            "react_agent.ops.agent_syncctl",
+            "artifact-store",
+            "preflight",
+            "--root",
+            str(tmp_path / "missing-store"),
+            "--json-output",
+            str(preflight_path),
+        ],
+        cwd="/sdb/dlut/dev/langgraph-my-agent",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 3
+    preflight = json.loads(preflight_path.read_text(encoding="utf-8"))
+    assert preflight["creation_required"] is True
+
+    plan_path = tmp_path / "plan.json"
+    explain_path = tmp_path / "explain.json"
+    plan = build_p2s_plan()
+    plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+    result = subprocess.run(
+        [
+            ".venv/bin/python",
+            "-m",
+            "react_agent.ops.agent_syncctl",
+            "plan",
+            "explain-execution",
+            "--plan",
+            str(plan_path),
+            "--json-output",
+            str(explain_path),
+        ],
+        cwd="/sdb/dlut/dev/langgraph-my-agent",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+    assert result.returncode == 0
+    explain = json.loads(explain_path.read_text(encoding="utf-8"))
+    assert explain["writer_contract_version"] == plan["execution_contract"]["writer_contract_version"]
+    assert explain["required_permissions"]["activate_approved"] is False

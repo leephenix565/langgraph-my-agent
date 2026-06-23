@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any, Sequence
 
 from react_agent.ops.sync_approval import load_approval, validate_approval
+from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_contracts import (
     EXAMPLES_DIR,
     READ_ONLY_UNSUPPORTED_COMMANDS,
@@ -50,6 +51,7 @@ from react_agent.ops.sync_plan import (
     validate_plan,
 )
 from react_agent.ops.sync_registry import load_sync_policy, validate_static_registry
+from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 
 def _add_output_args(parser: argparse.ArgumentParser) -> None:
@@ -213,7 +215,17 @@ def cmd_p2s_plan(args: argparse.Namespace) -> int:
     payload = {"summary_title": "agent-sync p2s plan", "plan": plan, "validation": validation, "exit_code": validation["exit_code"]}
     action_count = sum(len(agent["actions"]) for agent in plan["agents"])
     blocked_count = sum(len(agent["blocked_actions"]) for agent in plan["agents"])
-    return print_or_json(args, payload, [f"plan_id={plan['plan_id']}", f"actions={action_count}", f"blocked={blocked_count}"])
+    summary = plan.get("summary") or p2s_summary_from_plan(plan)
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"plan_id={plan['plan_id']}",
+            f"actions={action_count}",
+            f"blocked={blocked_count}",
+            f"physical_writes={summary['physical_write_total']}",
+        ],
+    )
 
 
 def cmd_p2s_coverage(args: argparse.Namespace) -> int:
@@ -257,6 +269,8 @@ def cmd_p2s_rehearse(args: argparse.Namespace) -> int:
         f"plan_id={result['plan_id']}",
         f"planned_actions={result['planned_action_count']}",
         f"written_actions={result['written_action_count']}",
+        f"physical_writes={result.get('execution_summary', {}).get('physical_write_total')}",
+        f"stage_only_activate_rejected={result.get('stage_only_activate_rejection', {}).get('rejected')}",
         f"hardlink_count={result['hardlink_count']}",
     ]
     return print_or_json(args, payload, rows)
@@ -300,6 +314,36 @@ def cmd_plan_show(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, rows)
 
 
+def cmd_plan_explain_execution(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    contract = plan.get("execution_contract") or {}
+    store = (contract.get("artifact_store") or {}) if isinstance(contract, dict) else {}
+    summary = plan.get("summary") or (p2s_summary_from_plan(plan) if plan.get("direction") == "p2s" else {})
+    payload = {
+        "summary_title": "agent-sync plan execution",
+        "plan_id": plan.get("plan_id"),
+        "plan_sha256": plan.get("canonical_sha256"),
+        "writer_contract_version": contract.get("writer_contract_version") if isinstance(contract, dict) else "",
+        "artifact_store_initialization": plan.get("artifact_store_initialization", {}),
+        "required_permissions": plan.get("approval_requirements", {}),
+        "environment_binding": {
+            "environment_snapshot_required": bool((plan.get("approval_requirements") or {}).get("environment_snapshot_required")),
+            "stage_only_approval_cannot_activate": bool((plan.get("activation_approval_boundary") or {}).get("stage_only_approval_cannot_activate")),
+        },
+        "artifact_store_root": store.get("root") if isinstance(store, dict) else "",
+        "summary": summary,
+        "exit_code": 0,
+    }
+    rows = [
+        f"plan_id={payload['plan_id']}",
+        f"writer_contract_version={payload['writer_contract_version']}",
+        f"artifact_store_initialization_required={payload['artifact_store_initialization'].get('required')}",
+        f"stage_permission={payload['required_permissions'].get('stage_approved')}",
+        f"activate_permission={payload['required_permissions'].get('activate_approved')}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
 def cmd_plan_validate(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     result = validate_plan(plan, check_target_freshness=not args.skip_target_freshness)
@@ -333,11 +377,31 @@ def cmd_approval_validate(args: argparse.Namespace) -> int:
         plan,
         environment_snapshot=environment,
         require_stage=args.require_stage,
+        require_verify=args.require_verify,
+        require_artifact_store_initialize=args.require_artifact_store_initialize,
         require_activate=args.require_activate,
         require_rollback=args.require_rollback,
     )
     payload = {"summary_title": "agent-sync approval validate", **result, "exit_code": result["exit_code"]}
     return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_artifact_store_preflight(args: argparse.Namespace) -> int:
+    payload = {
+        "summary_title": "agent-sync artifact-store preflight",
+        **artifact_store_preflight(Path(args.root)),
+    }
+    payload["exit_code"] = 0 if payload.get("ready") else 3
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"root_exists={payload['root_exists']}",
+            f"parent_exists={payload['parent_exists']}",
+            f"creation_required={payload['creation_required']}",
+            f"blockers={len(payload['blockers'])}",
+        ],
+    )
 
 
 def cmd_p2s_stage(args: argparse.Namespace) -> int:
@@ -477,6 +541,8 @@ def build_parser() -> argparse.ArgumentParser:
     approval_validate.add_argument("--plan", required=True)
     approval_validate.add_argument("--approval", required=True)
     approval_validate.add_argument("--require-stage", action="store_true")
+    approval_validate.add_argument("--require-verify", action="store_true")
+    approval_validate.add_argument("--require-artifact-store-initialize", action="store_true")
     approval_validate.add_argument("--require-activate", action="store_true")
     approval_validate.add_argument("--require-rollback", action="store_true")
     _add_output_args(approval_validate)
@@ -509,6 +575,10 @@ def build_parser() -> argparse.ArgumentParser:
     plan_show.add_argument("--plan", required=True)
     _add_output_args(plan_show)
     plan_show.set_defaults(func=cmd_plan_show)
+    plan_explain = plan_sub.add_parser("explain-execution")
+    plan_explain.add_argument("--plan", required=True)
+    _add_output_args(plan_explain)
+    plan_explain.set_defaults(func=cmd_plan_explain_execution)
     plan_validate = plan_sub.add_parser("validate")
     plan_validate.add_argument("--plan", required=True)
     plan_validate.add_argument("--skip-target-freshness", action="store_true")
@@ -517,6 +587,13 @@ def build_parser() -> argparse.ArgumentParser:
     plan_diff = plan_sub.add_parser("diff")
     _add_output_args(plan_diff)
     plan_diff.set_defaults(func=cmd_plan_diff)
+
+    artifact_store = subparsers.add_parser("artifact-store")
+    artifact_store_sub = artifact_store.add_subparsers(dest="command", required=True)
+    artifact_preflight = artifact_store_sub.add_parser("preflight")
+    artifact_preflight.add_argument("--root", default="/sdb/dlut/ops-artifacts/agent-sync")
+    _add_output_args(artifact_preflight)
+    artifact_preflight.set_defaults(func=cmd_artifact_store_preflight)
 
     lock = subparsers.add_parser("lock")
     lock_sub = lock.add_subparsers(dest="command", required=True)

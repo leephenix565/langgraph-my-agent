@@ -26,8 +26,15 @@ from react_agent.ops.sync_p2s import (
     p2s_stage,
     p2s_verify,
 )
-from react_agent.ops.sync_plan import stage_projection_digest_for_actions, validate_plan
+from react_agent.ops.sync_plan import (
+    P2S_TOOL_VERSION,
+    executable_plan_contract,
+    executable_rollback_contract,
+    stage_projection_digest_for_actions,
+    validate_plan,
+)
 from react_agent.ops.sync_registry import load_static_registry
+from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 
 def _future(hours: int = 24) -> str:
@@ -98,7 +105,10 @@ def _temp_plan(tmp_path: Path) -> dict[str, object]:
                 "process_preflight": {},
                 "process_actions": [],
                 "live_validation": [],
-                "rollback": {},
+                "rollback": {
+                    "transaction_rollback_id": stable_id("rollback", txn_id),
+                    "contract_ref": "execution_contract.rollback",
+                },
                 "expected_status": "stage_ready",
             }
         )
@@ -117,7 +127,7 @@ def _temp_plan(tmp_path: Path) -> dict[str, object]:
         all_actions.append(action)
     plan: dict[str, object] = {
         "schema_version": "agent_sync_plan_v1",
-        "tool_version": "sync_ops_2a_writer_contract_planner_test",
+        "tool_version": P2S_TOOL_VERSION,
         "test_only_temp_roots": True,
         "plan_id": "p2s-temp-e2e",
         "direction": "p2s",
@@ -143,6 +153,40 @@ def _temp_plan(tmp_path: Path) -> dict[str, object]:
             "action_counts": {"copy_from_prod": len(all_actions)},
             "expected_stage_projection_digest": stage_projection_digest_for_actions(all_actions),
         },
+        "artifact_store_preflight": {
+            "schema_version": "agent_sync_artifact_store_preflight_v1",
+            "root": str(tmp_path / "artifact-store"),
+            "parent": str(tmp_path),
+            "root_exists": False,
+            "parent_exists": True,
+            "expected_root_state": "missing",
+            "creation_required": True,
+            "ready": False,
+            "blockers": ["root_missing"],
+        },
+        "artifact_store_initialization": {
+            "required": True,
+            "root": str(tmp_path / "artifact-store"),
+            "parent": str(tmp_path),
+            "expected_root_state": "missing",
+            "recommended_mode": "inherit_parent_policy_or_0o770_if_parent_policy_absent",
+            "owner_strategy": "inherit_operator_or_parent_policy",
+            "group_strategy": "inherit_parent_or_recorded_ops_group",
+            "create_parents": False,
+            "approval_required": True,
+            "rollback": "remove_only_if_empty_and_created_by_this_run",
+        },
+        "execution_contract": executable_plan_contract(
+            plan_id="p2s-temp-e2e",
+            stage_root=stage_root,
+            active_path=str(active),
+            preflight={
+                "root": str(tmp_path / "artifact-store"),
+                "parent": str(tmp_path),
+                "root_exists": False,
+                "parent_exists": True,
+            },
+        ),
         "activation": {
             "old_active_sandbox_archive_path": str(tmp_path / "active-pre-syncops-temp"),
             "new_versioned_baseline_path": str(stage_root),
@@ -163,22 +207,33 @@ def _temp_plan(tmp_path: Path) -> dict[str, object]:
         "coverage": {"unresolved_file_count": 0, "coverage_ratio": 1.0},
         "validation_profile": {"risk_crash/part3_panelExp/core/base_funces/skmodels.py": "legacy_reference_python"},
         "agents": agents,
-        "global_preconditions": [],
+        "global_preconditions": [
+            "plan_schema_valid",
+            "canonical_hash_valid",
+            "plan_not_expired",
+            "exact_machine_approval_required",
+            "environment_snapshot_match_required",
+            "artifact_store_ready_or_initialization_approved",
+            "stage_root_missing",
+        ],
         "global_blockers": [],
         "approval_requirements": {
             "approval_record_required": True,
             "environment_snapshot_required": True,
             "stage_approved": True,
-            "activate_approved": True,
-            "rollback_approved": True,
+            "verify_approved": True,
+            "artifact_store_initialize_approved": True,
+            "activate_approved": False,
+            "rollback_approved": False,
             "delete_actions_approved": False,
             "process_actions_approved": False,
             "live_validation_approved": False,
             "publish_and_rebase_approved": False,
         },
-        "rollback_plan": {},
+        "rollback_plan": executable_rollback_contract("p2s-temp-e2e"),
         "canonical_sha256": "",
     }
+    plan["summary"] = p2s_summary_from_plan(plan)
     plan["canonical_sha256"] = canonical_sha256(plan)
     return plan
 
@@ -203,8 +258,11 @@ def _approval(plan: dict[str, object], *, stage: bool = True, activate: bool = T
             for action in agent["actions"]  # type: ignore[index]
         ],
         "stage_approved": stage,
+        "verify_approved": stage,
+        "artifact_store_initialize_approved": stage,
         "activate_approved": activate,
         "rollback_approved": rollback,
+        "post_rollback_reactivate_approved": False,
         "delete_approved": False,
         "process_action_approved": False,
         "live_validation_approved": False,
@@ -298,6 +356,37 @@ def test_temp_p2s_stage_verify_activate_rollback_and_recover(tmp_path: Path) -> 
     rollback = p2s_rollback(plan_path, approval_path, artifact_root, execute=True)
     assert rollback["archive_restored"] is True
     assert rollback["failed_baseline_retained"] is True
+
+
+def test_stage_only_approval_cannot_activate(tmp_path: Path) -> None:
+    plan = _temp_plan(tmp_path)
+    stage_only = _approval(plan, activate=False, rollback=False)
+    plan_path = tmp_path / "plan.json"
+    approval_path = tmp_path / "stage_approval.json"
+    write_json(plan_path, plan)
+    write_json(approval_path, stage_only)
+    artifact_root = tmp_path / "artifact-store"
+    p2s_stage(plan_path, approval_path, artifact_root, execute=True)
+    p2s_verify(plan_path, approval_path, artifact_root, execute=True)
+    with pytest.raises(SyncPlannerError) as exc:
+        p2s_activate(plan_path, approval_path, artifact_root, execute=True)
+    assert exc.value.exit_code == 4
+    assert "activate_permission_missing" in exc.value.details["blockers"]
+
+
+def test_legacy_read_only_plan_is_rejected() -> None:
+    plan_path = Path("/tmp/lma-sync-ops-2a-r1-source-policy-20260623T142613Z/new_current_p2s_plan.json")
+    if not plan_path.exists():
+        pytest.skip("SYNC-OPS-2A-R1 artifact unavailable")
+    import json
+
+    plan = json.loads(plan_path.read_text(encoding="utf-8"))
+    result = validate_plan(plan, check_target_freshness=False, allow_existing_stage=True)
+    assert result["valid"] is False
+    assert "legacy_read_only_global_precondition" in result["blockers"]
+    assert "rollback_contract_not_executable" in result["blockers"]
+    assert "per_agent_rollback_skeleton" in result["blockers"]
+    assert "approval_phase_scope_too_broad" in result["blockers"]
 
 
 def test_p2s_write_commands_require_execute(tmp_path: Path) -> None:

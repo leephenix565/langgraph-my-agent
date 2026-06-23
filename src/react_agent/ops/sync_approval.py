@@ -62,14 +62,26 @@ def _list_subset(values: object, allowed: set[str], reason: str, blockers: list[
         blockers.append(f"{reason}_outside_plan_scope")
 
 
+def _list_exact(values: object, allowed: set[str], reason: str, blockers: list[str]) -> None:
+    if not isinstance(values, list):
+        blockers.append(f"{reason}_not_list")
+        return
+    actual = {str(item) for item in values}
+    if actual != allowed:
+        blockers.append(f"{reason}_not_full_plan_scope")
+
+
 def validate_approval(
     approval: Mapping[str, Any],
     plan: Mapping[str, Any],
     *,
     environment_snapshot: Mapping[str, Any] | None = None,
     require_stage: bool = False,
+    require_verify: bool = False,
+    require_artifact_store_initialize: bool = False,
     require_activate: bool = False,
     require_rollback: bool = False,
+    require_full_scope: bool = True,
     allow_execution_phase: str = "SYNC-OPS-2B",
 ) -> dict[str, Any]:
     blockers: list[str] = []
@@ -108,12 +120,25 @@ def validate_approval(
     _list_subset(approval.get("approved_agent_ids"), agent_ids, "approved_agent_ids", blockers)
     _list_subset(approval.get("approved_transaction_ids"), transaction_ids, "approved_transaction_ids", blockers)
     _list_subset(approval.get("approved_action_ids"), action_ids, "approved_action_ids", blockers)
+    if require_full_scope and (require_stage or require_verify or require_activate or require_rollback):
+        _list_exact(approval.get("approved_agent_ids"), agent_ids, "approved_agent_ids", blockers)
+        _list_exact(approval.get("approved_transaction_ids"), transaction_ids, "approved_transaction_ids", blockers)
+        _list_exact(approval.get("approved_action_ids"), action_ids, "approved_action_ids", blockers)
     if require_stage and approval.get("stage_approved") is not True:
         blockers.append("approval_stage_not_approved")
+        blockers.append("stage_permission_missing")
+    if require_verify and approval.get("verify_approved") is not True:
+        blockers.append("approval_verify_not_approved")
+        blockers.append("verify_permission_missing")
+    if require_artifact_store_initialize and approval.get("artifact_store_initialize_approved") is not True:
+        blockers.append("approval_artifact_store_initialize_not_approved")
+        blockers.append("artifact_store_initialize_permission_missing")
     if require_activate and approval.get("activate_approved") is not True:
         blockers.append("approval_activate_not_approved")
+        blockers.append("activate_permission_missing")
     if require_rollback and approval.get("rollback_approved") is not True:
         blockers.append("approval_rollback_not_approved")
+        blockers.append("rollback_permission_missing")
     if approval.get("delete_approved"):
         blockers.append("approval_delete_not_supported_for_p2s")
     if approval.get("process_action_approved"):
@@ -131,16 +156,34 @@ def validate_approval(
     }
 
 
-def build_approval_request(plan: Mapping[str, Any], environment_snapshot: Mapping[str, Any]) -> dict[str, Any]:
+def build_stage_approval_request(plan: Mapping[str, Any], environment_snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    init_required = bool((plan.get("artifact_store_initialization") or {}).get("required"))
     return {
         "schema_version": "agent_sync_p2s_approval_request_v1",
         "plan_id": str(plan.get("plan_id") or ""),
         "plan_sha256": str(plan.get("canonical_sha256") or ""),
         "environment_snapshot_sha256": str(environment_snapshot.get("environment_snapshot_sha256") or ""),
+        "artifact_store_root": str(((plan.get("execution_contract") or {}).get("artifact_store") or {}).get("root") or ""),
+        "stage_root": str((plan.get("stage_materialization") or {}).get("stage_root") or ""),
+        "expires_at": str(plan.get("expires_at") or ""),
         "requested_agent_scopes": [str(agent.get("agent_id") or "") for agent in plan.get("agents") or [] if isinstance(agent, Mapping)],
+        "requested_transaction_scopes": [str(agent.get("transaction_id") or "") for agent in plan.get("agents") or [] if isinstance(agent, Mapping)],
+        "requested_action_scopes": [
+            str(action.get("action_id") or "")
+            for agent in plan.get("agents") or []
+            if isinstance(agent, Mapping)
+            for action in agent.get("actions") or []
+            if isinstance(action, Mapping)
+        ],
+        "artifact_store_initialize_requested": init_required,
+        "stage_requested": True,
+        "verify_requested": True,
+        "activate_requested": False,
+        "rollback_requested": False,
+        "post_rollback_reactivate_requested": False,
         "requested_stage_permission": True,
-        "requested_activate_permission": True,
-        "requested_rollback_permission": True,
+        "requested_activate_permission": False,
+        "requested_rollback_permission": False,
         "delete_requested": False,
         "process_action_requested": False,
         "live_requested": False,
@@ -149,3 +192,33 @@ def build_approval_request(plan: Mapping[str, Any], environment_snapshot: Mappin
         "approval_id": "",
         "approved_at": "",
     }
+
+
+def build_activation_approval_request_template(plan: Mapping[str, Any]) -> dict[str, Any]:
+    return {
+        "schema_version": "agent_sync_p2s_activation_approval_request_template_v1",
+        "plan_id": str(plan.get("plan_id") or ""),
+        "plan_sha256": str(plan.get("canonical_sha256") or ""),
+        "status": "blocked_pending_real_stage_closeout",
+        "artifact_store_root": str(((plan.get("execution_contract") or {}).get("artifact_store") or {}).get("root") or ""),
+        "missing_real_stage_fields": [
+            "stage_run_id",
+            "stage_artifact_index_sha256",
+            "stage_tree_digest",
+            "stage_validation_sha256",
+            "current_active_pointer_sha256",
+            "current_active_tree_sha256",
+            "candidate_path",
+            "archive_path",
+        ],
+        "activate_requested": True,
+        "rollback_requested": True,
+        "post_rollback_reactivate_requested": False,
+        "approval_id": "",
+        "approved_at": "",
+    }
+
+
+def build_approval_request(plan: Mapping[str, Any], environment_snapshot: Mapping[str, Any]) -> dict[str, Any]:
+    """Backward-compatible request builder now returns the stage-only request."""
+    return build_stage_approval_request(plan, environment_snapshot)

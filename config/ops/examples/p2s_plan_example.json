@@ -82,7 +82,49 @@
     ],
     "rollback": {
       "restore_old_active_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
-      "requires_future_phase_execution": true
+      "requires_rollback_approval": true,
+      "contract_ref": "execution_contract.rollback"
+    }
+  },
+  "execution_contract": {
+    "schema_version": "agent_sync_p2s_execution_contract_v1",
+    "writer_contract_version": "sync_ops_2a_r2_p2s_execution_contract_v1",
+    "minimum_tool_version": "sync_ops_2a_r2_executable_p2s_plan",
+    "execution_enabled": true,
+    "artifact_store": {
+      "root": "/sdb/dlut/ops-artifacts/agent-sync",
+      "initialization_requires_approval": true
+    },
+    "lock_requirements": {
+      "global_lock": "global-cycle",
+      "transaction_lock_prefix": "txn-"
+    },
+    "stage": {
+      "permission": "stage_approved",
+      "verify_permission": "verify_approved",
+      "stage_root": "/sdb/dlut/sandbox/prod-baselines/20260623T120000Z/fixed-dag-services"
+    },
+    "verify": {
+      "permission": "verify_approved"
+    },
+    "activation": {
+      "permission": "activate_approved",
+      "requires_real_stage_closeout": true
+    },
+    "rollback": {
+      "schema_version": "agent_sync_p2s_rollback_contract_v1",
+      "plan_id": "plan-example-p2s",
+      "executable": true,
+      "cases": [
+        {
+          "case_id": "stage_failure",
+          "active_sandbox": "unchanged",
+          "pointer": "unchanged"
+        }
+      ]
+    },
+    "crash_recovery": {
+      "journal_required": true
     }
   },
   "agents": [
@@ -115,7 +157,7 @@
       ],
       "blocked_actions": [],
       "backup": {
-        "required_future_phase": true
+        "active_archive_created_during_activation": true
       },
       "offline_tests": [],
       "process_preflight": {
@@ -124,26 +166,46 @@
       "process_actions": [],
       "live_validation": [],
       "rollback": {
-        "skeleton_only": true
+        "transaction_rollback_id": "rb-001",
+        "contract_ref": "execution_contract.rollback"
       },
       "expected_status": "stage_ready"
     }
   ],
   "global_preconditions": [
-    "read_only_plan_only",
-    "approval_required_before_future_write"
+    "plan_schema_valid",
+    "canonical_hash_valid",
+    "plan_not_expired",
+    "exact_machine_approval_required",
+    "environment_snapshot_match_required",
+    "artifact_store_ready_or_initialization_approved",
+    "stage_root_missing"
   ],
   "global_blockers": [],
   "approval_requirements": {
     "approval_record_required": true,
+    "environment_snapshot_required": true,
+    "stage_approved": true,
+    "verify_approved": true,
+    "artifact_store_initialize_approved": true,
+    "activate_approved": false,
+    "rollback_approved": false,
     "delete_actions_approved": false,
     "process_actions_approved": false,
     "live_validation_approved": false,
     "publish_and_rebase_approved": false
   },
   "rollback_plan": {
-    "execution": "not_available_in_sync_ops_1r",
-    "skeleton_only": true
+    "schema_version": "agent_sync_p2s_rollback_contract_v1",
+    "plan_id": "plan-example-p2s",
+    "executable": true,
+    "cases": [
+      {
+        "case_id": "stage_failure",
+        "active_sandbox": "unchanged",
+        "pointer": "unchanged"
+      }
+    ]
   },
   "canonical_sha256": "example-p2s-hash"
 }

@@ -86,10 +86,19 @@
     "stage_approved": {
       "type": "boolean"
     },
+    "verify_approved": {
+      "type": "boolean"
+    },
+    "artifact_store_initialize_approved": {
+      "type": "boolean"
+    },
     "activate_approved": {
       "type": "boolean"
     },
     "rollback_approved": {
+      "type": "boolean"
+    },
+    "post_rollback_reactivate_approved": {
       "type": "boolean"
     },
     "delete_approved": {

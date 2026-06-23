@@ -10,6 +10,10 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
+from react_agent.ops.sync_artifacts import (
+    DEFAULT_ARTIFACT_STORE_ROOT,
+    artifact_store_preflight,
+)
 from react_agent.ops.sync_contracts import (
     SyncPlannerError,
     canonical_sha256,
@@ -29,11 +33,36 @@ from react_agent.ops.sync_security import (
     NON_MATERIALIZABLE_SOURCE_CATEGORIES,
     redacted_structural_fingerprint,
 )
+from react_agent.ops.sync_summary import p2s_summary_from_plan, summary_consistency
 
 POINTER_PATH = Path("/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json")
 DEFAULT_PROD_ROOT = Path("/sdb/dlut/prod")
 DEFAULT_ACTIVE_SANDBOX = Path("/sdb/dlut/sandbox/r8-13a/services/prod")
 DEFAULT_VERSIONED_BASELINE = Path("/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services")
+P2S_EXECUTION_CONTRACT_VERSION = "sync_ops_2a_r2_p2s_execution_contract_v1"
+P2S_TOOL_VERSION = "sync_ops_2a_r2_executable_p2s_plan"
+READ_ONLY_PLAN_MARKERS = {
+    "read_only_plan_only",
+    "plan_only",
+    "future_write_only",
+    "writer_not_available",
+}
+EXECUTABLE_P2S_PRECONDITIONS = [
+    "plan_schema_valid",
+    "canonical_hash_valid",
+    "plan_not_expired",
+    "exact_machine_approval_required",
+    "environment_snapshot_match_required",
+    "registry_hash_match_required",
+    "policy_hash_match_required",
+    "catalog_hash_match_required",
+    "artifact_store_ready_or_initialization_approved",
+    "global_lock_available",
+    "transaction_locks_available",
+    "stage_root_missing",
+    "active_pointer_unchanged",
+    "active_baseline_tree_unchanged",
+]
 KNOWN_LEGACY_DIAGNOSTIC_PYTHON = {
     "risk_crash/part3_panelExp/core/base_funces/skmodels.py": "legacy_reference_python"
 }
@@ -261,6 +290,137 @@ def stage_projection_digest_for_actions(actions: Sequence[Mapping[str, Any]]) ->
     return canonical_sha256(sorted(items, key=lambda item: str(item["stage_relative_path"])))
 
 
+def artifact_store_initialization_contract(preflight: Mapping[str, Any]) -> dict[str, Any]:
+    required = not bool(preflight.get("root_exists"))
+    return {
+        "required": required,
+        "root": str(preflight.get("root") or DEFAULT_ARTIFACT_STORE_ROOT),
+        "parent": str(preflight.get("parent") or DEFAULT_ARTIFACT_STORE_ROOT.parent),
+        "expected_root_state": "missing" if required else "present",
+        "recommended_mode": "inherit_parent_policy_or_0o770_if_parent_policy_absent",
+        "owner_strategy": "inherit_operator_or_parent_policy",
+        "group_strategy": "inherit_parent_or_recorded_ops_group",
+        "create_parents": False,
+        "approval_required": required,
+        "rollback": "remove_only_if_empty_and_created_by_this_run",
+    }
+
+
+def executable_rollback_contract(plan_id: str) -> dict[str, Any]:
+    return {
+        "schema_version": "agent_sync_p2s_rollback_contract_v1",
+        "plan_id": plan_id,
+        "executable": True,
+        "cases": [
+            {
+                "case_id": "stage_failure",
+                "trigger": "stage_or_verify_failure_before_activation",
+                "actions": ["preserve_failed_stage", "release_locks", "close_run_as_stage_failed"],
+                "active_sandbox": "unchanged",
+                "pointer": "unchanged",
+                "idempotence": "repeat_returns_noop_if_stage_already_marked_failed",
+            },
+            {
+                "case_id": "activation_failure_before_archive",
+                "trigger": "candidate_build_or_validation_failure_before_active_archive",
+                "actions": ["preserve_failed_candidate", "release_locks"],
+                "active_sandbox": "unchanged",
+                "pointer": "unchanged",
+                "idempotence": "repeat_keeps_active_sandbox_unchanged",
+            },
+            {
+                "case_id": "activation_failure_after_active_archived",
+                "trigger": "active_archived_before_candidate_active",
+                "actions": ["restore_archive_to_active", "restore_pointer", "preserve_candidate_or_failed_baseline"],
+                "active_sandbox": "restored_from_archive",
+                "pointer": "restored_to_previous",
+                "idempotence": "already_restored_returns_noop_success",
+            },
+            {
+                "case_id": "activation_failure_after_candidate_activated",
+                "trigger": "candidate_active_before_or_after_pointer_update",
+                "actions": ["move_candidate_active_to_failed_path", "restore_archive", "restore_pointer", "post_rollback_digest"],
+                "active_sandbox": "restored_from_archive",
+                "pointer": "restored_to_previous",
+                "idempotence": "already_rolled_back_returns_noop_success",
+            },
+            {
+                "case_id": "wrong_run_plan_or_approval",
+                "trigger": "rollback_request_not_bound_to_run_plan_or_approval",
+                "actions": ["fail_closed"],
+                "active_sandbox": "unchanged",
+                "pointer": "unchanged",
+                "idempotence": "repeat_fails_closed_until_correct_binding",
+            },
+        ],
+    }
+
+
+def executable_plan_contract(
+    *,
+    plan_id: str,
+    stage_root: Path,
+    active_path: str,
+    preflight: Mapping[str, Any],
+) -> dict[str, Any]:
+    initialization = artifact_store_initialization_contract(preflight)
+    return {
+        "schema_version": "agent_sync_p2s_execution_contract_v1",
+        "writer_contract_version": P2S_EXECUTION_CONTRACT_VERSION,
+        "minimum_tool_version": P2S_TOOL_VERSION,
+        "execution_enabled": True,
+        "artifact_store": {
+            "root": str(preflight.get("root") or DEFAULT_ARTIFACT_STORE_ROOT),
+            "preflight": dict(preflight),
+            "initialization": initialization,
+            "initialization_requires_approval": bool(initialization["required"]),
+        },
+        "lock_requirements": {
+            "global_lock": "global-cycle",
+            "transaction_lock_prefix": "txn-",
+            "lock_root": "artifact_store_root/locks",
+            "stage_requires_locks": True,
+            "activate_requires_locks": True,
+            "rollback_requires_locks": True,
+        },
+        "stage": {
+            "permission": "stage_approved",
+            "verify_permission": "verify_approved",
+            "stage_root": str(stage_root),
+            "expected_stage_root_state": "missing",
+            "active_sandbox_mutation_allowed": False,
+            "pointer_mutation_allowed": False,
+        },
+        "verify": {
+            "permission": "verify_approved",
+            "requires_existing_stage": True,
+            "checks": ["file_hashes", "projection_digest", "secret_scan", "validation_profile", "agent_roots"],
+        },
+        "activation": {
+            "permission": "activate_approved",
+            "requires_real_stage_closeout": True,
+            "stage_only_approval_cannot_activate": True,
+            "active_path": active_path,
+            "archive_strategy": "atomic_rename_active_then_candidate",
+            "candidate_strategy": "copy_or_reflink_without_hardlinks",
+        },
+        "rollback": executable_rollback_contract(plan_id),
+        "crash_recovery": {
+            "journal_required": True,
+            "recoverable_events": [
+                "stage_started",
+                "stage_validated",
+                "candidate_built",
+                "active_archived",
+                "candidate_activated",
+                "pointer_updated",
+                "rollback_started",
+                "rollback_finished",
+            ],
+        },
+    }
+
+
 def build_experiment_template(*, output_root: str = "/tmp/agent-sync-experiment") -> dict[str, Any]:
     pointer = load_baseline_pointer()
     return {
@@ -434,11 +594,16 @@ def build_p2s_plan() -> dict[str, Any]:
     pointer = load_baseline_pointer()
     new_baseline_id = _baseline_id()
     stage_root = _stage_root_for(new_baseline_id)
+    store_preflight = artifact_store_preflight()
     plan = _base_plan("p2s")
-    plan["tool_version"] = "sync_ops_2a_writer_contract_planner"
+    plan["tool_version"] = P2S_TOOL_VERSION
+    plan["global_preconditions"] = list(EXECUTABLE_P2S_PRECONDITIONS)
     plan["approval_requirements"]["stage_approved"] = True
-    plan["approval_requirements"]["activate_approved"] = True
-    plan["approval_requirements"]["rollback_approved"] = True
+    plan["approval_requirements"]["verify_approved"] = True
+    plan["approval_requirements"]["artifact_store_initialize_approved"] = not bool(store_preflight.get("root_exists"))
+    plan["approval_requirements"]["activate_approved"] = False
+    plan["approval_requirements"]["rollback_approved"] = False
+    plan["approval_requirements"]["post_rollback_reactivate_approved"] = False
     plan["baseline"] = pointer
     plan["target_snapshot"] = {
         "active_sandbox_path": pointer["active_path"],
@@ -468,6 +633,15 @@ def build_p2s_plan() -> dict[str, Any]:
             "validation_profile_required": True,
         },
     }
+    plan["artifact_store_preflight"] = store_preflight
+    plan["artifact_store_initialization"] = artifact_store_initialization_contract(store_preflight)
+    plan["execution_contract"] = executable_plan_contract(
+        plan_id=plan["plan_id"],
+        stage_root=stage_root,
+        active_path=str(pointer["active_path"]),
+        preflight=store_preflight,
+    )
+    plan["rollback_plan"] = executable_rollback_contract(plan["plan_id"])
     plan["activation"] = {
         "old_active_sandbox_archive_path": f"/sdb/dlut/sandbox/r8-13a/services/prod-pre-syncops-{new_baseline_id}",
         "new_versioned_baseline_path": str(stage_root),
@@ -488,10 +662,25 @@ def build_p2s_plan() -> dict[str, Any]:
         },
         "post_switch_verification": ["pointer_sha256_changed", "26_agent_roots_present", "source_tree_digest_matches_stage"],
         "rollback": {
+            "contract_ref": "execution_contract.rollback",
             "restore_old_active_path": pointer["active_path"],
             "preserve_failed_stage": True,
-            "requires_future_phase_execution": True,
+            "requires_rollback_approval": True,
         },
+    }
+    plan["activation_approval_boundary"] = {
+        "stage_only_approval_cannot_activate": True,
+        "activation_request_status_before_real_stage": "blocked_pending_real_stage_closeout",
+        "required_real_stage_fields": [
+            "stage_run_id",
+            "stage_artifact_index_sha256",
+            "stage_tree_digest",
+            "stage_validation_sha256",
+            "current_active_pointer_sha256",
+            "current_active_tree_sha256",
+            "candidate_path",
+            "archive_path",
+        ],
     }
     agent_plans: list[dict[str, Any]] = []
     registry = load_static_registry()
@@ -636,12 +825,19 @@ def build_p2s_plan() -> dict[str, Any]:
                 "actions": actions,
                 "blocked_actions": blocked,
                 "observed_diff_counts": diff_by_id.get(agent_id, {}).get("counts", {}),
-                "backup": {"required_future_phase": True, "not_executed_in_sync_ops_1r": True},
+                "backup": {
+                    "active_archive_created_during_activation": True,
+                    "stage_failure_preserves_failed_stage": True,
+                    "no_backup_created_during_stage_only": True,
+                },
                 "offline_tests": [],
                 "process_preflight": {"required": False},
                 "process_actions": [],
                 "live_validation": [],
-                "rollback": {"skeleton_only": True, "stage_rollback_only_future_phase": True},
+                "rollback": {
+                    "transaction_rollback_id": stable_id("rollback", stable_id("stage", agent_id, transaction_root)),
+                    "contract_ref": "execution_contract.rollback",
+                },
                 "expected_status": "stage_ready" if not blocked else "blocked_manual_review",
             }
         )
@@ -700,6 +896,7 @@ def build_p2s_plan() -> dict[str, Any]:
             and str(action.get("sensitive_classification") or "") in {"potential_secret_literal", "blocked_env_file", "sensitive_name"}
         ),
     }
+    plan["summary"] = p2s_summary_from_plan(plan)
     stage_rel_paths = {
         str(action.get("stage_relative_path") or "")
         for agent in agent_plans
@@ -847,6 +1044,36 @@ def validate_plan(
         target_snapshot = plan.get("target_snapshot") or {}
         stage_materialization = plan.get("stage_materialization") or {}
         activation = plan.get("activation") or {}
+        execution_contract = plan.get("execution_contract") or {}
+        rollback_plan = plan.get("rollback_plan") or {}
+        approval_requirements = plan.get("approval_requirements") or {}
+        read_only_markers = {
+            str(item)
+            for item in plan.get("global_preconditions") or []
+            if str(item) in READ_ONLY_PLAN_MARKERS or any(marker in str(item) for marker in READ_ONLY_PLAN_MARKERS)
+        }
+        if read_only_markers:
+            blockers.append("legacy_read_only_global_precondition")
+        if not isinstance(execution_contract, Mapping) or execution_contract.get("schema_version") != "agent_sync_p2s_execution_contract_v1":
+            blockers.append("p2s_execution_contract_missing")
+        elif execution_contract.get("execution_enabled") is not True:
+            blockers.append("p2s_execution_contract_disabled")
+        if not isinstance(rollback_plan, Mapping) or rollback_plan.get("executable") is not True:
+            blockers.append("rollback_contract_not_executable")
+        if rollback_plan.get("skeleton_only") is True or str(rollback_plan.get("execution") or "").startswith("not_available"):
+            blockers.append("rollback_contract_not_executable")
+        if isinstance(activation, Mapping) and isinstance(activation.get("rollback"), Mapping):
+            if activation["rollback"].get("requires_future_phase_execution") is True:
+                blockers.append("activation_rollback_not_executable")
+        if (
+            approval_requirements.get("stage_approved") is True
+            and approval_requirements.get("activate_approved") is True
+            and approval_requirements.get("rollback_approved") is True
+        ):
+            blockers.append("approval_phase_scope_too_broad")
+        if plan.get("summary"):
+            if not summary_consistency(plan)["consistent"]:
+                blockers.append("p2s_summary_mismatch")
         active_path = str(target_snapshot.get("active_sandbox_path") or "")
         stage_root = str(stage_materialization.get("stage_root") or "")
         if not stage_materialization:
@@ -914,6 +1141,27 @@ def validate_plan(
         }
         if stage_materialization and not stage_transaction_action_ids:
             blockers.append("p2s_stage_materialization_actions_missing")
+        transaction_actions_by_id = {
+            str(action.get("action_id") or ""): action
+            for txn in stage_materialization.get("transactions") or []
+            if isinstance(txn, Mapping)
+            for action in txn.get("actions") or []
+            if isinstance(action, Mapping)
+        }
+        agent_actions_by_id = {
+            str(action.get("action_id") or ""): action
+            for agent in plan.get("agents") or []
+            if isinstance(agent, Mapping)
+            for action in agent.get("actions") or []
+            if isinstance(action, Mapping)
+        }
+        if set(transaction_actions_by_id) != set(agent_actions_by_id):
+            blockers.append("transaction_action_parity_mismatch")
+        else:
+            for action_id, action in agent_actions_by_id.items():
+                if action != transaction_actions_by_id[action_id]:
+                    blockers.append("transaction_action_parity_mismatch")
+                    break
         if len(plan.get("agents") or []) != 26:
             blockers.append("p2s_agent_disposition_count_not_26")
     for agent in plan.get("agents") or []:
@@ -932,6 +1180,18 @@ def validate_plan(
                 [action for action in agent.get("actions") or [] if isinstance(action, Mapping)]
             ):
                 blockers.append("p2s_agent_projection_digest_mismatch")
+            rollback = agent.get("rollback") or {}
+            if isinstance(rollback, Mapping) and (
+                rollback.get("skeleton_only") is True
+                or rollback.get("stage_rollback_only_future_phase") is True
+                or not str(rollback.get("transaction_rollback_id") or "")
+            ):
+                blockers.append("per_agent_rollback_skeleton")
+            backup = agent.get("backup") or {}
+            if isinstance(backup, Mapping) and (
+                backup.get("required_future_phase") is True or backup.get("not_executed_in_sync_ops_1r") is True
+            ):
+                blockers.append("per_agent_backup_skeleton")
         for action in agent.get("actions") or []:
             if not isinstance(action, Mapping):
                 blockers.append("action_not_mapping")

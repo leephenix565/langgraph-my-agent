@@ -5,12 +5,15 @@ from __future__ import annotations
 
 import json
 import os
+import shutil
 import tarfile
 import zipfile
 from pathlib import Path, PurePosixPath
 from typing import Any
 
 from react_agent.ops.sync_contracts import SyncPlannerError, file_sha256
+
+DEFAULT_ARTIFACT_STORE_ROOT = Path("/sdb/dlut/ops-artifacts/agent-sync")
 
 
 def _validate_entry_name(name: str, seen: set[str]) -> None:
@@ -70,6 +73,94 @@ def _fsync_parent(path: Path) -> None:
         os.fsync(fd)
     finally:
         os.close(fd)
+
+
+def _mode_text(path: Path) -> str:
+    try:
+        return oct(path.stat().st_mode & 0o777)
+    except OSError:
+        return ""
+
+
+def _writable_by_mode(path: Path) -> bool:
+    """Infer write readiness from ownership/mode only; do not create probe files."""
+    try:
+        st = path.stat()
+    except OSError:
+        return False
+    uid = os.geteuid()
+    gids = {os.getegid(), *os.getgroups()}
+    mode = st.st_mode
+    if st.st_uid == uid and mode & 0o200:
+        return True
+    if st.st_gid in gids and mode & 0o020:
+        return True
+    return bool(mode & 0o002)
+
+
+def artifact_store_preflight(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[str, Any]:
+    """Return a read-only artifact-store readiness summary."""
+    parent = root.parent
+    root_exists = root.exists()
+    parent_exists = parent.exists()
+    probe = root if root_exists else parent
+    try:
+        stat_result = probe.stat() if probe.exists() else None
+    except OSError:
+        stat_result = None
+    try:
+        usage = shutil.disk_usage(probe if probe.exists() else parent)
+        free_bytes = usage.free
+    except OSError:
+        free_bytes = None
+    blockers: list[str] = []
+    if not root_exists:
+        blockers.append("root_missing")
+    if not parent_exists:
+        blockers.append("parent_missing")
+    if root_exists and not _writable_by_mode(root):
+        blockers.append("root_not_writable_by_mode")
+    if not root_exists and parent_exists and not _writable_by_mode(parent):
+        blockers.append("parent_not_writable_by_mode")
+    if stat_result is None:
+        blockers.append("device_unavailable")
+    payload = {
+        "schema_version": "agent_sync_artifact_store_preflight_v1",
+        "root": str(root),
+        "parent": str(parent),
+        "root_exists": root_exists,
+        "parent_exists": parent_exists,
+        "root_realpath": str(root.resolve(strict=False)) if root_exists else "",
+        "parent_realpath": str(parent.resolve(strict=False)) if parent_exists else "",
+        "root_mode": _mode_text(root) if root_exists else "",
+        "parent_mode": _mode_text(parent) if parent_exists else "",
+        "root_uid": root.stat().st_uid if root_exists else None,
+        "root_gid": root.stat().st_gid if root_exists else None,
+        "parent_uid": parent.stat().st_uid if parent_exists else None,
+        "parent_gid": parent.stat().st_gid if parent_exists else None,
+        "filesystem_device_id": str(stat_result.st_dev) if stat_result is not None else "unavailable",
+        "free_bytes": free_bytes,
+        "root_write_ready_by_mode": _writable_by_mode(root) if root_exists else False,
+        "parent_write_ready_by_mode": _writable_by_mode(parent) if parent_exists else False,
+        "creation_required": not root_exists,
+        "expected_root_state": "present" if root_exists else "missing",
+        "creation_deferred": True,
+        "ready": root_exists and not blockers,
+        "blockers": blockers,
+        "fs_policy": {
+            "expected_root_state": "present" if root_exists else "missing",
+            "creation_deferred": True,
+            "same_filesystem_required": True,
+        },
+        "init_action": {
+            "required": not root_exists,
+            "approval_required": not root_exists,
+            "creates": ["runs/<run_id>"],
+            "mode": "0700_for_run_subdirectories",
+            "journal_event": "run_initialized",
+        },
+    }
+    return payload
 
 
 class ArtifactRunStore:

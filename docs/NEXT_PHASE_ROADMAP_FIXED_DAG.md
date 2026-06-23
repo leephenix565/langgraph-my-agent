@@ -385,13 +385,15 @@ validation, and temp-only reconstruction under `/tmp` before a machine approval
 request can be considered.
 
 SYNC-OPS-2A implements the writer contract but only exercises it in
-repo-external temporary roots. The next safe phase is SYNC-OPS-2B, and its entry
-condition is a fresh 2A-R1 plan, matching environment snapshot SHA, explicit
-machine approval for stage/activate/rollback, writable approved artifact-store
-root, no runtime-required compile blockers, `not_scanned copy=0`, and
-full-scale temp rehearsal pass. SYNC-OPS-2B must still avoid S2P apply,
-endpoint smoke, process restart, and owner-dev writes unless a later phase
-explicitly owns them.
+repo-external temporary roots. SYNC-OPS-2A-R2 splits the next real execution
+into SYNC-OPS-2B1 stage/verify approval and a later activation/rollback
+approval. Entry to 2B1 requires a fresh R2 executable plan, matching
+environment snapshot SHA, stage-only machine approval, explicit artifact-store
+initialization approval if needed, no runtime-required compile blockers,
+`not_scanned copy=0`, and full-scale temp rehearsal pass. 2B1 must not activate
+or roll back the active sandbox; S2P apply, endpoint smoke, process restart,
+and owner-dev writes remain out of scope unless a later phase explicitly owns
+them.
 
 ## Non-Goals
 
