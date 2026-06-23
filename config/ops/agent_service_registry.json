@@ -1,0 +1,2401 @@
+{
+  "schema_version": "agent_service_registry_v1",
+  "generated_at": "2026-06-23T08:11:46Z",
+  "catalog_source": "config/fixed_dag/agent_catalog.json",
+  "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+  "formal_external_agent_count": 26,
+  "registry_authority": "config/ops/agent_service_registry.json",
+  "agents": [
+    {
+      "agent_id": "financial_data_service",
+      "layer": "L1",
+      "dimension": "l1",
+      "role": "evidence_service",
+      "routes_to": [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar",
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot"
+      ],
+      "display_name": "金融数据服务智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "data_bundle_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "financial_data_service",
+          "root": "/sdb/dlut/prod/金融数据服务智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/金融数据服务智能体",
+        "support_subroots": [],
+        "entrypoint": "main.py",
+        "port": 11000,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "pg-ops-agent/README.md",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/financial_data_service",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/financial_data_service",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/金融数据服务智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/金融数据服务智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "financial_data_service",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "data_bundle_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/金融数据服务智能体",
+        "process_group_key": "port:11000"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "entity_relation_extractor",
+      "layer": "L1",
+      "dimension": "l1",
+      "role": "evidence_service",
+      "routes_to": [
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar",
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot"
+      ],
+      "display_name": "实体关系抽取智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "entity_relation_bundle_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "entity_relation_extractor",
+          "root": "/sdb/dlut/prod/实体关系抽取智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/实体关系抽取智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10017,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/entity_relation_extractor",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/entity_relation_extractor",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/实体关系抽取智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/实体关系抽取智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "entity_relation_bundle_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/实体关系抽取智能体",
+        "process_group_key": "port:10017"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "entity_relation_extractor_historical_prod_exists_conflict"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "value_traditional_valuation",
+      "layer": "L2",
+      "dimension": "value",
+      "role": "analysis_agent",
+      "routes_to": [
+        "value_composite"
+      ],
+      "display_name": "传统企业估值智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "value_traditional_valuation",
+          "root": "/sdb/dlut/prod/传统企业估值智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/传统企业估值智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10000,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "pg_service/README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "pg_service/test.py",
+          "test.py",
+          "tests/test_domain_contract_v1.py",
+          "tests/test_v21_compliance.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/value_traditional_valuation",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/value_traditional_valuation",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/传统企业估值智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/传统企业估值智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "valuation_traditional",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/传统企业估值智能体",
+        "process_group_key": "port:10000"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "value_ml_valuation",
+      "layer": "L2",
+      "dimension": "value",
+      "role": "analysis_agent",
+      "routes_to": [
+        "value_composite"
+      ],
+      "display_name": "机器学习企业估值智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "value_ml_valuation",
+          "root": "/sdb/dlut/prod/机器学习企业估值智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/机器学习企业估值智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10001,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "tests/test_domain_contract_v1.py",
+          "tests/test_service_contract.py",
+          "tests/test_v21_compliance.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/value_ml_valuation",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/value_ml_valuation",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/机器学习企业估值智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/机器学习企业估值智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "valuation_ml",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/机器学习企业估值智能体",
+        "process_group_key": "port:10001"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "value_meta_valuation",
+      "layer": "L2",
+      "dimension": "value",
+      "role": "analysis_agent",
+      "routes_to": [
+        "value_composite"
+      ],
+      "display_name": "元学习企业估值智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "value_meta_valuation",
+          "root": "/sdb/dlut/prod/元学习企业估值智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/元学习企业估值智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10002,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "pg_service/README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "pg_service/test.py",
+          "test.py",
+          "tests/test_domain_contract_v1.py",
+          "tests/test_v21_compliance.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/value_meta_valuation",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/value_meta_valuation",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/元学习企业估值智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/元学习企业估值智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "valuation_meta",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/元学习企业估值智能体",
+        "process_group_key": "port:10002"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "value_research_synthesis",
+      "layer": "L2",
+      "dimension": "value",
+      "role": "analysis_agent",
+      "routes_to": [
+        "value_composite"
+      ],
+      "display_name": "分析师研报与观点集成智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "value_research_synthesis",
+          "root": "/sdb/dlut/prod/分析师研报与观点集成智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/分析师研报与观点集成智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10006,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "external_agent_scaffold/README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "tests/conftest.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_compute_endpoint.py",
+          "tests/test_confidence_semantics.py",
+          "tests/test_domain_payload.py",
+          "tests/test_graceful_degradation.py",
+          "tests/test_idempotency.py",
+          "tests/test_local_data_offline.py",
+          "tests/test_response_time.py",
+          "tests/test_result_cache.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/value_research_synthesis",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/value_research_synthesis",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": true,
+        "sanitized_derivative_files": [
+          "build_analyst_ranking.py",
+          "build_analyst_raw.py",
+          "build_analyst_stock_rank.py",
+          "build_stock_basic.py",
+          "main5.py"
+        ],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/分析师研报与观点集成智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/分析师研报与观点集成智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "analyst_research",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/分析师研报与观点集成智能体",
+        "process_group_key": "port:10006"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "value_research_synthesis_sanitized_derivative_not_byte_equal"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "market_stock_technical",
+      "layer": "L2",
+      "dimension": "market",
+      "role": "analysis_agent",
+      "routes_to": [
+        "market_composite"
+      ],
+      "display_name": "个股技术分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "market_stock_technical",
+          "root": "/sdb/dlut/prod/个股技术分析智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/个股技术分析智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10009,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_v23_domain_payloads.py",
+          "fixed_dag_adapter/tests/__init__.py",
+          "fixed_dag_adapter/tests/conftest.py",
+          "fixed_dag_adapter/tests/test_fixed_dag_contract.py",
+          "tests/conftest.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_backtest.py",
+          "tests/test_compute_endpoint.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_stock_technical",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/market_stock_technical",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/个股技术分析智能体"
+        ],
+        "authority_status": "owner_patch_conflict",
+        "selected_root": "/sdb/dlut/dev/个股技术分析智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "technical_stock",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/个股技术分析智能体",
+        "process_group_key": "port:10009"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "market_fund_manager_behavior",
+      "layer": "L2",
+      "dimension": "market",
+      "role": "analysis_agent",
+      "routes_to": [
+        "market_composite"
+      ],
+      "display_name": "基金经理投资行为分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "market_composite_shared_support",
+          "root": "/sdb/dlut/prod/市场面综合智能体",
+          "subroot": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
+          "type": "support_subroot"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
+        "support_subroots": [
+          "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior"
+        ],
+        "entrypoint": "service.py",
+        "port": null,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_fund_manager_behavior",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/market_fund_manager_behavior",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/市场面综合智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/市场面综合智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
+        "process_group_key": "market_fund_manager_behavior"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "market_fund_manager_shared_support_root"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "market_ipo_investor_behavior",
+      "layer": "L2",
+      "dimension": "market",
+      "role": "analysis_agent",
+      "routes_to": [
+        "market_composite"
+      ],
+      "display_name": "IPO投资者构成与行为分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "market_ipo_investor_behavior",
+          "root": "/sdb/dlut/prod/IPO投资者行为智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/IPO投资者行为智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10008,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "external_agent_scaffold/README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_ipo_v21.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "tests/test_health_identity.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_ipo_investor_behavior",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/market_ipo_investor_behavior",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/IPO投资者行为智能体1"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/IPO投资者行为智能体1",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "ipo_investor_behavior",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/IPO投资者行为智能体",
+        "process_group_key": "port:10008"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "market_capital_flow_chip",
+      "layer": "L2",
+      "dimension": "market",
+      "role": "analysis_agent",
+      "routes_to": [
+        "market_composite"
+      ],
+      "display_name": "资金流/筹码分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "market_capital_flow_chip",
+          "root": "/sdb/dlut/prod/资金流智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/资金流智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10022,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold/tests/test_asof_leakage_probe.py",
+          "external_agent_scaffold/tests/test_compute_endpoint.py",
+          "external_agent_scaffold/tests/test_confidence_semantics.py",
+          "external_agent_scaffold/tests/test_domain_contract_v1.py",
+          "external_agent_scaffold/tests/test_graceful_degradation.py",
+          "external_agent_scaffold/tests/test_idempotency.py",
+          "external_agent_scaffold/tests/test_local_data_offline.py",
+          "external_agent_scaffold/tests/test_response_time.py",
+          "external_agent_scaffold/tests/test_result_cache.py",
+          "external_agent_scaffold/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_v23_domain_payloads.py",
+          "fixed_dag_adapter/tests/test_fixed_dag_contract.py",
+          "tests/conftest.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_backtest.py",
+          "tests/test_compute_endpoint.py",
+          "tests/test_confidence_semantics.py",
+          "tests/test_domain_contract_v1.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_capital_flow_chip",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/market_capital_flow_chip",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/资金流智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/资金流智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "money_flow",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/资金流智能体",
+        "process_group_key": "port:10022"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "sentiment_company_radar",
+      "layer": "L2",
+      "dimension": "market",
+      "role": "analysis_agent",
+      "routes_to": [
+        "market_composite"
+      ],
+      "display_name": "企业舆情雷达智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "sentiment_company_radar",
+          "root": "/sdb/dlut/prod/企业舆情雷达智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/企业舆情雷达智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10020,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/sentiment_company_radar",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/sentiment_company_radar",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/企业舆情雷达智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/企业舆情雷达智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/企业舆情雷达智能体",
+        "process_group_key": "port:10020"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "risk_crash",
+      "layer": "L2",
+      "dimension": "risk",
+      "role": "analysis_agent",
+      "routes_to": [
+        "risk_composite"
+      ],
+      "display_name": "股价崩盘风险智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "risk_crash",
+          "root": "/sdb/dlut/prod/股价崩盘风险智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/股价崩盘风险智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10012,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "agent协议/tests/test_asof_leakage_probe.py",
+          "agent协议/tests/test_compute_endpoint.py",
+          "agent协议/tests/test_local_data_offline.py",
+          "agent协议/tests/test_response_time.py",
+          "agent协议/tests/test_service_contract.py",
+          "crash_risk_model/agent/tests/__init__.py",
+          "crash_risk_model/agent/tests/conftest.py",
+          "crash_risk_model/agent/tests/test_answer_data_guard.py",
+          "crash_risk_model/agent/tests/test_asof_leakage_probe.py",
+          "crash_risk_model/agent/tests/test_backtest_card.py",
+          "crash_risk_model/agent/tests/test_compute_endpoint.py",
+          "crash_risk_model/agent/tests/test_confidence_semantics.py",
+          "crash_risk_model/agent/tests/test_domain_contract.py",
+          "crash_risk_model/agent/tests/test_graceful_degradation.py",
+          "crash_risk_model/agent/tests/test_idempotency.py",
+          "crash_risk_model/agent/tests/test_local_data_offline.py",
+          "crash_risk_model/agent/tests/test_report_material.py",
+          "crash_risk_model/agent/tests/test_response_time.py",
+          "crash_risk_model/agent/tests/test_result_cache.py",
+          "crash_risk_model/agent/tests/test_service_contract.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/risk_crash",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/risk_crash",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/股价崩盘风险智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/股价崩盘风险智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "crash_risk",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/股价崩盘风险智能体",
+        "process_group_key": "port:10012"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "risk_financial_fraud",
+      "layer": "L2",
+      "dimension": "risk",
+      "role": "analysis_agent",
+      "routes_to": [
+        "risk_composite"
+      ],
+      "display_name": "财务欺诈（造假）风险智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "risk_financial_fraud",
+          "root": "/sdb/dlut/prod/财务造假风险智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/财务造假风险智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10013,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "agent协议/tests/test_asof_leakage_probe.py",
+          "agent协议/tests/test_compute_endpoint.py",
+          "agent协议/tests/test_confidence_semantics.py",
+          "agent协议/tests/test_domain_contract_v1.py",
+          "agent协议/tests/test_graceful_degradation.py",
+          "agent协议/tests/test_idempotency.py",
+          "agent协议/tests/test_local_data_offline.py",
+          "agent协议/tests/test_response_time.py",
+          "agent协议/tests/test_result_cache.py",
+          "agent协议/tests/test_service_contract.py",
+          "tests/test_compute_core.py",
+          "tests/test_legacy_migrated_modules.py",
+          "tests/test_protocol_contract.py",
+          "tests/test_report_material.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/risk_financial_fraud",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/risk_financial_fraud",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/财务造假风险智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/财务造假风险智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/财务造假风险智能体",
+        "process_group_key": "port:10013"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "risk_identification",
+      "layer": "L2",
+      "dimension": "risk",
+      "role": "analysis_agent",
+      "routes_to": [
+        "risk_composite"
+      ],
+      "display_name": "风险识别智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "risk_identification",
+          "root": "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10010,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold_v2.3.1/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1/tests/test_v23_domain_payloads.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_backtest_cards.py",
+          "tests/test_compute_endpoint.py",
+          "tests/test_confidence_semantics.py",
+          "tests/test_graceful_degradation.py",
+          "tests/test_idempotency.py",
+          "tests/test_local_data_offline.py",
+          "tests/test_response_time.py",
+          "tests/test_result_cache.py",
+          "tests/test_service_contract.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/risk_identification",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/risk_identification",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
+        "process_group_key": "port:10010"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "risk_compliance_review",
+      "layer": "L2",
+      "dimension": "risk",
+      "role": "analysis_agent",
+      "routes_to": [
+        "risk_composite"
+      ],
+      "display_name": "公告合规审查智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "risk_compliance_review",
+          "root": "/sdb/dlut/prod/公告合规审查智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/公告合规审查智能体",
+        "support_subroots": [],
+        "entrypoint": "app.py",
+        "port": 10011,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "announcement_compliance/agent/tests/__init__.py",
+          "announcement_compliance/agent/tests/conftest.py",
+          "announcement_compliance/agent/tests/test_asof_leakage_probe.py",
+          "announcement_compliance/agent/tests/test_compute_endpoint.py",
+          "announcement_compliance/agent/tests/test_confidence_semantics.py",
+          "announcement_compliance/agent/tests/test_domain_contract.py",
+          "announcement_compliance/agent/tests/test_graceful_degradation.py",
+          "announcement_compliance/agent/tests/test_idempotency.py",
+          "announcement_compliance/agent/tests/test_local_data_offline.py",
+          "announcement_compliance/agent/tests/test_response_time.py",
+          "announcement_compliance/agent/tests/test_result_cache.py",
+          "announcement_compliance/agent/tests/test_service_contract.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/risk_compliance_review",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/risk_compliance_review",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/公告合规审查智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/公告合规审查智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/公告合规审查智能体",
+        "process_group_key": "port:10011"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_analysis",
+      "layer": "L2",
+      "dimension": "macro",
+      "role": "analysis_agent",
+      "routes_to": [
+        "macro_composite"
+      ],
+      "display_name": "宏观分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_analysis",
+          "root": "/sdb/dlut/prod/宏观分析智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/宏观分析智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10014,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README_SCAFFOLD_ORIGINAL.md",
+        "focused_tests": [
+          "tests/conftest.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_compute_endpoint.py",
+          "tests/test_confidence_semantics.py",
+          "tests/test_domain_contract_v1.py",
+          "tests/test_graceful_degradation.py",
+          "tests/test_idempotency.py",
+          "tests/test_local_data_offline.py",
+          "tests/test_macro_domain_contract.py",
+          "tests/test_pit_query.py",
+          "tests/test_response_time.py",
+          "tests/test_result_cache.py",
+          "tests/test_scenario_parsing.py",
+          "tests/test_service_contract.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_analysis",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_analysis",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/宏观分析智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/宏观分析智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "macro_analysis",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/宏观分析智能体",
+        "process_group_key": "port:10014"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_commodity_pricing",
+      "layer": "L2",
+      "dimension": "macro",
+      "role": "analysis_agent",
+      "routes_to": [
+        "macro_composite"
+      ],
+      "display_name": "商品定价分析智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_commodity_pricing",
+          "root": "/sdb/dlut/prod/商品定价分析智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/商品定价分析智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10004,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "readme.md",
+        "focused_tests": [
+          "agent协议/tests/test_compute_contract.py",
+          "agent协议/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1/tests/test_v23_domain_payloads.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_commodity_pricing",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_commodity_pricing",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/商品定价分析智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/商品定价分析智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "price_influence_agent",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/商品定价分析智能体",
+        "process_group_key": "port:10004"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_index_valuation",
+      "layer": "L2",
+      "dimension": "macro",
+      "role": "analysis_agent",
+      "routes_to": [
+        "macro_composite"
+      ],
+      "display_name": "股票指数估值智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_index_valuation",
+          "root": "/sdb/dlut/prod/股票指数估值智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/股票指数估值智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10003,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "agent协议/tests/test_service_contract.py",
+          "tests/conftest.py",
+          "tests/test_asof_leakage_probe.py",
+          "tests/test_compute_endpoint.py",
+          "tests/test_confidence_semantics.py",
+          "tests/test_date_recognition.py",
+          "tests/test_domain_contract_v1.py",
+          "tests/test_domain_payload_agent.py",
+          "tests/test_graceful_degradation.py",
+          "tests/test_idempotency.py",
+          "tests/test_local_data_offline.py",
+          "tests/test_response_time.py",
+          "tests/test_result_cache.py",
+          "tests/test_service_contract.py",
+          "tests/test_spts_adapter.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_index_valuation",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_index_valuation",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": true,
+        "sanitized_derivative_files": [
+          "config.py"
+        ],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/股票指数估值智能体"
+        ],
+        "authority_status": "owner_source_contains_equivalent_change",
+        "selected_root": "/sdb/dlut/dev/股票指数估值智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "valuation_index",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/股票指数估值智能体",
+        "process_group_key": "port:10003"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "macro_index_valuation_sanitized_derivative_not_byte_equal"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_sentiment",
+      "layer": "L2",
+      "dimension": "macro",
+      "role": "analysis_agent",
+      "routes_to": [
+        "macro_composite"
+      ],
+      "display_name": "宏观情绪感知智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_composite_placeholder",
+          "root": "/sdb/dlut/prod/宏观综合智能体",
+          "subroot": "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py",
+          "type": "placeholder_file"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py",
+        "support_subroots": [
+          "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py"
+        ],
+        "entrypoint": "",
+        "port": 10018,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_sentiment",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_sentiment",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": true
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/宏观情绪感知智能体"
+        ],
+        "authority_status": "semantic_deferred",
+        "selected_root": "/sdb/dlut/dev/宏观情绪感知智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/宏观综合智能体/placeholders/macro_sentiment.py",
+        "process_group_key": "port:10018"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "macro_sentiment_semantic_placeholder_snapshot",
+        "macro_sentiment_historical_prod_exists_conflict"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_industry_hotspot",
+      "layer": "L2",
+      "dimension": "macro",
+      "role": "analysis_agent",
+      "routes_to": [
+        "macro_composite"
+      ],
+      "display_name": "行业热点洞悉智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "conclusion_object_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_composite_placeholder",
+          "root": "/sdb/dlut/prod/宏观综合智能体",
+          "subroot": "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py",
+          "type": "placeholder_file"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py",
+        "support_subroots": [
+          "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py"
+        ],
+        "entrypoint": "",
+        "port": 10019,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "",
+        "focused_tests": []
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_industry_hotspot",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_industry_hotspot",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": true
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/行业热点洞悉智能体"
+        ],
+        "authority_status": "semantic_deferred",
+        "selected_root": "/sdb/dlut/dev/行业热点洞悉智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "conclusion_object_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/宏观综合智能体/placeholders/industry_hotspot.py",
+        "process_group_key": "port:10019"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [
+        "macro_industry_hotspot_semantic_placeholder_snapshot",
+        "macro_industry_hotspot_historical_prod_exists_conflict"
+      ],
+      "unverified": []
+    },
+    {
+      "agent_id": "value_composite",
+      "layer": "L3",
+      "dimension": "composite",
+      "role": "dimension_composite",
+      "routes_to": [
+        "decision_synthesizer"
+      ],
+      "display_name": "价值综合智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "dimension_composite_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "value_composite",
+          "root": "/sdb/dlut/prod/综合估值智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/综合估值智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10015,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "",
+        "focused_tests": [
+          "tests/test_fixed_dag_l3_wrapper.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/value_composite",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/value_composite",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/综合估值智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/综合估值智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "composite_valuation",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "dimension_composite_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/综合估值智能体",
+        "process_group_key": "port:10015"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "market_composite",
+      "layer": "L3",
+      "dimension": "composite",
+      "role": "dimension_composite",
+      "routes_to": [
+        "decision_synthesizer"
+      ],
+      "display_name": "市场面综合智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "dimension_composite_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "market_composite",
+          "root": "/sdb/dlut/prod/市场面综合智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/市场面综合智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10023,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1_fixed_dag_20260607-131633/tests/test_v23_domain_payloads.py",
+          "tests/test_backtest_metrics.py",
+          "tests/test_confidence_scale.py",
+          "tests/test_external_contract.py",
+          "tests/test_fusion.py",
+          "tests/test_fusion_arbiter.py",
+          "tests/test_horizons.py",
+          "tests/test_reliability_cap.py",
+          "tests/test_service.py",
+          "tests/test_subagent_scaffold_contract.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/market_composite",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/market_composite",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/市场面综合智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/市场面综合智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "dimension_composite_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/市场面综合智能体",
+        "process_group_key": "port:10023"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "risk_composite",
+      "layer": "L3",
+      "dimension": "composite",
+      "role": "dimension_composite",
+      "routes_to": [
+        "decision_synthesizer"
+      ],
+      "display_name": "风险综合智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "dimension_composite_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "risk_composite",
+          "root": "/sdb/dlut/prod/综合风险智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/综合风险智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10016,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_or_unknown",
+        "startup_runbook": "agent协议/README.md",
+        "focused_tests": [
+          "agent协议/tests/test_asof_leakage_probe.py",
+          "agent协议/tests/test_compute_endpoint.py",
+          "agent协议/tests/test_confidence_semantics.py",
+          "agent协议/tests/test_domain_contract_v1.py",
+          "agent协议/tests/test_graceful_degradation.py",
+          "agent协议/tests/test_idempotency.py",
+          "agent协议/tests/test_local_data_offline.py",
+          "agent协议/tests/test_response_time.py",
+          "agent协议/tests/test_result_cache.py",
+          "agent协议/tests/test_service_contract.py",
+          "tests/conftest.py",
+          "tests/fixtures/fixed_dag_l3/macro_composite.expected.json",
+          "tests/fixtures/fixed_dag_l3/macro_composite.input.json",
+          "tests/fixtures/fixed_dag_l3/market_composite.expected.json",
+          "tests/fixtures/fixed_dag_l3/market_composite.input.json",
+          "tests/fixtures/fixed_dag_l3/risk_composite.expected.json",
+          "tests/fixtures/fixed_dag_l3/risk_composite.input.json",
+          "tests/fixtures/fixed_dag_l3/value_composite.expected.json",
+          "tests/fixtures/fixed_dag_l3/value_composite.input.json",
+          "tests/test_asof_leakage_probe.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/risk_composite",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/risk_composite",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/综合风险智能体"
+        ],
+        "authority_status": "owner_authority_unresolved_no_patch",
+        "selected_root": "/sdb/dlut/dev/综合风险智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "dimension_composite_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/综合风险智能体",
+        "process_group_key": "port:10016"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "macro_composite",
+      "layer": "L3",
+      "dimension": "composite",
+      "role": "dimension_composite",
+      "routes_to": [
+        "decision_synthesizer"
+      ],
+      "display_name": "宏观综合智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "dimension_composite_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "macro_composite",
+          "root": "/sdb/dlut/prod/宏观综合智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/宏观综合智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10024,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "external_agent_scaffold_fixed_dag_v1.0/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_fixed_dag_v1.0/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1/tests/test_fixed_dag_payload_mapping.py",
+          "external_agent_scaffold_v2.3.1/tests/test_service_contract.py",
+          "external_agent_scaffold_v2.3.1/tests/test_v23_domain_payloads.py",
+          "tests/conftest.py",
+          "tests/test_backtest.py",
+          "tests/test_regime.py",
+          "tests/test_synthesis.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/macro_composite",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/macro_composite",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/宏观综合智能体"
+        ],
+        "authority_status": "owner_patch_ready",
+        "selected_root": "/sdb/dlut/dev/宏观综合智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "macro_synthesis_service",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "dimension_composite_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/宏观综合智能体",
+        "process_group_key": "port:10024"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "decision_synthesizer",
+      "layer": "L4",
+      "dimension": "l4",
+      "role": "decision_synthesizer",
+      "routes_to": [
+        "report_generator"
+      ],
+      "display_name": "综合研判智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "decision_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "decision_synthesizer",
+          "root": "/sdb/dlut/prod/决策融合智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/决策融合智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10025,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "tests/test_l4_decision_service.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/decision_synthesizer",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/decision_synthesizer",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/决策融合智能体"
+        ],
+        "authority_status": "owner_source_matches_prod_exact",
+        "selected_root": "/sdb/dlut/dev/决策融合智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "l4_decision_synthesizer",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "decision_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/决策融合智能体",
+        "process_group_key": "port:10025"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    },
+    {
+      "agent_id": "report_generator",
+      "layer": "L4",
+      "dimension": "l4",
+      "role": "report_generator",
+      "routes_to": [],
+      "display_name": "报告生成智能体",
+      "catalog_evidence": {
+        "source": "config/fixed_dag/agent_catalog.json",
+        "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
+        "output_contract": "report_result_v1"
+      },
+      "service_units": [
+        {
+          "unit_id": "report_generator",
+          "root": "/sdb/dlut/prod/报告生成智能体",
+          "type": "service_root"
+        }
+      ],
+      "prod": {
+        "root": "/sdb/dlut/prod/报告生成智能体",
+        "support_subroots": [],
+        "entrypoint": "service.py",
+        "port": 10026,
+        "health_path": "/health",
+        "compute_path": "/v1/agent/compute",
+        "process_manager": "documented_manual_process",
+        "startup_runbook": "README.md",
+        "focused_tests": [
+          "tests/test_l4_report_service.py"
+        ]
+      },
+      "sandbox": {
+        "active_root": "/sdb/dlut/sandbox/r8-13a/services/prod/report_generator",
+        "baseline_root": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services/report_generator",
+        "baseline_id": "20260623T050419Z",
+        "baseline_manifest_sha256": "0b70afce5b9a5f4218a9952c8a4418e8374288919d7d18883fef9f5d24279c73",
+        "sanitized_derivative": false,
+        "sanitized_derivative_files": [],
+        "semantic_placeholder": false
+      },
+      "owner_dev": {
+        "candidate_roots": [
+          "/sdb/dlut/dev/报告生成智能体"
+        ],
+        "authority_status": "owner_source_matches_prod_exact",
+        "selected_root": "/sdb/dlut/dev/报告生成智能体",
+        "evidence": [
+          "current CS1-A roots plus C3X subagent/static review; formal owner acceptance remains explicit only where noted"
+        ]
+      },
+      "contract": {
+        "external_agent_id": "l4_report_generator",
+        "health_schema": "external_agent_health_v0",
+        "compute_envelope_schema": "external_agent_compute_v0",
+        "output_contract": "report_result_v1",
+        "as_of_required": true
+      },
+      "sync": {
+        "include_profile": "source_bearing_default",
+        "exclude_profile": "runtime_noise_large_data_secret_default",
+        "large_asset_policy": "reference_only_over_25MiB",
+        "secret_policy": "block_or_sanitize_derivative",
+        "restart_required_after_source_change": true,
+        "transaction_root": "/sdb/dlut/prod/报告生成智能体",
+        "process_group_key": "port:10026"
+      },
+      "evidence": [
+        "config/fixed_dag/agent_catalog.json",
+        "config/fixed_dag/runtime_bindings.json",
+        "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+      ],
+      "conflicts": [],
+      "unverified": []
+    }
+  ],
+  "conflicts": [
+    {
+      "id": "entity_relation_extractor_historical_prod_exists_conflict",
+      "agent_id": "entity_relation_extractor",
+      "topic": "historical source durability vs current P2S",
+      "evidence_a": "C3R source_durability prod_exists=false",
+      "evidence_b": "current P2S/prod root exists",
+      "current_conclusion": "historical matrix is stale for current registry; prefer current P2S inventory",
+      "impact": "history import should link but not override current inventory",
+      "recommended_protocol_handling": "registry records evidence conflict and current snapshot timestamp",
+      "unresolved_operator_decision": false
+    },
+    {
+      "id": "value_research_synthesis_sanitized_derivative_not_byte_equal",
+      "agent_id": "value_research_synthesis",
+      "topic": "sanitized derivative",
+      "evidence_a": "P2S sensitive resolution manifest",
+      "evidence_b": "prod source contains runtime-required credential literal",
+      "current_conclusion": "sandbox baseline is sanitized-runtime-equivalent, not byte-equal",
+      "impact": "future S2P must not overwrite prod with sanitized copy",
+      "recommended_protocol_handling": "plan marks source as sanitized_derivative and requires operator mapping/review for S2P",
+      "unresolved_operator_decision": true
+    },
+    {
+      "id": "market_fund_manager_shared_support_root",
+      "agent_id": "market_fund_manager_behavior",
+      "topic": "shared support root",
+      "evidence_a": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
+      "evidence_b": "market_composite root hosts support subagent",
+      "current_conclusion": "not an independent service transaction root today",
+      "impact": "transaction isolation and restart dedupe required",
+      "recommended_protocol_handling": "model service_units/support_subroots; require shared-root conflict checks",
+      "unresolved_operator_decision": true
+    },
+    {
+      "id": "macro_index_valuation_sanitized_derivative_not_byte_equal",
+      "agent_id": "macro_index_valuation",
+      "topic": "sanitized derivative",
+      "evidence_a": "P2S sensitive resolution manifest",
+      "evidence_b": "prod source contains runtime-required credential literal",
+      "current_conclusion": "sandbox baseline is sanitized-runtime-equivalent, not byte-equal",
+      "impact": "future S2P must not overwrite prod with sanitized copy",
+      "recommended_protocol_handling": "plan marks source as sanitized_derivative and requires operator mapping/review for S2P",
+      "unresolved_operator_decision": true
+    },
+    {
+      "id": "macro_sentiment_semantic_placeholder_snapshot",
+      "agent_id": "macro_sentiment",
+      "topic": "placeholder service",
+      "evidence_a": "P2S sync_status semantic_placeholder_snapshot",
+      "evidence_b": "catalog formal external agent",
+      "current_conclusion": "placeholder snapshot is code baseline, not real service capability",
+      "impact": "diff tool must not treat placeholder as business implementation",
+      "recommended_protocol_handling": "registry semantic_placeholder=true; S2P needs semantic review",
+      "unresolved_operator_decision": false
+    },
+    {
+      "id": "macro_sentiment_historical_prod_exists_conflict",
+      "agent_id": "macro_sentiment",
+      "topic": "historical source durability vs current P2S",
+      "evidence_a": "C3R source_durability prod_exists=false",
+      "evidence_b": "current P2S/prod root exists",
+      "current_conclusion": "historical matrix is stale for current registry; prefer current P2S inventory",
+      "impact": "history import should link but not override current inventory",
+      "recommended_protocol_handling": "registry records evidence conflict and current snapshot timestamp",
+      "unresolved_operator_decision": false
+    },
+    {
+      "id": "macro_industry_hotspot_semantic_placeholder_snapshot",
+      "agent_id": "macro_industry_hotspot",
+      "topic": "placeholder service",
+      "evidence_a": "P2S sync_status semantic_placeholder_snapshot",
+      "evidence_b": "catalog formal external agent",
+      "current_conclusion": "placeholder snapshot is code baseline, not real service capability",
+      "impact": "diff tool must not treat placeholder as business implementation",
+      "recommended_protocol_handling": "registry semantic_placeholder=true; S2P needs semantic review",
+      "unresolved_operator_decision": false
+    },
+    {
+      "id": "macro_industry_hotspot_historical_prod_exists_conflict",
+      "agent_id": "macro_industry_hotspot",
+      "topic": "historical source durability vs current P2S",
+      "evidence_a": "C3R source_durability prod_exists=false",
+      "evidence_b": "current P2S/prod root exists",
+      "current_conclusion": "historical matrix is stale for current registry; prefer current P2S inventory",
+      "impact": "history import should link but not override current inventory",
+      "recommended_protocol_handling": "registry records evidence conflict and current snapshot timestamp",
+      "unresolved_operator_decision": false
+    }
+  ],
+  "unverified": []
+}

@@ -85,6 +85,13 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   external-agent sandbox path to the refreshed 26-agent baseline. Future
   external-agent sandbox experiments should rebase on that current baseline;
   production and owner-dev remain unchanged.
+- SYNC-OPS-1 adds the read-only bidirectional external-agent sync Planner MVP.
+  It freezes source-controlled ops registry/policy metadata, validates Draft
+  2020-12 schemas, generates B/S/P/D diffs, and emits immutable P2S/S2P/cycle
+  plans. It does not stage, apply, activate, lock, back up, restart, smoke, or
+  write any prod/sandbox/owner-dev tree. The next sync implementation entry is
+  SYNC-OPS-2 P2S automation, gated by explicit artifact-store and approval
+  decisions.
 
 重要边界：
 
@@ -101,6 +108,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
 - POST-BF-B2X 的非 L4 production policy 是新的 source-controlled 默认编排
   真源；`runtime_bindings.json` 仍只描述两个 L4 compute-default agent。Demo
   mode 与非 L4 production default 互斥，rollback 只关闭非 L4，不关闭 L4。
+- SYNC-OPS-1 的 `config/ops` registry/policy 是同步 planner 的控制面元数据；
+  它不是 runtime binding，不是 owner-dev acceptance，也不是可执行写入授权。
+  任何未来同步写操作都必须先生成 immutable plan，再用绑定 plan hash 的 approval
+  artifact 执行。
 
 ## Directory Operating Model
 

@@ -1,0 +1,31 @@
+[
+  {
+    "vector_id": "canonical-1",
+    "input": {
+      "b": 2,
+      "a": 1
+    },
+    "canonical_sha256": "43258cff783fe7036d8a43033f830adfc60ec037382473548ac742b888292777"
+  },
+  {
+    "vector_id": "canonical-2",
+    "input": {
+      "text": "中文路径/agent.py",
+      "list": [
+        "a",
+        "b"
+      ],
+      "canonical_sha256": "ignored"
+    },
+    "canonical_sha256": "2fda98daa44179e59f1bac11c9bead66a5b2a0dda7228d098e26461635fbd93e"
+  },
+  {
+    "vector_id": "canonical-3",
+    "input": {
+      "timestamp": "2026-06-23T00:00:00Z",
+      "path": "a/b",
+      "mode": "0o755"
+    },
+    "canonical_sha256": "9a67d1eeb3574173ed1a4b09e43b0c9d110e9e7fdb0f4ada4e4181358733f897"
+  }
+]

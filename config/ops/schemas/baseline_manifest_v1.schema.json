@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sandbox_baseline_v1.schema.json",
+  "title": "agent_sandbox_baseline_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "baseline_id",
+    "agents",
+    "source_tree_digest"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sandbox_baseline_v1"
+    },
+    "agents": {
+      "type": "array"
+    }
+  }
+}

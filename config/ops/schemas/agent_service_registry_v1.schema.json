@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_service_registry_v1.schema.json",
+  "title": "agent_service_registry_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "generated_at",
+    "formal_external_agent_count",
+    "agents"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_service_registry_v1"
+    },
+    "formal_external_agent_count": {
+      "type": "integer",
+      "const": 26
+    },
+    "agents": {
+      "type": "array",
+      "minItems": 26,
+      "maxItems": 26,
+      "items": {
+        "type": "object",
+        "required": [
+          "agent_id",
+          "layer",
+          "dimension",
+          "prod",
+          "sandbox",
+          "contract"
+        ]
+      }
+    }
+  }
+}

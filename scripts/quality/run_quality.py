@@ -65,6 +65,13 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/fixed_dag_report_synthesizer.py",
     "src/react_agent/fixed_dag_runtime_registry.py",
     "src/react_agent/graph.py",
+    "src/react_agent/ops/agent_syncctl.py",
+    "src/react_agent/ops/sync_contracts.py",
+    "src/react_agent/ops/sync_diff.py",
+    "src/react_agent/ops/sync_inventory.py",
+    "src/react_agent/ops/sync_plan.py",
+    "src/react_agent/ops/sync_registry.py",
+    "src/react_agent/ops/sync_security.py",
     "src/react_agent/public_api.py",
     "src/react_agent/public_contracts.py",
     "src/react_agent/public_mapping.py",
@@ -73,6 +80,11 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/state.py",
     "tests/integration_tests/test_public_api.py",
     "tests/integration_tests/test_graph.py",
+    "tests/integration_tests/test_sync_ops_planner.py",
+    "tests/unit_tests/ops/test_sync_contracts.py",
+    "tests/unit_tests/ops/test_sync_plan_cli.py",
+    "tests/unit_tests/ops/test_sync_registry_diff.py",
+    "tests/unit_tests/ops/test_sync_security_inventory.py",
     "tests/unit_tests/test_fixed_dag_catalog.py",
     "tests/unit_tests/test_fixed_dag_contracts.py",
     "tests/unit_tests/test_fixed_dag_executor.py",
@@ -90,6 +102,8 @@ STATIC_RUFF_TARGETS = (
 STATIC_MYPY_TARGETS = (
     "scripts/quality/run_quality.py",
     "scripts/quality/run_provider_live_smoke.py",
+    "scripts/ops/agent_syncctl.py",
+    "src/react_agent/ops",
 )
 STATIC_CODESPELL_TARGETS = (
     "README.md",
@@ -102,6 +116,8 @@ STATIC_CODESPELL_TARGETS = (
     "docs/QUALITY.md",
     "docs/DECISIONS.md",
     "docs/CHANGELOG.md",
+    "docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md",
+    "docs/SYNC_OPS_1_READ_ONLY_PLANNER.md",
 )
 
 

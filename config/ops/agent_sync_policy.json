@@ -1,0 +1,138 @@
+{
+  "schema_version": "agent_sync_policy_v1",
+  "directions": [
+    "p2s",
+    "s2p",
+    "publish_and_rebase"
+  ],
+  "source_file_policy": {
+    "include": [
+      "*.py",
+      "*.pyi",
+      "*.json",
+      "*.yaml",
+      "*.yml",
+      "*.toml",
+      "*.ini",
+      "*.cfg",
+      "*.md",
+      "*.txt",
+      "*.sh",
+      "*.ps1",
+      "Dockerfile",
+      "requirements*",
+      "package.json"
+    ],
+    "exclude_directories": [
+      ".git",
+      "__pycache__",
+      ".pytest_cache",
+      ".mypy_cache",
+      ".ruff_cache",
+      "venv",
+      ".venv",
+      "node_modules",
+      "logs",
+      "cache",
+      "output",
+      "outputs",
+      "backups",
+      "data",
+      "datasets",
+      "models",
+      "weights"
+    ],
+    "default_large_file_threshold_bytes": 26214400,
+    "recursive_model_data_hashing": false
+  },
+  "sensitive_file_policy": {
+    "classifications": [
+      "false_positive_identifier_only",
+      "example_or_placeholder_value",
+      "environment_lookup_no_literal_secret",
+      "hardcoded_credential_required_runtime",
+      "hardcoded_credential_unreachable_legacy",
+      "sensitive_noncredential_private_data",
+      "unresolved_sensitive_source"
+    ],
+    "hardcoded_runtime_secret": "block exact copy; allow sandbox-only sanitized derivative with manifest",
+    "unreachable_sensitive_file": "omit with reachability evidence",
+    "secret_allowlist": "not allowed as bypass"
+  },
+  "symlink_policy": {
+    "root_escape": "blocked",
+    "relative_inside_root": "recorded and copied only if safe",
+    "hardlink": "copy by content only if regular file; record link count",
+    "special_files": "blocked"
+  },
+  "large_asset_policy": {
+    "copy": "never by default",
+    "reference": "large_asset_reference entry with path/size/type/hash when safe",
+    "model_data": "manual owner decision"
+  },
+  "file_mode_policy": {
+    "preserve_executable_bit": true,
+    "preserve_uid_gid": false,
+    "setuid_setgid": "blocked"
+  },
+  "owner_boundary_policy": {
+    "owner_dev": "read-only by default",
+    "prod_not_owner_authority": true,
+    "semantic_equivalence": "manual review only"
+  },
+  "approval_policy": {
+    "machine_record_required": true,
+    "chat_text_not_approval": true,
+    "binds_plan_sha256": true,
+    "partial_approval": true,
+    "delete_process_live_independent_flags": true,
+    "expires_on_target_drift": true
+  },
+  "lock_policy": {
+    "mvp": "global_cycle_lock_plus_per_agent_transaction_lock",
+    "stale_lock_auto_delete": false,
+    "force_unlock_requires_audit": true,
+    "lock_root": "/sdb/dlut/ops-artifacts/agent-sync/locks"
+  },
+  "transaction_policy": {
+    "single_operator": true,
+    "per_agent_isolation": true,
+    "target_before_hash_required": true,
+    "s2p_delete_default": "disabled",
+    "rename_auto_apply": false,
+    "publish_and_rebase_after_settled_transactions_only": true
+  },
+  "validation_policy": {
+    "mainline_external_http_free": true,
+    "offline_tests_before_live": true,
+    "schema_validation_required": true,
+    "secret_scan_required": true
+  },
+  "live_gate_policy": {
+    "endpoint_smoke_explicit_only": true,
+    "process_action_explicit_only": true,
+    "not_in_default_mainline": true
+  },
+  "artifact_policy": {
+    "primary_store": "/sdb/dlut/ops-artifacts/agent-sync",
+    "tmp_only_for_disposable_intermediates": true,
+    "relative_paths": true,
+    "manifest_self_exclusion": true,
+    "no_raw_response": true,
+    "no_credentials": true,
+    "artifact_store_root": "/sdb/dlut/ops-artifacts/agent-sync",
+    "mvp_creation_deferred": true
+  },
+  "retention_policy": {
+    "mvp_delete_automatically": false,
+    "future_retention_index": true
+  },
+  "operator_decisions": {
+    "artifact_store_root": "/sdb/dlut/ops-artifacts/agent-sync",
+    "approval_record_mode": "file_based_json_bound_to_exact_plan_sha256",
+    "lock_strategy": "global_cycle_coordinator_lock_plus_per_agent_transaction_lock",
+    "delete_operation_default": "disabled",
+    "sanitized_derivative_long_term_policy": "non_publishable_by_default",
+    "artifact_retention": "no_automatic_deletion_in_mvp"
+  }
+}

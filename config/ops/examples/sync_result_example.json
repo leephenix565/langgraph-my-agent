@@ -1,0 +1,29 @@
+{
+  "schema_version": "agent_sync_result_v1",
+  "run_id": "run-example-001",
+  "plan_id": "plan-example-s2p",
+  "plan_sha256": "e64ef8becbcaf3f4dcae0b7ad9e2438cbfeb282f8b45a2aace796dc25a3103ed",
+  "approval_id": "approval-example-001",
+  "direction": "s2p",
+  "started_at": "2026-06-23T00:10:00Z",
+  "finished_at": "2026-06-23T00:11:00Z",
+  "global_status": "noop_already_equal",
+  "agents": [
+    {
+      "transaction_id": "tx-example-001",
+      "agent_id": "value_research_synthesis",
+      "final_status": "noop_already_equal",
+      "files_applied": [],
+      "files_skipped": [
+        "main5.py"
+      ],
+      "blockers": [],
+      "limitations": []
+    }
+  ],
+  "artifact_index": "artifact_index.json",
+  "non_claims": [
+    "example only",
+    "no endpoint"
+  ]
+}

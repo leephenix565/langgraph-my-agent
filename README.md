@@ -114,6 +114,14 @@ baseline while preserving the old sandbox tree. Main-system sandbox refresh
 remains dev-HEAD based, not production based. See
 `docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md`.
 
+SYNC-OPS-1 adds a read-only bidirectional external-agent sync planner MVP. It
+source-controls `config/ops/agent_service_registry.json`,
+`config/ops/agent_sync_policy.json`, Draft 2020-12 schemas, and a read-only
+`agent-sync` CLI for inventory, baseline inspection, experiment validation,
+B/S/P/D diffing, and immutable P2S/S2P/cycle plan generation. It does not
+stage, apply, switch, lock, back up, restart, smoke, or write prod/sandbox/
+owner-dev trees. See `docs/SYNC_OPS_1_READ_ONLY_PLANNER.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

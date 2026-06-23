@@ -1,0 +1,60 @@
+{
+  "schema_version": "agent_sync_experiment_v1",
+  "experiment_id": "exp-example-001",
+  "created_at": "2026-06-23T00:00:00Z",
+  "base_baseline_id": "20260623T050419Z",
+  "base_baseline_manifest_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+  "workspace_root": "/sdb/dlut/sandbox/experiments/example",
+  "agents": [
+    "value_research_synthesis"
+  ],
+  "change_units": [
+    {
+      "change_unit_id": "cu-example-001",
+      "agent_id": "value_research_synthesis",
+      "change_family": "report_material",
+      "risk_class": "B_protocol_wrapper",
+      "intended_behavior": [
+        "public-safe report material improvement"
+      ],
+      "non_goals": [
+        "no business scoring change"
+      ],
+      "files": [
+        "service.py"
+      ],
+      "base_hashes": {
+        "service.py": "1111111111111111111111111111111111111111111111111111111111111111"
+      },
+      "expected_contract_effect": [
+        "agent_conclusion_v1 unchanged"
+      ],
+      "required_tests": [
+        "py_compile",
+        "contract tests"
+      ],
+      "requires_live_gate": false,
+      "requires_restart": true,
+      "owner_review_required": true,
+      "status": "draft"
+    }
+  ],
+  "allowed_paths": [
+    "value_research_synthesis/**"
+  ],
+  "forbidden_paths": [
+    "**/.env*",
+    "**/data/**",
+    "**/models/**"
+  ],
+  "global_non_goals": [
+    "no model/data copy"
+  ],
+  "owner_boundaries": [
+    "owner-dev read-only"
+  ],
+  "test_plan": [
+    "offline contract tests"
+  ],
+  "status": "draft"
+}

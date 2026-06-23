@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-1 read-only bidirectional sync planner
+
+### Changed
+
+- Added `config/ops/agent_service_registry.json`,
+  `config/ops/agent_sync_policy.json`, Draft 2020-12 schemas, and protocol
+  examples for external-agent sync planning.
+- Added `src/react_agent/ops/` and `scripts/ops/agent_syncctl.py` for read-only
+  inventory, baseline inspection, experiment validation, B/S/P/D diffing, and
+  immutable P2S/S2P/cycle plan generation.
+- Added docs and ADRs for immutable hash-bound plans, static/runtime registry
+  separation, immutable active baselines, deferred publish-and-rebase, and
+  non-publishable sanitized derivatives.
+
+### Validated
+
+- Real `jsonschema.Draft202012Validator` validates all sync schemas and
+  examples.
+- Canonical hash vectors, registry invariants, filesystem safety, inventory,
+  diff, plan generation, and CLI unsupported-write behavior are covered by
+  tests.
+- The current environment rehearsal parses the active baseline pointer,
+  generates a read-only P2S plan, blocks active-baseline S2P, and emits a
+  deferred cycle plan.
+
+### Not Done
+
+- No production, sandbox, owner-dev, baseline pointer, artifact-store, lock,
+  backup, process, endpoint, provider, database, or smoke action was performed.
+- No P2S stage/activate, S2P apply/smoke, rollback, or lock acquisition command
+  is available in SYNC-OPS-1.
+
 ## 2026-06-23 - P2S-CLOSE-R1 sensitive source closure and sandbox switch
 
 ### Changed

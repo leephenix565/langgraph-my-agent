@@ -89,6 +89,15 @@ canaries are release evidence and remain manual live gates; they are not added
 to default mainline. Mainline must still be provider-free and must not call
 `/v1/agent/invoke` or live external endpoints.
 
+SYNC-OPS-1 adds a read-only bidirectional external-agent sync planner to the
+static/unit quality surface. Its tests validate Draft 2020-12 schemas,
+canonical hashes, registry invariants, filesystem safety, B/S/P/D diffing,
+immutable plan generation, and unsupported write-command rejection. The planner
+does not call `/health`, `/v1/agent/compute`, `/v1/agent/invoke`, providers, or
+databases; it does not start, stop, restart, signal, or smoke processes; and it
+does not write prod, sandbox, owner-dev, lock, backup, or artifact-store roots
+in mainline.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

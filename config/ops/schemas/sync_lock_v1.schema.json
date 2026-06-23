@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_lock_v1.schema.json",
+  "title": "agent_sync_lock_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "lock_id",
+    "run_id",
+    "plan_id",
+    "plan_sha256",
+    "direction",
+    "agent_scopes",
+    "target_roots",
+    "state"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_lock_v1"
+    }
+  }
+}

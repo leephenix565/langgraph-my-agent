@@ -3,6 +3,84 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-086: Sanitized Sandbox Derivatives Are Non-Publishable By Default
+
+Status: accepted for SYNC-OPS-1.
+
+Decision: sandbox-only sanitized derivatives in a production-derived baseline
+must not be published back to production by default. An S2P planner must block
+direct file actions from such derivatives unless a future explicit
+prod-safe-config-refactor change unit and hash-bound approval record exists.
+
+Reason: P2S-CLOSE-R1 intentionally replaced credential-bearing production
+source with sandbox-only derivatives. Publishing those derivatives back to prod
+could change runtime configuration semantics and erase production-only secure
+source.
+
+Non-consequence: this does not make production the owner source authority and
+does not prevent a reviewed owner-safe refactor later.
+
+## ADR-085: Publish-And-Rebase Defers P2S Until S2P Settles
+
+Status: accepted for SYNC-OPS-1.
+
+Decision: a cycle plan may reference an immutable S2P plan and approval
+requirements, but it must defer P2S rebase generation until all started S2P
+transactions settle against the real production after-state.
+
+Reason: precomputing the future production tree would hide target drift,
+rollback, partial success, and external owner deployments.
+
+Non-consequence: this does not execute any S2P or P2S transaction in
+SYNC-OPS-1.
+
+## ADR-084: Active Sandbox Baseline Is Immutable
+
+Status: accepted for SYNC-OPS-1.
+
+Decision: the active external-agent sandbox baseline is not a writable
+experiment workspace. Experiments must fork from the versioned baseline and
+carry an experiment manifest that binds the base baseline id and hash.
+
+Reason: after P2S-CLOSE-R1 the active sandbox path represents the current
+production-derived baseline. Mutating it directly would destroy the B/S/P/D
+diff source.
+
+Non-consequence: this does not delete or rewrite old sandbox experiments.
+
+## ADR-083: Static Service Registry Excludes Transient Process State
+
+Status: accepted for SYNC-OPS-1.
+
+Decision: `config/ops/agent_service_registry.json` stores stable Agent identity,
+path, contract, ownership, transaction, and sync policy metadata only. PID,
+listener state, process start time, elapsed time, raw command line, health
+result, compute result, endpoint response, and environment values belong only
+in generated runtime inventory snapshots.
+
+Reason: plan hashes and registry hashes must remain stable across process
+restarts and live diagnostics. Transient runtime state cannot be a source of
+truth for sync planning.
+
+Non-consequence: future apply/smoke phases may still collect bounded process
+preflight evidence before a write transaction.
+
+## ADR-082: Bidirectional Sync Uses Immutable Plans And Hash-Bound Approval
+
+Status: accepted for SYNC-OPS-1.
+
+Decision: external-agent P2S, S2P, and publish-and-rebase flows use immutable
+canonical JSON plans. Any future write command must read a file-based approval
+record bound to the exact plan SHA256. Chat acknowledgements are not machine
+approval.
+
+Reason: external Agent directories have different authorities and may drift
+between planning and application. Hash-bound plans plus target-before hashes
+are required to prevent stale or ambiguous writes.
+
+Non-consequence: SYNC-OPS-1 implements only read-only planning and validation;
+it does not apply, lock, back up, restart, smoke, or roll back.
+
 ## ADR-081: Sensitive Production Source Is Never Copied Verbatim Into Sandbox
 
 Status: accepted for P2S-CLOSE-R1.

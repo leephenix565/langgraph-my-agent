@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_policy_v1.schema.json",
+  "title": "agent_sync_policy_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "directions",
+    "source_file_policy",
+    "approval_policy",
+    "transaction_policy"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_policy_v1"
+    },
+    "directions": {
+      "type": "array",
+      "items": {
+        "enum": [
+          "p2s",
+          "s2p",
+          "publish_and_rebase"
+        ]
+      }
+    }
+  }
+}

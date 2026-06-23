@@ -95,6 +95,16 @@ rule, switched `/sdb/dlut/sandbox/r8-13a/services/prod` to the refreshed
 26-agent baseline, and preserved the previous sandbox tree for rollback and
 experiment review.
 
+SYNC-OPS-1 adds a read-only control-plane layer for future external-agent
+synchronization. The main-system repo now owns stable sync metadata under
+`config/ops/` and read-only planner code under `src/react_agent/ops/`. That
+metadata records candidate prod, sandbox, owner-dev, service-unit, and contract
+facts; it does not make prod an owner source authority and does not imply
+owner-dev acceptance. Future write phases must use immutable plans, hash-bound
+file approvals, target-before hashes, and per-Agent transactions. The active
+external-agent sandbox baseline remains immutable; experiments must fork from
+it rather than editing it in place.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

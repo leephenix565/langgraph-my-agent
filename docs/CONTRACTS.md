@@ -114,6 +114,19 @@ boundary. The executor records actual non-L4 compute activity in private
 `production_external_compute_*` provenance while preserving the existing public
 `externalInvoked=false` no-`/invoke` claim.
 
+SYNC-OPS-1 adds the read-only external Agent sync planning contract family. The
+source-controlled registry and policy live in `config/ops/`, schemas live in
+`config/ops/schemas/`, examples live in `config/ops/examples/`, and the planner
+logic lives under `src/react_agent/ops/`. These contracts are separate from
+fixed-DAG runtime plans and never enter LangGraph `State`.
+
+The planner validates artifacts with real JSON Schema Draft 2020-12 through
+`jsonschema.Draft202012Validator`, then applies repo semantic validators for
+catalog equality, route boundaries, canonical plan hashes, target freshness,
+sanitized-derivative blockers, active-baseline guards, and approval scope.
+Planner commands may emit inventory, B/S/P/D diff, P2S plan, S2P plan, and
+cycle plan JSON, but SYNC-OPS-1 has no stage/apply/smoke/rollback/lock command.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

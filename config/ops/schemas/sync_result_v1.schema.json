@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_result_v1.schema.json",
+  "title": "agent_sync_result_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "run_id",
+    "plan_id",
+    "plan_sha256",
+    "approval_id",
+    "direction",
+    "global_status",
+    "agents"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_result_v1"
+    }
+  }
+}

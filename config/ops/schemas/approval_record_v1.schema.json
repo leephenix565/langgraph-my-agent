@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_approval_v1.schema.json",
+  "title": "agent_sync_approval_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "approval_id",
+    "plan_id",
+    "plan_sha256",
+    "approved_agent_ids",
+    "approved_action_ids"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_approval_v1"
+    }
+  }
+}

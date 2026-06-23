@@ -1,0 +1,20 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_experiment_v1.schema.json",
+  "title": "agent_sync_experiment_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "base_baseline_id",
+    "agents",
+    "change_units",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_experiment_v1"
+    }
+  }
+}

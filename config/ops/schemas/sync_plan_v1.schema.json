@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_plan_v1.schema.json",
+  "title": "agent_sync_plan_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "direction",
+    "registry_sha256",
+    "policy_sha256",
+    "agents",
+    "approval_requirements",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_plan_v1"
+    },
+    "direction": {
+      "enum": [
+        "p2s",
+        "s2p",
+        "publish_and_rebase"
+      ]
+    }
+  }
+}

@@ -1,0 +1,23 @@
+{
+  "schema_version": "agent_sync_approval_v1",
+  "approval_id": "approval-example-001",
+  "plan_id": "plan-example-s2p",
+  "plan_sha256": "e64ef8becbcaf3f4dcae0b7ad9e2438cbfeb282f8b45a2aace796dc25a3103ed",
+  "approved_at": "2026-06-23T00:05:00Z",
+  "expires_at": "2026-06-24T00:05:00Z",
+  "approved_agent_ids": [
+    "value_research_synthesis"
+  ],
+  "approved_action_ids": [
+    "act-001"
+  ],
+  "approved_risk_classes": [
+    "B_protocol_wrapper"
+  ],
+  "delete_actions_approved": false,
+  "process_actions_approved": false,
+  "live_validation_approved": false,
+  "publish_and_rebase_approved": false,
+  "operator_reference": "review-ticket-or-human-id",
+  "notes": "example only; no credentials"
+}
