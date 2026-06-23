@@ -1025,3 +1025,17 @@ archive portability regressions:
 Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
 sandbox, owner-dev, real approvals, real locks, real bootstrap state, real
 stages, endpoints, process state, or environment values.
+
+## SYNC-OPS-2B0 Bootstrap Execution Guard
+
+SYNC-OPS-2B0 keeps the artifact-store bootstrap executor in the maintained
+quality surface:
+
+- real bootstrap execution fails closed when the current environment snapshot
+  SHA differs from the plan-bound SHA;
+- no machine approval is created for a stale environment;
+- metadata payload construction supports a single final atomic
+  `STORE_METADATA.json` replace with ownership ledger data present;
+- stale bootstrap attempts leave real artifact-store, prod, sandbox,
+  owner-dev, approval, lock, stage, endpoint, process, and environment-value
+  state untouched.

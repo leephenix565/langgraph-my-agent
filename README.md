@@ -176,6 +176,13 @@ approval requests distinct from machine approvals, and creates POSIX archive
 entries. It still does not create the real store or execute P2S stage. See
 `docs/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md`.
 
+SYNC-OPS-2B0 attempted the first real artifact-store bootstrap, but did not
+execute it because the rebuilt environment snapshot no longer matched the exact
+approved R4 snapshot. No machine approval was created, no artifact-store
+directory or metadata was written, and no P2S stage occurred. The bootstrap
+writer now fails closed on environment drift before any real write. See
+`docs/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

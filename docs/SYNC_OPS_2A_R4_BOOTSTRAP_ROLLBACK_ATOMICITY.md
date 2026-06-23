@@ -61,3 +61,10 @@ R4 does not modify prod, sandbox, owner-dev, the real artifact store, real
 approvals, real locks, backups, stages, activation, endpoints, process state,
 or environment values. All bootstrap rollback and archive coverage runs in
 repo-external temporary directories.
+
+## 2B0 Follow-Up
+
+SYNC-OPS-2B0 did not execute the R4 bootstrap request. The rebuilt environment
+snapshot no longer matched the R4 plan-bound environment SHA, so no machine
+approval was created and no real artifact-store write occurred. The R4 request
+must be treated as stale; a new bootstrap plan/request is required.

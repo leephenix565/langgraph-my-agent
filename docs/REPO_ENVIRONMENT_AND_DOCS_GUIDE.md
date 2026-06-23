@@ -297,4 +297,7 @@ Activation and rollback are a separate later approval bound to the real stage
 run and digest; stage-only approval cannot switch the active sandbox or update
 the pointer. SYNC-OPS-2A-R4 tightens bootstrap rollback: store metadata records
 an ownership ledger, blocked rollback is a true zero-mutation no-op, and
-approval requests are not machine approvals.
+approval requests are not machine approvals. SYNC-OPS-2B0 attempted the first
+real bootstrap but stopped before approval because the current environment
+snapshot drifted from the approved snapshot. A new exact bootstrap plan/request
+is required before `/sdb/dlut/ops-artifacts/agent-sync` can be created.

@@ -3,6 +3,30 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2B0 artifact-store bootstrap stale guard
+
+### Added
+
+- Added a bootstrap executor guard that rejects real bootstrap execution when
+  the rebuilt environment snapshot SHA no longer matches the plan-bound SHA.
+- Added single-final-replace metadata preparation so
+  `STORE_METADATA.json` can include ownership ledger data without a second
+  persistent metadata overwrite.
+- Added `docs/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
+
+### Result
+
+- The exact R4 bootstrap plan/request was not executed because the current
+  environment snapshot differed from the approved snapshot.
+- No machine approval was created, no real artifact-store directories were
+  created, and no `STORE_METADATA.json` was written.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, bootstrap,
+  backup, stage, activation, endpoint, process, `.env`, provider, database, or
+  secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A-R4 bootstrap rollback atomicity
 
 ### Added

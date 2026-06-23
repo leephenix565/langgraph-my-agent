@@ -177,6 +177,21 @@ def test_bootstrap_rejects_existing_regular_file(tmp_path: Path) -> None:
     assert exc.value.reason == "bootstrap_existing_path_not_directory"
 
 
+def test_bootstrap_rejects_environment_drift_before_write(tmp_path: Path) -> None:
+    root = tmp_path / "ops-artifacts" / "agent-sync"
+    plan = build_bootstrap_plan(root)
+    environment = build_bootstrap_environment_snapshot(plan)
+    approval = build_temp_bootstrap_approval(plan, environment, rollback=True)
+    root.parent.mkdir()
+
+    with pytest.raises(SyncPlannerError) as exc:
+        bootstrap_artifact_store(plan, approval, execute=True)
+
+    assert exc.value.exit_code == 5
+    assert exc.value.reason == "bootstrap_environment_snapshot_mismatch"
+    assert not root.exists()
+
+
 def test_p2s_plan_is_blocked_until_artifact_store_bootstrapped(tmp_path: Path) -> None:
     missing_store = tmp_path / "missing-store"
     plan = build_p2s_plan(artifact_store_root=missing_store)

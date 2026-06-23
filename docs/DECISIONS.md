@@ -3,6 +3,19 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-105: Bootstrap Execution Rechecks Plan-Bound Environment
+
+Status: accepted for SYNC-OPS-2B0.
+
+Decision: artifact-store bootstrap execution must rebuild the current
+environment snapshot immediately before writing and compare it to the
+plan-bound environment SHA. Any mismatch blocks execution and requires a new
+plan/request/approval cycle.
+
+Reason: the approved bootstrap plan binds ancestor, ownership, operator,
+device, path-state, and free-space facts. Updating the environment hash after
+approval would silently move the approval boundary.
+
 ## ADR-104: Sync Archives Use POSIX Entry Paths
 
 Status: accepted for SYNC-OPS-2A-R4.

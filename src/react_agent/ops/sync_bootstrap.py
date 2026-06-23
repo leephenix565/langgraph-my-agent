@@ -510,7 +510,13 @@ def validate_bootstrap_approval(approval: Mapping[str, Any], plan: Mapping[str, 
     }
 
 
-def _build_ownership_ledger(root: Path, plan: Mapping[str, Any], created_dirs: list[str]) -> dict[str, Any]:
+def _build_ownership_ledger(
+    root: Path,
+    plan: Mapping[str, Any],
+    created_dirs: list[str],
+    *,
+    metadata_identity: Mapping[str, Any] | None = None,
+) -> dict[str, Any]:
     action_by_path = _directory_action_by_path(plan)
     created_paths: list[dict[str, Any]] = []
     for path_text in created_dirs:
@@ -533,7 +539,7 @@ def _build_ownership_ledger(root: Path, plan: Mapping[str, Any], created_dirs: l
             "action_id": str((plan.get("metadata_action") or {}).get("action_id") or ""),
             "created_by_this_run": True,
             "preexisting_before_run": False,
-            "post_create_identity": _path_identity(metadata_path),
+            "post_create_identity": dict(metadata_identity or _path_identity(metadata_path)),
         }
     )
     return {
@@ -566,9 +572,17 @@ def _write_metadata(root: Path, plan: Mapping[str, Any], approval: Mapping[str, 
         "created_directories": created_dirs,
         "no_secrets_declaration": True,
     }
-    _atomic_write_json(root / STORE_METADATA_FILENAME, payload, mode=0o600)
-    payload["ownership_ledger"] = _build_ownership_ledger(root, plan, created_dirs)
-    _atomic_write_json(root / STORE_METADATA_FILENAME, payload, mode=0o600)
+    metadata_path = root / STORE_METADATA_FILENAME
+    tmp = metadata_path.with_name(f".{metadata_path.name}.tmp-{os.getpid()}-{uuid.uuid4().hex[:8]}")
+    fd = os.open(tmp, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    os.close(fd)
+    os.chmod(tmp, 0o600)
+    payload["ownership_ledger"] = _build_ownership_ledger(root, plan, created_dirs, metadata_identity=_path_identity(tmp))
+    tmp.write_text(json.dumps(payload, ensure_ascii=False, indent=2, allow_nan=False) + "\n", encoding="utf-8")
+    with tmp.open("rb") as handle:
+        os.fsync(handle.fileno())
+    os.replace(tmp, metadata_path)
+    _fsync_dir(metadata_path.parent)
     return payload
 
 
@@ -625,6 +639,15 @@ def bootstrap_artifact_store(plan: Mapping[str, Any], approval: Mapping[str, Any
     if existing["bootstrapped"]:
         return {"status": "noop_success", "root": str(root), "idempotent": True, "verify": existing}
     environment = build_bootstrap_environment_snapshot(plan)
+    if str(environment.get("environment_snapshot_sha256") or "") != str(plan.get("environment_snapshot_sha256") or ""):
+        raise SyncPlannerError(
+            "bootstrap_environment_snapshot_mismatch",
+            exit_code=5,
+            details={
+                "expected": str(plan.get("environment_snapshot_sha256") or ""),
+                "actual": str(environment.get("environment_snapshot_sha256") or ""),
+            },
+        )
     approval_result = validate_bootstrap_approval(approval, plan, environment)
     if not approval_result["valid"]:
         raise SyncPlannerError("bootstrap_approval_invalid", exit_code=4, details={"blockers": approval_result["blockers"]})

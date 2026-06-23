@@ -1359,6 +1359,17 @@ SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
   absolute entries, traversal components, duplicate normalized entries, and
   symlink entries.
 
+SYNC-OPS-2B0 confirms the bootstrap execution boundary:
+
+- a machine approval is created only after the current environment SHA exactly
+  matches the approved plan-bound SHA;
+- bootstrap execution repeats that environment comparison before creating any
+  directory;
+- environment drift blocks execution with no machine approval, no real
+  artifact-store write, and no P2S stage;
+- a drifted bootstrap requires a new plan, environment snapshot, request, and
+  machine approval.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:
