@@ -3,6 +3,39 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - P2S-CLOSE-R1 sensitive source closure and sandbox switch
+
+### Changed
+
+- Resolved the two P2S-BASELINE-X sensitive-source blockers without modifying
+  production or owner-dev repositories.
+- Created sandbox-only sanitized derivatives for runtime-required
+  credential-bearing source in `value_research_synthesis` and
+  `macro_index_valuation`.
+- Safely omitted one unreachable legacy `financial_data_service` test file that
+  contained token-like literal test material.
+- Switched `/sdb/dlut/sandbox/r8-13a/services/prod` to the refreshed 26-agent
+  production-derived baseline and preserved the previous sandbox tree at
+  `/sdb/dlut/sandbox/r8-13a/services/prod-pre-p2s-20260623T060926Z`.
+- Added the active baseline pointer at
+  `/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json`.
+
+### Validated
+
+- Covered all 26 formal external agents with no empty blocked roots.
+- Verified exact SHA equality for exact-copied files and explicit manifests for
+  sanitized derivatives.
+- Ran credential-oriented source scan, JSON parse checks, symlink/runtime-noise
+  checks, and staged Python py-compile using repo-external pycache.
+- Verified the active fixed sandbox tree equals the versioned baseline content.
+
+### Not Done
+
+- Did not modify production files, owner-dev repositories, runtime bindings, or
+  service processes.
+- Did not call endpoints, read `.env` values, read `/proc/*/environ`, copy raw
+  logs, copy secrets, or bulk-copy model/data assets.
+
 ## 2026-06-23 - P2S-BASELINE-X external-agent sandbox baseline refresh
 
 ### Changed

@@ -3,6 +3,31 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-081: Sensitive Production Source Is Never Copied Verbatim Into Sandbox
+
+Status: accepted for P2S-CLOSE-R1.
+
+Decision: production source-bearing files that contain sensitive literals must
+not be copied verbatim into sandbox baselines. A sandbox baseline may use a
+sandbox-only sanitized derivative that replaces the sensitive literal with an
+explicit environment-variable lookup and empty default, or it may omit a file
+that is proven unreachable legacy/test material. Both paths require manifests,
+line-range classification, source and derivative hashes, and offline validation.
+
+Reason: the prod-to-sandbox baseline is meant to give future experiments a
+current runtime-code starting point, not to spread production credentials or
+private runtime material into sandbox.
+
+Consequence: P2S-CLOSE-R1 resolved the `value_research_synthesis` and
+`macro_index_valuation` blockers with sanitized derivatives, safely omitted one
+unreachable legacy test file containing token-like test material, and then
+switched the fixed external-agent sandbox path to the validated 26-agent
+baseline.
+
+Non-consequence: this does not modify production, owner-dev repositories,
+service processes, runtime bindings, live flags, providers, endpoint behavior,
+model/data assets, or owner source authority.
+
 ## ADR-080: External Agent Sandbox Experiments Rebase On Versioned Production Runtime Snapshots
 
 Status: accepted for P2S-BASELINE-X.
@@ -24,8 +49,8 @@ fixed integration bugs.
 Consequence: a prod-to-sandbox refresh must stage first, archive old sandbox
 experiments, exclude secrets/runtime data/logs/cache/models/large datasets, and
 switch the current sandbox only after validation. P2S-BASELINE-X staged a
-26-agent baseline but intentionally did not switch the current sandbox path
-because two production roots contain credential-like inline source files.
+26-agent baseline; P2S-CLOSE-R1 resolved the sensitive-source blockers and
+switched the current sandbox path.
 
 Non-consequence: this does not modify production, owner-dev repositories,
 runtime bindings, live flags, service processes, or provider/invoke behavior.

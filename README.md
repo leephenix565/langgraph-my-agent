@@ -106,10 +106,12 @@ production runtime source after the backfill/release cycle. It staged a new
 26-agent source-bearing baseline under
 `/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services` and
 archived the old sandbox under
-`/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z`, but did not switch
-the current sandbox path because two production roots contain credential-like
-inline source files that must not be copied. Main-system sandbox refresh remains
-dev-HEAD based, not production based. See
+`/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z`. P2S-CLOSE-R1 then
+resolved the sensitive-source blockers with sandbox-only sanitized derivatives,
+omitted one unreachable legacy test file containing token-like material, and
+switched `/sdb/dlut/sandbox/r8-13a/services/prod` to the refreshed 26-agent
+baseline while preserving the old sandbox tree. Main-system sandbox refresh
+remains dev-HEAD based, not production based. See
 `docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md`.
 
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase

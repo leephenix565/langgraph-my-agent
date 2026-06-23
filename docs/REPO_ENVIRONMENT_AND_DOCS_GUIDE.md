@@ -89,7 +89,11 @@ does not apply to the main-system repository, does not make production an
 owner-dev authority, and must not copy secrets, logs, caches, `.git`, model
 weights, datasets, or runtime artifacts. If any production source-bearing file
 contains credential-like inline content, the current sandbox path must not be
-switched until that service is remediated.
+switched until that source is resolved by exact safe copy, sandbox-only
+sanitized derivative, or proven-unreachable omission. P2S-CLOSE-R1 applied that
+rule, switched `/sdb/dlut/sandbox/r8-13a/services/prod` to the refreshed
+26-agent baseline, and preserved the previous sandbox tree for rollback and
+experiment review.
 
 ## Directory Roles
 

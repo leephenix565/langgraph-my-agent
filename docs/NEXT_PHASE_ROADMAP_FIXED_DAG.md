@@ -80,10 +80,11 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   integration phase.
 - P2S-BASELINE-X stages the first external-agent production-to-sandbox baseline
   after the completed backfill/release cycle. It does not reopen backfill or
-  change runtime activation. The current staged baseline is blocked from
-  current-path switch until `value_research_synthesis` and
-  `macro_index_valuation` no longer contain credential-like inline production
-  source files.
+  change runtime activation. P2S-CLOSE-R1 resolves the sensitive-source
+  blockers with sandbox-only sanitized derivatives and switches the fixed
+  external-agent sandbox path to the refreshed 26-agent baseline. Future
+  external-agent sandbox experiments should rebase on that current baseline;
+  production and owner-dev remain unchanged.
 
 重要边界：
 
