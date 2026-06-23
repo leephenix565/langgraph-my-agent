@@ -888,3 +888,25 @@ external service is live verified or safe to enable.
 The scaffold tests are package-local validation. They are not part of the
 default reset mainline unless a later phase explicitly changes the quality
 policy.
+
+## SYNC-OPS-1R Planner Safety Gate
+
+SYNC-OPS-1R extends the read-only sync planner quality surface. Default static
+and mainline gates may run schema, canonical hash, filesystem safety, inventory,
+diff, P2S plan, CLI, archive-entry, and repo-external temp-root integration
+tests. These tests must not write production, sandbox, owner-dev, or configured
+artifact-store paths.
+
+Required safety assertions include:
+
+- old unsafe P2S plans fail validation;
+- P2S stage roots are new versioned baseline paths, not active sandbox paths;
+- ordinary copy actions have non-empty source hashes;
+- backup/runtime-noise files are excluded;
+- sanitized derivatives are preserved or blocked, never raw-replaced;
+- all 26 external agents receive explicit dispositions;
+- archive entry paths use POSIX `/`.
+
+Future P2S stage/activate, S2P apply, lock acquisition, process action, and
+endpoint smoke remain explicit live/write gates and are not part of default
+mainline.

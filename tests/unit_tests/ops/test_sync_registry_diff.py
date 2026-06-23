@@ -12,8 +12,8 @@ from react_agent.ops.sync_registry import (
 )
 
 
-def _record(sha: str) -> dict[str, str]:
-    return {"sha256": sha}
+def _record(sha: str, *, include: bool = True, classification: str = "source_bearing") -> dict[str, str | bool]:
+    return {"sha256": sha, "include": include, "classification": classification}
 
 
 def test_static_registry_matches_catalog_and_keeps_review_warnings_nonfatal() -> None:
@@ -51,5 +51,21 @@ def test_diff_classifications_cover_core_cases() -> None:
         prod=_record("c"),
         sanitized_derivative=True,
     ) == "sanitized_derivative"
+    assert (
+        classify_file_delta(
+            baseline=_record("a"),
+            sandbox=_record("b"),
+            prod=_record("", include=False, classification="blocked_sensitive_source"),
+            sanitized_derivative=True,
+        )
+        == "sanitized_derivative"
+    )
+    assert (
+        classify_file_delta(
+            baseline=_record("a"),
+            sandbox=_record("a"),
+            prod=_record("", include=False, classification="excluded_backup_artifact"),
+        )
+        == "backup_runtime_noise"
+    )
     assert classify_file_delta(baseline=_record("a"), sandbox=_record("b"), prod=_record("c"), semantic_placeholder=True) == "semantic_placeholder"
-

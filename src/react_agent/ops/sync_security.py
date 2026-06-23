@@ -6,7 +6,9 @@ from __future__ import annotations
 import os
 import re
 import stat
+import tokenize
 import unicodedata
+from io import BytesIO
 from pathlib import Path
 from typing import Literal, TypedDict
 
@@ -74,6 +76,9 @@ SECRET_NAME_RE = re.compile(
 )
 SECRET_CONTENT_RE = re.compile(
     r"(?i)(api[_-]?key|secret|password|passwd|token|credential|private[_-]?key|dsn)\s*[:=]\s*['\"][^'\"]{8,}['\"]"
+)
+BACKUP_FILE_RE = re.compile(
+    r"(?i)(.*\.bak($|[._-].*)|.*\.backup($|\..*)|.*_predeploy_.*|.*\.orig($|\..*)|.*\.rej($|\..*)|.*~$|.*\.swp$|\.DS_Store$)"
 )
 
 
@@ -178,6 +183,53 @@ def classify_sensitive_source(path: Path, *, size: int) -> tuple[str, list[str]]
     return "none", []
 
 
+def redacted_structural_fingerprint(path: Path) -> dict[str, object]:
+    """Return a secret-safe structural fingerprint for a source file."""
+    try:
+        data = path.read_bytes()
+    except OSError:
+        return {
+            "algorithm": "redacted_python_token_fingerprint_v1",
+            "status": "manual_sanitized_derivative_refresh_required",
+            "finding_category_count": 0,
+            "safe_line_ranges": [],
+            "redacted_source_sha256": "",
+        }
+    text = data.decode("utf-8", errors="ignore")
+    safe_lines = _line_ranges_for_secret(text)
+    if not safe_lines and SECRET_NAME_RE.search(path.name):
+        safe_lines = ["filename"]
+    sensitive_lines = {int(item) for item in safe_lines if item.isdigit()}
+    pieces: list[str] = []
+    status = "ok"
+    try:
+        tokens = tokenize.tokenize(BytesIO(data).readline)
+        for token in tokens:
+            if token.type in {tokenize.ENCODING, tokenize.ENDMARKER}:
+                continue
+            if token.type == tokenize.STRING and token.start[0] in sensitive_lines:
+                pieces.append("<REDACTED_SECRET_LITERAL>")
+            else:
+                pieces.append(token.string)
+    except tokenize.TokenError:
+        status = "manual_sanitized_derivative_refresh_required"
+        for lineno, line in enumerate(text.splitlines(), start=1):
+            if lineno in sensitive_lines:
+                pieces.append("<REDACTED_SECRET_LITERAL>")
+            else:
+                pieces.append(line)
+    normalized = unicodedata.normalize("NFC", "\n".join(pieces).replace("\r\n", "\n").replace("\r", "\n"))
+    import hashlib
+
+    return {
+        "algorithm": "redacted_python_token_fingerprint_v1",
+        "status": status,
+        "finding_category_count": len(safe_lines),
+        "safe_line_ranges": safe_lines,
+        "redacted_source_sha256": hashlib.sha256(normalized.encode("utf-8")).hexdigest(),
+    }
+
+
 def classify_large_asset(path: Path, *, size: int) -> str:
     if size > MAX_SOURCE_FILE_BYTES:
         return "reference_only_large_asset"
@@ -196,6 +248,14 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
             "reason": "excluded_directory",
+        }
+    if BACKUP_FILE_RE.match(path.name):
+        return {
+            "include": False,
+            "classification": "excluded_backup_artifact",
+            "sensitive_classification": "not_scanned",
+            "large_asset_classification": "not_large_asset",
+            "reason": "backup_runtime_noise",
         }
     stat_result = path.lstat()
     file_type = classify_file_type(stat_result.st_mode)
@@ -272,4 +332,3 @@ def detect_unicode_collision(paths: list[str]) -> list[str]:
 
 
 Operation = Literal["add", "replace", "delete", "omit", "sanitize", "noop"]
-

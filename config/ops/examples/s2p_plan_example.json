@@ -22,7 +22,7 @@
       "actions": [
         {
           "action_id": "act-001",
-          "operation": "sanitize",
+          "operation": "replace",
           "source_path": "main5.py",
           "target_path": "main5.py",
           "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555",

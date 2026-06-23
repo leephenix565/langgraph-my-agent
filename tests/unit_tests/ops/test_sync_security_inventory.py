@@ -60,3 +60,15 @@ def test_inventory_excludes_runtime_noise_and_detects_unicode_collision(tmp_path
     assert "__pycache__/x.pyc" not in paths
     assert detect_unicode_collision(["e\u0301.py", "é.py"]) == ["é.py"]
 
+
+def test_backup_filename_policy_excludes_runtime_artifacts(tmp_path: Path) -> None:
+    for relative in (
+        "service.backup.py",
+        "service.orig.py",
+        "backup/service.py",
+        "backups/service.py",
+    ):
+        path = tmp_path / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text("x = 1\n", encoding="utf-8")
+        assert should_include_source_file(tmp_path, path)["include"] is False

@@ -175,7 +175,17 @@ def cmd_cycle_plan(args: argparse.Namespace) -> int:
 def cmd_plan_show(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     payload = {"summary_title": "agent-sync plan show", "plan": plan, "exit_code": 0}
-    return print_or_json(args, payload, [f"plan_id={plan.get('plan_id')}", f"direction={plan.get('direction')}"])
+    rows = [f"plan_id={plan.get('plan_id')}", f"direction={plan.get('direction')}"]
+    if plan.get("direction") == "p2s":
+        rows.extend(
+            [
+                f"observed_diff={'present' if plan.get('observed_diff') else 'missing'}",
+                f"stage_materialization={'present' if plan.get('stage_materialization') else 'missing'}",
+                f"activation={'present' if plan.get('activation') else 'missing'}",
+                f"rollback={'present' if plan.get('activation', {}).get('rollback') else 'missing'}",
+            ]
+        )
+    return print_or_json(args, payload, rows)
 
 
 def cmd_plan_validate(args: argparse.Namespace) -> int:
@@ -200,7 +210,7 @@ def cmd_schema_validate(args: argparse.Namespace) -> int:
 def cmd_unsupported(group: str, command: str) -> int:
     payload = {
         "schema_version": "agent_sync_cli_error_v1",
-        "reason": "command_not_available_in_sync_ops_1",
+        "reason": "command_not_available_in_sync_ops_1r",
         "command": f"{group} {command}",
         "exit_code": 2,
     }

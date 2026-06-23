@@ -103,6 +103,15 @@ references, old sandbox archive preconditions, staged digest expectations,
 validation commands, switch preconditions, rollback skeleton, and approval
 requirements. They do not create staging directories or switch pointers.
 
+SYNC-OPS-1R tightens the P2S shape into `observed_diff`,
+`stage_materialization`, and `activation`. Observed diff is review evidence
+only. Stage materialization targets a new missing versioned baseline path, never
+the active sandbox. Activation is a future pointer-switch model with drift
+preconditions and rollback skeleton. `copy_from_prod` actions require
+non-empty source hashes and exclude backup/runtime-noise files. Sanitized
+derivatives use `preserve_sanitized_derivative` with a redacted structural
+fingerprint; sandbox-local secret metadata uses `preserve_sandbox_metadata`.
+
 S2P plans require an experiment manifest. They include B/S/P/D inventory refs,
 change units, per-file deltas, target-before hashes, add/replace/delete/omit/
 sanitize/noop actions, blockers, backup plan skeleton, offline test plan,
@@ -152,7 +161,7 @@ Implemented commands:
 - `agent-sync lock show`
 
 Unsupported write commands return exit code `2` with
-`command_not_available_in_sync_ops_1`:
+`command_not_available_in_sync_ops_1r` after the SYNC-OPS-1R safety repair:
 
 - `p2s stage`, `p2s activate`, `p2s rollback`
 - `s2p apply`, `s2p smoke`, `s2p rollback`
@@ -190,6 +199,9 @@ integration coverage.
 SYNC-OPS-2 may start only after:
 
 - planner registry, policy, schema, hash, inventory, diff, and plan tests pass;
+- the legacy unsafe P2S plan remains rejected by the SYNC-OPS-1R validator;
+- repaired P2S plans have no active-sandbox file targets, no empty copy source
+  hashes, no backup actions, and complete Agent dispositions;
 - operator confirms the durable artifact-store root can be created;
 - write-phase lock and approval records are reviewed;
 - P2S automation has explicit permission to archive, stage, activate, and
@@ -202,4 +214,3 @@ This phase does not modify production, sandbox, owner-dev repositories, baseline
 pointers, external Agent services, runtime bindings, live flags, databases,
 models, data assets, service processes, or endpoints. It does not acquire locks,
 create backups, apply patches, run smoke tests, or claim owner-dev durability.
-

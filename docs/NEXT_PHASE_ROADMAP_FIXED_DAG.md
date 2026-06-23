@@ -354,6 +354,26 @@ closure, especially `market_fund_manager_behavior`,
 5. 合并后再把阶段文档降级为 archive 或 historical reference。
 6. 不删除仍包含 backup path、artifact path、service patch inventory 的文档。
 
+## Sync Ops Roadmap
+
+SYNC-OPS-1 implemented the read-only planner. SYNC-OPS-1R repaired P2S plan
+write-safety before any automation phase:
+
+- observed diff is not executable;
+- P2S materializes a new versioned stage before activation;
+- active sandbox is immutable input;
+- sanitized derivatives are preserved by redacted structural fingerprint or
+  blocked for manual refresh;
+- backup/runtime artifacts are excluded;
+- approval requests are not approval records.
+
+The next implementation phase, if approved, is SYNC-OPS-2 P2S Automation. Its
+entry condition is an approved, hash-bound P2S plan with complete Agent
+dispositions, no direct active-sandbox file targets, no empty source hashes, no
+backup actions, and explicit stage/activate/rollback permissions. It should not
+include S2P apply, endpoint smoke, process restart, or owner-dev writes unless a
+later phase explicitly owns those actions.
+
 ## Non-Goals
 
 - 不把 dev evidence 升级成 production evidence。

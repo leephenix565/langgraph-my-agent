@@ -254,3 +254,17 @@ docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md
 - 不把 sandbox 实验结果直接等同于 production evidence。
 - 不把 prod 目录改动当作长期源码管理替代品。
 - 不把其他开发者维护的 dev agent 仓库当作主系统可直接改写的权威目录。
+
+## Sync Planner Boundary
+
+After P2S-CLOSE-R1, `/sdb/dlut/sandbox/r8-13a/services/prod` is the active
+production-derived external-agent baseline. It is not an experiment workspace.
+Future experiments should fork a versioned baseline, carry an experiment
+manifest, and use the read-only `agent-sync` planner to produce an immutable
+P2S/S2P/cycle plan before any approved write phase.
+
+SYNC-OPS-1R further requires P2S to materialize a new versioned stage before
+activation. Observed diff rows are review evidence only; they are not file
+actions. Sanitized derivatives and sandbox-local secret-requirement metadata
+must remain explicitly modeled and must not be treated as raw production
+source.

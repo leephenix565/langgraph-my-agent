@@ -51,7 +51,7 @@ def test_cli_unsupported_write_command_returns_2() -> None:
         check=False,
     )
     assert result.returncode == 2
-    assert "command_not_available_in_sync_ops_1" in result.stderr
+    assert "command_not_available_in_sync_ops_1r" in result.stderr
 
 
 def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
@@ -66,4 +66,3 @@ def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
     assert result.returncode == 0
     payload = json.loads(output.read_text(encoding="utf-8"))
     assert payload["registry"]["formal_external_agent_count"] == 26
-

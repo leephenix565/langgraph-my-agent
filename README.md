@@ -122,6 +122,14 @@ B/S/P/D diffing, and immutable P2S/S2P/cycle plan generation. It does not
 stage, apply, switch, lock, back up, restart, smoke, or write prod/sandbox/
 owner-dev trees. See `docs/SYNC_OPS_1_READ_ONLY_PLANNER.md`.
 
+SYNC-OPS-1R hardens the P2S plan model before write automation. P2S plans now
+separate observed diff, future versioned-stage materialization, and activation
+preconditions; backup/runtime-noise files are excluded, sanitized derivatives
+are preserved by redacted structural fingerprint rather than raw replace
+actions, and every Agent receives an explicit disposition. It is still
+read-only and does not create stages, approvals, locks, backups, or sandbox
+switches. See `docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

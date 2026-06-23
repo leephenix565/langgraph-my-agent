@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-1R P2S write-safety repair
+
+### Changed
+
+- Hardened P2S plan generation so observed diff, future versioned-stage
+  materialization, and activation preconditions are separate plan sections.
+- Added backup/runtime-noise filename exclusion for P2S inventory and planning.
+- Modeled sanitized sandbox derivatives as `preserve_sanitized_derivative`
+  actions with redacted structural fingerprints, not raw production replace
+  actions.
+- Preserved `SANDBOX_SECRET_REQUIREMENTS.md` as sandbox-generated metadata,
+  not as production source.
+- Added explicit per-Agent P2S dispositions, stage-root checks, target-drift
+  fields, shared-root dedupe checks, and POSIX archive-entry validation.
+
+### Validated
+
+- The legacy SYNC-OPS-1 current P2S plan is rejected by the new validator with
+  bounded reasons.
+- The repaired current P2S plan has no backup actions, no empty copy source
+  hashes, no active sandbox file targets, and complete 26-Agent dispositions.
+- Sync ops unit and integration tests cover P2S safety regression cases,
+  filesystem backup exclusion, schema validation, CLI unsupported-write
+  behavior, and archive path normalization.
+
+### Not Done
+
+- No P2S stage/activate/rollback, S2P apply, lock, approval, backup, endpoint
+  smoke, process action, artifact-store write, production write, sandbox write,
+  owner-dev write, `.env` value access, or secret output was performed.
+
 ## 2026-06-23 - SYNC-OPS-1 read-only bidirectional sync planner
 
 ### Changed

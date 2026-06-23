@@ -8,51 +8,142 @@
   "policy_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
   "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
   "baseline": {
-    "baseline_id": "20260623T050419Z"
+    "active_baseline_id": "20260623T050419Z",
+    "active_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
+    "versioned_baseline_path": "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services"
   },
   "experiment": {},
-  "target_snapshot": {},
+  "target_snapshot": {
+    "active_sandbox_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
+    "active_sandbox_pointer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "active_baseline_tree_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "versioned_baseline_tree_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc"
+  },
+  "observed_diff": {
+    "summary": {
+      "added_in_prod": 1
+    },
+    "agents": []
+  },
+  "stage_materialization": {
+    "baseline_id": "20260623T120000Z",
+    "stage_root": "/sdb/dlut/sandbox/prod-baselines/20260623T120000Z/fixed-dag-services",
+    "expected_stage_root_state": "missing",
+    "transactions": [
+      {
+        "transaction_id": "tx-example-001",
+        "agent_id": "value_ml_valuation",
+        "affected_agent_ids": [
+          "value_ml_valuation"
+        ],
+        "disposition": "stage_from_prod",
+        "actions": [
+          {
+            "action_id": "act-001",
+            "operation": "copy_from_prod",
+            "agent_id": "value_ml_valuation",
+            "affected_agent_ids": [
+              "value_ml_valuation"
+            ],
+            "transaction_root": "/sdb/dlut/prod/机器学习估值智能体",
+            "source_path": "service.py",
+            "source_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+            "source_mode": "0o644",
+            "source_file_type": "regular_file",
+            "source_root_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+            "destination_relative_path": "service.py",
+            "stage_relative_path": "value_ml_valuation/service.py",
+            "sensitive_classification": "none",
+            "large_asset_classification": "none"
+          }
+        ],
+        "blocked_actions": []
+      }
+    ],
+    "action_counts": {
+      "copy_from_prod": 1
+    }
+  },
+  "activation": {
+    "old_active_sandbox_archive_path": "/sdb/dlut/sandbox/r8-13a/services/prod-pre-syncops-20260623T120000Z",
+    "new_versioned_baseline_path": "/sdb/dlut/sandbox/prod-baselines/20260623T120000Z/fixed-dag-services",
+    "pointer_candidate": {
+      "path": "/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json",
+      "active_baseline_id": "20260623T120000Z"
+    },
+    "preconditions": {
+      "active_pointer_sha256": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "active_baseline_tree_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "old_active_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
+      "expected_stage_root_state": "missing"
+    },
+    "post_switch_verification": [
+      "26_agent_roots_present"
+    ],
+    "rollback": {
+      "restore_old_active_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
+      "requires_future_phase_execution": true
+    }
+  },
   "agents": [
     {
-      "agent_id": "value_research_synthesis",
+      "agent_id": "value_ml_valuation",
       "transaction_id": "tx-example-001",
-      "source_root": "prod-root",
-      "target_root": "sandbox-root",
-      "target_before_tree_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "source_root": "prod",
+      "target_root": "/sdb/dlut/sandbox/prod-baselines/20260623T120000Z/fixed-dag-services/value_ml_valuation",
+      "target_before_tree_sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+      "disposition": "stage_from_prod",
       "actions": [
         {
           "action_id": "act-001",
-          "operation": "sanitize",
-          "source_path": "main5.py",
-          "target_path": "main5.py",
-          "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
-          "expected_target_before_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
-          "expected_mode": "0o644",
-          "sensitive_classification": "hardcoded_credential_required_runtime",
-          "change_unit_id": "cu-example-001",
-          "approval_scope": "agent",
-          "rollback_source": "backup/main5.py"
+          "operation": "copy_from_prod",
+          "agent_id": "value_ml_valuation",
+          "affected_agent_ids": [
+            "value_ml_valuation"
+          ],
+          "transaction_root": "/sdb/dlut/prod/机器学习估值智能体",
+          "source_path": "service.py",
+          "source_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+          "source_mode": "0o644",
+          "source_file_type": "regular_file",
+          "source_root_digest": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+          "destination_relative_path": "service.py",
+          "stage_relative_path": "value_ml_valuation/service.py",
+          "sensitive_classification": "none",
+          "large_asset_classification": "none"
         }
       ],
       "blocked_actions": [],
-      "backup": {},
-      "offline_tests": [
-        "py_compile"
-      ],
-      "process_preflight": {},
+      "backup": {
+        "required_future_phase": true
+      },
+      "offline_tests": [],
+      "process_preflight": {
+        "required": false
+      },
       "process_actions": [],
       "live_validation": [],
-      "rollback": {},
-      "expected_status": "planned"
+      "rollback": {
+        "skeleton_only": true
+      },
+      "expected_status": "stage_ready"
     }
   ],
   "global_preconditions": [
-    "registry validates"
+    "read_only_plan_only",
+    "approval_required_before_future_write"
   ],
   "global_blockers": [],
   "approval_requirements": {
-    "approval_record_required": true
+    "approval_record_required": true,
+    "delete_actions_approved": false,
+    "process_actions_approved": false,
+    "live_validation_approved": false,
+    "publish_and_rebase_approved": false
   },
-  "rollback_plan": {},
-  "canonical_sha256": "61ebff581e15e499b70b0d72f1fedf5b73ea4c7f628daf882c1cf9d27875dcb1"
+  "rollback_plan": {
+    "execution": "not_available_in_sync_ops_1r",
+    "skeleton_only": true
+  },
+  "canonical_sha256": "example-p2s-hash"
 }

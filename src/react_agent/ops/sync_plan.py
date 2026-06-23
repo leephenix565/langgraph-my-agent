@@ -4,7 +4,7 @@
 from __future__ import annotations
 
 import uuid
-from collections.abc import Mapping
+from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
@@ -13,7 +13,6 @@ from react_agent.ops.sync_contracts import (
     SyncPlannerError,
     canonical_sha256,
     file_sha256,
-    load_and_validate,
     parse_utc,
     read_json,
     stable_id,
@@ -25,6 +24,7 @@ from react_agent.ops.sync_registry import (
     load_static_registry,
     validate_static_registry,
 )
+from react_agent.ops.sync_security import redacted_structural_fingerprint
 
 POINTER_PATH = Path("/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json")
 DEFAULT_PROD_ROOT = Path("/sdb/dlut/prod")
@@ -55,6 +55,151 @@ def load_baseline_pointer(path: Path = POINTER_PATH) -> dict[str, Any]:
         "active_exists": Path(str(active)).exists() if active else False,
         "versioned_baseline_exists": Path(str(baseline)).exists() if baseline else False,
     }
+
+
+def _baseline_id() -> str:
+    return datetime.now(UTC).strftime("%Y%m%dT%H%M%SZ")
+
+
+def _stage_root_for(baseline_id: str) -> Path:
+    return Path(f"/sdb/dlut/sandbox/prod-baselines/{baseline_id}/fixed-dag-services")
+
+
+def _combined_agent_tree_digest(inventory: Mapping[str, Any], root_role: str) -> str:
+    items = []
+    for agent in inventory.get("agents") or []:
+        if not isinstance(agent, Mapping):
+            continue
+        roots = agent.get("roots") or {}
+        root = roots.get(root_role) or {}
+        items.append(
+            {
+                "agent_id": agent.get("agent_id", ""),
+                "root_role": root_role,
+                "tree_digest": root.get("tree_digest", ""),
+                "root_exists": root.get("root_exists", False),
+            }
+        )
+    return canonical_sha256(sorted(items, key=lambda item: str(item["agent_id"])))
+
+
+def _included_files(root_inventory: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    result: dict[str, Mapping[str, Any]] = {}
+    for record in root_inventory.get("files") or []:
+        if isinstance(record, Mapping) and record.get("include"):
+            result[str(record.get("relative_path") or "")] = record
+    return result
+
+
+def _all_files(root_inventory: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
+    result: dict[str, Mapping[str, Any]] = {}
+    for record in root_inventory.get("files") or []:
+        if isinstance(record, Mapping):
+            result[str(record.get("relative_path") or "")] = record
+    return result
+
+
+def _copy_action(
+    *,
+    agent_id: str,
+    affected_agent_ids: list[str],
+    transaction_root: str,
+    record: Mapping[str, Any],
+    source_root_digest: str,
+) -> dict[str, Any]:
+    rel = str(record.get("relative_path") or "")
+    return {
+        "action_id": stable_id("mat", "copy_from_prod", transaction_root, rel),
+        "operation": "copy_from_prod",
+        "agent_id": agent_id,
+        "affected_agent_ids": affected_agent_ids,
+        "transaction_root": transaction_root,
+        "source_path": rel,
+        "source_sha256": str(record.get("sha256") or ""),
+        "source_mode": str(record.get("mode") or ""),
+        "source_file_type": str(record.get("file_type") or ""),
+        "source_root_digest": source_root_digest,
+        "destination_relative_path": rel,
+        "stage_relative_path": f"{agent_id}/{rel}",
+        "sensitive_classification": str(record.get("sensitive_classification") or ""),
+        "large_asset_classification": str(record.get("large_asset_classification") or ""),
+    }
+
+
+def _preserve_derivative_action(
+    *,
+    agent_id: str,
+    rel: str,
+    derivative_record: Mapping[str, Any] | None,
+    prod_record: Mapping[str, Any] | None,
+    metadata_doc_present: bool,
+) -> dict[str, Any]:
+    prod_path = Path(str(prod_record.get("raw_path") or "")) if prod_record else None
+    fingerprint = (
+        redacted_structural_fingerprint(prod_path)
+        if prod_path is not None and str(prod_path)
+        else {
+            "algorithm": "redacted_python_token_fingerprint_v1",
+            "status": "manual_sanitized_derivative_refresh_required",
+            "finding_category_count": 0,
+            "safe_line_ranges": [],
+            "redacted_source_sha256": "",
+        }
+    )
+    return {
+        "action_id": stable_id("mat", "preserve_sanitized_derivative", agent_id, rel),
+        "operation": "preserve_sanitized_derivative",
+        "agent_id": agent_id,
+        "affected_agent_ids": [agent_id],
+        "baseline_derivative_path": rel,
+        "destination_relative_path": rel,
+        "stage_relative_path": f"{agent_id}/{rel}",
+        "derivative_sha256": str((derivative_record or {}).get("sha256") or ""),
+        "derivative_manifest_reference": "active_registry_and_baseline_sanitized_derivative_files",
+        "derivative_state": "preserve" if derivative_record else "manual_review",
+        "redacted_source_fingerprint": fingerprint,
+        "safe_line_ranges": fingerprint.get("safe_line_ranges", []),
+        "environment_variable_names_only": True,
+        "metadata_doc_present": metadata_doc_present,
+        "runtime_equivalence": "sanitized_runtime_equivalent_if_redacted_fingerprint_unchanged",
+        "ordinary_copy_allowed": False,
+    }
+
+
+def _preserve_metadata_action(
+    *,
+    agent_id: str,
+    rel: str,
+    record: Mapping[str, Any],
+) -> dict[str, Any]:
+    return {
+        "action_id": stable_id("mat", "preserve_sandbox_metadata", agent_id, rel),
+        "operation": "preserve_sandbox_metadata",
+        "agent_id": agent_id,
+        "affected_agent_ids": [agent_id],
+        "baseline_metadata_path": rel,
+        "destination_relative_path": rel,
+        "stage_relative_path": f"{agent_id}/{rel}",
+        "metadata_sha256": str(record.get("sha256") or ""),
+        "generated_from": "P2S-CLOSE-R1",
+    }
+
+
+def _agent_disposition(agent: Mapping[str, Any], actions: Sequence[Mapping[str, Any]], blocked: Sequence[Mapping[str, Any]]) -> str:
+    if blocked:
+        return "blocked_sensitive_derivative_refresh"
+    sandbox = agent.get("sandbox") or {}
+    if isinstance(sandbox, Mapping) and sandbox.get("semantic_placeholder"):
+        return "semantic_placeholder_snapshot"
+    if agent.get("agent_id") == "market_fund_manager_behavior":
+        return "shared_transaction_member"
+    if isinstance(sandbox, Mapping) and sandbox.get("sanitized_derivative"):
+        return "stage_from_prod_with_preserved_derivative"
+    if not actions:
+        return "no_source_bearing_files"
+    if all(action.get("operation") == "copy_from_prod" for action in actions):
+        return "stage_from_prod"
+    return "already_equal_but_rematerialized"
 
 
 def build_experiment_template(*, output_root: str = "/tmp/agent-sync-experiment") -> dict[str, Any]:
@@ -224,34 +369,182 @@ def build_p2s_plan() -> dict[str, Any]:
     inventory = build_runtime_inventory(include_files=True)
     diff = diff_inventory(inventory)
     pointer = load_baseline_pointer()
+    new_baseline_id = _baseline_id()
+    stage_root = _stage_root_for(new_baseline_id)
     plan = _base_plan("p2s")
+    plan["tool_version"] = "sync_ops_1r_read_only_planner"
     plan["baseline"] = pointer
     plan["target_snapshot"] = {
         "active_sandbox_path": pointer["active_path"],
         "active_sandbox_pointer_sha256": pointer["pointer_sha256"],
+        "active_baseline_tree_sha256": _combined_agent_tree_digest(inventory, "active_sandbox"),
+        "versioned_baseline_tree_sha256": _combined_agent_tree_digest(inventory, "baseline"),
+    }
+    plan["observed_diff"] = {
+        "description": "current prod vs current active/versioned sandbox baseline; explanatory only",
+        "summary": diff["totals"],
+        "agents": diff["agents"],
+    }
+    plan["stage_materialization"] = {
+        "baseline_id": new_baseline_id,
+        "stage_root": str(stage_root),
+        "expected_stage_root_state": "missing",
+        "stage_root_must_not_equal_active_sandbox": True,
+        "stage_root_must_not_equal_current_versioned_baseline": True,
+        "transactions": [],
+        "action_counts": {},
+    }
+    plan["activation"] = {
+        "old_active_sandbox_archive_path": f"/sdb/dlut/sandbox/r8-13a/services/prod-pre-syncops-{new_baseline_id}",
+        "new_versioned_baseline_path": str(stage_root),
+        "pointer_candidate": {
+            "path": "/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json",
+            "active_baseline_id": new_baseline_id,
+            "active_path": "/sdb/dlut/sandbox/r8-13a/services/prod",
+            "versioned_baseline_path": str(stage_root),
+        },
+        "preconditions": {
+            "active_pointer_sha256": pointer["pointer_sha256"],
+            "active_baseline_tree_sha256": plan["target_snapshot"]["active_baseline_tree_sha256"],
+            "old_active_path": pointer["active_path"],
+            "expected_stage_root_state": "missing",
+            "registry_sha256": plan["registry_sha256"],
+            "policy_sha256": plan["policy_sha256"],
+            "catalog_sha256": plan["catalog_sha256"],
+        },
+        "post_switch_verification": ["pointer_sha256_changed", "26_agent_roots_present", "source_tree_digest_matches_stage"],
+        "rollback": {
+            "restore_old_active_path": pointer["active_path"],
+            "preserve_failed_stage": True,
+            "requires_future_phase_execution": True,
+        },
     }
     agent_plans: list[dict[str, Any]] = []
-    for agent in diff["agents"]:
-        actions, blocked = _file_actions_from_diff(agent, direction="p2s")
-        agent_plans.append(
+    registry = load_static_registry()
+    inventory_by_id = {agent["agent_id"]: agent for agent in inventory["agents"]}
+    diff_by_id = {agent["agent_id"]: agent for agent in diff["agents"]}
+    transactions: list[dict[str, Any]] = []
+    action_counts: dict[str, int] = {}
+    shared_transaction_targets: set[tuple[str, str, str]] = set()
+    for registry_agent in registry["agents"]:
+        agent_id = registry_agent["agent_id"]
+        agent_inventory = inventory_by_id[agent_id]
+        roots = agent_inventory["roots"]
+        prod_root = roots["prod"]
+        active_root = roots["active_sandbox"]
+        baseline_root = roots["baseline"]
+        prod_files = _included_files(prod_root)
+        prod_all = _all_files(prod_root)
+        active_files = _included_files(active_root)
+        baseline_files = _included_files(baseline_root)
+        sandbox = registry_agent.get("sandbox") or {}
+        derivative_files = set(sandbox.get("sanitized_derivative_files") or []) if isinstance(sandbox, Mapping) else set()
+        actions: list[dict[str, Any]] = []
+        blocked: list[dict[str, Any]] = []
+        affected = [agent_id]
+        transaction_root = str(registry_agent.get("sync", {}).get("transaction_root") or registry_agent["prod"]["root"])
+        if agent_id == "market_fund_manager_behavior":
+            affected = ["market_composite", "market_fund_manager_behavior"]
+            actions.append(
+                {
+                    "action_id": stable_id("mat", "noop_shared_transaction_member", agent_id),
+                    "operation": "noop_shared_transaction_member",
+                    "agent_id": agent_id,
+                    "affected_agent_ids": affected,
+                    "transaction_root": transaction_root,
+                    "destination_relative_path": "",
+                    "reason": "materialized_by_market_composite_shared_root",
+                }
+            )
+        elif isinstance(sandbox, Mapping) and sandbox.get("semantic_placeholder"):
+            for rel, record in sorted(prod_files.items()):
+                action = _copy_action(
+                    agent_id=agent_id,
+                    affected_agent_ids=[agent_id],
+                    transaction_root=transaction_root,
+                    record=record,
+                    source_root_digest=prod_root["tree_digest"],
+                )
+                action["operation"] = "snapshot_semantic_placeholder"
+                actions.append(action)
+        else:
+            for rel, record in sorted(prod_files.items()):
+                if rel in derivative_files:
+                    continue
+                key = (transaction_root, f"{agent_id}/{rel}", "copy_from_prod")
+                if key in shared_transaction_targets:
+                    blocked.append({"reason": "duplicate_stage_destination", "relative_path": rel})
+                    continue
+                shared_transaction_targets.add(key)
+                actions.append(
+                    _copy_action(
+                        agent_id=agent_id,
+                        affected_agent_ids=affected,
+                        transaction_root=transaction_root,
+                        record=record,
+                        source_root_digest=prod_root["tree_digest"],
+                    )
+                )
+            for rel in sorted(derivative_files):
+                derivative_record = active_files.get(rel) or baseline_files.get(rel)
+                prod_record = prod_all.get(rel)
+                if derivative_record is None:
+                    blocked.append({"reason": "blocked_manual_derivative_refresh", "relative_path": rel})
+                    continue
+                actions.append(
+                    _preserve_derivative_action(
+                        agent_id=agent_id,
+                        rel=rel,
+                        derivative_record=derivative_record,
+                        prod_record=prod_record,
+                        metadata_doc_present="SANDBOX_SECRET_REQUIREMENTS.md" in active_files
+                        or "SANDBOX_SECRET_REQUIREMENTS.md" in baseline_files,
+                    )
+                )
+            for rel, record in sorted(active_files.items()):
+                if rel == "SANDBOX_SECRET_REQUIREMENTS.md":
+                    actions.append(_preserve_metadata_action(agent_id=agent_id, rel=rel, record=record))
+        disposition = _agent_disposition(registry_agent, actions, blocked)
+        for action in actions:
+            op = str(action.get("operation") or "")
+            action_counts[op] = action_counts.get(op, 0) + 1
+        transactions.append(
             {
-                "agent_id": agent["agent_id"],
-                "transaction_id": stable_id("txn", "p2s", agent["agent_id"]),
-                "source_root": "prod",
-                "target_root": "active_sandbox",
-                "target_before_tree_sha256": "",
+                "transaction_id": stable_id("stage", agent_id, transaction_root),
+                "transaction_root": transaction_root,
+                "agent_id": agent_id,
+                "affected_agent_ids": affected,
+                "disposition": disposition,
                 "actions": actions,
                 "blocked_actions": blocked,
-                "backup": {"required_future_phase": True},
+            }
+        )
+        agent_plans.append(
+            {
+                "agent_id": agent_id,
+                "transaction_id": stable_id("stage", agent_id, transaction_root),
+                "source_root": "prod",
+                "target_root": str(stage_root / agent_id),
+                "target_before_tree_sha256": active_root["tree_digest"],
+                "active_tree_sha256": active_root["tree_digest"],
+                "prod_tree_sha256": prod_root["tree_digest"],
+                "baseline_tree_sha256": baseline_root["tree_digest"],
+                "disposition": disposition,
+                "actions": actions,
+                "blocked_actions": blocked,
+                "observed_diff_counts": diff_by_id.get(agent_id, {}).get("counts", {}),
+                "backup": {"required_future_phase": True, "not_executed_in_sync_ops_1r": True},
                 "offline_tests": [],
                 "process_preflight": {"required": False},
                 "process_actions": [],
                 "live_validation": [],
-                "rollback": {"skeleton_only": True},
-                "expected_status": "planned" if not blocked else "planned_with_blockers",
+                "rollback": {"skeleton_only": True, "stage_rollback_only_future_phase": True},
+                "expected_status": "stage_ready" if not blocked else "blocked_manual_review",
             }
         )
     plan["agents"] = agent_plans
+    plan["stage_materialization"]["transactions"] = transactions
+    plan["stage_materialization"]["action_counts"] = action_counts
     plan["diff_summary"] = diff["totals"]
     if any(agent["blocked_actions"] for agent in agent_plans):
         plan["global_blockers"].append("p2s_blocked_actions_present")
@@ -364,40 +657,140 @@ def build_cycle_plan(s2p_plan: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = True) -> dict[str, Any]:
-    validate_by_schema_version(plan)
     expected = canonical_sha256(plan)
     blockers: list[str] = []
+    try:
+        validate_by_schema_version(plan)
+    except SyncPlannerError as exc:
+        blockers.append(f"schema_{exc.reason}")
     if plan.get("canonical_sha256") != expected:
         blockers.append("canonical_hash_mismatch")
     try:
         parse_utc(str(plan.get("expires_at") or ""))
     except SyncPlannerError:
         blockers.append("invalid_expires_at")
-    action_targets: set[tuple[str, str]] = set()
+    direction = str(plan.get("direction") or "")
+    action_targets: set[tuple[str, str, str]] = set()
+    if direction == "p2s":
+        target_snapshot = plan.get("target_snapshot") or {}
+        stage_materialization = plan.get("stage_materialization") or {}
+        activation = plan.get("activation") or {}
+        active_path = str(target_snapshot.get("active_sandbox_path") or "")
+        stage_root = str(stage_materialization.get("stage_root") or "")
+        if not stage_materialization:
+            blockers.append("p2s_stage_materialization_missing")
+        if not activation:
+            blockers.append("p2s_activation_missing")
+        if not str(target_snapshot.get("active_sandbox_pointer_sha256") or ""):
+            blockers.append("p2s_active_pointer_sha256_missing")
+        if not str(target_snapshot.get("active_baseline_tree_sha256") or ""):
+            blockers.append("p2s_active_baseline_tree_sha256_missing")
+        if stage_root:
+            stage_path = Path(stage_root).resolve(strict=False)
+            active_resolved = Path(active_path).resolve(strict=False) if active_path else None
+            current_versioned = Path(str(plan.get("baseline", {}).get("versioned_baseline_path") or "")).resolve(strict=False)
+            allowed_root = Path("/sdb/dlut/sandbox/prod-baselines").resolve(strict=False)
+            if active_resolved and stage_path == active_resolved:
+                blockers.append("p2s_stage_root_is_active_sandbox")
+            if stage_path == current_versioned:
+                blockers.append("p2s_stage_root_is_current_versioned_baseline")
+            if allowed_root not in [stage_path, *stage_path.parents]:
+                blockers.append("p2s_stage_root_outside_allowed_namespace")
+            if stage_materialization.get("expected_stage_root_state") == "missing" and stage_path.exists():
+                blockers.append("blocked_stage_path_exists")
+        elif stage_materialization:
+            blockers.append("p2s_stage_root_missing")
+        if activation and not activation.get("preconditions"):
+            blockers.append("p2s_activation_preconditions_missing")
+        stage_transaction_action_ids = {
+            str(action.get("action_id") or "")
+            for txn in stage_materialization.get("transactions") or []
+            if isinstance(txn, Mapping)
+            for action in txn.get("actions") or []
+            if isinstance(action, Mapping)
+        }
+        if stage_materialization and not stage_transaction_action_ids:
+            blockers.append("p2s_stage_materialization_actions_missing")
+        if len(plan.get("agents") or []) != 26:
+            blockers.append("p2s_agent_disposition_count_not_26")
     for agent in plan.get("agents") or []:
         if not isinstance(agent, Mapping):
             blockers.append("agent_plan_not_mapping")
             continue
+        if direction == "p2s":
+            target_root = str(agent.get("target_root") or "")
+            if not str(agent.get("disposition") or ""):
+                blockers.append("p2s_agent_disposition_missing")
+            if target_root == "active_sandbox" or target_root == str(plan.get("target_snapshot", {}).get("active_sandbox_path") or ""):
+                blockers.append("p2s_agent_active_sandbox_target_root")
+            if not str(agent.get("target_before_tree_sha256") or ""):
+                blockers.append("p2s_agent_target_before_tree_sha256_missing")
         for action in agent.get("actions") or []:
             if not isinstance(action, Mapping):
                 blockers.append("action_not_mapping")
                 continue
-            target = (str(agent.get("transaction_id")), str(action.get("target_path") or ""))
-            if target in action_targets and action.get("operation") != "noop":
-                blockers.append("duplicate_action_target")
-            action_targets.add(target)
-            if action.get("operation") == "delete" and not plan.get("approval_requirements", {}).get("delete_actions_approved"):
+            operation = str(action.get("operation") or "")
+            if direction == "p2s":
+                destination = str(action.get("destination_relative_path") or action.get("target_path") or "")
+                target = (str(action.get("transaction_root") or agent.get("transaction_id")), destination, operation)
+                if target in action_targets and operation not in {"noop", "noop_shared_transaction_member"}:
+                    blockers.append("duplicate_action_target")
+                action_targets.add(target)
+                if operation in {"add", "replace"}:
+                    blockers.append("p2s_legacy_add_replace_action")
+                    if not str(action.get("source_sha256") or ""):
+                        blockers.append("p2s_copy_source_sha256_missing")
+                if operation == "copy_from_prod":
+                    if not str(action.get("source_sha256") or ""):
+                        blockers.append("p2s_copy_source_sha256_missing")
+                    if not str(action.get("source_mode") or ""):
+                        blockers.append("p2s_copy_source_mode_missing")
+                    if not str(action.get("source_file_type") or ""):
+                        blockers.append("p2s_copy_source_file_type_missing")
+                    sensitive = str(action.get("sensitive_classification") or "")
+                    if sensitive in {"potential_secret_literal", "blocked_env_file"}:
+                        blockers.append("p2s_sensitive_source_used_as_copy")
+                    rel = destination or str(action.get("source_path") or "")
+                    if ".bak_" in rel or rel.endswith(".bak") or "_predeploy_" in rel:
+                        blockers.append("p2s_backup_runtime_noise_used_as_copy")
+                elif operation == "preserve_sanitized_derivative":
+                    if not str(action.get("derivative_sha256") or ""):
+                        blockers.append("p2s_derivative_sha256_missing")
+                    fingerprint = action.get("redacted_source_fingerprint") or {}
+                    if not isinstance(fingerprint, Mapping) or not str(fingerprint.get("redacted_source_sha256") or ""):
+                        blockers.append("p2s_derivative_redacted_fingerprint_missing")
+                    if action.get("source_sha256"):
+                        blockers.append("p2s_derivative_has_raw_source_sha")
+                elif operation == "preserve_sandbox_metadata":
+                    if str(action.get("destination_relative_path") or "") != "SANDBOX_SECRET_REQUIREMENTS.md":
+                        blockers.append("p2s_unregistered_sandbox_metadata")
+                    if not str(action.get("metadata_sha256") or ""):
+                        blockers.append("p2s_metadata_sha256_missing")
+                elif operation == "omit_unreachable_sensitive":
+                    if not action.get("reachability_evidence"):
+                        blockers.append("p2s_omission_reachability_missing")
+                elif operation == "reference_large_asset":
+                    if action.get("copied") is not False:
+                        blockers.append("p2s_large_asset_must_not_copy")
+                if stage_transaction_action_ids and str(action.get("action_id") or "") not in stage_transaction_action_ids:
+                    blockers.append("p2s_agent_action_missing_from_stage_materialization")
+            else:
+                target = (str(agent.get("transaction_id")), str(action.get("target_path") or ""), operation)
+                if target in action_targets and operation != "noop":
+                    blockers.append("duplicate_action_target")
+                action_targets.add(target)
+            if operation == "delete" and not plan.get("approval_requirements", {}).get("delete_actions_approved"):
                 blockers.append("delete_action_without_approval_requirement")
-            if action.get("operation") == "sanitize":
+            if operation == "sanitize":
                 blockers.append("sanitize_action_not_publishable_in_sync_ops_1")
     if check_target_freshness and plan.get("direction") == "s2p":
         for agent in plan.get("agents") or []:
             if not isinstance(agent, Mapping):
                 continue
-            target_root = Path(str(agent.get("target_root") or ""))
-            if not target_root.exists():
+            target_root_path = Path(str(agent.get("target_root") or ""))
+            if not target_root_path.exists():
                 continue
-            current = inventory_root(str(agent.get("agent_id") or ""), target_root, root_role="target")
+            current = inventory_root(str(agent.get("agent_id") or ""), target_root_path, root_role="target")
             if agent.get("target_before_tree_sha256") and current["tree_digest"] != agent.get("target_before_tree_sha256"):
                 blockers.append("target_snapshot_stale")
                 break
@@ -411,8 +804,7 @@ def validate_plan(plan: Mapping[str, Any], *, check_target_freshness: bool = Tru
 
 
 def load_plan(path: Path) -> dict[str, Any]:
-    plan = load_and_validate(path)
+    plan = read_json(path)
     if not isinstance(plan, dict):
         raise SyncPlannerError("plan_not_object", exit_code=2)
     return plan
-

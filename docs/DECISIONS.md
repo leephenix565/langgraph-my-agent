@@ -3,6 +3,80 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-091: Backup And Deployment Artifacts Are Excluded From P2S
+
+Status: accepted for SYNC-OPS-1R.
+
+Decision: backup, predeploy, reject/orig, editor swap, and deployment snapshot
+filenames are not source-bearing P2S materialization inputs. They may appear in
+observed diff as runtime noise but must not become `copy_from_prod` actions.
+
+Reason: production service roots can contain emergency backups or deployment
+scratch files. Copying them into a new sandbox baseline would turn runtime
+noise into experimental source authority.
+
+Non-consequence: documented fixtures and normal versioned config files remain
+eligible when they do not match backup/runtime-noise policy.
+
+## ADR-090: Baseline-Local Metadata Is Not Production Source
+
+Status: accepted for SYNC-OPS-1R.
+
+Decision: sandbox-local metadata such as `SANDBOX_SECRET_REQUIREMENTS.md` is
+preserved as baseline metadata, not copied from production and not modeled as a
+prod-origin file action.
+
+Reason: P2S-CLOSE-R1 generated this metadata to document sanitized sandbox
+derivatives. Treating it as production source would create false source lineage
+and could mask sensitive-source review needs.
+
+Non-consequence: future automation may regenerate metadata, but only as an
+explicit metadata action.
+
+## ADR-089: Sensitive P2S Source Uses Redacted Structural Fingerprints
+
+Status: accepted for SYNC-OPS-1R.
+
+Decision: P2S plans must not ordinary-copy sensitive production source. For
+sanitized derivatives, the planner records a redacted structural fingerprint
+that replaces sensitive literals before hashing and stores only safe metadata.
+
+Reason: the planner needs drift evidence without retaining or exposing
+credential-like literals or hashes of those literals.
+
+Non-consequence: the planner does not generate new sanitized code in
+SYNC-OPS-1R. Manual derivative refresh remains a future explicitly approved
+workflow.
+
+## ADR-088: Observed Diff Is Not An Executable File-Action List
+
+Status: accepted for SYNC-OPS-1R.
+
+Decision: P2S observed diff explains current prod versus active/versioned
+sandbox baseline. Executable future materialization is represented separately
+as stage actions against a new versioned baseline path.
+
+Reason: directly converting observations into add/replace actions hid
+source-exclusion, sandbox-only metadata, and sanitized derivative semantics.
+
+Non-consequence: observed diff remains useful for review, but it cannot by
+itself authorize or execute writes.
+
+## ADR-087: P2S Materializes A New Versioned Baseline Before Activation
+
+Status: accepted for SYNC-OPS-1R.
+
+Decision: P2S plans must materialize a new, missing versioned stage under the
+sandbox baseline namespace before any future activation. File actions must not
+target the active sandbox path.
+
+Reason: active sandbox is the immutable current baseline and rollback source.
+Writing into it directly would bypass target-drift checks and destroy the
+previous baseline before validation.
+
+Non-consequence: SYNC-OPS-1R still does not create the stage or switch the
+baseline pointer; it only plans and validates.
+
 ## ADR-086: Sanitized Sandbox Derivatives Are Non-Publishable By Default
 
 Status: accepted for SYNC-OPS-1.

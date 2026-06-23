@@ -1252,6 +1252,28 @@ meaning is reset catalog projection, not old aNN config file enablement.
 R4-B/R4-C do not add runtime binding or legacy registry fields to
 `/api/agents`.
 
+## Agent Sync P2S Plan Contract
+
+`agent_sync_plan_v1` P2S plans separate review information from future write
+steps:
+
+- `observed_diff` is explanatory B/S/P/D state and is not executable.
+- `stage_materialization` describes how a future approved phase would build a
+  new missing versioned sandbox baseline.
+- `activation` describes future pointer-switch preconditions, post-switch
+  verification, and rollback skeleton.
+
+P2S file materialization actions must not target the active sandbox path.
+Ordinary `copy_from_prod` actions require non-empty source hash, mode, file
+type, source-root digest, and safe destination path. Sensitive production
+source must use `preserve_sanitized_derivative` with redacted structural
+fingerprint metadata or become a manual-review blocker. Baseline-local metadata
+uses `preserve_sandbox_metadata`.
+
+`p2s_approval_request.json` is only a request for future machine approval. It
+is not an approval record and cannot authorize stage, activate, backup, lock,
+process, endpoint, or rollback actions.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

@@ -18,11 +18,387 @@
     "schema_version": {
       "const": "agent_sync_plan_v1"
     },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
     "direction": {
       "enum": [
         "p2s",
         "s2p",
         "publish_and_rebase"
+      ]
+    },
+    "target_snapshot": {
+      "type": "object",
+      "additionalProperties": true,
+      "properties": {
+        "active_sandbox_path": {
+          "type": "string"
+        },
+        "active_sandbox_pointer_sha256": {
+          "type": "string",
+          "minLength": 1
+        },
+        "active_baseline_tree_sha256": {
+          "type": "string",
+          "minLength": 1
+        },
+        "versioned_baseline_tree_sha256": {
+          "type": "string"
+        }
+      }
+    },
+    "observed_diff": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "stage_materialization": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "baseline_id",
+        "stage_root",
+        "expected_stage_root_state",
+        "transactions"
+      ],
+      "properties": {
+        "baseline_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stage_root": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_stage_root_state": {
+          "enum": [
+            "missing"
+          ]
+        },
+        "transactions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/stage_transaction"
+          }
+        },
+        "action_counts": {
+          "type": "object"
+        }
+      }
+    },
+    "activation": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "old_active_sandbox_archive_path",
+        "new_versioned_baseline_path",
+        "pointer_candidate",
+        "preconditions",
+        "rollback"
+      ],
+      "properties": {
+        "old_active_sandbox_archive_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "new_versioned_baseline_path": {
+          "type": "string",
+          "minLength": 1
+        },
+        "pointer_candidate": {
+          "type": "object"
+        },
+        "preconditions": {
+          "type": "object",
+          "required": [
+            "active_pointer_sha256",
+            "active_baseline_tree_sha256",
+            "old_active_path",
+            "expected_stage_root_state"
+          ],
+          "properties": {
+            "active_pointer_sha256": {
+              "type": "string",
+              "minLength": 1
+            },
+            "active_baseline_tree_sha256": {
+              "type": "string",
+              "minLength": 1
+            },
+            "old_active_path": {
+              "type": "string",
+              "minLength": 1
+            },
+            "expected_stage_root_state": {
+              "const": "missing"
+            }
+          },
+          "additionalProperties": true
+        },
+        "rollback": {
+          "type": "object"
+        }
+      }
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/agent_plan"
+      }
+    },
+    "approval_requirements": {
+      "type": "object"
+    },
+    "canonical_sha256": {
+      "type": "string"
+    }
+  },
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "direction": {
+            "const": "p2s"
+          }
+        },
+        "required": [
+          "direction"
+        ]
+      },
+      "then": {
+        "required": [
+          "target_snapshot",
+          "observed_diff",
+          "stage_materialization",
+          "activation"
+        ]
+      }
+    }
+  ],
+  "$defs": {
+    "agent_plan": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "agent_id",
+        "transaction_id",
+        "source_root",
+        "target_root",
+        "target_before_tree_sha256",
+        "actions",
+        "blocked_actions",
+        "expected_status"
+      ],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_root": {
+          "type": "string"
+        },
+        "target_root": {
+          "type": "string"
+        },
+        "target_before_tree_sha256": {
+          "type": "string"
+        },
+        "disposition": {
+          "type": "string"
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plan_action"
+          }
+        },
+        "blocked_actions": {
+          "type": "array"
+        },
+        "expected_status": {
+          "type": "string"
+        }
+      }
+    },
+    "stage_transaction": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "transaction_id",
+        "agent_id",
+        "disposition",
+        "actions",
+        "blocked_actions"
+      ],
+      "properties": {
+        "transaction_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "agent_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "affected_agent_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disposition": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actions": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/plan_action"
+          }
+        },
+        "blocked_actions": {
+          "type": "array"
+        }
+      }
+    },
+    "plan_action": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "action_id",
+        "operation"
+      ],
+      "properties": {
+        "action_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operation": {
+          "enum": [
+            "add",
+            "replace",
+            "delete",
+            "noop",
+            "copy_from_prod",
+            "preserve_sanitized_derivative",
+            "preserve_sandbox_metadata",
+            "omit_unreachable_sensitive",
+            "reference_large_asset",
+            "snapshot_semantic_placeholder",
+            "noop_shared_transaction_member"
+          ]
+        },
+        "source_sha256": {
+          "type": "string"
+        },
+        "source_mode": {
+          "type": "string"
+        },
+        "source_file_type": {
+          "type": "string"
+        },
+        "destination_relative_path": {
+          "type": "string"
+        },
+        "stage_relative_path": {
+          "type": "string"
+        },
+        "derivative_sha256": {
+          "type": "string"
+        },
+        "redacted_source_fingerprint": {
+          "type": "object"
+        },
+        "metadata_sha256": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "copy_from_prod"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "source_sha256",
+              "source_mode",
+              "source_file_type",
+              "destination_relative_path",
+              "stage_relative_path"
+            ],
+            "properties": {
+              "source_sha256": {
+                "minLength": 1
+              },
+              "source_mode": {
+                "minLength": 1
+              },
+              "source_file_type": {
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "preserve_sanitized_derivative"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "derivative_sha256",
+              "redacted_source_fingerprint",
+              "destination_relative_path",
+              "stage_relative_path"
+            ],
+            "properties": {
+              "derivative_sha256": {
+                "minLength": 1
+              }
+            }
+          }
+        },
+        {
+          "if": {
+            "properties": {
+              "operation": {
+                "const": "preserve_sandbox_metadata"
+              }
+            },
+            "required": [
+              "operation"
+            ]
+          },
+          "then": {
+            "required": [
+              "metadata_sha256",
+              "destination_relative_path",
+              "stage_relative_path"
+            ],
+            "properties": {
+              "metadata_sha256": {
+                "minLength": 1
+              }
+            }
+          }
+        }
       ]
     }
   }

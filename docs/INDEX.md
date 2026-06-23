@@ -7,7 +7,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 
 | Path | Purpose |
 | --- | --- |
-| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-G v2.3.1 external scaffold contract patch, R7-H consistency repair, R7-I report-first thought-chain presentation mode, and non-claims. |
+| `README.md` | Reset branch overview, active R3 plan-driven execution, R4-A fixed DAG catalog projection, R4-B runtime binding registry, R4-C legacy boundary cleanup, R5-B1 frontend contract migration, R5-B2 workflow DAG inspector UI rewrite, R5-B2.6 Chinese localization/copy polish, R5-C user-facing simplification, R5-C1 business-copy professionalization, R6-B reset quality mainline rebuild, R7-G v2.3.1 external scaffold contract patch, R7-H consistency repair, R7-I report-first thought-chain presentation mode, SYNC-OPS read-only sync planner hardening, and non-claims. |
 | `AGENTS.md` | Codex and Vibe Coding workflow rules. |
 | `docs/SYSTEM_MAP.md` | Active runtime topology, fixed DAG public catalog source, runtime binding source, retained legacy inputs, quality entrypoints. |
 | `docs/ARCHITECTURE_FIXED_DAG.md` | Active fixed DAG executor, catalog source, runtime binding source, batches, step results, and 27 formal agent ids. |
@@ -28,6 +28,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md` | POST-BF-B2X production runtime release: dedicated non-L4 external compute orchestration, initial production activation set, rollback, provenance, canary, and topic closure. |
 | `docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md` | P2S-BASELINE-X/P2S-CLOSE-R1 external-agent prod-to-sandbox source-bearing baseline refresh: staged baseline, old sandbox preservation, sensitive-source resolution, fixed sandbox switch, rollback, and non-claims. |
 | `docs/SYNC_OPS_1_READ_ONLY_PLANNER.md` | SYNC-OPS-1 read-only bidirectional external-agent sync planner: static registry, sync policy, Draft 2020-12 schemas, B/S/P/D diff, immutable P2S/S2P/cycle plans, CLI, and non-claims. |
+| `docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md` | SYNC-OPS-1R P2S write-safety repair: observed diff versus stage materialization, versioned-stage activation model, sanitized derivative fingerprints, backup exclusion, per-Agent dispositions, and non-claims. |
 | `docs/报告完善计划（中文）.md` | Report-quality improvement plan: public-safe report material contract, L3 deterministic-fusion/LLM-explanation boundary, and staged L2/L3 enhancement sequence. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |

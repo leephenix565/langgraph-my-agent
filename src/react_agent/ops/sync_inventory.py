@@ -131,6 +131,30 @@ def inventory_root(agent_id: str, root: Path, *, root_role: str) -> dict[str, An
             "excluded_count": 0,
             "unicode_collisions": [],
         }
+    if root.is_file() or root.is_symlink():
+        record = _file_record(agent_id, root.parent, root, root_role)
+        included = [record] if record["include"] else []
+        digest_items = [
+            {
+                "relative_path": item["relative_path"],
+                "file_type": item["file_type"],
+                "sha256": item["sha256"],
+                "executable": item["executable"],
+                "symlink_target": item["symlink_target"],
+            }
+            for item in included
+        ]
+        return {
+            "agent_id": agent_id,
+            "root_role": root_role,
+            "root": str(root),
+            "root_exists": True,
+            "tree_digest": canonical_sha256(digest_items),
+            "files": [record],
+            "included_count": len(included),
+            "excluded_count": 0 if included else 1,
+            "unicode_collisions": [],
+        }
     records: list[FileInventoryRecord] = []
     for current, dirnames, filenames in os.walk(root, topdown=True, followlinks=False):
         current_path = Path(current)
@@ -234,4 +258,3 @@ def build_runtime_inventory(*, include_files: bool = True) -> dict[str, Any]:
         "fatal_conflict_count": len(validation["fatal_conflicts"]),
         "review_warning_count": len(validation["review_warnings"]),
     }
-

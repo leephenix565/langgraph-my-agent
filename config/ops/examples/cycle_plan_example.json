@@ -10,49 +10,46 @@
   "baseline": {
     "baseline_id": "20260623T050419Z"
   },
-  "experiment": {},
+  "experiment": {
+    "s2p_plan_id": "plan-example-s2p",
+    "s2p_plan_sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  },
   "target_snapshot": {},
   "agents": [
     {
       "agent_id": "value_research_synthesis",
-      "transaction_id": "tx-example-001",
-      "source_root": "prod-root",
-      "target_root": "sandbox-root",
-      "target_before_tree_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
-      "actions": [
-        {
-          "action_id": "act-001",
-          "operation": "sanitize",
-          "source_path": "main5.py",
-          "target_path": "main5.py",
-          "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
-          "expected_target_before_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
-          "expected_mode": "0o644",
-          "sensitive_classification": "hardcoded_credential_required_runtime",
-          "change_unit_id": "cu-example-001",
-          "approval_scope": "agent",
-          "rollback_source": "backup/main5.py"
-        }
-      ],
+      "transaction_id": "tx-cycle-001",
+      "source_root": "s2p_plan",
+      "target_root": "deferred_p2s_after_settled_prod",
+      "target_before_tree_sha256": "",
+      "actions": [],
       "blocked_actions": [],
       "backup": {},
-      "offline_tests": [
-        "py_compile"
-      ],
+      "offline_tests": [],
       "process_preflight": {},
       "process_actions": [],
       "live_validation": [],
       "rollback": {},
-      "expected_status": "planned"
+      "expected_status": "deferred_rebase_after_s2p_settled"
     }
   ],
+  "deferred_rebase": {
+    "p2s_plan_generation": "deferred_until_all_started_s2p_transactions_settled",
+    "reads": "real_prod_after_state",
+    "rollback_failed_blocks_rebase": true,
+    "requires_publish_and_rebase_approval": true
+  },
   "global_preconditions": [
-    "registry validates"
+    "s2p_settled_before_rebase"
   ],
   "global_blockers": [],
   "approval_requirements": {
-    "approval_record_required": true
+    "approval_record_required": true,
+    "publish_and_rebase_approved": true
   },
-  "rollback_plan": {},
-  "canonical_sha256": "fc86839ff31d6c0d8aca312a0bdd41ab332c090b87da70727644e00281b1d4f1"
+  "rollback_plan": {
+    "execution": "not_available_in_sync_ops_1r",
+    "skeleton_only": true
+  },
+  "canonical_sha256": "example-cycle-hash"
 }
