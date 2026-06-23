@@ -87,15 +87,19 @@ block the current P2S plan.
 
 ## SYNC-OPS-2B Entry
 
-SYNC-OPS-2B may begin only with:
+SYNC-OPS-2A-R1 supersedes the 2A current plan/request with a stricter source
+selection policy and a full-scale temp rehearsal requirement. SYNC-OPS-2B may
+begin only with:
 
-- a fresh current P2S plan from the 2A tool version;
+- a fresh current P2S plan from the 2A-R1 tool version;
 - matching environment snapshot SHA;
 - a real machine approval file with stage/activate/rollback scopes explicitly
   set;
 - writable approved artifact-store root;
 - clean target drift checks;
 - no runtime-required compile blockers.
+- `not_scanned copy=0`, unknown blocked count `0`, sensitive copy count `0`,
+  and full-scale temp stage/verify/activate/rollback pass.
 
 ## Non-Claims
 

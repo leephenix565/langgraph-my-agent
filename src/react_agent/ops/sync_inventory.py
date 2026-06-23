@@ -12,6 +12,7 @@ from typing import Any, TypedDict
 
 from react_agent.ops.sync_contracts import canonical_sha256, file_sha256
 from react_agent.ops.sync_registry import load_static_registry, validate_static_registry
+from react_agent.ops.sync_runtime_assets import is_explicit_runtime_asset
 from react_agent.ops.sync_security import (
     BACKUP_FILE_RE,
     EXCLUDED_DIR_NAMES,
@@ -42,6 +43,8 @@ class FileInventoryRecord(TypedDict):
     sensitive_classification: str
     sensitive_line_ranges: list[str]
     large_asset_classification: str
+    source_category: str
+    source_category_reason: str
     include: bool
     include_decision: str
     reason: str
@@ -85,16 +88,21 @@ def _file_record(
     sensitive = "not_scanned"
     sensitive_lines: list[str] = []
     large = "not_large_asset"
+    source_category = "unknown_blocked"
+    source_category_reason = "not_source_bearing"
     include = False
     include_decision = "excluded"
     reason = "not_source_bearing"
     if file_type == "regular":
-        safety = should_include_source_file(root, path)
+        explicit_asset = is_explicit_runtime_asset(agent_id, relative_path)
+        safety = should_include_source_file(root, path, explicit_asset=explicit_asset)
         include = safety["include"]
         include_decision = safety["classification"]
         reason = safety["reason"]
         sensitive, sensitive_lines = classify_sensitive_source(path, size=stat_result.st_size)
         large = safety["large_asset_classification"]
+        source_category = safety["source_category"]
+        source_category_reason = safety["source_category_reason"]
         if include:
             sha = file_sha256(path)
             normalized_sha, line_ending = _normalized_text_sha(path, stat_result.st_size)
@@ -102,6 +110,8 @@ def _file_record(
         include_decision, symlink_target = safe_symlink_decision(root, path)
         include = include_decision == "safe_relative_symlink"
         reason = include_decision
+        source_category = "source_code"
+        source_category_reason = "safe_relative_symlink"
     else:
         include_decision = f"blocked_{file_type}"
         reason = file_type
@@ -123,6 +133,8 @@ def _file_record(
         "sensitive_classification": sensitive,
         "sensitive_line_ranges": sensitive_lines,
         "large_asset_classification": large,
+        "source_category": source_category,
+        "source_category_reason": source_category_reason,
         "include": include,
         "include_decision": include_decision,
         "reason": reason,
@@ -183,7 +195,14 @@ def inventory_root(agent_id: str, root: Path, *, root_role: str, relative_base: 
         kept_dirs: list[str] = []
         for dirname in dirnames:
             candidate = current_path / dirname
-            if dirname in EXCLUDED_DIR_NAMES or BACKUP_FILE_RE.match(dirname):
+            lower_dirname = dirname.lower()
+            if (
+                dirname in EXCLUDED_DIR_NAMES
+                or dirname.startswith(".")
+                or "output" in lower_dirname
+                or lower_dirname.endswith("_out")
+                or BACKUP_FILE_RE.match(dirname)
+            ):
                 continue
             try:
                 stat_result = candidate.lstat()

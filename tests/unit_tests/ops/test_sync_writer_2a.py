@@ -76,6 +76,8 @@ def _temp_plan(tmp_path: Path) -> dict[str, object]:
             "stage_relative_path": f"{agent_id}/{rel}",
             "sensitive_classification": "none",
             "large_asset_classification": "not_large_asset",
+            "source_category": "source_code",
+            "source_category_reason": "source_extension",
         }
         txn_id = stable_id("stage", agent_id, str(source_dir))
         agents.append(

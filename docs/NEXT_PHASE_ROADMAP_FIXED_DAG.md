@@ -90,9 +90,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   2020-12 schemas, generates B/S/P/D diffs, and emits immutable P2S/S2P/cycle
   plans. SYNC-OPS-1R/1R2 then harden P2S action safety, recursive coverage,
   parity ledgers, and temp reconstruction. SYNC-OPS-2A adds only temp-root
-  writer primitives. The next sync implementation entry is SYNC-OPS-2B real
-  P2S execution, gated by explicit machine approval, environment snapshot,
-  locks, and artifact-store readiness.
+  writer primitives. SYNC-OPS-2A-R1 closes source selection and proves the
+  actual current plan with full-scale temp stage/verify/activate/rollback.
+  The next sync implementation entry is SYNC-OPS-2B real P2S execution, gated
+  by explicit machine approval, environment snapshot, locks, artifact-store
+  readiness, source-policy clean plan validation, and full-scale rehearsal
+  evidence.
 
 重要边界：
 
@@ -383,11 +386,12 @@ request can be considered.
 
 SYNC-OPS-2A implements the writer contract but only exercises it in
 repo-external temporary roots. The next safe phase is SYNC-OPS-2B, and its entry
-condition is a fresh 2A plan, matching environment snapshot SHA, explicit
+condition is a fresh 2A-R1 plan, matching environment snapshot SHA, explicit
 machine approval for stage/activate/rollback, writable approved artifact-store
-root, and no runtime-required compile blockers. SYNC-OPS-2B must still avoid
-S2P apply, endpoint smoke, process restart, and owner-dev writes unless a later
-phase explicitly owns them.
+root, no runtime-required compile blockers, `not_scanned copy=0`, and
+full-scale temp rehearsal pass. SYNC-OPS-2B must still avoid S2P apply,
+endpoint smoke, process restart, and owner-dev writes unless a later phase
+explicitly owns them.
 
 ## Non-Goals
 

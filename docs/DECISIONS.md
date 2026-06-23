@@ -2555,3 +2555,94 @@ approval cannot silently roll back; rollback approval must be available before
 real execution.
 
 Non-consequence: SYNC-OPS-2A does not approve real stage, activate, or rollback.
+
+## ADR-072: P2S Source Selection Is Role Based
+
+Status: accepted for SYNC-OPS P2S execution entry.
+
+Decision: small regular files are not automatically source-bearing. P2S
+inventory classifies files by role before planning: source code,
+schema/protocol, tests, documentation, runbooks, package metadata, explicit
+runtime assets, generated artifacts, experiment results, data/model assets,
+backup artifacts, local metadata, runtime noise, sensitive blocked, or unknown
+blocked.
+
+Reason: the 2A plan showed that extension-based inclusion admitted generated
+results, local tool settings, backup trees, and opaque files as copy actions.
+
+Consequence: source category is part of inventory and copy actions. The plan
+validator rejects non-materializable categories in `copy_from_prod`.
+
+Non-consequence: role classification does not prove business correctness or
+owner source authority.
+
+## ADR-073: Local Metadata Backups And Generated Results Are Excluded By Default
+
+Status: accepted for SYNC-OPS P2S execution entry.
+
+Decision: `.claude`, `.idea`, `.vscode`, hidden local/cache directories,
+backup-pattern directories, `artifacts`, `results`, `reports`, `outputs`, and
+`runs` are pruned or excluded by default.
+
+Reason: these paths are local workflow state, deployment residue, experiment
+outputs, reports, or runtime artifacts, not portable source baseline input.
+
+Consequence: a future stage plan may be smaller than a historical raw manifest
+while still complete, provided excluded files have explicit dispositions.
+
+Non-consequence: explicitly evidenced runtime assets can still be listed in a
+manifest and included.
+
+## ADR-074: Runtime Static Assets Require Explicit Evidence
+
+Status: accepted for SYNC-OPS P2S execution entry.
+
+Decision: runtime static assets, test fixtures, and legacy references are
+included only when registered in an explicit runtime asset manifest with
+agent id, relative path, role, evidence, size, SHA, and secret-scan policy.
+
+Reason: generated-result directories can contain small JSON or CSV files that
+look harmless but are not source authority.
+
+Consequence: `config/ops/agent_runtime_asset_manifest.json` is the allowlist
+for such exceptions. The current manifest contains the risk-composite
+fixed-DAG L3 contract fixtures.
+
+Non-consequence: the manifest cannot whitelist models, production datasets,
+raw logs, credentials, or user data.
+
+## ADR-075: Not Scanned Is Never Executable
+
+Status: accepted for SYNC-OPS P2S execution entry.
+
+Decision: a `copy_from_prod` action must never have
+`sensitive_classification=not_scanned`. Unknown or opaque files are classified
+and excluded or blocked before planning.
+
+Reason: a plan with `not_scanned` copy actions cannot prove that no secret or
+runtime noise is being copied.
+
+Consequence: no-extension files are content-sniffed and secret-scanned. Safe
+text can be classified as documentation; empty directory markers and opaque
+files are excluded with explicit categories.
+
+Non-consequence: this does not output file contents or secret findings.
+
+## ADR-076: Real Write Approval Needs Full-Scale Actual-Plan Rehearsal
+
+Status: accepted for SYNC-OPS P2S execution entry.
+
+Decision: a reduced synthetic writer fixture is not enough for real P2S
+approval. The current actual plan must stage, verify, activate, and roll back
+successfully in a repo-external temp root before requesting machine approval.
+
+Reason: full-scale rehearsal validates source selection, digest projection,
+secret scan, compile profile, no-hardlink activation, rollback, and recovery
+against the same action set that would be approved.
+
+Consequence: SYNC-OPS-2A-R1 adds a temp-only `p2s rehearse` path that remaps
+stage, active, pointer, archive, approval, locks, and artifact store to `/tmp`.
+
+Non-consequence: temp rehearsal is not real execution and does not create a
+real approval, lock, backup, stage, activation, endpoint smoke, or process
+action.

@@ -1,0 +1,103 @@
+{
+  "schema_version": "agent_runtime_asset_manifest_v1",
+  "generated_at": "2026-06-23T00:00:00Z",
+  "scope": "external_agent_p2s_source_selection",
+  "assets": [
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/macro_composite.expected.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 1073,
+      "sha256": "33de7a7522a8c8453a13a086cf4f8ad5abf81a7918b93395396e3b5ceab52260",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/macro_composite.input.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 728,
+      "sha256": "43a6145b6889ca14428cbd9180121eca9dd56eab763c74e8c751b2834f5c43b5",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/market_composite.expected.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 1005,
+      "sha256": "2adb195671ecb039d04fdb09aac6baca80226cccb60548df50b03bd4cc10f6fc",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/market_composite.input.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 627,
+      "sha256": "8152cfb355b7fed57aa6d7b5024c469fd807fe3d034f3364b7ef5ee00d904881",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/risk_composite.expected.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 1120,
+      "sha256": "3e275a08175faba2e218ace537fa6e60157895cc52e51788df703710d2c0e65f",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/risk_composite.input.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 775,
+      "sha256": "5e6919d6a9deafe14f2d84c6ca92866bd4492601ed07348968b8e9a47953635a",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/value_composite.expected.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 940,
+      "sha256": "5a1dbc638782a485bb8330e694680f83f6695ecdcd7109e5c98ad8b291af6a4f",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    },
+    {
+      "agent_id": "risk_composite",
+      "relative_path": "tests/fixtures/fixed_dag_l3/value_composite.input.json",
+      "asset_role": "test_fixture",
+      "required_by": ["offline_contract_tests"],
+      "evidence": ["risk_composite tests/fixtures/fixed_dag_l3"],
+      "size": 595,
+      "sha256": "d0ae4d73955be77f524b7655c8fd0dc0b8bdeaecd0ab761111abf382a51a763f",
+      "publish_to_sandbox": true,
+      "data_or_model": false,
+      "secret_scan_required": true
+    }
+  ]
+}

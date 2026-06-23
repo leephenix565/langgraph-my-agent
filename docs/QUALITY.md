@@ -951,3 +951,20 @@ Required assertions include:
 - activation uses an independent candidate and reports zero hard links;
 - rollback restores the archive and preserves the failed active tree;
 - recovery journal state classifies resume versus rollback-required points.
+
+## SYNC-OPS-2A-R1 Source Policy Gate
+
+SYNC-OPS-2A-R1 extends the maintained quality surface with source-selection
+regressions and full-scale temp rehearsal:
+
+- hidden local/editor metadata, backup-pattern directories, generated
+  artifacts, experiment results, reports, outputs, data assets, model assets,
+  runtime noise, and sensitive files are excluded or blocked by role;
+- no `copy_from_prod` action may carry `not_scanned`, unknown, sensitive, or
+  non-materializable source categories;
+- runtime static assets and test fixtures require explicit manifest evidence;
+- no-extension files are sniffed and secret-scanned before classification;
+- the actual current P2S plan must rehearse stage, verify, activate, rollback,
+  no-hardlink check, secret scan, py_compile profile, and recovery in `/tmp`;
+- real prod, sandbox, owner-dev, artifact-store, approval, lock, backup, stage,
+  activation, endpoint, process, and env-value state remain untouched.

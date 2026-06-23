@@ -1303,6 +1303,20 @@ SYNC-OPS-2A adds write-run contracts without executing real server writes:
 - The recovery journal records stage, candidate, archive, pointer, rollback,
   and closeout events so interrupted runs can classify resume versus rollback.
 
+SYNC-OPS-2A-R1 adds source-selection invariants to P2S plans:
+
+- every inventory file receives a source role before planning;
+- `copy_from_prod` and `snapshot_semantic_placeholder` actions must include
+  `source_category`, `source_sha256`, completed sensitive classification, file
+  mode, and file type;
+- `not_scanned`, sensitive, unknown, editor/local metadata, backup artifacts,
+  generated artifacts, experiment results, data/model assets, and runtime
+  noise cannot be materialized by ordinary copy;
+- runtime static assets, test fixtures, and legacy references require explicit
+  manifest evidence before materialization;
+- full-scale temp rehearsal of the actual plan is required before a real
+  approval request can be considered actionable.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

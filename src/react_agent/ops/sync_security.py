@@ -17,6 +17,11 @@ from react_agent.ops.sync_contracts import SyncPlannerError
 MAX_SOURCE_FILE_BYTES = 25 * 1024 * 1024
 EXCLUDED_DIR_NAMES = {
     ".git",
+    ".idea",
+    ".vscode",
+    ".claude",
+    ".history",
+    ".cache",
     "__pycache__",
     ".pytest_cache",
     ".mypy_cache",
@@ -28,8 +33,14 @@ EXCLUDED_DIR_NAMES = {
     "log",
     "cache",
     "caches",
+    "tmp",
+    "temp",
     "output",
     "outputs",
+    "runs",
+    "artifacts",
+    "results",
+    "reports",
     "dist",
     "build",
     "backups",
@@ -43,6 +54,12 @@ EXCLUDED_DIR_NAMES = {
     "tests.bak_v22_20260607_082218",
 }
 EXCLUDED_FILE_NAMES = {".env", ".env.local", ".env.production", ".env.dev"}
+EDITOR_LOCAL_DIR_NAMES = {".idea", ".vscode", ".claude", ".history"}
+GENERATED_DIR_NAMES = {"artifacts", "output", "outputs", "runs", "reports"}
+EXPERIMENT_RESULT_DIR_NAMES = {"results"}
+RUNTIME_NOISE_DIR_NAMES = {"logs", "log", "cache", "caches", "tmp", "temp"}
+DATA_ASSET_DIR_NAMES = {"data", "dataset", "datasets"}
+MODEL_ASSET_DIR_NAMES = {"models", "weights"}
 SOURCE_EXTENSIONS = {
     ".py",
     ".pyi",
@@ -62,6 +79,9 @@ SOURCE_EXTENSIONS = {
     ".jsx",
     ".html",
     ".css",
+    ".jsonl",
+    ".vue",
+    ".bat",
 }
 SOURCE_BASENAMES = {
     ".gitignore",
@@ -83,8 +103,31 @@ SECRET_CONTENT_RE = re.compile(
     r"(?i)(api[_-]?key|secret|password|passwd|token|credential|private[_-]?key|dsn)\s*[:=]\s*['\"][^'\"]{8,}['\"]"
 )
 BACKUP_FILE_RE = re.compile(
-    r"(?i)(.*\.bak($|[._-].*)|.*\.backup($|\..*)|.*_predeploy_.*|.*\.orig($|\..*)|.*\.rej($|\..*)|.*~$|.*\.swp$|\.DS_Store$)"
+    r"(?i)(\.?[^/]*\.bak($|[._-].*)|\.?[^/]*\.backup($|\..*)|\.?[^/]*bak_[^/]*|\.?[^/]*_bak_[^/]*|"
+    r"\.?opt_bak_[^/]*|\.?snapshot_bak_[^/]*|_backup_[^/]*|backup_[^/]*|.*_predeploy_.*|"
+    r".*\.orig($|\..*)|.*\.rej($|\..*)|.*~$|.*\.swp$|\.DS_Store$)"
 )
+MATERIALIZABLE_SOURCE_CATEGORIES = {
+    "source_code",
+    "schema_protocol",
+    "contract_test",
+    "offline_test",
+    "documentation",
+    "startup_runbook",
+    "package_metadata",
+}
+EXPLICIT_ASSET_SOURCE_CATEGORIES = {"runtime_static_asset", "test_fixture", "legacy_reference"}
+NON_MATERIALIZABLE_SOURCE_CATEGORIES = {
+    "generated_artifact",
+    "experiment_result",
+    "data_asset",
+    "model_asset",
+    "backup_artifact",
+    "editor_local_metadata",
+    "runtime_noise",
+    "sensitive_blocked",
+    "unknown_blocked",
+}
 
 
 class FileSafety(TypedDict):
@@ -92,6 +135,8 @@ class FileSafety(TypedDict):
     classification: str
     sensitive_classification: str
     large_asset_classification: str
+    source_category: str
+    source_category_reason: str
     reason: str
 
 
@@ -159,7 +204,101 @@ def _looks_text(path: Path, size: int) -> bool:
         return False
     if path.name in SOURCE_BASENAMES or path.suffix in SOURCE_EXTENSIONS:
         return True
+    try:
+        sample = path.read_bytes()[:4096]
+    except OSError:
+        return False
+    if b"\x00" in sample:
+        return False
+    if not sample:
+        return True
+    textish = sum(1 for byte in sample if byte in b"\t\n\r" or 32 <= byte <= 126 or byte >= 128)
+    return textish / len(sample) >= 0.85
     return False
+
+
+def _relative_parts(root: Path, path: Path) -> tuple[str, ...]:
+    try:
+        return path.relative_to(root).parts
+    except ValueError:
+        return path.parts
+
+
+def _has_dir(parts: tuple[str, ...], names: set[str]) -> bool:
+    return any(part in names for part in parts[:-1])
+
+
+def _has_generated_dir(parts: tuple[str, ...]) -> bool:
+    for part in parts[:-1]:
+        if part in GENERATED_DIR_NAMES or "output" in part or part.endswith("_out"):
+            return True
+    return False
+
+
+def _has_backup_dir(parts: tuple[str, ...]) -> bool:
+    return any(BACKUP_FILE_RE.match(part) for part in parts)
+
+
+def classify_source_category(root: Path, path: Path, *, explicit_asset: bool = False) -> tuple[str, str]:
+    """Classify a source candidate into a single sync role."""
+    rel_parts = _relative_parts(root, path)
+    lower_parts = tuple(part.lower() for part in rel_parts)
+    suffix = path.suffix.lower()
+    name = path.name
+    lower_name = name.lower()
+    if name in EXCLUDED_FILE_NAMES or lower_name.startswith(".env") or suffix == ".env":
+        return "sensitive_blocked", "env_or_secret_file"
+    if _has_backup_dir(rel_parts):
+        return "backup_artifact", "backup_name_pattern"
+    if _has_dir(lower_parts, EDITOR_LOCAL_DIR_NAMES) or any(part.startswith(".") for part in lower_parts[:-1]):
+        return "editor_local_metadata", "editor_or_local_tool_directory"
+    if _has_dir(lower_parts, RUNTIME_NOISE_DIR_NAMES):
+        return "runtime_noise", "runtime_noise_directory"
+    if _has_generated_dir(lower_parts):
+        return ("runtime_static_asset", "explicit_runtime_asset_manifest") if explicit_asset else ("generated_artifact", "generated_artifact_directory")
+    if _has_dir(lower_parts, EXPERIMENT_RESULT_DIR_NAMES):
+        return ("test_fixture", "explicit_test_fixture_manifest") if explicit_asset else ("experiment_result", "experiment_result_directory")
+    if _has_dir(lower_parts, DATA_ASSET_DIR_NAMES):
+        return ("test_fixture", "explicit_test_fixture_manifest") if explicit_asset else ("data_asset", "data_asset_directory")
+    if _has_dir(lower_parts, MODEL_ASSET_DIR_NAMES) or suffix in {".pkl", ".pt", ".pth", ".onnx", ".safetensors", ".joblib", ".model"}:
+        return "model_asset", "model_asset"
+    if lower_name in {".docx", ".pdf", ".xlsx"}:
+        return "generated_artifact", "hidden_document_artifact"
+    if lower_name == ".gitkeep":
+        return "runtime_noise", "empty_directory_marker"
+    if suffix in {".log", ".pid", ".flag", ".tsbuildinfo", ".tfevents"}:
+        return "runtime_noise", "runtime_noise_extension"
+    if suffix in {".parquet", ".csv", ".tsv", ".xlsx"}:
+        return ("test_fixture", "explicit_test_fixture_manifest") if explicit_asset else ("data_asset", "tabular_data_asset")
+    if suffix in {".png", ".jpg", ".jpeg", ".gif", ".svg", ".pdf", ".docx"}:
+        return "generated_artifact", "report_or_figure_artifact"
+    if suffix in {".zip", ".rar", ".tgz", ".tar", ".gz"}:
+        return "generated_artifact", "archive_artifact"
+    if name in SOURCE_BASENAMES or lower_name in {item.lower() for item in SOURCE_BASENAMES}:
+        if "runbook" in lower_name or "startup" in lower_name:
+            return "startup_runbook", "startup_or_runbook_basename"
+        return "package_metadata", "package_or_repo_metadata"
+    if suffix in {".py", ".pyi", ".js", ".ts", ".tsx", ".jsx", ".html", ".css", ".sh", ".ps1", ".vue", ".bat"}:
+        if any(part in {"tests", "test"} for part in lower_parts[:-1]):
+            return "contract_test", "test_source_path"
+        return "source_code", "source_extension"
+    if suffix in {".json", ".yaml", ".yml", ".toml", ".ini", ".cfg"}:
+        if any(part in {"schemas", "schema", "protocol", "protocols"} for part in lower_parts[:-1]) or "schema" in lower_name:
+            return "schema_protocol", "schema_or_protocol_path"
+        if any(part in {"tests", "fixtures", "fixture"} for part in lower_parts[:-1]):
+            return "test_fixture", "test_fixture_path"
+        if "config" in lower_name or any(part in {"config", "configs"} for part in lower_parts[:-1]):
+            return "schema_protocol", "configuration_file"
+        return "schema_protocol", "structured_configuration"
+    if suffix in {".md", ".rst", ".txt", ".jsonl"}:
+        if "runbook" in lower_name or "startup" in lower_name:
+            return "startup_runbook", "startup_or_runbook_document"
+        if any(part in {"tests", "fixtures", "fixture"} for part in lower_parts[:-1]):
+            return "test_fixture", "test_fixture_path"
+        return "documentation", "documentation_or_text_resource"
+    if not suffix and _looks_text(path, path.lstat().st_size):
+        return "documentation", "extensionless_safe_text"
+    return "unknown_blocked", "unknown_file_type_or_binary"
 
 
 def _line_ranges_for_secret(content: str) -> list[str]:
@@ -243,15 +382,18 @@ def classify_large_asset(path: Path, *, size: int) -> str:
     return "not_large_asset"
 
 
-def should_include_source_file(root: Path, path: Path) -> FileSafety:
+def should_include_source_file(root: Path, path: Path, *, explicit_asset: bool = False) -> FileSafety:
     rel = path.relative_to(root)
     rel_parts = rel.parts
+    source_category, source_category_reason = classify_source_category(root, path, explicit_asset=explicit_asset)
     if any(part in EXCLUDED_DIR_NAMES for part in rel_parts[:-1]):
         return {
             "include": False,
             "classification": "excluded_directory",
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
             "reason": "excluded_directory",
         }
     if BACKUP_FILE_RE.match(path.name):
@@ -260,6 +402,8 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": "excluded_backup_artifact",
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
+            "source_category": "backup_artifact",
+            "source_category_reason": "backup_name_pattern",
             "reason": "backup_runtime_noise",
         }
     stat_result = path.lstat()
@@ -270,6 +414,8 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": "blocked_setuid_setgid",
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
             "reason": "setuid_setgid",
         }
     if file_type == "symlink":
@@ -279,6 +425,8 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": decision,
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
             "reason": reason,
         }
     if file_type != "regular":
@@ -287,6 +435,8 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": f"blocked_{file_type}",
             "sensitive_classification": "not_scanned",
             "large_asset_classification": "not_large_asset",
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
             "reason": file_type,
         }
     large = classify_large_asset(path, size=stat_result.st_size)
@@ -297,6 +447,8 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": "blocked_sensitive_source",
             "sensitive_classification": sensitive,
             "large_asset_classification": large,
+            "source_category": "sensitive_blocked",
+            "source_category_reason": sensitive,
             "reason": sensitive,
         }
     if large != "not_large_asset":
@@ -305,35 +457,28 @@ def should_include_source_file(root: Path, path: Path) -> FileSafety:
             "classification": "large_asset_reference",
             "sensitive_classification": sensitive,
             "large_asset_classification": large,
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
             "reason": large,
         }
-    if path.name in SOURCE_BASENAMES or path.suffix in SOURCE_EXTENSIONS:
+    if source_category in MATERIALIZABLE_SOURCE_CATEGORIES or (explicit_asset and source_category in EXPLICIT_ASSET_SOURCE_CATEGORIES):
         return {
             "include": True,
             "classification": "source_bearing",
             "sensitive_classification": sensitive,
             "large_asset_classification": large,
-            "reason": "included_source_bearing",
+            "source_category": source_category,
+            "source_category_reason": source_category_reason,
+            "reason": f"included_{source_category}",
         }
-    if not path.suffix:
-        try:
-            sample = path.read_bytes()[:4096]
-        except OSError:
-            sample = b"\x00"
-        if b"\x00" not in sample:
-            return {
-                "include": True,
-                "classification": "small_text_resource",
-                "sensitive_classification": sensitive,
-                "large_asset_classification": large,
-                "reason": "included_small_text_resource",
-            }
     return {
         "include": False,
-        "classification": "excluded_non_source",
+        "classification": f"excluded_{source_category}",
         "sensitive_classification": sensitive,
         "large_asset_classification": large,
-        "reason": "extension_not_in_include_profile",
+        "source_category": source_category,
+        "source_category_reason": source_category_reason,
+        "reason": source_category_reason,
     }
 
 

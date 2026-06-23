@@ -3,6 +3,35 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - SYNC-OPS-2A-R1 P2S source-policy closure
+
+### Added
+
+- Added role-based P2S source classification and a runtime asset manifest for
+  explicit small fixture/static-asset exceptions.
+- Added `agent-sync p2s source-audit` and temp-only `agent-sync p2s rehearse`
+  commands.
+- Added full-scale temp writer rehearsal coverage for the current actual P2S
+  plan: stage, verify, activate, rollback, no-hardlink check, and recovery.
+- Added `docs/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md` and
+  ADRs 072-076.
+
+### Changed
+
+- Tightened source selection so local editor/AI-tool metadata, hidden backups,
+  generated artifacts/results/reports/outputs/runs, data assets, model assets,
+  runtime noise, and sensitive files are excluded by default.
+- Changed plan validation to reject `copy_from_prod` actions with
+  `not_scanned`, sensitive, unknown, or non-materializable source categories.
+- Updated sync policy docs/config to make source categories and manifest-only
+  asset inclusion explicit.
+
+### Not Done
+
+- No real prod, sandbox, owner-dev, artifact-store, approval, lock, backup,
+  stage, activation, endpoint, process, provider, database, env-value, or
+  secret-output operation was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A P2S writer dry-run hardening
 
 ### Added

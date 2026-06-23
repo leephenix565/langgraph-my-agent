@@ -143,6 +143,14 @@ primitives, and recovery journal tests. It only writes repo-external temporary
 fixtures in this phase; real sandbox execution still requires a SYNC-OPS-2B
 approval. See `docs/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md`.
 
+SYNC-OPS-2A-R1 closes the source-selection gap before real P2S execution:
+files are classified by role, hidden local/editor metadata, backups,
+generated results, data/model assets, runtime noise, sensitive files, and
+unknown files are excluded or blocked by policy, and `not_scanned` can no
+longer become a copy action. The current real plan is rehearsed at full scale
+under `/tmp` before a new awaiting-approval request is useful. See
+`docs/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -916,3 +924,7 @@ readiness.
   reconstruction checks. It still does not write prod, sandbox, owner-dev,
   approval, lock, backup, stage, activate, endpoint, process, or artifact-store
   state.
+- SYNC-OPS-2A-R1 closes P2S source selection and full-scale temp rehearsal
+  before real execution approval. It still does not write prod, sandbox,
+  owner-dev, real artifact-store, approval, lock, backup, stage, activate,
+  endpoint, process, or environment-value state.

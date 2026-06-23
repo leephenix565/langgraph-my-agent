@@ -7,6 +7,7 @@ import json
 import os
 import shutil
 from collections.abc import Mapping
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from typing import Any
 
@@ -15,6 +16,7 @@ from react_agent.ops.sync_artifacts import ArtifactRunStore
 from react_agent.ops.sync_contracts import (
     SyncPlannerError,
     canonical_sha256,
+    file_sha256,
     read_json,
     stable_id,
     write_json,
@@ -167,6 +169,24 @@ def _write_pointer(plan: Mapping[str, Any], path: Path) -> None:
     os.replace(tmp, path)
 
 
+def _write_rollback_pointer(plan: Mapping[str, Any], path: Path) -> None:
+    baseline = plan.get("baseline") or {}
+    activation = plan.get("activation") or {}
+    preconditions = activation.get("preconditions") if isinstance(activation, Mapping) else {}
+    old_active = str((preconditions or {}).get("old_active_path") or baseline.get("active_path") or "")
+    payload = {
+        "schema": "fixed_dag_prod_sandbox_baseline_pointer_v1",
+        "active_baseline_id": str(baseline.get("active_baseline_id") or ""),
+        "active_path": old_active,
+        "versioned_baseline_path": str(baseline.get("versioned_baseline_path") or ""),
+        "manifest_hashes": baseline.get("manifest_hashes") or {},
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = path.with_name(f".{path.name}.tmp-{os.getpid()}")
+    write_json(tmp, payload)
+    os.replace(tmp, path)
+
+
 def _stage_digest(plan: Mapping[str, Any], root: Path) -> str:
     return compute_stage_digest(root, _all_actions(plan))
 
@@ -279,6 +299,7 @@ def p2s_activate(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
     expected = str((plan.get("stage_materialization") or {}).get("expected_stage_projection_digest") or "")
     if candidate_digest != expected:
         raise SyncPlannerError("candidate_digest_mismatch", exit_code=7)
+    archive.parent.mkdir(parents=True, exist_ok=True)
     os.replace(active, archive)
     store.append_event("active_archived", {"archive": str(archive)})
     os.replace(candidate, active)
@@ -317,7 +338,7 @@ def p2s_rollback(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
         os.replace(active, failed)
     if not active.exists():
         os.replace(archive, active)
-    _write_pointer(plan, pointer)
+    _write_rollback_pointer(plan, pointer)
     result = {
         "run_id": _run_id(plan),
         "active_path": str(active),
@@ -332,6 +353,160 @@ def p2s_rollback(plan_path: Path, approval_path: Path, artifact_root: Path, *, e
     store.write_json("rollback/rollback_result.json", result)
     store.finalize()
     return result
+
+
+def _require_temp_rehearsal_root(root: Path) -> None:
+    resolved = root.resolve(strict=False)
+    tmp = Path("/tmp").resolve(strict=False)
+    if tmp not in [resolved, *resolved.parents]:
+        raise SyncPlannerError("p2s_rehearsal_temp_root_not_under_tmp", exit_code=2)
+    forbidden = [
+        Path("/sdb/dlut/prod").resolve(strict=False),
+        Path("/sdb/dlut/sandbox").resolve(strict=False),
+        Path("/sdb/dlut/ops-artifacts/agent-sync").resolve(strict=False),
+    ]
+    if any(path in [resolved, *resolved.parents] for path in forbidden):
+        raise SyncPlannerError("p2s_rehearsal_temp_root_forbidden", exit_code=2)
+
+
+def _future(hours: int = 24) -> str:
+    return (datetime.now(UTC) + timedelta(hours=hours)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _all_action_ids(plan: Mapping[str, Any]) -> list[str]:
+    return [
+        str(action.get("action_id") or "")
+        for agent in plan.get("agents") or []
+        if isinstance(agent, Mapping)
+        for action in agent.get("actions") or []
+        if isinstance(action, Mapping)
+    ]
+
+
+def prepare_temp_rehearsal_plan(plan: Mapping[str, Any], temp_root: Path) -> dict[str, Any]:
+    _require_temp_rehearsal_root(temp_root)
+    decoded = json.loads(json.dumps(plan, ensure_ascii=False, allow_nan=False))
+    if not isinstance(decoded, dict):
+        raise SyncPlannerError("plan_not_object", exit_code=2)
+    active = temp_root / "active"
+    pointer = temp_root / "PROD_BASELINE_POINTER.json"
+    baseline_id = str((decoded.get("stage_materialization") or {}).get("baseline_id") or "temp-baseline")
+    stage_root = temp_root / "versioned" / baseline_id / "fixed-dag-services"
+    archive = temp_root / "archives" / f"active-pre-{baseline_id}"
+    old_pointer = {
+        "schema": "fixed_dag_prod_sandbox_baseline_pointer_v1",
+        "active_baseline_id": str((decoded.get("baseline") or {}).get("active_baseline_id") or "temp-old-baseline"),
+        "active_path": str(active),
+        "versioned_baseline_path": str(temp_root / "old-versioned" / "fixed-dag-services"),
+        "manifest_hashes": {},
+    }
+    active.mkdir(parents=True, exist_ok=True)
+    write_json(pointer, old_pointer)
+    decoded["test_only_temp_roots"] = True
+    decoded["target_snapshot"]["active_sandbox_path"] = str(active)
+    decoded["target_snapshot"]["active_sandbox_pointer_sha256"] = file_sha256(pointer)
+    decoded["target_snapshot"]["active_baseline_tree_sha256"] = "temp-active-tree"
+    decoded["target_snapshot"]["versioned_baseline_tree_sha256"] = "temp-old-versioned-tree"
+    decoded["baseline"]["active_path"] = str(active)
+    decoded["baseline"]["versioned_baseline_path"] = str(temp_root / "old-versioned" / "fixed-dag-services")
+    decoded["baseline"]["pointer_path"] = str(pointer)
+    decoded["baseline"]["pointer_sha256"] = file_sha256(pointer)
+    decoded["stage_materialization"]["stage_root"] = str(stage_root)
+    decoded["stage_materialization"]["expected_stage_root_state"] = "missing"
+    decoded["activation"]["old_active_sandbox_archive_path"] = str(archive)
+    decoded["activation"]["new_versioned_baseline_path"] = str(stage_root)
+    decoded["activation"]["pointer_candidate"]["path"] = str(pointer)
+    decoded["activation"]["pointer_candidate"]["active_path"] = str(active)
+    decoded["activation"]["pointer_candidate"]["versioned_baseline_path"] = str(stage_root)
+    decoded["activation"]["preconditions"]["active_pointer_sha256"] = file_sha256(pointer)
+    decoded["activation"]["preconditions"]["active_baseline_tree_sha256"] = "temp-active-tree"
+    decoded["activation"]["preconditions"]["old_active_path"] = str(active)
+    for agent in decoded.get("agents") or []:
+        if isinstance(agent, dict):
+            agent["target_root"] = str(stage_root / str(agent.get("agent_id") or ""))
+            agent["target_before_tree_sha256"] = "temp-active-tree"
+            agent["active_tree_sha256"] = "temp-active-tree"
+    decoded["canonical_sha256"] = canonical_sha256(decoded)
+    return decoded
+
+
+def build_temp_rehearsal_approval(plan: Mapping[str, Any]) -> dict[str, Any]:
+    environment = build_environment_snapshot(plan)
+    return {
+        "schema_version": "agent_sync_approval_v1",
+        "approval_id": "temp-rehearsal-approval",
+        "status": "approved",
+        "plan_id": str(plan.get("plan_id") or ""),
+        "plan_sha256": str(plan.get("canonical_sha256") or ""),
+        "environment_snapshot_sha256": str(environment.get("environment_snapshot_sha256") or ""),
+        "approved_at": datetime.now(UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z"),
+        "expires_at": _future(),
+        "execution_phase": "SYNC-OPS-2B",
+        "approved_agent_ids": _agent_ids(plan),
+        "approved_transaction_ids": _transaction_ids(plan),
+        "approved_action_ids": _all_action_ids(plan),
+        "stage_approved": True,
+        "activate_approved": True,
+        "rollback_approved": True,
+        "delete_approved": False,
+        "process_action_approved": False,
+        "live_validation_approved": False,
+        "partial_success_rebase_approved": False,
+        "operator_reference": "sync-ops-2a-r1-temp-rehearsal",
+        "notes": "temp-only approval fixture; not valid for real server roots",
+    }
+
+
+def _tree_byte_count(root: Path) -> int:
+    total = 0
+    for path in root.rglob("*"):
+        if path.is_file():
+            try:
+                total += path.stat().st_size
+            except OSError:
+                continue
+    return total
+
+
+def run_full_scale_p2s_rehearsal(plan: Mapping[str, Any], temp_root: Path) -> dict[str, Any]:
+    _require_temp_rehearsal_root(temp_root)
+    if temp_root.exists() and any(temp_root.iterdir()):
+        raise SyncPlannerError("p2s_rehearsal_temp_root_not_empty", exit_code=2)
+    temp_root.mkdir(parents=True, exist_ok=True)
+    rehearsal_plan = prepare_temp_rehearsal_plan(plan, temp_root)
+    approval = build_temp_rehearsal_approval(rehearsal_plan)
+    input_root = temp_root / "input"
+    plan_path = input_root / "plan.json"
+    approval_path = input_root / "approval.json"
+    write_json(plan_path, rehearsal_plan)
+    write_json(approval_path, approval)
+    artifact_root = temp_root / "artifact-store"
+    stage = p2s_stage(plan_path, approval_path, artifact_root, execute=True)
+    verify = p2s_verify(plan_path, approval_path, artifact_root, execute=True)
+    activate = p2s_activate(plan_path, approval_path, artifact_root, execute=True)
+    recover = p2s_recover(artifact_root, str(stage["run_id"]))
+    rollback = p2s_rollback(plan_path, approval_path, artifact_root, execute=True)
+    stage_root = _stage_root(rehearsal_plan)
+    return {
+        "schema_version": "agent_sync_p2s_full_scale_temp_rehearsal_v1",
+        "temp_root": str(temp_root),
+        "plan_id": str(rehearsal_plan.get("plan_id") or ""),
+        "plan_sha256": str(rehearsal_plan.get("canonical_sha256") or ""),
+        "environment_snapshot_sha256": build_environment_snapshot(rehearsal_plan)["environment_snapshot_sha256"],
+        "planned_action_count": len(_all_actions(rehearsal_plan)),
+        "written_action_count": int(stage["stage"].get("written_file_count") or 0),
+        "byte_count": _tree_byte_count(stage_root),
+        "stage": stage["stage"],
+        "verify": verify,
+        "activate": activate,
+        "rollback": rollback,
+        "crash_recovery": recover,
+        "versioned_stage_preserved": stage_root.exists(),
+        "old_active_restored_after_rollback": _active_path(rehearsal_plan).exists(),
+        "failed_baseline_retained": bool(rollback.get("failed_baseline_retained")),
+        "hardlink_count": int(activate.get("hardlink_count") or 0),
+        "real_roots_modified": False,
+    }
 
 
 def p2s_recover(artifact_root: Path, run_id: str) -> dict[str, Any]:

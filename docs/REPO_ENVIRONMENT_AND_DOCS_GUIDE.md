@@ -279,3 +279,11 @@ Real P2S stage, activate, and rollback require a separate machine approval,
 matching environment snapshot, locks, and approved artifact-store root. The
 configured durable artifact root remains `/sdb/dlut/ops-artifacts/agent-sync`,
 but SYNC-OPS-2A does not create or write it.
+
+SYNC-OPS-2A-R1 closes source selection before any real P2S execution. Local
+tool metadata, backups, generated outputs/results/reports, data/model assets,
+runtime noise, sensitive files, and unknown files are not copied into a new
+sandbox baseline by default. The actual current P2S plan must pass full-scale
+stage/verify/activate/rollback rehearsal under repo-external `/tmp`; the real
+active sandbox and pointer remain immutable inputs until a later approved
+execution phase.

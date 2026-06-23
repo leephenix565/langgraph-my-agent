@@ -37,6 +37,7 @@ from react_agent.ops.sync_p2s import (
     p2s_rollback,
     p2s_stage,
     p2s_verify,
+    run_full_scale_p2s_rehearsal,
 )
 from react_agent.ops.sync_plan import (
     build_cycle_plan,
@@ -88,6 +89,16 @@ def _schema_validation_payload() -> dict[str, Any]:
 
 def cmd_inventory(args: argparse.Namespace) -> int:
     payload = build_runtime_inventory(include_files=not args.no_files)
+    if getattr(args, "source_policy_summary", False):
+        counts: dict[str, int] = {}
+        for agent in payload.get("agents") or []:
+            if not isinstance(agent, dict):
+                continue
+            for record in (agent.get("roots") or {}).get("prod", {}).get("files") or []:
+                if isinstance(record, dict):
+                    category = str(record.get("source_category") or "unknown")
+                    counts[category] = counts.get(category, 0) + 1
+        payload["source_policy_summary"] = {"source_category_counts": dict(sorted(counts.items()))}
     payload["summary_title"] = "agent-sync inventory"
     payload["exit_code"] = 0
     rows = [
@@ -96,6 +107,50 @@ def cmd_inventory(args: argparse.Namespace) -> int:
         f"review_warnings={payload['review_warning_count']}",
     ]
     return print_or_json(args, payload, rows)
+
+
+def _plan_source_audit(plan: dict[str, Any]) -> dict[str, Any]:
+    actions = [
+        action
+        for agent in plan.get("agents", [])
+        if isinstance(agent, dict)
+        for action in agent.get("actions", [])
+        if isinstance(action, dict)
+    ]
+    generated_or_local = [
+        action
+        for action in actions
+        if action.get("operation") in {"copy_from_prod", "snapshot_semantic_placeholder"}
+        and action.get("source_category")
+        in {
+            "generated_artifact",
+            "experiment_result",
+            "data_asset",
+            "model_asset",
+            "backup_artifact",
+            "editor_local_metadata",
+            "runtime_noise",
+            "sensitive_blocked",
+            "unknown_blocked",
+        }
+    ]
+    not_scanned = [
+        action
+        for action in actions
+        if action.get("operation") in {"copy_from_prod", "snapshot_semantic_placeholder"}
+        and action.get("sensitive_classification") == "not_scanned"
+    ]
+    return {
+        "schema_version": "agent_sync_p2s_source_audit_v1",
+        "plan_id": plan.get("plan_id"),
+        "plan_sha256": plan.get("canonical_sha256"),
+        "source_selection": plan.get("source_selection", {}),
+        "copy_action_count": sum(1 for action in actions if action.get("operation") == "copy_from_prod"),
+        "not_scanned_copy_count": len(not_scanned),
+        "non_materializable_copy_count": len(generated_or_local),
+        "valid": not not_scanned and not generated_or_local,
+        "exit_code": 0 if not not_scanned and not generated_or_local else 7,
+    }
 
 
 def cmd_status(args: argparse.Namespace) -> int:
@@ -179,6 +234,30 @@ def cmd_p2s_coverage(args: argparse.Namespace) -> int:
         f"current_rows={current['row_count']}",
         f"current_unresolved={current['unresolved_count']}",
         f"safe_source_coverage_ratio={current['safe_source_coverage_ratio']:.6f}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
+def cmd_p2s_source_audit(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    payload = {"summary_title": "agent-sync p2s source audit", **_plan_source_audit(plan)}
+    rows = [
+        f"plan_id={payload['plan_id']}",
+        f"not_scanned_copy_count={payload['not_scanned_copy_count']}",
+        f"non_materializable_copy_count={payload['non_materializable_copy_count']}",
+    ]
+    return print_or_json(args, payload, rows)
+
+
+def cmd_p2s_rehearse(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    result = run_full_scale_p2s_rehearsal(plan, Path(args.temp_root))
+    payload = {"summary_title": "agent-sync p2s rehearse", **result, "exit_code": 0}
+    rows = [
+        f"plan_id={result['plan_id']}",
+        f"planned_actions={result['planned_action_count']}",
+        f"written_actions={result['written_action_count']}",
+        f"hardlink_count={result['hardlink_count']}",
     ]
     return print_or_json(args, payload, rows)
 
@@ -326,6 +405,7 @@ def build_parser() -> argparse.ArgumentParser:
 
     inventory = subparsers.add_parser("inventory")
     inventory.add_argument("--no-files", action="store_true")
+    inventory.add_argument("--source-policy-summary", action="store_true")
     _add_output_args(inventory)
     inventory.set_defaults(func=cmd_inventory)
 
@@ -368,6 +448,15 @@ def build_parser() -> argparse.ArgumentParser:
     p2s_coverage.add_argument("--plan", required=True)
     _add_output_args(p2s_coverage)
     p2s_coverage.set_defaults(func=cmd_p2s_coverage)
+    p2s_source_audit = p2s_sub.add_parser("source-audit")
+    p2s_source_audit.add_argument("--plan", required=True)
+    _add_output_args(p2s_source_audit)
+    p2s_source_audit.set_defaults(func=cmd_p2s_source_audit)
+    p2s_rehearse = p2s_sub.add_parser("rehearse")
+    p2s_rehearse.add_argument("--plan", required=True)
+    p2s_rehearse.add_argument("--temp-root", required=True)
+    _add_output_args(p2s_rehearse)
+    p2s_rehearse.set_defaults(func=cmd_p2s_rehearse)
     for command_name, command_func in (
         ("stage", cmd_p2s_stage),
         ("verify", cmd_p2s_verify),

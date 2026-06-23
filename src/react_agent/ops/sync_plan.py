@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import uuid
+from collections import Counter
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
@@ -24,7 +25,10 @@ from react_agent.ops.sync_registry import (
     load_static_registry,
     validate_static_registry,
 )
-from react_agent.ops.sync_security import redacted_structural_fingerprint
+from react_agent.ops.sync_security import (
+    NON_MATERIALIZABLE_SOURCE_CATEGORIES,
+    redacted_structural_fingerprint,
+)
 
 POINTER_PATH = Path("/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json")
 DEFAULT_PROD_ROOT = Path("/sdb/dlut/prod")
@@ -102,6 +106,16 @@ def _all_files(root_inventory: Mapping[str, Any]) -> dict[str, Mapping[str, Any]
     return result
 
 
+def _source_category_counts(records: Sequence[Mapping[str, Any]], *, include: bool | None = None) -> dict[str, int]:
+    counter: Counter[str] = Counter()
+    for record in records:
+        if include is not None and bool(record.get("include")) is not include:
+            continue
+        category = str(record.get("source_category") or "unknown_blocked")
+        counter[category] += 1
+    return dict(sorted(counter.items()))
+
+
 def _copy_action(
     *,
     agent_id: str,
@@ -129,6 +143,8 @@ def _copy_action(
         "stage_relative_path": f"{agent_id}/{rel}",
         "sensitive_classification": str(record.get("sensitive_classification") or ""),
         "large_asset_classification": str(record.get("large_asset_classification") or ""),
+        "source_category": str(record.get("source_category") or ""),
+        "source_category_reason": str(record.get("source_category_reason") or ""),
     }
 
 
@@ -493,6 +509,7 @@ def build_p2s_plan() -> dict[str, Any]:
         baseline_root = roots["baseline"]
         prod_files = _included_files(prod_root)
         prod_all = _all_files(prod_root)
+        prod_records = [record for record in prod_root.get("files") or [] if isinstance(record, Mapping)]
         active_files = _included_files(active_root)
         baseline_files = _included_files(baseline_root)
         sandbox = registry_agent.get("sandbox") or {}
@@ -609,6 +626,9 @@ def build_p2s_plan() -> dict[str, Any]:
                 "placeholder_file_count": placeholder_count,
                 "shared_transaction_file_count": shared_file_count,
                 "explicitly_excluded_file_count": int(prod_root.get("excluded_count") or 0),
+                "source_category_counts": _source_category_counts(prod_records),
+                "materialized_source_category_counts": _source_category_counts(prod_records, include=True),
+                "excluded_source_category_counts": _source_category_counts(prod_records, include=False),
                 "removed_from_prod_count": 0,
                 "unresolved_file_count": len(blocked),
                 "coverage_ratio": 1.0 if not blocked else 0.0,
@@ -652,6 +672,33 @@ def build_p2s_plan() -> dict[str, Any]:
         "removed_from_prod_count": 0,
         "unresolved_file_count": total_unresolved,
         "coverage_ratio": 1.0 if total_unresolved == 0 else 0.0,
+    }
+    source_category_counter: Counter[str] = Counter()
+    materialized_category_counter: Counter[str] = Counter()
+    excluded_category_counter: Counter[str] = Counter()
+    for agent in agent_plans:
+        source_category_counter.update(agent.get("source_category_counts") or {})
+        materialized_category_counter.update(agent.get("materialized_source_category_counts") or {})
+        excluded_category_counter.update(agent.get("excluded_source_category_counts") or {})
+    plan["source_selection"] = {
+        "schema_version": "agent_sync_source_selection_summary_v1",
+        "source_category_counts": dict(sorted(source_category_counter.items())),
+        "materialized_source_category_counts": dict(sorted(materialized_category_counter.items())),
+        "excluded_source_category_counts": dict(sorted(excluded_category_counter.items())),
+        "runtime_asset_count": int(materialized_category_counter.get("runtime_static_asset", 0) + materialized_category_counter.get("test_fixture", 0)),
+        "not_scanned_copy_count": sum(
+            1
+            for action in all_stage_actions
+            if action.get("operation") in {"copy_from_prod", "snapshot_semantic_placeholder"}
+            and str(action.get("sensitive_classification") or "") == "not_scanned"
+        ),
+        "unknown_blocked_count": int(source_category_counter.get("unknown_blocked", 0)),
+        "sensitive_copy_count": sum(
+            1
+            for action in all_stage_actions
+            if action.get("operation") in {"copy_from_prod", "snapshot_semantic_placeholder"}
+            and str(action.get("sensitive_classification") or "") in {"potential_secret_literal", "blocked_env_file", "sensitive_name"}
+        ),
     }
     stage_rel_paths = {
         str(action.get("stage_relative_path") or "")
@@ -843,6 +890,7 @@ def validate_plan(
         elif expected_projection != stage_projection_digest_for_actions(stage_actions):
             blockers.append("p2s_stage_projection_digest_mismatch")
         coverage = plan.get("coverage") or {}
+        source_selection = plan.get("source_selection") or {}
         if not coverage:
             blockers.append("p2s_coverage_missing")
         else:
@@ -850,6 +898,13 @@ def validate_plan(
                 blockers.append("p2s_coverage_unresolved_files")
             if float(coverage.get("coverage_ratio") or 0.0) != 1.0:
                 blockers.append("p2s_coverage_ratio_not_one")
+        if source_selection:
+            if int(source_selection.get("not_scanned_copy_count") or 0) != 0:
+                blockers.append("p2s_not_scanned_copy_present")
+            if int(source_selection.get("unknown_blocked_count") or 0) != 0:
+                blockers.append("p2s_unknown_blocked_files_present")
+            if int(source_selection.get("sensitive_copy_count") or 0) != 0:
+                blockers.append("p2s_sensitive_copy_present")
         stage_transaction_action_ids = {
             str(action.get("action_id") or "")
             for txn in stage_materialization.get("transactions") or []
@@ -900,8 +955,15 @@ def validate_plan(
                     if not str(action.get("source_file_type") or ""):
                         blockers.append("p2s_copy_source_file_type_missing")
                     sensitive = str(action.get("sensitive_classification") or "")
+                    source_category = str(action.get("source_category") or "")
                     if sensitive in {"potential_secret_literal", "blocked_env_file"}:
                         blockers.append("p2s_sensitive_source_used_as_copy")
+                    if sensitive == "not_scanned":
+                        blockers.append("p2s_copy_sensitive_not_scanned")
+                    if source_category in NON_MATERIALIZABLE_SOURCE_CATEGORIES:
+                        blockers.append(f"p2s_non_materializable_source_category:{source_category}")
+                    if not source_category:
+                        blockers.append("p2s_copy_source_category_missing")
                     rel = destination or str(action.get("source_path") or "")
                     if ".bak_" in rel or rel.endswith(".bak") or "_predeploy_" in rel:
                         blockers.append("p2s_backup_runtime_noise_used_as_copy")
