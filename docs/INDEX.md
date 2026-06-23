@@ -26,6 +26,7 @@ R1-A remain available through tag `pre-fixed-dag-reset-20260604-1457`.
 | `docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md` | BF-COMPLETE-X/BF-CLOSE-R1 sandbox-to-prod backfill closure: final 31-unit ledger, entity/sentiment production backfill, trace revalidation, and non-claims. |
 | `docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md` | POST-BF-B1X post-backfill readiness foundation: dependency readiness semantics, sentiment subtask alignment, valuation latency stabilization, remaining L2 semantic decisions, activation candidates, and non-claims. |
 | `docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md` | POST-BF-B2X production runtime release: dedicated non-L4 external compute orchestration, initial production activation set, rollback, provenance, canary, and topic closure. |
+| `docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md` | P2S-BASELINE-X external-agent prod-to-sandbox source-bearing baseline refresh: staged baseline, old sandbox preservation, blocked sensitive files, and non-claims. |
 | `docs/报告完善计划（中文）.md` | Report-quality improvement plan: public-safe report material contract, L3 deterministic-fusion/LLM-explanation boundary, and staged L2/L3 enhancement sequence. |
 | `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md` | R7-G fixed DAG external developer handoff entry point, v2.3.1 source package boundary, payload family, wrapper compatibility note, and submission checklist. |
 | `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md` | R7-G mapping rules from v2.3.1 external response payloads to fixed DAG contracts. |

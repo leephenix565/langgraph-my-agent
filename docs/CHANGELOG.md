@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-23 - P2S-BASELINE-X external-agent sandbox baseline refresh
+
+### Changed
+
+- Added `docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md`.
+- Recorded a production-to-sandbox external-agent source-bearing baseline
+  refresh after the completed backfill and runtime release cycle.
+- Archived the old external-agent sandbox inventory and sandbox-only patches
+  under `/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z`.
+- Staged a new production-derived 26-agent baseline under
+  `/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services`.
+- Created a dev-HEAD based main-system sandbox baseline instead of copying the
+  main-system production runtime copy.
+
+### Validated
+
+- Covered all 26 formal external agents.
+- Verified SHA manifests for the sanitized artifact directory.
+- Verified source hash equality for unblocked staged files.
+- Compiled 815 staged Python files using repo-external pycache.
+- Preserved old sandbox experiment patches without applying them to the new
+  baseline.
+
+### Not Done
+
+- Did not switch `/sdb/dlut/sandbox/r8-13a/services/prod` because
+  `value_research_synthesis` and `macro_index_valuation` contain
+  high-confidence credential-like inline production source files that must not
+  be copied.
+- Did not modify production files, owner-dev repositories, runtime bindings, or
+  service processes.
+- Did not call endpoints, read `.env` values, read `/proc/*/environ`, copy raw
+  logs, or bulk-copy model/data assets.
+
 ## 2026-06-23 - POST-BF-B2X non-L4 production runtime activation
 
 ### Changed

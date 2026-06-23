@@ -101,6 +101,17 @@ L1 external defaults remain zero, and L4 still uses the existing two
 `external_compute_default` bindings. See
 `docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md`.
 
+P2S-BASELINE-X attempted to refresh the external-agent sandbox from current
+production runtime source after the backfill/release cycle. It staged a new
+26-agent source-bearing baseline under
+`/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services` and
+archived the old sandbox under
+`/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z`, but did not switch
+the current sandbox path because two production roots contain credential-like
+inline source files that must not be copied. Main-system sandbox refresh remains
+dev-HEAD based, not production based. See
+`docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds

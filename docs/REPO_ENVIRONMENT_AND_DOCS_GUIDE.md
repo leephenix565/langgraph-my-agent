@@ -81,6 +81,16 @@ the default path. Prod main should receive the pushed dev commit by ff-only
 deployment; rollback uses `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1` rather
 than editing runtime bindings.
 
+P2S-BASELINE-X adds a separate external-agent sandbox baseline refresh rule.
+After backfill and release closure, external-agent experiments may need a fresh
+starting point from current production runtime roots. That flow is
+`prod external-agent runtime source -> versioned sandbox baseline` only. It
+does not apply to the main-system repository, does not make production an
+owner-dev authority, and must not copy secrets, logs, caches, `.git`, model
+weights, datasets, or runtime artifacts. If any production source-bearing file
+contains credential-like inline content, the current sandbox path must not be
+switched until that service is remediated.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

@@ -78,6 +78,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   plus optional `macro_composite` only after canary validation. Remaining
   excluded agents move to independent backlog items rather than another generic
   integration phase.
+- P2S-BASELINE-X stages the first external-agent production-to-sandbox baseline
+  after the completed backfill/release cycle. It does not reopen backfill or
+  change runtime activation. The current staged baseline is blocked from
+  current-path switch until `value_research_synthesis` and
+  `macro_index_valuation` no longer contain credential-like inline production
+  source files.
 
 重要边界：
 

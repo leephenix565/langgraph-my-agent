@@ -3,6 +3,33 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-080: External Agent Sandbox Experiments Rebase On Versioned Production Runtime Snapshots
+
+Status: accepted for P2S-BASELINE-X.
+
+Decision: after a completed external-agent backfill and production release
+cycle, future external-agent sandbox experiments should start from a versioned
+source-bearing snapshot of the current production runtime roots. The snapshot is
+used only as an experiment baseline. It does not make production the owner-dev
+source authority.
+
+The main-system sandbox follows a different rule: it must be refreshed from the
+current main-system dev HEAD, not from `/sdb/dlut/prod/langgraph-my-agent`.
+
+Reason: production external-agent roots can contain user backfill, post-release
+runtime fixes, and service-owner deployments that old sandbox trees do not
+have. Starting new experiments from stale sandbox code risks reintroducing
+fixed integration bugs.
+
+Consequence: a prod-to-sandbox refresh must stage first, archive old sandbox
+experiments, exclude secrets/runtime data/logs/cache/models/large datasets, and
+switch the current sandbox only after validation. P2S-BASELINE-X staged a
+26-agent baseline but intentionally did not switch the current sandbox path
+because two production roots contain credential-like inline source files.
+
+Non-consequence: this does not modify production, owner-dev repositories,
+runtime bindings, live flags, service processes, or provider/invoke behavior.
+
 ## ADR-079: Non-L4 Production Compute Uses Dedicated Orchestration
 
 Status: accepted for POST-BF-B2X.
