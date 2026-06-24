@@ -6,6 +6,8 @@ Use this short prompt for future server Codex sessions:
 Read AGENTS.md and docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md.
 For the named experiment manifest, audit the current repo and durable artifact
 store, generate a cycle plan, validate it, and stop for exact machine approval.
+If validation reports missing source-bearing baseline mappings, stop and emit a
+repair request instead of producing a non-zero approval request.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

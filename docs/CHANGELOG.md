@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-5A first non-zero qualification
+
+### Added
+
+- Added first non-zero qualification documentation for baseline mapping,
+  multi-transaction rehearsal, strict compensation, candidate selection, and
+  5B entry.
+- Added temp cycle helpers for two independent transactions, a shared member,
+  and reverse-order compensation after a later transaction failure.
+
+### Changed
+
+- S2P validation now rejects normal Agents that have empty B/S/P inventory
+  descriptors without an explicit registered-empty disposition.
+- `cycle rehearse` now runs single-transaction, multi-transaction, and
+  compensation rehearsals.
+- Non-zero `cycle publish-and-rebase --execute` now reports the 5B approval
+  boundary explicitly instead of relying on the no-op runner to reject it.
+
+### Not Done
+
+- No real non-zero prod write, process action, endpoint call, owner-dev write,
+  active sandbox mutation, baseline pointer write, machine approval, or P2S
+  repair execution.
+
 ## 2026-06-24 - SYNC-OPS-4X publish-and-rebase cycle
 
 ### Added

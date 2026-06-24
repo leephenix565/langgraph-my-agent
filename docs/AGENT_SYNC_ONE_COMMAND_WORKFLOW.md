@@ -36,6 +36,10 @@ python scripts/ops/agent_syncctl.py cycle validate --cycle-plan cycle-plan.json
 5. Request machine approval. The approval bundle must bind the exact cycle,
    S2P, P2S, experiment, action scopes, and capability flags.
 
+   Do not request approval if any normal Agent has an empty baseline,
+   experiment, or prod descriptor without an explicit registered-empty
+   disposition. Repair the baseline first.
+
 6. Execute only with the approved bundle.
 
 ```bash
@@ -68,4 +72,5 @@ python scripts/ops/agent_syncctl.py cycle recover --run-root <run-root>
 
 The cycle fails closed on target drift, digest scope mismatch, unregistered
 experiment changes, owner authority conflicts, unsupported delete, process
-authority gaps, projection mismatch, lock conflict, and rollback failure.
+authority gaps, projection mismatch, lock conflict, rollback failure, and
+missing source-bearing baseline mappings.

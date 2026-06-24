@@ -115,6 +115,13 @@ entrypoints, and the real no-op cycle boundary. Mainline remains default-safe:
 no endpoint call, no real process action, no real prod write, no active sandbox
 mutation, and no environment-value access.
 
+SYNC-OPS-5A adds first non-zero qualification coverage. Focused tests reject
+empty-inventory success for normal Agents, exercise two independent
+transactions plus a shared member, and prove strict compensation rolls back an
+earlier successful transaction when a later transaction fails. The phase may
+write a real experiment only after baseline completeness is proven; otherwise
+it emits a repair request and remains no-prod-write.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

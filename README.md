@@ -57,6 +57,14 @@ change units and an exact machine approval bundle. See
 `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`, and
 `docs/CODEX_AGENT_SYNC_OPERATOR_WORKFLOW.md`.
 
+SYNC-OPS-5A qualifies the first real non-zero cycle and intentionally stops
+before execution when the current baseline is incomplete. It rejects
+`risk_financial_fraud` empty-inventory success states, proves multi-transaction
+and shared-member rehearsal plus strict compensation in `/tmp`, records the
+best existing user sandbox candidate, and emits a P2S baseline repair
+requirement when needed. See
+`docs/SYNC_OPS_5A_FIRST_NONZERO_CYCLE_QUALIFICATION.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

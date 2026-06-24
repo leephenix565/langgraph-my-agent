@@ -14,10 +14,11 @@ from react_agent.ops.sync_contracts import (
 from react_agent.ops.sync_cycle import (
     archive_policy_summary,
     build_cycle_approval_bundle,
-    build_cycle_plan_from_experiment,
     build_cycle_plan_from_s2p,
     recover_cycle,
     run_cycle_noop,
+    run_temp_cycle_compensation,
+    run_temp_multi_transaction_cycle,
     run_temp_nonzero_cycle,
     validate_cycle_approval_bundle,
     validate_cycle_plan,
@@ -27,6 +28,7 @@ from react_agent.ops.sync_s2p import (
     build_s2p_plan_v2,
     compare_digest_descriptors,
     digest_descriptor,
+    validate_s2p_plan_contract,
 )
 
 
@@ -35,10 +37,16 @@ def test_s2p_mapping_repairs_empty_and_shared_members(tmp_path: Path) -> None:
     plan = build_s2p_plan_v2(manifest)
 
     fraud = next(agent for agent in plan["agents"] if agent["agent_id"] == "risk_financial_fraud")
-    assert fraud["baseline_tree_sha256"]
+    assert fraud["baseline_tree_sha256"] == ""
     assert fraud["experiment_tree_sha256"]
     assert fraud["baseline_descriptor"]["file_count"] == 0
     assert fraud["experiment_descriptor"]["file_count"] == 0
+    assert fraud["mapping_status"] == "blocked"
+    assert any("blocked_baseline_source_mapping_missing:risk_financial_fraud" in blocker for blocker in fraud["mapping_blockers"])
+    validation = validate_s2p_plan_contract(plan)
+    assert validation["valid"] is False
+    assert any("blocked_baseline_source_mapping_missing:risk_financial_fraud" in blocker for blocker in validation["blockers"])
+    assert any("s2p_agent_empty_inventory_not_registered:risk_financial_fraud" in blocker for blocker in validation["blockers"])
 
     fund = next(agent for agent in plan["agents"] if agent["agent_id"] == "market_fund_manager_behavior")
     market = next(agent for agent in plan["agents"] if agent["agent_id"] == "market_composite")
@@ -66,7 +74,8 @@ def test_cycle_plan_embeds_projection_and_precomputed_p2s(tmp_path: Path) -> Non
     cycle = build_cycle_plan_from_s2p(s2p)
     validation = validate_cycle_plan(cycle)
 
-    assert validation["valid"] is True
+    assert validation["valid"] is False
+    assert "s2p_plan_invalid" in validation["blockers"]
     assert cycle["schema_version"] == "agent_sync_publish_and_rebase_cycle_v1"
     assert cycle["mode"] == "strict_all_or_nothing"
     assert cycle["projected_prod_after_state"]["projected_combined_prod_descriptor"]["scope"] == "s2p_prod_inventory"
@@ -77,8 +86,7 @@ def test_cycle_plan_embeds_projection_and_precomputed_p2s(tmp_path: Path) -> Non
 
 
 def test_cycle_approval_bundle_rejects_noop_action_scope(tmp_path: Path) -> None:
-    manifest = build_experiment_fork(workspace_root=tmp_path / "experiment", experiment_id="exp_cycle_bundle")
-    cycle = build_cycle_plan_from_experiment(manifest)
+    cycle, _unused = _minimal_noop_cycle(tmp_path)
     bundle = build_cycle_approval_bundle(cycle, operator_reference="unit-test")
     assert validate_cycle_approval_bundle(bundle, cycle, require_noop=True)["valid"] is True
 
@@ -163,6 +171,29 @@ def test_cycle_nonzero_rehearsal_and_recovery(tmp_path: Path) -> None:
     assert result["p2s_activate"] == "passed"
     assert result["failure_results"]["recovery"]["status"] == "rollback_required"
     assert recover_cycle([{"event_type": "prod_after_state_verified"}])["recommended_action"] == "resume_p2s"
+
+
+def test_multi_transaction_cycle_and_shared_member_rehearsal(tmp_path: Path) -> None:
+    result = run_temp_multi_transaction_cycle(tmp_path / "multi-cycle")
+    assert result["valid"] is True
+    assert result["independent_transaction_count"] >= 2
+    assert result["shared_member_count"] == 1
+    assert result["owner_transaction_id"] == "txn_market_composite"
+    assert result["duplicate_target_count"] == 0
+    assert result["actual_matches_projection"] is True
+    assert result["cycle_status"] == "closed"
+
+
+def test_cycle_compensates_earlier_transactions_when_later_transaction_fails(tmp_path: Path) -> None:
+    result = run_temp_cycle_compensation(tmp_path / "compensation-cycle")
+    assert result["valid"] is True
+    assert result["transaction_a_apply"]["status"] == "applied_and_verified"
+    assert result["transaction_b_apply"]["status"] == "rolled_back"
+    assert result["compensation_order"] == ["txn_agent_b", "txn_agent_a"]
+    assert result["compensated_transaction_count"] == 2
+    assert result["prod_restored"] is True
+    assert result["p2s_action_count"] == 0
+    assert result["cycle_status"] == "s2p_cycle_compensated_rolled_back"
 
 
 def test_nonzero_bundle_requires_explicit_approval(tmp_path: Path) -> None:

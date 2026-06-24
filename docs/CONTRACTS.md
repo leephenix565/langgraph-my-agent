@@ -143,6 +143,13 @@ typed `agent_sync_digest_descriptor_v1` records; naked hashes from incompatible
 scopes fail closed. The real current-server cycle remains no-op only unless a
 future non-zero experiment receives an exact machine approval bundle.
 
+SYNC-OPS-5A tightens the S2P mapping contract: a non-shared,
+non-placeholder Agent cannot use an empty inventory descriptor as a successful
+baseline, experiment, or prod mapping unless the registry explicitly declares a
+registered empty tree. Strict cycle qualification also requires reverse-order
+compensation for all earlier cycle-applied transactions when a later
+transaction fails.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

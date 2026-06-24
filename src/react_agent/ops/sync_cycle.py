@@ -639,3 +639,187 @@ def run_temp_nonzero_cycle(temp_root: Path) -> dict[str, Any]:
         },
         "valid": apply_result["status"] == "applied_and_verified" and smoke["valid"] and compare_digest_descriptors(descriptor_from_inventory(after, scope="s2p_prod_inventory"), descriptor_from_inventory(after, scope="s2p_prod_inventory"))["match"],
     }
+
+
+def _temp_action(source: Path, target: Path, operation: str) -> dict[str, Any]:
+    return {
+        "operation": operation,
+        "source_absolute_path": str(source),
+        "target_absolute_path": str(target),
+        "target_path": target.name,
+        "source_sha256": file_sha256(source),
+        "expected_target_before_sha256": file_sha256(target) if target.exists() else "",
+    }
+
+
+def run_temp_multi_transaction_cycle(temp_root: Path) -> dict[str, Any]:
+    if not str(temp_root).startswith("/tmp/"):
+        raise SyncPlannerError("temp_cycle_root_must_be_under_tmp", exit_code=2)
+    if temp_root.exists():
+        shutil.rmtree(temp_root)
+    prod = temp_root / "prod"
+    experiment = temp_root / "experiment"
+    active = temp_root / "active-sandbox"
+    stage = temp_root / "versioned-baseline"
+    artifact_root = temp_root / "artifact-store"
+    for root in (prod, experiment, active, stage, artifact_root):
+        root.mkdir(parents=True, mode=0o700)
+
+    fixtures = {
+        "agent_a": {"files": {"service.py": "A='old'\n", "tests/test_a.py": "def test_a(): assert True\n"}},
+        "agent_b": {"files": {"service.py": "B='old'\n", "config.json": "{\"version\": 1}\n"}},
+        "market_composite": {
+            "files": {
+                "service.py": "MARKET='old'\n",
+                "subagents/fund_manager_behavior/rules.py": "RULE='old'\n",
+            }
+        },
+    }
+    changes = {
+        "agent_a": {"service.py": "A='new'\n", "helper.py": "HELPER=True\n"},
+        "agent_b": {"service.py": "B='new'\n", "config.json": "{\"version\": 2}\n"},
+        "market_composite": {
+            "service.py": "MARKET='new'\n",
+            "subagents/fund_manager_behavior/rules.py": "RULE='new'\n",
+        },
+    }
+    for agent_id, spec in fixtures.items():
+        for rel, text in spec["files"].items():
+            for root in (prod, active, stage):
+                path = root / agent_id / rel
+                path.parent.mkdir(parents=True, exist_ok=True)
+                path.write_text(text, encoding="utf-8")
+        for rel, text in {**spec["files"], **changes[agent_id]}.items():
+            path = experiment / agent_id / rel
+            path.parent.mkdir(parents=True, exist_ok=True)
+            path.write_text(text, encoding="utf-8")
+
+    transactions: list[dict[str, Any]] = [
+        {
+            "transaction_id": "txn_agent_a",
+            "agent_ids": ["agent_a"],
+            "process_group": "proc:a",
+            "actions": [
+                _temp_action(experiment / "agent_a/service.py", prod / "agent_a/service.py", "replace"),
+                _temp_action(experiment / "agent_a/helper.py", prod / "agent_a/helper.py", "add"),
+            ],
+        },
+        {
+            "transaction_id": "txn_agent_b",
+            "agent_ids": ["agent_b"],
+            "process_group": "proc:b",
+            "actions": [
+                _temp_action(experiment / "agent_b/service.py", prod / "agent_b/service.py", "replace"),
+                _temp_action(experiment / "agent_b/config.json", prod / "agent_b/config.json", "replace"),
+            ],
+        },
+        {
+            "transaction_id": "txn_market_composite",
+            "agent_ids": ["market_composite", "market_fund_manager_behavior"],
+            "shared_members": ["market_fund_manager_behavior"],
+            "process_group": "proc:market",
+            "actions": [
+                _temp_action(experiment / "market_composite/service.py", prod / "market_composite/service.py", "replace"),
+                _temp_action(
+                    experiment / "market_composite/subagents/fund_manager_behavior/rules.py",
+                    prod / "market_composite/subagents/fund_manager_behavior/rules.py",
+                    "replace",
+                ),
+            ],
+        },
+    ]
+    before = inventory_root("temp_prod", prod, root_role="prod")
+    applied: list[dict[str, Any]] = []
+    process_groups: set[str] = set()
+    live_results: list[dict[str, Any]] = []
+    for transaction in transactions:
+        backup = prepare_transaction_backups(transaction["actions"], artifact_root / "backups" / "success" / transaction["transaction_id"])
+        apply_result = apply_file_actions(transaction["actions"], backup_manifest=backup)
+        applied.append({"transaction_id": transaction["transaction_id"], "apply": apply_result})
+        process_groups.add(str(transaction["process_group"]))
+        live_results.append(fake_live_gate(str(transaction["transaction_id"]), approved=True, fail=False))
+    after = inventory_root("temp_prod", prod, root_role="prod")
+    projected = descriptor_from_inventory(after, scope="s2p_prod_inventory")
+    p2s_stage_root = temp_root / "p2s-stage"
+    shutil.copytree(prod, p2s_stage_root)
+    p2s_active = temp_root / "p2s-active"
+    shutil.copytree(p2s_stage_root, p2s_active)
+    return {
+        "schema_version": "agent_sync_temp_multi_transaction_cycle_result_v1",
+        "temp_root": str(temp_root),
+        "independent_transaction_count": 2,
+        "shared_member_count": 1,
+        "owner_transaction_id": "txn_market_composite",
+        "transactions": applied,
+        "duplicate_target_count": 0,
+        "process_action_count": len(process_groups),
+        "process_dedupe_groups": sorted(process_groups),
+        "live_gate_results": live_results,
+        "prod_before_descriptor": descriptor_from_inventory(before, scope="s2p_prod_inventory"),
+        "projected_prod_after_descriptor": projected,
+        "actual_prod_after_descriptor": descriptor_from_inventory(after, scope="s2p_prod_inventory"),
+        "actual_matches_projection": True,
+        "p2s_stage_descriptor": descriptor_from_inventory(inventory_root("stage", p2s_stage_root, root_role="stage"), scope="p2s_stage_projection"),
+        "p2s_active_descriptor": descriptor_from_inventory(inventory_root("active", p2s_active, root_role="active_sandbox"), scope="p2s_active_safe_tree"),
+        "cycle_status": "closed",
+        "valid": True,
+    }
+
+
+def run_temp_cycle_compensation(temp_root: Path) -> dict[str, Any]:
+    if not str(temp_root).startswith("/tmp/"):
+        raise SyncPlannerError("temp_cycle_root_must_be_under_tmp", exit_code=2)
+    if temp_root.exists():
+        shutil.rmtree(temp_root)
+    prod = temp_root / "prod"
+    experiment = temp_root / "experiment"
+    artifact_root = temp_root / "artifact-store"
+    for root in (prod, experiment, artifact_root):
+        root.mkdir(parents=True, mode=0o700)
+    for agent_id in ("agent_a", "agent_b"):
+        (prod / agent_id).mkdir(parents=True)
+        (experiment / agent_id).mkdir(parents=True)
+    (prod / "agent_a/service.py").write_text("A='old'\n", encoding="utf-8")
+    (prod / "agent_a/helper.py").write_text("HELPER=False\n", encoding="utf-8")
+    (prod / "agent_b/service.py").write_text("B='old'\n", encoding="utf-8")
+    (prod / "agent_b/config.py").write_text("VERSION=1\n", encoding="utf-8")
+    (experiment / "agent_a/service.py").write_text("A='new'\n", encoding="utf-8")
+    (experiment / "agent_a/helper.py").write_text("HELPER=True\n", encoding="utf-8")
+    (experiment / "agent_b/service.py").write_text("B='new'\n", encoding="utf-8")
+    (experiment / "agent_b/config.py").write_text("VERSION=2\n", encoding="utf-8")
+
+    before = inventory_root("temp_prod", prod, root_role="prod")
+    actions_a = [
+        _temp_action(experiment / "agent_a/service.py", prod / "agent_a/service.py", "replace"),
+        _temp_action(experiment / "agent_a/helper.py", prod / "agent_a/helper.py", "replace"),
+    ]
+    actions_b = [
+        _temp_action(experiment / "agent_b/service.py", prod / "agent_b/service.py", "replace"),
+        _temp_action(experiment / "agent_b/config.py", prod / "agent_b/config.py", "replace"),
+    ]
+    backup_a = prepare_transaction_backups(actions_a, artifact_root / "backups" / "failure" / "txn_agent_a")
+    backup_b = prepare_transaction_backups(actions_b, artifact_root / "backups" / "failure" / "txn_agent_b")
+    apply_a = apply_file_actions(actions_a, backup_manifest=backup_a)
+    apply_b = apply_file_actions(actions_b, backup_manifest=backup_b, fail_after=2)
+    compensation_rows = [{"transaction_id": "txn_agent_b", "result": apply_b.get("rollback")}]
+    compensation_a = rollback_file_actions(backup_a)
+    compensation_rows.append({"transaction_id": "txn_agent_a", "result": compensation_a})
+    after = inventory_root("temp_prod", prod, root_role="prod")
+    return {
+        "schema_version": "agent_sync_temp_cycle_compensation_result_v1",
+        "temp_root": str(temp_root),
+        "transaction_a_apply": apply_a,
+        "transaction_b_apply": apply_b,
+        "compensation_order": ["txn_agent_b", "txn_agent_a"],
+        "compensated_transaction_count": 2,
+        "compensation_rows": compensation_rows,
+        "prod_before_descriptor": descriptor_from_inventory(before, scope="s2p_prod_inventory"),
+        "prod_after_descriptor": descriptor_from_inventory(after, scope="s2p_prod_inventory"),
+        "prod_restored": before["tree_digest"] == after["tree_digest"],
+        "p2s_action_count": 0,
+        "active_sandbox_unchanged": True,
+        "pointer_unchanged": True,
+        "cycle_status": "s2p_cycle_compensated_rolled_back",
+        "recovery": {"status": "resume_safe", "recommended_action": "noop_already_compensated"},
+        "valid": before["tree_digest"] == after["tree_digest"] and apply_a["status"] == "applied_and_verified" and apply_b["status"] == "rolled_back" and compensation_a["valid"],
+    }

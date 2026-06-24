@@ -3,6 +3,46 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-130: Candidate Selection And Machine Approval Are Separate
+
+Status: accepted for SYNC-OPS-5A.
+
+Decision: SYNC-OPS-5A may select a candidate and freeze evidence, but SYNC-OPS-5B
+must grant the exact execution approval for the final hashes.
+
+Reason: selecting a low-risk patch is not the same as approving prod writes or
+P2S activation.
+
+## ADR-129: The First Nonzero Cycle Uses Existing User Sandbox Work
+
+Status: accepted for SYNC-OPS-5A.
+
+Decision: the first real nonzero cycle must use an existing user-owned sandbox
+change, not a synthetic synchronization canary.
+
+Reason: a canary would test plumbing without proving a real business workflow.
+
+## ADR-128: Strict Cycles Compensate Earlier Transactions
+
+Status: accepted for SYNC-OPS-5A.
+
+Decision: if a later transaction fails in strict mode, every earlier
+cycle-applied transaction is compensated in reverse order before P2S can run.
+
+Reason: leaving prod partially advanced while sandbox remains old violates the
+strict all-or-nothing cycle contract.
+
+## ADR-127: Normal Agents Cannot Succeed With Empty Inventory Digests
+
+Status: accepted for SYNC-OPS-5A.
+
+Decision: non-shared, non-placeholder Agents cannot use an empty inventory
+digest as a successful baseline, experiment, or prod mapping unless explicitly
+registered as an empty tree.
+
+Reason: empty digest success masked the missing `risk_financial_fraud` source
+tree.
+
 ## ADR-126: Closeout Archives Store Evidence, Not Workspaces
 
 Status: accepted for SYNC-OPS-4X.

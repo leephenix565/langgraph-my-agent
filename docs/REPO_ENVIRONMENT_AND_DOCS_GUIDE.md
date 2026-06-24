@@ -120,6 +120,12 @@ precomputed P2S evidence; no-op cycle evidence may be written to the durable
 artifact store, but real non-zero cycles still require an exact machine
 approval bundle.
 
+SYNC-OPS-5A adds the first non-zero qualification gate. A normal Agent whose
+current prod, baseline, or experiment inventory is empty cannot be treated as a
+successful noop unless it is explicitly registered as an empty tree. If the
+baseline is incomplete, generate a repair request before creating a non-zero
+experiment cycle.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

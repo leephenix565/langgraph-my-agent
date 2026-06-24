@@ -108,8 +108,11 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   backup/apply/rollback primitives, fake process/live gates, historical replay,
   and a real zero-action no-op rehearsal. SYNC-OPS-4X implements the
   one-command publish-and-rebase cycle, typed digest descriptors, strict
-  projected-prod gating, and a real no-op cycle. The next sync entry is the
-  first explicitly approved non-zero experiment cycle.
+  projected-prod gating, and a real no-op cycle. SYNC-OPS-5A qualifies the
+  first non-zero cycle and found that `risk_financial_fraud` requires a baseline
+  repair before execution. The next sync entry is the exact approved baseline
+  repair or, after repair, the first explicitly approved non-zero experiment
+  cycle.
 
 重要边界：
 
@@ -130,9 +133,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   它不是 runtime binding，不是 owner-dev acceptance，也不是可执行写入授权。
   任何未来同步写操作都必须先生成 immutable plan，再用绑定 plan hash 的 approval
   artifact 执行。
-- SYNC-OPS-4X 的 publish-and-rebase control plane 只证明非零 cycle 可在 `/tmp`
-  演练并证明当前真实环境 no-op；首个真实非零 publish 仍必须等待精确的
-  experiment change unit 和 machine approval bundle。
+- SYNC-OPS-5A 的 first-nonzero qualification 发现 `risk_financial_fraud` 当前
+  baseline/source tree 不完整；首个真实非零 publish 必须先完成精确批准的 baseline
+  repair，然后再等待精确的 experiment change unit 和 machine approval bundle。
 
 ## Directory Operating Model
 
@@ -424,14 +427,15 @@ explicitly owns them.
 
 ## CS1-C3X Current Follow-Up
 
-## First Non-Zero Publish Entry
+## Baseline Repair / First Non-Zero Publish Entry
 
-SYNC-OPS-4X completed the bidirectional sync control plane. The next sync-ops
-topic is the first real non-zero experiment cycle, starting from the verified
-active sandbox baseline `20260624T060045Z`. Future S2P work must begin with a
-fresh experiment manifest, explicit change units, a cycle plan, and a separate
-machine approval bundle; the no-op cycle approval does not authorize S2P file
-apply, endpoint smoke, process action, delete, or production source writes.
+SYNC-OPS-4X completed the bidirectional sync control plane, and SYNC-OPS-5A
+qualified the first non-zero cycle. The next sync-ops topic is the exact
+machine-approved baseline repair for `risk_financial_fraud`; after that repair
+is complete, the first real non-zero experiment cycle starts from the repaired
+active sandbox baseline. The no-op cycle approval does not authorize S2P file
+apply, endpoint smoke, process action, delete, production source writes, or
+baseline repair execution.
 
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should

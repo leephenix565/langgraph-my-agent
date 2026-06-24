@@ -63,3 +63,9 @@ entries.
 SYNC-OPS-4X runs a real current-server no-op cycle only. The first real non-zero
 publish still requires a real experiment manifest, explicit change units, a
 non-zero cycle plan, and a separate exact machine approval bundle.
+
+SYNC-OPS-5A later found that `risk_financial_fraud` was not a completed mapping
+despite the 4X repair marker: the current prod, active baseline, and immutable
+baseline all lacked its source-bearing tree. The 4X no-op evidence remains
+valid, but first non-zero execution is blocked until the baseline repair
+request is approved and completed.

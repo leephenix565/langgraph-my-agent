@@ -215,6 +215,29 @@ def _inventory_or_registered_empty(agent_id: str, root: Path, *, root_role: str,
     return inventory_root(agent_id, root, root_role=root_role)
 
 
+def _agent_allows_empty_mapping(agent: Mapping[str, Any]) -> bool:
+    sync = agent.get("sync") or {}
+    sandbox = agent.get("sandbox") or {}
+    return bool(sync.get("registered_empty_tree") or sandbox.get("semantic_placeholder"))
+
+
+def _source_mapping_blockers(
+    *,
+    agent_id: str,
+    agent: Mapping[str, Any],
+    roots: Mapping[str, Mapping[str, Any]],
+    is_shared_member: bool,
+) -> list[str]:
+    if is_shared_member or _agent_allows_empty_mapping(agent):
+        return []
+    blockers: list[str] = []
+    for role in ("baseline", "active_sandbox", "prod"):
+        root = roots[role]
+        if root.get("root_exists") is False or int(root.get("included_count") or 0) <= 0:
+            blockers.append(f"blocked_baseline_source_mapping_missing:{agent_id}:{role}")
+    return blockers
+
+
 def _shared_owner(agent: Mapping[str, Any], registry: Sequence[Mapping[str, Any]]) -> Mapping[str, Any] | None:
     prod_root_text = str((agent.get("prod") or {}).get("root") or "")
     if not prod_root_text:
@@ -599,12 +622,13 @@ def build_s2p_plan_v2(experiment_manifest: Mapping[str, Any]) -> dict[str, Any]:
         experiment_root = workspace / prefix
         prod_root = Path(str((agent.get("prod") or {}).get("root") or ""))
         prod_inventory = inventory_root(agent_id, prod_root, root_role="prod") if prod_root.exists() else inventory_root(agent_id, prod_root, root_role="prod")
-        allow_registered_empty = not is_shared_member and not baseline_root.exists() and int(prod_inventory.get("included_count") or 0) == 0
+        allow_registered_empty = _agent_allows_empty_mapping(agent) and not is_shared_member
         roots = {
             "baseline": _inventory_or_registered_empty(agent_id, baseline_root, root_role="baseline", allow_registered_empty=allow_registered_empty),
             "active_sandbox": _inventory_or_registered_empty(agent_id, experiment_root, root_role="experiment", allow_registered_empty=allow_registered_empty),
             "prod": prod_inventory,
         }
+        mapping_blockers = _source_mapping_blockers(agent_id=agent_id, agent=agent, roots=roots, is_shared_member=is_shared_member)
         agent_inventory = {
             "agent_id": agent_id,
             "roots": roots,
@@ -658,6 +682,15 @@ def build_s2p_plan_v2(experiment_manifest: Mapping[str, Any]) -> dict[str, Any]:
                             "reason": "change_unit_file_missing_from_bspd_roots",
                         }
                     )
+        for reason in mapping_blockers:
+            blocked.append(
+                {
+                    "action_id": stable_id("s2pblk", agent_id, reason),
+                    "agent_id": agent_id,
+                    "relative_path": "",
+                    "reason": reason,
+                }
+            )
         transaction_id = transaction_ids_by_agent.get(owner_agent_id, "") if is_shared_member else transaction_ids_by_agent[agent_id]
         if is_shared_member and not transaction_id:
             plan["global_blockers"].append(f"shared_owner_transaction_missing:{agent_id}")
@@ -711,6 +744,10 @@ def build_s2p_plan_v2(experiment_manifest: Mapping[str, Any]) -> dict[str, Any]:
                 "prod_descriptor": descriptor_from_inventory(roots["prod"], scope="s2p_prod_inventory"),
                 "baseline_registered_empty_tree": bool(roots["baseline"].get("registered_empty_tree")),
                 "experiment_registered_empty_tree": bool(roots["active_sandbox"].get("registered_empty_tree")),
+                "prod_registered_empty_tree": bool(roots["prod"].get("registered_empty_tree")),
+                "mapping_status": "blocked" if mapping_blockers else "complete",
+                "mapping_blockers": mapping_blockers,
+                "semantic_placeholder": bool((agent.get("sandbox") or {}).get("semantic_placeholder")),
                 "actions": actions,
                 "blocked_actions": blocked,
                 "bspd_dispositions": dispositions,
@@ -799,6 +836,16 @@ def validate_s2p_plan_contract(plan: Mapping[str, Any], *, check_target_freshnes
                 blockers.append(f"s2p_agent_{field}_missing:{agent.get('agent_id')}")
             elif not str(descriptor.get("digest") or ""):
                 blockers.append(f"s2p_agent_{field}_digest_missing:{agent.get('agent_id')}")
+        if (
+            agent.get("agent_role") != "shared_transaction_member"
+            and not agent.get("semantic_placeholder")
+            and not agent.get("baseline_registered_empty_tree")
+            and not agent.get("experiment_registered_empty_tree")
+        ):
+            for field in ("baseline_descriptor", "experiment_descriptor", "prod_descriptor"):
+                descriptor = agent.get(field)
+                if isinstance(descriptor, Mapping) and int(descriptor.get("file_count") or 0) <= 0:
+                    blockers.append(f"s2p_agent_empty_inventory_not_registered:{agent.get('agent_id')}:{field}")
         if agent.get("agent_role") == "shared_transaction_member":
             if not str(agent.get("owner_agent_id") or ""):
                 blockers.append(f"shared_member_owner_missing:{agent.get('agent_id')}")
@@ -810,6 +857,9 @@ def validate_s2p_plan_contract(plan: Mapping[str, Any], *, check_target_freshnes
             blockers.append("s2p_backup_skeleton")
         if (agent.get("rollback") or {}).get("skeleton_only") is True:
             blockers.append("s2p_rollback_skeleton")
+        for blocked_action in agent.get("blocked_actions") or []:
+            if isinstance(blocked_action, Mapping) and blocked_action.get("reason"):
+                blockers.append(str(blocked_action["reason"]))
         for action in agent.get("actions") or []:
             if not isinstance(action, Mapping):
                 blockers.append("action_not_mapping")
