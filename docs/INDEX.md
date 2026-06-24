@@ -163,6 +163,10 @@ and documentation cleanup guidance without changing runtime behavior.
 It does not prove business-agent correctness, provider readiness, external
 service readiness, restored fusion acceptance, or production deployment
 readiness.
+SYNC-OPS-2B2X closes the prod-to-sandbox automation topic. It proves activation,
+controlled rollback restoration, and final reactivation of the same immutable
+stage under separate machine approvals. See
+`docs/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md`.
 R8-13K adds the first main-system report-material layer: mapped external
 outputs can carry bounded domain metrics, drivers, data quality, and
 research-points material into `report_input_bundle_v1`. It also records that

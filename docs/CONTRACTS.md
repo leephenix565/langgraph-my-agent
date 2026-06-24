@@ -1412,6 +1412,19 @@ SYNC-OPS-2B1 completes the first real P2S stage/verify boundary:
 - activation request generation is a planning artifact and is not a machine
   approval.
 
+## SYNC-OPS-2B2X Activation And Rollback Closure Contract
+
+SYNC-OPS-2B2X closes the P2S execution contract:
+
+- initial activation and post-rollback reactivation require separate machine
+  approvals bound to the same immutable stage evidence;
+- the frozen pointer candidate bytes are reused for both activations;
+- rollback restores the old active directory and old pointer bytes exactly;
+- final success preserves the immutable versioned stage, the old active archive,
+  the failed-new rollback proof, and durable run artifacts;
+- activation/rollback do not imply endpoint smoke, process action, S2P,
+  publish-and-rebase, deletion, production source writes, or owner-dev writes.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

@@ -29,6 +29,14 @@ point for new Codex sessions: it summarizes current progress, A/B/C agent work
 classes, near-term end-to-end trace priorities, production compute/invoke
 boundaries, and which docs should be compacted later.
 
+SYNC-OPS-2B2X completes the prod-to-sandbox automation topic. The verified
+2B1 immutable stage was activated, rolled back to prove exact old active and
+pointer restoration, and then reactivated through a second independent machine
+approval. The final sandbox active baseline is `20260624T060045Z`; production
+sources, owner-dev repositories, endpoints, processes, and S2P were not
+touched. See
+`docs/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

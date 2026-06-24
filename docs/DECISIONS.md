@@ -3,6 +3,61 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-114: P2S Closeout Preserves Stage And Old Active Archive
+
+Status: accepted for SYNC-OPS-2B2X.
+
+Decision: successful P2S closeout preserves the immutable versioned stage and
+the previous active baseline archive.
+
+Reason: the stage is the activation authority and the archive is the rollback
+source of record for the old active baseline.
+
+Consequence: final closeout keeps the stage, archive, failed-new rollback proof,
+durable run artifacts, and sha manifests.
+
+Non-consequence: closeout does not delete historical baselines or rollback
+evidence.
+
+## ADR-113: Initial Activation And Post-Rollback Reactivation Use Separate Approvals
+
+Status: accepted for SYNC-OPS-2B2X.
+
+Decision: the first activation/rollback and the post-rollback final
+reactivation use separate machine approval records bound to the same plan,
+stage run, stage digest, artifact index, stage validation, and frozen pointer
+candidate.
+
+Reason: rollback validation intentionally returns the sandbox to the old active
+state, so the final reactivation is a distinct state transition that needs its
+own approval boundary.
+
+Consequence: the second approval is created only after old active and old
+pointer restoration proofs pass and no plan, stage, prod freshness, process, or
+lock-scope drift is observed.
+
+Non-consequence: the second approval cannot expand action scope, create a new
+stage, or approve publish-and-rebase.
+
+## ADR-112: P2S Release Closure Requires Activation, Rollback, And Reactivation
+
+Status: accepted for SYNC-OPS-2B2X.
+
+Decision: a production-to-sandbox release is not closed until activation,
+rollback restoration, and final reactivation have all been proven against the
+same immutable stage.
+
+Reason: activation alone does not prove that the rollback contract can restore
+the prior active baseline and pointer bytes if activation later needs to be
+reversed.
+
+Consequence: closeout artifacts record first activation, controlled rollback,
+old active/pointer restoration, second approval, final reactivation, old archive
+proof, immutable stage proof, and topic closure.
+
+Non-consequence: this does not approve S2P, endpoint smoke, process action,
+delete operations, or production-source mutation.
+
 ## ADR-111: P2S Stage/Verify Does Not Activate
 
 Status: accepted for SYNC-OPS-2B1.

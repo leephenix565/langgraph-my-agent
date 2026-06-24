@@ -307,3 +307,8 @@ versioned P2S stage while leaving the active sandbox and pointer unchanged. The
 next write approval boundary is activation/rollback; it must bind the real
 stage run id, artifact index SHA, stage digest, stage validation SHA, current
 active pointer SHA, and current active tree SHA before any sandbox switch.
+SYNC-OPS-2B2X completes that boundary: first activation, controlled rollback
+restoration, separate post-rollback reactivation approval, final reactivation,
+and P2S topic closure are complete. The active sandbox now points to baseline
+`20260624T060045Z`, while production sources, owner-dev repositories,
+endpoints, process state, and S2P remain out of scope.

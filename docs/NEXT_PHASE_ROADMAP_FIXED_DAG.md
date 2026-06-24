@@ -415,6 +415,14 @@ explicitly owns them.
 
 ## CS1-C3X Current Follow-Up
 
+## SYNC-OPS-3X Entry
+
+SYNC-OPS-2B2X completed prod-to-sandbox automation. The next sync-ops topic is
+`sync_ops_3x_sandbox_to_prod_automation`, starting from the verified active
+sandbox baseline `20260624T060045Z`. Future S2P work must begin with a fresh
+planner/audit phase; the P2S closeout approval does not authorize S2P, endpoint
+smoke, process action, delete, or production source writes.
+
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should
 focus on source/owner blocked evidence paths, not another blanket backfill:

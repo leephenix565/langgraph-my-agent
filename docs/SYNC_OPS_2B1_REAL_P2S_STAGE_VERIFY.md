@@ -89,3 +89,10 @@ The request is not a machine approval. It does not contain `approval_id` or
 This phase did not modify prod, active sandbox, owner-dev, or the baseline
 pointer. It did not activate, roll back active sandbox state, call endpoints,
 operate processes, read environment values, or output secrets.
+
+## Follow-Up Closure
+
+SYNC-OPS-2B2X consumed this stage evidence in the final P2S activation cycle.
+The same immutable stage was activated, rolled back to prove exact old
+active/pointer restoration, and reactivated through a second independent
+machine approval. The final active sandbox baseline is `20260624T060045Z`.

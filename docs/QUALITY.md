@@ -1064,6 +1064,25 @@ Default gates still must not activate, roll back active sandbox state, update
 the baseline pointer, call endpoints, operate processes, read environment
 values, or write prod/owner-dev.
 
+## SYNC-OPS-2B2X Activation Closure Gate
+
+SYNC-OPS-2B2X adds final P2S closure evidence:
+
+- exact plan/stage evidence must match before activation approval;
+- prod freshness mismatch count must be zero;
+- active process blocker count must be zero;
+- first activation must produce the stage digest as active tree;
+- controlled rollback must restore the old active tree and old pointer SHA;
+- second reactivation approval must be independent and post-rollback scoped;
+- final active tree must equal the stage digest, final pointer must equal the
+  frozen pointer candidate SHA, and old archive tree must equal the old active
+  digest;
+- hardlink count and secret findings must be zero.
+
+Default gates still must not write prod, write owner-dev, call endpoints,
+operate processes, read environment values, delete baselines, run S2P, or run
+live validation.
+
 ## SYNC-OPS-2B0 Bootstrap Execution Guard
 
 SYNC-OPS-2B0 keeps the artifact-store bootstrap executor in the maintained

@@ -119,6 +119,21 @@ def _combined_agent_tree_digest(inventory: Mapping[str, Any], root_role: str) ->
     return canonical_sha256(sorted(items, key=lambda item: str(item["agent_id"])))
 
 
+def _root_tree_digest_or_absent(agent_id: str, root_role: str, root: Mapping[str, Any]) -> str:
+    """Return a non-empty drift token even when a per-agent root is absent."""
+    digest = str(root.get("tree_digest") or "")
+    if digest:
+        return digest
+    return canonical_sha256(
+        {
+            "agent_id": agent_id,
+            "root_role": root_role,
+            "root_exists": bool(root.get("root_exists")),
+            "root": str(root.get("root") or ""),
+        }
+    )
+
+
 def _included_files(root_inventory: Mapping[str, Any]) -> dict[str, Mapping[str, Any]]:
     result: dict[str, Mapping[str, Any]] = {}
     for record in root_inventory.get("files") or []:
@@ -790,6 +805,7 @@ def build_p2s_plan(*, artifact_store_root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -
         placeholder_count = sum(1 for action in actions if action.get("operation") == "snapshot_semantic_placeholder")
         agent_projection_digest = stage_projection_digest_for_actions(actions)
         shared_file_count = int(prod_root.get("included_count") or 0) if disposition == "shared_transaction_member" else 0
+        active_tree_digest = _root_tree_digest_or_absent(agent_id, "active_sandbox", active_root)
         for action in actions:
             op = str(action.get("operation") or "")
             action_counts[op] = action_counts.get(op, 0) + 1
@@ -811,8 +827,8 @@ def build_p2s_plan(*, artifact_store_root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -
                 "transaction_id": stable_id("stage", agent_id, transaction_root),
                 "source_root": "prod",
                 "target_root": str(stage_root / agent_id),
-                "target_before_tree_sha256": active_root["tree_digest"],
-                "active_tree_sha256": active_root["tree_digest"],
+                "target_before_tree_sha256": active_tree_digest,
+                "active_tree_sha256": active_tree_digest,
                 "prod_tree_sha256": prod_root["tree_digest"],
                 "baseline_tree_sha256": baseline_root["tree_digest"],
                 "disposition": disposition,

@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-2B2X P2S activation, rollback, and closure
+
+### Added
+
+- Added `docs/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md`.
+- Recorded final prod-to-sandbox automation topic closure and the
+  `sync_ops_3x_sandbox_to_prod_automation` next topic.
+- Added ADRs for activation/rollback/reactivation closure, separate
+  post-rollback approval, and preserving immutable stage plus old active
+  archive.
+
+### Changed
+
+- Updated reset docs to record the real activation cycle: first activation,
+  controlled rollback proof, independent final reactivation, final active
+  baseline `20260624T060045Z`, old active archive preservation, and no
+  endpoint/process/prod/owner-dev/S2P scope.
+
+### Not Done
+
+- No production source modification.
+- No owner-dev modification.
+- No endpoint or process action.
+- No S2P, publish-and-rebase, delete, or live validation.
+
 ## 2026-06-24 - SYNC-OPS-2B1 real P2S stage and verify
 
 ### Added
