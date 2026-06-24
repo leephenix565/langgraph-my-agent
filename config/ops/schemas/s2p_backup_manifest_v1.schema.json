@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_backup_manifest_v1.schema.json",
+  "title": "agent_sync_s2p_backup_manifest_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "backup_root",
+    "files"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_backup_manifest_v1"
+    },
+    "backup_root": {
+      "type": "string"
+    },
+    "files": {
+      "type": "array"
+    }
+  }
+}

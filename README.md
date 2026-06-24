@@ -37,6 +37,16 @@ sources, owner-dev repositories, endpoints, processes, and S2P were not
 touched. See
 `docs/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md`.
 
+SYNC-OPS-3X implements the sandbox-to-prod automation control plane. It adds
+experiment fork/show/validate/diff/close commands, B/S/P/D change-unit gated
+S2P plans, no-op and future non-zero approval boundaries, backed-up file
+transaction primitives, fake process/live-gate contracts, rollback/recovery
+tests, historical 31-unit replay, and a real current-server zero-action no-op
+rehearsal in the durable artifact store. It does not execute a real non-zero
+publish, modify prod source files, modify active sandbox, call endpoints, or
+operate processes. See
+`docs/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

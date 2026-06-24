@@ -1,0 +1,21 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_owner_handoff_v1.schema.json",
+  "title": "agent_sync_s2p_owner_handoff_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "plan_id",
+    "changed_files",
+    "owner_repo_modified"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_owner_handoff_v1"
+    },
+    "owner_repo_modified": {
+      "const": false
+    }
+  }
+}

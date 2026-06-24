@@ -62,6 +62,17 @@ from react_agent.ops.sync_plan import (
     validate_plan,
 )
 from react_agent.ops.sync_registry import load_sync_policy, validate_static_registry
+from react_agent.ops.sync_s2p import (
+    build_experiment_fork,
+    fake_live_gate,
+    prod_digest_summary,
+    recover_s2p_journal,
+    run_s2p_noop,
+    run_temp_historical_replay,
+    sandbox_pointer_summary,
+    validate_experiment_contract,
+    validate_s2p_plan_contract,
+)
 from react_agent.ops.sync_summary import p2s_summary_from_plan
 
 
@@ -218,6 +229,50 @@ def cmd_experiment_validate(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
 
 
+def cmd_experiment_fork(args: argparse.Namespace) -> int:
+    manifest = build_experiment_fork(workspace_root=Path(args.workspace_root), experiment_id=args.experiment_id)
+    output = ensure_output_path(args.output)
+    maybe_write_json(output, manifest)
+    payload = {"summary_title": "agent-sync experiment fork", "manifest": manifest, "output": str(output or ""), "exit_code": 0}
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"experiment_id={manifest['experiment_id']}",
+            f"workspace_root={manifest['workspace_root']}",
+            f"copied_files={manifest.get('fork_result', {}).get('copied_file_count')}",
+        ],
+    )
+
+
+def cmd_experiment_show(args: argparse.Namespace) -> int:
+    manifest = read_json(Path(args.manifest))
+    validation = validate_experiment_contract(manifest)
+    payload = {"summary_title": "agent-sync experiment show", "manifest": manifest, "validation": validation, "exit_code": validation["exit_code"]}
+    return print_or_json(args, payload, [f"experiment_id={manifest.get('experiment_id')}", f"status={manifest.get('status')}", f"valid={validation['valid']}"])
+
+
+def cmd_experiment_diff(args: argparse.Namespace) -> int:
+    manifest = read_json(Path(args.manifest))
+    plan = build_s2p_plan(manifest)
+    summary = plan.get("s2p_summary") or {}
+    payload = {"summary_title": "agent-sync experiment diff", "plan_id": plan["plan_id"], "summary": summary, "blockers": plan.get("global_blockers", []), "exit_code": 0}
+    return print_or_json(args, payload, [f"actions={summary.get('actionable_file_action_count')}", f"blocked={summary.get('blocked_action_count')}"])
+
+
+def cmd_experiment_close(args: argparse.Namespace) -> int:
+    if not args.reason:
+        raise SyncPlannerError("experiment_close_reason_required", exit_code=2)
+    manifest_path = Path(args.manifest)
+    manifest = read_json(manifest_path)
+    manifest["status"] = "closed"
+    manifest["closed_at"] = __import__("datetime").datetime.now(__import__("datetime").UTC).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+    manifest["close_reason"] = args.reason
+    write_json(manifest_path, manifest)
+    payload = {"summary_title": "agent-sync experiment close", "experiment_id": manifest.get("experiment_id"), "status": "closed", "exit_code": 0}
+    return print_or_json(args, payload, [f"experiment_id={manifest.get('experiment_id')}", "status=closed"])
+
+
 def cmd_p2s_plan(args: argparse.Namespace) -> int:
     plan = build_p2s_plan()
     output = ensure_output_path(args.output)
@@ -298,6 +353,89 @@ def cmd_s2p_plan(args: argparse.Namespace) -> int:
     action_count = sum(len(agent["actions"]) for agent in plan["agents"])
     blocked_count = sum(len(agent["blocked_actions"]) for agent in plan["agents"]) + len(plan["global_blockers"])
     return print_or_json(args, payload, [f"plan_id={plan['plan_id']}", f"actions={action_count}", f"blocked={blocked_count}"])
+
+
+def cmd_s2p_validate(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    result = validate_s2p_plan_contract(plan, check_target_freshness=not args.skip_target_freshness)
+    payload = {"summary_title": "agent-sync s2p validate", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_s2p_explain(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    summary = plan.get("s2p_summary") or {}
+    payload = {
+        "summary_title": "agent-sync s2p explain",
+        "plan_id": plan.get("plan_id"),
+        "plan_sha256": plan.get("canonical_sha256"),
+        "contract": plan.get("execution_contract", {}),
+        "summary": summary,
+        "approval_requirements": plan.get("approval_requirements", {}),
+        "exit_code": 0,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"plan_id={payload['plan_id']}",
+            f"actions={summary.get('actionable_file_action_count')}",
+            f"process={summary.get('process_action_count')}",
+            f"live={summary.get('live_gate_count')}",
+        ],
+    )
+
+
+def cmd_s2p_rehearse(args: argparse.Namespace) -> int:
+    result = run_temp_historical_replay(Path(args.temp_root))
+    payload = {"summary_title": "agent-sync s2p rehearse", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"imported_change_units={result['imported_change_unit_count']}",
+            f"exact={result['exact_byte_replay_count']}",
+            f"patch={result['patch_replay_count']}",
+            f"valid={result['valid']}",
+        ],
+    )
+
+
+def cmd_s2p_apply(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    plan = load_plan(Path(args.plan))
+    approval = read_json(Path(args.approval))
+    summary = plan.get("s2p_summary") or {}
+    if int(summary.get("actionable_file_action_count") or 0) != 0:
+        raise SyncPlannerError("nonzero_s2p_apply_requires_sync_ops_4x_machine_approval", exit_code=4)
+    result = run_s2p_noop(plan, approval, Path(args.artifact_root))
+    payload = {"summary_title": "agent-sync s2p apply", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(args, payload, [f"run_id={result['run_id']}", f"status={result['status']}", f"prod_unchanged={result['prod_unchanged']}"])
+
+
+def cmd_s2p_verify(args: argparse.Namespace) -> int:
+    plan = load_plan(Path(args.plan))
+    result = validate_s2p_plan_contract(plan, check_target_freshness=not args.skip_target_freshness)
+    prod = prod_digest_summary(plan)
+    sandbox = sandbox_pointer_summary()
+    payload = {"summary_title": "agent-sync s2p verify", "plan_validation": result, "prod": prod, "sandbox": sandbox, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"prod_digest={prod['combined_digest']}"])
+
+
+def cmd_s2p_smoke(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    if not getattr(args, "allow_live", False):
+        raise SyncPlannerError("allow_live_required_for_s2p_smoke", exit_code=2)
+    result = fake_live_gate("cli_smoke", approved=False)
+    payload = {"summary_title": "agent-sync s2p smoke", **result, "exit_code": 4}
+    return print_or_json(args, payload, ["executed=false", "reason=live_validation_not_approved"])
+
+
+def cmd_s2p_rollback(args: argparse.Namespace) -> int:
+    _require_execute(args)
+    recovery = recover_s2p_journal([])
+    payload = {"summary_title": "agent-sync s2p rollback", "rollback_attempted": False, "recovery": recovery, "exit_code": 10}
+    return print_or_json(args, payload, ["rollback_attempted=false", f"recommended_action={recovery['recommended_action']}"])
 
 
 def cmd_cycle_plan(args: argparse.Namespace) -> int:
@@ -641,6 +779,25 @@ def build_parser() -> argparse.ArgumentParser:
     experiment_validate.add_argument("--manifest", required=True)
     _add_output_args(experiment_validate)
     experiment_validate.set_defaults(func=cmd_experiment_validate)
+    experiment_fork = experiment_sub.add_parser("fork")
+    experiment_fork.add_argument("--workspace-root", required=True)
+    experiment_fork.add_argument("--experiment-id")
+    experiment_fork.add_argument("--output")
+    _add_output_args(experiment_fork)
+    experiment_fork.set_defaults(func=cmd_experiment_fork)
+    experiment_show = experiment_sub.add_parser("show")
+    experiment_show.add_argument("--manifest", required=True)
+    _add_output_args(experiment_show)
+    experiment_show.set_defaults(func=cmd_experiment_show)
+    experiment_diff = experiment_sub.add_parser("diff")
+    experiment_diff.add_argument("--manifest", required=True)
+    _add_output_args(experiment_diff)
+    experiment_diff.set_defaults(func=cmd_experiment_diff)
+    experiment_close = experiment_sub.add_parser("close")
+    experiment_close.add_argument("--manifest", required=True)
+    experiment_close.add_argument("--reason", required=True)
+    _add_output_args(experiment_close)
+    experiment_close.set_defaults(func=cmd_experiment_close)
 
     p2s = subparsers.add_parser("p2s")
     p2s_sub = p2s.add_subparsers(dest="command", required=True)
@@ -695,9 +852,48 @@ def build_parser() -> argparse.ArgumentParser:
     s2p_plan.add_argument("--output")
     _add_output_args(s2p_plan)
     s2p_plan.set_defaults(func=cmd_s2p_plan)
-    for unsupported in ("apply", "smoke", "rollback"):
-        parser_unsupported = s2p_sub.add_parser(unsupported)
-        parser_unsupported.set_defaults(func=lambda _args, cmd=unsupported: cmd_unsupported("s2p", cmd))
+    s2p_validate = s2p_sub.add_parser("validate")
+    s2p_validate.add_argument("--plan", required=True)
+    s2p_validate.add_argument("--skip-target-freshness", action="store_true")
+    _add_output_args(s2p_validate)
+    s2p_validate.set_defaults(func=cmd_s2p_validate)
+    s2p_explain = s2p_sub.add_parser("explain")
+    s2p_explain.add_argument("--plan", required=True)
+    _add_output_args(s2p_explain)
+    s2p_explain.set_defaults(func=cmd_s2p_explain)
+    s2p_rehearse = s2p_sub.add_parser("rehearse")
+    s2p_rehearse.add_argument("--plan")
+    s2p_rehearse.add_argument("--temp-root", required=True)
+    _add_output_args(s2p_rehearse)
+    s2p_rehearse.set_defaults(func=cmd_s2p_rehearse)
+    s2p_apply = s2p_sub.add_parser("apply")
+    s2p_apply.add_argument("--plan", required=True)
+    s2p_apply.add_argument("--approval", required=True)
+    s2p_apply.add_argument("--artifact-root", required=True)
+    s2p_apply.add_argument("--execute", action="store_true")
+    s2p_apply.add_argument("--allow-process-action", action="store_true")
+    s2p_apply.add_argument("--allow-live", action="store_true")
+    s2p_apply.add_argument("--allow-delete", action="store_true")
+    _add_output_args(s2p_apply)
+    s2p_apply.set_defaults(func=cmd_s2p_apply)
+    s2p_verify = s2p_sub.add_parser("verify")
+    s2p_verify.add_argument("--plan", required=True)
+    s2p_verify.add_argument("--skip-target-freshness", action="store_true")
+    _add_output_args(s2p_verify)
+    s2p_verify.set_defaults(func=cmd_s2p_verify)
+    s2p_smoke = s2p_sub.add_parser("smoke")
+    s2p_smoke.add_argument("--plan", required=True)
+    s2p_smoke.add_argument("--approval", required=True)
+    s2p_smoke.add_argument("--execute", action="store_true")
+    s2p_smoke.add_argument("--allow-live", action="store_true")
+    _add_output_args(s2p_smoke)
+    s2p_smoke.set_defaults(func=cmd_s2p_smoke)
+    s2p_rollback = s2p_sub.add_parser("rollback")
+    s2p_rollback.add_argument("--plan", required=True)
+    s2p_rollback.add_argument("--approval", required=True)
+    s2p_rollback.add_argument("--execute", action="store_true")
+    _add_output_args(s2p_rollback)
+    s2p_rollback.set_defaults(func=cmd_s2p_rollback)
 
     cycle = subparsers.add_parser("cycle")
     cycle_sub = cycle.add_subparsers(dest="command", required=True)

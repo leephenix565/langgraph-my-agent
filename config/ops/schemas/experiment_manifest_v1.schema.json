@@ -15,6 +15,100 @@
   "properties": {
     "schema_version": {
       "const": "agent_sync_experiment_v1"
+    },
+    "experiment_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "base_baseline_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "workspace_root": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agents": {
+      "type": "array",
+      "items": {
+        "oneOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "required": [
+              "agent_id"
+            ],
+            "properties": {
+              "agent_id": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "change_units": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "change_unit_id",
+          "agent_id",
+          "risk_class",
+          "files"
+        ],
+        "properties": {
+          "change_unit_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "agent_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "risk_class": {
+            "enum": [
+              "A_docs_tests_material",
+              "B_protocol_wrapper",
+              "C_data_dependency",
+              "D_business_core",
+              "S_security_deployment"
+            ]
+          },
+          "files": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "allowed_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "forbidden_paths": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "status": {
+      "enum": [
+        "draft",
+        "open",
+        "closed",
+        "aborted"
+      ]
     }
   }
 }

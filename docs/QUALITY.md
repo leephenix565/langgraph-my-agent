@@ -98,6 +98,15 @@ databases; it does not start, stop, restart, signal, or smoke processes; and it
 does not write prod, sandbox, owner-dev, lock, backup, or artifact-store roots
 in mainline.
 
+SYNC-OPS-3X adds the sandbox-to-prod automation quality surface. Focused tests
+cover experiment manifests, B/S/P/D classification, change-unit gates,
+approval scope, backup/apply rollback, fake process and fake live gates, crash
+recovery, historical replay, and current no-op rehearsal. Default static and
+mainline still must not call real endpoints, operate real processes, write
+real prod files, write active sandbox, read env values, or execute a non-zero
+S2P publish. Real no-op rehearsal evidence may be written only to the durable
+artifact store under the approved no-op run contract.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

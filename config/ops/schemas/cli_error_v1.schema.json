@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_cli_error_v1.schema.json",
+  "title": "agent_sync_cli_error_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "reason",
+    "exit_code"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_cli_error_v1"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "exit_code": {
+      "type": "integer"
+    }
+  }
+}

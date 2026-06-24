@@ -39,12 +39,19 @@ SCHEMA_FILES = {
     "agent_sync_execution_environment_v2": "execution_environment_v2.schema.json",
     "agent_sync_artifact_store_bootstrap_approval_v1": "artifact_store_bootstrap_approval_v1.schema.json",
     "agent_sync_artifact_store_metadata_v1": "artifact_store_metadata_v1.schema.json",
+    "agent_sync_s2p_approval_v1": "s2p_approval_v1.schema.json",
+    "agent_sync_s2p_backup_manifest_v1": "s2p_backup_manifest_v1.schema.json",
+    "agent_sync_s2p_apply_result_v1": "s2p_apply_result_v1.schema.json",
+    "agent_sync_s2p_process_action_result_v1": "s2p_process_action_result_v1.schema.json",
+    "agent_sync_s2p_live_gate_result_v1": "s2p_live_gate_result_v1.schema.json",
+    "agent_sync_s2p_recovery_v1": "s2p_recovery_v1.schema.json",
+    "agent_sync_s2p_noop_run_result_v1": "s2p_noop_run_result_v1.schema.json",
+    "agent_sync_s2p_historical_replay_v1": "s2p_historical_replay_v1.schema.json",
+    "agent_sync_s2p_owner_handoff_v1": "s2p_owner_handoff_v1.schema.json",
+    "agent_sync_cli_error_v1": "cli_error_v1.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {
-    ("s2p", "apply"),
-    ("s2p", "smoke"),
-    ("s2p", "rollback"),
     ("cycle", "publish-and-rebase"),
     ("lock", "force-release"),
 }

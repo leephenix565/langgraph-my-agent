@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_apply_result_v1.schema.json",
+  "title": "agent_sync_s2p_apply_result_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "status"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_apply_result_v1"
+    },
+    "status": {
+      "enum": [
+        "applied_and_verified",
+        "rolled_back",
+        "rollback_failed"
+      ]
+    }
+  }
+}

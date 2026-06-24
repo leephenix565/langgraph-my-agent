@@ -127,6 +127,23 @@ sanitized-derivative blockers, active-baseline guards, and approval scope.
 Planner commands may emit inventory, B/S/P/D diff, P2S plan, S2P plan, and
 cycle plan JSON, but SYNC-OPS-1 has no stage/apply/smoke/rollback/lock command.
 
+SYNC-OPS-3X promotes S2P from a skeleton planner to an executable transaction
+contract family. `agent-sync experiment fork/show/validate/diff/close` manages
+immutable-baseline experiment workspaces. `agent-sync s2p
+plan/validate/explain/rehearse/apply/verify/smoke/rollback` now exists, but
+real current-server `apply` is accepted only for zero-action no-op plans in
+this phase. Non-zero file apply, process actions, live gates, delete,
+owner-handoff generation, and publish-and-rebase require future explicit
+machine approval.
+
+The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
+current prod, and owner-dev provenance. Prod-only changes are preserved by
+default. Every non-noop file action must belong to exactly one change unit.
+Backed-up file apply, offline validation, process restart, live smoke, and
+rollback are independently approved capabilities. `/v1/agent/invoke`, raw
+endpoint bodies, environment values, arbitrary shell commands, hardlinks, and
+whole-directory prod overwrite are outside the contract.
+
 ## Contract Boundary
 
 Contracts separate internal DAG execution from the public transcript. Internal

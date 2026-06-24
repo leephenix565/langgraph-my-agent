@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_historical_replay_v1.schema.json",
+  "title": "agent_sync_s2p_historical_replay_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "imported_change_unit_count",
+    "disposition_counts",
+    "valid"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_historical_replay_v1"
+    },
+    "imported_change_unit_count": {
+      "type": "integer"
+    },
+    "valid": {
+      "type": "boolean"
+    }
+  }
+}

@@ -1,58 +1,171 @@
 {
   "schema_version": "agent_sync_plan_v1",
-  "plan_id": "plan-example-s2p",
+  "tool_version": "sync_ops_3x_s2p_transaction_writer",
+  "plan_id": "s2p_example_001",
   "direction": "s2p",
-  "created_at": "2026-06-23T00:00:00Z",
-  "expires_at": "2026-06-30T00:00:00Z",
+  "created_at": "2026-06-24T00:00:00Z",
+  "expires_at": "2026-06-25T00:00:00Z",
   "registry_sha256": "2222222222222222222222222222222222222222222222222222222222222222",
   "policy_sha256": "3333333333333333333333333333333333333333333333333333333333333333",
   "catalog_sha256": "b3e73d96413d6f9fe9dc1305807b2c46bb62d0ecc1ae7bb892b93aa4f351f243",
   "baseline": {
-    "baseline_id": "20260623T050419Z"
+    "active_baseline_id": "20260624T060045Z"
   },
-  "experiment": {},
-  "target_snapshot": {},
+  "experiment": {
+    "experiment_id": "exp-example-001",
+    "workspace_root": "/tmp/agent-sync-example",
+    "base_baseline_id": "20260624T060045Z"
+  },
+  "target_snapshot": {
+    "prod_root": "/tmp/prod",
+    "active_sandbox_pointer_sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
+    "artifact_store_metadata_sha256": "abcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcdefabcd"
+  },
   "agents": [
     {
       "agent_id": "value_research_synthesis",
-      "transaction_id": "tx-example-001",
-      "source_root": "prod-root",
-      "target_root": "sandbox-root",
+      "transaction_id": "s2ptxn-example-001",
+      "source_root": "/tmp/agent-sync-example/value_research_synthesis",
+      "target_root": "/tmp/prod/value_research_synthesis",
       "target_before_tree_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
       "actions": [
         {
-          "action_id": "act-001",
+          "action_id": "s2pact-example-001",
           "operation": "replace",
-          "source_path": "main5.py",
-          "target_path": "main5.py",
+          "relative_path": "service.py",
+          "source_path": "service.py",
+          "target_path": "service.py",
           "source_sha256": "5555555555555555555555555555555555555555555555555555555555555555",
           "expected_target_before_sha256": "6666666666666666666666666666666666666666666666666666666666666666",
-          "expected_mode": "0o644",
-          "sensitive_classification": "hardcoded_credential_required_runtime",
+          "expected_target_state": "present",
           "change_unit_id": "cu-example-001",
-          "approval_scope": "agent",
-          "rollback_source": "backup/main5.py"
+          "risk_class": "B_protocol_wrapper",
+          "approval_scope": "s2p_change_unit",
+          "rollback_source": "planned_backup",
+          "classification": "changed_in_sandbox_only"
         }
       ],
       "blocked_actions": [],
-      "backup": {},
+      "backup": {
+        "required": true,
+        "root": "backups/<run_id>/<transaction_id>"
+      },
       "offline_tests": [
         "py_compile"
       ],
-      "process_preflight": {},
+      "process_preflight": {
+        "process_action_requires_approval": true
+      },
       "process_actions": [],
       "live_validation": [],
-      "rollback": {},
+      "rollback": {
+        "journaled_restore": true,
+        "rollback_approved_required": true
+      },
       "expected_status": "planned"
     }
   ],
+  "transactions": [
+    {
+      "transaction_id": "s2ptxn-example-001",
+      "service_unit_id": "port:10006",
+      "affected_agent_ids": [
+        "value_research_synthesis"
+      ],
+      "source_experiment_root": "/tmp/agent-sync-example/value_research_synthesis",
+      "target_prod_root": "/tmp/prod/value_research_synthesis",
+      "target_before_tree_sha256": "4444444444444444444444444444444444444444444444444444444444444444",
+      "file_actions": [
+        {
+          "action_id": "s2pact-example-001",
+          "operation": "replace",
+          "target_path": "service.py"
+        }
+      ],
+      "backup_contract": {
+        "required": true
+      },
+      "offline_validation": [
+        "py_compile"
+      ],
+      "process_contract": {
+        "requires_process_actions_approved": true
+      },
+      "live_validation_contract": {
+        "requires_live_validation_approved": true
+      },
+      "rollback_contract": {
+        "journaled_restore": true
+      },
+      "owner_handoff_contract": {
+        "generation_requires_approval": true
+      },
+      "blockers": []
+    }
+  ],
   "global_preconditions": [
-    "registry validates"
+    "plan_schema_valid",
+    "exact_machine_approval_required",
+    "backup_before_apply"
   ],
   "global_blockers": [],
   "approval_requirements": {
-    "approval_record_required": true
+    "approval_record_required": true,
+    "backup_approved": false,
+    "apply_approved": false,
+    "process_actions_approved": false,
+    "live_validation_approved": false,
+    "rollback_approved": false,
+    "delete_approved": false
   },
-  "rollback_plan": {},
-  "canonical_sha256": "e64ef8becbcaf3f4dcae0b7ad9e2438cbfeb282f8b45a2aace796dc25a3103ed"
+  "execution_contract": {
+    "schema_version": "agent_sync_s2p_execution_contract_v1",
+    "writer_contract_version": "sync_ops_3x_s2p_transaction_writer",
+    "execution_enabled": true,
+    "artifact_store": {
+      "root": "/sdb/dlut/ops-artifacts/agent-sync"
+    },
+    "lock_requirements": {
+      "global_lock_required": true,
+      "transaction_locks_required": true
+    },
+    "backup": {
+      "required_before_replace": true
+    },
+    "apply": {
+      "os_replace": true
+    },
+    "offline_validation": {
+      "before_process": true
+    },
+    "process": {
+      "requires_process_actions_approved": true
+    },
+    "live_gate": {
+      "requires_live_validation_approved": true
+    },
+    "rollback": {
+      "journaled": true
+    },
+    "crash_recovery": {
+      "journal_required": true
+    }
+  },
+  "rollback_plan": {
+    "executable": true,
+    "journaled": true,
+    "per_transaction": true,
+    "skeleton_only": false
+  },
+  "s2p_summary": {
+    "agent_count": 1,
+    "transaction_count": 1,
+    "actionable_file_action_count": 1,
+    "blocked_action_count": 0,
+    "delete_action_count": 0,
+    "process_action_count": 0,
+    "live_gate_count": 0,
+    "coverage_ratio": 1.0
+  },
+  "canonical_sha256": "example-canonical-sha256"
 }

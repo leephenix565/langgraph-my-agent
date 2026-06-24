@@ -100,10 +100,15 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   approved R4 snapshot. SYNC-OPS-2A-R5 repairs that boundary so approval binds
   stable security facts while free space and unrelated group observations are
   execution/diagnostic facts. SYNC-OPS-2B0-R1 completed the real durable
-  artifact-store bootstrap and regenerated a stage-ready P2S plan. SYNC-OPS-2B1
-  completed the real versioned P2S stage/verify run without activating the
-  active sandbox. The next sync implementation entry is SYNC-OPS-2B2 activation
-  approval.
+  artifact-store bootstrap, SYNC-OPS-2B1 completed the real versioned P2S
+  stage/verify run, and SYNC-OPS-2B2X activated, rolled back, and finally
+  reactivated the same immutable stage. The prod-to-sandbox automation topic is
+  complete. SYNC-OPS-3X implements the sandbox-to-prod automation control
+  plane, including experiment manifests, B/S/P/D diff, S2P approvals,
+  backup/apply/rollback primitives, fake process/live gates, historical replay,
+  and a real zero-action no-op rehearsal. The next sync entry is
+  SYNC-OPS-4X for the first explicitly approved non-zero publish-and-rebase
+  cycle.
 
 重要边界：
 
@@ -124,6 +129,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   它不是 runtime binding，不是 owner-dev acceptance，也不是可执行写入授权。
   任何未来同步写操作都必须先生成 immutable plan，再用绑定 plan hash 的 approval
   artifact 执行。
+- SYNC-OPS-3X 的 S2P control plane 只证明非零事务可在 `/tmp` 演练并证明当前
+  真实环境 no-op；首个真实非零 publish 仍必须等待 SYNC-OPS-4X 的精确
+  experiment change unit 和 machine approval。
 
 ## Directory Operating Model
 

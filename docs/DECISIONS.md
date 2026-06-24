@@ -3,6 +3,72 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-120: Historical Replay And Real No-Op Precede Non-Zero Publish
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: before the first real non-zero S2P publish, the control plane must
+import historical change-unit dispositions, complete a non-zero temp replay,
+and execute a real zero-action no-op rehearsal in the durable artifact store.
+
+Reason: historical backfill evidence proves representative service shapes, and
+the no-op run proves current locks, approvals, artifacts, and drift guards
+without mutating prod.
+
+Non-consequence: no-op success is not a non-zero publish approval.
+
+## ADR-119: Sanitized Derivatives Are Not Automatically Publishable
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: sandbox-only sanitized derivatives are blocked from S2P publication
+unless converted into an explicit reviewed prod-safe refactor change unit.
+
+Reason: a sanitized sandbox artifact may be safe for sandbox baselines while
+still lacking owner acceptance or production-source authority.
+
+## ADR-118: File Apply, Process Restart, And Live Smoke Are Separate Approvals
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: backup/apply, offline tests, process actions, live health/compute
+smoke, rollback, delete, owner handoff, and publish-and-rebase are distinct
+approval capabilities.
+
+Reason: file mutation, process control, and endpoint calls have different
+blast radii and must not be implied by a generic S2P approval.
+
+## ADR-117: Production Updates Are Journaled Per-Service Transactions
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: every future non-zero S2P prod update is applied as a backed-up,
+write-ahead-journaled service transaction with rollback proof.
+
+Reason: prod is updated in place, not by sandbox pointer switch; the recovery
+contract must restore any partially replaced files.
+
+## ADR-116: B/S/P/D Preserves Prod And Owner Provenance
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: S2P compares immutable baseline (B), sandbox experiment (S), current
+prod (P), and owner-dev provenance (D). Prod-only changes are preserved by
+default, and owner conflicts block automatic publication.
+
+Reason: the active sandbox is not a whole-tree prod authority and must not
+overwrite independent prod or owner changes.
+
+## ADR-115: S2P Publishes Explicit Experiment Change Units
+
+Status: accepted for SYNC-OPS-3X.
+
+Decision: sandbox-to-prod automation publishes explicit experiment change
+units, never an entire sandbox tree.
+
+Reason: limiting scope by change unit prevents accidental publication of
+generated results, tests, local metadata, or unrelated sandbox edits.
+
 ## ADR-114: P2S Closeout Preserves Stage And Old Active Archive
 
 Status: accepted for SYNC-OPS-2B2X.

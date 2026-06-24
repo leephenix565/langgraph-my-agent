@@ -464,30 +464,9 @@ def build_experiment_template(*, output_root: str = "/tmp/agent-sync-experiment"
 
 
 def validate_experiment_manifest(manifest: Mapping[str, Any]) -> dict[str, Any]:
-    validate_by_schema_version(manifest)
-    pointer = load_baseline_pointer()
-    workspace = Path(str(manifest.get("workspace_root") or ""))
-    blockers: list[str] = []
-    if str(manifest.get("base_baseline_id") or "") != str(pointer.get("active_baseline_id") or ""):
-        blockers.append("base_baseline_id_mismatch")
-    for forbidden in (pointer.get("active_path"), pointer.get("versioned_baseline_path"), str(DEFAULT_PROD_ROOT)):
-        if forbidden and workspace.resolve(strict=False) == Path(str(forbidden)).resolve(strict=False):
-            blockers.append("workspace_is_forbidden_root")
-    change_units = manifest.get("change_units") or []
-    ids = [str(item.get("change_unit_id") or "") for item in change_units if isinstance(item, Mapping)]
-    if len(ids) != len(set(ids)):
-        blockers.append("duplicate_change_unit_id")
-    for unit in change_units:
-        if not isinstance(unit, Mapping):
-            blockers.append("change_unit_not_mapping")
-            continue
-        if unit.get("risk_class") in {"D_business_core", "S_security_deployment"} and not unit.get("owner_review_required"):
-            blockers.append(f"owner_review_required:{unit.get('change_unit_id')}")
-    return {
-        "valid": not blockers,
-        "blockers": blockers,
-        "active_baseline_id": pointer["active_baseline_id"],
-    }
+    from react_agent.ops.sync_s2p import validate_experiment_contract
+
+    return validate_experiment_contract(manifest)
 
 
 def _base_plan(direction: str) -> dict[str, Any]:
@@ -944,73 +923,9 @@ def build_p2s_plan(*, artifact_store_root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -
 
 
 def build_s2p_plan(experiment_manifest: Mapping[str, Any]) -> dict[str, Any]:
-    validation = validate_experiment_manifest(experiment_manifest)
-    plan = _base_plan("s2p")
-    pointer = load_baseline_pointer()
-    workspace = Path(str(experiment_manifest.get("workspace_root") or ""))
-    plan["baseline"] = pointer
-    plan["experiment"] = {
-        "experiment_id": experiment_manifest.get("experiment_id", ""),
-        "workspace_root": str(workspace),
-        "base_baseline_id": experiment_manifest.get("base_baseline_id", ""),
-    }
-    if validation["blockers"]:
-        plan["global_blockers"].extend(validation["blockers"])
-    if workspace.resolve(strict=False) in {
-        Path(str(pointer["active_path"])).resolve(strict=False),
-        Path(str(pointer["versioned_baseline_path"])).resolve(strict=False),
-    }:
-        plan["global_blockers"].append("blocked_active_baseline_not_experiment")
-    registry = load_static_registry()
-    agent_ids = {str(agent.get("agent_id")) for agent in experiment_manifest.get("agents") or [] if isinstance(agent, Mapping)}
-    if not agent_ids:
-        agent_ids = {str(unit.get("agent_id")) for unit in experiment_manifest.get("change_units") or [] if isinstance(unit, Mapping)}
-    agent_plans: list[dict[str, Any]] = []
-    for agent in registry["agents"]:
-        if agent_ids and agent["agent_id"] not in agent_ids:
-            continue
-        baseline_root = Path(agent["sandbox"]["baseline_root"])
-        prod_root = Path(agent["prod"]["root"])
-        exp_root = workspace / agent["agent_id"]
-        agent_inventory = {
-            "agent_id": agent["agent_id"],
-            "roots": {
-                "baseline": inventory_root(agent["agent_id"], baseline_root, root_role="baseline"),
-                "active_sandbox": inventory_root(agent["agent_id"], exp_root, root_role="experiment"),
-                "prod": inventory_root(agent["agent_id"], prod_root, root_role="prod"),
-            },
-            "sanitized_derivative": agent["sandbox"].get("sanitized_derivative", False),
-            "semantic_placeholder": agent["sandbox"].get("semantic_placeholder", False),
-        }
-        diff = diff_inventory({"agents": [agent_inventory], "registry_sha256": "", "policy_sha256": ""})
-        actions, blocked = _file_actions_from_diff(diff["agents"][0], direction="s2p")
-        for action in actions:
-            if action.get("operation") == "delete":
-                blocked.append({"action_id": action.get("action_id"), "reason": "delete_disabled_by_policy"})
-        agent_plans.append(
-            {
-                "agent_id": agent["agent_id"],
-                "transaction_id": stable_id("txn", "s2p", agent["agent_id"], str(workspace)),
-                "source_root": str(exp_root),
-                "target_root": str(prod_root),
-                "target_before_tree_sha256": agent_inventory["roots"]["prod"]["tree_digest"],
-                "actions": actions,
-                "blocked_actions": blocked,
-                "backup": {"required_future_phase": True},
-                "offline_tests": agent["prod"].get("focused_tests", []),
-                "process_preflight": {"planned_only": True},
-                "process_actions": [],
-                "live_validation": [],
-                "rollback": {"skeleton_only": True},
-                "expected_status": "planned" if not blocked else "blocked",
-            }
-        )
-    plan["agents"] = agent_plans
-    if any(agent["blocked_actions"] for agent in agent_plans):
-        plan["global_blockers"].append("s2p_blocked_actions_present")
-    plan["approval_requirements"]["process_actions_approved"] = False
-    plan["canonical_sha256"] = canonical_sha256(plan)
-    return plan
+    from react_agent.ops.sync_s2p import build_s2p_plan_v2
+
+    return build_s2p_plan_v2(experiment_manifest)
 
 
 def build_cycle_plan(s2p_plan: Mapping[str, Any]) -> dict[str, Any]:
@@ -1199,6 +1114,12 @@ def validate_plan(
                     break
         if len(plan.get("agents") or []) != 26:
             blockers.append("p2s_agent_disposition_count_not_26")
+    elif direction == "s2p":
+        from react_agent.ops.sync_s2p import validate_s2p_plan_contract
+
+        s2p_validation = validate_s2p_plan_contract(plan, check_target_freshness=check_target_freshness)
+        if not s2p_validation["valid"]:
+            blockers.extend(str(item) for item in s2p_validation["blockers"])
     for agent in plan.get("agents") or []:
         if not isinstance(agent, Mapping):
             blockers.append("agent_plan_not_mapping")

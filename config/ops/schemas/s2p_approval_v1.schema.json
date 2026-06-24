@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_approval_v1.schema.json",
+  "title": "agent_sync_s2p_approval_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "approval_id",
+    "status",
+    "plan_id",
+    "plan_sha256",
+    "approved_at",
+    "expires_at",
+    "execution_phase",
+    "approved_agent_ids",
+    "approved_transaction_ids",
+    "approved_action_ids",
+    "operator_reference"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_approval_v1"
+    },
+    "status": {
+      "const": "approved"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "plan_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_agent_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approved_transaction_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approved_action_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operator_reference": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

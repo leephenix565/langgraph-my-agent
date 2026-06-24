@@ -150,15 +150,15 @@
         "execution_enabled",
         "artifact_store",
         "lock_requirements",
-        "stage",
-        "verify",
-        "activation",
         "rollback",
         "crash_recovery"
       ],
       "properties": {
         "schema_version": {
-          "const": "agent_sync_p2s_execution_contract_v1"
+          "enum": [
+            "agent_sync_p2s_execution_contract_v1",
+            "agent_sync_s2p_execution_contract_v1"
+          ]
         },
         "writer_contract_version": {
           "type": "string",
@@ -227,6 +227,27 @@
           "activation",
           "execution_contract",
           "rollback_plan"
+        ]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "direction": {
+            "const": "s2p"
+          }
+        },
+        "required": [
+          "direction"
+        ]
+      },
+      "then": {
+        "required": [
+          "target_snapshot",
+          "execution_contract",
+          "rollback_plan",
+          "transactions",
+          "s2p_summary"
         ]
       }
     }

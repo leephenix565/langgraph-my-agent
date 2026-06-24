@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-3X sandbox-to-prod automation
+
+### Added
+
+- Added executable S2P automation contracts for experiment manifests, B/S/P/D
+  planning, S2P approvals, backup manifests, apply results, fake process/live
+  gate results, recovery, owner handoff, and no-op run results.
+- Added `sync_s2p.py` with experiment fork helpers, change-unit gated S2P
+  planning support, no-op approval/run handling, temp historical replay,
+  backup/apply/rollback primitives, fake process/live gates, and recovery
+  classification.
+- Added `agent-sync experiment fork/show/diff/close` and expanded `agent-sync
+  s2p` to `plan/validate/explain/rehearse/apply/verify/smoke/rollback`.
+- Added `docs/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md` and ADRs 115-120.
+
+### Changed
+
+- S2P plans now use the current baseline pointer's immutable
+  `versioned_baseline_path` as B, not stale registry baseline roots.
+- S2P no-op plans preserve prod-only/runtime/backup/non-source and unchanged
+  sandbox derivative rows without turning them into publish blockers.
+- Default quality and CLI contracts now distinguish no-op rehearsal from a
+  future non-zero publish.
+
+### Not Done
+
+- No real non-zero sandbox-to-prod publish.
+- No prod file modification, active sandbox modification, owner-dev write,
+  endpoint call, process action, `/v1/agent/invoke`, env-value access, or
+  secret output.
+
 ## 2026-06-24 - SYNC-OPS-2B2X P2S activation, rollback, and closure
 
 ### Added

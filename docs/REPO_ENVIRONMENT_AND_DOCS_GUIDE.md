@@ -105,6 +105,15 @@ file approvals, target-before hashes, and per-Agent transactions. The active
 external-agent sandbox baseline remains immutable; experiments must fork from
 it rather than editing it in place.
 
+SYNC-OPS-3X adds the executable sandbox-to-prod control plane. External-agent
+experiments still fork from the immutable sandbox baseline, but only explicit
+change units can become future prod actions. The control plane preserves
+prod-only and owner-dev provenance by default, blocks sanitized derivatives
+unless they become reviewed prod-safe refactors, and separates file apply,
+process action, live smoke, rollback, owner handoff, and publish-and-rebase
+approvals. The real 3X rehearsal is zero-action only and does not modify prod,
+active sandbox, owner-dev, endpoints, or processes.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

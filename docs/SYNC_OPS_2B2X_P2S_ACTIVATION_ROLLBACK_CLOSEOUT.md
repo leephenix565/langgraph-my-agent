@@ -72,3 +72,9 @@ live validation.
 
 The `prod_to_sandbox_automation` topic is complete. The next topic is
 `sync_ops_3x_sandbox_to_prod_automation`.
+
+SYNC-OPS-3X implements sandbox-to-prod automation as a separate control-plane
+capability with experiment manifests, B/S/P/D comparison, per-service backup
+and rollback, fake process/live gates, historical replay, and a real no-op
+rehearsal. The first non-zero publish remains blocked until a later
+machine-approved SYNC-OPS-4X experiment.

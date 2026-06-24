@@ -1,0 +1,24 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_s2p_recovery_v1.schema.json",
+  "title": "agent_sync_s2p_recovery_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "event_count",
+    "recommended_action"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_s2p_recovery_v1"
+    },
+    "recommended_action": {
+      "enum": [
+        "resume_safe",
+        "rollback_required",
+        "manual_intervention_required"
+      ]
+    }
+  }
+}

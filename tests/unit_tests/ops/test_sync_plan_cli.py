@@ -41,7 +41,7 @@ def test_active_baseline_is_rejected_as_s2p_experiment() -> None:
     manifest = build_experiment_template(output_root="/sdb/dlut/sandbox/r8-13a/services/prod")
     manifest["agents"] = [{"agent_id": "value_ml_valuation"}]
     plan = build_s2p_plan(manifest)
-    assert "blocked_active_baseline_not_experiment" in plan["global_blockers"]
+    assert "workspace_is_forbidden_root" in plan["global_blockers"]
 
 
 def test_cycle_plan_defers_rebase() -> None:
@@ -54,16 +54,27 @@ def test_cycle_plan_defers_rebase() -> None:
     assert all(not agent["actions"] for agent in cycle["agents"])
 
 
-def test_cli_unsupported_write_command_returns_2() -> None:
+def test_cli_s2p_apply_requires_execute_and_approval() -> None:
     result = subprocess.run(
-        [".venv/bin/python", "scripts/ops/agent_syncctl.py", "s2p", "apply"],
+        [
+            ".venv/bin/python",
+            "scripts/ops/agent_syncctl.py",
+            "s2p",
+            "apply",
+            "--plan",
+            "missing-plan.json",
+            "--approval",
+            "missing-approval.json",
+            "--artifact-root",
+            str(Path("/tmp") / "agent-sync-test-store"),
+        ],
         cwd="/sdb/dlut/dev/langgraph-my-agent",
         text=True,
         capture_output=True,
         check=False,
     )
     assert result.returncode == 2
-    assert "command_not_available_before_sync_ops_2" in result.stderr
+    assert "execute_required" in result.stderr
 
 
 def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
