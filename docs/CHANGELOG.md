@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-5A-R1X source authority final freeze
+
+### Added
+
+- Added source-authority and final-freeze documentation for
+  `risk_financial_fraud`, including old repair supersession, prod source
+  recovery, full-baseline P2S rebase, candidate requalification, and compound
+  execution request boundaries.
+- Added R1X planning contracts for risk-fraud prod source recovery, full
+  P2S rebase projection, final compound execution plans, and compound approval
+  requests.
+- Added `agent-sync risk-fraud validate-old-repair` and `agent-sync risk-fraud
+  freeze` read-only CLI entries.
+
+### Changed
+
+- The 5A 67-action baseline-only repair is now rejected as a side artifact, not
+  an executable plan.
+- `financial_data_service` first-candidate evidence is reclassified from
+  docs/tests material to a superseded `B_protocol_wrapper` requiring process and
+  live approval.
+
+### Not Done
+
+- No real prod file modification, active sandbox mutation, baseline pointer
+  write, owner-dev write, endpoint call, process action, machine approval, or
+  real cycle execution.
+
 ## 2026-06-24 - SYNC-OPS-5A first non-zero qualification
 
 ### Added

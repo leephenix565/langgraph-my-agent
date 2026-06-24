@@ -150,6 +150,16 @@ registered empty tree. Strict cycle qualification also requires reverse-order
 compensation for all earlier cycle-applied transactions when a later
 transaction fails.
 
+SYNC-OPS-5A-R1X adds the source-authority recovery contract for
+`risk_financial_fraud`. Historical baselines are now evidence, not current prod
+authority. The old 67-action baseline-only repair request is rejected and
+superseded because it cannot make current prod non-empty and does not describe a
+full-baseline P2S stage. The executable path is a prod source recovery plan,
+followed by a complete P2S rebase that clones the current baseline and applies
+the settled recovered Agent delta. Stage/verify approval remains separate from
+activation/rollback approval. Runtime wrapper candidates are at least
+`B_protocol_wrapper` and must declare process/live requirements.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

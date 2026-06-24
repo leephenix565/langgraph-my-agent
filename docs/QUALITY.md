@@ -122,6 +122,15 @@ earlier successful transaction when a later transaction fails. The phase may
 write a real experiment only after baseline completeness is proven; otherwise
 it emits a repair request and remains no-prod-write.
 
+SYNC-OPS-5A-R1X adds focused source-authority and recovery-freeze coverage.
+Tests reject the old 67-action baseline-only repair plan, prove a missing prod
+source tree must use a prod source recovery contract before P2S rebase, validate
+full-baseline P2S stage/activation split, and reclassify runtime wrapper
+candidate patches as process/live-gated `B_protocol_wrapper` work. Mainline
+still performs no real prod write, active sandbox mutation, pointer mutation,
+owner-dev write, process action, endpoint call, machine approval, or env-value
+access.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

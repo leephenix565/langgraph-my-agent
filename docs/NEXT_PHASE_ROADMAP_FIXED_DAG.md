@@ -110,9 +110,12 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   one-command publish-and-rebase cycle, typed digest descriptors, strict
   projected-prod gating, and a real no-op cycle. SYNC-OPS-5A qualifies the
   first non-zero cycle and found that `risk_financial_fraud` requires a baseline
-  repair before execution. The next sync entry is the exact approved baseline
-  repair or, after repair, the first explicitly approved non-zero experiment
-  cycle.
+  repair before execution. SYNC-OPS-5A-R1X then determined that the old
+  67-action baseline-only repair is not executable: the current prod root is
+  empty, the source authority is a deleted/lost prod source for a service that
+  still exists, and the correct next sync entry is an exact prod source recovery
+  approval, followed by a full-baseline P2S rebase and only then the first
+  explicitly approved non-zero experiment cycle.
 
 重要边界：
 
@@ -134,8 +137,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   任何未来同步写操作都必须先生成 immutable plan，再用绑定 plan hash 的 approval
   artifact 执行。
 - SYNC-OPS-5A 的 first-nonzero qualification 发现 `risk_financial_fraud` 当前
-  baseline/source tree 不完整；首个真实非零 publish 必须先完成精确批准的 baseline
-  repair，然后再等待精确的 experiment change unit 和 machine approval bundle。
+  baseline/source tree 不完整；SYNC-OPS-5A-R1X further supersedes the old
+  baseline-only repair. 首个真实非零 publish 必须先完成精确批准的 prod source
+  recovery，再执行完整 P2S rebase，最后重新冻结 experiment change unit 和 machine
+  approval bundle。
 
 ## Directory Operating Model
 

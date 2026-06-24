@@ -126,6 +126,14 @@ successful noop unless it is explicitly registered as an empty tree. If the
 baseline is incomplete, generate a repair request before creating a non-zero
 experiment cycle.
 
+SYNC-OPS-5A-R1X tightens that repair rule for missing production source. A
+historical sandbox baseline is evidence only; it is not current production
+source authority by itself. If a registered prod root is empty while the
+service should still exist, the next executable artifact must be a prod source
+recovery plan with backup, offline tests, process/live approval requirements,
+rollback, and crash recovery. Only after recovery settles may P2S create a full
+new baseline; a one-Agent partial stage is not a valid active-baseline repair.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

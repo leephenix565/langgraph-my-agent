@@ -55,6 +55,12 @@ cycle approval request is generated.
 
 ## 5B Entry
 
+R1X update: the 5A baseline repair request is superseded. It was a
+baseline-only repair and could not restore the current empty prod root. The next
+approval boundary is prod source recovery for `risk_financial_fraud`; only after
+that recovery settles can P2S create a complete replacement baseline and the
+first real non-zero cycle be regenerated.
+
 SYNC-OPS-5B may proceed only after:
 
 - `risk_financial_fraud` has non-empty compatible prod, active baseline,

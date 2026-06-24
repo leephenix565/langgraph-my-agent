@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_final_compound_execution_approval_request_v1.schema.json",
+  "title": "agent_sync_final_compound_execution_approval_request_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "request_id",
+    "status",
+    "compound_plan_id",
+    "compound_plan_sha256",
+    "source_recovery_requested",
+    "prod_backup_requested",
+    "prod_apply_requested",
+    "offline_tests_requested",
+    "process_action_requested",
+    "live_health_requested",
+    "live_compute_requested",
+    "adapter_validation_requested",
+    "source_recovery_rollback_requested",
+    "p2s_stage_requested",
+    "p2s_activate_requested",
+    "p2s_rollback_requested",
+    "experiment_materialization_requested",
+    "first_cycle_backup_apply_requested",
+    "delete_requested",
+    "approval_id",
+    "approved_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_final_compound_execution_approval_request_v1"
+    },
+    "status": {
+      "const": "awaiting_machine_approval"
+    },
+    "approval_id": {
+      "const": ""
+    },
+    "approved_at": {
+      "const": ""
+    },
+    "delete_requested": {
+      "const": false
+    }
+  }
+}

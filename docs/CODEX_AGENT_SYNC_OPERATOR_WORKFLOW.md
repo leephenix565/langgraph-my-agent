@@ -8,6 +8,9 @@ For the named experiment manifest, audit the current repo and durable artifact
 store, generate a cycle plan, validate it, and stop for exact machine approval.
 If validation reports missing source-bearing baseline mappings, stop and emit a
 repair request instead of producing a non-zero approval request.
+If risk_financial_fraud is missing current prod source, use the R1X
+source-recovery path; do not approve or execute the superseded 67-action
+baseline-only repair.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

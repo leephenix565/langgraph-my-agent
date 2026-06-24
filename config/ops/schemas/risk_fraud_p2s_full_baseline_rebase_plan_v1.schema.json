@@ -1,0 +1,62 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_risk_fraud_p2s_full_baseline_rebase_plan_v1.schema.json",
+  "title": "agent_sync_risk_fraud_p2s_full_baseline_rebase_plan_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "tool_version",
+    "plan_id",
+    "created_at",
+    "expires_at",
+    "baseline_before",
+    "source_after_recovery_descriptor",
+    "stage",
+    "agent_dispositions",
+    "expected_full_stage_descriptor",
+    "candidate_archive_pointer_contract",
+    "stage_approval_request",
+    "activation_request_template",
+    "rollback_contract",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_risk_fraud_p2s_full_baseline_rebase_plan_v1"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "agent_dispositions": {
+      "type": "array",
+      "minItems": 26,
+      "items": {
+        "type": "object",
+        "required": ["agent_id", "disposition"]
+      }
+    },
+    "stage_approval_request": {
+      "type": "object",
+      "properties": {
+        "stage_requested": {"const": true},
+        "verify_requested": {"const": true},
+        "activate_requested": {"const": false},
+        "rollback_requested": {"const": false}
+      }
+    },
+    "activation_request_template": {
+      "type": "object",
+      "properties": {
+        "stage_requested": {"const": false},
+        "activate_requested": {"const": true},
+        "rollback_requested": {"const": true}
+      }
+    },
+    "canonical_sha256": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

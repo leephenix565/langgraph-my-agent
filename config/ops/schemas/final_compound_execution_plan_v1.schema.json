@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_final_compound_execution_plan_v1.schema.json",
+  "title": "agent_sync_final_compound_execution_plan_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "tool_version",
+    "compound_plan_id",
+    "created_at",
+    "expires_at",
+    "mode",
+    "phases",
+    "approval_sections",
+    "readiness_status",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_final_compound_execution_plan_v1"
+    },
+    "compound_plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "strict_projected_after_state_gates"
+    },
+    "phases": {
+      "type": "array",
+      "minItems": 4,
+      "items": {
+        "type": "object",
+        "required": ["phase", "stop_on_failure"]
+      }
+    },
+    "approval_sections": {
+      "type": "object"
+    },
+    "canonical_sha256": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

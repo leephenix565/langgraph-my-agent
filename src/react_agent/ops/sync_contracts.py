@@ -56,6 +56,10 @@ SCHEMA_FILES = {
     "agent_sync_cycle_run_result_v1": "cycle_run_result_v1.schema.json",
     "agent_sync_cycle_recovery_v1": "cycle_recovery_v1.schema.json",
     "agent_sync_experiment_closeout_v1": "experiment_closeout_v1.schema.json",
+    "agent_sync_risk_fraud_prod_source_recovery_plan_v1": "risk_fraud_prod_source_recovery_plan_v1.schema.json",
+    "agent_sync_risk_fraud_p2s_full_baseline_rebase_plan_v1": "risk_fraud_p2s_full_baseline_rebase_plan_v1.schema.json",
+    "agent_sync_final_compound_execution_plan_v1": "final_compound_execution_plan_v1.schema.json",
+    "agent_sync_final_compound_execution_approval_request_v1": "final_compound_execution_approval_request_v1.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {

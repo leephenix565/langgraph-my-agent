@@ -3,6 +3,62 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-135: Compound Approval Requires Exact Per-Phase Gates
+
+Status: accepted for SYNC-OPS-5A-R1X.
+
+Decision: source recovery, P2S rebase, experiment materialization, and the
+first real user change cycle may share one approval request only when each
+phase has exact hashes, action scopes, permissions, rollback, and projected
+after-state gates.
+
+Reason: a compound approval must not let a later phase silently absorb drift
+or updated hashes from an earlier phase.
+
+## ADR-134: Runtime Wrapper Changes Are Not Docs/Test Material
+
+Status: accepted for SYNC-OPS-5A-R1X.
+
+Decision: a patch to a service runtime wrapper, route, response shape, static
+mount, or protocol envelope is at least `B_protocol_wrapper` and must declare
+process/live requirements when the service is running.
+
+Reason: pairing a runtime patch with a test file does not make the change
+docs-only.
+
+## ADR-133: P2S Recovery Materializes Complete Baselines
+
+Status: accepted for SYNC-OPS-5A-R1X.
+
+Decision: a P2S repair may not create and activate a one-Agent partial stage.
+It must materialize a complete baseline by cloning current active safe files
+and applying the recovered Agent delta, or by fully rematerializing all Agents.
+
+Reason: active sandbox replacement must remain a full fixed-DAG service tree.
+
+## ADR-132: Baseline-Only Repair Cannot Restore Missing Current Prod Source
+
+Status: accepted for SYNC-OPS-5A-R1X.
+
+Decision: when current prod source is empty, a baseline-only repair cannot
+satisfy current-prod source authority. Prod source recovery with backup,
+tests, process/live approval, rollback, and projected after-state is required
+first.
+
+Reason: S2P/P2S cycles compare against current prod; a sandbox-only baseline
+patch does not make current prod non-empty.
+
+## ADR-131: Historical Baselines Are Evidence, Not Current Source Authority
+
+Status: accepted for SYNC-OPS-5A-R1X.
+
+Decision: a historical immutable baseline can be used as recovery evidence only
+after an authority decision. It is not automatically current production source
+authority.
+
+Reason: historical bytes can be stale, partial, or from a different lifecycle
+than the live service.
+
 ## ADR-130: Candidate Selection And Machine Approval Are Separate
 
 Status: accepted for SYNC-OPS-5A.

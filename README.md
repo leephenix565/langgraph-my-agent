@@ -65,6 +65,14 @@ best existing user sandbox candidate, and emits a P2S baseline repair
 requirement when needed. See
 `docs/SYNC_OPS_5A_FIRST_NONZERO_CYCLE_QUALIFICATION.md`.
 
+SYNC-OPS-5A-R1X closes the remaining source-authority gap before that first
+non-zero cycle. It supersedes the incomplete 67-action baseline-only repair,
+classifies `risk_financial_fraud` as lost current prod source with a live
+process still running, freezes an executable prod-source recovery plan and full
+P2S rebase projection, and reclassifies the `financial_data_service` candidate
+as a superseded `B_protocol_wrapper` requiring process/live approval. See
+`docs/SYNC_OPS_5A_R1X_SOURCE_AUTHORITY_AND_FINAL_FREEZE.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

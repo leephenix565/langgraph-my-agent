@@ -66,6 +66,7 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/fixed_dag_runtime_registry.py",
     "src/react_agent/graph.py",
     "src/react_agent/ops/agent_syncctl.py",
+    "src/react_agent/ops/sync_5a_r1x.py",
     "src/react_agent/ops/sync_approval.py",
     "src/react_agent/ops/sync_artifacts.py",
     "src/react_agent/ops/sync_bootstrap.py",
@@ -92,6 +93,7 @@ STATIC_RUFF_TARGETS = (
     "tests/unit_tests/ops/test_sync_artifact_store_bootstrap.py",
     "tests/unit_tests/ops/test_sync_contracts.py",
     "tests/unit_tests/ops/test_sync_coverage_materialize.py",
+    "tests/unit_tests/ops/test_sync_5a_r1x.py",
     "tests/unit_tests/ops/test_sync_p2s_safety.py",
     "tests/unit_tests/ops/test_sync_plan_cli.py",
     "tests/unit_tests/ops/test_sync_registry_diff.py",
@@ -146,6 +148,7 @@ STATIC_CODESPELL_TARGETS = (
     "docs/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md",
     "docs/SYNC_OPS_4X_PUBLISH_AND_REBASE_CYCLE.md",
     "docs/SYNC_OPS_5A_FIRST_NONZERO_CYCLE_QUALIFICATION.md",
+    "docs/SYNC_OPS_5A_R1X_SOURCE_AUTHORITY_AND_FINAL_FREEZE.md",
     "docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md",
     "docs/CODEX_AGENT_SYNC_OPERATOR_WORKFLOW.md",
 )

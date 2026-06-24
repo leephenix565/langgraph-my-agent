@@ -38,7 +38,8 @@ python scripts/ops/agent_syncctl.py cycle validate --cycle-plan cycle-plan.json
 
    Do not request approval if any normal Agent has an empty baseline,
    experiment, or prod descriptor without an explicit registered-empty
-   disposition. Repair the baseline first.
+   disposition. If the current prod source tree is missing, freeze prod source
+   recovery first; do not execute an old baseline-only repair plan.
 
 6. Execute only with the approved bundle.
 
@@ -74,3 +75,8 @@ The cycle fails closed on target drift, digest scope mismatch, unregistered
 experiment changes, owner authority conflicts, unsupported delete, process
 authority gaps, projection mismatch, lock conflict, rollback failure, and
 missing source-bearing baseline mappings.
+
+`risk_financial_fraud` has an additional recovery-first guard from
+SYNC-OPS-5A-R1X: the superseded 67-action repair plan must not be approved or
+executed. Historical baseline bytes can seed a recovery plan only after a source
+authority decision, and P2S rebase must materialize a full 26-Agent baseline.

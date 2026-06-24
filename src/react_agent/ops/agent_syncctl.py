@@ -9,6 +9,21 @@ import sys
 from pathlib import Path
 from typing import Any, Sequence
 
+from react_agent.ops.sync_5a_r1x import (
+    build_final_compound_execution_approval_request,
+    build_final_compound_execution_plan,
+    build_first_cycle_projection,
+    build_projected_experiment_contract,
+    build_risk_fraud_authority_decision,
+    build_risk_fraud_p2s_rebase_plan,
+    build_risk_fraud_prod_recovery_plan,
+    build_risk_fraud_source_authority_matrix,
+    requalify_financial_data_service_candidate,
+    validate_final_compound_execution_plan,
+    validate_old_risk_fraud_repair_plan,
+    validate_risk_fraud_p2s_rebase_plan,
+    validate_risk_fraud_prod_recovery_plan,
+)
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_bootstrap import (
@@ -572,6 +587,64 @@ def cmd_cycle_close(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, ["status=closeout_idempotent"])
 
 
+def cmd_risk_fraud_validate_old_repair(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    result = validate_old_risk_fraud_repair_plan(plan)
+    payload = {"summary_title": "agent-sync risk-fraud validate-old-repair", **result, "exit_code": 7}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"reasons={len(result['rejection_reasons'])}"])
+
+
+def cmd_risk_fraud_freeze(args: argparse.Namespace) -> int:
+    matrix = build_risk_fraud_source_authority_matrix()
+    runtime = {
+        "listener_exists": bool(args.listener_exists),
+        "pid": str(args.pid or ""),
+        "cwd": str(args.cwd or ""),
+        "runtime_authority_unresolved": bool(args.runtime_authority_unresolved),
+        "source_deleted_process_still_alive": bool(args.listener_exists),
+    }
+    authority = build_risk_fraud_authority_decision(matrix, runtime)
+    recovery = build_risk_fraud_prod_recovery_plan(runtime_audit=runtime)
+    recovery_validation = validate_risk_fraud_prod_recovery_plan(recovery)
+    p2s = build_risk_fraud_p2s_rebase_plan(recovery)
+    p2s_validation = validate_risk_fraud_p2s_rebase_plan(p2s)
+    candidate = requalify_financial_data_service_candidate(
+        patch_path=Path(args.patch),
+        rollback_patch_path=Path(args.rollback_patch),
+        sandbox_test_path=Path(args.sandbox_test),
+    )
+    projected_experiment = build_projected_experiment_contract(candidate, p2s)
+    first_cycle = build_first_cycle_projection(candidate, projected_experiment)
+    compound = build_final_compound_execution_plan(recovery, p2s, projected_experiment, first_cycle)
+    compound_validation = validate_final_compound_execution_plan(compound)
+    approval_request = build_final_compound_execution_approval_request(compound)
+    payload = {
+        "summary_title": "agent-sync risk-fraud freeze",
+        "source_authority": authority,
+        "recovery_plan": recovery,
+        "recovery_validation": recovery_validation,
+        "p2s_rebase_plan": p2s,
+        "p2s_rebase_validation": p2s_validation,
+        "candidate": candidate,
+        "projected_experiment": projected_experiment,
+        "first_cycle": first_cycle,
+        "compound_plan": compound,
+        "compound_validation": compound_validation,
+        "approval_request": approval_request,
+        "exit_code": 0 if recovery_validation["valid"] and p2s_validation["valid"] and compound_validation["valid"] else 7,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"classification={authority['classification']}",
+            f"recovery_actions={recovery_validation['action_count']}",
+            f"candidate_risk={candidate['risk_class']}",
+            f"request_status={approval_request['status']}",
+        ],
+    )
+
+
 def cmd_plan_show(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     payload = {"summary_title": "agent-sync plan show", "plan": plan, "exit_code": 0}
@@ -1064,6 +1137,23 @@ def build_parser() -> argparse.ArgumentParser:
     cycle_close.add_argument("--run-root", required=True)
     _add_output_args(cycle_close)
     cycle_close.set_defaults(func=cmd_cycle_close)
+
+    risk_fraud = subparsers.add_parser("risk-fraud")
+    risk_fraud_sub = risk_fraud.add_subparsers(dest="command", required=True)
+    risk_old = risk_fraud_sub.add_parser("validate-old-repair")
+    risk_old.add_argument("--plan", required=True)
+    _add_output_args(risk_old)
+    risk_old.set_defaults(func=cmd_risk_fraud_validate_old_repair)
+    risk_freeze = risk_fraud_sub.add_parser("freeze")
+    risk_freeze.add_argument("--patch", required=True)
+    risk_freeze.add_argument("--rollback-patch", required=True)
+    risk_freeze.add_argument("--sandbox-test", required=True)
+    risk_freeze.add_argument("--listener-exists", action="store_true")
+    risk_freeze.add_argument("--runtime-authority-unresolved", action="store_true")
+    risk_freeze.add_argument("--pid", default="")
+    risk_freeze.add_argument("--cwd", default="")
+    _add_output_args(risk_freeze)
+    risk_freeze.set_defaults(func=cmd_risk_fraud_freeze)
 
     plan = subparsers.add_parser("plan")
     plan_sub = plan.add_subparsers(dest="command", required=True)

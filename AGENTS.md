@@ -59,6 +59,10 @@ Implementation changes must update the relevant reset docs:
   write authority.
 - Sanitized derivatives are non-publishable by default; convert them into an
   explicitly reviewed prod-safe refactor before planning a publish.
+- Historical baselines are source evidence, not current production authority.
+  If a registered prod source tree is missing, generate and approve an explicit
+  prod source recovery plan before any full-baseline P2S rebase or non-zero
+  cycle.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is
