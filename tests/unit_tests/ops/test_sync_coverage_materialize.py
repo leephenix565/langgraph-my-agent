@@ -9,7 +9,10 @@ from react_agent.ops.sync_coverage import (
     build_baseline_parity_ledger,
     build_current_prod_coverage_ledger,
 )
-from react_agent.ops.sync_materialize import reconstruct_temp_stage
+from react_agent.ops.sync_materialize import (
+    compile_stage_with_profile,
+    reconstruct_temp_stage,
+)
 from react_agent.ops.sync_plan import build_p2s_plan, validate_plan
 
 
@@ -38,3 +41,15 @@ def test_temp_stage_reconstruction_matches_projection_digest(tmp_path: Path) -> 
     assert result["structural_pass"] is True
     assert result["duplicate_destination_count"] == 0
     assert result["secret_scan"]["pass"] is True
+
+
+def test_compile_stage_does_not_write_pycache_inside_stage(tmp_path: Path) -> None:
+    stage = tmp_path / "stage"
+    package = stage / "agent"
+    package.mkdir(parents=True)
+    (package / "service.py").write_text("VALUE = 1\n", encoding="utf-8")
+
+    result = compile_stage_with_profile(stage)
+
+    assert result["pass"] is True
+    assert not list(stage.rglob("__pycache__"))

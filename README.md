@@ -200,6 +200,16 @@ request still permits only stage and verify. No prod, sandbox, owner-dev,
 baseline pointer, endpoint, process, P2S stage, or activation action occurred.
 See `docs/SYNC_OPS_2B0_R1_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
 
+SYNC-OPS-2B1 executed that stage-only approval. It created the new immutable
+versioned baseline stage at
+`/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services` and
+verified the projection digest, secret scan, and compile profile. The active
+sandbox tree and `PROD_BASELINE_POINTER.json` SHA remained unchanged, and a
+new activation request is awaiting separate machine approval. No prod,
+owner-dev, active sandbox, baseline pointer, endpoint, process, activation, or
+active rollback action occurred. See
+`docs/SYNC_OPS_2B1_REAL_P2S_STAGE_VERIFY.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -999,3 +1009,6 @@ readiness.
 - SYNC-OPS-2B0-R1 creates only the approved durable artifact-store directories
   and metadata. It does not execute P2S stage, activation, rollback, endpoint,
   process, prod, sandbox, owner-dev, or baseline-pointer writes.
+- SYNC-OPS-2B1 creates and verifies only the approved versioned stage. It does
+  not activate, roll back, archive the active sandbox, update the pointer, call
+  endpoints, operate processes, or write prod/owner-dev.

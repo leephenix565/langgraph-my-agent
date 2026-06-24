@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-2B1 real P2S stage and verify
+
+### Added
+
+- Executed the exact stage-only P2S plan `p2s_cb655480f481` through the
+  durable artifact store.
+- Created the new versioned sandbox baseline stage at
+  `/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services`.
+- Added `docs/SYNC_OPS_2B1_REAL_P2S_STAGE_VERIFY.md`.
+
+### Changed
+
+- Hardened stage compile validation so `py_compile` writes bytecode to a
+  `/tmp` cache instead of leaving `__pycache__` files inside the versioned
+  stage.
+
+### Result
+
+- Stage/verify completed under run `run_fbb3e73cd466` with 1582 actions, 1581
+  physical writes, one shared noop, zero secret findings, zero hard compile
+  failures, and matching projection digest
+  `ca24a6ce521006131eca7d87aa2725783df2331d78f49859add6542f5afd8d8d`.
+- Active sandbox and `PROD_BASELINE_POINTER.json` were unchanged.
+- A new activation approval request is awaiting machine approval.
+
+### Not Done
+
+- No prod, active sandbox, owner-dev, baseline pointer, endpoint, process,
+  activation, active rollback, env-value, or secret-output action was
+  performed.
+
 ## 2026-06-24 - SYNC-OPS-2B0-R1 durable artifact-store bootstrap
 
 ### Added

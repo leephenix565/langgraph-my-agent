@@ -302,6 +302,8 @@ real bootstrap but stopped before approval because the current environment
 snapshot drifted from the approved snapshot. SYNC-OPS-2A-R5 replaces that
 volatile snapshot boundary with stable approval binding, execution
 constraints, and diagnostic observations. SYNC-OPS-2B0-R1 then created the
-durable artifact store and metadata. The next write approval boundary is P2S
-stage/verify; it still must not activate, roll back, switch the active sandbox,
-or update the pointer.
+durable artifact store and metadata. SYNC-OPS-2B1 created and verified the
+versioned P2S stage while leaving the active sandbox and pointer unchanged. The
+next write approval boundary is activation/rollback; it must bind the real
+stage run id, artifact index SHA, stage digest, stage validation SHA, current
+active pointer SHA, and current active tree SHA before any sandbox switch.

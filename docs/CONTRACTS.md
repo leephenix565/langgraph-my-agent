@@ -1396,6 +1396,22 @@ SYNC-OPS-2B0-R1 completes the durable artifact-store bootstrap:
 - the regenerated P2S plan may request stage/verify approval, but activation
   and rollback remain separate future approvals.
 
+## SYNC-OPS-2B1 Real P2S Stage Contract
+
+SYNC-OPS-2B1 completes the first real P2S stage/verify boundary:
+
+- machine approval binds the exact P2S plan id/hash, frozen environment
+  snapshot SHA, 26 Agent scopes, 26 transaction scopes, and 1582 action scopes;
+- stage/verify are approved, while artifact-store initialization, activation,
+  rollback, delete, process action, live validation, and publish-and-rebase are
+  not approved;
+- the writer may create only the versioned stage root and durable run
+  artifacts for `run_fbb3e73cd466`;
+- active sandbox, archive path, active candidate path, and
+  `PROD_BASELINE_POINTER.json` are non-targets for this phase;
+- activation request generation is a planning artifact and is not a machine
+  approval.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

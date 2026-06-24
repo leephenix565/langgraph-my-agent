@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import os
 import py_compile
 import shutil
@@ -143,7 +144,9 @@ def compile_stage_with_profile(root: Path, profile: Mapping[str, str] | None = N
             rel = normalize_safe_relative_path(path.relative_to(root))
             profile_class = str((profile or {}).get(rel) or "runtime_required_python")
             try:
-                py_compile.compile(str(path), doraise=True)
+                cache_target = cache_root / f"{hashlib.sha256(rel.encode('utf-8')).hexdigest()}.pyc"
+                cache_target.parent.mkdir(parents=True, exist_ok=True)
+                py_compile.compile(str(path), cfile=str(cache_target), doraise=True)
             except py_compile.PyCompileError as exc:
                 row = {"relative_path": rel, "reason": exc.exc_type_name, "validation_profile": profile_class}
                 if profile_class in diagnostic_classes:

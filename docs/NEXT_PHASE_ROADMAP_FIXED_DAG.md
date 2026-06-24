@@ -100,8 +100,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   approved R4 snapshot. SYNC-OPS-2A-R5 repairs that boundary so approval binds
   stable security facts while free space and unrelated group observations are
   execution/diagnostic facts. SYNC-OPS-2B0-R1 completed the real durable
-  artifact-store bootstrap and regenerated a stage-ready P2S plan. The next
-  sync implementation entry is SYNC-OPS-2B1 stage/verify approval.
+  artifact-store bootstrap and regenerated a stage-ready P2S plan. SYNC-OPS-2B1
+  completed the real versioned P2S stage/verify run without activating the
+  active sandbox. The next sync implementation entry is SYNC-OPS-2B2 activation
+  approval.
 
 重要边界：
 
@@ -390,12 +392,12 @@ zero, current prod coverage unresolved count of zero, stage projection digest
 validation, and temp-only reconstruction under `/tmp` before a machine approval
 request can be considered.
 
-SYNC-OPS-2A implements the writer contract but only exercises it in
-repo-external temporary roots. SYNC-OPS-2B0-R1 has now created valid durable
-artifact-store metadata. The next real step is SYNC-OPS-2B1: machine approval
-for P2S stage/verify only. 2B1 must not activate or roll back the active
-sandbox; S2P apply, endpoint smoke, process restart, and owner-dev writes
-remain out of scope unless a later phase explicitly owns them.
+SYNC-OPS-2A implements the writer contract and SYNC-OPS-2B0-R1 created valid
+durable artifact-store metadata. SYNC-OPS-2B1 has now created and verified the
+new versioned baseline stage. The next real step is SYNC-OPS-2B2: separate
+machine approval for activation/rollback. S2P apply, endpoint smoke, process
+restart, and owner-dev writes remain out of scope unless a later phase
+explicitly owns them.
 
 ## Non-Goals
 

@@ -1043,6 +1043,27 @@ Default gates still must not write prod, sandbox, owner-dev, run P2S stage or
 activation, update the baseline pointer, call endpoints, operate processes, or
 read environment values.
 
+## SYNC-OPS-2B1 Real Stage Verify Gate
+
+SYNC-OPS-2B1 adds the first real versioned-stage verification evidence:
+
+- plan, frozen environment, current environment, artifact store, machine
+  approval, and source preflight are validated before stage creation;
+- source preflight requires 1582 actions, 1581 physical writes, one shared
+  noop, zero source drift, zero duplicate destinations, zero sensitive ordinary
+  copies, zero `not_scanned` copies, and coverage ratio `1.0`;
+- stage verify requires expected and actual projection digests to match, zero
+  secret findings, zero hard compile failures, zero unexpected files, and zero
+  source-stage hardlinks;
+- compile validation writes bytecode to a `/tmp` cache, not into the versioned
+  stage tree;
+- active sandbox tree SHA and baseline pointer SHA must be unchanged after
+  stage/verify.
+
+Default gates still must not activate, roll back active sandbox state, update
+the baseline pointer, call endpoints, operate processes, read environment
+values, or write prod/owner-dev.
+
 ## SYNC-OPS-2B0 Bootstrap Execution Guard
 
 SYNC-OPS-2B0 keeps the artifact-store bootstrap executor in the maintained

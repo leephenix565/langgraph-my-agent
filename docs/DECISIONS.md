@@ -3,6 +3,21 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-111: P2S Stage/Verify Does Not Activate
+
+Status: accepted for SYNC-OPS-2B1.
+
+Decision: the first real P2S write after durable artifact-store bootstrap is
+limited to versioned baseline stage and verify. It may write the approved
+stage root and durable run artifacts, but it must not archive the active
+sandbox, build an active candidate, update the baseline pointer, activate, or
+roll back active state.
+
+Reason: stage/verify produces the real stage digest and validation evidence
+needed for a separate activation approval. Binding activation to the completed
+stage run keeps the sandbox switch decision separate from source
+materialization.
+
 ## ADR-110: Durable Artifact Store Is Bootstrapped Before P2S Stage
 
 Status: accepted for SYNC-OPS-2B0-R1.

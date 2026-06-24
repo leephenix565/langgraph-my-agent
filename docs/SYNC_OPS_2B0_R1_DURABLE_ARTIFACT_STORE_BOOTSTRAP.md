@@ -71,6 +71,12 @@ is stage-ready and no longer requests artifact-store initialization. The new
 stage approval request remains `awaiting_machine_approval` and requests only
 stage and verify; activation and rollback remain false.
 
+SYNC-OPS-2B1 consumed that stage-only boundary. It created and verified the
+versioned stage
+`/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services` under
+durable run `run_fbb3e73cd466`. The active sandbox and baseline pointer
+remained unchanged, and activation still requires a separate machine approval.
+
 ## Non-Claims
 
 This phase did not modify prod, sandbox, owner-dev, the baseline pointer, or
