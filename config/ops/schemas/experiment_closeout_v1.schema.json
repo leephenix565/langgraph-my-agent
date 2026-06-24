@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_experiment_closeout_v1.schema.json",
+  "title": "agent_sync_experiment_closeout_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "experiment_id",
+    "status",
+    "closed_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_experiment_closeout_v1"
+    },
+    "status": {
+      "enum": [
+        "published_and_rebased",
+        "aborted",
+        "closed_noop"
+      ]
+    }
+  }
+}

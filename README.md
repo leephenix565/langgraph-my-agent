@@ -47,6 +47,16 @@ publish, modify prod source files, modify active sandbox, call endpoints, or
 operate processes. See
 `docs/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md`.
 
+SYNC-OPS-4X adds the one-command publish-and-rebase cycle that bridges S2P and
+P2S. It fixes the 3X empty/shared mapping gaps, types digest scopes, packages
+only manifests/evidence, precomputes the P2S rebase from the projected prod
+after-state, and runs a real current-server no-op cycle with prod, sandbox, and
+pointer unchanged. Future non-zero publishes still require explicit experiment
+change units and an exact machine approval bundle. See
+`docs/SYNC_OPS_4X_PUBLISH_AND_REBASE_CYCLE.md`,
+`docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`, and
+`docs/CODEX_AGENT_SYNC_OPERATOR_WORKFLOW.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

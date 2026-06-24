@@ -106,9 +106,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   complete. SYNC-OPS-3X implements the sandbox-to-prod automation control
   plane, including experiment manifests, B/S/P/D diff, S2P approvals,
   backup/apply/rollback primitives, fake process/live gates, historical replay,
-  and a real zero-action no-op rehearsal. The next sync entry is
-  SYNC-OPS-4X for the first explicitly approved non-zero publish-and-rebase
-  cycle.
+  and a real zero-action no-op rehearsal. SYNC-OPS-4X implements the
+  one-command publish-and-rebase cycle, typed digest descriptors, strict
+  projected-prod gating, and a real no-op cycle. The next sync entry is the
+  first explicitly approved non-zero experiment cycle.
 
 重要边界：
 
@@ -129,9 +130,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   它不是 runtime binding，不是 owner-dev acceptance，也不是可执行写入授权。
   任何未来同步写操作都必须先生成 immutable plan，再用绑定 plan hash 的 approval
   artifact 执行。
-- SYNC-OPS-3X 的 S2P control plane 只证明非零事务可在 `/tmp` 演练并证明当前
-  真实环境 no-op；首个真实非零 publish 仍必须等待 SYNC-OPS-4X 的精确
-  experiment change unit 和 machine approval。
+- SYNC-OPS-4X 的 publish-and-rebase control plane 只证明非零 cycle 可在 `/tmp`
+  演练并证明当前真实环境 no-op；首个真实非零 publish 仍必须等待精确的
+  experiment change unit 和 machine approval bundle。
 
 ## Directory Operating Model
 
@@ -423,13 +424,14 @@ explicitly owns them.
 
 ## CS1-C3X Current Follow-Up
 
-## SYNC-OPS-3X Entry
+## First Non-Zero Publish Entry
 
-SYNC-OPS-2B2X completed prod-to-sandbox automation. The next sync-ops topic is
-`sync_ops_3x_sandbox_to_prod_automation`, starting from the verified active
-sandbox baseline `20260624T060045Z`. Future S2P work must begin with a fresh
-planner/audit phase; the P2S closeout approval does not authorize S2P, endpoint
-smoke, process action, delete, or production source writes.
+SYNC-OPS-4X completed the bidirectional sync control plane. The next sync-ops
+topic is the first real non-zero experiment cycle, starting from the verified
+active sandbox baseline `20260624T060045Z`. Future S2P work must begin with a
+fresh experiment manifest, explicit change units, a cycle plan, and a separate
+machine approval bundle; the no-op cycle approval does not authorize S2P file
+apply, endpoint smoke, process action, delete, or production source writes.
 
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should

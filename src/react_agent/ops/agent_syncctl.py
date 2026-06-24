@@ -39,6 +39,14 @@ from react_agent.ops.sync_contracts import (
     write_json,
 )
 from react_agent.ops.sync_coverage import load_plan_and_build_ledgers
+from react_agent.ops.sync_cycle import (
+    build_cycle_plan_from_experiment,
+    build_cycle_plan_from_s2p,
+    recover_cycle,
+    run_cycle_noop,
+    run_temp_nonzero_cycle,
+    validate_cycle_plan,
+)
 from react_agent.ops.sync_diff import diff_inventory
 from react_agent.ops.sync_environment import build_environment_snapshot
 from react_agent.ops.sync_inventory import build_runtime_inventory
@@ -52,7 +60,6 @@ from react_agent.ops.sync_p2s import (
     run_full_scale_p2s_rehearsal,
 )
 from react_agent.ops.sync_plan import (
-    build_cycle_plan,
     build_experiment_template,
     build_p2s_plan,
     build_s2p_plan,
@@ -439,12 +446,105 @@ def cmd_s2p_rollback(args: argparse.Namespace) -> int:
 
 
 def cmd_cycle_plan(args: argparse.Namespace) -> int:
-    s2p = load_plan(Path(args.s2p_plan))
-    plan = build_cycle_plan(s2p)
+    if getattr(args, "experiment", None):
+        plan = build_cycle_plan_from_experiment(read_json(Path(args.experiment)))
+    else:
+        if not getattr(args, "s2p_plan", None):
+            raise SyncPlannerError("cycle_plan_requires_experiment_or_s2p_plan", exit_code=2)
+        s2p = load_plan(Path(args.s2p_plan))
+        plan = build_cycle_plan_from_s2p(s2p)
     output = ensure_output_path(args.output)
     maybe_write_json(output, plan)
-    payload = {"summary_title": "agent-sync cycle plan", "plan": plan, "exit_code": 0}
-    return print_or_json(args, payload, [f"plan_id={plan['plan_id']}", "p2s_rebase=deferred"])
+    payload = {"summary_title": "agent-sync cycle plan", "plan": plan, "validation": validate_cycle_plan(plan), "exit_code": 0}
+    return print_or_json(args, payload, [f"cycle_id={plan['cycle_id']}", f"s2p={plan['s2p_plan']['plan_id']}", f"p2s={plan['p2s_plan']['plan_id']}"])
+
+
+def cmd_cycle_prepare(args: argparse.Namespace) -> int:
+    plan = build_cycle_plan_from_experiment(read_json(Path(args.experiment)))
+    approval_request = {
+        "schema_version": "agent_sync_cycle_approval_request_v1",
+        "status": "awaiting_machine_approval",
+        "cycle_id": plan["cycle_id"],
+        "cycle_plan_sha256": plan["canonical_sha256"],
+        "s2p_plan_id": plan["s2p_plan"]["plan_id"],
+        "s2p_plan_sha256": plan["s2p_plan"]["plan_sha256"],
+        "p2s_plan_id": plan["p2s_plan"]["plan_id"],
+        "p2s_plan_sha256": plan["p2s_plan"]["canonical_sha256"],
+        "approval_requirements": plan["approval_requirements"],
+    }
+    output = ensure_output_path(args.output)
+    maybe_write_json(output, {"cycle_plan": plan, "approval_request": approval_request})
+    payload = {"summary_title": "agent-sync cycle prepare", "cycle_plan": plan, "approval_request": approval_request, "exit_code": 0}
+    return print_or_json(args, payload, [f"cycle_id={plan['cycle_id']}", f"status={approval_request['status']}"])
+
+
+def cmd_cycle_validate(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.cycle_plan))
+    result = validate_cycle_plan(plan)
+    payload = {"summary_title": "agent-sync cycle validate", **result, "exit_code": result["exit_code"]}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_cycle_explain(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.cycle_plan))
+    payload = {
+        "summary_title": "agent-sync cycle explain",
+        "cycle_id": plan.get("cycle_id"),
+        "cycle_sha256": plan.get("canonical_sha256"),
+        "s2p_plan": plan.get("s2p_plan", {}),
+        "p2s_plan": plan.get("p2s_plan", {}),
+        "approval_requirements": plan.get("approval_requirements", {}),
+        "state_machine": plan.get("state_machine", []),
+        "exit_code": 0,
+    }
+    return print_or_json(args, payload, [f"cycle_id={plan.get('cycle_id')}", f"mode={plan.get('mode')}"])
+
+
+def cmd_cycle_rehearse(args: argparse.Namespace) -> int:
+    result = run_temp_nonzero_cycle(Path(args.temp_root))
+    payload = {"summary_title": "agent-sync cycle rehearse", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(args, payload, [f"s2p_actions={result['s2p_action_count']}", f"valid={result['valid']}"])
+
+
+def cmd_cycle_publish_and_rebase(args: argparse.Namespace) -> int:
+    if not args.execute:
+        raise SyncPlannerError("execute_required", exit_code=2)
+    plan = read_json(Path(args.cycle_plan))
+    approval = read_json(Path(args.approval_bundle))
+    result = run_cycle_noop(plan, approval, Path(args.artifact_root))
+    payload = {"summary_title": "agent-sync cycle publish-and-rebase", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(args, payload, [f"cycle_run_id={result['cycle_run_id']}", f"status={result['status']}"])
+
+
+def cmd_cycle_status(args: argparse.Namespace) -> int:
+    run_root = Path(args.run_root)
+    events_path = run_root / "journal" / "events.jsonl"
+    events: list[dict[str, Any]] = []
+    if events_path.exists():
+        for line in events_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                events.append(json.loads(line))
+    recovery = recover_cycle(events)
+    payload = {"summary_title": "agent-sync cycle status", "run_root": str(run_root), "event_count": len(events), "recovery": recovery, "exit_code": 0}
+    return print_or_json(args, payload, [f"event_count={len(events)}", f"recommended_action={recovery['recommended_action']}"])
+
+
+def cmd_cycle_recover(args: argparse.Namespace) -> int:
+    run_root = Path(args.run_root)
+    events_path = run_root / "journal" / "events.jsonl"
+    events: list[dict[str, Any]] = []
+    if events_path.exists():
+        for line in events_path.read_text(encoding="utf-8").splitlines():
+            if line.strip():
+                events.append(json.loads(line))
+    recovery = recover_cycle(events)
+    payload = {"summary_title": "agent-sync cycle recover", "run_root": str(run_root), "recovery": recovery, "exit_code": 0}
+    return print_or_json(args, payload, [f"status={recovery['status']}", f"recommended_action={recovery['recommended_action']}"])
+
+
+def cmd_cycle_close(args: argparse.Namespace) -> int:
+    payload = {"summary_title": "agent-sync cycle close", "status": "closeout_idempotent", "run_root": args.run_root, "exit_code": 0}
+    return print_or_json(args, payload, ["status=closeout_idempotent"])
 
 
 def cmd_plan_show(args: argparse.Namespace) -> int:
@@ -897,13 +997,48 @@ def build_parser() -> argparse.ArgumentParser:
 
     cycle = subparsers.add_parser("cycle")
     cycle_sub = cycle.add_subparsers(dest="command", required=True)
+    cycle_prepare = cycle_sub.add_parser("prepare")
+    cycle_prepare.add_argument("--experiment", required=True)
+    cycle_prepare.add_argument("--output")
+    _add_output_args(cycle_prepare)
+    cycle_prepare.set_defaults(func=cmd_cycle_prepare)
     cycle_plan = cycle_sub.add_parser("plan")
-    cycle_plan.add_argument("--s2p-plan", required=True)
+    cycle_plan.add_argument("--s2p-plan")
+    cycle_plan.add_argument("--experiment")
     cycle_plan.add_argument("--output")
     _add_output_args(cycle_plan)
     cycle_plan.set_defaults(func=cmd_cycle_plan)
+    cycle_validate = cycle_sub.add_parser("validate")
+    cycle_validate.add_argument("--cycle-plan", required=True)
+    _add_output_args(cycle_validate)
+    cycle_validate.set_defaults(func=cmd_cycle_validate)
+    cycle_explain = cycle_sub.add_parser("explain")
+    cycle_explain.add_argument("--cycle-plan", required=True)
+    _add_output_args(cycle_explain)
+    cycle_explain.set_defaults(func=cmd_cycle_explain)
+    cycle_rehearse = cycle_sub.add_parser("rehearse")
+    cycle_rehearse.add_argument("--temp-root", required=True)
+    _add_output_args(cycle_rehearse)
+    cycle_rehearse.set_defaults(func=cmd_cycle_rehearse)
     publish = cycle_sub.add_parser("publish-and-rebase")
-    publish.set_defaults(func=lambda _args: cmd_unsupported("cycle", "publish-and-rebase"))
+    publish.add_argument("--cycle-plan", required=True)
+    publish.add_argument("--approval-bundle", required=True)
+    publish.add_argument("--artifact-root", default="/sdb/dlut/ops-artifacts/agent-sync")
+    publish.add_argument("--execute", action="store_true")
+    _add_output_args(publish)
+    publish.set_defaults(func=cmd_cycle_publish_and_rebase)
+    cycle_status = cycle_sub.add_parser("status")
+    cycle_status.add_argument("--run-root", required=True)
+    _add_output_args(cycle_status)
+    cycle_status.set_defaults(func=cmd_cycle_status)
+    cycle_recover = cycle_sub.add_parser("recover")
+    cycle_recover.add_argument("--run-root", required=True)
+    _add_output_args(cycle_recover)
+    cycle_recover.set_defaults(func=cmd_cycle_recover)
+    cycle_close = cycle_sub.add_parser("close")
+    cycle_close.add_argument("--run-root", required=True)
+    _add_output_args(cycle_close)
+    cycle_close.set_defaults(func=cmd_cycle_close)
 
     plan = subparsers.add_parser("plan")
     plan_sub = plan.add_subparsers(dest="command", required=True)

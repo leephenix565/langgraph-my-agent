@@ -90,10 +90,11 @@ No production file is modified during the no-op run.
 
 ## SYNC-OPS-4X Entry
 
-The next topic is `sync_ops_4x_publish_and_rebase_cycle`. The first non-zero
-publish still requires a fresh experiment, explicit change units, a hash-bound
-machine approval, backup/apply/offline validation approval, and separate
-process/live permissions if those gates are needed.
+SYNC-OPS-4X implements the one-command publish-and-rebase cycle and closes the
+integration gap between S2P and P2S. The first real non-zero publish still
+requires a fresh experiment, explicit change units, a hash-bound cycle approval
+bundle, backup/apply/offline validation approval, and separate process/live
+permissions if those gates are needed.
 
 ## Non-Claims
 

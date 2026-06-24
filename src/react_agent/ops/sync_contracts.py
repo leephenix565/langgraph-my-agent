@@ -49,10 +49,16 @@ SCHEMA_FILES = {
     "agent_sync_s2p_historical_replay_v1": "s2p_historical_replay_v1.schema.json",
     "agent_sync_s2p_owner_handoff_v1": "s2p_owner_handoff_v1.schema.json",
     "agent_sync_cli_error_v1": "cli_error_v1.schema.json",
+    "agent_sync_digest_descriptor_v1": "digest_descriptor_v1.schema.json",
+    "agent_sync_projected_prod_state_v1": "projected_prod_state_v1.schema.json",
+    "agent_sync_publish_and_rebase_cycle_v1": "publish_and_rebase_cycle_v1.schema.json",
+    "agent_sync_cycle_approval_bundle_v1": "cycle_approval_bundle_v1.schema.json",
+    "agent_sync_cycle_run_result_v1": "cycle_run_result_v1.schema.json",
+    "agent_sync_cycle_recovery_v1": "cycle_recovery_v1.schema.json",
+    "agent_sync_experiment_closeout_v1": "experiment_closeout_v1.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {
-    ("cycle", "publish-and-rebase"),
     ("lock", "force-release"),
 }
 

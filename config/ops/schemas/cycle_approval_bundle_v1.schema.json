@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_cycle_approval_bundle_v1.schema.json",
+  "title": "agent_sync_cycle_approval_bundle_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "approval_bundle_id",
+    "status",
+    "cycle_id",
+    "cycle_plan_sha256",
+    "s2p_plan_id",
+    "s2p_plan_sha256",
+    "p2s_plan_id",
+    "p2s_plan_sha256",
+    "approved_at",
+    "expires_at",
+    "approved_s2p_action_ids",
+    "approved_p2s_action_ids",
+    "operator_reference"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_cycle_approval_bundle_v1"
+    },
+    "status": {
+      "const": "approved"
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "cycle_plan_sha256": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_s2p_action_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "approved_p2s_action_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "operator_reference": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-4X publish-and-rebase cycle
+
+### Added
+
+- Added typed digest descriptors, projected prod after-state schemas,
+  publish-and-rebase cycle plans, cycle approval bundles, cycle run/recovery
+  schemas, and experiment closeout schema registration.
+- Added `sync_cycle.py` with cycle plan construction, approval-bundle
+  validation, temp non-zero cycle rehearsal, real no-op cycle execution, archive
+  policy validation, and recovery classification.
+- Added `agent-sync cycle prepare/plan/validate/explain/rehearse/
+  publish-and-rebase/status/recover/close`.
+- Added `docs/SYNC_OPS_4X_PUBLISH_AND_REBASE_CYCLE.md`,
+  `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`, and
+  `docs/CODEX_AGENT_SYNC_OPERATOR_WORKFLOW.md`.
+
+### Changed
+
+- S2P mapping now records `risk_financial_fraud` as an explicit registered
+  empty baseline/experiment source tree instead of a silent empty digest noop.
+- `market_fund_manager_behavior` is now an explicit shared transaction member
+  owned by the `market_composite` transaction.
+- Cycle artifacts are minimized to manifests/evidence and reject raw workspace
+  or source-tree archive entries.
+
+### Not Done
+
+- No real non-zero prod publish, active sandbox mutation, pointer write,
+  owner-dev write, endpoint call, process action, `/v1/agent/invoke`, env-value
+  access, or secret output.
+
 ## 2026-06-24 - SYNC-OPS-3X sandbox-to-prod automation
 
 ### Added

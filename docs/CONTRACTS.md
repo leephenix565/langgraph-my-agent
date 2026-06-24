@@ -136,6 +136,13 @@ this phase. Non-zero file apply, process actions, live gates, delete,
 owner-handoff generation, and publish-and-rebase require future explicit
 machine approval.
 
+SYNC-OPS-4X implements publish-and-rebase as an executable parent cycle. The
+cycle contract binds an S2P plan, projected prod after-state, precomputed P2S
+plan, strict state machine, and approval bundle. Digest comparisons now use
+typed `agent_sync_digest_descriptor_v1` records; naked hashes from incompatible
+scopes fail closed. The real current-server cycle remains no-op only unless a
+future non-zero experiment receives an exact machine approval bundle.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

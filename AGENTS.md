@@ -43,6 +43,31 @@ Implementation changes must update the relevant reset docs:
 - quality gates: `docs/QUALITY.md`, `docs/CHANGELOG.md`
 - durable architecture decision: `docs/DECISIONS.md`, `docs/CHANGELOG.md`
 
+## Bidirectional Agent Sync Workflow
+
+- The active sandbox baseline is not a mutable experiment. Fork experiments
+  from registered immutable baselines with `agent-sync experiment fork`.
+- Every non-noop sandbox-to-prod file action must be covered by one explicit
+  change unit. Unregistered workspace changes are blockers.
+- Plan generation and machine approval are separate. Chat text is not approval.
+- One-command publish-and-rebase may run only from an approved cycle plan and
+  approval bundle:
+  `python scripts/ops/agent_syncctl.py cycle publish-and-rebase --cycle-plan <plan> --approval-bundle <bundle> --execute`.
+- Do not publish a whole sandbox tree, use `rsync --delete`, or perform an
+  automatic semantic merge.
+- Owner-dev repositories are read-only unless a separate owner workflow grants
+  write authority.
+- Sanitized derivatives are non-publishable by default; convert them into an
+  explicitly reviewed prod-safe refactor before planning a publish.
+- Process action, live validation, delete, owner handoff, and P2S activation
+  remain independent approval capabilities.
+- The durable sync artifact store is
+  `/sdb/dlut/ops-artifacts/agent-sync`; closeouts should store manifests,
+  hashes, bounded patches, and results, not full workspaces or raw source trees.
+- Fail closed on target drift, digest-scope mismatch, owner conflicts, lock
+  conflicts, and rollback failures. Use `agent-sync cycle status` and
+  `agent-sync cycle recover` for interrupted cycle runs.
+
 ## Safety Boundary
 
 Never output secrets, provider raw responses, raw graph messages, manager assignment internals, or agent JSON as a public transcript.

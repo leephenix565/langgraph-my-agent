@@ -1,0 +1,22 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_cycle_run_result_v1.schema.json",
+  "title": "agent_sync_cycle_run_result_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "cycle_run_id",
+    "status",
+    "valid"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_cycle_run_result_v1"
+    },
+    "valid": {
+      "type": "boolean"
+    }
+  }
+}

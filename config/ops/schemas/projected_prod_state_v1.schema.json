@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_projected_prod_state_v1.schema.json",
+  "title": "agent_sync_projected_prod_state_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "transactions",
+    "projected_combined_prod_descriptor"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_projected_prod_state_v1"
+    },
+    "transactions": {
+      "type": "array"
+    },
+    "projected_combined_prod_descriptor": {
+      "type": "object"
+    }
+  }
+}

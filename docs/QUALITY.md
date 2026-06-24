@@ -107,6 +107,14 @@ real prod files, write active sandbox, read env values, or execute a non-zero
 S2P publish. Real no-op rehearsal evidence may be written only to the durable
 artifact store under the approved no-op run contract.
 
+SYNC-OPS-4X adds the one-command publish-and-rebase quality surface. Focused
+tests cover repaired Agent mapping, typed digest descriptor compatibility,
+cycle plan hashing, approval bundle scope checks, full temp non-zero cycle
+rehearsal, failure/recovery paths, artifact archive minimization, CLI
+entrypoints, and the real no-op cycle boundary. Mainline remains default-safe:
+no endpoint call, no real process action, no real prod write, no active sandbox
+mutation, and no environment-value access.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

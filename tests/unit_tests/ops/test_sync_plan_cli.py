@@ -44,14 +44,15 @@ def test_active_baseline_is_rejected_as_s2p_experiment() -> None:
     assert "workspace_is_forbidden_root" in plan["global_blockers"]
 
 
-def test_cycle_plan_defers_rebase() -> None:
+def test_cycle_plan_embeds_projected_rebase_contract() -> None:
     manifest = build_experiment_template(output_root="/tmp/sync-ops-test-experiment")
     manifest["agents"] = [{"agent_id": "value_ml_valuation"}]
     plan = build_s2p_plan(manifest)
     cycle = build_cycle_plan(plan)
-    assert cycle["direction"] == "publish_and_rebase"
-    assert cycle["deferred_rebase"]["p2s_plan_generation"] == "deferred_until_all_started_s2p_transactions_settled"
-    assert all(not agent["actions"] for agent in cycle["agents"])
+    assert cycle["schema_version"] == "agent_sync_publish_and_rebase_cycle_v1"
+    assert cycle["mode"] == "strict_all_or_nothing"
+    assert cycle["projected_prod_after_state"]["projected_combined_prod_descriptor"]["scope"] == "s2p_prod_inventory"
+    assert cycle["p2s_plan"]["canonical_sha256"]
 
 
 def test_cli_s2p_apply_requires_execute_and_approval() -> None:

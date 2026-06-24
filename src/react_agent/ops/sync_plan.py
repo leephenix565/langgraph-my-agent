@@ -929,37 +929,9 @@ def build_s2p_plan(experiment_manifest: Mapping[str, Any]) -> dict[str, Any]:
 
 
 def build_cycle_plan(s2p_plan: Mapping[str, Any]) -> dict[str, Any]:
-    validate_plan(s2p_plan, check_target_freshness=False)
-    plan = _base_plan("publish_and_rebase")
-    plan["experiment"] = {"s2p_plan_id": s2p_plan.get("plan_id"), "s2p_plan_sha256": s2p_plan.get("canonical_sha256")}
-    plan["agents"] = [
-        {
-            "agent_id": agent.get("agent_id"),
-            "transaction_id": stable_id("cycle", str(agent.get("agent_id")), str(s2p_plan.get("plan_id"))),
-            "source_root": "s2p_plan",
-            "target_root": "deferred_p2s_after_settled_prod",
-            "target_before_tree_sha256": "",
-            "actions": [],
-            "blocked_actions": [],
-            "backup": {},
-            "offline_tests": [],
-            "process_preflight": {},
-            "process_actions": [],
-            "live_validation": [],
-            "rollback": {},
-            "expected_status": "deferred_rebase_after_s2p_settled",
-        }
-        for agent in s2p_plan.get("agents", [])
-    ]
-    plan["deferred_rebase"] = {
-        "p2s_plan_generation": "deferred_until_all_started_s2p_transactions_settled",
-        "reads": "real_prod_after_state",
-        "rollback_failed_blocks_rebase": True,
-        "requires_publish_and_rebase_approval": True,
-    }
-    plan["approval_requirements"]["publish_and_rebase_approved"] = True
-    plan["canonical_sha256"] = canonical_sha256(plan)
-    return plan
+    from react_agent.ops.sync_cycle import build_cycle_plan_from_s2p
+
+    return build_cycle_plan_from_s2p(s2p_plan)
 
 
 def validate_plan(

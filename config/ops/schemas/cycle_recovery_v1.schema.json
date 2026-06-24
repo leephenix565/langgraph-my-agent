@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_cycle_recovery_v1.schema.json",
+  "title": "agent_sync_cycle_recovery_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "status",
+    "recommended_action",
+    "observed_events"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_cycle_recovery_v1"
+    },
+    "status": {
+      "enum": [
+        "resume_safe",
+        "rollback_required",
+        "manual_intervention_required"
+      ]
+    }
+  }
+}

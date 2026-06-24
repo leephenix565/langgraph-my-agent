@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_publish_and_rebase_cycle_v1.schema.json",
+  "title": "agent_sync_publish_and_rebase_cycle_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "created_at",
+    "expires_at",
+    "mode",
+    "experiment",
+    "registry_sha256",
+    "policy_sha256",
+    "catalog_sha256",
+    "baseline",
+    "s2p_plan",
+    "projected_prod_after_state",
+    "p2s_plan",
+    "approval_requirements",
+    "failure_policy",
+    "recovery_policy",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_publish_and_rebase_cycle_v1"
+    },
+    "cycle_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mode": {
+      "const": "strict_all_or_nothing"
+    },
+    "s2p_plan": {
+      "type": "object"
+    },
+    "p2s_plan": {
+      "type": "object"
+    },
+    "projected_prod_after_state": {
+      "type": "object"
+    },
+    "canonical_sha256": {
+      "type": "string",
+      "minLength": 1
+    }
+  }
+}

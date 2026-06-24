@@ -114,6 +114,12 @@ process action, live smoke, rollback, owner handoff, and publish-and-rebase
 approvals. The real 3X rehearsal is zero-action only and does not modify prod,
 active sandbox, owner-dev, endpoints, or processes.
 
+SYNC-OPS-4X productizes the bidirectional workflow as a one-command
+publish-and-rebase cycle. Cycle plans bind S2P, projected prod after-state, and
+precomputed P2S evidence; no-op cycle evidence may be written to the durable
+artifact store, but real non-zero cycles still require an exact machine
+approval bundle.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

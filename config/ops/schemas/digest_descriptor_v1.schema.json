@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://example.local/agent_sync_digest_descriptor_v1.schema.json",
+  "title": "agent_sync_digest_descriptor_v1",
+  "type": "object",
+  "additionalProperties": true,
+  "required": [
+    "schema_version",
+    "algorithm",
+    "digest",
+    "scope",
+    "root_role",
+    "include_profile",
+    "relative_path_basis",
+    "entry_contract_version",
+    "file_count"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_digest_descriptor_v1"
+    },
+    "algorithm": {
+      "const": "sha256"
+    },
+    "digest": {
+      "type": "string"
+    },
+    "scope": {
+      "enum": [
+        "p2s_stage_projection",
+        "p2s_active_safe_tree",
+        "s2p_workspace_inventory",
+        "s2p_prod_inventory",
+        "transaction_source_tree",
+        "transaction_target_tree",
+        "baseline_manifest",
+        "full_workspace_diagnostic"
+      ]
+    },
+    "root_role": {
+      "type": "string"
+    },
+    "include_profile": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relative_path_basis": {
+      "const": "posix"
+    },
+    "entry_contract_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "file_count": {
+      "type": "integer",
+      "minimum": 0
+    }
+  }
+}

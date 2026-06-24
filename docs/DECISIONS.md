@@ -3,6 +3,68 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-126: Closeout Archives Store Evidence, Not Workspaces
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: cycle closeout archives contain contracts, manifests, hashes,
+bounded patches, and result summaries. They do not contain full experiment
+workspaces, prod source trees, sandbox source trees, backup bytes, raw endpoint
+responses, or symlink entries.
+
+Reason: sync artifacts must be portable and auditable without becoming a second
+raw source distribution or secret-bearing backup channel.
+
+## ADR-125: Shared Agent Slots Reference An Owner Transaction
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: shared Agent slots such as `market_fund_manager_behavior` reference a
+single owner transaction and never silently produce empty independent baselines.
+
+Reason: shared service roots must be applied once by the owner transaction to
+avoid duplicate or conflicting file actions.
+
+## ADR-124: Digest Hashes Are Typed By Scope And Profile
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: digest values used by sync plans are wrapped in
+`agent_sync_digest_descriptor_v1` before comparison.
+
+Reason: a P2S stage projection hash and an S2P workspace inventory hash can
+have the same algorithm but different roots, filters, and semantics.
+
+## ADR-123: Strict Cycles Stop Before P2S After S2P Failure
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: strict publish-and-rebase cycles do not continue to P2S after any
+S2P transaction failure or rollback.
+
+Reason: the precomputed P2S plan is valid only for the approved projected prod
+after-state.
+
+## ADR-122: P2S Requires The Approved Projected Prod State
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: a cycle may run P2S only when the actual settled prod after-state
+matches the approved projected prod after-state.
+
+Reason: updating the P2S hash at execution time would bypass the machine
+approval bundle.
+
+## ADR-121: One-Command Cycles Bind Exact S2P And P2S Plans
+
+Status: accepted for SYNC-OPS-4X.
+
+Decision: one-command publish-and-rebase uses one immutable cycle plan
+containing exact S2P evidence and a precomputed P2S rebase plan.
+
+Reason: S2P and P2S are separate writers, but a real publish must prevent
+unapproved work from interleaving between prod settle and sandbox rebase.
+
 ## ADR-120: Historical Replay And Real No-Op Precede Non-Zero Publish
 
 Status: accepted for SYNC-OPS-3X.
