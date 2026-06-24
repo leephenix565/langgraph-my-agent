@@ -13,6 +13,7 @@
     "root_realpath",
     "bootstrap_plan_id",
     "bootstrap_plan_sha256",
+    "bootstrap_environment_binding_sha256",
     "bootstrap_run_id",
     "mode",
     "uid",
@@ -42,6 +43,10 @@
       "minLength": 1
     },
     "bootstrap_plan_sha256": {
+      "type": "string",
+      "minLength": 64
+    },
+    "bootstrap_environment_binding_sha256": {
       "type": "string",
       "minLength": 64
     },

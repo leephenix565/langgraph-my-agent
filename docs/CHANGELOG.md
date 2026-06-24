@@ -21,6 +21,9 @@ Historical changelog entries before this reset branch are preserved by tag
 - Bootstrap approval requests now bind `environment_binding_sha256` instead of
   exact volatile observations such as free bytes or unrelated supplementary
   groups.
+- Bootstrap store metadata now records the approved
+  `bootstrap_environment_binding_sha256` so later P2S plans can verify the
+  durable store was initialized under the same stable authorization boundary.
 - Free space is evaluated against `minimum_free_bytes` at execution time.
 - Security-critical drift still fails closed for path state, root identity,
   uid, mode, device, inode, access basis, and relevant group membership.

@@ -770,6 +770,8 @@ def _write_metadata(root: Path, plan: Mapping[str, Any], approval: Mapping[str, 
         "root_realpath": str(root.resolve(strict=True)),
         "bootstrap_plan_id": str(plan.get("plan_id") or ""),
         "bootstrap_plan_sha256": str(plan.get("canonical_sha256") or ""),
+        "bootstrap_environment_binding_sha256": str(plan.get("environment_binding_sha256") or ""),
+        "bootstrap_environment_contract_version": str(plan.get("environment_contract_version") or ""),
         "bootstrap_run_id": _bootstrap_run_id(plan),
         "bootstrap_approval_id": str(approval.get("approval_id") or ""),
         "mode": _mode_text(root),
@@ -823,6 +825,8 @@ def verify_artifact_store(root: Path = DEFAULT_ARTIFACT_STORE_ROOT) -> dict[str,
             blockers.append("store_metadata_status_not_bootstrapped")
         if str(metadata.get("root") or "") != str(root):
             blockers.append("store_metadata_root_mismatch")
+        if not str(metadata.get("bootstrap_environment_binding_sha256") or ""):
+            blockers.append("store_metadata_environment_binding_missing")
     return {
         "schema_version": "agent_sync_artifact_store_verify_v1",
         "root": str(root),

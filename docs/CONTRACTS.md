@@ -1342,7 +1342,8 @@ SYNC-OPS-2A-R3 adds a separate artifact-store bootstrap contract:
 - `agent_sync_artifact_store_bootstrap_approval_v1` binds exact bootstrap plan
   SHA, stable bootstrap environment binding SHA, and action ids.
 - `STORE_METADATA.json` is the durable marker that makes the store usable by
-  later P2S runs.
+  later P2S runs. It records the bootstrap plan id/hash and stable
+  environment binding SHA used by the machine approval.
 - `STORE_METADATA.json` also carries a bootstrap ownership ledger. Bootstrap
   rollback may remove only paths that ledger marks as created by the same run.
 - Bootstrap rollback is preflighted and all-or-nothing. Unsafe rollback returns

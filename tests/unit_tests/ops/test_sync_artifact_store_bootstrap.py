@@ -74,6 +74,7 @@ def test_bootstrap_approval_execute_verify_idempotency_and_rollback(tmp_path: Pa
     assert validate_bootstrap_approval(approval, plan, environment)["valid"] is True
     result = bootstrap_artifact_store(plan, approval, execute=True)
     assert result["status"] == "bootstrapped"
+    assert result["metadata"]["bootstrap_environment_binding_sha256"] == plan["environment_binding_sha256"]
     assert verify_artifact_store(root)["bootstrapped"] is True
 
     second = bootstrap_artifact_store(plan, approval, execute=True)
