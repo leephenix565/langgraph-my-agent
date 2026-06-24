@@ -115,7 +115,10 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   empty, the source authority is a deleted/lost prod source for a service that
   still exists, and the correct next sync entry is an exact prod source recovery
   approval, followed by a full-baseline P2S rebase and only then the first
-  explicitly approved non-zero experiment cycle.
+  explicitly approved non-zero experiment cycle. SYNC-OPS-5A-R2X further shows
+  that this is an irreversible source-loss incident: the 67-file package is
+  intact, but the live process lacks complete launch authority, so execution is
+  blocked until a concrete launcher/process-manager contract is approved.
 
 重要边界：
 
@@ -140,7 +143,8 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   baseline/source tree 不完整；SYNC-OPS-5A-R1X further supersedes the old
   baseline-only repair. 首个真实非零 publish 必须先完成精确批准的 prod source
   recovery，再执行完整 P2S rebase，最后重新冻结 experiment change unit 和 machine
-  approval bundle。
+  approval bundle。SYNC-OPS-5A-R2X blocks recovery execution until launch
+  authority is complete; no 5B approval should skip that blocker.
 
 ## Directory Operating Model
 

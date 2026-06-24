@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_final_compound_execution_approval_request_v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "request_id",
+    "status",
+    "compound_plan_id",
+    "compound_plan_sha256",
+    "recovery",
+    "p2s_rebase",
+    "experiment",
+    "first_cycle",
+    "approval_id",
+    "approved_at"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_final_compound_execution_approval_request_v2"
+    },
+    "status": {
+      "const": "awaiting_machine_approval"
+    },
+    "approval_id": {
+      "const": ""
+    },
+    "approved_at": {
+      "const": ""
+    },
+    "recovery": {
+      "type": "object",
+      "required": [
+        "irreversible_source_loss_cutover_acknowledged",
+        "delete_requested",
+        "invoke_requested"
+      ],
+      "properties": {
+        "irreversible_source_loss_cutover_acknowledged": { "const": true },
+        "delete_requested": { "const": false },
+        "invoke_requested": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "first_cycle": {
+      "type": "object",
+      "required": ["delete_requested"],
+      "properties": {
+        "delete_requested": { "const": false }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

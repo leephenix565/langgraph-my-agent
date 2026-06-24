@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-5A-R2X source-loss recovery hardening
+
+### Added
+
+- Added irreversible source-loss recovery V2 contracts for the
+  `risk_financial_fraud` deleted-source/live-process incident.
+- Added full P2S rebase V2 contracts with concrete stage/candidate/archive
+  paths and physical materialization manifests.
+- Added R2X focused tests for old plan supersession, source-loss canary,
+  launch-authority blocking, exact P2S manifests, candidate reselection, and
+  compound approval requests.
+
+### Changed
+
+- Superseded the R1X recovery plan because it allowed in-place writes and
+  empty-tree rollback semantics for a source-loss incident.
+- Superseded the R1X P2S projection because it retained placeholder paths and
+  lacked a physical materialization manifest.
+- Requalified the first real change candidate to the existing market
+  contract-test patch, while treating the wider market runtime bundle as outside
+  the selected tests-only change unit.
+
+### Not Done
+
+- Launch authority remains unresolved for the live `risk_financial_fraud`
+  process, so no executable recovery approval is created.
+- No real prod file modification, active sandbox mutation, pointer write,
+  owner-dev write, endpoint call, process action, machine approval, or real
+  cycle execution.
+
 ## 2026-06-24 - SYNC-OPS-5A-R1X source authority final freeze
 
 ### Added

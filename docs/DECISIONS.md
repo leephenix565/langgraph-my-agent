@@ -3,6 +3,59 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-140: Compound Execution Requires Launch Authority Before Approval
+
+Status: accepted for SYNC-OPS-5A-R2X.
+
+Decision: source recovery, full P2S rebase, and first publish can be combined
+only after the recovered service has a reproducible launch authority: exact
+launcher, cwd, environment source references, stop method, startup timeout, and
+owner.
+
+Reason: approving file recovery without a restart/cutover authority can leave a
+verified source tree that cannot safely become the live service.
+
+## ADR-139: Full P2S Rebase Plans Need Physical Manifests
+
+Status: accepted for SYNC-OPS-5A-R2X.
+
+Decision: a full P2S rebase plan must contain concrete stage/candidate/archive
+paths and a full physical materialization manifest. Disposition counts and
+aggregate digests alone are not executable.
+
+Reason: activation and rollback need exact path/action scopes and stage
+evidence.
+
+## ADR-138: Shadow Canary Before Source-Loss Cutover
+
+Status: accepted for SYNC-OPS-5A-R2X.
+
+Decision: source-loss recovery must validate a sibling candidate with offline
+tests and a loopback shadow canary before stopping the incumbent process.
+
+Reason: once the only in-memory runtime is stopped, the previous runtime cannot
+be reconstructed from the empty current source tree.
+
+## ADR-137: Empty-Tree Restore Is Not Runtime Rollback
+
+Status: accepted for SYNC-OPS-5A-R2X.
+
+Decision: restoring the current empty prod root after stopping a source-lost
+service is not rollback. The recovery semantics are verified roll-forward or
+manual intervention.
+
+Reason: the old source bytes no longer exist in the current prod root.
+
+## ADR-136: Running Service With Deleted Source Is Source-Loss
+
+Status: accepted for SYNC-OPS-5A-R2X.
+
+Decision: a running service whose source tree has been deleted is an
+irreversible source-loss incident, not a normal file transaction.
+
+Reason: runtime memory is evidence that a service exists, but it is not durable
+source authority or a rollback target.
+
 ## ADR-135: Compound Approval Requires Exact Per-Phase Gates
 
 Status: accepted for SYNC-OPS-5A-R1X.

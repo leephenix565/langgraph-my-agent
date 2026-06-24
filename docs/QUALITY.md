@@ -131,6 +131,14 @@ still performs no real prod write, active sandbox mutation, pointer mutation,
 owner-dev write, process action, endpoint call, machine approval, or env-value
 access.
 
+SYNC-OPS-5A-R2X adds irreversible source-loss coverage. Focused tests reject
+R1X in-place recovery and placeholder P2S plans, validate sibling-candidate
+source-loss recovery V2, require canary and irreversible acknowledgement, block
+unresolved launch authority, require concrete full-P2S paths and physical
+action manifests, and select a tests-only market candidate. Mainline remains
+no-real-prod-write, no-real-process-action, no-endpoint, no-active-sandbox-write,
+no-pointer-write, no-owner-dev-write, and no env-value access.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

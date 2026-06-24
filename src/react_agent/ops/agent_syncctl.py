@@ -24,6 +24,22 @@ from react_agent.ops.sync_5a_r1x import (
     validate_risk_fraud_p2s_rebase_plan,
     validate_risk_fraud_prod_recovery_plan,
 )
+from react_agent.ops.sync_5a_r2x import (
+    build_final_compound_execution_approval_request_v2,
+    build_final_compound_execution_plan_v2,
+    build_first_real_cycle_plan_v2,
+    build_full_p2s_rebase_plan_v2,
+    build_projected_experiment_manifest_v2,
+    build_source_loss_recovery_plan_v2,
+    build_source_package_integrity,
+    reselect_first_candidate,
+    validate_final_compound_execution_plan_v2,
+    validate_first_real_cycle_plan_v2,
+    validate_full_p2s_rebase_plan_v2,
+    validate_source_loss_recovery_plan_v2,
+    validate_superseded_r1x_p2s_projection,
+    validate_superseded_r1x_recovery_plan,
+)
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_bootstrap import (
@@ -645,6 +661,63 @@ def cmd_risk_fraud_freeze(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_risk_fraud_freeze_source_loss(args: argparse.Namespace) -> int:
+    old_recovery = read_json(Path(args.old_recovery_plan))
+    old_p2s = read_json(Path(args.old_p2s_plan))
+    runtime = {
+        "pid": str(args.pid or ""),
+        "cwd": str(args.cwd or ""),
+        "exe": str(args.exe or ""),
+        "argv": ["python3", "-u", "-m", "app.main"],
+        "launch_authority_classification": str(args.launch_authority_classification or ""),
+    }
+    superseded_recovery = validate_superseded_r1x_recovery_plan(old_recovery)
+    superseded_p2s = validate_superseded_r1x_p2s_projection(old_p2s)
+    package = build_source_package_integrity()
+    recovery = build_source_loss_recovery_plan_v2(runtime_audit=runtime, canary_port=int(args.canary_port))
+    recovery_validation = validate_source_loss_recovery_plan_v2(recovery)
+    p2s = build_full_p2s_rebase_plan_v2(recovery)
+    p2s_validation = validate_full_p2s_rebase_plan_v2(p2s)
+    candidates = reselect_first_candidate()
+    selected = candidates["selected_candidate"]
+    experiment = build_projected_experiment_manifest_v2(selected, p2s)
+    first_cycle = build_first_real_cycle_plan_v2(selected, experiment, p2s)
+    first_cycle_validation = validate_first_real_cycle_plan_v2(first_cycle)
+    compound = build_final_compound_execution_plan_v2(recovery, p2s, experiment, first_cycle)
+    compound_validation = validate_final_compound_execution_plan_v2(compound)
+    request = build_final_compound_execution_approval_request_v2(compound, selected, first_cycle)
+    payload = {
+        "summary_title": "agent-sync risk-fraud freeze-source-loss",
+        "superseded_recovery_plan": superseded_recovery,
+        "superseded_p2s_projection_plan": superseded_p2s,
+        "source_package_integrity": package,
+        "source_loss_recovery_plan": recovery,
+        "source_loss_recovery_validation": recovery_validation,
+        "full_p2s_rebase_plan": p2s,
+        "full_p2s_rebase_validation": p2s_validation,
+        "candidate_reselection": candidates,
+        "projected_experiment": experiment,
+        "first_cycle_plan": first_cycle,
+        "first_cycle_validation": first_cycle_validation,
+        "compound_plan": compound,
+        "compound_validation": compound_validation,
+        "approval_request": request,
+        "exit_code": 0
+        if recovery_validation["valid"] and p2s_validation["valid"] and first_cycle_validation["valid"] and compound_validation["valid"]
+        else 7,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"recovery_valid={recovery_validation['valid']}",
+            f"launch={recovery['launch_authority']['classification']}",
+            f"p2s_actions={p2s_validation['physical_action_count']}",
+            f"candidate={selected['candidate_id']}",
+        ],
+    )
+
+
 def cmd_plan_show(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     payload = {"summary_title": "agent-sync plan show", "plan": plan, "exit_code": 0}
@@ -1154,6 +1227,16 @@ def build_parser() -> argparse.ArgumentParser:
     risk_freeze.add_argument("--cwd", default="")
     _add_output_args(risk_freeze)
     risk_freeze.set_defaults(func=cmd_risk_fraud_freeze)
+    risk_source_loss = risk_fraud_sub.add_parser("freeze-source-loss")
+    risk_source_loss.add_argument("--old-recovery-plan", required=True)
+    risk_source_loss.add_argument("--old-p2s-plan", required=True)
+    risk_source_loss.add_argument("--pid", default="")
+    risk_source_loss.add_argument("--cwd", default="")
+    risk_source_loss.add_argument("--exe", default="/usr/bin/python3.14")
+    risk_source_loss.add_argument("--canary-port", default="11013")
+    risk_source_loss.add_argument("--launch-authority-classification", default="")
+    _add_output_args(risk_source_loss)
+    risk_source_loss.set_defaults(func=cmd_risk_fraud_freeze_source_loss)
 
     plan = subparsers.add_parser("plan")
     plan_sub = plan.add_subparsers(dest="command", required=True)

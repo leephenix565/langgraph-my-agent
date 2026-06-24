@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_source_loss_recovery_plan_v2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "incident",
+    "source_authority",
+    "target",
+    "candidate",
+    "source_loss_evidence_archive",
+    "file_actions",
+    "launch_authority",
+    "canary_contract",
+    "requested_permissions",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "agent_sync_source_loss_recovery_plan_v2"
+    },
+    "plan_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "incident": {
+      "type": "object",
+      "required": [
+        "incident_class",
+        "previous_runtime_restore_supported",
+        "cutover_semantics",
+        "empty_tree_restore_is_rollback",
+        "irreversible_cutover_acknowledgement_required"
+      ],
+      "properties": {
+        "incident_class": {
+          "const": "source_deleted_process_still_alive"
+        },
+        "previous_runtime_restore_supported": {
+          "const": false
+        },
+        "cutover_semantics": {
+          "const": "verified_roll_forward"
+        },
+        "empty_tree_restore_is_rollback": {
+          "const": false
+        },
+        "irreversible_cutover_acknowledgement_required": {
+          "const": true
+        }
+      },
+      "additionalProperties": true
+    },
+    "candidate": {
+      "type": "object",
+      "required": ["candidate_path", "candidate_descriptor"]
+    },
+    "source_loss_evidence_archive": {
+      "type": "object",
+      "required": ["archive_path", "preserve_after_cutover"]
+    },
+    "file_actions": {
+      "type": "array",
+      "minItems": 1
+    },
+    "canary_contract": {
+      "type": "object",
+      "required": ["canary_port", "argv", "health_url", "compute_url", "invoke_forbidden"]
+    },
+    "requested_permissions": {
+      "type": "object",
+      "required": ["irreversible_source_loss_cutover_acknowledged", "delete", "invoke"],
+      "properties": {
+        "irreversible_source_loss_cutover_acknowledged": {
+          "const": true
+        },
+        "delete": {
+          "const": false
+        },
+        "invoke": {
+          "const": false
+        }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {
+      "type": "string",
+      "minLength": 64,
+      "maxLength": 64
+    }
+  },
+  "additionalProperties": true
+}

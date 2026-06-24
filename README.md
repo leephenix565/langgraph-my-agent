@@ -73,6 +73,15 @@ P2S rebase projection, and reclassifies the `financial_data_service` candidate
 as a superseded `B_protocol_wrapper` requiring process/live approval. See
 `docs/SYNC_OPS_5A_R1X_SOURCE_AUTHORITY_AND_FINAL_FREEZE.md`.
 
+SYNC-OPS-5A-R2X tightens that recovery into an irreversible source-loss model.
+The 67-file source package passes integrity, but the live launch authority is
+not complete: no manager-owned unit was found, registry and live argv disagree,
+and the live bind depends on unreproduced environment state. R2X therefore
+blocks final execution as `blocked_source_loss_launch_authority`, while freezing
+the V2 source-loss recovery contract shape, exact full P2S rebase shape, and a
+safer `market_capital_flow_chip` tests-only first-cycle candidate. See
+`docs/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

@@ -62,3 +62,9 @@ R1X freezes a recovery-first plan/request. The next phase is a machine approval
 for risk-fraud prod source recovery. Only after recovery settles and P2S rebase
 is verified should the first real user change cycle be regenerated on the final
 state.
+
+R2X update: the R1X recovery plan and P2S projection are superseded. A running
+service whose source tree has been deleted is an irreversible source-loss
+incident; in-place file writes and empty-tree rollback are not safe. R2X
+requires launch authority, a sibling candidate, shadow canary, and a concrete
+full-baseline materialization manifest before any machine approval can execute.

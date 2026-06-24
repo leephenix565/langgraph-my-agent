@@ -61,6 +61,12 @@ approval boundary is prod source recovery for `risk_financial_fraud`; only after
 that recovery settles can P2S create a complete replacement baseline and the
 first real non-zero cycle be regenerated.
 
+R2X update: the R1X recovery request is also superseded until launch authority
+is complete. The source package is intact, but the current service is a
+source-loss incident with an in-memory incumbent and no manager-owned restart
+contract. The next approval boundary is launch-authority closure plus source
+loss recovery, not a direct file recovery.
+
 SYNC-OPS-5B may proceed only after:
 
 - `risk_financial_fraud` has non-empty compatible prod, active baseline,

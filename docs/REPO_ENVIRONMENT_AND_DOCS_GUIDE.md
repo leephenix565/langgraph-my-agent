@@ -134,6 +134,13 @@ recovery plan with backup, offline tests, process/live approval requirements,
 rollback, and crash recovery. Only after recovery settles may P2S create a full
 new baseline; a one-Agent partial stage is not a valid active-baseline repair.
 
+SYNC-OPS-5A-R2X further distinguishes deleted-source live processes from normal
+file recovery. If the only live runtime is an in-memory process whose cwd is an
+empty source tree, restarting that service is irreversible unless launch
+authority is complete. The safe plan uses a sibling candidate, shadow canary,
+contract-level incumbent/canary comparison, and verified roll-forward; it must
+not write files into the current cwd or call an empty-tree restore rollback.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

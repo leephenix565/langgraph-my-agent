@@ -63,6 +63,10 @@ Implementation changes must update the relevant reset docs:
   If a registered prod source tree is missing, generate and approve an explicit
   prod source recovery plan before any full-baseline P2S rebase or non-zero
   cycle.
+- A running service whose source tree has been deleted is a source-loss
+  incident. Do not plan in-place writes into its cwd, and do not call restoring
+  an empty tree rollback. Require launch authority, sibling candidate, shadow
+  canary, and explicit irreversible roll-forward approval.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

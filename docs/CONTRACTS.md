@@ -160,6 +160,15 @@ the settled recovered Agent delta. Stage/verify approval remains separate from
 activation/rollback approval. Runtime wrapper candidates are at least
 `B_protocol_wrapper` and must declare process/live requirements.
 
+SYNC-OPS-5A-R2X replaces the R1X recovery semantics with an irreversible
+source-loss contract. A running process whose source tree has been deleted is
+not a normal rollbackable file transaction: previous runtime restore is
+unsupported after the incumbent is stopped, empty-tree restore is not rollback,
+and recovery must roll forward through a verified sibling candidate and shadow
+canary. V2 P2S rebase plans must use concrete paths and a complete physical
+materialization manifest. Current execution remains blocked until launch
+authority is complete.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

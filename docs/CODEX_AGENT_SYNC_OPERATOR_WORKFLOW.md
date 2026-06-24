@@ -11,6 +11,9 @@ repair request instead of producing a non-zero approval request.
 If risk_financial_fraud is missing current prod source, use the R1X
 source-recovery path; do not approve or execute the superseded 67-action
 baseline-only repair.
+If the process is still running from an empty source root, treat it as R2X
+source-loss. Stop at launch-authority blockers; do not invent a restart
+launcher, read env values, or call an empty-tree restore rollback.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

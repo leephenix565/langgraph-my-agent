@@ -80,3 +80,7 @@ missing source-bearing baseline mappings.
 SYNC-OPS-5A-R1X: the superseded 67-action repair plan must not be approved or
 executed. Historical baseline bytes can seed a recovery plan only after a source
 authority decision, and P2S rebase must materialize a full 26-Agent baseline.
+SYNC-OPS-5A-R2X adds that if the service is still running from a deleted source
+tree, execution is blocked until launch authority is explicit. Recovery must
+materialize a sibling candidate, pass a shadow canary, and roll forward; an
+empty-tree restore is not rollback.
