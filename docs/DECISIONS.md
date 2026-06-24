@@ -3,6 +3,19 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-110: Durable Artifact Store Is Bootstrapped Before P2S Stage
+
+Status: accepted for SYNC-OPS-2B0-R1.
+
+Decision: `/sdb/dlut/ops-artifacts/agent-sync` is initialized by a separate
+stable-binding machine-approved bootstrap before any real P2S stage. The
+bootstrap writes only the approved directory layout and `STORE_METADATA.json`.
+
+Reason: P2S stage needs durable plans, approvals, runs, locks, validation, and
+closeout evidence before it can safely write a versioned sandbox stage.
+Separating store bootstrap from stage keeps infrastructure creation out of the
+P2S transaction and makes the next approval scope stage/verify only.
+
 ## ADR-109: Environment Drift, Constraint Failure, And Diagnostics Are Distinct
 
 Status: accepted for SYNC-OPS-2A-R5.

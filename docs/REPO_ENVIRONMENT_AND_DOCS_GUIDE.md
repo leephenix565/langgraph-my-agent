@@ -301,5 +301,7 @@ approval requests are not machine approvals. SYNC-OPS-2B0 attempted the first
 real bootstrap but stopped before approval because the current environment
 snapshot drifted from the approved snapshot. SYNC-OPS-2A-R5 replaces that
 volatile snapshot boundary with stable approval binding, execution
-constraints, and diagnostic observations. A new R5 bootstrap plan/request is
-required before `/sdb/dlut/ops-artifacts/agent-sync` can be created.
+constraints, and diagnostic observations. SYNC-OPS-2B0-R1 then created the
+durable artifact store and metadata. The next write approval boundary is P2S
+stage/verify; it still must not activate, roll back, switch the active sandbox,
+or update the pointer.

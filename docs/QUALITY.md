@@ -1026,6 +1026,23 @@ Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
 sandbox, owner-dev, real approvals, real locks, real bootstrap state, real
 stages, endpoints, process state, or environment values.
 
+## SYNC-OPS-2B0-R1 Durable Bootstrap Gate
+
+SYNC-OPS-2B0-R1 records the one approved real bootstrap boundary:
+
+- bootstrap plan hash and environment binding hash are independently
+  recomputed before approval;
+- machine approval binds both hashes and exact action ids;
+- the request object remains invalid as an approval;
+- only the ten approved directories and `STORE_METADATA.json` are written;
+- verification checks modes, metadata, ownership ledger, unexpected paths, and
+  secret findings;
+- P2S replan is read-only and produces only an awaiting stage/verify request.
+
+Default gates still must not write prod, sandbox, owner-dev, run P2S stage or
+activation, update the baseline pointer, call endpoints, operate processes, or
+read environment values.
+
 ## SYNC-OPS-2B0 Bootstrap Execution Guard
 
 SYNC-OPS-2B0 keeps the artifact-store bootstrap executor in the maintained

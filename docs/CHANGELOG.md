@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-24 - SYNC-OPS-2B0-R1 durable artifact-store bootstrap
+
+### Added
+
+- Executed the exact stable-binding artifact-store bootstrap for
+  `/sdb/dlut/ops-artifacts/agent-sync`.
+- Created the ten approved directories and one atomic `STORE_METADATA.json`
+  file.
+- Added `docs/SYNC_OPS_2B0_R1_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
+
+### Result
+
+- `STORE_METADATA.json` records the approved plan id/hash, environment binding
+  SHA, approval id, bootstrap run id, and ownership ledger.
+- The durable artifact store verified with 10/10 directories, zero unexpected
+  paths, and zero secret findings.
+- A new read-only P2S plan is stage-ready and a new stage-only approval request
+  is awaiting machine approval.
+
+### Not Done
+
+- No prod, sandbox, owner-dev, P2S stage, P2S activation, baseline pointer,
+  endpoint, process, provider, database, env-value, chown/chgrp, setuid/setgid,
+  or secret-output action was performed.
+
 ## 2026-06-23 - SYNC-OPS-2A-R5 stable bootstrap environment binding
 
 ### Added

@@ -53,6 +53,12 @@ R5 generates a new bootstrap plan and an approval request that binds
 `environment_binding_sha256`; it does not create a machine approval and does
 not execute bootstrap.
 
+## Follow-Up
+
+SYNC-OPS-2B0-R1 later used that exact stable-binding request to bootstrap the
+durable artifact store. The next approval boundary is P2S stage/verify only,
+not another artifact-store bootstrap.
+
 ## Non-Claims
 
 R5 does not create `/sdb/dlut/ops-artifacts`, does not write prod, sandbox,

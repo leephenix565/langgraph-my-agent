@@ -1386,6 +1386,16 @@ SYNC-OPS-2A-R5 repairs the bootstrap environment model:
 - root realpath/device/inode/uid/mode, path-state, symlink, action, access
   basis, and relevant group drift remain fail-closed.
 
+SYNC-OPS-2B0-R1 completes the durable artifact-store bootstrap:
+
+- the exact stable-binding bootstrap plan creates only the ten approved
+  directories and `STORE_METADATA.json`;
+- `STORE_METADATA.json` records the plan id/hash, environment binding SHA,
+  approval id, run id, and ownership ledger;
+- the store is now a verified prerequisite for future P2S stage runs;
+- the regenerated P2S plan may request stage/verify approval, but activation
+  and rollback remain separate future approvals.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

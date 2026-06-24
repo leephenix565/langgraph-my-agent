@@ -192,6 +192,14 @@ relevant group drift still fail closed. R5 generates a new awaiting-approval
 bootstrap request only; it does not create the real artifact store or run P2S
 stage. See `docs/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md`.
 
+SYNC-OPS-2B0-R1 executed the stable-binding durable artifact-store bootstrap.
+It created only `/sdb/dlut/ops-artifacts/agent-sync`, its approved subdirs, and
+`STORE_METADATA.json`; verification passed with no unexpected paths and no
+secret findings. A new read-only P2S plan is stage-ready, and the new approval
+request still permits only stage and verify. No prod, sandbox, owner-dev,
+baseline pointer, endpoint, process, P2S stage, or activation action occurred.
+See `docs/SYNC_OPS_2B0_R1_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md`.
+
 Phase R3 upgrades the reset skeleton to plan-driven fixed-DAG execution. Phase
 R4-A adds the fixed DAG catalog source and switches the backend public
 `/api/agents` projection to the 27 `snake_case` reset agents. Phase R4-B adds
@@ -988,3 +996,6 @@ readiness.
   still does not create prod, sandbox, owner-dev, artifact-store, approval,
   lock, backup, stage, activation, endpoint, process, or environment-value
   state.
+- SYNC-OPS-2B0-R1 creates only the approved durable artifact-store directories
+  and metadata. It does not execute P2S stage, activation, rollback, endpoint,
+  process, prod, sandbox, owner-dev, or baseline-pointer writes.
