@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_launch_authority_v1",
+  "type": "object",
+  "required": ["schema_version", "authority_id", "authority_kind", "service_unit_id", "executable", "argv", "cwd", "environment_source", "start_contract", "stop_contract", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_launch_authority_v1" },
+    "authority_kind": {
+      "enum": ["systemd_unit", "supervisor_program", "approved_source_launcher", "sync_ops_supervised_launcher"]
+    },
+    "argv": { "type": "array", "minItems": 1 },
+    "start_contract": {
+      "type": "object",
+      "required": ["shell", "start_new_session"],
+      "properties": {
+        "shell": { "const": false },
+        "start_new_session": { "const": true }
+      },
+      "additionalProperties": true
+    },
+    "stop_contract": {
+      "type": "object",
+      "required": ["sigkill_allowed", "pid_reuse_protection"],
+      "properties": {
+        "sigkill_allowed": { "const": false },
+        "pid_reuse_protection": { "const": true }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

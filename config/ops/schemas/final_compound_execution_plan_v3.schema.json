@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_final_compound_execution_plan_v3",
+  "type": "object",
+  "required": ["schema_version", "compound_plan_id", "mode", "phases", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_final_compound_execution_plan_v3" },
+    "mode": { "const": "strict_after_state_gates" },
+    "phases": { "type": "array", "minItems": 4, "maxItems": 4 },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

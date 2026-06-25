@@ -67,6 +67,9 @@ Implementation changes must update the relevant reset docs:
   incident. Do not plan in-place writes into its cwd, and do not call restoring
   an empty tree rollback. Require launch authority, sibling candidate, shadow
   canary, and explicit irreversible roll-forward approval.
+- Manual argv evidence is not launch authority. Source-loss execution must use
+  a process manager or the approved sync-ops supervised launcher contract with
+  exact executable, argv, cwd, PID reuse checks, bounded logs, and no shell.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_full_p2s_rebase_plan_v3",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "stage_root", "activation_candidate_path", "activation_archive_path", "agent_dispositions", "materialization_manifest", "stage_approval_request", "activation_request_template", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_full_p2s_rebase_plan_v3" },
+    "agent_dispositions": { "type": "array", "minItems": 26, "maxItems": 26 },
+    "materialization_manifest": { "type": "array", "minItems": 1 },
+    "risk_fraud_expected_file_count": { "const": 67 },
+    "stage_approval_request": {
+      "type": "object",
+      "required": ["stage_requested", "verify_requested", "activate_requested", "rollback_requested"],
+      "properties": {
+        "stage_requested": { "const": true },
+        "verify_requested": { "const": true },
+        "activate_requested": { "const": false },
+        "rollback_requested": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

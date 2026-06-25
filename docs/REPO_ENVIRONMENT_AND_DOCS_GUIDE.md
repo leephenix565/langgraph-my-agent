@@ -141,6 +141,11 @@ authority is complete. The safe plan uses a sibling candidate, shadow canary,
 contract-level incumbent/canary comparison, and verified roll-forward; it must
 not write files into the current cwd or call an empty-tree restore rollback.
 
+SYNC-OPS-5A-R3X establishes the approved launch-authority model. Future
+operators should use the frozen compound request and approved sync-ops launcher
+contracts; they must not run arbitrary shell commands or infer launch authority
+from a live process argv alone.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

@@ -144,7 +144,9 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   baseline-only repair. 首个真实非零 publish 必须先完成精确批准的 prod source
   recovery，再执行完整 P2S rebase，最后重新冻结 experiment change unit 和 machine
   approval bundle。SYNC-OPS-5A-R2X blocks recovery execution until launch
-  authority is complete; no 5B approval should skip that blocker.
+  authority is complete; no 5B approval should skip that blocker. SYNC-OPS-5A-R3X
+  productizes that launch authority and emits the final awaiting approval
+  compound request.
 
 ## Directory Operating Model
 

@@ -40,6 +40,22 @@ from react_agent.ops.sync_5a_r2x import (
     validate_superseded_r1x_p2s_projection,
     validate_superseded_r1x_recovery_plan,
 )
+from react_agent.ops.sync_5a_r3x import (
+    build_environment_reference_metadata,
+    build_final_compound_execution_approval_request_v3,
+    build_final_compound_execution_plan_v3,
+    build_first_real_cycle_plan_v3,
+    build_full_p2s_rebase_plan_v3,
+    build_projected_experiment_manifest_v3,
+    build_risk_fraud_launch_authority,
+    build_source_loss_recovery_plan_v3,
+    build_source_package_provenance,
+    validate_final_compound_execution_plan_v3,
+    validate_first_real_cycle_plan_v3,
+    validate_full_p2s_rebase_plan_v3,
+    validate_source_loss_recovery_plan_v3,
+    validate_source_package_provenance,
+)
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_bootstrap import (
@@ -100,6 +116,13 @@ from react_agent.ops.sync_plan import (
     load_plan,
     validate_experiment_manifest,
     validate_plan,
+)
+from react_agent.ops.sync_process_launcher import (
+    preflight_launch_authority,
+    start_supervised_process,
+    status_supervised_process,
+    stop_supervised_process,
+    validate_launch_authority,
 )
 from react_agent.ops.sync_registry import load_sync_policy, validate_static_registry
 from react_agent.ops.sync_s2p import (
@@ -718,6 +741,141 @@ def cmd_risk_fraud_freeze_source_loss(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_risk_fraud_freeze_source_loss_v3(args: argparse.Namespace) -> int:
+    argv = json.loads(args.argv_json) if getattr(args, "argv_json", "") else ["python3", "-u", "-m", "app.main"]
+    if not isinstance(argv, list) or not all(isinstance(item, str) for item in argv):
+        raise SyncPlannerError("argv_json_must_be_string_array", exit_code=2)
+    provenance = build_source_package_provenance()
+    provenance_validation = validate_source_package_provenance(provenance)
+    launch = build_risk_fraud_launch_authority(canary_port=int(args.canary_port))
+    launch_validation = validate_launch_authority(launch)
+    environment = build_environment_reference_metadata()
+    recovery = build_source_loss_recovery_plan_v3(
+        pid=str(args.pid or ""),
+        start_ticks=str(args.start_ticks or ""),
+        cwd=str(args.cwd or ""),
+        exe=str(args.exe or "/usr/bin/python3.14"),
+        argv=argv,
+        canary_port=int(args.canary_port),
+    )
+    recovery_validation = validate_source_loss_recovery_plan_v3(recovery)
+    p2s = build_full_p2s_rebase_plan_v3(recovery)
+    p2s_validation = validate_full_p2s_rebase_plan_v3(p2s)
+    candidates = reselect_first_candidate()
+    selected = candidates["selected_candidate"]
+    experiment = build_projected_experiment_manifest_v3(selected, p2s)
+    first_cycle = build_first_real_cycle_plan_v3(selected, experiment, p2s)
+    first_cycle_validation = validate_first_real_cycle_plan_v3(first_cycle)
+    compound = build_final_compound_execution_plan_v3(recovery, p2s, experiment, first_cycle)
+    compound_validation = validate_final_compound_execution_plan_v3(compound)
+    request = build_final_compound_execution_approval_request_v3(
+        compound=compound,
+        recovery=recovery,
+        p2s=p2s,
+        experiment=experiment,
+        cycle=first_cycle,
+        provenance=provenance,
+    )
+    valid = (
+        provenance_validation["valid"]
+        and launch_validation["valid"]
+        and recovery_validation["valid"]
+        and p2s_validation["valid"]
+        and first_cycle_validation["valid"]
+        and compound_validation["valid"]
+    )
+    payload = {
+        "summary_title": "agent-sync risk-fraud freeze-source-loss-v3",
+        "source_package_provenance": provenance,
+        "source_package_provenance_validation": provenance_validation,
+        "environment_reference_metadata": environment,
+        "launch_authority": launch,
+        "launch_authority_validation": launch_validation,
+        "source_loss_recovery_plan_v3": recovery,
+        "source_loss_recovery_plan_v3_validation": recovery_validation,
+        "full_p2s_rebase_plan_v3": p2s,
+        "full_p2s_rebase_plan_v3_validation": p2s_validation,
+        "candidate_reselection": candidates,
+        "projected_experiment_manifest_v3": experiment,
+        "first_real_cycle_plan_v3": first_cycle,
+        "first_real_cycle_plan_v3_validation": first_cycle_validation,
+        "final_compound_execution_plan_v3": compound,
+        "final_compound_execution_plan_v3_validation": compound_validation,
+        "final_compound_execution_approval_request_v3": request,
+        "exit_code": 0 if valid else 7,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"provenance_resolved={provenance_validation['resolved_count']}",
+            f"launch_valid={launch_validation['valid']}",
+            f"recovery_valid={recovery_validation['valid']}",
+            f"request_status={request['status']}",
+        ],
+    )
+
+
+def _load_launch_authority_from_plan(plan_path: str) -> dict[str, Any]:
+    payload = read_json(Path(plan_path))
+    if "launch_authority" in payload and isinstance(payload["launch_authority"], dict):
+        return dict(payload["launch_authority"])
+    if payload.get("schema_version") == "agent_sync_launch_authority_v1":
+        return dict(payload)
+    raise SyncPlannerError("launch_authority_not_found_in_plan", exit_code=7)
+
+
+def _validate_process_approval(path_text: str) -> dict[str, Any]:
+    approval = read_json(Path(path_text))
+    if approval.get("status") != "approved":
+        raise SyncPlannerError("process_machine_approval_required", exit_code=4)
+    return dict(approval)
+
+
+def cmd_process_preflight(args: argparse.Namespace) -> int:
+    authority = _load_launch_authority_from_plan(args.plan)
+    result = preflight_launch_authority(authority)
+    payload = {"summary_title": "agent-sync process preflight", **result, "exit_code": 0 if result["valid"] else 7}
+    return print_or_json(args, payload, [f"valid={result['valid']}", f"blockers={len(result['blockers'])}"])
+
+
+def cmd_process_start(args: argparse.Namespace) -> int:
+    authority = _load_launch_authority_from_plan(args.plan)
+    _validate_process_approval(args.approval)
+    result = start_supervised_process(
+        authority,
+        state_path=Path(args.state) if args.state else None,
+        environment_overrides={"APP_PORT": str(args.port)} if args.port else None,
+        execute=bool(args.execute),
+    )
+    payload = {"summary_title": "agent-sync process start", **result, "exit_code": 0 if result.get("started") else 7}
+    return print_or_json(args, payload, [f"started={result.get('started')}", f"pid={result.get('pid', '')}"])
+
+
+def cmd_process_status(args: argparse.Namespace) -> int:
+    authority = _load_launch_authority_from_plan(args.plan)
+    result = status_supervised_process(authority, state_path=Path(args.state))
+    valid = bool(result["identity_match"] and result.get("authority_binding_match"))
+    payload = {"summary_title": "agent-sync process status", **result, "exit_code": 0 if valid else 7}
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"running={result['running']}",
+            f"identity_match={result['identity_match']}",
+            f"authority_binding_match={result.get('authority_binding_match')}",
+        ],
+    )
+
+
+def cmd_process_stop(args: argparse.Namespace) -> int:
+    authority = _load_launch_authority_from_plan(args.plan)
+    _validate_process_approval(args.approval)
+    result = stop_supervised_process(authority, state_path=Path(args.state), execute=bool(args.execute))
+    payload = {"summary_title": "agent-sync process stop", **result, "exit_code": 0 if result.get("stopped") else 7}
+    return print_or_json(args, payload, [f"stopped={result.get('stopped')}", f"reason={result.get('reason', '')}"])
+
+
 def cmd_plan_show(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     payload = {"summary_title": "agent-sync plan show", "plan": plan, "exit_code": 0}
@@ -1237,6 +1395,42 @@ def build_parser() -> argparse.ArgumentParser:
     risk_source_loss.add_argument("--launch-authority-classification", default="")
     _add_output_args(risk_source_loss)
     risk_source_loss.set_defaults(func=cmd_risk_fraud_freeze_source_loss)
+    risk_source_loss_v3 = risk_fraud_sub.add_parser("freeze-source-loss-v3")
+    risk_source_loss_v3.add_argument("--pid", default="")
+    risk_source_loss_v3.add_argument("--start-ticks", default="")
+    risk_source_loss_v3.add_argument("--cwd", default="")
+    risk_source_loss_v3.add_argument("--exe", default="/usr/bin/python3.14")
+    risk_source_loss_v3.add_argument("--argv-json", default="")
+    risk_source_loss_v3.add_argument("--canary-port", default="11013")
+    _add_output_args(risk_source_loss_v3)
+    risk_source_loss_v3.set_defaults(func=cmd_risk_fraud_freeze_source_loss_v3)
+
+    process = subparsers.add_parser("process")
+    process_sub = process.add_subparsers(dest="command", required=True)
+    process_preflight = process_sub.add_parser("preflight")
+    process_preflight.add_argument("--plan", required=True)
+    _add_output_args(process_preflight)
+    process_preflight.set_defaults(func=cmd_process_preflight)
+    process_start = process_sub.add_parser("start")
+    process_start.add_argument("--plan", required=True)
+    process_start.add_argument("--approval", required=True)
+    process_start.add_argument("--state", default="")
+    process_start.add_argument("--port", default="")
+    process_start.add_argument("--execute", action="store_true")
+    _add_output_args(process_start)
+    process_start.set_defaults(func=cmd_process_start)
+    process_status = process_sub.add_parser("status")
+    process_status.add_argument("--plan", required=True)
+    process_status.add_argument("--state", required=True)
+    _add_output_args(process_status)
+    process_status.set_defaults(func=cmd_process_status)
+    process_stop = process_sub.add_parser("stop")
+    process_stop.add_argument("--plan", required=True)
+    process_stop.add_argument("--approval", required=True)
+    process_stop.add_argument("--state", required=True)
+    process_stop.add_argument("--execute", action="store_true")
+    _add_output_args(process_stop)
+    process_stop.set_defaults(func=cmd_process_stop)
 
     plan = subparsers.add_parser("plan")
     plan_sub = plan.add_subparsers(dest="command", required=True)

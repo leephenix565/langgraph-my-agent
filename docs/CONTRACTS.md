@@ -169,6 +169,13 @@ canary. V2 P2S rebase plans must use concrete paths and a complete physical
 materialization manifest. Current execution remains blocked until launch
 authority is complete.
 
+SYNC-OPS-5A-R3X productizes that authority. `manual_exact_argv` remains audit
+evidence only; approved launch authority requires a process manager or the
+sync-ops supervised launcher with exact executable, argv, cwd, owner
+preconditions, bounded non-secret environment overrides, 0600 logs, PID reuse
+protection, no shell, and SIGTERM-only stop semantics. Recovery V3 also
+requires 67/67 per-file source provenance before approval.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

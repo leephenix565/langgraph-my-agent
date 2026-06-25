@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_first_real_cycle_plan_v3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "cycle_id",
+    "selected_change_unit",
+    "s2p_plan",
+    "p2s_plan",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": { "const": "agent_sync_first_real_cycle_plan_v3" },
+    "cycle_id": { "type": "string", "minLength": 1 },
+    "selected_change_unit": { "type": "object" },
+    "s2p_plan": {
+      "type": "object",
+      "required": ["action_count", "process_required", "live_required", "delete_required"],
+      "properties": {
+        "action_count": { "const": 1 },
+        "process_required": { "const": false },
+        "live_required": { "const": false },
+        "delete_required": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "p2s_plan": {
+      "type": "object",
+      "required": ["action_count"],
+      "properties": {
+        "action_count": { "const": 1 }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

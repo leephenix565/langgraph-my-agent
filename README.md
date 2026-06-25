@@ -82,6 +82,12 @@ the V2 source-loss recovery contract shape, exact full P2S rebase shape, and a
 safer `market_capital_flow_chip` tests-only first-cycle candidate. See
 `docs/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md`.
 
+SYNC-OPS-5A-R3X closes that blocker by proving 67/67 source package
+provenance and introducing an approved sync-ops supervised launcher. The final
+compound plan is now frozen as an awaiting-machine-approval request, but still
+does not execute recovery, P2S, process, endpoint, prod, sandbox, or pointer
+actions. See `docs/SYNC_OPS_5A_R3X_APPROVED_LAUNCH_AUTHORITY.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

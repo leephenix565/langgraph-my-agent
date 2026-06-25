@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5A-R3X approved launch authority
+
+### Added
+
+- Added source package provenance V1 contracts proving 67/67
+  `risk_financial_fraud` files against the June 23 prod-to-sandbox manifests.
+- Added `agent_sync_launch_authority_v1` and a bounded sync-ops supervised
+  launcher contract with no shell, exact argv/cwd/executable, PID reuse
+  protection, 0600 logs, and SIGTERM-only stop semantics.
+- Added source-loss recovery V3, full P2S rebase V3, compound plan V3, and
+  compound approval request V3 contracts.
+
+### Changed
+
+- Superseded R2X recovery, P2S, first-cycle, and compound plans because launch
+  authority is now productized and must be rebound by hash.
+- Promoted the final compound request to `awaiting_machine_approval` while
+  keeping all real execution out of this phase.
+
+### Not Done
+
+- No real prod file modification, active sandbox mutation, pointer write,
+  owner-dev write, endpoint call, process action, machine approval, or real
+  cycle execution.
+
 ## 2026-06-24 - SYNC-OPS-5A-R2X source-loss recovery hardening
 
 ### Added

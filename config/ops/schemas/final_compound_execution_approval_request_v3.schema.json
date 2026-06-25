@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_final_compound_execution_approval_request_v3",
+  "type": "object",
+  "required": ["schema_version", "request_id", "status", "recovery_plan_sha256", "p2s_plan_sha256", "first_cycle_sha256", "compound_plan_sha256", "requested_permissions", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_final_compound_execution_approval_request_v3" },
+    "status": { "const": "awaiting_machine_approval" },
+    "approval_id": { "const": "" },
+    "approved_at": { "const": "" },
+    "requested_permissions": {
+      "type": "object",
+      "required": ["irreversible_source_loss_cutover_acknowledged", "delete", "invoke", "sigkill"],
+      "properties": {
+        "irreversible_source_loss_cutover_acknowledged": { "const": true },
+        "delete": { "const": false },
+        "invoke": { "const": false },
+        "sigkill": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

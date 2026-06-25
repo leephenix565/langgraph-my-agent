@@ -1,0 +1,38 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_environment_reference_metadata_v1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "classification",
+    "service_self_loads_dotenv",
+    "launcher_reads_env_values",
+    "control_plane_observes_env_values",
+    "proc_environ_read",
+    "bounded_public_overrides",
+    "valid",
+    "blockers"
+  ],
+  "properties": {
+    "schema_version": { "const": "agent_sync_environment_reference_metadata_v1" },
+    "classification": {
+      "enum": [
+        "service_self_loads_dotenv",
+        "process_manager_environment_file",
+        "approved_secure_launcher_env_reference",
+        "defaults_sufficient_for_contract_canary",
+        "environment_source_unreproducible"
+      ]
+    },
+    "launcher_reads_env_values": { "const": false },
+    "control_plane_observes_env_values": { "const": false },
+    "proc_environ_read": { "const": false },
+    "bounded_public_overrides": {
+      "type": "object",
+      "required": ["production", "canary"]
+    },
+    "valid": { "type": "boolean" },
+    "blockers": { "type": "array", "items": { "type": "string" } }
+  },
+  "additionalProperties": true
+}

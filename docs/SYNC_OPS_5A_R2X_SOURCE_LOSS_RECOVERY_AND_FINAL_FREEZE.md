@@ -63,3 +63,6 @@ wrapper change.
 
 R2X does not execute recovery, P2S rebase, experiment materialization, first
 cycle, process actions, endpoint calls, or approvals.
+
+R3X supersedes the R2X frozen plans after productizing launch authority and
+closing 67/67 source provenance. R2X artifacts remain evidence, not approval.

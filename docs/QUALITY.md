@@ -139,6 +139,12 @@ action manifests, and select a tests-only market candidate. Mainline remains
 no-real-prod-write, no-real-process-action, no-endpoint, no-active-sandbox-write,
 no-pointer-write, no-owner-dev-write, and no env-value access.
 
+SYNC-OPS-5A-R3X adds source provenance and launcher coverage. Focused tests
+prove 67/67 package provenance, reject `manual_exact_argv` as authority,
+exercise the temp sync-ops supervised launcher start/status/stop path, validate
+recovery V3 and full P2S V3, and confirm the final compound request remains an
+approval request rather than an approval.
+
 ## R8-8N-DOCS Readiness Documentation Boundary
 
 R8-8N-DOCS persists the agent readiness matrix and developer prompt catalog in:

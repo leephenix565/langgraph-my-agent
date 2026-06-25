@@ -14,6 +14,9 @@ baseline-only repair.
 If the process is still running from an empty source root, treat it as R2X
 source-loss. Stop at launch-authority blockers; do not invent a restart
 launcher, read env values, or call an empty-tree restore rollback.
+For R3X and later, launch authority must be a process manager or the approved
+sync-ops supervised launcher contract. Do not execute ad hoc shell commands or
+read environment values.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

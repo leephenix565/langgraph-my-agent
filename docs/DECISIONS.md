@@ -3,6 +3,60 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-145: Source-Loss Approval Requires Complete Package Provenance
+
+Status: accepted for SYNC-OPS-5A-R3X.
+
+Decision: source-loss recovery requires per-file provenance for every file in
+the recovery package. Package integrity alone is insufficient.
+
+Reason: historical baselines prove bytes only when every file can be traced to
+a manifest or accepted lineage record.
+
+## ADR-144: Environment Values Stay Outside Sync Artifacts
+
+Status: accepted for SYNC-OPS-5A-R3X.
+
+Decision: launch contracts may reference environment sources and bounded
+non-secret overrides, but the sync control plane must not read or persist
+secret values.
+
+Reason: recovery planning needs reproducible startup behavior without leaking
+credentials into plans, logs, or closeouts.
+
+## ADR-143: Sync Launchers Are Closed Command Contracts
+
+Status: accepted for SYNC-OPS-5A-R3X.
+
+Decision: a sync-ops launcher is a closed contract: exact executable, argv,
+cwd, owner, environment names, log/state paths, and stop semantics. It is not
+an arbitrary command runner.
+
+Reason: process authority must be auditable and machine-approvable without
+granting general shell execution.
+
+## ADR-142: Manual Argv Evidence Is Not Launch Authority
+
+Status: accepted for SYNC-OPS-5A-R3X.
+
+Decision: `manual_exact_argv` can describe the running process, but it is not
+a valid launch authority until wrapped by a process manager or approved
+sync-ops launcher.
+
+Reason: reproducing a process requires start, stop, status, environment, logs,
+and PID reuse controls, not just argv text.
+
+## ADR-141: Final Recovery Approval Binds Final Tool HEAD
+
+Status: accepted for SYNC-OPS-5A-R3X.
+
+Decision: final recovery, P2S rebase, experiment, first cycle, and compound
+approval requests are generated only after commit/push and bind the final tool
+HEAD plus all plan hashes.
+
+Reason: execution approval must not authorize code or schema that has changed
+after the plan was frozen.
+
 ## ADR-140: Compound Execution Requires Launch Authority Before Approval
 
 Status: accepted for SYNC-OPS-5A-R2X.

@@ -1,0 +1,33 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_source_loss_recovery_plan_v3",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "incident", "source_provenance", "launch_authority", "environment_contract", "candidate", "source_loss_evidence_archive", "file_actions", "requested_permissions", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_source_loss_recovery_plan_v3" },
+    "incident": {
+      "type": "object",
+      "required": ["previous_runtime_restore_supported", "empty_tree_restore_is_rollback", "irreversible_cutover_acknowledgement_required"],
+      "properties": {
+        "previous_runtime_restore_supported": { "const": false },
+        "empty_tree_restore_is_rollback": { "const": false },
+        "irreversible_cutover_acknowledgement_required": { "const": true }
+      },
+      "additionalProperties": true
+    },
+    "file_actions": { "type": "array", "minItems": 67, "maxItems": 67 },
+    "requested_permissions": {
+      "type": "object",
+      "required": ["irreversible_source_loss_cutover_acknowledged", "delete", "invoke", "sigkill"],
+      "properties": {
+        "irreversible_source_loss_cutover_acknowledged": { "const": true },
+        "delete": { "const": false },
+        "invoke": { "const": false },
+        "sigkill": { "const": false }
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}

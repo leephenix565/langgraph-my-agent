@@ -84,3 +84,6 @@ SYNC-OPS-5A-R2X adds that if the service is still running from a deleted source
 tree, execution is blocked until launch authority is explicit. Recovery must
 materialize a sibling candidate, pass a shadow canary, and roll forward; an
 empty-tree restore is not rollback.
+SYNC-OPS-5A-R3X adds that launch authority must be a process manager or the
+approved sync-ops supervised launcher. Do not treat copied argv text as
+executable authority.

@@ -1,0 +1,37 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "agent_sync_source_package_provenance_v1",
+  "type": "object",
+  "required": ["schema_version", "source_file_count", "entries", "resolved_count", "unresolved_count", "canonical_sha256"],
+  "properties": {
+    "schema_version": { "const": "agent_sync_source_package_provenance_v1" },
+    "source_file_count": { "const": 67 },
+    "entries": {
+      "type": "array",
+      "minItems": 67,
+      "maxItems": 67,
+      "items": {
+        "type": "object",
+        "required": ["relative_path", "sha256", "authority_sources", "classification", "resolved"],
+        "properties": {
+          "classification": {
+            "enum": [
+              "exact_prod_baseline_manifest_provenance",
+              "accepted_bg_hash_provenance",
+              "exact_backup_provenance",
+              "owner_equivalent_provenance",
+              "historical_baseline_only",
+              "unresolved"
+            ]
+          },
+          "resolved": { "type": "boolean" }
+        },
+        "additionalProperties": true
+      }
+    },
+    "resolved_count": { "const": 67 },
+    "unresolved_count": { "const": 0 },
+    "canonical_sha256": { "type": "string", "minLength": 64, "maxLength": 64 }
+  },
+  "additionalProperties": true
+}
