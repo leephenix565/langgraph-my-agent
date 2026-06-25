@@ -20,6 +20,7 @@ from react_agent.ops.sync_cycle import (
     build_strict_cycle_approval_request,
     build_strict_cycle_plan_from_children,
     recover_cycle,
+    run_cycle_nonzero_strict,
     run_cycle_noop,
     run_temp_cycle_compensation,
     run_temp_multi_transaction_cycle,
@@ -431,3 +432,90 @@ def test_cli_publish_and_rebase_dry_run_accepts_strict_request(tmp_path: Path) -
     assert payload["process_actions"] == 0
     assert payload["live_actions"] == 0
     assert payload["delete_actions"] == 0
+
+
+def test_strict_nonzero_cycle_executes_one_file_publish_and_rebase(tmp_path: Path) -> None:
+    summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
+    prod_root = tmp_path / "prod" / "risk_financial_fraud"
+    experiment_root = tmp_path / "experiment" / "fixed-dag-services" / "risk_financial_fraud"
+    active_root = tmp_path / "sandbox" / "prod"
+    pointer_path = tmp_path / "sandbox" / "PROD_BASELINE_POINTER.json"
+    stage_root = tmp_path / "baselines" / "first-cycle-p2s_52d75b56543f" / "fixed-dag-services"
+    rel = Path("risk_financial_fraud/tests/test_report_material.py")
+    before = "def test_report_material_before():\n    assert 'before'\n"
+    after = "def test_report_material_after():\n    assert 'after'\n"
+    for root, content in ((prod_root, before), (experiment_root, after), (active_root / "risk_financial_fraud", before)):
+        target = root / "tests" / "test_report_material.py"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(content, encoding="utf-8")
+        (root / "README.md").write_text("stable\n", encoding="utf-8")
+    pointer_path.parent.mkdir(parents=True, exist_ok=True)
+    pointer_path.write_text(
+        json.dumps(
+            {
+                "schema_version": "fixed_dag_prod_sandbox_baseline_pointer_v1",
+                "active_baseline_id": "risk-fraud-rebase-full_p2s_rebase_9f7f07553392",
+                "active_path": str(active_root),
+                "versioned_baseline_path": str(tmp_path / "baseline" / "fixed-dag-services"),
+                "manifest_hashes": {},
+            }
+        ),
+        encoding="utf-8",
+    )
+    before_sha = file_sha256(prod_root / "tests" / "test_report_material.py")
+    after_sha = file_sha256(experiment_root / "tests" / "test_report_material.py")
+    s2p["actions"][0].update(
+        {
+            "source_experiment_file": str(experiment_root / "tests" / "test_report_material.py"),
+            "target_prod_file": str(prod_root / "tests" / "test_report_material.py"),
+            "before_sha256": before_sha,
+            "after_sha256": after_sha,
+        }
+    )
+    p2s["stage_root"] = str(stage_root)
+    p2s["actions"][0].update(
+        {
+            "source_prod_file": str(prod_root / "tests" / "test_report_material.py"),
+            "target_baseline_file": str(stage_root / rel),
+            "expected_source_sha256": after_sha,
+            "expected_target_sha256": after_sha,
+        }
+    )
+    projected["before_descriptor"]["digest"] = "before-temp"
+    projected["after_descriptor"]["digest"] = "after-temp"
+    p2s["projected_active_source_after_descriptor"] = dict(projected["after_descriptor"])
+    summary["projected_prod_after_descriptor"] = "after-temp"
+    plan = build_strict_cycle_plan_from_children(
+        summary_cycle=summary,
+        experiment_manifest=experiment,
+        change_unit=change,
+        s2p_child_plan=s2p,
+        projected_prod_after=projected,
+        p2s_child_plan=p2s,
+        created_at="2026-06-25T00:00:00Z",
+        expires_at="2026-06-26T00:00:00Z",
+    )
+    plan["baseline"].update(
+        {
+            "active_path": str(active_root),
+            "pointer_path": str(pointer_path),
+            "pointer_sha256": file_sha256(pointer_path),
+        }
+    )
+    plan["canonical_sha256"] = canonical_sha256(plan)
+    approval = build_cycle_approval_bundle(plan, operator_reference="unit-test", approve_nonzero=True)
+
+    result = run_cycle_nonzero_strict(plan, approval, tmp_path / "artifacts")
+
+    assert result["valid"] is True
+    assert result["status"] == "terminal_publish_and_rebase_chain_complete"
+    assert result["s2p_action_count"] == 1
+    assert result["p2s_action_count"] == 1
+    assert result["endpoint_call_count"] == 0
+    assert result["process_action_count"] == 0
+    assert file_sha256(prod_root / "tests" / "test_report_material.py") == after_sha
+    assert file_sha256(active_root / rel) == after_sha
+    assert file_sha256(stage_root / rel) == after_sha
+    pointer = json.loads(pointer_path.read_text(encoding="utf-8"))
+    assert pointer["active_baseline_id"] == "first-cycle-p2s_52d75b56543f"
+    assert Path(result["old_active_archive"]).exists()

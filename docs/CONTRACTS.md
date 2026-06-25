@@ -1602,3 +1602,22 @@ descriptor `f6ed15e1...`, P2S child `p2s_first_52d75b56543f`, and P2S action
 The approval request is `agent_sync_cycle_approval_request_v1` with status
 `awaiting_machine_approval`. It is explicitly not a machine approval and cannot
 be used with `--execute`.
+
+## SYNC-OPS-5C-FINAL Strict Nonzero Execution Contract
+
+Strict non-zero execution uses the same
+`agent_sync_publish_and_rebase_cycle_v1` plan and requires an approved
+`agent_sync_cycle_approval_bundle_v1`. The approval bundle must match the
+strict cycle hash and exact action ids from the plan; an approval request is
+not executable.
+
+The first executable non-zero cycle is constrained to one S2P action and one
+P2S action. The S2P action performs a backed-up atomic replacement of the
+single registered production file, followed by focused offline validation and
+prod-after descriptor verification. The P2S action stages the same file into a
+new immutable baseline, activates an independent candidate, updates the
+pointer, and records final prod/active/stage parity.
+
+The contract keeps process restart, live endpoint calls, `/invoke`, provider
+calls, deletes, full-tree publish, semantic merge, and owner-dev writes outside
+the approved capability set.

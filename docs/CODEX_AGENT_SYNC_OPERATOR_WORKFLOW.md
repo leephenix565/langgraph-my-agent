@@ -60,3 +60,7 @@ the CLI has `schema_version=agent_sync_publish_and_rebase_cycle_v1`. If the
 packet only has `agent_sync_first_nonzero_cycle_plan_v1`, generate the strict
 envelope and approval request without changing the child S2P/P2S plans or
 action ids, then stop for exact machine approval.
+After SYNC-OPS-5C-FINAL, an approved strict non-zero cycle may be executed
+through the same CLI. The approval bundle must be exact for the strict cycle
+hash and S2P/P2S action ids, and process/live/delete/invoke/provider/owner-dev
+permissions must remain false.

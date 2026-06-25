@@ -115,3 +115,9 @@ change unit, S2P child, projected prod-after descriptor, and P2S child in the
 formal `agent_sync_publish_and_rebase_cycle_v1` strict envelope. Use
 `agent-sync cycle validate` and publish-and-rebase dry-run to confirm
 `ready_for_machine_approval`.
+SYNC-OPS-5C-FINAL adds that strict non-zero execution is allowed only with an
+exact `agent_sync_cycle_approval_bundle_v1`. The approved bundle must match
+the strict cycle hash and the two requested S2P/P2S action ids. Execution
+records a single-file backup, focused offline test, prod-after descriptor
+proof, P2S stage/activation proof, final parity, owner handoff, and zero
+process/live/delete/provider/owner-dev actions.

@@ -3503,3 +3503,21 @@ Consequence: final cycle packets include a strict envelope and a separate
 awaiting-machine-approval request. The request cannot act as approval and does
 not authorize execution until a machine approval is created for that strict
 cycle hash.
+
+## ADR-083: Strict Non-Zero Cycles Execute Only With Exact Approval Bundles
+
+Status: accepted for SYNC-OPS-5C-FINAL.
+
+Decision: a non-zero publish-and-rebase cycle may execute through the formal
+CLI only when an `agent_sync_cycle_approval_bundle_v1` exactly matches the
+strict cycle hash, S2P action ids, and P2S action ids.
+
+Reason: the first real non-zero cycle must preserve the machine-approved
+business scope. A request, summary, stale packet, or approval with expanded
+process/live/delete/provider/owner-dev capability is not an execution
+authority.
+
+Consequence: strict non-zero execution performs the approved one-file S2P
+transaction and matching P2S rebase, records durable backup and parity
+evidence, and leaves process/live/provider/delete/owner-dev capability outside
+the cycle.

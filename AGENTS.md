@@ -97,6 +97,9 @@ Implementation changes must update the relevant reset docs:
   frozen experiment, change unit, S2P child, projected prod-after descriptor,
   and P2S child in `agent_sync_publish_and_rebase_cycle_v1` before calling
   `agent-sync cycle publish-and-rebase`.
+- Strict non-zero publish-and-rebase execution requires
+  `agent_sync_cycle_approval_bundle_v1` with exact S2P/P2S action ids and
+  process/live/delete/invoke/provider/owner-dev permissions set false.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

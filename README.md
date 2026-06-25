@@ -1128,3 +1128,18 @@ readiness.
   awaiting approval request and reports `ready_for_machine_approval`.
 - This repair does not write prod, sandbox, pointer, owner-dev, processes,
   endpoints, or secrets.
+
+## SYNC-OPS-5C-FINAL Strict Nonzero Execution
+
+- Strict non-zero publish-and-rebase execution now uses the formal
+  `agent_sync_publish_and_rebase_cycle_v1` plan with an exact
+  `agent_sync_cycle_approval_bundle_v1`.
+- The approved first cycle contains one S2P action and one P2S action for
+  `risk_financial_fraud/tests/test_report_material.py`.
+- The executor creates a durable single-file backup, performs an atomic
+  production replace, runs the focused offline test, verifies the projected
+  prod-after descriptor, stages the matching P2S update, activates the new
+  sandbox baseline, updates the pointer, and records owner handoff evidence.
+- Process restart, live endpoint calls, `/invoke`, provider calls, deletes,
+  semantic merge, full-tree publish, and owner-dev writes remain outside this
+  approval.

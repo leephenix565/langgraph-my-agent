@@ -126,6 +126,7 @@ from react_agent.ops.sync_cycle import (
     build_cycle_plan_from_experiment,
     build_cycle_plan_from_s2p,
     recover_cycle,
+    run_cycle_nonzero_strict,
     run_cycle_noop,
     run_temp_cycle_compensation,
     run_temp_multi_transaction_cycle,
@@ -653,8 +654,9 @@ def cmd_cycle_publish_and_rebase(args: argparse.Namespace) -> int:
     s2p_actions = int(((plan.get("s2p_plan") or {}).get("summary") or {}).get("actionable_file_action_count") or 0)
     p2s_actions = int((plan.get("p2s_plan") or {}).get("p2s_action_count") or 0)
     if s2p_actions or p2s_actions:
-        raise SyncPlannerError("nonzero_cycle_execution_requires_sync_ops_5b_machine_approval", exit_code=4)
-    result = run_cycle_noop(plan, approval, Path(args.artifact_root))
+        result = run_cycle_nonzero_strict(plan, approval, Path(args.artifact_root))
+    else:
+        result = run_cycle_noop(plan, approval, Path(args.artifact_root))
     payload = {"summary_title": "agent-sync cycle publish-and-rebase", **result, "exit_code": 0 if result["valid"] else 7}
     return print_or_json(args, payload, [f"cycle_run_id={result['cycle_run_id']}", f"status={result['status']}"])
 

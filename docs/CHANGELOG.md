@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5C-FINAL strict nonzero execution
+
+### Added
+
+- Added formal strict non-zero execution support for
+  `agent_sync_publish_and_rebase_cycle_v1` when an exact
+  `agent_sync_cycle_approval_bundle_v1` is supplied.
+- Added durable evidence for one-file S2P backup/apply/test, prod-after
+  descriptor proof, first-cycle P2S stage/activation, final parity, experiment
+  closeout, owner handoff, and lock release.
+- Added focused coverage for strict one-file publish-and-rebase execution with
+  exact action ids and no process/live/delete/provider/owner-dev capability.
+- Closed cycle `cycle_strict_e7bc707d5b8b` with durable run
+  `run_cycle_strict_cycle_strict_e7bc707d5b8b_20260625T135349Z`, final active
+  baseline `first-cycle-p2s_52d75b56543f`, and pointer SHA
+  `237f93bf0a90c0f8dcc4f2c4c240274b15af3bb2e980871d5a3929e40178e939`.
+
+### Changed
+
+- `agent-sync cycle publish-and-rebase --execute` now runs strict non-zero
+  cycles through the formal cycle executor instead of rejecting every non-zero
+  cycle after approval validation.
+
+### Not Done
+
+- No process restart, live endpoint call, `/invoke`, provider call, delete,
+  owner-dev write, full-tree publish, or semantic merge.
+
 ## 2026-06-25 - SYNC-OPS-5C-R1 strict cycle envelope repair
 
 ### Added

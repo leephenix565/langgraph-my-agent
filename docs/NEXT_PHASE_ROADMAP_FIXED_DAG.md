@@ -463,6 +463,10 @@ SYNC-OPS-5C-R1 repairs the packet shape for that next step. The remaining
 action is machine approval for the strict
 `agent_sync_publish_and_rebase_cycle_v1` envelope, not another source-loss,
 P2S, or experiment-planning phase.
+SYNC-OPS-5C-FINAL executes that strict non-zero cycle with a single S2P action
+and a matching first-cycle P2S action. After its closeout, the bidirectional
+agent sync topic moves to normal operator use rather than another
+infrastructure phase.
 
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should

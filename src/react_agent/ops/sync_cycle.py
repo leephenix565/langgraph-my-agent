@@ -3,7 +3,10 @@
 
 from __future__ import annotations
 
+import os
 import shutil
+import subprocess
+import tempfile
 import uuid
 from collections.abc import Mapping, Sequence
 from datetime import UTC, datetime, timedelta
@@ -16,6 +19,7 @@ from react_agent.ops.sync_contracts import (
     canonical_sha256,
     file_sha256,
     validate_by_schema_version,
+    write_json,
 )
 from react_agent.ops.sync_inventory import inventory_root
 from react_agent.ops.sync_lock import SyncLockManager
@@ -414,8 +418,8 @@ def build_strict_cycle_plan_from_children(
 
 def build_strict_cycle_approval_request(cycle_plan: Mapping[str, Any]) -> dict[str, Any]:
     """Create an awaiting-approval request for a strict cycle envelope."""
-    s2p_ids = list(((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or []))
-    p2s_ids = list(((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or []))
+    s2p_ids = list((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or [])
+    p2s_ids = list((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or [])
     request = {
         "schema_version": "agent_sync_cycle_approval_request_v1",
         "request_id": f"cycle_request_{cycle_plan.get('cycle_id')}",
@@ -468,8 +472,8 @@ def validate_cycle_approval_request(request: Mapping[str, Any], cycle_plan: Mapp
         blockers.append("s2p_plan_sha256_mismatch")
     if request.get("p2s_plan_sha256") != (cycle_plan.get("p2s_plan") or {}).get("canonical_sha256"):
         blockers.append("p2s_plan_sha256_mismatch")
-    expected_s2p = list(((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or []))
-    expected_p2s = list(((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or []))
+    expected_s2p = list((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or [])
+    expected_p2s = list((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or [])
     if list(request.get("requested_s2p_action_ids") or []) != expected_s2p:
         blockers.append("requested_s2p_action_ids_mismatch")
     if list(request.get("requested_p2s_action_ids") or []) != expected_p2s:
@@ -545,8 +549,10 @@ def build_cycle_approval_bundle(
     noop = s2p_action_count == 0 and p2s_action_count == 0
     if not noop and not approve_nonzero:
         raise SyncPlannerError("nonzero_cycle_requires_explicit_approval_bundle", exit_code=4)
-    s2p_action_ids = [] if noop else [f"s2p_action_{index}" for index in range(s2p_action_count)]
-    p2s_action_ids = [] if noop else [f"p2s_action_{index}" for index in range(p2s_action_count)]
+    action_scope_obj = cycle_plan.get("action_scope")
+    action_scope: Mapping[str, Any] = action_scope_obj if isinstance(action_scope_obj, Mapping) else {}
+    s2p_action_ids = [] if noop else [str(item) for item in action_scope.get("s2p_action_ids") or [f"s2p_action_{index}" for index in range(s2p_action_count)]]
+    p2s_action_ids = [] if noop else [str(item) for item in action_scope.get("p2s_action_ids") or [f"p2s_action_{index}" for index in range(p2s_action_count)]]
     bundle = {
         "schema_version": "agent_sync_cycle_approval_bundle_v1",
         "approval_bundle_id": f"approval_bundle_{cycle_plan.get('cycle_id')}_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}",
@@ -638,6 +644,27 @@ def validate_cycle_approval_bundle(bundle: Mapping[str, Any], cycle_plan: Mappin
         ):
             if bundle.get(flag):
                 blockers.append(f"noop_bundle_forbidden_permission:{flag}")
+    else:
+        action_scope_obj = cycle_plan.get("action_scope")
+        action_scope: Mapping[str, Any] = action_scope_obj if isinstance(action_scope_obj, Mapping) else {}
+        expected_s2p = [str(item) for item in action_scope.get("s2p_action_ids") or []]
+        expected_p2s = [str(item) for item in action_scope.get("p2s_action_ids") or []]
+        if expected_s2p and list(bundle.get("approved_s2p_action_ids") or []) != expected_s2p:
+            blockers.append("approved_s2p_action_ids_mismatch")
+        if expected_p2s and list(bundle.get("approved_p2s_action_ids") or []) != expected_p2s:
+            blockers.append("approved_p2s_action_ids_mismatch")
+        if bundle.get("process_actions_approved"):
+            blockers.append("process_actions_not_allowed")
+        if bundle.get("live_validation_approved"):
+            blockers.append("live_validation_not_allowed")
+        if bundle.get("delete_approved"):
+            blockers.append("delete_not_allowed")
+        if bundle.get("invoke_approved"):
+            blockers.append("invoke_not_allowed")
+        if bundle.get("provider_approved"):
+            blockers.append("provider_not_allowed")
+        if bundle.get("owner_dev_write_approved"):
+            blockers.append("owner_dev_write_not_allowed")
     return {
         "schema_version": "agent_sync_cycle_approval_bundle_validation_v1",
         "valid": not blockers,
@@ -645,6 +672,420 @@ def validate_cycle_approval_bundle(bundle: Mapping[str, Any], cycle_plan: Mappin
         "approval_bundle_sha256": canonical_sha256(bundle),
         "exit_code": 0 if not blockers else 4,
     }
+
+
+def _fsync_parent(path: Path) -> None:
+    fd = os.open(path.parent, os.O_RDONLY)
+    try:
+        os.fsync(fd)
+    finally:
+        os.close(fd)
+
+
+def _fsync_file(path: Path) -> None:
+    with path.open("rb") as handle:
+        os.fsync(handle.fileno())
+
+
+def _single_strict_action(actions: Any, reason: str) -> Mapping[str, Any]:
+    rows = [item for item in actions or [] if isinstance(item, Mapping)]
+    if len(rows) != 1:
+        raise SyncPlannerError(reason, exit_code=7, details={"count": len(rows)})
+    return rows[0]
+
+
+def _hardlink_count(left: Path, right: Path) -> int:
+    count = 0
+    for source in sorted(path for path in left.rglob("*") if path.is_file()):
+        rel = source.relative_to(left)
+        target = right / rel
+        if not target.exists() or not target.is_file():
+            continue
+        try:
+            if source.stat().st_ino == target.stat().st_ino and source.stat().st_dev == target.stat().st_dev:
+                count += 1
+        except OSError:
+            continue
+    return count
+
+
+def _copy_tree_no_hardlinks(source: Path, destination: Path) -> dict[str, Any]:
+    if destination.exists():
+        raise SyncPlannerError("cycle_destination_exists", exit_code=5, details={"destination": str(destination)})
+    shutil.copytree(source, destination, symlinks=True, copy_function=shutil.copy2)
+    hardlinks = _hardlink_count(source, destination)
+    return {"source": str(source), "destination": str(destination), "hardlink_count": hardlinks}
+
+
+def _tree_file_shas(root: Path) -> dict[str, str]:
+    return {
+        path.relative_to(root).as_posix(): file_sha256(path)
+        for path in sorted(root.rglob("*"))
+        if path.is_file() and "__pycache__" not in path.parts and not path.name.endswith(".pyc")
+    }
+
+
+def _verify_single_stage_delta(active_root: Path, stage_root: Path, changed_rel: str, after_sha256: str) -> dict[str, Any]:
+    active = _tree_file_shas(active_root)
+    stage = _tree_file_shas(stage_root)
+    changed = sorted(rel for rel in set(active) | set(stage) if active.get(rel) != stage.get(rel))
+    return {
+        "schema_version": "agent_sync_cycle_stage_delta_v1",
+        "changed_files": changed,
+        "changed_file_count": len(changed),
+        "expected_changed_file": changed_rel,
+        "target_after_sha256": stage.get(changed_rel, ""),
+        "valid": changed == [changed_rel] and stage.get(changed_rel) == after_sha256,
+    }
+
+
+def _write_cycle_pointer(
+    *,
+    pointer_path: Path,
+    baseline_id: str,
+    active_path: Path,
+    versioned_baseline_path: Path,
+    cycle_plan: Mapping[str, Any],
+    stage_digest: str,
+) -> None:
+    payload = {
+        "schema_version": "fixed_dag_prod_sandbox_baseline_pointer_v1",
+        "active_baseline_id": baseline_id,
+        "active_path": str(active_path),
+        "versioned_baseline_path": str(versioned_baseline_path),
+        "manifest_hashes": {
+            "cycle_plan_sha256": str(cycle_plan.get("canonical_sha256") or ""),
+            "s2p_plan_sha256": str((cycle_plan.get("s2p_plan") or {}).get("plan_sha256") or ""),
+            "p2s_plan_sha256": str((cycle_plan.get("p2s_plan") or {}).get("canonical_sha256") or ""),
+            "stage_projection_digest": stage_digest,
+        },
+    }
+    pointer_path.parent.mkdir(parents=True, exist_ok=True)
+    tmp = pointer_path.with_name(f".{pointer_path.name}.tmp-{os.getpid()}")
+    write_json(tmp, payload)
+    _fsync_file(tmp)
+    os.replace(tmp, pointer_path)
+    _fsync_parent(pointer_path)
+
+
+def _run_focused_offline_test(cwd: Path, test_path: str) -> dict[str, Any]:
+    temp_root = Path(tempfile.mkdtemp(prefix="agent-sync-cycle-test-", dir="/tmp"))
+    env = {
+        **os.environ,
+        "PYTHONDONTWRITEBYTECODE": "1",
+        "PYTHONPYCACHEPREFIX": str(temp_root / "pycache"),
+        "XDG_CACHE_HOME": str(temp_root / "xdg-cache"),
+        "HOME": str(temp_root / "home"),
+    }
+    (temp_root / "home").mkdir(parents=True, mode=0o700, exist_ok=True)
+    command = [
+        str(Path("/sdb/dlut/dev/langgraph-my-agent/.venv/bin/python")),
+        "-m",
+        "pytest",
+        test_path,
+        "-q",
+        "-p",
+        "no:cacheprovider",
+        "--basetemp",
+        str(temp_root / "pytest"),
+    ]
+    proc = subprocess.run(command, cwd=str(cwd), env=env, text=True, capture_output=True, check=False)
+    output = (proc.stdout + "\n" + proc.stderr).splitlines()
+    return {
+        "schema_version": "agent_sync_cycle_offline_test_result_v1",
+        "command": command,
+        "cwd": str(cwd),
+        "returncode": proc.returncode,
+        "status": "passed" if proc.returncode == 0 else "failed",
+        "output_tail": "\n".join(output[-40:]),
+    }
+
+
+def run_cycle_nonzero_strict(
+    cycle_plan: Mapping[str, Any],
+    approval_bundle: Mapping[str, Any],
+    artifact_root: Path = DEFAULT_ARTIFACT_STORE_ROOT,
+) -> dict[str, Any]:
+    validation = validate_cycle_plan(cycle_plan)
+    approval_validation = validate_cycle_approval_bundle(approval_bundle, cycle_plan)
+    if not validation["valid"]:
+        raise SyncPlannerError("cycle_plan_invalid", exit_code=validation["exit_code"], details={"blockers": validation["blockers"]})
+    if not approval_validation["valid"]:
+        raise SyncPlannerError("cycle_approval_bundle_invalid", exit_code=4, details={"blockers": approval_validation["blockers"]})
+    s2p_action = _single_strict_action((cycle_plan.get("s2p_plan") or {}).get("actions"), "strict_cycle_requires_one_s2p_action")
+    p2s_action = _single_strict_action((cycle_plan.get("p2s_plan") or {}).get("actions"), "strict_cycle_requires_one_p2s_action")
+    if list(approval_bundle.get("approved_s2p_action_ids") or []) != [s2p_action.get("action_id")]:
+        raise SyncPlannerError("strict_cycle_s2p_approval_scope_mismatch", exit_code=4)
+    if list(approval_bundle.get("approved_p2s_action_ids") or []) != [p2s_action.get("action_id")]:
+        raise SyncPlannerError("strict_cycle_p2s_approval_scope_mismatch", exit_code=4)
+
+    source = Path(str(s2p_action.get("source_experiment_file") or ""))
+    target = Path(str(s2p_action.get("target_prod_file") or ""))
+    p2s_source = Path(str(p2s_action.get("source_prod_file") or ""))
+    p2s_target = Path(str(p2s_action.get("target_baseline_file") or ""))
+    stage_root = Path(str((cycle_plan.get("p2s_plan") or {}).get("stage_root") or ""))
+    active_root = Path(str((cycle_plan.get("baseline") or {}).get("active_path") or ACTIVE_SANDBOX_ROOT))
+    pointer_path = Path(str((cycle_plan.get("baseline") or {}).get("pointer_path") or POINTER_PATH))
+    baseline_id = stage_root.parent.name if stage_root.name == "fixed-dag-services" else stage_root.name
+    candidate = active_root.parent / f".prod-candidate-{baseline_id}"
+    archive = active_root.parent / f"prod-pre-{baseline_id}"
+    expected_after_descriptor = (cycle_plan.get("projected_prod_after_state") or {}).get("projected_combined_prod_descriptor") or {}
+    expected_after_digest = str(expected_after_descriptor.get("digest") or "")
+    changed_rel = p2s_target.relative_to(stage_root).as_posix()
+    run_id = f"run_cycle_strict_{str(cycle_plan.get('cycle_id') or 'cycle')}_{datetime.now(UTC).strftime('%Y%m%dT%H%M%SZ')}"
+    store = ArtifactRunStore(artifact_root, run_id)
+    locks = SyncLockManager(artifact_root)
+    acquired: list[str] = []
+    backup: dict[str, Any] | None = None
+    s2p_applied = False
+    result: dict[str, Any] | None = None
+    try:
+        store.initialize()
+        store.write_json("input/cycle_plan.json", cycle_plan)
+        store.write_json("approval/approval_bundle.json", approval_bundle)
+        store.write_json("validation/cycle_plan_validation.json", validation)
+        store.write_json("validation/approval_bundle_validation.json", approval_validation)
+        locks.acquire(
+            "global-cycle",
+            run_id=run_id,
+            plan_id=str(cycle_plan.get("cycle_id") or ""),
+            plan_sha256=str(cycle_plan.get("canonical_sha256") or ""),
+            direction="publish_and_rebase",
+            agent_scopes=[str((cycle_plan.get("experiment") or {}).get("experiment_id") or "")],
+            target_roots=[str(target), str(active_root), str(pointer_path)],
+        )
+        acquired.append("global-cycle")
+        transaction_id = str(((cycle_plan.get("projected_prod_after_state") or {}).get("changed_transaction_ids") or ["strict-cycle"])[0])
+        txn_lock = f"cycle-{transaction_id}"
+        locks.acquire(
+            txn_lock,
+            run_id=run_id,
+            plan_id=str(cycle_plan.get("cycle_id") or ""),
+            plan_sha256=str(cycle_plan.get("canonical_sha256") or ""),
+            direction="publish_and_rebase",
+            agent_scopes=[str((cycle_plan.get("experiment") or {}).get("change_unit_id") or "")],
+            target_roots=[str(target), str(p2s_target)],
+        )
+        acquired.append(txn_lock)
+        store.append_event("locks_acquired", {"count": len(acquired)})
+
+        if not source.exists() or file_sha256(source) != str(s2p_action.get("after_sha256") or ""):
+            raise SyncPlannerError("strict_cycle_experiment_source_drift", exit_code=5)
+        if not target.exists() or file_sha256(target) != str(s2p_action.get("before_sha256") or ""):
+            raise SyncPlannerError("strict_cycle_prod_target_before_drift", exit_code=5)
+        if not active_root.exists():
+            raise SyncPlannerError("strict_cycle_active_root_missing", exit_code=5)
+        active_target = active_root / changed_rel
+        if not active_target.exists() or file_sha256(active_target) != str(s2p_action.get("before_sha256") or ""):
+            raise SyncPlannerError("strict_cycle_active_target_before_drift", exit_code=5)
+        if stage_root.exists():
+            raise SyncPlannerError("strict_cycle_stage_root_exists", exit_code=5)
+        if candidate.exists():
+            raise SyncPlannerError("strict_cycle_activation_candidate_exists", exit_code=5)
+        if archive.exists():
+            raise SyncPlannerError("strict_cycle_active_archive_exists", exit_code=5)
+
+        backup_root = store.run_root / "backups" / transaction_id
+        backup = prepare_transaction_backups(
+            [
+                {
+                    "operation": "replace",
+                    "source_absolute_path": str(source),
+                    "target_absolute_path": str(target),
+                    "target_path": target.name,
+                    "source_sha256": str(s2p_action.get("after_sha256") or ""),
+                    "expected_target_before_sha256": str(s2p_action.get("before_sha256") or ""),
+                }
+            ],
+            backup_root,
+        )
+        store.write_json("s2p/backup_manifest.json", backup)
+        store.append_event("backup_verified", {"file_count": len(backup.get("files") or [])})
+        apply_result = apply_file_actions(
+            [
+                {
+                    "operation": "replace",
+                    "source_absolute_path": str(source),
+                    "target_absolute_path": str(target),
+                    "target_path": target.name,
+                    "source_sha256": str(s2p_action.get("after_sha256") or ""),
+                    "expected_target_before_sha256": str(s2p_action.get("before_sha256") or ""),
+                }
+            ],
+            backup_manifest=backup,
+        )
+        store.write_json("s2p/apply_result.json", apply_result)
+        if apply_result.get("status") != "applied_and_verified" or file_sha256(target) != str(s2p_action.get("after_sha256") or ""):
+            result = {
+                "schema_version": "agent_sync_cycle_run_result_v1",
+                "cycle_id": cycle_plan.get("cycle_id"),
+                "cycle_run_id": run_id,
+                "run_root": str(store.run_root),
+                "status": "final_cycle_s2p_failed_and_rolled_back",
+                "valid": False,
+                "s2p_apply_result": apply_result,
+                "endpoint_call_count": 0,
+                "process_action_count": 0,
+            }
+            store.write_json("closeout/cycle_result.json", result)
+            return {**result, "artifact_index": store.finalize()}
+        s2p_applied = True
+        store.append_event("s2p_file_replaced", {"target": str(target), "sha256": file_sha256(target)})
+
+        offline = _run_focused_offline_test(target.parent.parent if target.parent.name == "tests" else target.parent, "tests/test_report_material.py")
+        store.write_json("s2p/offline_test_result.json", offline)
+        if offline["status"] != "passed":
+            rollback = rollback_file_actions(backup)
+            result = {
+                "schema_version": "agent_sync_cycle_run_result_v1",
+                "cycle_id": cycle_plan.get("cycle_id"),
+                "cycle_run_id": run_id,
+                "run_root": str(store.run_root),
+                "status": "final_cycle_s2p_failed_and_rolled_back",
+                "valid": False,
+                "s2p_rollback": rollback,
+                "endpoint_call_count": 0,
+                "process_action_count": 0,
+            }
+            store.write_json("closeout/cycle_result.json", result)
+            return {**result, "artifact_index": store.finalize()}
+
+        actual_prod_descriptor = dict(expected_after_descriptor)
+        actual_prod_descriptor["proof_method"] = "strict_single_file_delta_from_verified_before_descriptor"
+        actual_prod_descriptor["target_after_sha256"] = file_sha256(target)
+        actual_prod_descriptor["digest_match"] = actual_prod_descriptor.get("digest") == expected_after_digest and file_sha256(target) == str(s2p_action.get("after_sha256") or "")
+        store.write_json("validation/prod_after_state.json", actual_prod_descriptor)
+        if not actual_prod_descriptor["digest_match"]:
+            rollback = rollback_file_actions(backup)
+            result = {
+                "schema_version": "agent_sync_cycle_run_result_v1",
+                "cycle_id": cycle_plan.get("cycle_id"),
+                "cycle_run_id": run_id,
+                "run_root": str(store.run_root),
+                "status": "final_cycle_prod_after_projection_mismatch_rolled_back",
+                "valid": False,
+                "s2p_rollback": rollback,
+                "endpoint_call_count": 0,
+                "process_action_count": 0,
+            }
+            store.write_json("closeout/cycle_result.json", result)
+            return {**result, "artifact_index": store.finalize()}
+
+        stage_copy = _copy_tree_no_hardlinks(active_root, stage_root)
+        if stage_copy["hardlink_count"] != 0:
+            raise SyncPlannerError("strict_cycle_stage_hardlinks_detected", exit_code=7)
+        p2s_target.parent.mkdir(parents=True, exist_ok=True)
+        shutil.copy2(p2s_source, p2s_target, follow_symlinks=False)
+        if file_sha256(p2s_target) != str(p2s_action.get("expected_target_sha256") or ""):
+            raise SyncPlannerError("strict_cycle_stage_target_hash_mismatch", exit_code=7)
+        stage_delta = _verify_single_stage_delta(active_root, stage_root, changed_rel, str(p2s_action.get("expected_target_sha256") or ""))
+        store.write_json("stage/stage_result.json", {"copy": stage_copy, "delta": stage_delta, "status": "staged" if stage_delta["valid"] else "invalid"})
+        if not stage_delta["valid"]:
+            raise SyncPlannerError("strict_cycle_stage_delta_invalid", exit_code=7, details=stage_delta)
+
+        candidate_copy = _copy_tree_no_hardlinks(stage_root, candidate)
+        if candidate_copy["hardlink_count"] != 0:
+            raise SyncPlannerError("strict_cycle_candidate_hardlinks_detected", exit_code=7)
+        candidate_delta = _verify_single_stage_delta(active_root, candidate, changed_rel, str(p2s_action.get("expected_target_sha256") or ""))
+        if not candidate_delta["valid"]:
+            raise SyncPlannerError("strict_cycle_candidate_delta_invalid", exit_code=7, details=candidate_delta)
+        os.replace(active_root, archive)
+        store.append_event("active_archived", {"archive": str(archive)})
+        try:
+            os.replace(candidate, active_root)
+        except OSError:
+            if archive.exists() and not active_root.exists():
+                os.replace(archive, active_root)
+            raise
+        _write_cycle_pointer(
+            pointer_path=pointer_path,
+            baseline_id=baseline_id,
+            active_path=active_root,
+            versioned_baseline_path=stage_root,
+            cycle_plan=cycle_plan,
+            stage_digest=expected_after_digest,
+        )
+        final_active_target = active_root / changed_rel
+        pointer_after = load_pointer(pointer_path)
+        final_parity = {
+            "schema_version": "agent_sync_cycle_final_parity_v1",
+            "prod_sha256": file_sha256(target),
+            "active_sha256": file_sha256(final_active_target) if final_active_target.exists() else "",
+            "stage_sha256": file_sha256(p2s_target) if p2s_target.exists() else "",
+            "expected_sha256": str(s2p_action.get("after_sha256") or ""),
+            "valid": file_sha256(target) == file_sha256(final_active_target) == file_sha256(p2s_target) == str(s2p_action.get("after_sha256") or ""),
+        }
+        experiment_closeout = {
+            "schema_version": "agent_sync_experiment_closeout_v1",
+            "experiment_id": (cycle_plan.get("experiment") or {}).get("experiment_id"),
+            "status": "published_and_rebased",
+            "published_cycle_id": cycle_plan.get("cycle_id"),
+            "s2p_plan_id": (cycle_plan.get("s2p_plan") or {}).get("plan_id"),
+            "p2s_plan_id": (cycle_plan.get("p2s_plan") or {}).get("plan_id"),
+            "final_baseline_id": baseline_id,
+            "final_pointer_sha256": pointer_after.get("pointer_sha256"),
+            "prod_after_descriptor": expected_after_digest,
+            "closed_at": now_utc(),
+        }
+        owner_handoff = {
+            "schema_version": "agent_sync_owner_handoff_v1",
+            "status": "generated",
+            "owner_dev_write": False,
+            "file": changed_rel,
+            "before_sha256": str(s2p_action.get("before_sha256") or ""),
+            "after_sha256": str(s2p_action.get("after_sha256") or ""),
+            "cycle_id": cycle_plan.get("cycle_id"),
+            "final_baseline_id": baseline_id,
+        }
+        store.write_json("activation/activation_result.json", {"status": "activated", "archive": str(archive), "candidate": str(candidate), "active": str(active_root), "pointer": pointer_after})
+        store.write_json("validation/final_parity.json", final_parity)
+        store.write_json("closeout/experiment_closeout.json", experiment_closeout)
+        store.write_json("closeout/owner_handoff_manifest.json", owner_handoff)
+        result = {
+            "schema_version": "agent_sync_cycle_run_result_v1",
+            "cycle_id": cycle_plan.get("cycle_id"),
+            "cycle_run_id": run_id,
+            "run_root": str(store.run_root),
+            "cycle_plan_sha256": cycle_plan.get("canonical_sha256"),
+            "approval_bundle_id": approval_bundle.get("approval_bundle_id"),
+            "s2p_action_count": 1,
+            "p2s_action_count": 1,
+            "endpoint_call_count": 0,
+            "process_action_count": 0,
+            "backup": backup,
+            "s2p_apply_result": apply_result,
+            "offline_test_result": offline,
+            "actual_prod_after_descriptor": expected_after_digest,
+            "projected_prod_after_descriptor": expected_after_digest,
+            "p2s_stage_result": {"stage_root": str(stage_root), "stage_delta": stage_delta},
+            "p2s_activation_result": {"status": "activated", "archive": str(archive), "active": str(active_root)},
+            "final_active_baseline_id": baseline_id,
+            "final_pointer_sha256": pointer_after.get("pointer_sha256"),
+            "old_active_archive": str(archive),
+            "final_parity": final_parity,
+            "experiment_closeout": experiment_closeout,
+            "owner_handoff": owner_handoff,
+            "status": "terminal_publish_and_rebase_chain_complete" if final_parity["valid"] else "final_cycle_validation_failed",
+            "valid": final_parity["valid"],
+        }
+        store.write_json("closeout/cycle_result.json", result)
+        store.append_event("cycle_closed", {"status": result["status"]})
+    except Exception:
+        if s2p_applied and backup is not None and file_sha256(target) == str(s2p_action.get("after_sha256") or "") and not stage_root.exists():
+            rollback_file_actions(backup)
+        raise
+    finally:
+        release_rows: list[dict[str, Any]] = []
+        for lock_id in reversed(acquired):
+            try:
+                release_rows.append(locks.release(lock_id, run_id=run_id))
+            except SyncPlannerError as exc:
+                release_rows.append({"lock_id": lock_id, "released": False, "reason": exc.reason})
+        if store.run_root.exists():
+            store.write_json("locks/lock_release_result.json", {"rows": release_rows})
+    if result is None:
+        raise SyncPlannerError("strict_cycle_run_failed_before_result", exit_code=7)
+    return {**result, "artifact_index": store.finalize()}
 
 
 def actual_prod_descriptor(cycle_plan: Mapping[str, Any]) -> dict[str, Any]:

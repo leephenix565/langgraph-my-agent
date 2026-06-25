@@ -1253,3 +1253,17 @@ The terminal upstream gate records real execution evidence:
   `ready_for_machine_approval`.
 - Process, live, delete, invoke, provider, and owner-dev permissions remain
   false in the request.
+
+## SYNC-OPS-5C-FINAL Strict Nonzero Execution Gate
+
+- Exact machine approval bundles must match strict cycle hashes and S2P/P2S
+  action ids.
+- Non-zero execution must prove one durable S2P backup, one atomic production
+  file replacement, focused offline test success, and projected prod-after
+  descriptor equality before P2S starts.
+- First-cycle P2S must prove one staged action, no hardlinks, candidate
+  verification, activation, pointer update, and prod/active/stage file parity.
+- Process actions, live endpoints, `/invoke`, provider calls, deletes, and
+  owner-dev writes must remain zero.
+- Interrupted or failed cycles are recovered through the cycle recovery
+  contract; S2P is not re-applied after a verified production change.
