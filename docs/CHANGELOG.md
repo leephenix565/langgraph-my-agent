@@ -3,6 +3,35 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5A-R4X real canary qualification
+
+### Added
+
+- Added R4X environment variable matrix, clean environment profile, incumbent
+  versus canary equivalence, precutover canary plan, canary-only machine
+  approval, Recovery V4, P2S V4, projected experiment/cycle V4, and
+  conditional approval-chain contracts.
+- Added focused R4X tests for environment contradiction rejection,
+  environment parity, diagnostic body hashes, degradation blocking,
+  canary-only permissions, P2S stage/activation separation, and the new
+  `agent-sync risk-fraud freeze-source-loss-v4` CLI.
+- Added process launcher stop semantics that require optional listener release
+  proof without using SIGKILL.
+
+### Changed
+
+- Superseded the R3X broad compound request in favor of a closeout-bound
+  approval chain. Cutover can now await approval only after a real canary
+  closeout; P2S stage, P2S activation, experiment materialization, and first
+  publish remain blocked behind later real closeouts.
+
+### Not Done
+
+- No incumbent stop, source-root cutover, recovered production start, active
+  sandbox mutation, pointer write, owner-dev write, `/invoke`, provider call,
+  env-value output, secret output, P2S stage/activate, or first non-zero cycle
+  execution.
+
 ## 2026-06-25 - SYNC-OPS-5A-R3X approved launch authority
 
 ### Added

@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/service_environment_profile_v1.schema.json",
+  "title": "SYNC-OPS Service Environment Profile V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "service_unit_id",
+    "base_environment_mode",
+    "bounded_overrides",
+    "variable_contracts",
+    "values_read",
+    "proc_environ_read",
+    "candidate_runtime_artifacts_excluded_from_source_descriptor",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_service_environment_profile_v1"},
+    "service_unit_id": {"type": "string", "minLength": 1},
+    "base_environment_mode": {"const": "clean_allowlist"},
+    "allowed_system_variables": {"type": "array", "items": {"type": "string"}},
+    "bounded_overrides": {
+      "type": "object",
+      "required": ["common", "canary", "future_production", "only_differences_allowed"],
+      "properties": {
+        "common": {"type": "object"},
+        "canary": {"type": "object"},
+        "future_production": {"type": "object"},
+        "only_differences_allowed": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": true
+    },
+    "variable_contracts": {"type": "array", "minItems": 14},
+    "path_dependencies": {"type": "array"},
+    "secret_reference_contracts": {"type": "array"},
+    "values_read": {"const": false},
+    "proc_environ_read": {"const": false},
+    "candidate_runtime_artifacts_excluded_from_source_descriptor": {"const": true},
+    "environment_profile_diff_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

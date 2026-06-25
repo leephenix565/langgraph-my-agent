@@ -87,3 +87,7 @@ empty-tree restore is not rollback.
 SYNC-OPS-5A-R3X adds that launch authority must be a process manager or the
 approved sync-ops supervised launcher. Do not treat copied argv text as
 executable authority.
+SYNC-OPS-5A-R4X adds that source-loss cutover approval requires a real
+pre-cutover shadow canary closeout. Do not request P2S stage, P2S activation,
+experiment materialization, or first-cycle approval until the preceding node in
+the conditional approval chain has a real closeout SHA.

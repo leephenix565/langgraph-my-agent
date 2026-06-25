@@ -146,6 +146,12 @@ operators should use the frozen compound request and approved sync-ops launcher
 contracts; they must not run arbitrary shell commands or infer launch authority
 from a live process argv alone.
 
+SYNC-OPS-5A-R4X adds the final source-loss canary qualification boundary. A
+cutover request is valid only after the exact sibling candidate has passed a
+real shadow canary against the incumbent using the same clean environment
+profile. P2S stage, P2S activation, experiment materialization, and first
+publish remain separate approvals bound to real closeout artifacts.
+
 ## Directory Roles
 
 | Directory | Role | How To Use |

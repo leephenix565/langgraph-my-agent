@@ -176,6 +176,18 @@ preconditions, bounded non-secret environment overrides, 0600 logs, PID reuse
 protection, no shell, and SIGTERM-only stop semantics. Recovery V3 also
 requires 67/67 per-file source provenance before approval.
 
+SYNC-OPS-5A-R4X adds the final source-loss pre-cutover contract family:
+`agent_sync_runtime_variable_matrix_v1`,
+`agent_sync_service_environment_profile_v1`,
+`agent_sync_incumbent_canary_equivalence_v1`,
+`agent_sync_source_loss_precutover_canary_plan_v1`,
+`agent_sync_machine_precutover_canary_approval_v1`,
+`agent_sync_source_loss_recovery_plan_v4`,
+`agent_sync_full_p2s_rebase_plan_v4`, and
+`agent_sync_conditional_approval_chain_v1`. These contracts keep real canary
+qualification separate from irreversible cutover, P2S stage, P2S activation,
+experiment materialization, and the first non-zero publish cycle.
+
 The S2P contract compares B/S/P/D: immutable baseline, experiment workspace,
 current prod, and owner-dev provenance. Prod-only changes are preserved by
 default. Every non-noop file action must belong to exactly one change unit.

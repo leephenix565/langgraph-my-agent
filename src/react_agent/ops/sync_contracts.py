@@ -73,6 +73,16 @@ SCHEMA_FILES = {
     "agent_sync_first_real_cycle_plan_v3": "first_real_cycle_plan_v3.schema.json",
     "agent_sync_final_compound_execution_plan_v3": "final_compound_execution_plan_v3.schema.json",
     "agent_sync_final_compound_execution_approval_request_v3": "final_compound_execution_approval_request_v3.schema.json",
+    "agent_sync_runtime_variable_matrix_v1": "runtime_variable_matrix_v1.schema.json",
+    "agent_sync_service_environment_profile_v1": "service_environment_profile_v1.schema.json",
+    "agent_sync_incumbent_canary_equivalence_v1": "incumbent_canary_equivalence_v1.schema.json",
+    "agent_sync_source_loss_precutover_canary_plan_v1": "source_loss_precutover_canary_plan_v1.schema.json",
+    "agent_sync_machine_precutover_canary_approval_v1": "machine_precutover_canary_approval_v1.schema.json",
+    "agent_sync_source_loss_recovery_plan_v4": "source_loss_recovery_plan_v4.schema.json",
+    "agent_sync_full_p2s_rebase_plan_v4": "full_p2s_rebase_plan_v4.schema.json",
+    "agent_sync_projected_experiment_manifest_v4": "projected_experiment_manifest_v4.schema.json",
+    "agent_sync_first_real_cycle_plan_v4": "first_real_cycle_plan_v4.schema.json",
+    "agent_sync_conditional_approval_chain_v1": "conditional_approval_chain_v1.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {

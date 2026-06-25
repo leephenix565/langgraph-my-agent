@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/runtime_variable_matrix_v1.schema.json",
+  "title": "SYNC-OPS Runtime Variable Matrix V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "service_unit_id",
+    "variable_contracts",
+    "counts",
+    "values_read",
+    "proc_environ_read",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_runtime_variable_matrix_v1"},
+    "service_unit_id": {"type": "string", "minLength": 1},
+    "source_root": {"type": "string"},
+    "dotenv_reference_path": {"type": "string"},
+    "dotenv_reference_exists": {"type": "boolean"},
+    "values_read": {"const": false},
+    "proc_environ_read": {"const": false},
+    "variable_contracts": {
+      "type": "array",
+      "minItems": 14,
+      "items": {
+        "type": "object",
+        "required": [
+          "name",
+          "classification",
+          "read_at_import",
+          "read_at_startup",
+          "read_at_compute",
+          "required",
+          "optional",
+          "secret_backed",
+          "path_backed"
+        ],
+        "properties": {
+          "name": {"type": "string", "minLength": 1},
+          "classification": {"type": "string", "minLength": 1},
+          "referenced_by": {"type": "array", "items": {"type": "string"}},
+          "read_at_import": {"type": "boolean"},
+          "read_at_startup": {"type": "boolean"},
+          "read_at_compute": {"type": "boolean"},
+          "required": {"type": "boolean"},
+          "optional": {"type": "boolean"},
+          "safe_default_exists": {"type": "boolean"},
+          "default_value_class": {"type": "string"},
+          "default_path": {"type": "string"},
+          "default_path_exists": {"type": "boolean"},
+          "default_path_type": {"type": "string"},
+          "canary_required": {"type": "boolean"},
+          "production_required": {"type": "boolean"},
+          "secret_backed": {"type": "boolean"},
+          "path_backed": {"type": "boolean"},
+          "failure_behavior": {"type": "string"},
+          "degraded_behavior": {"type": "string"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "counts": {"type": "object"},
+    "missing_required_runtime_inputs": {"type": "array", "items": {"type": "string"}},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

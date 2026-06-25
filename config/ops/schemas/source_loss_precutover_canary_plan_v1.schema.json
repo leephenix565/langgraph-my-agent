@@ -1,0 +1,48 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/source_loss_precutover_canary_plan_v1.schema.json",
+  "title": "SYNC-OPS Source Loss Precutover Canary Plan V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "final_head_sha256",
+    "source_provenance_sha256",
+    "candidate_path",
+    "candidate_descriptor",
+    "file_actions",
+    "environment_profile_sha256",
+    "launch_authority_sha256",
+    "canary_port",
+    "request_fixture_sha256",
+    "equivalence_contract_sha256",
+    "runtime_artifact_policy",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_source_loss_precutover_canary_plan_v1"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "final_head_sha256": {"type": "string", "minLength": 1},
+    "source_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_path": {"type": "string", "minLength": 1, "not": {"pattern": "[<>]"}},
+    "candidate_descriptor": {"type": "object"},
+    "file_actions": {"type": "array", "minItems": 67, "maxItems": 67, "items": {"type": "object"}},
+    "environment_profile": {"type": "object"},
+    "environment_profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "launch_authority": {"type": "object"},
+    "launch_authority_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "canary_port": {"type": "integer"},
+    "request_fixture_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "equivalence_contract_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "runtime_artifact_policy": {
+      "type": "object",
+      "required": ["runtime_artifacts_excluded_from_source_descriptor"],
+      "properties": {
+        "runtime_artifacts_excluded_from_source_descriptor": {"const": true}
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

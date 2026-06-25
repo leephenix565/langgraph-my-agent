@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/source_loss_recovery_plan_v4.schema.json",
+  "title": "SYNC-OPS Source Loss Recovery Plan V4",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "precutover_canary_closeout_sha256", "candidate_path", "candidate_descriptor", "projected_prod_after_descriptor", "requested_permissions", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_source_loss_recovery_plan_v4"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "precutover_canary_closeout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "candidate_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "candidate_descriptor": {"type": "object"},
+    "runtime_artifact_policy": {"type": "object"},
+    "projected_prod_after_descriptor": {"type": "object"},
+    "requested_permissions": {
+      "type": "object",
+      "properties": {
+        "irreversible_source_loss_cutover_acknowledged": {"const": true},
+        "delete": {"const": false},
+        "invoke": {"const": false},
+        "sigkill": {"const": false}
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

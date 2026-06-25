@@ -145,8 +145,11 @@ production readiness 证明；它只把当前进度、目录使用方式、下�
   recovery，再执行完整 P2S rebase，最后重新冻结 experiment change unit 和 machine
   approval bundle。SYNC-OPS-5A-R2X blocks recovery execution until launch
   authority is complete; no 5B approval should skip that blocker. SYNC-OPS-5A-R3X
-  productizes that launch authority and emits the final awaiting approval
-  compound request.
+  productizes that launch authority. SYNC-OPS-5A-R4X supersedes the broad V3
+  compound request with real shadow-canary qualification and a conditional
+  approval chain: cutover awaits machine approval, while P2S stage, P2S
+  activation, experiment materialization, and first publish remain blocked
+  until the preceding real closeout exists.
 
 ## Directory Operating Model
 

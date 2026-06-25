@@ -17,6 +17,10 @@ launcher, read env values, or call an empty-tree restore rollback.
 For R3X and later, launch authority must be a process manager or the approved
 sync-ops supervised launcher contract. Do not execute ad hoc shell commands or
 read environment values.
+For R4X and later, a source-loss cutover request is valid only after the exact
+sibling candidate has passed the real shadow-canary closeout. Do not collapse
+cutover, P2S stage, P2S activation, experiment materialization, and first
+publish into one broad approval.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

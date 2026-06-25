@@ -56,6 +56,26 @@ from react_agent.ops.sync_5a_r3x import (
     validate_source_loss_recovery_plan_v3,
     validate_source_package_provenance,
 )
+from react_agent.ops.sync_5a_r4x import (
+    build_conditional_approval_chain_v1,
+    build_environment_profile_v1,
+    build_equivalence_contract_v1,
+    build_first_real_cycle_plan_v4,
+    build_full_p2s_rebase_plan_v4,
+    build_machine_precutover_canary_approval,
+    build_precutover_canary_plan_v1,
+    build_projected_experiment_v4,
+    build_runtime_variable_matrix,
+    build_source_loss_recovery_plan_v4,
+    validate_conditional_approval_chain_v1,
+    validate_environment_profile_v1,
+    validate_equivalence_contract_v1,
+    validate_full_p2s_rebase_plan_v4,
+    validate_machine_precutover_canary_approval,
+    validate_precutover_canary_plan_v1,
+    validate_runtime_variable_matrix,
+    validate_source_loss_recovery_plan_v4,
+)
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_bootstrap import (
@@ -816,6 +836,101 @@ def cmd_risk_fraud_freeze_source_loss_v3(args: argparse.Namespace) -> int:
     )
 
 
+def cmd_risk_fraud_freeze_source_loss_v4(args: argparse.Namespace) -> int:
+    runtime_identity = {
+        "pid": str(args.pid or ""),
+        "start_ticks": str(args.start_ticks or ""),
+        "cwd": str(args.cwd or ""),
+        "exe": str(args.exe or "/usr/bin/python3.14"),
+        "argv": json.loads(args.argv_json) if getattr(args, "argv_json", "") else ["python3", "-u", "-m", "app.main"],
+    }
+    if not isinstance(runtime_identity["argv"], list) or not all(isinstance(item, str) for item in runtime_identity["argv"]):
+        raise SyncPlannerError("argv_json_must_be_string_array", exit_code=2)
+    matrix = build_runtime_variable_matrix()
+    matrix_validation = validate_runtime_variable_matrix(matrix)
+    profile = build_environment_profile_v1(variable_matrix=matrix, canary_port=int(args.canary_port))
+    profile_validation = validate_environment_profile_v1(profile)
+    equivalence = build_equivalence_contract_v1()
+    equivalence_validation = validate_equivalence_contract_v1(equivalence)
+    plan = build_precutover_canary_plan_v1(
+        final_head=str(args.final_head or ""),
+        runtime_identity=runtime_identity,
+        canary_port=int(args.canary_port),
+    )
+    plan_validation = validate_precutover_canary_plan_v1(plan)
+    approval = build_machine_precutover_canary_approval(plan)
+    approval_validation = validate_machine_precutover_canary_approval(approval, plan)
+    fake_closeout = {
+        "canonical_sha256": canonical_sha256({"plan": plan["canonical_sha256"], "status": "cli_projection_only"}),
+        "candidate_path": plan["candidate_path"],
+        "candidate_descriptor": plan["candidate_descriptor"],
+        "source_provenance_sha256": plan["source_provenance_sha256"],
+        "environment_profile_sha256": plan["environment_profile_sha256"],
+        "equivalence_result_sha256": equivalence["canonical_sha256"],
+        "incumbent_capture_sha256": equivalence["fixture_sha256"],
+        "port_release_proof": {"port": int(args.canary_port), "released": True},
+        "runtime_artifact_policy": plan["runtime_artifact_policy"],
+    }
+    recovery = build_source_loss_recovery_plan_v4(precutover_closeout=fake_closeout, runtime_identity=runtime_identity)
+    recovery_validation = validate_source_loss_recovery_plan_v4(recovery)
+    p2s = build_full_p2s_rebase_plan_v4(recovery)
+    p2s_validation = validate_full_p2s_rebase_plan_v4(p2s)
+    selected = reselect_first_candidate()["selected_candidate"]
+    experiment = build_projected_experiment_v4(selected, p2s)
+    cycle = build_first_real_cycle_plan_v4(selected, experiment, p2s)
+    chain = build_conditional_approval_chain_v1(
+        canary_closeout=fake_closeout,
+        recovery_v4=recovery,
+        p2s_v4=p2s,
+        experiment_v4=experiment,
+        cycle_v4=cycle,
+    )
+    chain_validation = validate_conditional_approval_chain_v1(chain)
+    valid = all(
+        item["valid"]
+        for item in (
+            matrix_validation,
+            profile_validation,
+            equivalence_validation,
+            plan_validation,
+            approval_validation,
+            recovery_validation,
+            p2s_validation,
+            chain_validation,
+        )
+    )
+    payload = {
+        "summary_title": "agent-sync risk-fraud freeze-source-loss-v4",
+        "runtime_variable_matrix": matrix,
+        "runtime_variable_matrix_validation": matrix_validation,
+        "environment_profile_v1": profile,
+        "environment_profile_validation": profile_validation,
+        "equivalence_contract": equivalence,
+        "equivalence_contract_validation": equivalence_validation,
+        "precutover_canary_plan": plan,
+        "precutover_canary_plan_validation": plan_validation,
+        "machine_precutover_canary_approval": approval,
+        "precutover_canary_approval_validation": approval_validation,
+        "source_loss_recovery_plan_v4": recovery,
+        "source_loss_recovery_plan_v4_validation": recovery_validation,
+        "full_p2s_rebase_plan_v4": p2s,
+        "full_p2s_rebase_plan_v4_validation": p2s_validation,
+        "projected_experiment_v4": experiment,
+        "first_real_cycle_plan_v4": cycle,
+        "conditional_approval_chain_v1": chain,
+        "conditional_approval_chain_validation": chain_validation,
+        "exit_code": 0 if valid else 7,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"plan_id={plan['plan_id']}",
+            f"plan_valid={plan_validation['valid']}",
+            f"approval_valid={approval_validation['valid']}",
+            f"chain_valid={chain_validation['valid']}",
+        ],
+    )
 def _load_launch_authority_from_plan(plan_path: str) -> dict[str, Any]:
     payload = read_json(Path(plan_path))
     if "launch_authority" in payload and isinstance(payload["launch_authority"], dict):
@@ -842,10 +957,19 @@ def cmd_process_preflight(args: argparse.Namespace) -> int:
 def cmd_process_start(args: argparse.Namespace) -> int:
     authority = _load_launch_authority_from_plan(args.plan)
     _validate_process_approval(args.approval)
+    overrides: dict[str, str] = {}
+    if args.host:
+        overrides["APP_HOST"] = str(args.host)
+    if args.port:
+        overrides["APP_PORT"] = str(args.port)
+    if args.python_unbuffered:
+        overrides["PYTHONUNBUFFERED"] = "1"
+    if args.python_dont_write_bytecode:
+        overrides["PYTHONDONTWRITEBYTECODE"] = "1"
     result = start_supervised_process(
         authority,
         state_path=Path(args.state) if args.state else None,
-        environment_overrides={"APP_PORT": str(args.port)} if args.port else None,
+        environment_overrides=overrides or None,
         execute=bool(args.execute),
     )
     payload = {"summary_title": "agent-sync process start", **result, "exit_code": 0 if result.get("started") else 7}
@@ -871,7 +995,12 @@ def cmd_process_status(args: argparse.Namespace) -> int:
 def cmd_process_stop(args: argparse.Namespace) -> int:
     authority = _load_launch_authority_from_plan(args.plan)
     _validate_process_approval(args.approval)
-    result = stop_supervised_process(authority, state_path=Path(args.state), execute=bool(args.execute))
+    result = stop_supervised_process(
+        authority,
+        state_path=Path(args.state),
+        execute=bool(args.execute),
+        port=int(args.port) if args.port else None,
+    )
     payload = {"summary_title": "agent-sync process stop", **result, "exit_code": 0 if result.get("stopped") else 7}
     return print_or_json(args, payload, [f"stopped={result.get('stopped')}", f"reason={result.get('reason', '')}"])
 
@@ -1404,6 +1533,16 @@ def build_parser() -> argparse.ArgumentParser:
     risk_source_loss_v3.add_argument("--canary-port", default="11013")
     _add_output_args(risk_source_loss_v3)
     risk_source_loss_v3.set_defaults(func=cmd_risk_fraud_freeze_source_loss_v3)
+    risk_source_loss_v4 = risk_fraud_sub.add_parser("freeze-source-loss-v4")
+    risk_source_loss_v4.add_argument("--final-head", required=True)
+    risk_source_loss_v4.add_argument("--pid", default="")
+    risk_source_loss_v4.add_argument("--start-ticks", default="")
+    risk_source_loss_v4.add_argument("--cwd", default="")
+    risk_source_loss_v4.add_argument("--exe", default="/usr/bin/python3.14")
+    risk_source_loss_v4.add_argument("--argv-json", default="")
+    risk_source_loss_v4.add_argument("--canary-port", default="11013")
+    _add_output_args(risk_source_loss_v4)
+    risk_source_loss_v4.set_defaults(func=cmd_risk_fraud_freeze_source_loss_v4)
 
     process = subparsers.add_parser("process")
     process_sub = process.add_subparsers(dest="command", required=True)
@@ -1415,7 +1554,10 @@ def build_parser() -> argparse.ArgumentParser:
     process_start.add_argument("--plan", required=True)
     process_start.add_argument("--approval", required=True)
     process_start.add_argument("--state", default="")
+    process_start.add_argument("--host", default="")
     process_start.add_argument("--port", default="")
+    process_start.add_argument("--python-unbuffered", action="store_true")
+    process_start.add_argument("--python-dont-write-bytecode", action="store_true")
     process_start.add_argument("--execute", action="store_true")
     _add_output_args(process_start)
     process_start.set_defaults(func=cmd_process_start)
@@ -1428,6 +1570,7 @@ def build_parser() -> argparse.ArgumentParser:
     process_stop.add_argument("--plan", required=True)
     process_stop.add_argument("--approval", required=True)
     process_stop.add_argument("--state", required=True)
+    process_stop.add_argument("--port", default="")
     process_stop.add_argument("--execute", action="store_true")
     _add_output_args(process_stop)
     process_stop.set_defaults(func=cmd_process_stop)

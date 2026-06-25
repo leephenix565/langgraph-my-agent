@@ -3,6 +3,51 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-149: Closeout-Bound Approval Chain Replaces Broad Source-Loss Approval
+
+Status: accepted for SYNC-OPS-5A-R4X.
+
+Decision: source-loss cutover, P2S stage, P2S activation, experiment
+materialization, and first publish cycle use a conditional approval chain bound
+to real closeout SHA values. A projected downstream artifact is not approval
+evidence.
+
+Reason: irreversible cutover and baseline activation must not be preapproved
+before the previous phase has produced real artifacts.
+
+## ADR-148: Canary Acceptance Is Contract Equivalence, Not Raw Body Equality
+
+Status: accepted for SYNC-OPS-5A-R4X.
+
+Decision: canary acceptance compares identity, schemas, adapter mapping,
+status severity, and degradation categories. Raw response body SHA values are
+diagnostic only.
+
+Reason: bounded services may include timestamps or nondeterministic numeric
+material while still satisfying the public contract.
+
+## ADR-147: Missing Environment References Are Fail-Closed
+
+Status: accepted for SYNC-OPS-5A-R4X.
+
+Decision: `approved_secure_launcher_env_reference` is invalid when the
+reference is absent or not required. If defaults are sufficient, the profile
+must prove every required startup/compute variable is default-backed or
+optional.
+
+Reason: a source-loss cutover cannot rely on contradictory environment claims.
+
+## ADR-146: Real Shadow Canary Before Source-Loss Cutover Approval
+
+Status: accepted for SYNC-OPS-5A-R4X.
+
+Decision: source-loss cutover approval is requested only after the exact
+sibling candidate has passed offline validation and real loopback canary
+qualification under the same environment profile as future production.
+
+Reason: after incumbent stop, the empty current source tree cannot restore the
+old runtime.
+
 ## ADR-145: Source-Loss Approval Requires Complete Package Provenance
 
 Status: accepted for SYNC-OPS-5A-R3X.

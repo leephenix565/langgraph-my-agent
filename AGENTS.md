@@ -70,6 +70,10 @@ Implementation changes must update the relevant reset docs:
 - Manual argv evidence is not launch authority. Source-loss execution must use
   a process manager or the approved sync-ops supervised launcher contract with
   exact executable, argv, cwd, PID reuse checks, bounded logs, and no shell.
+- Source-loss cutover approval requires a real pre-cutover shadow canary
+  closeout for the exact sibling candidate and exact environment profile. Do
+  not combine cutover, P2S stage, P2S activation, experiment materialization,
+  and first publish into one broad approval.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

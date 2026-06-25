@@ -55,3 +55,9 @@ process=false, live=false, delete=false.
 R3X does not modify prod, active sandbox, the baseline pointer, owner-dev, or
 the live service process. It does not call `/health`, `/compute`, or `/invoke`.
 It creates no machine approval and executes no recovery, P2S, or publish cycle.
+
+## R4X Supersession
+
+R4X supersedes the R3X broad compound request. Launch authority remains valid
+evidence, but cutover approval now requires a real pre-cutover canary closeout
+and a staged approval chain.

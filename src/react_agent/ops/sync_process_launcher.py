@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import signal
+import socket
 import subprocess
 import time
 from collections.abc import Mapping, Sequence
@@ -48,6 +49,21 @@ def _path_under(path: Path, roots: Sequence[str]) -> bool:
         except ValueError:
             continue
     return False
+
+
+def _port_listening(port: int) -> bool:
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.settimeout(0.2)
+        return sock.connect_ex(("127.0.0.1", port)) == 0
+
+
+def _wait_for_port_release(port: int, timeout_seconds: float) -> bool:
+    deadline = time.monotonic() + timeout_seconds
+    while time.monotonic() < deadline:
+        if not _port_listening(port):
+            return True
+        time.sleep(0.05)
+    return not _port_listening(port)
 
 
 def build_supervised_launcher_authority(
@@ -367,7 +383,13 @@ def status_supervised_process(authority: Mapping[str, Any], *, state_path: Path)
     }
 
 
-def stop_supervised_process(authority: Mapping[str, Any], *, state_path: Path, execute: bool = False) -> dict[str, Any]:
+def stop_supervised_process(
+    authority: Mapping[str, Any],
+    *,
+    state_path: Path,
+    execute: bool = False,
+    port: int | None = None,
+) -> dict[str, Any]:
     if not execute:
         return {"schema_version": "agent_sync_process_stop_result_v1", "stopped": False, "reason": "execute_required"}
     status = status_supervised_process(authority, state_path=state_path)
@@ -386,20 +408,32 @@ def stop_supervised_process(authority: Mapping[str, Any], *, state_path: Path, e
         try:
             waited_pid, _status = os.waitpid(pid, os.WNOHANG)
             if waited_pid == pid:
+                release_timeout = float(_as_mapping(authority.get("stop_contract")).get("listener_release_timeout_seconds") or 15)
+                port_released = True if port is None else _wait_for_port_release(port, release_timeout)
                 return {
                     "schema_version": "agent_sync_process_stop_result_v1",
-                    "stopped": True,
+                    "stopped": port_released,
                     "sigkill_used": False,
                     "pid": pid,
+                    "port": port,
+                    "port_released": port_released,
+                    "manual_intervention_required": not port_released,
+                    "reason": "" if port_released else "listener_release_timeout",
                 }
         except ChildProcessError:
             pass
         if not Path(f"/proc/{pid}").exists():
+            release_timeout = float(_as_mapping(authority.get("stop_contract")).get("listener_release_timeout_seconds") or 15)
+            port_released = True if port is None else _wait_for_port_release(port, release_timeout)
             return {
                 "schema_version": "agent_sync_process_stop_result_v1",
-                "stopped": True,
+                "stopped": port_released,
                 "sigkill_used": False,
                 "pid": pid,
+                "port": port,
+                "port_released": port_released,
+                "manual_intervention_required": not port_released,
+                "reason": "" if port_released else "listener_release_timeout",
             }
         time.sleep(0.05)
     return {

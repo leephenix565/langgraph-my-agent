@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/machine_precutover_canary_approval_v1.schema.json",
+  "title": "SYNC-OPS Machine Precutover Canary Approval V1",
+  "type": "object",
+  "required": ["schema_version", "approval_id", "status", "plan_id", "plan_sha256", "approved_action_ids", "permissions", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_machine_precutover_canary_approval_v1"},
+    "approval_id": {"type": "string", "minLength": 1},
+    "status": {"const": "approved"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "approved_action_ids": {"type": "array", "minItems": 67, "maxItems": 67, "items": {"type": "string"}},
+    "permissions": {
+      "type": "object",
+      "required": ["candidate_materialization", "canary_process_start", "canary_process_stop", "incumbent_sigterm", "source_root_cutover", "p2s_stage", "p2s_activate", "first_cycle", "delete", "invoke", "sigkill"],
+      "properties": {
+        "candidate_materialization": {"const": true},
+        "source_provenance_use": {"const": true},
+        "offline_tests": {"const": true},
+        "canary_process_start": {"const": true},
+        "canary_process_stop": {"const": true},
+        "incumbent_sigterm": {"const": false},
+        "source_root_cutover": {"const": false},
+        "recovered_production_start": {"const": false},
+        "p2s_stage": {"const": false},
+        "p2s_activate": {"const": false},
+        "pointer_write": {"const": false},
+        "first_cycle": {"const": false},
+        "delete": {"const": false},
+        "invoke": {"const": false},
+        "sigkill": {"const": false}
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

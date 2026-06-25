@@ -1,0 +1,14 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/projected_experiment_manifest_v4.schema.json",
+  "title": "SYNC-OPS Projected Experiment Manifest V4",
+  "type": "object",
+  "required": ["schema_version", "experiment_id", "status", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_projected_experiment_manifest_v4"},
+    "experiment_id": {"type": "string", "minLength": 1},
+    "status": {"const": "blocked_pending_p2s_activation_closeout"},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

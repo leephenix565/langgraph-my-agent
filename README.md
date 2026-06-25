@@ -88,6 +88,15 @@ compound plan is now frozen as an awaiting-machine-approval request, but still
 does not execute recovery, P2S, process, endpoint, prod, sandbox, or pointer
 actions. See `docs/SYNC_OPS_5A_R3X_APPROVED_LAUNCH_AUTHORITY.md`.
 
+SYNC-OPS-5A-R4X supersedes that broad V3 request with a real pre-cutover
+shadow-canary gate and a staged approval chain. It classifies the risk-fraud
+runtime variables without reading values, freezes a clean environment profile,
+materializes the exact recovered candidate as a sibling source tree, validates
+the 11013 canary against the 10013 incumbent by identity/schema/status and
+degradation category, and leaves cutover, P2S, experiment, and first cycle
+blocked behind closeout-bound approvals. See
+`docs/SYNC_OPS_5A_R4X_REAL_SHADOW_CANARY_AND_APPROVAL_CHAIN.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

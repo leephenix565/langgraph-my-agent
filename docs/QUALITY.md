@@ -139,6 +139,15 @@ action manifests, and select a tests-only market candidate. Mainline remains
 no-real-prod-write, no-real-process-action, no-endpoint, no-active-sandbox-write,
 no-pointer-write, no-owner-dev-write, and no env-value access.
 
+SYNC-OPS-5A-R4X adds environment-profile, real-canary contract, and staged
+approval-chain coverage. Focused tests reject contradictory secure environment
+references, require clean canary/future-production environment parity, treat
+raw body hashes as diagnostic only, block new canary degradation categories,
+enforce canary-only approval permissions, and keep P2S/experiment/first-cycle
+approvals blocked behind real closeouts. Default mainline still avoids real
+endpoints and real process actions; the R4X real canary is an explicitly
+authorized goal-only execution.
+
 SYNC-OPS-5A-R3X adds source provenance and launcher coverage. Focused tests
 prove 67/67 package provenance, reject `manual_exact_argv` as authority,
 exercise the temp sync-ops supervised launcher start/status/stop path, validate
