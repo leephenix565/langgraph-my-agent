@@ -97,6 +97,14 @@ degradation category, and leaves cutover, P2S, experiment, and first cycle
 blocked behind closeout-bound approvals. See
 `docs/SYNC_OPS_5A_R4X_REAL_SHADOW_CANARY_AND_APPROVAL_CHAIN.md`.
 
+SYNC-OPS-5A-R5X freezes the exact source-loss cutover contract after that
+canary proof. It supersedes V4 because cutover approval must bind a fresh
+candidate path, canonical archive path, complete tree descriptors, production
+launch authority, exact action ids, SIGTERM/no-SIGKILL policy, and
+roll-forward failure states. It does not stop the incumbent, modify the
+canonical target, create the real fresh candidate, call endpoints, or execute
+P2S. See `docs/SYNC_OPS_5A_R5X_SOURCE_LOSS_CUTOVER_CONTRACT.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

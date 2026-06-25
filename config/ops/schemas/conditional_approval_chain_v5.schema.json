@@ -1,0 +1,15 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/conditional_approval_chain_v5.schema.json",
+  "title": "SYNC-OPS Conditional Approval Chain V5",
+  "type": "object",
+  "required": ["schema_version", "chain_id", "nodes", "broad_preapproval_forbidden", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_conditional_approval_chain_v5"},
+    "chain_id": {"type": "string", "minLength": 1},
+    "nodes": {"type": "array", "minItems": 7},
+    "broad_preapproval_forbidden": {"const": true},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

@@ -3314,3 +3314,58 @@ stage, active, pointer, archive, approval, locks, and artifact store to `/tmp`.
 Non-consequence: temp rehearsal is not real execution and does not create a
 real approval, lock, backup, stage, activation, endpoint smoke, or process
 action.
+
+## ADR-077: Source-Loss Cutover Uses Roll-Forward-Only Approval
+
+Status: accepted for SYNC-OPS-5A-R5X.
+
+Decision: once the only live source-less incumbent is stopped, recovery is a
+roll-forward operation to the verified recovered source or manual intervention.
+Restoring an empty source tree is not service rollback.
+
+Reason: the incumbent runtime exists only in the running process. After that
+process exits, there is no source tree from which to restart the old runtime.
+
+Consequence: cutover approval must explicitly acknowledge the irreversible
+boundary and bind failure states for retry/manual intervention.
+
+## ADR-078: Canary Evidence Is Not A Cutover Candidate
+
+Status: accepted for SYNC-OPS-5A-R5X.
+
+Decision: a shadow-canary directory that has run a service is retained as
+evidence only. Production cutover requires a fresh sibling candidate
+materialized from frozen source provenance.
+
+Reason: canary startup and offline tests can create runtime files, caches,
+state, logs, or local data that are not part of the source package.
+
+Consequence: validators reject reuse of the dirty canary path as the fresh
+cutover candidate.
+
+## ADR-079: Cutover Approval Binds Full Trees And Exact Actions
+
+Status: accepted for SYNC-OPS-5A-R5X.
+
+Decision: source-root cutover approval binds complete tree descriptors,
+canonical/archive/fresh candidate paths, production launch authority, and
+exact materialization plus stop/archive/rename/start/smoke action ids.
+
+Reason: directory rename moves more than source-bearing files, and a boolean
+permission set cannot prove the exact operational boundary.
+
+Consequence: V4 plans without those fields are superseded and cannot be used
+for machine approval.
+
+## ADR-080: Canary And Production Launch Authorities Are Separate
+
+Status: accepted for SYNC-OPS-5A-R5X.
+
+Decision: the canary launcher authority and production launch authority are
+separate contracts because they have different cwd and port bindings.
+
+Reason: proving a candidate on 11013 does not by itself authorize starting
+the recovered production service on 10013.
+
+Consequence: V5 cutover approval binds the production launch authority hash
+separately from the R4X canary evidence.

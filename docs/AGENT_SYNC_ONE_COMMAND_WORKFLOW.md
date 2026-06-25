@@ -91,3 +91,7 @@ SYNC-OPS-5A-R4X adds that source-loss cutover approval requires a real
 pre-cutover shadow canary closeout. Do not request P2S stage, P2S activation,
 experiment materialization, or first-cycle approval until the preceding node in
 the conditional approval chain has a real closeout SHA.
+SYNC-OPS-5A-R5X adds that the cutover approval itself must bind a fresh
+candidate, canonical archive, complete tree descriptors, production launch
+authority, exact action ids, and roll-forward failure states. The R4X canary
+directory is evidence only and must not be renamed into production.

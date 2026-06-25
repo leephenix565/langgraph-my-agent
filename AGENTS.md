@@ -74,6 +74,11 @@ Implementation changes must update the relevant reset docs:
   closeout for the exact sibling candidate and exact environment profile. Do
   not combine cutover, P2S stage, P2S activation, experiment materialization,
   and first publish into one broad approval.
+- A shadow-canary directory that has run a process is evidence, not a clean
+  production cutover candidate. Source-loss cutover approval must bind a fresh
+  sibling candidate path, canonical archive path, full-tree descriptors,
+  production launch authority, exact action ids, SIGTERM/no-SIGKILL policy,
+  and roll-forward failure states.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

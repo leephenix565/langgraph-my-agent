@@ -55,6 +55,14 @@ The chain is:
 No downstream approval can bind a projected artifact where a real closeout SHA
 is required.
 
+## R5X Follow-Up
+
+R5X supersedes Recovery V4/P2S V4/first-cycle V4 because the cutover approval
+must bind full target paths, a fresh candidate, canonical archive, production
+launch authority, complete tree descriptors, exact action ids, and
+roll-forward failure states. The R4X canary directory remains evidence only;
+it is not a clean production cutover candidate.
+
 ## Non-Claims
 
 R4X does not stop the incumbent, rename the canonical source root, start a new

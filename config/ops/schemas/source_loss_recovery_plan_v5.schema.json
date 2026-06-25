@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/source_loss_recovery_plan_v5.schema.json",
+  "title": "SYNC-OPS Source Loss Recovery Plan V5",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "precutover_canary_closeout_sha256",
+    "source_provenance_sha256",
+    "environment_profile_sha256",
+    "equivalence_result_sha256",
+    "canonical_target_path",
+    "canonical_full_tree_descriptor",
+    "fresh_cutover_candidate_path",
+    "archive_path",
+    "production_launch_authority",
+    "production_launch_authority_sha256",
+    "incumbent_identity",
+    "incumbent_port",
+    "file_actions",
+    "cutover_actions",
+    "exact_requested_action_ids",
+    "state_machine",
+    "failure_policy",
+    "requested_permissions",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_source_loss_recovery_plan_v5"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "precutover_canary_closeout_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "source_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "environment_profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "equivalence_result_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "canonical_target_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "fresh_cutover_candidate_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "archive_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "incumbent_port": {"const": 10013},
+    "file_actions": {"type": "array", "minItems": 67},
+    "cutover_actions": {"type": "array", "minItems": 22},
+    "exact_requested_action_ids": {"type": "array", "items": {"type": "string"}},
+    "requested_permissions": {
+      "type": "object",
+      "properties": {
+        "irreversible_source_loss_acknowledgement": {"const": true},
+        "sigkill": {"const": false},
+        "delete": {"const": false},
+        "invoke": {"const": false},
+        "provider": {"const": false},
+        "p2s": {"const": false},
+        "first_cycle": {"const": false}
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

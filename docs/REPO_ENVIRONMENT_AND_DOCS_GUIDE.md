@@ -359,3 +359,10 @@ restoration, separate post-rollback reactivation approval, final reactivation,
 and P2S topic closure are complete. The active sandbox now points to baseline
 `20260624T060045Z`, while production sources, owner-dev repositories,
 endpoints, process state, and S2P remain out of scope.
+
+SYNC-OPS-5A-R5X records the current source-loss cutover approval boundary for
+`risk_financial_fraud`: the R4X canary result is valid evidence, but production
+cutover requires a fresh sibling candidate, canonical archive, full-tree
+descriptor, production launch authority, exact action ids, and roll-forward
+state machine. This guide still treats `/sdb/dlut/prod/*` as runtime state that
+must only be changed by a separate exact machine approval.

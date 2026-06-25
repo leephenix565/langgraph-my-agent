@@ -7,7 +7,7 @@ import argparse
 import json
 import sys
 from pathlib import Path
-from typing import Any, Sequence
+from typing import Any, Mapping, Sequence
 
 from react_agent.ops.sync_5a_r1x import (
     build_final_compound_execution_approval_request,
@@ -75,6 +75,12 @@ from react_agent.ops.sync_5a_r4x import (
     validate_precutover_canary_plan_v1,
     validate_runtime_variable_matrix,
     validate_source_loss_recovery_plan_v4,
+)
+from react_agent.ops.sync_5a_r5x import (
+    build_real_readonly_preflight,
+    build_v5_projection_bundle,
+    validate_source_loss_cutover_approval_request_v5,
+    validate_source_loss_recovery_plan_v5,
 )
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
@@ -162,6 +168,10 @@ from react_agent.ops.sync_summary import p2s_summary_from_plan
 def _add_output_args(parser: argparse.ArgumentParser) -> None:
     parser.add_argument("--json-output", help="Write JSON output to an explicit file path.")
     parser.add_argument("--stdout-json", action="store_true", help="Write JSON output to stdout.")
+
+
+def _as_mapping(value: Any) -> Mapping[str, Any]:
+    return value if isinstance(value, Mapping) else {}
 
 
 def _schema_validation_payload() -> dict[str, Any]:
@@ -1005,6 +1015,132 @@ def cmd_process_stop(args: argparse.Namespace) -> int:
     return print_or_json(args, payload, [f"stopped={result.get('stopped')}", f"reason={result.get('reason', '')}"])
 
 
+def _runtime_from_source_loss_args(args: argparse.Namespace) -> dict[str, Any]:
+    argv: list[str] = []
+    if getattr(args, "argv_json", ""):
+        parsed = json.loads(args.argv_json)
+        argv = [str(item) for item in parsed]
+    return {
+        "pid": str(getattr(args, "pid", "") or ""),
+        "start_ticks": str(getattr(args, "start_ticks", "") or ""),
+        "cwd": str(getattr(args, "cwd", "") or ""),
+        "exe": str(getattr(args, "exe", "") or "/usr/bin/python3.14"),
+        "argv": argv,
+    }
+
+
+def cmd_source_loss_plan(args: argparse.Namespace) -> int:
+    closeout = read_json(Path(args.precutover_closeout))
+    runtime = _runtime_from_source_loss_args(args)
+    bundle = build_v5_projection_bundle(
+        final_head=args.final_head,
+        precutover_closeout=closeout,
+        runtime_identity=runtime,
+    )
+    recovery = bundle["source_loss_recovery_plan_v5"]
+    validation = validate_source_loss_recovery_plan_v5(recovery)
+    request = bundle["source_loss_cutover_approval_request_v5"]
+    request_validation = validate_source_loss_cutover_approval_request_v5(request, recovery)
+    payload = {
+        "summary_title": "agent-sync source-loss plan",
+        **bundle,
+        "source_loss_recovery_plan_v5_validation": validation,
+        "source_loss_cutover_approval_request_v5_validation": request_validation,
+        "exit_code": 0 if validation["valid"] and request_validation["valid"] else 7,
+    }
+    return print_or_json(
+        args,
+        payload,
+        [
+            f"plan_id={recovery['plan_id']}",
+            f"plan_valid={validation['valid']}",
+            f"request_status={request['status']}",
+        ],
+    )
+
+
+def cmd_source_loss_validate(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    validation = validate_source_loss_recovery_plan_v5(plan)
+    payload = {"summary_title": "agent-sync source-loss validate", **validation, "exit_code": 0 if validation["valid"] else 7}
+    return print_or_json(args, payload, [f"valid={validation['valid']}", f"blockers={len(validation['blockers'])}"])
+
+
+def cmd_source_loss_explain(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    payload = {
+        "summary_title": "agent-sync source-loss explain",
+        "plan_id": plan.get("plan_id"),
+        "plan_sha256": plan.get("canonical_sha256"),
+        "canonical_target_path": plan.get("canonical_target_path"),
+        "fresh_cutover_candidate_path": plan.get("fresh_cutover_candidate_path"),
+        "archive_path": plan.get("archive_path"),
+        "production_launch_authority_sha256": plan.get("production_launch_authority_sha256"),
+        "exact_action_count": len(plan.get("exact_requested_action_ids") or []),
+        "sigkill_allowed": bool(_as_mapping(plan.get("requested_permissions")).get("sigkill")),
+        "exit_code": 0,
+    }
+    return print_or_json(args, payload, [f"plan_id={payload['plan_id']}", f"actions={payload['exact_action_count']}"])
+
+
+def cmd_source_loss_preflight(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    expected = _as_mapping(plan.get("incumbent_identity"))
+    payload = build_real_readonly_preflight(expected_runtime_identity=expected, recovery_v5=plan)
+    payload["summary_title"] = "agent-sync source-loss preflight"
+    payload["exit_code"] = 0 if payload["valid"] else 7
+    return print_or_json(args, payload, [f"valid={payload['valid']}", f"blockers={len(payload['blockers'])}"])
+
+
+def cmd_source_loss_execute(args: argparse.Namespace) -> int:
+    if not getattr(args, "approval", ""):
+        payload = {
+            "schema_version": "agent_sync_cli_error_v1",
+            "summary_title": "agent-sync source-loss execute",
+            "reason": "machine_approval_missing",
+            "exit_code": 4,
+        }
+        return print_or_json(args, payload, ["reason=machine_approval_missing"])
+    approval = read_json(Path(args.approval))
+    if approval.get("status") != "approved":
+        payload = {
+            "schema_version": "agent_sync_cli_error_v1",
+            "summary_title": "agent-sync source-loss execute",
+            "reason": "machine_approval_missing",
+            "exit_code": 4,
+        }
+        return print_or_json(args, payload, ["reason=machine_approval_missing"])
+    payload = {
+        "schema_version": "agent_sync_cli_error_v1",
+        "summary_title": "agent-sync source-loss execute",
+        "reason": "source_loss_execute_not_enabled_in_r5x",
+        "exit_code": 7,
+    }
+    return print_or_json(args, payload, ["reason=source_loss_execute_not_enabled_in_r5x"])
+
+
+def cmd_source_loss_status(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    payload = {
+        "summary_title": "agent-sync source-loss status",
+        "plan_id": plan.get("plan_id"),
+        "status": "planned_not_executed",
+        "exit_code": 0,
+    }
+    return print_or_json(args, payload, [f"status={payload['status']}"])
+
+
+def cmd_source_loss_recover(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    payload = {
+        "summary_title": "agent-sync source-loss recover",
+        "plan_id": plan.get("plan_id"),
+        "recovery_status": "not_started_no_recovery_required",
+        "exit_code": 0,
+    }
+    return print_or_json(args, payload, [f"recovery_status={payload['recovery_status']}"])
+
+
 def cmd_plan_show(args: argparse.Namespace) -> int:
     plan = load_plan(Path(args.plan))
     payload = {"summary_title": "agent-sync plan show", "plan": plan, "exit_code": 0}
@@ -1574,6 +1710,45 @@ def build_parser() -> argparse.ArgumentParser:
     process_stop.add_argument("--execute", action="store_true")
     _add_output_args(process_stop)
     process_stop.set_defaults(func=cmd_process_stop)
+
+    source_loss = subparsers.add_parser("source-loss")
+    source_loss_sub = source_loss.add_subparsers(dest="command", required=True)
+    source_loss_plan = source_loss_sub.add_parser("plan")
+    source_loss_plan.add_argument("--final-head", required=True)
+    source_loss_plan.add_argument("--precutover-closeout", required=True)
+    source_loss_plan.add_argument("--pid", required=True)
+    source_loss_plan.add_argument("--start-ticks", required=True)
+    source_loss_plan.add_argument("--cwd", required=True)
+    source_loss_plan.add_argument("--exe", default="/usr/bin/python3.14")
+    source_loss_plan.add_argument("--argv-json", required=True)
+    _add_output_args(source_loss_plan)
+    source_loss_plan.set_defaults(func=cmd_source_loss_plan)
+    source_loss_validate = source_loss_sub.add_parser("validate")
+    source_loss_validate.add_argument("--plan", required=True)
+    _add_output_args(source_loss_validate)
+    source_loss_validate.set_defaults(func=cmd_source_loss_validate)
+    source_loss_explain = source_loss_sub.add_parser("explain")
+    source_loss_explain.add_argument("--plan", required=True)
+    _add_output_args(source_loss_explain)
+    source_loss_explain.set_defaults(func=cmd_source_loss_explain)
+    source_loss_preflight = source_loss_sub.add_parser("preflight")
+    source_loss_preflight.add_argument("--plan", required=True)
+    _add_output_args(source_loss_preflight)
+    source_loss_preflight.set_defaults(func=cmd_source_loss_preflight)
+    source_loss_execute = source_loss_sub.add_parser("execute")
+    source_loss_execute.add_argument("--plan", required=True)
+    source_loss_execute.add_argument("--approval", default="")
+    source_loss_execute.add_argument("--execute", action="store_true")
+    _add_output_args(source_loss_execute)
+    source_loss_execute.set_defaults(func=cmd_source_loss_execute)
+    source_loss_status = source_loss_sub.add_parser("status")
+    source_loss_status.add_argument("--plan", required=True)
+    _add_output_args(source_loss_status)
+    source_loss_status.set_defaults(func=cmd_source_loss_status)
+    source_loss_recover = source_loss_sub.add_parser("recover")
+    source_loss_recover.add_argument("--plan", required=True)
+    _add_output_args(source_loss_recover)
+    source_loss_recover.set_defaults(func=cmd_source_loss_recover)
 
     plan = subparsers.add_parser("plan")
     plan_sub = plan.add_subparsers(dest="command", required=True)

@@ -1494,6 +1494,28 @@ SYNC-OPS-2B2X closes the P2S execution contract:
 - activation/rollback do not imply endpoint smoke, process action, S2P,
   publish-and-rebase, deletion, production source writes, or owner-dev writes.
 
+## SYNC-OPS-5A-R5X Source-Loss Cutover Contract
+
+SYNC-OPS-5A-R5X freezes the source-loss cutover approval surface:
+
+- V4 plans are superseded if they lack canonical target, archive, fresh
+  candidate, production launch authority, full-tree descriptors, or exact
+  stop/archive/rename/start/smoke action ids.
+- The R4X canary directory is evidence only. A fresh sibling candidate must be
+  materialized from the frozen 67-file source provenance before cutover.
+- `agent_sync_cutover_tree_descriptor_v1` covers full directory shape,
+  source-bearing descriptor, runtime/data/model/unknown/sensitive counts, and
+  a safe full-entry digest.
+- `agent_sync_production_launch_authority_v1` binds the production cwd, port
+  10013, executable, argv, clean environment profile, supervised launch rules,
+  PID/start/cwd/exe checks, and SIGTERM-only stop.
+- `agent_sync_source_loss_recovery_plan_v5` binds 67 materialization actions,
+  22 cutover actions, roll-forward-only failure states, and no SIGKILL/delete/
+  invoke/provider/P2S/first-cycle permissions.
+- `source_loss_cutover_approval_request_v5` is a request, not an approval, and
+  downstream P2S/experiment/first-cycle nodes stay blocked until real closeouts
+  exist.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

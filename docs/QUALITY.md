@@ -1173,3 +1173,26 @@ SYNC-OPS-2A-R5 adds bootstrap environment-binding regressions:
 Default gates still must not create `/sdb/dlut/ops-artifacts`, write prod,
 sandbox, owner-dev, real approvals, real locks, real bootstrap state, real
 stages, endpoints, process state, or environment values.
+
+## SYNC-OPS-5A-R5X Cutover Contract Gate
+
+SYNC-OPS-5A-R5X adds focused regressions for source-loss cutover approval:
+
+- V4 recovery plans are rejected for missing exact paths, action ids,
+  production launch authority, full-tree descriptors, and roll-forward states.
+- Dirty canary reuse is rejected; fresh candidate paths must be distinct and
+  expected-missing.
+- Full-tree descriptors classify source, runtime, data/model, unknown, and
+  sensitive entries without reading environment values.
+- Production launch authority must bind exact cwd, executable, argv, port
+  10013, clean environment profile, no shell, and SIGTERM/no-SIGKILL.
+- Temp simulations cover normal cutover, SIGTERM timeout, port-not-released,
+  rename failure, start retry, contract degradation, PID reuse, and crash
+  recovery without mutating real prod.
+- `agent-sync source-loss execute` rejects missing machine approval with
+  `exit=4`.
+
+Default gates still must not stop the incumbent, create a real fresh candidate,
+modify canonical prod target, start recovered production, execute P2S, mutate
+active sandbox, write the pointer, call endpoints, operate real processes,
+read environment values, or create a machine approval.

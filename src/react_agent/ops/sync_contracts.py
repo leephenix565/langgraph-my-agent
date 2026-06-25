@@ -83,6 +83,16 @@ SCHEMA_FILES = {
     "agent_sync_projected_experiment_manifest_v4": "projected_experiment_manifest_v4.schema.json",
     "agent_sync_first_real_cycle_plan_v4": "first_real_cycle_plan_v4.schema.json",
     "agent_sync_conditional_approval_chain_v1": "conditional_approval_chain_v1.schema.json",
+    "agent_sync_cutover_tree_descriptor_v1": "cutover_tree_descriptor_v1.schema.json",
+    "agent_sync_production_launch_authority_v1": "production_launch_authority_v1.schema.json",
+    "agent_sync_source_loss_recovery_plan_v5": "source_loss_recovery_plan_v5.schema.json",
+    "agent_sync_source_loss_cutover_approval_request_v5": "source_loss_cutover_approval_request_v5.schema.json",
+    "agent_sync_full_p2s_rebase_plan_v5": "full_p2s_rebase_plan_v5.schema.json",
+    "agent_sync_full_p2s_stage_request_v5": "full_p2s_stage_request_v5.schema.json",
+    "agent_sync_full_p2s_activation_template_v5": "full_p2s_activation_template_v5.schema.json",
+    "agent_sync_projected_experiment_manifest_v5": "projected_experiment_manifest_v5.schema.json",
+    "agent_sync_first_real_cycle_plan_v5": "first_real_cycle_plan_v5.schema.json",
+    "agent_sync_conditional_approval_chain_v5": "conditional_approval_chain_v5.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {

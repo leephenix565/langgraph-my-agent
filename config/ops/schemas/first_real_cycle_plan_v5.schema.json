@@ -1,0 +1,13 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/first_real_cycle_plan_v5.schema.json",
+  "title": "SYNC-OPS First Real Cycle Plan V5",
+  "type": "object",
+  "required": ["schema_version", "status", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_first_real_cycle_plan_v5"},
+    "status": {"const": "blocked_pending_experiment_validation"},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

@@ -21,6 +21,10 @@ For R4X and later, a source-loss cutover request is valid only after the exact
 sibling candidate has passed the real shadow-canary closeout. Do not collapse
 cutover, P2S stage, P2S activation, experiment materialization, and first
 publish into one broad approval.
+For R5X and later, do not reuse the canary directory as the production cutover
+candidate. Require the V5 plan to bind canonical target, archive path, fresh
+candidate path, production launch authority, complete tree descriptors, exact
+action ids, SIGTERM/no-SIGKILL policy, and roll-forward-only failure states.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/production_launch_authority_v1.schema.json",
+  "title": "SYNC-OPS Production Launch Authority V1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "authority_id",
+    "authority_kind",
+    "service_unit_id",
+    "executable",
+    "argv",
+    "cwd",
+    "production_port",
+    "environment_profile_sha256",
+    "start_contract",
+    "stop_contract",
+    "status_contract",
+    "log_contract",
+    "recovery_contract",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_production_launch_authority_v1"},
+    "authority_id": {"type": "string", "minLength": 1},
+    "authority_kind": {"const": "sync_ops_supervised_launcher"},
+    "service_unit_id": {"const": "risk_financial_fraud"},
+    "executable": {"const": "/usr/bin/python3.14"},
+    "argv": {
+      "type": "array",
+      "prefixItems": [
+        {"const": "/usr/bin/python3.14"},
+        {"const": "-u"},
+        {"const": "-m"},
+        {"const": "app.main"}
+      ],
+      "minItems": 4,
+      "maxItems": 4
+    },
+    "cwd": {"type": "string", "minLength": 1},
+    "production_port": {"const": 10013},
+    "environment_profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "start_contract": {"type": "object"},
+    "stop_contract": {"type": "object"},
+    "status_contract": {"type": "object"},
+    "log_contract": {"type": "object"},
+    "recovery_contract": {"type": "object"},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

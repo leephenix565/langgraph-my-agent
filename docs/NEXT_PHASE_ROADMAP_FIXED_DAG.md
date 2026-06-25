@@ -451,6 +451,13 @@ active sandbox baseline. The no-op cycle approval does not authorize S2P file
 apply, endpoint smoke, process action, delete, production source writes, or
 baseline repair execution.
 
+SYNC-OPS-5A-R5X is the current final freeze before 5B. The real canary has
+already passed, but final cutover approval must now use Recovery V5:
+fresh candidate, canonical archive, full-tree descriptors, production launch
+authority, exact action ids, SIGTERM/no-SIGKILL, and roll-forward failure
+states. P2S stage, activation, experiment materialization, and first publish
+remain blocked until each upstream real closeout exists.
+
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should
 focus on source/owner blocked evidence paths, not another blanket backfill:

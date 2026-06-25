@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5A-R5X source-loss cutover contract
+
+### Added
+
+- Added R5X source-loss cutover contracts: full-tree descriptor, production
+  launch authority, Source-Loss Recovery V5, cutover approval request V5, P2S
+  V5, projected experiment/cycle V5, and conditional approval chain V5.
+- Added `agent-sync source-loss` planning, validation, explanation, preflight,
+  status, recovery, and approval-missing execute rejection commands.
+- Added focused R5X tests for V4 supersession, dirty canary rejection, fresh
+  candidate paths, production launch authority, exact action ids,
+  roll-forward state machine simulation, downstream blocked chain, schema
+  validation, and missing-approval CLI behavior.
+
+### Changed
+
+- Superseded Recovery V4/P2S V4/first-cycle V4 because cutover approval must
+  bind complete tree descriptors, canonical/archive/fresh candidate paths,
+  production launch authority, exact action ids, SIGTERM/no-SIGKILL, and
+  roll-forward failure states.
+
+### Not Done
+
+- No incumbent stop, canonical target modification, real fresh candidate
+  materialization, recovered production start, P2S, active sandbox mutation,
+  pointer write, owner-dev write, endpoint call, env-value access, machine
+  approval, or first non-zero cycle execution.
+
 ## 2026-06-25 - SYNC-OPS-5A-R4X real canary qualification
 
 ### Added
