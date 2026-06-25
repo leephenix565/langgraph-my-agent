@@ -3,6 +3,61 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-154: Portable Closeouts Exclude Raw Temp Fixtures
+
+Status: accepted for SYNC-OPS-5A-R6X.
+
+Decision: source-loss closeouts carry manifests, plans, requests, hashes, and
+bounded evidence only. Raw temp fixtures, candidate/source trees, pycache,
+backup bytes, and runtime outputs are not portable closeout entries.
+
+Reason: closeouts must be auditable and portable without packaging source or
+test workspaces.
+
+## ADR-153: Cutover File Actions Bind Type, Mode, and Executable Bits
+
+Status: accepted for SYNC-OPS-5A-R6X.
+
+Decision: irreversible source-loss materialization actions bind file content,
+file type, mode, executable bit, destination path, symlink policy, and
+hardlink policy.
+
+Reason: content hashes alone do not describe an executable production source
+tree.
+
+## ADR-152: Post-Start Runtime Artifacts Are Separate From Pre-Start Source
+
+Status: accepted for SYNC-OPS-5A-R6X.
+
+Decision: clean pre-start descriptors never contain runtime artifacts.
+Post-start artifacts are recorded by an explicit runtime artifact policy and
+must not relax the clean cutover candidate projection.
+
+Reason: startup may create caches or runtime data, but those bytes are not
+approval inputs for source materialization.
+
+## ADR-151: Offline Validation Must Be Tree-Non-Mutating
+
+Status: accepted for SYNC-OPS-5A-R6X.
+
+Decision: offline validation must redirect Python bytecode, pytest cache, and
+temporary files outside the cutover candidate and prove the full-entry digest
+is unchanged before and after validation.
+
+Reason: deleting cache after validation hides the evidence that the candidate
+was polluted.
+
+## ADR-150: Pre-Start Cutover Candidates Are Action-Projections
+
+Status: accepted for SYNC-OPS-5A-R6X.
+
+Decision: a pre-start cutover candidate is projected only from approved file
+actions and implied directories. It is not projected by scanning a source root
+that may contain pycache or validation artifacts.
+
+Reason: the first V5 plan combined 67 approved actions with a 124-entry tree;
+that mismatch must fail closed.
+
 ## ADR-149: Closeout-Bound Approval Chain Replaces Broad Source-Loss Approval
 
 Status: accepted for SYNC-OPS-5A-R4X.

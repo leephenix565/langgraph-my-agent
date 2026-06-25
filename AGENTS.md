@@ -79,6 +79,11 @@ Implementation changes must update the relevant reset docs:
   sibling candidate path, canonical archive path, full-tree descriptors,
   production launch authority, exact action ids, SIGTERM/no-SIGKILL policy,
   and roll-forward failure states.
+- A pre-start cutover candidate is clean by construction: project it only from
+  approved file actions and implied directories. Do not include pycache,
+  pytest cache, runtime DBs, logs, sockets, pid files, unknown entries, or
+  validation artifacts. Offline validation must prove the candidate tree is
+  unchanged before and after checks.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

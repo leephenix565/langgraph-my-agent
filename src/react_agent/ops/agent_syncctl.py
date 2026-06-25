@@ -78,9 +78,14 @@ from react_agent.ops.sync_5a_r4x import (
 )
 from react_agent.ops.sync_5a_r5x import (
     build_real_readonly_preflight,
-    build_v5_projection_bundle,
-    validate_source_loss_cutover_approval_request_v5,
     validate_source_loss_recovery_plan_v5,
+)
+from react_agent.ops.sync_5a_r6x import (
+    build_real_readonly_preflight_v6,
+    build_v6_projection_bundle,
+    validate_source_loss_cutover_approval_request_v6,
+    validate_source_loss_recovery_plan_v5_strict,
+    validate_source_loss_recovery_plan_v6,
 )
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
@@ -1032,20 +1037,27 @@ def _runtime_from_source_loss_args(args: argparse.Namespace) -> dict[str, Any]:
 def cmd_source_loss_plan(args: argparse.Namespace) -> int:
     closeout = read_json(Path(args.precutover_closeout))
     runtime = _runtime_from_source_loss_args(args)
-    bundle = build_v5_projection_bundle(
+    qualification = read_json(Path(args.qualification_evidence)) if getattr(args, "qualification_evidence", "") else {
+        "schema_version": "agent_sync_cli_missing_qualification_evidence_v1",
+        "canonical_sha256": "",
+        "full_materialization": {"valid": False},
+        "offline_nonmutation": {"valid": False},
+    }
+    bundle = build_v6_projection_bundle(
         final_head=args.final_head,
         precutover_closeout=closeout,
         runtime_identity=runtime,
+        qualification_evidence=qualification,
     )
-    recovery = bundle["source_loss_recovery_plan_v5"]
-    validation = validate_source_loss_recovery_plan_v5(recovery)
-    request = bundle["source_loss_cutover_approval_request_v5"]
-    request_validation = validate_source_loss_cutover_approval_request_v5(request, recovery)
+    recovery = bundle["source_loss_recovery_plan_v6"]
+    validation = validate_source_loss_recovery_plan_v6(recovery)
+    request = bundle["source_loss_cutover_approval_request_v6"]
+    request_validation = validate_source_loss_cutover_approval_request_v6(request, recovery)
     payload = {
         "summary_title": "agent-sync source-loss plan",
         **bundle,
-        "source_loss_recovery_plan_v5_validation": validation,
-        "source_loss_cutover_approval_request_v5_validation": request_validation,
+        "source_loss_recovery_plan_v6_validation": validation,
+        "source_loss_cutover_approval_request_v6_validation": request_validation,
         "exit_code": 0 if validation["valid"] and request_validation["valid"] else 7,
     }
     return print_or_json(
@@ -1061,7 +1073,12 @@ def cmd_source_loss_plan(args: argparse.Namespace) -> int:
 
 def cmd_source_loss_validate(args: argparse.Namespace) -> int:
     plan = read_json(Path(args.plan))
-    validation = validate_source_loss_recovery_plan_v5(plan)
+    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
+        validation = validate_source_loss_recovery_plan_v6(plan)
+    elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v5":
+        validation = validate_source_loss_recovery_plan_v5_strict(plan)
+    else:
+        validation = validate_source_loss_recovery_plan_v5(plan)
     payload = {"summary_title": "agent-sync source-loss validate", **validation, "exit_code": 0 if validation["valid"] else 7}
     return print_or_json(args, payload, [f"valid={validation['valid']}", f"blockers={len(validation['blockers'])}"])
 
@@ -1074,9 +1091,30 @@ def cmd_source_loss_explain(args: argparse.Namespace) -> int:
         "plan_sha256": plan.get("canonical_sha256"),
         "canonical_target_path": plan.get("canonical_target_path"),
         "fresh_cutover_candidate_path": plan.get("fresh_cutover_candidate_path"),
+        "clean_fresh_candidate_path": plan.get("clean_fresh_candidate_path", ""),
         "archive_path": plan.get("archive_path"),
         "production_launch_authority_sha256": plan.get("production_launch_authority_sha256"),
         "exact_action_count": len(plan.get("exact_requested_action_ids") or []),
+        "clean_prestart_projection": plan.get("clean_fresh_candidate_projection", {}),
+        "poststart_runtime_artifact_policy": plan.get("poststart_runtime_artifact_policy", {}),
+        "file_action_metadata_complete": not any(
+            key not in action
+            for action in plan.get("file_actions") or []
+            if isinstance(action, dict)
+            for key in (
+                "source_file_type",
+                "source_mode",
+                "source_executable",
+                "expected_destination_type",
+                "expected_destination_mode",
+                "follow_symlink",
+                "hardlink_allowed",
+            )
+        ),
+        "offline_validation_nonmutating": bool(
+            _as_mapping(_as_mapping(plan.get("qualification_evidence")).get("offline_nonmutation")).get("valid")
+        ),
+        "irreversible_boundary": "source-loss cutover requires exact machine approval",
         "sigkill_allowed": bool(_as_mapping(plan.get("requested_permissions")).get("sigkill")),
         "exit_code": 0,
     }
@@ -1086,13 +1124,39 @@ def cmd_source_loss_explain(args: argparse.Namespace) -> int:
 def cmd_source_loss_preflight(args: argparse.Namespace) -> int:
     plan = read_json(Path(args.plan))
     expected = _as_mapping(plan.get("incumbent_identity"))
-    payload = build_real_readonly_preflight(expected_runtime_identity=expected, recovery_v5=plan)
+    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
+        payload = build_real_readonly_preflight_v6(expected_runtime_identity=expected, recovery_v6=plan)
+    else:
+        payload = build_real_readonly_preflight(expected_runtime_identity=expected, recovery_v5=plan)
     payload["summary_title"] = "agent-sync source-loss preflight"
     payload["exit_code"] = 0 if payload["valid"] else 7
     return print_or_json(args, payload, [f"valid={payload['valid']}", f"blockers={len(payload['blockers'])}"])
 
 
 def cmd_source_loss_execute(args: argparse.Namespace) -> int:
+    plan = read_json(Path(args.plan))
+    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v5":
+        validation = validate_source_loss_recovery_plan_v5_strict(plan)
+        if not validation["valid"]:
+            payload = {
+                "schema_version": "agent_sync_cli_error_v1",
+                "summary_title": "agent-sync source-loss execute",
+                "reason": "fresh_candidate_projection_invalid",
+                "validation": validation,
+                "exit_code": 7,
+            }
+            return print_or_json(args, payload, ["reason=fresh_candidate_projection_invalid"])
+    elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
+        validation = validate_source_loss_recovery_plan_v6(plan)
+        if not validation["valid"]:
+            payload = {
+                "schema_version": "agent_sync_cli_error_v1",
+                "summary_title": "agent-sync source-loss execute",
+                "reason": "source_loss_plan_invalid",
+                "validation": validation,
+                "exit_code": 7,
+            }
+            return print_or_json(args, payload, ["reason=source_loss_plan_invalid"])
     if not getattr(args, "approval", ""):
         payload = {
             "schema_version": "agent_sync_cli_error_v1",
@@ -1721,6 +1785,7 @@ def build_parser() -> argparse.ArgumentParser:
     source_loss_plan.add_argument("--cwd", required=True)
     source_loss_plan.add_argument("--exe", default="/usr/bin/python3.14")
     source_loss_plan.add_argument("--argv-json", required=True)
+    source_loss_plan.add_argument("--qualification-evidence", default="")
     _add_output_args(source_loss_plan)
     source_loss_plan.set_defaults(func=cmd_source_loss_plan)
     source_loss_validate = source_loss_sub.add_parser("validate")

@@ -1196,3 +1196,21 @@ Default gates still must not stop the incumbent, create a real fresh candidate,
 modify canonical prod target, start recovered production, execute P2S, mutate
 active sandbox, write the pointer, call endpoints, operate real processes,
 read environment values, or create a machine approval.
+
+## SYNC-OPS-5A-R6X Clean Candidate Gate
+
+SYNC-OPS-5A-R6X adds focused regressions for clean pre-start source-loss
+candidates:
+
+- V5 recovery plans are rejected when 67 file actions are paired with a
+  polluted 124-entry expected descriptor.
+- Pre-start candidates must project 67 regular files, 10 parent directories,
+  one root entry, and 78 total entries.
+- Runtime artifacts, unknown entries, unexpected pycache, sensitive entries,
+  symlinks, and special files are forbidden in the pre-start projection.
+- Every file action must bind source type, mode, executable bit, destination
+  type, destination mode, no-follow-symlink, and no-hardlink.
+- Offline validation must prove full-tree digest equality before and after
+  py_compile and focused tests.
+- Portable archives must use POSIX entry names and exclude raw temp fixtures,
+  source trees, candidate bytes, backup bytes, and pycache.

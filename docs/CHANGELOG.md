@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5A-R6X clean cutover candidate hardening
+
+### Added
+
+- Added R6X clean candidate projection contracts, post-start runtime artifact
+  policy, Source-Loss Recovery V6, V6 cutover request, downstream P2S/
+  experiment/cycle V6 objects, and conditional approval chain V6.
+- Added focused R6X tests for V5 fail-closed validation, 67-action clean
+  projection, file type/mode/executable metadata, 67-file temp materialization,
+  offline validation non-mutation, post-start runtime policy, archive
+  portability, and CLI rejection behavior.
+
+### Changed
+
+- Superseded Source-Loss V5 and downstream V5 objects because the fresh
+  candidate expected descriptor included runtime/unknown `__pycache__` entries
+  and the file actions did not bind complete metadata.
+
+### Not Done
+
+- No incumbent stop, canonical target modification, real fresh candidate
+  materialization, recovered production start, P2S, active sandbox mutation,
+  pointer write, owner-dev write, endpoint call, env-value access, machine
+  approval, or first non-zero cycle execution.
+
 ## 2026-06-25 - SYNC-OPS-5A-R5X source-loss cutover contract
 
 ### Added

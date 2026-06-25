@@ -95,3 +95,7 @@ SYNC-OPS-5A-R5X adds that the cutover approval itself must bind a fresh
 candidate, canonical archive, complete tree descriptors, production launch
 authority, exact action ids, and roll-forward failure states. The R4X canary
 directory is evidence only and must not be renamed into production.
+SYNC-OPS-5A-R6X adds that the 5B cutover candidate must be a clean pre-start
+projection from exact file actions. Reject V5 requests and any plan whose fresh
+candidate descriptor contains pycache, runtime files, unknown entries, or file
+actions without type/mode/executable metadata.

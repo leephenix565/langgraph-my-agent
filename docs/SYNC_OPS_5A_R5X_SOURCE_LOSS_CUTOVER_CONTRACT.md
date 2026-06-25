@@ -99,6 +99,14 @@ Downstream nodes remain blocked:
 6. `experiment_materialization_v5`: blocked pending P2S activation closeout.
 7. `first_nonzero_cycle_v5`: blocked pending experiment validation.
 
+## R6X Supersession
+
+SYNC-OPS-5A-R6X supersedes the initial V5 request because its fresh candidate
+expected descriptor was produced by scanning a source root that contained
+Python bytecode. V6 requires a clean projection from the 67 approved file
+actions, per-file type/mode/executable metadata, non-mutating offline
+validation evidence, and portable closeouts without raw temp fixture entries.
+
 ## Non-Claims
 
 R5X does not stop the incumbent, signal any process, create the real fresh

@@ -1516,6 +1516,26 @@ SYNC-OPS-5A-R5X freezes the source-loss cutover approval surface:
   downstream P2S/experiment/first-cycle nodes stay blocked until real closeouts
   exist.
 
+## SYNC-OPS-5A-R6X Clean Cutover Candidate Contract
+
+SYNC-OPS-5A-R6X supersedes the V5 request when the fresh-candidate projection
+is polluted by runtime artifacts or action metadata is incomplete:
+
+- `agent_sync_clean_cutover_candidate_projection_v1` is derived only from the
+  67 approved file actions and implied directories: 67 regular files, 10
+  parent directories, one root entry, and 78 total entries.
+- Clean pre-start projections must have zero runtime, data/model, unknown,
+  sensitive, special, symlink, and unexpected entries.
+- Every materialization action binds content SHA, source type, source mode,
+  executable bit, destination type, destination mode, no-follow-symlink, and
+  no-hardlink.
+- Offline validation must prove the candidate full-entry digest before checks
+  equals the digest after checks.
+- `agent_sync_poststart_runtime_artifact_policy_v1` records allowed post-start
+  runtime artifacts separately and does not relax pre-start projection.
+- V6 approval requests remain requests only; P2S and first-cycle nodes stay
+  blocked behind real closeouts.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

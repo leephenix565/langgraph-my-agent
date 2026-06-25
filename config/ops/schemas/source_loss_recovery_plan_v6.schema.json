@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/source_loss_recovery_plan_v6.schema.json",
+  "title": "SYNC-OPS Source Loss Recovery Plan V6",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "plan_id",
+    "source_provenance_sha256",
+    "environment_profile_sha256",
+    "canonical_target_path",
+    "clean_fresh_candidate_path",
+    "clean_fresh_candidate_projection",
+    "poststart_runtime_artifact_policy",
+    "archive_path",
+    "production_launch_authority",
+    "incumbent_identity",
+    "file_actions",
+    "cutover_actions",
+    "exact_requested_action_ids",
+    "qualification_evidence",
+    "requested_permissions",
+    "canonical_sha256"
+  ],
+  "properties": {
+    "schema_version": {"const": "agent_sync_source_loss_recovery_plan_v6"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "source_provenance_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "environment_profile_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "canonical_target_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "clean_fresh_candidate_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "fresh_cutover_candidate_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "archive_path": {"type": "string", "not": {"pattern": "[<>]"}},
+    "incumbent_port": {"const": 10013},
+    "file_actions": {
+      "type": "array",
+      "minItems": 67,
+      "maxItems": 67,
+      "items": {
+        "type": "object",
+        "required": [
+          "action_id",
+          "operation",
+          "source_path",
+          "source_sha256",
+          "source_file_type",
+          "source_mode",
+          "source_executable",
+          "relative_path",
+          "destination_path",
+          "expected_destination_type",
+          "expected_destination_mode",
+          "follow_symlink",
+          "hardlink_allowed"
+        ]
+      }
+    },
+    "cutover_actions": {"type": "array", "minItems": 22},
+    "exact_requested_action_ids": {"type": "array", "items": {"type": "string"}},
+    "requested_permissions": {
+      "type": "object",
+      "properties": {
+        "irreversible_source_loss_acknowledgement": {"const": true},
+        "sigkill": {"const": false},
+        "delete": {"const": false},
+        "invoke": {"const": false},
+        "provider": {"const": false},
+        "p2s": {"const": false},
+        "first_cycle": {"const": false}
+      },
+      "additionalProperties": true
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

@@ -1,0 +1,16 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/full_p2s_activation_template_v6.schema.json",
+  "title": "SYNC-OPS Full P2S Activation Template V6",
+  "type": "object",
+  "required": ["schema_version", "request_id", "status", "stage", "activate", "rollback", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_full_p2s_activation_template_v6"},
+    "status": {"const": "blocked_pending_real_stage_closeout"},
+    "stage": {"const": false},
+    "activate": {"const": true},
+    "rollback": {"const": true},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

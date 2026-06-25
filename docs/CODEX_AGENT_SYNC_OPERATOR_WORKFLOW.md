@@ -25,6 +25,10 @@ For R5X and later, do not reuse the canary directory as the production cutover
 candidate. Require the V5 plan to bind canonical target, archive path, fresh
 candidate path, production launch authority, complete tree descriptors, exact
 action ids, SIGTERM/no-SIGKILL policy, and roll-forward-only failure states.
+For R6X and later, require the V6 clean candidate projection: 67 files, 10
+parent directories, one root entry, 78 total entries, no runtime/unknown/
+unexpected entries, complete file type/mode/executable metadata, and
+non-mutating offline validation proof.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

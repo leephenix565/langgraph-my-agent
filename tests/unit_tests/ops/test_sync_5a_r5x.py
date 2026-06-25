@@ -245,9 +245,9 @@ def test_source_loss_execute_requires_machine_approval(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 4
+    assert result.returncode == 7
     payload = json.loads(result.stdout)
-    assert payload["reason"] == "machine_approval_missing"
+    assert payload["reason"] == "fresh_candidate_projection_invalid"
 
 
 def test_readonly_preflight_reports_no_actions_with_fixture_runtime() -> None:

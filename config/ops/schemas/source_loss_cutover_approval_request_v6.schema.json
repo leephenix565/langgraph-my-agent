@@ -1,0 +1,31 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/source_loss_cutover_approval_request_v6.schema.json",
+  "title": "SYNC-OPS Source Loss Cutover Approval Request V6",
+  "type": "object",
+  "required": ["schema_version", "request_id", "status", "plan_id", "plan_sha256", "requested_action_ids", "permissions", "approval_id", "approved_at", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_source_loss_cutover_approval_request_v6"},
+    "request_id": {"type": "string", "minLength": 1},
+    "status": {"const": "awaiting_machine_approval"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "plan_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"},
+    "requested_action_ids": {"type": "array", "items": {"type": "string"}},
+    "permissions": {
+      "type": "object",
+      "properties": {
+        "sigterm": {"const": true},
+        "sigkill": {"const": false},
+        "delete": {"const": false},
+        "p2s": {"const": false},
+        "first_cycle": {"const": false},
+        "irreversible_source_loss_acknowledgement": {"const": true}
+      },
+      "additionalProperties": true
+    },
+    "approval_id": {"const": ""},
+    "approved_at": {"const": ""},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

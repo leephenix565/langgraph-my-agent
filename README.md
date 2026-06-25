@@ -105,6 +105,14 @@ roll-forward failure states. It does not stop the incumbent, modify the
 canonical target, create the real fresh candidate, call endpoints, or execute
 P2S. See `docs/SYNC_OPS_5A_R5X_SOURCE_LOSS_CUTOVER_CONTRACT.md`.
 
+SYNC-OPS-5A-R6X supersedes the initial V5 request because the fresh-candidate
+projection included Python runtime artifacts from a scanned source root. R6X
+projects the clean pre-start candidate strictly from 67 file actions and 10
+derived parent directories, binds type/mode/executable metadata for every file,
+proves offline validation is tree-non-mutating, separates post-start runtime
+artifact policy, and fixes portable archive hygiene. See
+`docs/SYNC_OPS_5A_R6X_CLEAN_CUTOVER_CANDIDATE.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies
