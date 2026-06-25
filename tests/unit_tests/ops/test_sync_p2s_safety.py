@@ -76,6 +76,7 @@ def test_repaired_p2s_plan_preserves_derivatives_and_metadata() -> None:
         "value_research_synthesis",
         "macro_index_valuation",
     }
+    assert all(action.get("source_absolute_path") for action in derivative_actions)
     ordinary_sensitive = [
         action
         for action in actions
@@ -94,6 +95,7 @@ def test_repaired_p2s_plan_preserves_derivatives_and_metadata() -> None:
         "value_research_synthesis",
         "macro_index_valuation",
     }
+    assert all(action.get("source_absolute_path") for action in metadata)
 
 
 def test_repaired_p2s_plan_has_26_dispositions_and_shared_member() -> None:

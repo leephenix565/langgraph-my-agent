@@ -3,6 +3,24 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - REPO-CONSOLIDATION-M1A quality baseline closure
+
+### Fixed
+
+- Restored deterministic mainline behavior for the SYNC-OPS-1R2
+  materialization coverage test by replacing current-server P2S inventory reads
+  with a hermetic temp fixture covering direct copy, sanitized derivative,
+  metadata preservation, and shared-transaction coverage.
+- Hardened P2S reconstruction so preserved sanitized derivatives and sandbox
+  metadata bind exact source paths and fail closed on post-plan source drift,
+  matching the existing copy-from-prod drift boundary.
+
+### Not Done
+
+- No runtime behavior change, sync contract change, production write, sandbox
+  write, endpoint call, process action, provider call, or documentation
+  migration.
+
 ## 2026-06-25 - SYNC-OPS-5C-FINAL strict nonzero execution
 
 ### Added

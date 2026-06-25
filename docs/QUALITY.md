@@ -976,6 +976,13 @@ tests may write repo-external `/tmp` materialization trees but must not write
 production, sandbox, owner-dev, configured artifact-store, approval, lock,
 backup, stage, activate, endpoint, or process state.
 
+REPO-CONSOLIDATION-M1A keeps the default mainline form of this coverage
+hermetic. Unit tests for projection digest, parity ledgers, and temp
+reconstruction use repo-external fixtures rather than the mutable current
+server prod/sandbox/pointer roots. Current-environment parity remains an
+explicit sync audit or rehearsal responsibility, not a default mainline unit
+dependency.
+
 Required assertions include:
 
 - nested packages, tests, configs, runbooks, `.gitignore`, HTML/CSS, and small

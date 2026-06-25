@@ -220,6 +220,7 @@ def _preserve_derivative_action(
         "baseline_derivative_path": rel,
         "destination_relative_path": rel,
         "stage_relative_path": f"{agent_id}/{rel}",
+        "source_absolute_path": str((derivative_record or {}).get("raw_path") or ""),
         "derivative_sha256": str((derivative_record or {}).get("sha256") or ""),
         "derivative_manifest_reference": "active_registry_and_baseline_sanitized_derivative_files",
         "derivative_state": "preserve" if derivative_record else "manual_review",
@@ -246,6 +247,7 @@ def _preserve_metadata_action(
         "baseline_metadata_path": rel,
         "destination_relative_path": rel,
         "stage_relative_path": f"{agent_id}/{rel}",
+        "source_absolute_path": str(record.get("raw_path") or ""),
         "metadata_sha256": str(record.get("sha256") or ""),
         "generated_from": "P2S-CLOSE-R1",
     }

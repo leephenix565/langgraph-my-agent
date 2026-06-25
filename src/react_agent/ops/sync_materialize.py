@@ -50,33 +50,61 @@ def _source_for_preserved_action(action: Mapping[str, Any], roots: Mapping[str, 
     raise SyncPlannerError("preserved_source_missing", exit_code=7, details={"agent_id": agent_id, "relative_path": rel})
 
 
+def _source_for_action(action: Mapping[str, Any], roots: Mapping[str, Mapping[str, str]]) -> Path:
+    operation = str(action.get("operation") or "")
+    if operation in {"copy_from_prod", "snapshot_semantic_placeholder"}:
+        source_text = str(action.get("source_absolute_path") or "")
+        if not source_text:
+            raise SyncPlannerError("materialization_source_missing", exit_code=7, details={"operation": operation})
+        return Path(source_text)
+    if operation in {"preserve_sanitized_derivative", "preserve_sandbox_metadata"}:
+        if action.get("source_absolute_path"):
+            return Path(str(action.get("source_absolute_path")))
+        return _source_for_preserved_action(action, roots)
+    raise SyncPlannerError("unsupported_materialization_operation", exit_code=7, details={"operation": operation})
+
+
+def _expected_hash_for_action(action: Mapping[str, Any]) -> str:
+    operation = str(action.get("operation") or "")
+    if operation in {"copy_from_prod", "snapshot_semantic_placeholder"}:
+        return str(action.get("source_sha256") or "")
+    if operation == "preserve_sanitized_derivative":
+        return str(action.get("derivative_sha256") or "")
+    if operation == "preserve_sandbox_metadata":
+        return str(action.get("metadata_sha256") or "")
+    return ""
+
+
 def _write_action(action: Mapping[str, Any], temp_root: Path, roots: Mapping[str, Mapping[str, str]]) -> dict[str, Any]:
     operation = str(action.get("operation") or "")
     if operation == "noop_shared_transaction_member":
         return {"operation": operation, "written": False, "reason": "noop_shared_transaction_member"}
     stage_rel = normalize_safe_relative_path(str(action.get("stage_relative_path") or ""))
     destination = temp_root / stage_rel
-    destination.parent.mkdir(parents=True, exist_ok=True)
     if operation in {"copy_from_prod", "snapshot_semantic_placeholder"}:
-        source = Path(str(action.get("source_absolute_path") or ""))
-        if not source.exists():
-            raise SyncPlannerError("materialization_source_missing", exit_code=7, details={"path": str(source)})
-        shutil.copyfile(source, destination)
         mode_text = str(action.get("source_mode") or "0o644")
         try:
             mode = int(mode_text, 8)
         except ValueError:
             mode = 0o644
-        destination.chmod(stat.S_IMODE(mode))
+        target_mode = stat.S_IMODE(mode)
     elif operation in {"preserve_sanitized_derivative", "preserve_sandbox_metadata"}:
-        if action.get("source_absolute_path"):
-            source = Path(str(action.get("source_absolute_path")))
-        else:
-            source = _source_for_preserved_action(action, roots)
-        shutil.copyfile(source, destination)
-        destination.chmod(0o644)
+        target_mode = 0o644
     else:
         return {"operation": operation, "written": False, "reason": "operation_not_materialized"}
+    source = _source_for_action(action, roots)
+    if not source.exists():
+        raise SyncPlannerError("materialization_source_missing", exit_code=7, details={"path": str(source), "operation": operation})
+    expected_hash = _expected_hash_for_action(action)
+    if expected_hash and file_sha256(source) != expected_hash:
+        raise SyncPlannerError(
+            "materialization_source_hash_drift",
+            exit_code=5,
+            details={"source": str(source), "operation": operation, "action_id": str(action.get("action_id") or "")},
+        )
+    destination.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copyfile(source, destination)
+    destination.chmod(target_mode)
     return {
         "operation": operation,
         "written": True,
@@ -193,10 +221,6 @@ def materialize_stage(plan: Mapping[str, Any], stage_root: Path, *, validation_p
             if normalized in seen_destinations and str(action.get("operation") or "") != "noop_shared_transaction_member":
                 duplicate_destinations.append(normalized)
             seen_destinations.add(normalized)
-        before_source = Path(str(action.get("source_absolute_path") or ""))
-        expected_sha = str(action.get("source_sha256") or "")
-        if before_source.exists() and expected_sha and file_sha256(before_source) != expected_sha:
-            raise SyncPlannerError("materialization_source_hash_drift", exit_code=5, details={"source": str(before_source)})
         writes.append(_write_action(action, stage_root, roots))
     expected_digest = str((plan.get("stage_materialization") or {}).get("expected_stage_projection_digest") or "")
     actual_digest = compute_stage_digest(stage_root, actions)
