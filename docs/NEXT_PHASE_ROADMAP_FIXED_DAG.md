@@ -459,6 +459,10 @@ running from the canonical source root, and full P2S rebase activated
 the active baseline, so it is superseded as a zero-effect change. The next sync
 step is to use a new exact non-zero tests/docs change packet from the new
 baseline; do not rerun source-loss recovery or P2S for that purpose.
+SYNC-OPS-5C-R1 repairs the packet shape for that next step. The remaining
+action is machine approval for the strict
+`agent_sync_publish_and_rebase_cycle_v1` envelope, not another source-loss,
+P2S, or experiment-planning phase.
 
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should

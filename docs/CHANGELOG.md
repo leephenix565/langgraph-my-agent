@@ -3,6 +3,30 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5C-R1 strict cycle envelope repair
+
+### Added
+
+- Added a deterministic strict-envelope builder that wraps the frozen first
+  non-zero experiment, change unit, S2P child, projected prod-after descriptor,
+  and P2S child in `agent_sync_publish_and_rebase_cycle_v1`.
+- Added approval-request validation for `agent_sync_cycle_approval_request_v1`
+  and publish-and-rebase dry-run support that reports
+  `ready_for_machine_approval` without `--execute`.
+- Added focused regressions for summary-plan rejection, strict child binding,
+  request-versus-approval separation, child hash drift, and CLI dry-run.
+
+### Changed
+
+- Superseded the summary `agent_sync_first_nonzero_cycle_plan_v1` object as a
+  non-executable cycle summary. The S2P/P2S child ids, hashes, action ids, and
+  projected prod-after descriptor are unchanged.
+
+### Not Done
+
+- No machine approval, production write, sandbox write, pointer update,
+  endpoint call, process action, owner-dev write, or cycle execution.
+
 ## 2026-06-25 - SYNC-OPS-5A-R7X cutover tree digest parity
 
 ### Fixed

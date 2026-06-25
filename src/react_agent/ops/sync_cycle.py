@@ -40,6 +40,7 @@ from react_agent.ops.sync_s2p import (
 
 CYCLE_CONTRACT_VERSION = "agent_sync_publish_and_rebase_cycle_v1"
 CYCLE_TOOL_VERSION = "sync_ops_4x_publish_and_rebase_cycle"
+STRICT_CYCLE_ENVELOPE_TOOL_VERSION = "sync_ops_5c_r1_strict_cycle_envelope"
 
 
 def now_utc() -> str:
@@ -244,6 +245,261 @@ def build_cycle_plan_from_experiment(experiment_manifest: Mapping[str, Any]) -> 
         plan["canonical_sha256"] = canonical_sha256(plan)
         return plan
     return build_cycle_plan_from_s2p(build_s2p_plan_v2(experiment_manifest))
+
+
+def build_strict_cycle_plan_from_children(
+    *,
+    summary_cycle: Mapping[str, Any],
+    experiment_manifest: Mapping[str, Any],
+    change_unit: Mapping[str, Any],
+    s2p_child_plan: Mapping[str, Any],
+    projected_prod_after: Mapping[str, Any],
+    p2s_child_plan: Mapping[str, Any],
+    created_at: str | None = None,
+    expires_at: str | None = None,
+) -> dict[str, Any]:
+    """Wrap an already-qualified first-nonzero packet in the formal cycle envelope."""
+    if summary_cycle.get("schema") != "agent_sync_first_nonzero_cycle_plan_v1":
+        raise SyncPlannerError("strict_cycle_summary_schema_mismatch", exit_code=7)
+    if s2p_child_plan.get("change_unit_id") != change_unit.get("change_unit_id"):
+        raise SyncPlannerError("strict_cycle_s2p_change_unit_mismatch", exit_code=7)
+    s2p_actions = [action for action in s2p_child_plan.get("actions") or [] if isinstance(action, Mapping)]
+    p2s_actions = [action for action in p2s_child_plan.get("actions") or [] if isinstance(action, Mapping)]
+    if len(s2p_actions) != int(summary_cycle.get("s2p_action_count") or 0):
+        raise SyncPlannerError("strict_cycle_s2p_action_count_mismatch", exit_code=7)
+    if len(p2s_actions) != int(summary_cycle.get("p2s_action_count") or 0):
+        raise SyncPlannerError("strict_cycle_p2s_action_count_mismatch", exit_code=7)
+    after_descriptor = projected_prod_after.get("after_descriptor") or s2p_child_plan.get("projected_prod_after_descriptor")
+    if not isinstance(after_descriptor, Mapping) or not after_descriptor.get("digest"):
+        raise SyncPlannerError("strict_cycle_projected_after_missing", exit_code=7)
+    if str(after_descriptor.get("digest")) != str(summary_cycle.get("projected_prod_after_descriptor") or ""):
+        raise SyncPlannerError("strict_cycle_projected_after_mismatch", exit_code=7)
+    if str(p2s_child_plan.get("projected_active_source_after_descriptor", {}).get("digest") or "") != str(after_descriptor.get("digest")):
+        raise SyncPlannerError("strict_cycle_p2s_projected_after_mismatch", exit_code=7)
+
+    registry = validate_static_registry()
+    pointer = load_pointer()
+    created = created_at or now_utc()
+    expires = expires_at or expires_utc()
+    seed = canonical_sha256(
+        {
+            "summary_cycle_id": summary_cycle.get("cycle_id"),
+            "summary_cycle_sha256": summary_cycle.get("cycle_sha256"),
+            "experiment_manifest_sha256": experiment_manifest.get("canonical_sha256"),
+            "change_unit_sha256": change_unit.get("canonical_sha256"),
+            "s2p_plan_sha256": s2p_child_plan.get("plan_sha256"),
+            "p2s_plan_sha256": p2s_child_plan.get("plan_sha256"),
+            "projected_after": after_descriptor,
+        }
+    )
+    transaction_id = f"txn_{change_unit.get('agent') or 'agent'}_first_nonzero"
+    target_prod_root = ""
+    if s2p_actions:
+        target = Path(str(s2p_actions[0].get("target_prod_file") or ""))
+        if len(target.parts) >= 2:
+            target_prod_root = str(target.parent.parent)
+    projected = {
+        "schema_version": "agent_sync_projected_prod_state_v1",
+        "transactions": [
+            {
+                "agent_id": change_unit.get("agent"),
+                "affected_agent_ids": [change_unit.get("agent")],
+                "transaction_id": transaction_id,
+                "target_prod_root": target_prod_root,
+                "target_before_descriptor": projected_prod_after.get("before_descriptor", {}),
+                "projected_target_after_descriptor": dict(after_descriptor),
+                "action_count": len(s2p_actions),
+                "action_ids": [str(action.get("action_id") or "") for action in s2p_actions],
+            }
+        ],
+        "projected_combined_prod_descriptor": dict(after_descriptor),
+        "changed_transaction_ids": [transaction_id],
+        "unchanged_transaction_ids": [],
+    }
+    noop = not s2p_actions and not p2s_actions
+    plan = {
+        "schema_version": CYCLE_CONTRACT_VERSION,
+        "cycle_id": f"cycle_strict_{seed[:12]}",
+        "supersedes_summary_cycle_id": summary_cycle.get("cycle_id"),
+        "supersedes_summary_cycle_sha256": summary_cycle.get("cycle_sha256"),
+        "created_at": created,
+        "expires_at": expires,
+        "mode": "strict_all_or_nothing",
+        "tool_version": STRICT_CYCLE_ENVELOPE_TOOL_VERSION,
+        "experiment": {
+            "experiment_id": experiment_manifest.get("experiment_id"),
+            "manifest_sha256": experiment_manifest.get("canonical_sha256"),
+            "workspace": experiment_manifest.get("workspace"),
+            "change_unit_id": change_unit.get("change_unit_id"),
+            "change_unit_sha256": change_unit.get("canonical_sha256"),
+            "changed_files": list(experiment_manifest.get("changed_files") or []),
+        },
+        "registry_sha256": registry["registry_sha256"],
+        "policy_sha256": registry["policy_sha256"],
+        "catalog_sha256": registry["catalog_sha256"],
+        "baseline": {
+            "baseline_id": pointer.get("active_baseline_id") or experiment_manifest.get("base_baseline_id"),
+            "active_path": pointer.get("active_path"),
+            "pointer_sha256": pointer.get("pointer_sha256"),
+            "base_baseline_id": experiment_manifest.get("base_baseline_id"),
+        },
+        "s2p_plan": {
+            "plan_id": s2p_child_plan.get("plan_id"),
+            "plan_sha256": s2p_child_plan.get("plan_sha256"),
+            "canonical_sha256": s2p_child_plan.get("canonical_sha256"),
+            "summary": {
+                "actionable_file_action_count": len(s2p_actions),
+                "process_action_count": 0,
+                "live_action_count": 0,
+                "delete_action_count": 0,
+            },
+            "validation": {"schema_version": "strict_child_plan_validation_v1", "valid": True, "blockers": []},
+            "actions": s2p_actions,
+            "child_plan": dict(s2p_child_plan),
+        },
+        "projected_prod_after_state": projected,
+        "p2s_plan": {
+            "plan_id": p2s_child_plan.get("plan_id"),
+            "plan_sha256": p2s_child_plan.get("plan_sha256"),
+            "canonical_sha256": p2s_child_plan.get("canonical_sha256"),
+            "p2s_action_count": len(p2s_actions),
+            "stage_root": p2s_child_plan.get("stage_root"),
+            "actions": p2s_actions,
+            "source_projected_prod_descriptor": dict(after_descriptor),
+            "expected_stage_projection_descriptor": dict(p2s_child_plan.get("projected_active_source_after_descriptor") or after_descriptor),
+            "child_plan": dict(p2s_child_plan),
+        },
+        "approval_requirements": {
+            "approval_bundle_required": True,
+            "backup_approved": not noop,
+            "apply_approved": not noop,
+            "offline_tests_approved": not noop,
+            "process_actions_approved": False,
+            "live_validation_approved": False,
+            "s2p_rollback_approved": not noop,
+            "p2s_stage_approved": not noop,
+            "p2s_activate_approved": not noop,
+            "p2s_rollback_approved": not noop,
+            "experiment_close_approved": not noop,
+            "owner_handoff_approved": not noop,
+            "delete_approved": False,
+            "noop_cycle_approved": noop,
+            "artifact_recording_approved": True,
+            "lock_cycle_approved": True,
+        },
+        "failure_policy": {
+            "strict_all_or_nothing": True,
+            "s2p_failure_blocks_p2s": True,
+            "projection_mismatch_blocks_p2s": True,
+            "p2s_failure_leaves_prod_settled": True,
+        },
+        "recovery_policy": {
+            "journal_required": True,
+            "resume_s2p_after_backup": True,
+            "resume_p2s_after_settled_prod": True,
+            "closeout_idempotent": True,
+        },
+        "action_scope": {
+            "s2p_action_ids": [str(action.get("action_id") or "") for action in s2p_actions],
+            "p2s_action_ids": [str(action.get("action_id") or "") for action in p2s_actions],
+            "process_actions": 0,
+            "live_actions": 0,
+            "delete_actions": 0,
+        },
+        "canonical_sha256": "",
+    }
+    plan["canonical_sha256"] = canonical_sha256(plan)
+    return plan
+
+
+def build_strict_cycle_approval_request(cycle_plan: Mapping[str, Any]) -> dict[str, Any]:
+    """Create an awaiting-approval request for a strict cycle envelope."""
+    s2p_ids = list(((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or []))
+    p2s_ids = list(((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or []))
+    request = {
+        "schema_version": "agent_sync_cycle_approval_request_v1",
+        "request_id": f"cycle_request_{cycle_plan.get('cycle_id')}",
+        "status": "awaiting_machine_approval",
+        "cycle_id": cycle_plan.get("cycle_id"),
+        "cycle_plan_sha256": cycle_plan.get("canonical_sha256"),
+        "supersedes_summary_cycle_id": cycle_plan.get("supersedes_summary_cycle_id"),
+        "s2p_plan_id": (cycle_plan.get("s2p_plan") or {}).get("plan_id"),
+        "s2p_plan_sha256": (cycle_plan.get("s2p_plan") or {}).get("plan_sha256"),
+        "p2s_plan_id": (cycle_plan.get("p2s_plan") or {}).get("plan_id"),
+        "p2s_plan_sha256": (cycle_plan.get("p2s_plan") or {}).get("canonical_sha256"),
+        "requested_s2p_action_ids": s2p_ids,
+        "requested_p2s_action_ids": p2s_ids,
+        "requested_action_ids": s2p_ids + p2s_ids,
+        "permissions": {
+            "backup": bool(s2p_ids),
+            "apply": bool(s2p_ids),
+            "offline_tests": bool(s2p_ids),
+            "s2p_rollback": bool(s2p_ids),
+            "p2s_stage": bool(p2s_ids),
+            "p2s_activate": bool(p2s_ids),
+            "p2s_rollback": bool(p2s_ids),
+            "owner_handoff_artifact": bool(s2p_ids or p2s_ids),
+            "process": False,
+            "live": False,
+            "delete": False,
+            "invoke": False,
+            "provider": False,
+            "owner_dev_write": False,
+        },
+        "expires_at": cycle_plan.get("expires_at"),
+        "canonical_sha256": "",
+    }
+    request["canonical_sha256"] = canonical_sha256(request)
+    return request
+
+
+def validate_cycle_approval_request(request: Mapping[str, Any], cycle_plan: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate an awaiting-approval request without treating it as an approval."""
+    blockers: list[str] = []
+    if request.get("schema_version") != "agent_sync_cycle_approval_request_v1":
+        blockers.append("approval_request_schema_mismatch")
+    if request.get("status") != "awaiting_machine_approval":
+        blockers.append("approval_request_status_mismatch")
+    if request.get("cycle_id") != cycle_plan.get("cycle_id"):
+        blockers.append("cycle_id_mismatch")
+    if request.get("cycle_plan_sha256") != cycle_plan.get("canonical_sha256"):
+        blockers.append("cycle_plan_sha256_mismatch")
+    if request.get("s2p_plan_sha256") != (cycle_plan.get("s2p_plan") or {}).get("plan_sha256"):
+        blockers.append("s2p_plan_sha256_mismatch")
+    if request.get("p2s_plan_sha256") != (cycle_plan.get("p2s_plan") or {}).get("canonical_sha256"):
+        blockers.append("p2s_plan_sha256_mismatch")
+    expected_s2p = list(((cycle_plan.get("action_scope") or {}).get("s2p_action_ids") or []))
+    expected_p2s = list(((cycle_plan.get("action_scope") or {}).get("p2s_action_ids") or []))
+    if list(request.get("requested_s2p_action_ids") or []) != expected_s2p:
+        blockers.append("requested_s2p_action_ids_mismatch")
+    if list(request.get("requested_p2s_action_ids") or []) != expected_p2s:
+        blockers.append("requested_p2s_action_ids_mismatch")
+    if list(request.get("requested_action_ids") or []) != expected_s2p + expected_p2s:
+        blockers.append("requested_action_ids_mismatch")
+    permissions = request.get("permissions") or {}
+    for key in ("process", "live", "delete", "invoke", "provider", "owner_dev_write"):
+        if permissions.get(key) is not False:
+            blockers.append(f"forbidden_permission:{key}")
+    try:
+        expires = datetime.fromisoformat(str(request.get("expires_at") or "").replace("Z", "+00:00")).astimezone(UTC)
+        if expires <= datetime.now(UTC):
+            blockers.append("approval_request_expired")
+    except ValueError:
+        blockers.append("approval_request_expires_invalid")
+    if request.get("canonical_sha256") != canonical_sha256(request):
+        blockers.append("approval_request_canonical_hash_mismatch")
+    return {
+        "schema_version": "agent_sync_cycle_approval_request_validation_v1",
+        "valid": not blockers,
+        "blockers": sorted(set(blockers)),
+        "approval_request_sha256": canonical_sha256(request),
+        "request_is_machine_approval": False,
+        "action_count": len(expected_s2p) + len(expected_p2s),
+        "process_actions": 0,
+        "live_actions": 0,
+        "delete_actions": 0,
+        "exit_code": 0 if not blockers else 7,
+    }
 
 
 def validate_cycle_plan(plan: Mapping[str, Any]) -> dict[str, Any]:

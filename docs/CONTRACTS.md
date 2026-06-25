@@ -1581,3 +1581,24 @@ Do not expose the following as transcript content:
 - secrets or environment values
 - provider or external raw responses
 - endpoint URLs or env var values as transcript content
+
+## SYNC-OPS-5C-R1 Strict Cycle Envelope Contract
+
+The executable publish-and-rebase cycle contract is
+`agent_sync_publish_and_rebase_cycle_v1`. A first non-zero summary packet is
+not executable until it is wrapped in that strict envelope.
+
+The strict envelope must include `schema_version`, `cycle_id`, `created_at`,
+`expires_at`, `mode=strict_all_or_nothing`, experiment identity, registry,
+policy, catalog, baseline, S2P child, projected prod after-state, P2S child,
+approval requirements, failure policy, recovery policy, and
+`canonical_sha256`.
+
+The R1 builder preserves the frozen business scope: S2P child
+`s2p_first_0abdfb4f91a4`, S2P action `s2p_e1d56522098d`, projected prod-after
+descriptor `f6ed15e1...`, P2S child `p2s_first_52d75b56543f`, and P2S action
+`p2s_5d09bb73bb47`.
+
+The approval request is `agent_sync_cycle_approval_request_v1` with status
+`awaiting_machine_approval`. It is explicitly not a machine approval and cannot
+be used with `--execute`.

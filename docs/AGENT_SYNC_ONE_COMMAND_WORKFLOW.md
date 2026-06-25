@@ -109,3 +109,9 @@ invalidated by a stale downstream change unit. If the selected experiment patch
 is already present in prod and the active baseline, supersede that
 experiment/cycle packet and generate a new exact non-zero packet from the
 current active baseline.
+SYNC-OPS-5C-R1 adds that a first non-zero summary packet is not the executable
+cycle contract. Before approval or execution, wrap the frozen experiment,
+change unit, S2P child, projected prod-after descriptor, and P2S child in the
+formal `agent_sync_publish_and_rebase_cycle_v1` strict envelope. Use
+`agent-sync cycle validate` and publish-and-rebase dry-run to confirm
+`ready_for_machine_approval`.

@@ -3486,3 +3486,20 @@ recovery reruns.
 
 Consequence: after P2S activation, generate a new exact non-zero cycle packet
 from the new active baseline instead of rolling back source-loss or P2S.
+
+## ADR-082: First Non-Zero Summaries Must Be Wrapped In Strict Cycle Envelopes
+
+Status: accepted for SYNC-OPS-5C-R1.
+
+Decision: `agent_sync_first_nonzero_cycle_plan_v1` is a summary and readiness
+object. It must be wrapped in `agent_sync_publish_and_rebase_cycle_v1` before it
+can be validated by the formal publish-and-rebase CLI.
+
+Reason: the formal CLI requires strict all-or-nothing cycle fields, projected
+prod after-state, and a precomputed P2S contract. The summary object binds the
+same business scope but does not contain the formal execution envelope.
+
+Consequence: final cycle packets include a strict envelope and a separate
+awaiting-machine-approval request. The request cannot act as approval and does
+not authorize execution until a machine approval is created for that strict
+cycle hash.

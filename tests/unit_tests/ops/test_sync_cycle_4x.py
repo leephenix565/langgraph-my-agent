@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import json
+import subprocess
 from pathlib import Path
 
 import pytest
@@ -15,12 +17,15 @@ from react_agent.ops.sync_cycle import (
     archive_policy_summary,
     build_cycle_approval_bundle,
     build_cycle_plan_from_s2p,
+    build_strict_cycle_approval_request,
+    build_strict_cycle_plan_from_children,
     recover_cycle,
     run_cycle_noop,
     run_temp_cycle_compensation,
     run_temp_multi_transaction_cycle,
     run_temp_nonzero_cycle,
     validate_cycle_approval_bundle,
+    validate_cycle_approval_request,
     validate_cycle_plan,
 )
 from react_agent.ops.sync_s2p import (
@@ -214,3 +219,215 @@ def test_archive_policy_rejects_nonportable_and_workspace_entries() -> None:
     assert invalid["absolute_entry_count"] == 1
     assert invalid["traversal_entry_count"] == 1
     assert invalid["raw_workspace_entry_count"] == 2
+
+
+def _strict_first_nonzero_children() -> tuple[dict, dict, dict, dict, dict, dict]:
+    after_descriptor = {
+        "schema": "agent_source_descriptor_v1",
+        "scope": "prod_source_after_projected_first_cycle",
+        "agent": "risk_financial_fraud",
+        "file_count": 67,
+        "digest": "f6ed15e1c7c3d7b739b03dd90a7821b9e3baf5a2a56bf3213e4c13351b4133db",
+        "records_sha256": "records-after",
+    }
+    before_descriptor = {
+        **after_descriptor,
+        "scope": "prod_source_before_first_cycle",
+        "digest": "0ab2df6bf051476ee110cb7073828ed396d67b84a205dd0b6bd10414a11c7720",
+        "records_sha256": "records-before",
+    }
+    summary = {
+        "schema": "agent_sync_first_nonzero_cycle_plan_v1",
+        "cycle_id": "cycle_bb73bb471272",
+        "cycle_sha256": "07d09a6e9b2c0e8d666b2d25b58ef0c1f04b4578a7bfc9d3b18db7ddab910a35",
+        "experiment_id": "first_nonzero_risk_fraud_report_contract_3e3a071",
+        "experiment_manifest_sha256": "1806e2c957afc2604f4fe7aee516edb5eda8754c2953866e10517a05186c191f",
+        "change_unit_id": "cu_792c2d1b0262",
+        "change_unit_sha256": "abdffb31f57e9aafdb7e6a5124a8ede3a08871910d96deea78096acb41b2e37c",
+        "s2p_plan_id": "s2p_first_0abdfb4f91a4",
+        "s2p_plan_sha256": "2cce1f6d838e886cec3feffe33d8bead1c977e6eb85d3d9c593d6892762f55bb",
+        "s2p_action_count": 1,
+        "p2s_plan_id": "p2s_first_52d75b56543f",
+        "p2s_plan_sha256": "c8e3d41f376abda96f498386d628ad6ecfc23264486f4f21fb8f093133cf86f3",
+        "p2s_action_count": 1,
+        "projected_prod_after_descriptor": after_descriptor["digest"],
+        "process_actions": 0,
+        "live_endpoint_calls": 0,
+        "delete_actions": 0,
+        "owner_dev_write": False,
+        "status": "awaiting_machine_approval",
+    }
+    experiment = {
+        "experiment_id": "first_nonzero_risk_fraud_report_contract_3e3a071",
+        "canonical_sha256": "1806e2c957afc2604f4fe7aee516edb5eda8754c2953866e10517a05186c191f",
+        "workspace": "/tmp/experiment/fixed-dag-services",
+        "base_baseline_id": "risk-fraud-rebase-full_p2s_rebase_9f7f07553392",
+        "changed_files": ["risk_financial_fraud/tests/test_report_material.py"],
+        "registered_change_units": ["cu_792c2d1b0262"],
+        "unregistered_changes": 0,
+    }
+    change = {
+        "change_unit_id": "cu_792c2d1b0262",
+        "canonical_sha256": "abdffb31f57e9aafdb7e6a5124a8ede3a08871910d96deea78096acb41b2e37c",
+        "agent": "risk_financial_fraud",
+        "file": "risk_financial_fraud/tests/test_report_material.py",
+        "risk_class": "A_docs_tests_material",
+    }
+    s2p = {
+        "schema": "agent_sync_s2p_plan_v1",
+        "plan_id": "s2p_first_0abdfb4f91a4",
+        "plan_sha256": "2cce1f6d838e886cec3feffe33d8bead1c977e6eb85d3d9c593d6892762f55bb",
+        "canonical_sha256": "07ae6e98c7e428f1a56731eed0cc76854b44cbfc132dec4e555c0de37066c172",
+        "change_unit_id": "cu_792c2d1b0262",
+        "actions": [
+            {
+                "action_id": "s2p_e1d56522098d",
+                "operation": "atomic_replace_one_file",
+                "source_experiment_file": "/tmp/experiment/fixed-dag-services/risk_financial_fraud/tests/test_report_material.py",
+                "target_prod_file": "/sdb/dlut/prod/财务造假风险智能体/tests/test_report_material.py",
+                "before_sha256": "7f5677195a289a15debcf5b3c55a6c2d421fb1f097be65162c85873712142b5e",
+                "after_sha256": "021b6060dfe22924762039f7b53c51c1874e880abae52147f468381232696fe3",
+                "backup_required": True,
+                "offline_tests_required": True,
+                "process_required": False,
+                "live_required": False,
+                "delete_required": False,
+            }
+        ],
+        "projected_prod_after_descriptor": after_descriptor,
+    }
+    projected = {"before_descriptor": before_descriptor, "after_descriptor": after_descriptor}
+    p2s = {
+        "schema": "agent_sync_first_cycle_p2s_plan_v1",
+        "plan_id": "p2s_first_52d75b56543f",
+        "plan_sha256": "c8e3d41f376abda96f498386d628ad6ecfc23264486f4f21fb8f093133cf86f3",
+        "canonical_sha256": "ef0d6ef02aae16e4d49835555e60ec8ecad5656b95c294a46f0f57fb55d7d21f",
+        "stage_root": "/tmp/stage/fixed-dag-services",
+        "actions": [
+            {
+                "action_id": "p2s_5d09bb73bb47",
+                "operation": "copy_settled_prod_file_to_new_baseline_stage",
+                "source_prod_file": "/sdb/dlut/prod/财务造假风险智能体/tests/test_report_material.py",
+                "target_baseline_file": "/tmp/stage/fixed-dag-services/risk_financial_fraud/tests/test_report_material.py",
+                "expected_source_sha256": "021b6060dfe22924762039f7b53c51c1874e880abae52147f468381232696fe3",
+                "expected_target_sha256": "021b6060dfe22924762039f7b53c51c1874e880abae52147f468381232696fe3",
+                "process_required": False,
+                "live_required": False,
+                "delete_required": False,
+            }
+        ],
+        "projected_active_source_after_descriptor": after_descriptor,
+    }
+    return summary, experiment, change, s2p, projected, p2s
+
+
+def test_summary_first_nonzero_cycle_is_not_formal_cycle_plan() -> None:
+    summary, _experiment, _change, _s2p, _projected, _p2s = _strict_first_nonzero_children()
+    result = validate_cycle_plan(summary)
+    assert result["valid"] is False
+    assert "not_cycle_plan" in result["blockers"]
+    assert "cycle_not_strict_all_or_nothing" in result["blockers"]
+    assert "projected_prod_after_state_missing" in result["blockers"]
+    assert "precomputed_p2s_plan_missing" in result["blockers"]
+
+
+def test_strict_cycle_builder_binds_frozen_children_and_actions() -> None:
+    summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
+    plan = build_strict_cycle_plan_from_children(
+        summary_cycle=summary,
+        experiment_manifest=experiment,
+        change_unit=change,
+        s2p_child_plan=s2p,
+        projected_prod_after=projected,
+        p2s_child_plan=p2s,
+        created_at="2026-06-25T00:00:00Z",
+        expires_at="2026-06-26T00:00:00Z",
+    )
+
+    assert plan["schema_version"] == "agent_sync_publish_and_rebase_cycle_v1"
+    assert plan["mode"] == "strict_all_or_nothing"
+    assert plan["supersedes_summary_cycle_id"] == "cycle_bb73bb471272"
+    assert plan["s2p_plan"]["plan_id"] == "s2p_first_0abdfb4f91a4"
+    assert plan["s2p_plan"]["summary"]["actionable_file_action_count"] == 1
+    assert plan["p2s_plan"]["plan_id"] == "p2s_first_52d75b56543f"
+    assert plan["p2s_plan"]["p2s_action_count"] == 1
+    assert plan["action_scope"]["s2p_action_ids"] == ["s2p_e1d56522098d"]
+    assert plan["action_scope"]["p2s_action_ids"] == ["p2s_5d09bb73bb47"]
+    assert plan["projected_prod_after_state"]["projected_combined_prod_descriptor"]["digest"] == summary["projected_prod_after_descriptor"]
+    validation = validate_cycle_plan(plan)
+    assert validation["valid"] is True
+    assert validation["blockers"] == []
+
+
+def test_strict_cycle_approval_request_is_not_machine_approval() -> None:
+    summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
+    plan = build_strict_cycle_plan_from_children(
+        summary_cycle=summary,
+        experiment_manifest=experiment,
+        change_unit=change,
+        s2p_child_plan=s2p,
+        projected_prod_after=projected,
+        p2s_child_plan=p2s,
+        created_at="2026-06-25T00:00:00Z",
+        expires_at="2026-06-26T00:00:00Z",
+    )
+    request = build_strict_cycle_approval_request(plan)
+
+    request_validation = validate_cycle_approval_request(request, plan)
+    assert request_validation["valid"] is True
+    assert request_validation["request_is_machine_approval"] is False
+    assert request_validation["action_count"] == 2
+    assert request["requested_action_ids"] == ["s2p_e1d56522098d", "p2s_5d09bb73bb47"]
+    assert validate_cycle_approval_bundle(request, plan)["valid"] is False
+
+    request["s2p_plan_sha256"] = "changed"
+    drift = validate_cycle_approval_request(request, plan)
+    assert drift["valid"] is False
+    assert "s2p_plan_sha256_mismatch" in drift["blockers"]
+
+
+def test_cli_publish_and_rebase_dry_run_accepts_strict_request(tmp_path: Path) -> None:
+    summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
+    plan = build_strict_cycle_plan_from_children(
+        summary_cycle=summary,
+        experiment_manifest=experiment,
+        change_unit=change,
+        s2p_child_plan=s2p,
+        projected_prod_after=projected,
+        p2s_child_plan=p2s,
+        created_at="2026-06-25T00:00:00Z",
+        expires_at="2026-06-26T00:00:00Z",
+    )
+    request = build_strict_cycle_approval_request(plan)
+    plan_path = tmp_path / "strict_cycle_plan.json"
+    request_path = tmp_path / "strict_cycle_request.json"
+    result_path = tmp_path / "dry_run.json"
+    plan_path.write_text(json.dumps(plan, ensure_ascii=False), encoding="utf-8")
+    request_path.write_text(json.dumps(request, ensure_ascii=False), encoding="utf-8")
+
+    result = subprocess.run(
+        [
+            ".venv/bin/python",
+            "scripts/ops/agent_syncctl.py",
+            "cycle",
+            "publish-and-rebase",
+            "--cycle-plan",
+            str(plan_path),
+            "--approval-bundle",
+            str(request_path),
+            "--json-output",
+            str(result_path),
+        ],
+        cwd="/sdb/dlut/dev/langgraph-my-agent",
+        text=True,
+        capture_output=True,
+        check=False,
+    )
+
+    assert result.returncode == 0
+    payload = json.loads(result_path.read_text(encoding="utf-8"))
+    assert payload["status"] == "ready_for_machine_approval"
+    assert payload["action_count"] == 2
+    assert payload["process_actions"] == 0
+    assert payload["live_actions"] == 0
+    assert payload["delete_actions"] == 0

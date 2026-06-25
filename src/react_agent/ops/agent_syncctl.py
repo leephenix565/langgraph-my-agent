@@ -130,6 +130,7 @@ from react_agent.ops.sync_cycle import (
     run_temp_cycle_compensation,
     run_temp_multi_transaction_cycle,
     run_temp_nonzero_cycle,
+    validate_cycle_approval_request,
     validate_cycle_plan,
 )
 from react_agent.ops.sync_diff import diff_inventory
@@ -622,10 +623,33 @@ def cmd_cycle_rehearse(args: argparse.Namespace) -> int:
 
 
 def cmd_cycle_publish_and_rebase(args: argparse.Namespace) -> int:
-    if not args.execute:
-        raise SyncPlannerError("execute_required", exit_code=2)
     plan = read_json(Path(args.cycle_plan))
     approval = read_json(Path(args.approval_bundle))
+    if not args.execute:
+        plan_validation = validate_cycle_plan(plan)
+        if approval.get("schema_version") == "agent_sync_cycle_approval_request_v1":
+            approval_validation = validate_cycle_approval_request(approval, plan)
+            status = "ready_for_machine_approval" if plan_validation["valid"] and approval_validation["valid"] else "blocked"
+        else:
+            from react_agent.ops.sync_cycle import validate_cycle_approval_bundle
+
+            approval_validation = validate_cycle_approval_bundle(approval, plan)
+            status = "ready_for_execution_dry_run" if plan_validation["valid"] and approval_validation["valid"] else "blocked"
+        payload = {
+            "summary_title": "agent-sync cycle publish-and-rebase dry-run",
+            "status": status,
+            "cycle_id": plan.get("cycle_id"),
+            "cycle_plan_validation": plan_validation,
+            "approval_validation": approval_validation,
+            "action_count": int(((plan.get("s2p_plan") or {}).get("summary") or {}).get("actionable_file_action_count") or 0)
+            + int((plan.get("p2s_plan") or {}).get("p2s_action_count") or 0),
+            "process_actions": 0,
+            "live_actions": 0,
+            "delete_actions": 0,
+            "execute": False,
+            "exit_code": 0 if plan_validation["valid"] and approval_validation["valid"] else 7,
+        }
+        return print_or_json(args, payload, [f"status={status}", f"cycle_id={plan.get('cycle_id')}"])
     s2p_actions = int(((plan.get("s2p_plan") or {}).get("summary") or {}).get("actionable_file_action_count") or 0)
     p2s_actions = int((plan.get("p2s_plan") or {}).get("p2s_action_count") or 0)
     if s2p_actions or p2s_actions:

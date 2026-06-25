@@ -1114,3 +1114,17 @@ readiness.
 - SYNC-OPS-2B1 creates and verifies only the approved versioned stage. It does
   not activate, roll back, archive the active sandbox, update the pointer, call
   endpoints, operate processes, or write prod/owner-dev.
+
+## SYNC-OPS-5C-R1 Strict Cycle Envelope
+
+- `agent_sync_first_nonzero_cycle_plan_v1` is a summary/readiness object, not
+  the executable publish-and-rebase contract.
+- The executable contract is `agent_sync_publish_and_rebase_cycle_v1` with
+  `mode=strict_all_or_nothing`, projected prod after-state, and a precomputed
+  P2S child.
+- The strict envelope preserves the frozen experiment, change unit, S2P child,
+  P2S child, projected prod-after digest, and the two action ids.
+- Dry-run `agent-sync cycle publish-and-rebase` validates strict plan plus
+  awaiting approval request and reports `ready_for_machine_approval`.
+- This repair does not write prod, sandbox, pointer, owner-dev, processes,
+  endpoints, or secrets.

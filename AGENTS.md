@@ -93,6 +93,10 @@ Implementation changes must update the relevant reset docs:
   downstream experiment or cycle change unit must not retroactively invalidate
   those upstream closeouts. Supersede only the stale downstream node and require
   a new exact non-zero cycle packet.
+- First non-zero cycle summaries are not executable cycle contracts. Wrap the
+  frozen experiment, change unit, S2P child, projected prod-after descriptor,
+  and P2S child in `agent_sync_publish_and_rebase_cycle_v1` before calling
+  `agent-sync cycle publish-and-rebase`.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

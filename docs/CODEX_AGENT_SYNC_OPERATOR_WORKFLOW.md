@@ -55,3 +55,8 @@ and endpoint counts, recovery status, topic status, and non-claims.
 Codex must not bypass the CLI, mutate files directly, create replacement
 approvals, perform semantic merges, invoke endpoints, operate processes, or
 reuse a no-op approval for a non-zero cycle.
+For first non-zero packets generated after 5B, confirm that the plan passed to
+the CLI has `schema_version=agent_sync_publish_and_rebase_cycle_v1`. If the
+packet only has `agent_sync_first_nonzero_cycle_plan_v1`, generate the strict
+envelope and approval request without changing the child S2P/P2S plans or
+action ids, then stop for exact machine approval.

@@ -1242,3 +1242,14 @@ The terminal upstream gate records real execution evidence:
   the old active archive;
 - stale downstream change units are fail-closed only for experiment/cycle
   approval and cannot roll back completed upstream closeouts.
+
+## SYNC-OPS-5C-R1 Strict Cycle Envelope Gate
+
+- Summary `agent_sync_first_nonzero_cycle_plan_v1` objects are rejected by the
+  formal cycle validator.
+- Strict envelopes preserve frozen child plan hashes and action ids.
+- Approval requests validate as requests and are not accepted as approvals.
+- Publish-and-rebase dry-run succeeds without `--execute` and reports
+  `ready_for_machine_approval`.
+- Process, live, delete, invoke, provider, and owner-dev permissions remain
+  false in the request.
