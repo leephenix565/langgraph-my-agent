@@ -33,6 +33,10 @@ For R7X and later, reject V6 plans unless the projection and materialization
 physical tree digests match under one entry contract. Require explicit
 directory mode actions and a temp rehearsal bound to the final plan by action
 semantics.
+After a 5B source-loss cutover and full P2S rebase have real closeouts, do not
+let a stale first-cycle change unit block or roll back those upstream results.
+Mark only the stale experiment/cycle packet superseded and generate a new exact
+non-zero tests/docs packet from the active baseline.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

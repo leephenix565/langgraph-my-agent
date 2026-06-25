@@ -451,15 +451,14 @@ active sandbox baseline. The no-op cycle approval does not authorize S2P file
 apply, endpoint smoke, process action, delete, production source writes, or
 baseline repair execution.
 
-SYNC-OPS-5A-R7X is the current final freeze before 5B. The real canary has
-already passed, and final cutover approval must now use Recovery V7: a clean
-67-action pre-start candidate projection, explicit directory mode actions, a
-single physical tree digest contract shared by projection and materialization,
-a separate classification digest, non-mutating offline validation, fresh
-candidate, canonical archive, production launch authority, exact action ids,
-SIGTERM/no-SIGKILL, and roll-forward failure states. P2S stage, activation,
-experiment materialization, and first publish remain blocked until each
-upstream real closeout exists.
+SYNC-OPS-5B-X has completed the upstream recovery chain. The risk-fraud
+source-loss cutover ran from the repaired V7 approval, recovered production is
+running from the canonical source root, and full P2S rebase activated
+`risk-fraud-rebase-full_p2s_rebase_9f7f07553392`. The old
+`market_capital_flow_chip` first-cycle patch is already present in prod and
+the active baseline, so it is superseded as a zero-effect change. The next sync
+step is to use a new exact non-zero tests/docs change packet from the new
+baseline; do not rerun source-loss recovery or P2S for that purpose.
 
 CS1-C3X closed the macro member contract issue and produced owner-source
 handoff patches for prod-only wrapper/test drift. The next safe phase should

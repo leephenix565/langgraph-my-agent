@@ -89,6 +89,10 @@ Implementation changes must update the relevant reset docs:
   manifest digest, explicit directory mode actions, and exact temp-to-final
   action semantics. Do not approve a plan whose projected physical tree digest
   differs from the exact rehearsal materialization digest.
+- After source-loss recovery and P2S activation have real closeouts, a stale
+  downstream experiment or cycle change unit must not retroactively invalidate
+  those upstream closeouts. Supersede only the stale downstream node and require
+  a new exact non-zero cycle packet.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

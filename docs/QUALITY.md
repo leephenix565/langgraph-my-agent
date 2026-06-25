@@ -1228,3 +1228,17 @@ SYNC-OPS-5A-R7X adds focused regressions for the final cutover tree contract:
   one-to-one.
 - Offline validation must preserve the physical digest after exact
   materialization.
+
+## SYNC-OPS-5B-X Upstream Execution Gate
+
+The terminal upstream gate records real execution evidence:
+
+- repaired V7 source-loss approval must bind 100 exact actions;
+- recovered production must pass health, compute, adapter, and equivalence
+  checks with no new degradation categories;
+- P2S stage must prove 1640 manifest path/SHA actions, 67 recovered
+  `risk_financial_fraud` files, and no placeholder/invalid SHA actions;
+- P2S activation must update the active baseline and pointer while preserving
+  the old active archive;
+- stale downstream change units are fail-closed only for experiment/cycle
+  approval and cannot roll back completed upstream closeouts.

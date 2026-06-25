@@ -4811,6 +4811,29 @@ Historical changelog entries before this reset branch are preserved by tag
 - No frontend v2 workflow rewrite.
 - No production deployment hardening.
 
+# 2026-06-25 - SYNC-OPS-5B-X source-loss recovery and P2S activation
+
+## Added
+
+- Added `docs/SYNC_OPS_5B_X_SOURCE_LOSS_AND_P2S_CLOSEOUT.md`.
+- Documented the repaired V7 source-loss cutover and full P2S rebase closeout.
+
+## Changed
+
+- Updated sync-ops docs to record that stale downstream change units supersede
+  only experiment/cycle packets, not completed source-loss or P2S closeouts.
+- Recorded active sandbox baseline
+  `risk-fraud-rebase-full_p2s_rebase_9f7f07553392` as the upstream closeout
+  baseline for the next exact first non-zero cycle packet.
+
+## Not Done
+
+- No `/v1/agent/invoke` call.
+- No provider call.
+- No SIGKILL.
+- No owner-dev modification.
+- No first real non-zero publish cycle execution.
+
 ## 2026-06-04 - Phase R1-B fixed DAG runtime protocol skeleton
 
 ### Added

@@ -3470,3 +3470,19 @@ the recovered production service on 10013.
 
 Consequence: V5 cutover approval binds the production launch authority hash
 separately from the R4X canary evidence.
+
+## ADR-081: Downstream Stale Change Units Do Not Invalidate Upstream Closeouts
+
+Status: accepted for SYNC-OPS-5B-X.
+
+Decision: source-loss recovery and full P2S rebase are independent upstream
+nodes. Once they complete with exact approvals and real closeouts, a stale
+experiment or first-cycle change unit supersedes only the downstream
+experiment/cycle packet.
+
+Reason: treating a later zero-effect change unit as a global blocker would
+discard valid recovered prod and P2S evidence and encourage unnecessary
+recovery reruns.
+
+Consequence: after P2S activation, generate a new exact non-zero cycle packet
+from the new active baseline instead of rolling back source-loss or P2S.

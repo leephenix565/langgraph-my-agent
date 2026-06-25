@@ -121,6 +121,16 @@ temp rehearsal bound by action semantics, and refreezes the downstream V7
 approval chain. See
 `docs/SYNC_OPS_5A_R7X_CUTOVER_TREE_DIGEST_PARITY.md`.
 
+SYNC-OPS-5B-X executed the repaired V7 upstream chain. The source-loss cutover
+for `risk_financial_fraud` completed with SIGTERM-only incumbent stop,
+canonical archive, recovered production start, and health/compute/adapter
+equivalence. Full P2S rebase then staged and activated baseline
+`risk-fraud-rebase-full_p2s_rebase_9f7f07553392`. The old
+`market_capital_flow_chip` first-cycle candidate is now superseded because its
+patch is already present in prod and the new active baseline, so the first real
+non-zero publish still requires a new exact approval packet. See
+`docs/SYNC_OPS_5B_X_SOURCE_LOSS_AND_P2S_CLOSEOUT.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

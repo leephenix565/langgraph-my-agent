@@ -103,3 +103,9 @@ SYNC-OPS-5A-R7X adds that projection and materialization must share a physical
 tree digest contract. Reject V6 requests when the clean projected digest and
 the exact 67-file rehearsal digest differ, directory modes are not explicit, or
 the rehearsal is not bound to final action semantics.
+
+SYNC-OPS-5B-X adds that completed source-loss and P2S closeouts are not
+invalidated by a stale downstream change unit. If the selected experiment patch
+is already present in prod and the active baseline, supersede that
+experiment/cycle packet and generate a new exact non-zero packet from the
+current active baseline.

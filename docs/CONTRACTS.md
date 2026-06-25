@@ -1555,6 +1555,20 @@ not equal the exact materialized candidate digest:
 - V7 approval requests remain requests only; P2S, experiment materialization,
   and the first cycle stay blocked behind real closeouts.
 
+## SYNC-OPS-5B-X Upstream Closeout Contract
+
+SYNC-OPS-5B-X establishes the real upstream closeout boundary:
+
+- A repaired V7 source-loss approval can execute independently of downstream
+  experiment/cycle validity when the source-loss plan and request are exact.
+- Full P2S rebase can execute after the recovered prod source descriptor
+  matches the frozen descriptor and recovery settle closeout exists.
+- A stale first-cycle change unit supersedes only experiment and cycle nodes.
+  It does not invalidate source-loss recovery, recovery settle, P2S stage, or
+  P2S activation closeouts.
+- The active sandbox baseline after this closeout is
+  `risk-fraud-rebase-full_p2s_rebase_9f7f07553392`.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

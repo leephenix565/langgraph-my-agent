@@ -32,21 +32,20 @@ from react_agent.ops.sync_s2p import (
 )
 
 
-def test_s2p_mapping_repairs_empty_and_shared_members(tmp_path: Path) -> None:
+def test_s2p_mapping_accepts_recovered_risk_fraud_and_shared_members(tmp_path: Path) -> None:
     manifest = build_experiment_fork(workspace_root=tmp_path / "experiment", experiment_id="exp_cycle_mapping")
     plan = build_s2p_plan_v2(manifest)
 
     fraud = next(agent for agent in plan["agents"] if agent["agent_id"] == "risk_financial_fraud")
-    assert fraud["baseline_tree_sha256"] == ""
+    assert fraud["baseline_tree_sha256"] == fraud["experiment_tree_sha256"]
     assert fraud["experiment_tree_sha256"]
-    assert fraud["baseline_descriptor"]["file_count"] == 0
-    assert fraud["experiment_descriptor"]["file_count"] == 0
-    assert fraud["mapping_status"] == "blocked"
-    assert any("blocked_baseline_source_mapping_missing:risk_financial_fraud" in blocker for blocker in fraud["mapping_blockers"])
+    assert fraud["baseline_descriptor"]["file_count"] == 67
+    assert fraud["experiment_descriptor"]["file_count"] == 67
+    assert fraud["mapping_status"] == "complete"
+    assert fraud["mapping_blockers"] == []
     validation = validate_s2p_plan_contract(plan)
-    assert validation["valid"] is False
-    assert any("blocked_baseline_source_mapping_missing:risk_financial_fraud" in blocker for blocker in validation["blockers"])
-    assert any("s2p_agent_empty_inventory_not_registered:risk_financial_fraud" in blocker for blocker in validation["blockers"])
+    assert validation["valid"] is True
+    assert validation["blockers"] == []
 
     fund = next(agent for agent in plan["agents"] if agent["agent_id"] == "market_fund_manager_behavior")
     market = next(agent for agent in plan["agents"] if agent["agent_id"] == "market_composite")
@@ -74,8 +73,8 @@ def test_cycle_plan_embeds_projection_and_precomputed_p2s(tmp_path: Path) -> Non
     cycle = build_cycle_plan_from_s2p(s2p)
     validation = validate_cycle_plan(cycle)
 
-    assert validation["valid"] is False
-    assert "s2p_plan_invalid" in validation["blockers"]
+    assert validation["valid"] is True
+    assert validation["blockers"] == []
     assert cycle["schema_version"] == "agent_sync_publish_and_rebase_cycle_v1"
     assert cycle["mode"] == "strict_all_or_nothing"
     assert cycle["projected_prod_after_state"]["projected_combined_prod_descriptor"]["scope"] == "s2p_prod_inventory"
