@@ -84,6 +84,11 @@ Implementation changes must update the relevant reset docs:
   pytest cache, runtime DBs, logs, sockets, pid files, unknown entries, or
   validation artifacts. Offline validation must prove the candidate tree is
   unchanged before and after checks.
+- Source-loss cutover tree approval must bind one physical tree digest
+  contract for both projection and materialization, a separate classification
+  manifest digest, explicit directory mode actions, and exact temp-to-final
+  action semantics. Do not approve a plan whose projected physical tree digest
+  differs from the exact rehearsal materialization digest.
 - Process action, live validation, delete, owner handoff, and P2S activation
   remain independent approval capabilities.
 - The durable sync artifact store is

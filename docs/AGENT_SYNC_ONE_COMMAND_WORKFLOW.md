@@ -99,3 +99,7 @@ SYNC-OPS-5A-R6X adds that the 5B cutover candidate must be a clean pre-start
 projection from exact file actions. Reject V5 requests and any plan whose fresh
 candidate descriptor contains pycache, runtime files, unknown entries, or file
 actions without type/mode/executable metadata.
+SYNC-OPS-5A-R7X adds that projection and materialization must share a physical
+tree digest contract. Reject V6 requests when the clean projected digest and
+the exact 67-file rehearsal digest differ, directory modes are not explicit, or
+the rehearsal is not bound to final action semantics.

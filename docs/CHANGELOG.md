@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-25 - SYNC-OPS-5A-R7X cutover tree digest parity
+
+### Added
+
+- Added R7X physical tree descriptor contracts, classification manifest digest,
+  directory mode authority, directory action ledger, action semantics binding,
+  Source-Loss Recovery V7, V7 cutover request, downstream P2S/experiment/cycle
+  V7 objects, and conditional approval chain V7.
+- Added focused R7X tests for V6 fail-closed validation, physical digest path
+  independence, classification digest separation, directory mode actions,
+  exact 67-file rehearsal parity, V7 approval request separation, downstream
+  chain blocking, and CLI rejection behavior.
+
+### Changed
+
+- Superseded Source-Loss V6 and downstream V6 objects because the clean
+  projection physical digest did not match the exact 67-file materialization
+  digest and directory modes were not explicit approval actions.
+
+### Not Done
+
+- No incumbent stop, canonical target modification, real fresh candidate
+  materialization, recovered production start, P2S, active sandbox mutation,
+  pointer write, owner-dev write, endpoint call, env-value access, machine
+  approval, or first non-zero cycle execution.
+
 ## 2026-06-25 - SYNC-OPS-5A-R6X clean cutover candidate hardening
 
 ### Added

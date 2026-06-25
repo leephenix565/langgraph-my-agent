@@ -103,6 +103,18 @@ SCHEMA_FILES = {
     "agent_sync_projected_experiment_manifest_v6": "projected_experiment_manifest_v6.schema.json",
     "agent_sync_first_real_cycle_plan_v6": "first_real_cycle_plan_v6.schema.json",
     "agent_sync_conditional_approval_chain_v6": "conditional_approval_chain_v6.schema.json",
+    "agent_sync_cutover_physical_tree_descriptor_v2": "cutover_physical_tree_descriptor_v2.schema.json",
+    "agent_sync_directory_mode_authority_v1": "directory_mode_authority_v1.schema.json",
+    "agent_sync_directory_action_ledger_v1": "directory_action_ledger_v1.schema.json",
+    "agent_sync_action_semantics_binding_v1": "action_semantics_binding_v1.schema.json",
+    "agent_sync_source_loss_recovery_plan_v7": "source_loss_recovery_plan_v7.schema.json",
+    "agent_sync_source_loss_cutover_approval_request_v7": "source_loss_cutover_approval_request_v7.schema.json",
+    "agent_sync_full_p2s_rebase_plan_v7": "full_p2s_rebase_plan_v7.schema.json",
+    "agent_sync_full_p2s_stage_request_v7": "full_p2s_stage_request_v7.schema.json",
+    "agent_sync_full_p2s_activation_template_v7": "full_p2s_activation_template_v7.schema.json",
+    "agent_sync_projected_experiment_manifest_v7": "projected_experiment_manifest_v7.schema.json",
+    "agent_sync_first_real_cycle_plan_v7": "first_real_cycle_plan_v7.schema.json",
+    "agent_sync_conditional_approval_chain_v7": "conditional_approval_chain_v7.schema.json",
 }
 
 READ_ONLY_UNSUPPORTED_COMMANDS = {

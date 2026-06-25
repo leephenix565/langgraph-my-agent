@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/directory_action_ledger_v1.schema.json",
+  "title": "SYNC-OPS Directory Action Ledger V1",
+  "type": "object",
+  "required": ["schema_version", "plan_id", "action_count", "actions", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_directory_action_ledger_v1"},
+    "plan_id": {"type": "string", "minLength": 1},
+    "action_count": {"type": "integer", "minimum": 1},
+    "actions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "action_id",
+          "operation",
+          "relative_path",
+          "expected_before_state",
+          "candidate_pre_cutover_mode",
+          "canonical_post_cutover_mode",
+          "follow_symlink",
+          "hardlink_allowed",
+          "action_semantics_sha256"
+        ],
+        "properties": {
+          "operation": {"const": "create_candidate_directory"},
+          "expected_before_state": {"const": "missing"},
+          "follow_symlink": {"const": false},
+          "hardlink_allowed": {"const": false},
+          "action_semantics_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+        },
+        "additionalProperties": true
+      }
+    },
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

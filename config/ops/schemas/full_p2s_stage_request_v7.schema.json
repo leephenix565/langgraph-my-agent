@@ -1,0 +1,18 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://dlut.example/agent-sync/full_p2s_stage_request_v7.schema.json",
+  "title": "SYNC-OPS Full P2S Stage Request V7",
+  "type": "object",
+  "required": ["schema_version", "request_id", "status", "stage", "verify", "activate", "rollback", "canonical_sha256"],
+  "properties": {
+    "schema_version": {"const": "agent_sync_full_p2s_stage_request_v7"},
+    "request_id": {"type": "string", "minLength": 1},
+    "status": {"const": "blocked_pending_recovery_settle"},
+    "stage": {"const": true},
+    "verify": {"const": true},
+    "activate": {"const": false},
+    "rollback": {"const": false},
+    "canonical_sha256": {"type": "string", "pattern": "^[0-9a-f]{64}$"}
+  },
+  "additionalProperties": true
+}

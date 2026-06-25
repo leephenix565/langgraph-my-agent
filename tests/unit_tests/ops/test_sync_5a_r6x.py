@@ -274,7 +274,7 @@ def test_cli_rejects_v5_projection_before_approval_check(tmp_path: Path) -> None
     assert payload["reason"] == "fresh_candidate_projection_invalid"
 
 
-def test_cli_rejects_valid_v6_without_machine_approval(tmp_path: Path) -> None:
+def test_cli_rejects_superseded_v6_under_r7_contract(tmp_path: Path) -> None:
     plan = build_source_loss_recovery_plan_v6(
         final_head="e4ff990d2669fda8897249906f4e6a00964653e7",
         precutover_closeout=_closeout(),
@@ -299,6 +299,6 @@ def test_cli_rejects_valid_v6_without_machine_approval(tmp_path: Path) -> None:
         capture_output=True,
         text=True,
     )
-    assert result.returncode == 4
+    assert result.returncode == 7
     payload = json.loads(result.stdout)
-    assert payload["reason"] == "machine_approval_missing"
+    assert payload["reason"] == "projection_materialization_digest_mismatch"

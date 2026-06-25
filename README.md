@@ -113,6 +113,14 @@ proves offline validation is tree-non-mutating, separates post-start runtime
 artifact policy, and fixes portable archive hygiene. See
 `docs/SYNC_OPS_5A_R6X_CLEAN_CUTOVER_CANDIDATE.md`.
 
+SYNC-OPS-5A-R7X supersedes V6 because the clean projection digest and the exact
+67-file materialization digest used different complete-tree contracts. R7X
+separates physical tree identity from classification policy, makes root and
+parent directory modes explicit actions, qualifies the final plan with an exact
+temp rehearsal bound by action semantics, and refreezes the downstream V7
+approval chain. See
+`docs/SYNC_OPS_5A_R7X_CUTOVER_TREE_DIGEST_PARITY.md`.
+
 CS1-C1X records the first accelerated post-backfill convergence wave. It adds
 a source-controlled health identity validator, enforces request-`as_of`
 anti-lookahead checks before external compute results enter DAG state, applies

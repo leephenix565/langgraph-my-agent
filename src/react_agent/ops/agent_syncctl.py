@@ -87,6 +87,11 @@ from react_agent.ops.sync_5a_r6x import (
     validate_source_loss_recovery_plan_v5_strict,
     validate_source_loss_recovery_plan_v6,
 )
+from react_agent.ops.sync_5a_r7x import (
+    build_real_readonly_preflight_v7,
+    validate_source_loss_recovery_plan_v6_for_v7,
+    validate_source_loss_recovery_plan_v7,
+)
 from react_agent.ops.sync_approval import load_approval, validate_approval
 from react_agent.ops.sync_artifacts import artifact_store_preflight
 from react_agent.ops.sync_bootstrap import (
@@ -1073,8 +1078,10 @@ def cmd_source_loss_plan(args: argparse.Namespace) -> int:
 
 def cmd_source_loss_validate(args: argparse.Namespace) -> int:
     plan = read_json(Path(args.plan))
-    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
-        validation = validate_source_loss_recovery_plan_v6(plan)
+    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v7":
+        validation = validate_source_loss_recovery_plan_v7(plan)
+    elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
+        validation = validate_source_loss_recovery_plan_v6_for_v7(plan)
     elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v5":
         validation = validate_source_loss_recovery_plan_v5_strict(plan)
     else:
@@ -1096,6 +1103,16 @@ def cmd_source_loss_explain(args: argparse.Namespace) -> int:
         "production_launch_authority_sha256": plan.get("production_launch_authority_sha256"),
         "exact_action_count": len(plan.get("exact_requested_action_ids") or []),
         "clean_prestart_projection": plan.get("clean_fresh_candidate_projection", {}),
+        "physical_tree_descriptor": plan.get("physical_tree_descriptor_v2", {}),
+        "classification_manifest_sha256": plan.get("classification_manifest_sha256", ""),
+        "directory_mode_ledger": plan.get("directory_action_ledger", {}),
+        "action_semantics_set_sha256": plan.get("action_semantics_set_sha256", ""),
+        "rehearsal_parity": {
+            "evidence_sha256": plan.get("temp_exact_action_rehearsal_evidence_sha256", ""),
+            "expected_physical_tree_digest": plan.get("expected_physical_tree_digest", ""),
+            "materialized_physical_tree_digest": _as_mapping(plan.get("temp_exact_action_rehearsal_evidence")).get("actual_after_materialization_physical_tree_digest", ""),
+            "post_validation_physical_tree_digest": _as_mapping(plan.get("temp_exact_action_rehearsal_evidence")).get("actual_after_offline_validation_physical_tree_digest", ""),
+        },
         "poststart_runtime_artifact_policy": plan.get("poststart_runtime_artifact_policy", {}),
         "file_action_metadata_complete": not any(
             key not in action
@@ -1124,7 +1141,9 @@ def cmd_source_loss_explain(args: argparse.Namespace) -> int:
 def cmd_source_loss_preflight(args: argparse.Namespace) -> int:
     plan = read_json(Path(args.plan))
     expected = _as_mapping(plan.get("incumbent_identity"))
-    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
+    if plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v7":
+        payload = build_real_readonly_preflight_v7(expected_runtime_identity=expected, recovery_v7=plan)
+    elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
         payload = build_real_readonly_preflight_v6(expected_runtime_identity=expected, recovery_v6=plan)
     else:
         payload = build_real_readonly_preflight(expected_runtime_identity=expected, recovery_v5=plan)
@@ -1147,7 +1166,17 @@ def cmd_source_loss_execute(args: argparse.Namespace) -> int:
             }
             return print_or_json(args, payload, ["reason=fresh_candidate_projection_invalid"])
     elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v6":
-        validation = validate_source_loss_recovery_plan_v6(plan)
+        validation = validate_source_loss_recovery_plan_v6_for_v7(plan)
+        payload = {
+            "schema_version": "agent_sync_cli_error_v1",
+            "summary_title": "agent-sync source-loss execute",
+            "reason": "projection_materialization_digest_mismatch",
+            "validation": validation,
+            "exit_code": 7,
+        }
+        return print_or_json(args, payload, ["reason=projection_materialization_digest_mismatch"])
+    elif plan.get("schema_version") == "agent_sync_source_loss_recovery_plan_v7":
+        validation = validate_source_loss_recovery_plan_v7(plan)
         if not validation["valid"]:
             payload = {
                 "schema_version": "agent_sync_cli_error_v1",

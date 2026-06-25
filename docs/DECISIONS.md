@@ -3,6 +3,52 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-158: Exact Rehearsal Action Semantics Qualify Final Cutover Plans
+
+Status: accepted for SYNC-OPS-5A-R7X.
+
+Decision: a final source-loss cutover plan is execution-ready only when a
+repo-external rehearsal uses actions with identical semantics to the final
+plan actions. Absolute roots and action ids may differ; operation, relative
+path, content/type/mode/executable bits, classification policy, and
+symlink/hardlink policy must match.
+
+Reason: a rehearsal that uses similar but not identical action semantics does
+not qualify an irreversible production cutover.
+
+## ADR-157: Directory Modes Are Explicit Cutover Actions
+
+Status: accepted for SYNC-OPS-5A-R7X.
+
+Decision: root and parent directory creation/mode expectations are explicit
+machine-approved actions, including any pre-cutover to post-cutover mode
+transition.
+
+Reason: directory mode drift can change production access behavior even when
+file contents are identical.
+
+## ADR-156: Physical Tree Identity Is Separate From Classification Policy
+
+Status: accepted for SYNC-OPS-5A-R7X.
+
+Decision: source-loss cutover physical tree identity is hashed independently
+from policy classification labels. Classification is bound by a separate
+manifest digest.
+
+Reason: policy relabeling should not masquerade as a physical file change, and
+physical mode/content changes must not be hidden in classification drift.
+
+## ADR-155: Projection and Materialization Share One Physical Entry Contract
+
+Status: accepted for SYNC-OPS-5A-R7X.
+
+Decision: projected cutover trees and materialized candidate inventories use
+the same canonical physical entry serializer.
+
+Reason: V6 allowed a clean projection digest to differ from the exact
+materialized digest, leaving approval unable to prove what the writer will
+create.
+
 ## ADR-154: Portable Closeouts Exclude Raw Temp Fixtures
 
 Status: accepted for SYNC-OPS-5A-R6X.

@@ -1536,6 +1536,25 @@ is polluted by runtime artifacts or action metadata is incomplete:
 - V6 approval requests remain requests only; P2S and first-cycle nodes stay
   blocked behind real closeouts.
 
+## SYNC-OPS-5A-R7X Cutover Tree Digest Parity Contract
+
+SYNC-OPS-5A-R7X supersedes V6 when the clean projection physical digest does
+not equal the exact materialized candidate digest:
+
+- `agent_sync_cutover_physical_tree_descriptor_v2` uses one canonical physical
+  entry serializer for projection, materialization, and post-validation
+  inventory.
+- The physical digest excludes absolute root, root role, timestamps, uid/gid,
+  and classification labels. Classification is bound separately by
+  `classification_manifest_sha256`.
+- `agent_sync_directory_action_ledger_v1` makes root and parent directory
+  modes explicit machine-approved actions.
+- `agent_sync_action_semantics_binding_v1` proves the repo-external rehearsal
+  actions and final plan actions have identical semantics despite different
+  absolute roots and action ids.
+- V7 approval requests remain requests only; P2S, experiment materialization,
+  and the first cycle stay blocked behind real closeouts.
+
 ## Public Exclusions
 
 Do not expose the following as transcript content:

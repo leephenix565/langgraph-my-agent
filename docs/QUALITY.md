@@ -1214,3 +1214,17 @@ candidates:
   py_compile and focused tests.
 - Portable archives must use POSIX entry names and exclude raw temp fixtures,
   source trees, candidate bytes, backup bytes, and pycache.
+
+## SYNC-OPS-5A-R7X Tree Parity Gate
+
+SYNC-OPS-5A-R7X adds focused regressions for the final cutover tree contract:
+
+- V6 recovery plans are rejected when projected and materialized physical tree
+  digests differ.
+- Projection and materialization must use one physical entry digest contract.
+- Directory root and parent modes must be explicit actions.
+- Physical digest and classification digest are separate.
+- The full 67-file temp rehearsal must bind to the final V7 action semantics
+  one-to-one.
+- Offline validation must preserve the physical digest after exact
+  materialization.

@@ -29,6 +29,10 @@ For R6X and later, require the V6 clean candidate projection: 67 files, 10
 parent directories, one root entry, 78 total entries, no runtime/unknown/
 unexpected entries, complete file type/mode/executable metadata, and
 non-mutating offline validation proof.
+For R7X and later, reject V6 plans unless the projection and materialization
+physical tree digests match under one entry contract. Require explicit
+directory mode actions and a temp rehearsal bound to the final plan by action
+semantics.
 Do not approve by chat text. Do not write prod, active sandbox, owner-dev,
 processes, or endpoints.
 

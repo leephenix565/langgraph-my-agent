@@ -360,10 +360,12 @@ and P2S topic closure are complete. The active sandbox now points to baseline
 `20260624T060045Z`, while production sources, owner-dev repositories,
 endpoints, process state, and S2P remain out of scope.
 
-SYNC-OPS-5A-R6X records the current source-loss cutover approval boundary for
+SYNC-OPS-5A-R7X records the current source-loss cutover approval boundary for
 `risk_financial_fraud`: the R4X canary result is valid evidence, but production
-cutover requires a V6 clean pre-start candidate projection from the 67 approved
-file actions, non-mutating offline validation, post-start runtime artifact
-policy, canonical archive, production launch authority, exact action ids, and
-roll-forward state machine. This guide still treats `/sdb/dlut/prod/*` as
-runtime state that must only be changed by a separate exact machine approval.
+cutover requires a V7 clean pre-start candidate projection from the 67 approved
+file actions, explicit directory mode actions, matching projected/materialized
+physical tree digests, a separate classification manifest digest,
+non-mutating offline validation, canonical archive, production launch
+authority, exact action ids, and roll-forward state machine. This guide still
+treats `/sdb/dlut/prod/*` as runtime state that must only be changed by a
+separate exact machine approval.
