@@ -5,6 +5,16 @@ Historical changelog entries before this reset branch are preserved by tag
 
 ## 2026-06-25 - SYNC-OPS-5A-R7X cutover tree digest parity
 
+### Fixed
+
+- Hardened Full P2S Rebase V7 generation so recovered `risk_financial_fraud`
+  stage actions are derived from the V7 source-loss file-action ledger instead
+  of the legacy V4 compatibility shim.
+- Hardened Full P2S Rebase V7 validation to reject placeholder
+  `risk_financial_fraud/recovered/<n>` actions, non-SHA source hashes, missing
+  recovered-action metadata, and stage-request action scopes that do not exactly
+  match the materialization manifest.
+
 ### Added
 
 - Added R7X physical tree descriptor contracts, classification manifest digest,

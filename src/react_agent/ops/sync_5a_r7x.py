@@ -863,9 +863,71 @@ def build_full_p2s_rebase_plan_v7(recovery_v7: Mapping[str, Any]) -> dict[str, A
     p2s["recovery_plan_gate"]["recovery_schema_version"] = "agent_sync_source_loss_recovery_plan_v7"
     p2s["recovery_plan_gate"]["recovery_plan_id"] = recovery_v7.get("plan_id")
     p2s["recovery_plan_gate"]["recovery_plan_sha256"] = recovery_v7.get("canonical_sha256")
+    materialization = [
+        action
+        for action in p2s.get("materialization_manifest") or []
+        if isinstance(action, Mapping) and action.get("operation") != "copy_recovered_prod_file_to_stage"
+    ]
+    recovered_actions = _p2s_recovered_actions_from_v7_source_loss_plan(recovery_v7, p2s)
+    materialization.extend(recovered_actions)
+    p2s["materialization_manifest"] = materialization
+    p2s["risk_fraud_expected_file_count"] = len(recovered_actions)
+    p2s["stage_approval_request"]["requested_action_ids"] = [
+        str(action.get("action_id") or "") for action in materialization
+    ]
+    expected_descriptor = dict(_as_mapping(p2s.get("expected_full_stage_descriptor")))
+    expected_descriptor["file_count"] = len(materialization)
+    expected_descriptor["digest"] = canonical_sha256(
+        {
+            "active": _as_mapping(_as_mapping(p2s.get("active_preconditions")).get("active_descriptor")),
+            "recovered": _as_mapping(_as_mapping(p2s.get("recovery_plan_gate")).get("actual_prod_after_must_equal")),
+            "manifest": materialization,
+        }
+    )
+    p2s["expected_full_stage_descriptor"] = expected_descriptor
     p2s["canonical_sha256"] = ""
     p2s["canonical_sha256"] = canonical_sha256(p2s)
     return p2s
+
+
+def _p2s_recovered_actions_from_v7_source_loss_plan(
+    recovery_v7: Mapping[str, Any], p2s_plan: Mapping[str, Any]
+) -> list[dict[str, Any]]:
+    stage_root = Path(str(p2s_plan.get("stage_root") or ""))
+    canonical_target = Path(str(recovery_v7.get("canonical_target_path") or ""))
+    p2s_id = str(p2s_plan.get("plan_id") or "")
+    recovered: list[dict[str, Any]] = []
+    for action in recovery_v7.get("file_actions") or []:
+        if not isinstance(action, Mapping):
+            continue
+        rel = normalize_safe_relative_path(str(action.get("relative_path") or ""))
+        source_sha = str(action.get("source_sha256") or "")
+        recovered.append(
+            {
+                "action_id": stable_id(
+                    "p2s-risk-v7",
+                    p2s_id,
+                    rel,
+                    source_sha,
+                    str(action.get("source_file_type") or ""),
+                    str(action.get("source_mode") or ""),
+                    str(bool(action.get("source_executable"))),
+                ),
+                "operation": "copy_recovered_prod_file_to_stage",
+                "relative_path": f"risk_financial_fraud/{rel}",
+                "source_after_recovery_path": str(canonical_target / rel),
+                "stage_path": str(stage_root / "risk_financial_fraud" / rel),
+                "sha256": source_sha,
+                "source_file_type": str(action.get("source_file_type") or ""),
+                "source_mode": str(action.get("source_mode") or ""),
+                "source_executable": bool(action.get("source_executable")),
+                "expected_stage_type": str(action.get("expected_destination_type") or ""),
+                "expected_stage_mode": str(action.get("expected_destination_mode") or ""),
+                "classification": str(action.get("classification") or ""),
+                "source_loss_action_id": str(action.get("action_id") or ""),
+            }
+        )
+    return recovered
 
 
 def validate_full_p2s_rebase_plan_v7(plan: Mapping[str, Any]) -> dict[str, Any]:
@@ -879,9 +941,47 @@ def validate_full_p2s_rebase_plan_v7(plan: Mapping[str, Any]) -> dict[str, Any]:
         blockers.append("schema_version_not_v7")
     if _as_mapping(plan.get("recovery_plan_gate")).get("recovery_schema_version") != "agent_sync_source_loss_recovery_plan_v7":
         blockers.append("recovery_gate_not_v7")
+    materialization = [action for action in plan.get("materialization_manifest") or [] if isinstance(action, Mapping)]
+    recovered_actions = [
+        action for action in materialization if action.get("operation") == "copy_recovered_prod_file_to_stage"
+    ]
+    if len(recovered_actions) != 67:
+        blockers.append("p2s_recovered_action_count_not_67")
+    requested_action_ids = [str(action_id or "") for action_id in _as_mapping(plan.get("stage_approval_request")).get("requested_action_ids") or []]
+    materialization_action_ids = [str(action.get("action_id") or "") for action in materialization]
+    if requested_action_ids != materialization_action_ids:
+        blockers.append("p2s_stage_request_action_ids_not_exact_manifest")
+    for action in recovered_actions:
+        rel = str(action.get("relative_path") or "")
+        source_after = str(action.get("source_after_recovery_path") or "")
+        stage_path = str(action.get("stage_path") or "")
+        sha = str(action.get("sha256") or "")
+        if rel.startswith("risk_financial_fraud/recovered/") or source_after.startswith("recovered/"):
+            blockers.append("p2s_recovered_source_action_placeholder")
+        if not rel.startswith("risk_financial_fraud/"):
+            blockers.append("p2s_recovered_relative_path_not_agent_scoped")
+        if len(sha) != 64 or any(ch not in "0123456789abcdef" for ch in sha.lower()):
+            blockers.append("p2s_recovered_sha256_invalid")
+        if not source_after.startswith("/"):
+            blockers.append("p2s_recovered_source_path_not_absolute")
+        if not stage_path.startswith(str(plan.get("stage_root") or "")):
+            blockers.append("p2s_recovered_stage_path_outside_stage_root")
+        for key in (
+            "source_file_type",
+            "source_mode",
+            "source_executable",
+            "expected_stage_type",
+            "expected_stage_mode",
+            "classification",
+            "source_loss_action_id",
+        ):
+            if key not in action or action.get(key) in ("", None):
+                blockers.append("p2s_recovered_action_metadata_incomplete")
+                break
     if str(plan.get("canonical_sha256") or "") != canonical_sha256(plan):
         blockers.append("canonical_hash_mismatch")
-    return {"schema_version": "agent_sync_full_p2s_rebase_plan_v7_validation", "valid": not blockers, "blockers": blockers, "plan_id": plan.get("plan_id", ""), "plan_sha256": plan.get("canonical_sha256", ""), "physical_action_count": base["physical_action_count"]}
+    deduped_blockers = list(dict.fromkeys(blockers))
+    return {"schema_version": "agent_sync_full_p2s_rebase_plan_v7_validation", "valid": not deduped_blockers, "blockers": deduped_blockers, "plan_id": plan.get("plan_id", ""), "plan_sha256": plan.get("canonical_sha256", ""), "physical_action_count": len(materialization)}
 
 
 def _retag(payload: Mapping[str, Any], schema_version: str, id_prefix: str) -> dict[str, Any]:

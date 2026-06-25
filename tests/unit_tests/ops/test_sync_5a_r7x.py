@@ -203,6 +203,15 @@ def test_v7_plan_request_downstream_chain_are_valid(tmp_path: Path) -> None:
     p2s_validation = validate_full_p2s_rebase_plan_v7(p2s)
     assert p2s_validation["valid"] is True
     assert p2s["recovery_plan_gate"]["recovery_schema_version"] == "agent_sync_source_loss_recovery_plan_v7"
+    recovered_actions = [
+        action
+        for action in p2s["materialization_manifest"]
+        if action["operation"] == "copy_recovered_prod_file_to_stage"
+    ]
+    assert len(recovered_actions) == 67
+    assert all(not action["relative_path"].startswith("risk_financial_fraud/recovered/") for action in recovered_actions)
+    assert all(len(action["sha256"]) == 64 for action in recovered_actions)
+    assert all(action["source_loss_action_id"] for action in recovered_actions)
     validate_by_schema_version(p2s)
     stage = build_full_p2s_stage_request_v7(p2s)
     activation = build_full_p2s_activation_template_v7(p2s)
@@ -235,6 +244,36 @@ def test_v7_plan_request_downstream_chain_are_valid(tmp_path: Path) -> None:
     validate_by_schema_version(experiment)
     validate_by_schema_version(cycle)
     validate_by_schema_version(chain)
+
+
+def test_v7_full_p2s_rejects_legacy_placeholder_recovered_actions(tmp_path: Path) -> None:
+    plan, _rehearsal = _build_valid_v7(tmp_path)
+    p2s = build_full_p2s_rebase_plan_v7(plan)
+    rewritten = []
+    risk_index = 0
+    for action in p2s["materialization_manifest"]:
+        if action["operation"] != "copy_recovered_prod_file_to_stage":
+            rewritten.append(action)
+            continue
+        rewritten.append(
+            {
+                "action_id": action["action_id"],
+                "operation": "copy_recovered_prod_file_to_stage",
+                "relative_path": f"risk_financial_fraud/recovered/{risk_index}",
+                "source_after_recovery_path": f"recovered/{risk_index}",
+                "stage_path": f"{p2s['stage_root']}/risk_financial_fraud/recovered/{risk_index}",
+                "sha256": str(risk_index),
+            }
+        )
+        risk_index += 1
+    p2s["materialization_manifest"] = rewritten
+    p2s["stage_approval_request"]["requested_action_ids"] = [action["action_id"] for action in rewritten]
+    p2s["canonical_sha256"] = canonical_sha256(p2s)
+    validation = validate_full_p2s_rebase_plan_v7(p2s)
+    assert validation["valid"] is False
+    assert "p2s_recovered_source_action_placeholder" in validation["blockers"]
+    assert "p2s_recovered_sha256_invalid" in validation["blockers"]
+    assert "p2s_recovered_action_metadata_incomplete" in validation["blockers"]
 
 
 def test_cli_rejects_v6_and_valid_v7_without_machine_approval(tmp_path: Path) -> None:

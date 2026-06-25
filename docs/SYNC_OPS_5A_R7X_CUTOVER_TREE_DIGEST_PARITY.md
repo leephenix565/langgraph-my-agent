@@ -74,3 +74,23 @@ Source-Loss Recovery V7 is valid only when:
 The next executable step remains a 5B machine approval for the exact V7 cutover
 request. P2S stage, activation, experiment materialization, and the first
 non-zero cycle remain blocked behind real upstream closeouts.
+
+## 5B-X Pre-Execution P2S Guard
+
+The terminal 5B-X preflight found a downstream P2S compatibility-shim defect:
+the frozen V7 source-loss plan carried the correct 67 source file actions, but
+the generated Full P2S Rebase V7 manifest inherited the older V4 placeholder
+actions `risk_financial_fraud/recovered/<n>` with non-SHA hash strings. That
+manifest cannot be used after an irreversible source-loss cutover because it
+does not bind the real recovered source paths, hashes, file type, mode,
+executable bit, or source-loss action ids.
+
+Full P2S Rebase V7 generation now replaces the compatibility-shim recovered
+actions with actions derived from the V7 file-action ledger. Validation rejects
+placeholder recovered paths, invalid source hashes, missing recovered-action
+metadata, and stage approval requests whose action ids are not an exact
+manifest match.
+
+Any repaired P2S object has a new canonical hash and is not covered by an older
+machine approval. It must be re-frozen and explicitly approved before a future
+operator performs the irreversible cutover.
