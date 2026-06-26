@@ -17,6 +17,13 @@ under `src/react_agent/fixed_dag/`, while
 `src/react_agent/fixed_dag_contracts.py` remains the compatibility facade and
 current import authority for existing callers.
 
+M2C continues that split for executor foundations only: execution constants,
+topology helpers, validation helpers, and step-result helpers live under
+`src/react_agent/fixed_dag/execution/`, while
+`src/react_agent/fixed_dag_executor.py` remains the compatibility facade and
+current executor import authority. The runner, external compute bridge, runtime
+registry, adapter, graph, and public API semantics are unchanged.
+
 ## Active Skeleton Flow
 
 ```mermaid

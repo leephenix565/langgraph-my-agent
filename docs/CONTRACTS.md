@@ -6,7 +6,12 @@ This document names the Phase R3 Fixed DAG contracts exposed through
 `react_agent.fixed_dag_contracts` as the public compatibility facade while
 moving foundational constants, typed shapes, labels, and safety helpers into
 the internal `src/react_agent/fixed_dag/` package. Contract semantics and old
-imports are unchanged.
+imports are unchanged. M2C keeps `react_agent.fixed_dag_executor` as the public
+compatibility facade while moving execution constants, topology helpers,
+validation helpers, and step-result helpers into the internal
+`src/react_agent/fixed_dag/execution/` package. Deterministic execution,
+selected routing, workflow snapshots, graph topology, and public schemas are
+unchanged.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

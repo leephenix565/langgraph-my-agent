@@ -1,5 +1,7 @@
 import copy
 import json
+import subprocess
+import sys
 from types import SimpleNamespace
 
 import pytest
@@ -41,6 +43,97 @@ def _disable_external_compute_default_for_unit_tests(monkeypatch):
 
 def _plan():
     return build_default_fixed_dag_plan("q", as_of="2026-06-04")
+
+
+def test_executor_execution_package_preserves_old_import_facade() -> None:
+    import react_agent.fixed_dag_executor as executor
+    from react_agent.fixed_dag.execution import (
+        constants,
+        step_results,
+        topology,
+        validation,
+    )
+
+    assert executor.FIXED_DAG_EXECUTION_SCHEMA_VERSION == constants.FIXED_DAG_EXECUTION_SCHEMA_VERSION
+    assert executor.FIXED_DAG_STEP_RESULT_SCHEMA_VERSION == constants.FIXED_DAG_STEP_RESULT_SCHEMA_VERSION
+    assert executor.LEGAL_STEP_STATUSES == constants.LEGAL_STEP_STATUSES
+    assert executor.LEGAL_DIMENSIONS == constants.LEGAL_DIMENSIONS
+    assert executor.STAGE_ORDER_INDEX == constants.STAGE_ORDER_INDEX
+    assert executor.L2_EVIDENCE_DEPS == constants.L2_EVIDENCE_DEPS
+    assert executor.DIMENSION_STEP_IDS == constants.DIMENSION_STEP_IDS
+    assert executor.COMPOSITE_DEPENDENCY_GROUPS == constants.COMPOSITE_DEPENDENCY_GROUPS
+    assert executor.build_dag_step_index is topology.build_dag_step_index
+    assert executor.topological_batches is topology.topological_batches
+    assert executor.topological_batches_for_selected_plan is topology.topological_batches_for_selected_plan
+    assert executor.validate_dag_steps is validation.validate_dag_steps
+    assert executor.validate_selected_dag_steps is validation.validate_selected_dag_steps
+    assert executor.validate_dag_execution_result is validation.validate_dag_execution_result
+    assert executor.build_step_result is step_results.build_step_result
+    assert executor.validate_step_result is step_results.validate_step_result
+    assert executor.build_initial_step_results is step_results.build_initial_step_results
+
+
+def test_execution_leaf_imports_do_not_load_old_executor_or_runner() -> None:
+    code = """
+import sys
+import react_agent.fixed_dag.execution.validation
+assert 'react_agent.fixed_dag_executor' not in sys.modules
+import react_agent.fixed_dag_contracts
+assert 'react_agent.fixed_dag.execution.runner' not in sys.modules
+print('import-boundary-ok')
+"""
+    result = subprocess.run(
+        [sys.executable, "-c", code],
+        check=True,
+        capture_output=True,
+        text=True,
+    )
+
+    assert result.stdout.strip() == "import-boundary-ok"
+
+
+def test_executor_validation_rejects_legacy_keys_directly() -> None:
+    full_plan = copy.deepcopy(_plan())
+    full_plan["layerPlan"] = []
+    valid, reason = validate_dag_steps(full_plan)
+    assert not valid
+    assert reason == "legacy_dispatch_field_present"
+
+    selected_plan = compile_selected_fixed_dag_plan(
+        build_route_intent(
+            task_type="general",
+            selected_dimensions=["value"],
+            selected_agents=["value_ml_valuation"],
+            fallback_reason="fallback to full DAG",
+        ),
+        user_text="q",
+        as_of="2026-06-09",
+    )
+    selected_plan["fusionSteps"] = []
+    valid, reason = validate_selected_dag_steps(selected_plan)
+    assert not valid
+    assert reason == "legacy_dispatch_field_present"
+
+    result = execute_fixed_dag_plan(_plan(), question="q", as_of="2026-06-04")
+    result["baseline_bundle"] = {}
+    valid, reason = validate_dag_execution_result(result)
+    assert not valid
+    assert reason == "legacy_dispatch_field_present"
+
+
+def test_build_dag_step_index_preserves_last_nonempty_duplicate_id() -> None:
+    plan = {
+        "steps": [
+            {"id": "", "agent_id": "route_planner"},
+            {"id": "duplicate", "agent_id": "route_planner"},
+            {"id": "duplicate", "agent_id": "financial_data_service"},
+        ]
+    }
+
+    index = build_dag_step_index(plan)
+
+    assert "" not in index
+    assert index == {"duplicate": {"id": "duplicate", "agent_id": "financial_data_service"}}
 
 
 def _compute_envelope(agent_id: str, external_agent_id: str, tool_result: dict[str, object]):
