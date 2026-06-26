@@ -22,6 +22,7 @@ below; historical phase records live under `docs/history/` and are indexed by
 | [`README.md`](../README.md) | Repository overview and non-claims. |
 | [`AGENTS.md`](../AGENTS.md) | Codex workflow, sync approval boundaries, and safety policy. |
 | [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) | Current operational status, active baseline, and current engineering theme. |
+| [`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`](REPOSITORY_CONSOLIDATION_CLOSEOUT.md) | Final closeout for repository authority and active-core consolidation. |
 | [`docs/SYSTEM_MAP.md`](SYSTEM_MAP.md) | Current runtime topology and operational map. |
 | [`docs/ARCHITECTURE_FIXED_DAG.md`](ARCHITECTURE_FIXED_DAG.md) | Logical 27-agent DAG architecture and catalog semantics. |
 | [`docs/CONTRACTS.md`](CONTRACTS.md) | Internal/public contract and schema boundaries. |
@@ -31,6 +32,8 @@ below; historical phase records live under `docs/history/` and are indexed by
 ## Current Status
 
 - [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) is the single status summary.
+- [`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`](REPOSITORY_CONSOLIDATION_CLOSEOUT.md)
+  records the completed repository authority and active-core consolidation theme.
 - [`docs/CHANGELOG.md`](CHANGELOG.md) records changes over time; it is not the
   current status authority.
 - [`docs/history/`](history/README.md) preserves historical evidence and phase

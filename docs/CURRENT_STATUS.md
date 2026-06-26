@@ -50,12 +50,15 @@ records.
 
 ## Current Engineering Theme
 
-The active engineering theme is Repository Authority & Active-Core
-Consolidation. M3B records the Context/State active-vs-compat boundary in
-metadata-only helpers so tests can validate retained compatibility fields
-without changing runtime shape. No field deletion, public contract change,
-graph topology change, catalog change, or runtime binding change is part of
-this step.
+Repository Authority & Active-Core Consolidation is complete. The final
+closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+
+M4A found P4 count `0`, so M4B deletion implementation is skipped. Current
+mode returns to normal maintenance and product engineering on top of the fixed
+DAG, strict sync workflow, consolidated docs authority, active-core package
+boundaries, and Context/State compatibility metadata. No field deletion, public
+contract change, graph topology change, catalog change, or runtime binding
+change is part of this closeout.
 
 ## Current Non-Claims
 

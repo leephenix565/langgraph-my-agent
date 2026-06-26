@@ -4,7 +4,9 @@ This branch is the Fixed DAG reset branch. It replaces old route-mode,
 Router-SFT, route-prior, A01 contract dispatch, and Fair Fusion mainline
 material with the current fixed-DAG runtime and strict sync workflow.
 
-For current status, read `docs/CURRENT_STATUS.md`. Historical phase ledgers and
+For current status, read `docs/CURRENT_STATUS.md`. The Repository Authority &
+Active-Core Consolidation theme is complete and recorded in
+`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. Historical phase ledgers and
 closeouts are retained under `docs/history/` with a machine-readable manifest;
 they are evidence, not current authority.
 
@@ -29,8 +31,8 @@ they are evidence, not current authority.
 - Runtime binding authority: `config/fixed_dag/runtime_bindings.json`.
 - Sync workflow: strict publish-and-rebase has completed a real non-zero cycle;
   future work uses normal experiment/change-unit/approval flow.
-- Repository theme after sync closure: Repository Authority & Active-Core
-  Consolidation.
+- Repository Authority & Active-Core Consolidation: complete; M4A found no P4
+  deletion candidates and skipped M4B deletion.
 - Production status: this repository records source and contracts. Passing
   tests or docs gates is not production readiness by itself.
 

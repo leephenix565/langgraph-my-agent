@@ -59,6 +59,11 @@ runtime bindings, public schemas, sync schemas, graph topology, process actions,
 endpoint calls, provider calls, prod state, sandbox state, or owner-dev
 repositories.
 
+The final Repository Authority & Active-Core Consolidation closeout does not
+add live checks. Static and mainline remain provider-free and endpoint-free.
+`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` records the no-P4 deletion decision;
+history docs remain evidence and are not promoted to current authority.
+
 ## Manual, Live, And Archived Gates
 
 These checks are not default reset mainline gates:

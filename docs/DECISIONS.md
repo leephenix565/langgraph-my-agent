@@ -3,6 +3,28 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-160: Repository Consolidation Ends With No Proven Dead-Code Deletion
+
+Status: accepted for REPO-CONSOLIDATION-FINAL.
+
+Decision: close the Repository Authority & Active-Core Consolidation theme
+without an M4B deletion implementation because M4A found P4 count `0`. Retain
+the compatibility facades and require future P4 evidence before any deletion.
+
+Reason: P0/P1 observations lack deletion proof. The fixed-DAG facades,
+Context/State compatibility metadata, legacy compatibility seams, tests, and
+manual/tooling boundaries are deliberate retained surfaces. Preserving
+static/mainline quality and public/runtime boundaries is more valuable than
+line-count reduction without proof.
+
+Consequence: the repository is cleaner and easier to navigate, while remaining
+compatibility-safe. Future cleanup is evidence-gated and must prove P4-level
+deletion safety before implementation.
+
+Non-consequence: this decision does not change runtime behavior, config,
+catalog, runtime bindings, public schemas, graph topology, sync CLI, deployment,
+or public API.
+
 ## ADR-159: Repository Docs Authority Separates Current State From Historical Evidence
 
 Status: accepted for REPO-CONSOLIDATION-M1.

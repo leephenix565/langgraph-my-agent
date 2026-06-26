@@ -29,6 +29,9 @@ Context and State active-vs-compat classification. It is not public transcript
 material, does not change Context or State runtime shape, and does not alter
 public contracts, graph topology, workflow snapshots, catalog, or runtime
 bindings.
+REPO-CONSOLIDATION-FINAL closes the consolidation theme with these compatibility
+facades retained. M4A found no P4 deletion candidates, so no M4B deletion is
+performed and public contracts remain unchanged.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

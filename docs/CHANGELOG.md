@@ -3,6 +3,25 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Repository authority and active-core consolidation closeout
+
+### Changed
+
+- Added `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` as the final closeout
+  record for Repository Authority & Active-Core Consolidation.
+- Recorded that documentation authority is consolidated, fixed-DAG active-core
+  packages are split behind retained facades, and Context/State compatibility
+  metadata is machine-checkable.
+- Recorded the M4A dead-code decision: P4 count is `0`, deletion candidate
+  count is `0`, and M4B deletion implementation is skipped.
+
+### Not Done
+
+- No source/runtime/config behavior change, code deletion, compatibility
+  deletion, public contract change, catalog change, runtime binding change,
+  graph topology change, endpoint call, process action, provider call, prod
+  write, sandbox write, artifact-store write, or owner-dev write.
+
 ## 2026-06-26 - Context/State compatibility metadata isolation
 
 ### Changed

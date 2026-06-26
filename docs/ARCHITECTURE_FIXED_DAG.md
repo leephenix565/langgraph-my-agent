@@ -48,6 +48,11 @@ and writes the same State fields, compatibility pools remain available, and no
 Context dataclass field, State TypedDict field, reducer, runtime shape, graph
 topology, or public API contract changes.
 
+REPO-CONSOLIDATION-FINAL records this package organization as complete for the
+theme. The old fixed-DAG facades remain supported import surfaces, M4A found no
+P4 deletion candidates, and no runtime/config/schema behavior changes are part
+of the closeout.
+
 ## Active Skeleton Flow
 
 ```mermaid
