@@ -24,6 +24,11 @@ while moving `execute_fixed_dag_plan` into
 `src/react_agent/fixed_dag/execution/runner.py`. The fixed-DAG execution
 contract, selected routing behavior, report precedence, workflow snapshot, and
 old import path are unchanged.
+M3B adds `react_agent.compat.context_state` as metadata/test support for
+Context and State active-vs-compat classification. It is not public transcript
+material, does not change Context or State runtime shape, and does not alter
+public contracts, graph topology, workflow snapshots, catalog, or runtime
+bindings.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

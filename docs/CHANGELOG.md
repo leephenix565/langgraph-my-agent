@@ -3,6 +3,25 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Context/State compatibility metadata isolation
+
+### Changed
+
+- Added `react_agent.compat.context_state` as a metadata-only helper for
+  machine-checkable active, compat, legacy, and manual Context/State field
+  groups.
+- Added focused tests proving the Context dataclass surface, State/InputState
+  TypedDict surface, result-pool reducers, and compatibility classifications
+  remain stable.
+
+### Not Done
+
+- No Context/State field deletion, field rename, default change, reducer
+  change, runtime shape change, public schema change, graph topology change,
+  catalog change, runtime binding change, endpoint call, process action,
+  provider call, prod write, sandbox write, artifact-store write, or owner-dev
+  write.
+
 ## 2026-06-26 - Fixed-DAG executor runner boundary completion
 
 ### Changed

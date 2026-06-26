@@ -51,9 +51,11 @@ records.
 ## Current Engineering Theme
 
 The active engineering theme is Repository Authority & Active-Core
-Consolidation. M1 is documentation authority consolidation only: it separates
-current entrypoints from historical phase evidence while preserving audit,
-artifact, backup, rollback, and owner handoff references.
+Consolidation. M3B records the Context/State active-vs-compat boundary in
+metadata-only helpers so tests can validate retained compatibility fields
+without changing runtime shape. No field deletion, public contract change,
+graph topology change, catalog change, or runtime binding change is part of
+this step.
 
 ## Current Non-Claims
 

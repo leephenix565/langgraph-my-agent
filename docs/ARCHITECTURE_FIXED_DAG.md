@@ -42,6 +42,12 @@ current executor import authority. Execution order, report precedence,
 external compute demo/default semantics, graph topology, and public API
 semantics are unchanged.
 
+M3B adds `src/react_agent/compat/context_state.py` as metadata-only support for
+the retained Context/State compatibility boundary. The active graph still reads
+and writes the same State fields, compatibility pools remain available, and no
+Context dataclass field, State TypedDict field, reducer, runtime shape, graph
+topology, or public API contract changes.
+
 ## Active Skeleton Flow
 
 ```mermaid
