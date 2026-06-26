@@ -1,0 +1,1122 @@
+{
+  "agent_coverage": [
+    {
+      "agent_id": "route_planner",
+      "called": false,
+      "data_quality_keys": [],
+      "dimension": "l1",
+      "display_name": "路径规划器",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L1",
+      "limitations_count": 0,
+      "mapped": false,
+      "mapped_schema": "",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "financial_data_service",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "l1",
+      "display_name": "金融数据服务",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L1",
+      "limitations_count": 0,
+      "mapped": true,
+      "mapped_schema": "",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "entity_relation_extractor",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "l1",
+      "display_name": "实体关系抽取器",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L1",
+      "limitations_count": 0,
+      "mapped": true,
+      "mapped_schema": "",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "value_traditional_valuation",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "value",
+      "display_name": "传统企业估值",
+      "domain_metrics_keys": [
+        "valuation_method",
+        "valuation_view",
+        "as_of_date",
+        "current_price",
+        "current_market_value",
+        "fair_value",
+        "fair_value_center_mv",
+        "fair_value_range_mv",
+        "undervalued_ratio"
+      ],
+      "drivers_keys": [],
+      "evidence_count": 6,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 3,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "value_ml_valuation",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "value",
+      "display_name": "机器学习企业估值",
+      "domain_metrics_keys": [
+        "code",
+        "trade_date",
+        "as_of_date",
+        "target_date",
+        "current_price",
+        "current_mv",
+        "pb",
+        "roe",
+        "growth",
+        "target_pe_raw",
+        "ci_low",
+        "ci_high",
+        "upside_pct",
+        "diagnosis"
+      ],
+      "drivers_keys": [
+        "diagnosis",
+        "feature_snapshot"
+      ],
+      "evidence_count": 5,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 4,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "value_meta_valuation",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "value",
+      "display_name": "元学习企业估值",
+      "domain_metrics_keys": [
+        "valuation_method",
+        "fair_value",
+        "undervalued_ratio",
+        "diagnosis",
+        "components",
+        "as_of_date",
+        "value_basis",
+        "current_market_value"
+      ],
+      "drivers_keys": [
+        "diagnosis",
+        "components"
+      ],
+      "evidence_count": 2,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 4,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "value_research_synthesis",
+      "called": true,
+      "data_quality_keys": [
+        "anti_lookahead_passed"
+      ],
+      "dimension": "value",
+      "display_name": "研报观点综合",
+      "domain_metrics_keys": [
+        "target_price",
+        "eps",
+        "pe",
+        "roe",
+        "ci_low",
+        "ci_high",
+        "upside_pct",
+        "current_price",
+        "n_contributors",
+        "used_forecast_year"
+      ],
+      "drivers_keys": [],
+      "evidence_count": 2,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 5,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "market_stock_technical",
+      "called": true,
+      "data_quality_keys": [
+        "coverage",
+        "anti_lookahead_passed",
+        "calibrated",
+        "degraded"
+      ],
+      "dimension": "market",
+      "display_name": "个股技术分析",
+      "domain_metrics_keys": [
+        "trend",
+        "model_confidence",
+        "reported_confidence",
+        "up_votes",
+        "down_votes",
+        "horizon_days",
+        "forecast_horizon"
+      ],
+      "drivers_keys": [],
+      "evidence_count": 3,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 5,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "market_fund_manager_behavior",
+      "called": false,
+      "data_quality_keys": [],
+      "dimension": "market",
+      "display_name": "基金经理行为分析",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 1,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 1,
+      "mapped": false,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "market_ipo_investor_behavior",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "market",
+      "display_name": "IPO 投资者行为分析",
+      "domain_metrics_keys": [],
+      "drivers_keys": [
+        "crj_group"
+      ],
+      "evidence_count": 2,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 4,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "market_capital_flow_chip",
+      "called": true,
+      "data_quality_keys": [
+        "data_completeness",
+        "model_trust",
+        "degraded",
+        "anti_lookahead_passed",
+        "calibrated"
+      ],
+      "dimension": "market",
+      "display_name": "资金流与筹码分析",
+      "domain_metrics_keys": [
+        "prob_up",
+        "direction",
+        "channel_votes",
+        "horizon_days"
+      ],
+      "drivers_keys": [
+        "channel_votes"
+      ],
+      "evidence_count": 4,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "sentiment_company_radar",
+      "called": true,
+      "data_quality_keys": [
+        "anti_lookahead_passed"
+      ],
+      "dimension": "market",
+      "display_name": "企业舆情雷达",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 1,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 3,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "risk_crash",
+      "called": true,
+      "data_quality_keys": [
+        "coverage",
+        "data_completeness",
+        "anti_lookahead_passed",
+        "calibrated",
+        "cached",
+        "model",
+        "method",
+        "method_details",
+        "data_sources"
+      ],
+      "dimension": "risk",
+      "display_name": "股价崩盘风险",
+      "domain_metrics_keys": [
+        "risk_score",
+        "percentile",
+        "rank",
+        "decile",
+        "universe_size",
+        "risk_level",
+        "model_vintage_boundary"
+      ],
+      "drivers_keys": [
+        "risk_score_bridge",
+        "feature_driver_table",
+        "history_context",
+        "model_validation_context",
+        "data_boundary",
+        "model_vintage_boundary"
+      ],
+      "evidence_count": 7,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_point_markers": [
+        "模型把该标的归入 低风险 的崩盘风险档位。",
+        "本次判级的主要解释来自模型特征表，而不是 LLM 主观判断。",
+        "历史崩盘标签和偏态指标提供风险背景，但不是当前评分的唯一来源。"
+      ],
+      "research_points_count": 5,
+      "status": "complete"
+    },
+    {
+      "agent_id": "risk_financial_fraud",
+      "called": true,
+      "data_quality_keys": [
+        "cached",
+        "data_sources",
+        "method",
+        "anti_lookahead_passed",
+        "feature_data_anti_lookahead_passed",
+        "feature_available",
+        "model_available",
+        "data_completeness",
+        "financial_report_period",
+        "financial_publish_time",
+        "annual_feature_available_after",
+        "scoring_method",
+        "model_trust",
+        "warnings"
+      ],
+      "dimension": "risk",
+      "display_name": "财务欺诈风险",
+      "domain_metrics_keys": [
+        "risk_level",
+        "risk_score",
+        "risk_flags",
+        "gate",
+        "model_available",
+        "feature_available",
+        "fraud_risk_bridge",
+        "model_context",
+        "feature_diagnostics",
+        "risk_gate_rule"
+      ],
+      "drivers_keys": [
+        "fraud_risk_bridge",
+        "model_context",
+        "feature_diagnostics",
+        "risk_gate_rule",
+        "evidence_context_summary",
+        "risk_flags"
+      ],
+      "evidence_count": 4,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 3,
+      "status": "partial"
+    },
+    {
+      "agent_id": "risk_identification",
+      "called": true,
+      "data_quality_keys": [
+        "data_completeness",
+        "available_features",
+        "expected_features",
+        "text_available"
+      ],
+      "dimension": "risk",
+      "display_name": "风险识别",
+      "domain_metrics_keys": [
+        "margins"
+      ],
+      "drivers_keys": [
+        "margins",
+        "hits"
+      ],
+      "evidence_count": 5,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "risk_compliance_review",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "risk",
+      "display_name": "公告合规审查",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 1,
+      "failed": true,
+      "failure_reason": "adapter_mapping_failed:unsupported_tool_result_schema",
+      "layer": "L2",
+      "limitations_count": 1,
+      "mapped": false,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "macro_analysis",
+      "called": true,
+      "data_quality_keys": [
+        "data_completeness",
+        "anti_lookahead_passed",
+        "data_nowcast",
+        "sector_rotation_available"
+      ],
+      "dimension": "macro",
+      "display_name": "宏观分析",
+      "domain_metrics_keys": [
+        "regime",
+        "regulator_suggestion",
+        "asset_class_ranking",
+        "best_asset_class",
+        "data_nowcast",
+        "sector_rotation"
+      ],
+      "drivers_keys": [
+        "regime",
+        "regulator_suggestion",
+        "asset_class_ranking",
+        "data_nowcast",
+        "sector_rotation"
+      ],
+      "evidence_count": 6,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "macro_commodity_pricing",
+      "called": true,
+      "data_quality_keys": [
+        "coverage",
+        "anti_lookahead_passed",
+        "calibrated",
+        "degraded",
+        "n_cross_market_pairs"
+      ],
+      "dimension": "macro",
+      "display_name": "商品定价分析",
+      "domain_metrics_keys": [
+        "product",
+        "requested_target",
+        "time_window_months",
+        "sheet",
+        "statistic_name",
+        "china_out_influence",
+        "foreign_in_influence",
+        "china_pricing_share",
+        "n_china_to_foreign_pairs",
+        "n_foreign_to_china_pairs"
+      ],
+      "drivers_keys": [],
+      "evidence_count": 3,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 5,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "macro_index_valuation",
+      "called": true,
+      "data_quality_keys": [
+        "coverage",
+        "data_completeness",
+        "anti_lookahead_passed",
+        "cached",
+        "data_source",
+        "sample_size",
+        "price_date",
+        "method",
+        "method_details",
+        "degraded"
+      ],
+      "dimension": "macro",
+      "display_name": "股票指数估值",
+      "domain_metrics_keys": [
+        "valuation_pct",
+        "sentiment_pct",
+        "index_valuation_level",
+        "sentiment_level",
+        "latest_pe_ttm",
+        "sample_size",
+        "verdict",
+        "stance_text",
+        "momentum_20d",
+        "method"
+      ],
+      "drivers_keys": [
+        "macro_direction_bridge",
+        "percentile_context",
+        "forward_return_context",
+        "data_window",
+        "method_assumptions",
+        "confidence_factors",
+        "method"
+      ],
+      "evidence_count": 6,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 6,
+      "mapped": true,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 4,
+      "status": "complete"
+    },
+    {
+      "agent_id": "macro_sentiment",
+      "called": false,
+      "data_quality_keys": [],
+      "dimension": "macro",
+      "display_name": "宏观情绪感知",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 1,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 1,
+      "mapped": false,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "macro_industry_hotspot",
+      "called": false,
+      "data_quality_keys": [],
+      "dimension": "macro",
+      "display_name": "行业热点洞察",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 1,
+      "failed": false,
+      "layer": "L2",
+      "limitations_count": 1,
+      "mapped": false,
+      "mapped_schema": "conclusion_object_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "value_composite",
+      "called": true,
+      "data_quality_keys": [
+        "composite_status",
+        "member_count",
+        "upstream_outputs_consumed"
+      ],
+      "dimension": "value",
+      "display_name": "价值综合",
+      "domain_metrics_keys": [
+        "agent_id",
+        "method",
+        "fair_value_range"
+      ],
+      "drivers_keys": [
+        "method",
+        "members",
+        "fair_value_range",
+        "member_weight_summary"
+      ],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L3",
+      "limitations_count": 2,
+      "mapped": true,
+      "mapped_schema": "dimension_composite_result_v1",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "market_composite",
+      "called": true,
+      "data_quality_keys": [
+        "coverage",
+        "anti_lookahead_passed",
+        "calibrated",
+        "degraded",
+        "composite_status",
+        "warnings",
+        "member_count",
+        "upstream_outputs_consumed",
+        "business_core_changed"
+      ],
+      "dimension": "market",
+      "display_name": "市场综合",
+      "domain_metrics_keys": [
+        "agent_id",
+        "method"
+      ],
+      "drivers_keys": [
+        "method",
+        "members",
+        "normalized",
+        "fusion",
+        "warnings",
+        "member_weight_summary"
+      ],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L3",
+      "limitations_count": 2,
+      "mapped": true,
+      "mapped_schema": "dimension_composite_result_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "risk_composite",
+      "called": true,
+      "data_quality_keys": [
+        "composite_status",
+        "warnings",
+        "member_count",
+        "upstream_outputs_consumed",
+        "business_core_changed"
+      ],
+      "dimension": "risk",
+      "display_name": "风险综合",
+      "domain_metrics_keys": [
+        "agent_id",
+        "gate",
+        "penalty",
+        "risk_score"
+      ],
+      "drivers_keys": [
+        "members",
+        "warnings",
+        "member_weight_summary"
+      ],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L3",
+      "limitations_count": 2,
+      "mapped": true,
+      "mapped_schema": "dimension_composite_result_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "macro_composite",
+      "called": true,
+      "data_quality_keys": [
+        "composite_status",
+        "warnings",
+        "cached",
+        "contract_ok",
+        "member_count",
+        "upstream_outputs_consumed",
+        "business_core_changed"
+      ],
+      "dimension": "macro",
+      "display_name": "宏观综合",
+      "domain_metrics_keys": [
+        "agent_id",
+        "regime",
+        "regime_detail",
+        "dimension_weights",
+        "risk_sensitivity",
+        "style_bias",
+        "industry_adjustment"
+      ],
+      "drivers_keys": [
+        "regime",
+        "regime_detail",
+        "industry_adjustment",
+        "members",
+        "warnings",
+        "member_weight_summary"
+      ],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L3",
+      "limitations_count": 2,
+      "mapped": true,
+      "mapped_schema": "dimension_composite_result_v1",
+      "research_points_count": 0,
+      "status": "partial"
+    },
+    {
+      "agent_id": "decision_synthesizer",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "l4",
+      "display_name": "决策综合器",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L4",
+      "limitations_count": 0,
+      "mapped": true,
+      "mapped_schema": "",
+      "research_points_count": 0,
+      "status": "complete"
+    },
+    {
+      "agent_id": "report_generator",
+      "called": true,
+      "data_quality_keys": [],
+      "dimension": "l4",
+      "display_name": "报告生成器",
+      "domain_metrics_keys": [],
+      "drivers_keys": [],
+      "evidence_count": 0,
+      "failed": false,
+      "layer": "L4",
+      "limitations_count": 0,
+      "mapped": true,
+      "mapped_schema": "",
+      "research_points_count": 0,
+      "status": "complete"
+    }
+  ],
+  "expected_metrics": {
+    "compute_called": 23,
+    "compute_failed": 1,
+    "compute_mapped": 22,
+    "evidence_cards_count": 5,
+    "failed_agent": "risk_compliance_review",
+    "failure_reason": "adapter_mapping_failed:unsupported_tool_result_schema",
+    "l2_complete": 12,
+    "l2_partial": 6,
+    "l3_complete": 1,
+    "l3_partial": 3,
+    "l4_decision_mapped": true,
+    "l4_report_mapped": true,
+    "limitations_count": 4,
+    "quality_score_max": 45,
+    "quality_score_total": 25,
+    "research_points_total": 3,
+    "research_points_utilized": 3,
+    "sections_count": 6
+  },
+  "loss_ledger": [
+    {
+      "agent_id": "macro_analysis",
+      "dimension": "macro",
+      "evidence": [
+        "no research_points available in evidence bundle"
+      ],
+      "failure_reason": "",
+      "layer": "L2",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "macro_commodity_pricing",
+      "dimension": "macro",
+      "evidence": [
+        "no research_points available in evidence bundle"
+      ],
+      "failure_reason": "",
+      "layer": "L2",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "macro_composite",
+      "dimension": "macro",
+      "evidence": [
+        "no research_points available in evidence bundle",
+        "status=partial"
+      ],
+      "failure_reason": "",
+      "layer": "L3",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "macro_index_valuation",
+      "dimension": "macro",
+      "evidence": [],
+      "failure_reason": "",
+      "layer": "L2",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "report_generator",
+      "dimension": "l4",
+      "evidence": [],
+      "failure_reason": "",
+      "layer": "L4",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "report_generator",
+      "dimension": "l4",
+      "evidence": [
+        "external_compute_default mapped report_generator, but report_result.status=pending_implementation and answer begins with fixed process template"
+      ],
+      "failure_reason": "",
+      "layer": "L4",
+      "loss_stage": "l4_report_generator_underused",
+      "recommended_action": "artifact-backed harness plus L4 report-generator contract/prompt or renderer fallback guard",
+      "severity": 5
+    },
+    {
+      "agent_id": "report_result.answer",
+      "dimension": "rendering",
+      "evidence": [
+        "answer hard cap/truncation can drop L3 composite narrative while sections retain it; observed answer_len=7003"
+      ],
+      "failure_reason": "",
+      "layer": "report_result",
+      "loss_stage": "fallback_renderer_gap",
+      "recommended_action": "RQ1 should score answer/section parity; RQ2 should render from sections or enforce parity",
+      "severity": 5
+    },
+    {
+      "agent_id": "risk_compliance_review",
+      "dimension": "risk",
+      "evidence": [
+        "real compute attempted but adapter failed; placeholder filled downstream slot",
+        "no research_points available in evidence bundle"
+      ],
+      "failure_reason": "adapter_mapping_failed:unsupported_tool_result_schema",
+      "layer": "L2",
+      "loss_stage": "adapter_schema_unsupported",
+      "recommended_action": "add adapter schema support or align service wrapper to agent_conclusion_v1",
+      "severity": 5
+    },
+    {
+      "agent_id": "risk_composite",
+      "dimension": "risk",
+      "evidence": [
+        "no research_points available in evidence bundle",
+        "status=partial"
+      ],
+      "failure_reason": "",
+      "layer": "L3",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "risk_identification",
+      "dimension": "risk",
+      "evidence": [
+        "no research_points available in evidence bundle"
+      ],
+      "failure_reason": "",
+      "layer": "L2",
+      "loss_stage": "report_generator_underused",
+      "recommended_action": "improve L4 report-generator contract/prompt or renderer use of report_input_bundle",
+      "severity": 5
+    },
+    {
+      "agent_id": "final_report.md",
+      "dimension": "public",
+      "evidence": [
+        "final report exposes schema/process terms such as Status: pending_implementation and repeats workflow framing before business conclusion"
+      ],
+      "failure_reason": "",
+      "layer": "rendering",
+      "loss_stage": "fallback_renderer_gap",
+      "recommended_action": "renderer should promote business thesis, evidence trace, risk/macro constraints, and hide schema-like noise",
+      "severity": 4
+    },
+    {
+      "agent_id": "market_ipo_investor_behavior",
+      "dimension": "market",
+      "evidence": [
+        "raw keys advertised research_points and data_quality, but evidence bundle preserves drivers only"
+      ],
+      "failure_reason": "",
+      "layer": "L2",
+      "loss_stage": "adapter_whitelist_gap",
+      "recommended_action": "RQ3 should merge raw_output.data_quality and accept safe research_points aliases",
+      "severity": 4
+    }
+  ],
+  "metadata": {
+    "expected_max_score": 45,
+    "expected_score": 25,
+    "full_workflow_trace_retained": false,
+    "m0_artifact": "/tmp/lma-report-quality-m0-audit-20260626T145524Z",
+    "public_safe": true,
+    "provider_response_body_retained": false,
+    "external_response_body_retained": false,
+    "source_artifact": "/tmp/lma-fixed-dag-real-e2e-20260626T143716Z",
+    "source_artifact_retained": false
+  },
+  "non_claims": [
+    "No invoke endpoint was called.",
+    "No provider model was called by the offline fixture mode.",
+    "No external or provider response body is retained in this fixture."
+  ],
+  "quality_summary": {
+    "l2_complete": 12,
+    "l2_error": 0,
+    "l2_partial": 6,
+    "l2_total": 18,
+    "l3_available": 4,
+    "l3_complete": 1,
+    "l3_error": 0,
+    "l3_partial": 3,
+    "l3_total": 4
+  },
+  "report_result": {
+    "answer": "已完成本轮研判流程。系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成；可展开流程详情查看过程记录。 收到的问题：请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH 当前是否值得关注。请尽量调用所有已经可接入的 fixed-DAG agent，并输出每个 agent 的结构化结论和最终报告。 报告生成输入摘要： 证据质量诊断： L2 完成 12/18，证据不完整 6，error 0，无可读证据 0；L3 输出 4/4，complete 1，证据不完整 3，error 0。 智能体任务编排(智能体任务单)： 本轮生成 智能体任务单：L2 18 个，L3 4 个，L4 2 个。每个任务携带 target、as_of、required_output_schema 和 公开安全 upstream 摘要；完整任务保留在 report_input_bundle/workflow trace 中，fallback 报告不逐条展开模板化任务指令。 单体智能体输入： 估值维单体智能体： - 传统企业估值：信号 -0.4641，置信度 0.91。模型 融合估值(PE+PS+PB) 合理价值中枢 8138.79 亿 证据质量：external_status=ok；raw_output_keys=entity_id,stock_name,valuation_method,valuation_view,as_of_da...；核心指标_count=8。 关键证据：模型 融合估值(PE+PS+PB) 合理价值中枢 8138.79 亿（spts_database, 2026-06-18）；财务报告期 20260331(公告日 20260425)（fina_indicator, 2026-04-25）；当前市值 15188 亿,股价 1215.00 元（spts_database, 2026-06-18） 核心指标：valuation_method=融合估值(PE+PS+PB)；valuation_view=overvalued；as_of_date=20260618；current_price=1215.0；current_market_value=15188.49144 - 机器学习企业估值：信号 0.38996499999999995，置信度 0.63。XGBoost+蒙特卡洛 预测股价中枢 1688.81 元 证据质量：external_status=ok；raw_output_keys=code,trade_date,as_of_date,target_date,current_price,current_...；核心指标_count=8。 关键证据：XGBoost+蒙特卡洛 预测股价中枢 1688.81 元（spts_database, 2026-06-18）；行情/财务指标快照日 20260618（spts_database, 2026-06-18）；SHAP 归因(对预测PE):净资产收益率ROE(拉低-10.18)、行业估值锚(拉低-6.97)、对数研发费用(推高+4.83)（xgboost_model, 2026-06-18） 核心指标：code=600519.SH；trade_date=20260618；as_of_date=20260626；target_date=20260626；current_price=1215.0 驱动因素：diagnosis=显著低估；feature_snapshot={\"净利润同比\": 1.4714, \"净资产收益率ROE\": 10.5687, \"对数总市值\": 18.8386, \"对数研发费用\": 17.8983, \"营收同比\": 6.336, \"行业估值锚\": 3.3266} - 元学习企业估值：信号 -0.3029，置信度 0.70。传统价值型模型 (PE 70% + PS 30%) 合理价值 10587.61 亿 证据质量：external_status=ok；raw_output_keys=entity_id,stock_name,valuation_method,current_price,fair_valu...；核心指标_count=8。 关键证据：传统价值型模型 (PE 70% + PS 30%) 合理价值 10587.61 亿（spts_database, 2026-06-18）；同业支撑集 5 家可比公司(余弦相似度 Sim^20 加权)（spts_database, 2026-06-18） 核心指标：valuation_method=传统价值型模型 (PE 70% + PS 30%)；fair_value=10587.61；undervalued_ratio=-0.3029；diagnosis=高估；components=[{\"model\": \"泸州老窖（000568.SZ）\", \"pe\": 11.98, \"ps\": 4.88, \"weight\": 0.1555}, {\"m... 驱动因素：diagnosis=高估；components=[{\"model\": \"泸州老窖（000568.SZ）\", \"pe\": 11.98, \"ps\": 4.88, \"weight\": 0.1555}, {\"model\": \"五粮液（000858.SZ）\", \"pe\": 23.37, \"p... - 研报观点综合：信号 0.364，置信度 0.70。61 位分析师历史表现加权目标价 1435.76 元，较点时现价潜在空间 18.2% 证据质量：external_status=ok；raw_output_keys=target_price,eps,pe,roe,ci_low,ci_high,upside_pct,current_price；quality_keys=query_type,resolved,n_contributors,report_count,anti_lookahead_p...。 关键证据：61 位分析师历史表现加权目标价 1435.76 元，较点时现价潜在空间 18.2%（analyst_reports(report_rc) + 加权估值引擎, 2026-06-18）；加权预测 EPS 73.708、PE 19.01、ROE 30.95（analyst_reports(report_rc) + 加权估值引擎, 2026-06-18） 核心指标：target_price=1435.76；eps=73.708；pe=19.01；roe=30.95；ci_low=1319.55 数据质量：anti_lookahead_passed=True 市场维单体智能体： - 个股技术分析：信号 -0.0136，置信度 0.56。multitask_lstm_cls 模型回归方向 跌，预测收益率 -0.04%，上涨概率 0.493445 证据质量：external_status=ok；raw_output_keys=trend,model_confidence,reported_confidence,pred...",
+    "evidence_cards": [
+      {
+        "note": "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
+        "title": "分析框架"
+      },
+      {
+        "note": "围绕你提出的问题进行结构化梳理。",
+        "title": "用户问题"
+      },
+      {
+        "note": "如需查看过程，可展开流程详情。",
+        "title": "流程记录"
+      },
+      {
+        "note": "纳入 18 个单体智能体摘要和 4 个综合智能体摘要。",
+        "title": "报告生成输入"
+      },
+      {
+        "note": "本轮由 L4 报告生成智能体在受控计算路径下读取结构化报告输入包后生成。",
+        "title": "报告生成方式"
+      }
+    ],
+    "limitations": [
+      "当前为本地固定流程模式。",
+      "高级连接状态可在设置诊断中查看。",
+      "大模型报告综合 provider 未配置或不可用，已回退到模板报告。",
+      "L4 报告生成智能体仅在显式计算白名单路径下运行，不改变默认运行配置，也不代表生产默认启用。"
+    ],
+    "sections": [
+      {
+        "content": "系统按照固定研判流程组织本轮分析。",
+        "id": "runtime_scope",
+        "title": "分析框架"
+      },
+      {
+        "content": "如需查看过程，可展开流程详情。",
+        "id": "implementation_status",
+        "title": "流程记录"
+      },
+      {
+        "content": "L2 完成 12/18，证据不完整 6，error 0，无可读证据 0；L3 输出 4/4，complete 1，证据不完整 3，error 0。",
+        "id": "evidence_quality",
+        "title": "证据质量诊断"
+      },
+      {
+        "content": "本轮生成 智能体任务单：L2 18 个，L3 4 个，L4 2 个。每个任务携带 target、as_of、required_output_schema 和 公开安全 upstream 摘要；完整任务保留在 report_input_bundle/workflow trace 中，fallback 报告不逐条展开模板化任务指令。",
+        "id": "agent_task_orchestration",
+        "title": "智能体任务编排(智能体任务单)"
+      },
+      {
+        "content": "估值维单体智能体： - 传统企业估值：信号 -0.4641，置信度 0.91。模型 融合估值(PE+PS+PB) 合理价值中枢 8138.79 亿 证据质量：external_status=ok；raw_output_keys=entity_id,stock_name,valuation_method,valuation_view,as_of_da...；核心指标_count=8。 关键证据：模型 融合估值(PE+PS+PB) 合理价值中枢 8138.79 亿（spts_database, 2026-06-18）；财务报告期 20260331(公告日 20260425)（fina_indicator, 2026-04-25）；当前市值 15188 亿,股价 1215.00 元（spts_database, 2026-06-18） 核心指标：valuation_method=融合估值(PE+PS+PB)；valuation_view=overvalued；as_of_date=20260618；current_price=1215.0；current_market_value=15188.49144 - 机器学习企业估值：信号 0.38996499999999995，置信度 0.63。XGBoost+蒙特卡洛 预测股价中枢 1688.81 元 证据质量：external_status=ok；raw_output_keys=code,trade_date,as_of_date,target_date,current_price,current_...；核心指标_count=8。 关键证据：XGBoost+蒙特卡洛 预测股价中枢 1688.81 元（spts_database, 2026-06-18）；行情/财务指标快照日 20260618（spts_database, 2...",
+        "id": "l2_agent_evidence",
+        "title": "单体智能体输入"
+      },
+      {
+        "content": "- 价值综合：综合信号 -0.045386，成员 4 个，置信度 0.75。 证据质量：evidence_refs_count=5；member_count=4。 主要成员：传统企业估值(w=0.309161,综合倾向=-0.4641,conf=0.9081,状态=已返回结构化结果)；机器学习企业估值(w=0.21421,综合倾向=0.389965,conf=0.6292,状态=已返回结构化结果)；元学习企业估值(w=0.238314,综合倾向=-0.3029,conf=0.7,状态=已返回结构化结果)；研报观点综合(w=0.238315,综合倾向=0.364,conf=0.7,状态=已返回结构化结果)。 核心指标：agent_id=value_composite；method=fixed_dag_upstream_weighted_member_vote；fair_value_range={\"high\": 1880.0, \"low\": 1550.0, \"mid\": 1720.0} 驱动因素：method=fixed_dag_upstream_weighted_member_vote；members=[{\"agent_id\": \"value_traditional_valuation\", \"confidence\": 0.9081, \"综合倾向\": -0.4641, \"status\": \"complete\", \"weight\":...；fair_value_range={\"high\": 1880.0, \"low\": 1550.0, \"mid\": 1720.0} 数据质量：composite_status=ok；member_count=4；upstream_outputs_consumed=True - 市场综合：综合信号 -0.009304，成员 5 个，置信度 0....",
+        "id": "l3_composite_evidence",
+        "title": "综合智能体输入"
+      }
+    ],
+    "status": "pending_implementation",
+    "title": "研判流程"
+  },
+  "rubric": [
+    {
+      "evidence": [
+        "References many concrete L2/L3 signals and evidence snippets, but evidence_cards are generic and some placeholders appear in the body."
+      ],
+      "max": 5,
+      "name": "Evidence grounding",
+      "notes": "",
+      "score": 3
+    },
+    {
+      "evidence": [
+        "Lists value/market/risk/macro but does not produce a clear cross-dimensional investment thesis or conflict hierarchy."
+      ],
+      "max": 5,
+      "name": "Cross-dimension synthesis",
+      "notes": "",
+      "score": 2
+    },
+    {
+      "evidence": [
+        "Risk gate appears and risk_compliance failure is visible in public report, but final business implication is weak."
+      ],
+      "max": 5,
+      "name": "Risk handling",
+      "notes": "",
+      "score": 3
+    },
+    {
+      "evidence": [
+        "Macro agents are listed; partial/missing macro coverage is not converted into clear regulator impact."
+      ],
+      "max": 5,
+      "name": "Macro handling",
+      "notes": "",
+      "score": 2
+    },
+    {
+      "evidence": [
+        "L3 member weights/drivers exist and are rendered in compact form; conflict/downweight effects are not synthesized well."
+      ],
+      "max": 5,
+      "name": "L3 transparency",
+      "notes": "",
+      "score": 3
+    },
+    {
+      "evidence": [
+        "No clear action such as watch/hold/manual review is presented in natural business terms; report remains process-first."
+      ],
+      "max": 5,
+      "name": "Decision clarity",
+      "notes": "",
+      "score": 1
+    },
+    {
+      "evidence": [
+        "Limitations honestly disclose local/default-off/provider/fallback boundaries."
+      ],
+      "max": 5,
+      "name": "Limitations honesty",
+      "notes": "",
+      "score": 4
+    },
+    {
+      "evidence": [
+        "Chinese is readable but schema/process noise and list-heavy structure make it feel like a template rather than a professional report."
+      ],
+      "max": 5,
+      "name": "Business readability",
+      "notes": "",
+      "score": 2
+    },
+    {
+      "evidence": [
+        "No unsafe markers found in saved public report artifacts."
+      ],
+      "max": 5,
+      "name": "Public safety",
+      "notes": "",
+      "score": 5
+    }
+  ],
+  "schema": "report_quality_baseline_fixture_v1",
+  "summary": {
+    "compute_called": 23,
+    "compute_failed": 1,
+    "compute_mapped": 22,
+    "failed_agents": [
+      "risk_compliance_review"
+    ],
+    "final_report_evidence_cards": 5,
+    "final_report_limitations": 4,
+    "final_report_sections": 6,
+    "l2_complete": 12,
+    "l2_partial": 6,
+    "l3_complete": 1,
+    "l3_partial": 3,
+    "l4_decision_mapped": true,
+    "l4_report_mapped": true,
+    "mode": {
+      "external_compute": "real_bridge",
+      "placeholder_model": "fake_fixture",
+      "report_model": "fake_fixture"
+    },
+    "phase": "R8-13A",
+    "unsafe_scan_result": "pass",
+    "workflow_step_count": 27
+  }
+}

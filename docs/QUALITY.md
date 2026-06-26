@@ -64,6 +64,27 @@ add live checks. Static and mainline remain provider-free and endpoint-free.
 `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` records the no-P4 deletion decision;
 history docs remain evidence and are not promoted to current authority.
 
+## Report Quality Artifact Harness
+
+RQ1 adds an offline report-quality artifact harness:
+
+```powershell
+conda run --no-capture-output -n cline_env python scripts/quality/report_quality_audit.py --fixture tests/fixtures/report_quality/real_e2e_quality_baseline_v1.json --output-dir <repo-external-output-dir>
+conda run --no-capture-output -n cline_env python scripts/quality/report_quality_audit.py --artifact-root <sanitized-e2e-artifact-root> --output-dir <repo-external-output-dir>
+```
+
+The harness reads sanitized fixed-DAG E2E artifacts or the compact public-safe
+fixture and scores report grounding, traceability, template-like wording,
+research-point utilization, answer/section parity, and unsafe markers. The
+current baseline fixture records score `25/45`; this is a regression metric,
+not a claim that report quality has improved.
+
+The harness is offline only. It does not call endpoints, providers, processes,
+demo stacks, prod, sandbox, owner-dev repositories, or the durable artifact
+store. It is not a live readiness check and is not wired to require the real
+`/tmp` artifact in default mainline. Threshold mode can be run manually before
+future RQ2/RQ3/RQ4 report-quality implementation waves.
+
 ## Manual, Live, And Archived Gates
 
 These checks are not default reset mainline gates:

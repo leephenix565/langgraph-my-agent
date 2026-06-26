@@ -3,6 +3,22 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Report quality artifact harness
+
+### Added
+
+- Added offline `scripts/quality/report_quality_audit.py` for sanitized
+  fixed-DAG E2E report artifacts and compact report-quality fixtures.
+- Added a public-safe baseline fixture and unit tests for report score,
+  traceability, template-like wording, research-point utilization,
+  answer/section parity, unsafe-scan behavior, and threshold exits.
+
+### Not Done
+
+- No report-generation behavior, prompt, adapter behavior, L4 service,
+  runtime binding, catalog, public contract, graph topology, endpoint,
+  provider, process, prod, sandbox, owner-dev, or artifact-store change.
+
 ## 2026-06-26 - System map post-closeout polish
 
 ### Changed
