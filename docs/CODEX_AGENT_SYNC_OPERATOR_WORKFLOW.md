@@ -1,5 +1,10 @@
 # Codex Agent Sync Operator Workflow
 
+This is a prompt wrapper for Codex operators. Normative sync policy lives in
+`AGENTS.md` and `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`; current status lives
+in `docs/CURRENT_STATUS.md`; historical closeouts live under
+`docs/history/sync-ops/`.
+
 Use this short prompt for future server Codex sessions:
 
 ```text

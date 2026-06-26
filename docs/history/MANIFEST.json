@@ -1,0 +1,1195 @@
+{
+  "generated_by_goal": "REPO-CONSOLIDATION-M1",
+  "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+  "repo_head_at_generation": "38aa1ba4c09757f1c58e8cf6a6bfbc32051a5519",
+  "row_count": 45,
+  "rows": [
+    {
+      "artifact_references": [
+        "/sdb/dlut/dev/IPO投资者行为智能体/external_agent_scaffold",
+        "/sdb/dlut/dev/IPO投资者行为智能体/external_agent_scaffold/service.py",
+        "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/dev/个股技术分析智能体",
+        "/sdb/dlut/dev/企业舆情雷达智能体",
+        "/sdb/dlut/dev/传统企业估值智能体",
+        "/sdb/dlut/dev/元学习企业估值智能体",
+        "/sdb/dlut/dev/公告合规审查智能体",
+        "/sdb/dlut/dev/分析师研报与观点集成智能体",
+        "/sdb/dlut/dev/宏观分析智能体",
+        "/sdb/dlut/dev/宏观情绪感知智能体/macro_sentiment_agent",
+        "/sdb/dlut/dev/实体关系抽取智能体/entity_relation_agent",
+        "/sdb/dlut/dev/机器学习企业估值智能体",
+        "/sdb/dlut/dev/股价崩盘风险智能体",
+        "/sdb/dlut/dev/股票指数估值智能体",
+        "/sdb/dlut/dev/行业热点洞悉智能体/industry_insight_agent",
+        "/sdb/dlut/dev/财务造假风险智能体",
+        "/sdb/dlut/dev/资金流智能体",
+        "/sdb/dlut/dev/金融数据服务智能体/pg-ops-agent-v1.2/backend",
+        "/tmp/lma-r8-8*-service-backup/*/service_patch_manifest.json"
+      ],
+      "backup_references": [
+        "/tmp/lma-r8-8*-service-backup/*/service_patch_manifest.json"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "91523d90bb60548417d3d059f7e7b1c6a83fabc05a14bc3c89c58685dbcff9d8",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/misc/AGENT_READINESS_MATRIX_R8_8N.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/AGENT_READINESS_MATRIX_R8_8N.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/dev/IPO投资者行为智能体/external_agent_scaffold",
+        "/sdb/dlut/dev/IPO投资者行为智能体/external_agent_scaffold/service.py",
+        "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/dev/个股技术分析智能体",
+        "/sdb/dlut/dev/企业舆情雷达智能体",
+        "/sdb/dlut/dev/传统企业估值智能体",
+        "/sdb/dlut/dev/元学习企业估值智能体",
+        "/sdb/dlut/dev/公告合规审查智能体",
+        "/sdb/dlut/dev/分析师研报与观点集成智能体",
+        "/sdb/dlut/dev/宏观分析智能体",
+        "/sdb/dlut/dev/宏观情绪感知智能体/macro_sentiment_agent",
+        "/sdb/dlut/dev/实体关系抽取智能体/entity_relation_agent",
+        "/sdb/dlut/dev/机器学习企业估值智能体",
+        "/sdb/dlut/dev/股价崩盘风险智能体",
+        "/sdb/dlut/dev/股票指数估值智能体",
+        "/sdb/dlut/dev/行业热点洞悉智能体/industry_insight_agent",
+        "/sdb/dlut/dev/财务造假风险智能体",
+        "/sdb/dlut/dev/资金流智能体",
+        "/sdb/dlut/dev/金融数据服务智能体/pg-ops-agent-v1.2/backend",
+        "/tmp/lma-r8-8*-service-backup/*/service_patch_manifest.json"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/dev/个股技术分析智能体",
+        "/sdb/dlut/dev/企业舆情雷达智能体/company_radar_agent",
+        "/sdb/dlut/dev/传统企业估值智能体",
+        "/sdb/dlut/dev/元学习企业估值智能体",
+        "/sdb/dlut/dev/公告合规审查智能体",
+        "/sdb/dlut/dev/分析师研报与观点集成智能体",
+        "/sdb/dlut/dev/实体关系抽取智能体/entity_relation_agent",
+        "/sdb/dlut/dev/机器学习企业估值智能体",
+        "/sdb/dlut/dev/股价崩盘风险智能体",
+        "/sdb/dlut/dev/财务造假风险智能体",
+        "/sdb/dlut/dev/资金流智能体",
+        "/sdb/dlut/dev/金融数据服务智能体/pg-ops-agent-v1.2/backend",
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/backups/bg3_20260621_145721",
+        "/sdb/dlut/prod/langgraph-my-agent/src/react_agent/",
+        "/sdb/dlut/prod/公告合规审查智能体",
+        "/sdb/dlut/prod/决策融合智能体",
+        "/sdb/dlut/prod/报告生成智能体",
+        "/sdb/dlut/prod/股价崩盘风险智能体"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/bg3_20260621_145721"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "0360a610540e868414423d43dfad593e801c14ed1388762825fbd694871eb310",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/CONTROLLED_READINESS_SMOKE_LOG.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/dev/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/dev/个股技术分析智能体",
+        "/sdb/dlut/dev/企业舆情雷达智能体/company_radar_agent",
+        "/sdb/dlut/dev/传统企业估值智能体",
+        "/sdb/dlut/dev/元学习企业估值智能体",
+        "/sdb/dlut/dev/公告合规审查智能体",
+        "/sdb/dlut/dev/分析师研报与观点集成智能体",
+        "/sdb/dlut/dev/实体关系抽取智能体/entity_relation_agent",
+        "/sdb/dlut/dev/机器学习企业估值智能体",
+        "/sdb/dlut/dev/股价崩盘风险智能体",
+        "/sdb/dlut/dev/财务造假风险智能体",
+        "/sdb/dlut/dev/资金流智能体",
+        "/sdb/dlut/dev/金融数据服务智能体/pg-ops-agent-v1.2/backend",
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/backups/bg3_20260621_145721",
+        "/sdb/dlut/prod/langgraph-my-agent/src/react_agent/",
+        "/sdb/dlut/prod/公告合规审查智能体",
+        "/sdb/dlut/prod/决策融合智能体",
+        "/sdb/dlut/prod/报告生成智能体",
+        "/sdb/dlut/prod/股价崩盘风险智能体"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z",
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z/<agent_id>/",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/health_results.json",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/integrated_trace.json",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/process_restart_manifest.json"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z",
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z/<agent_id>/"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "6cbca0ddc0b5d76e8f79912b13cc304ed431a99a90bf3ad009f3df8d2af20a64",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/cs1/CS1_C1X_ACCELERATED_BULK_REMEDIATION.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/CS1_C1X_ACCELERATED_BULK_REMEDIATION.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z",
+        "/sdb/dlut/prod/backups/cs1c1x_20260622T081402Z/<agent_id>/",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/health_results.json",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/integrated_trace.json",
+        "/tmp/lma-cs1c1x-bulk-remediation-20260622T081402Z/process_restart_manifest.json"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/IPO投资者行为智能体/service.py",
+        "/sdb/dlut/prod/backups/cs1c2x_20260622T093703Z",
+        "/sdb/dlut/prod/传统企业估值智能体/service.py",
+        "/sdb/dlut/prod/元学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/机器学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/股价崩盘风险智能体/crash_risk_model/agent/app.py",
+        "/sdb/dlut/prod/股价崩盘风险智能体/crash_risk_model/agent/protocol.py",
+        "/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z",
+        "/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z/health_compute_results.json"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/cs1c2x_20260622T093703Z"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "57ff181155170a2d7518dc4153c5faf84a1bd588e0be17a561f4e9fa4ba07a6e",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/cs1/CS1_C2X_TEMPORAL_MARKET_PUBLIC_CLOSURE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/CS1_C2X_TEMPORAL_MARKET_PUBLIC_CLOSURE.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/IPO投资者行为智能体/service.py",
+        "/sdb/dlut/prod/backups/cs1c2x_20260622T093703Z",
+        "/sdb/dlut/prod/传统企业估值智能体/service.py",
+        "/sdb/dlut/prod/元学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/机器学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/股价崩盘风险智能体/crash_risk_model/agent/app.py",
+        "/sdb/dlut/prod/股价崩盘风险智能体/crash_risk_model/agent/protocol.py",
+        "/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z",
+        "/tmp/lma-cs1c2x-temporal-market-public-20260622T092218Z/health_compute_results.json"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z",
+        "/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z/portable_owner_patches"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "b9676ada830363d2c81d967c5090594b990dc8e4fc05836c386c1702c0f78c46",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/cs1/CS1_C3R_REMAINING_EVIDENCE_AND_DURABILITY_RECOVERY.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/CS1_C3R_REMAINING_EVIDENCE_AND_DURABILITY_RECOVERY.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z",
+        "/tmp/lma-cs1c3r-evidence-durability-20260622T121352Z/portable_owner_patches"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z",
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs",
+        "/sdb/dlut/prod/宏观综合智能体/service.py",
+        "/sdb/dlut/prod/宏观综合智能体/tests/test_synthesis.py",
+        "/sdb/dlut/prod/资金流智能体/schemas.py",
+        "/sdb/dlut/prod/资金流智能体/tests/test_domain_contract_v1.py",
+        "/tmp/lma-cs1c3x-source-durability-20260622T103501Z",
+        "/tmp/lma-cs1c3x-source-durability-20260622T103501Z/source_durability_matrix.json"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z",
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "60ec70d27d05efa5590fdca3fb1b9b969063cdd63da5b4a03fc410f3acc81a26",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/cs1/CS1_C3X_SOURCE_DURABILITY_AND_REMAINING_EVIDENCE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/CS1_C3X_SOURCE_DURABILITY_AND_REMAINING_EVIDENCE.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z",
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs",
+        "/sdb/dlut/prod/宏观综合智能体/service.py",
+        "/sdb/dlut/prod/宏观综合智能体/tests/test_synthesis.py",
+        "/sdb/dlut/prod/资金流智能体/schemas.py",
+        "/sdb/dlut/prod/资金流智能体/tests/test_domain_contract_v1.py",
+        "/tmp/lma-cs1c3x-source-durability-20260622T103501Z",
+        "/tmp/lma-cs1c3x-source-durability-20260622T103501Z/source_durability_matrix.json"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "548929454dc20f48d515aa1c8c134e11dc5e402d4872e3c38e5681fcc2d79ef4",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/misc/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "c26031b7edef1818925ec89091f8283237703781b9b17569caf508a87dd1490f",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/misc/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/企业舆情雷达智能体/company_radar_agent",
+        "/sdb/dlut/prod/实体关系抽取智能体/entity_relation_agent"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "0f6830102c8872daf5666c185294366f2a9d344c18b8037fed04167aab7417b7",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/backfill/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/FULL_SANDBOX_PROD_BACKFILL_CLOSURE.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/企业舆情雷达智能体/company_radar_agent",
+        "/sdb/dlut/prod/实体关系抽取智能体/entity_relation_agent"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "6a5e1728d62de9f7f9b9627097b05e3060161ba8c4fc5e7ef7760977a1e2ecce",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs",
+        "/sdb/dlut/prod/langgraph-my-agent",
+        "/sdb/dlut/sandbox/langgraph-my-agent-r8-a-class"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "cdcff234fdd5fbc883a15fca6cc11706a1986c6379a3fbadcef25579241ffb82",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/misc/NEXT_PHASE_ROADMAP_FIXED_DAG.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod/backups/cs1c3x_20260622T103501Z/owner_handoffs",
+        "/sdb/dlut/prod/langgraph-my-agent",
+        "/sdb/dlut/sandbox/langgraph-my-agent-r8-a-class"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/tmp/lma-post-bf-b1x-readiness-foundation-20260622T154013Z"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "54e6e41aca68d47da46cfe9f8cfe893335fa9b7f5c25d23df5dcc98d7a90f568",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/releases/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/POST_BF_B1X_PRODUCTION_READINESS_FOUNDATION.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/tmp/lma-post-bf-b1x-readiness-foundation-20260622T154013Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "13533c20d6dfe840e04ce9eb044ce945b35578cc3514ba402a26d81d42eb2e76",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/POST_BF_B2X_NON_L4_RUNTIME_ACTIVATION_AND_RELEASE.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/dev",
+        "/sdb/dlut/dev/*",
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/*",
+        "/sdb/dlut/prod/backups/bg3_20260621_145721",
+        "/sdb/dlut/prod/langgraph-my-agent",
+        "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/prod/个股技术分析智能体",
+        "/sdb/dlut/prod/分析师研报与观点集成智能体",
+        "/sdb/dlut/prod/商品定价分析智能体/agent协议",
+        "/sdb/dlut/prod/宏观分析智能体",
+        "/sdb/dlut/prod/机器学习企业估值智能体",
+        "/sdb/dlut/prod/金融数据服务智能体/pg-ops-agent/backend",
+        "/sdb/dlut/sandbox/r8-13a/services/prod/*",
+        "/tmp/lma-bg2-blocker-unlock-20260621_143632/macro_index_valuation",
+        "/tmp/lma-bg2-blocker-unlock-20260621_143632/risk_financial_fraud",
+        "/tmp/lma-bg3-b2c-duo-20260621_145721",
+        "/tmp/lma-bg4-post-backfill-e2e-20260621_151711"
+      ],
+      "backup_references": [
+        "/sdb/dlut/prod/backups/bg3_20260621_145721"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "811c0347a1eaa685c1acc7823b6ae4aeb58610fec1d78509b1444e181cd3015b",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/backfill/PRE_BACKFILL_AUDIT_FIXED_DAG.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/dev",
+        "/sdb/dlut/dev/*",
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/*",
+        "/sdb/dlut/prod/backups/bg3_20260621_145721",
+        "/sdb/dlut/prod/langgraph-my-agent",
+        "/sdb/dlut/prod/上市公司财务与市场风险规则推理智能体",
+        "/sdb/dlut/prod/个股技术分析智能体",
+        "/sdb/dlut/prod/分析师研报与观点集成智能体",
+        "/sdb/dlut/prod/商品定价分析智能体/agent协议",
+        "/sdb/dlut/prod/宏观分析智能体",
+        "/sdb/dlut/prod/机器学习企业估值智能体",
+        "/sdb/dlut/prod/金融数据服务智能体/pg-ops-agent/backend",
+        "/sdb/dlut/sandbox/r8-13a/services/prod/*",
+        "/tmp/lma-bg2-blocker-unlock-20260621_143632/macro_index_valuation",
+        "/tmp/lma-bg2-blocker-unlock-20260621_143632/risk_financial_fraud",
+        "/tmp/lma-bg3-b2c-duo-20260621_145721",
+        "/tmp/lma-bg4-post-backfill-e2e-20260621_151711"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod/*",
+        "/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z",
+        "/sdb/dlut/sandbox/langgraph-my-agent-baselines/20260623T050419Z/langgraph-my-agent",
+        "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services",
+        "/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json",
+        "/sdb/dlut/sandbox/r8-13a/services/prod",
+        "/sdb/dlut/sandbox/r8-13a/services/prod-pre-p2s-20260623T060926Z",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z"
+      ],
+      "backup_references": [
+        "/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "ee45778172c39f970c54cbc8001c7c537f28a1e283b897b825fa831fad4e9d97",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/backfill/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/PROD_TO_SANDBOX_AGENT_BASELINE_REFRESH.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/dev/langgraph-my-agent",
+        "/sdb/dlut/prod/*",
+        "/sdb/dlut/sandbox/backups/p2s_pre_refresh_20260623T050419Z",
+        "/sdb/dlut/sandbox/langgraph-my-agent-baselines/20260623T050419Z/langgraph-my-agent",
+        "/sdb/dlut/sandbox/prod-baselines/20260623T050419Z/fixed-dag-services",
+        "/sdb/dlut/sandbox/r8-13a/services/PROD_BASELINE_POINTER.json",
+        "/sdb/dlut/sandbox/r8-13a/services/prod",
+        "/sdb/dlut/sandbox/r8-13a/services/prod-pre-p2s-20260623T060926Z",
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/宏观综合智能体",
+        "/sdb/dlut/prod/市场面综合智能体",
+        "/sdb/dlut/prod/综合估值智能体",
+        "/sdb/dlut/prod/综合风险智能体",
+        "/tmp/lma-r8-13c-real-agent-e2e/20260611T122047Z",
+        "/tmp/lma-r8-13d-handoff-package/20260612T023822Z"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "f8ea372173265577c2ec9a02a548867f5c1ac7dcf17f77a0fd5c13f2488271a6",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod",
+        "/sdb/dlut/prod/宏观综合智能体",
+        "/sdb/dlut/prod/市场面综合智能体",
+        "/sdb/dlut/prod/综合估值智能体",
+        "/sdb/dlut/prod/综合风险智能体",
+        "/tmp/lma-r8-13c-real-agent-e2e/20260611T122047Z",
+        "/tmp/lma-r8-13d-handoff-package/20260612T023822Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/宏观综合智能体",
+        "/sdb/dlut/prod/市场面综合智能体",
+        "/sdb/dlut/prod/综合估值智能体",
+        "/sdb/dlut/prod/综合风险智能体",
+        "/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z",
+        "/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z/metadata/service_patch_manifest.json",
+        "/tmp/lma-r8-13e-prod-l3-restart/20260612T024553Z",
+        "/tmp/lma-r8-13e-prod-l3-smoke/20260612T024649Z"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "52a91c34612acef6d570e9a7192e72dc3037b577ab552a5e369438ca5da76996",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/宏观综合智能体",
+        "/sdb/dlut/prod/市场面综合智能体",
+        "/sdb/dlut/prod/综合估值智能体",
+        "/sdb/dlut/prod/综合风险智能体",
+        "/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z",
+        "/tmp/lma-r8-13e-prod-l3-backfill/20260612T024513Z/metadata/service_patch_manifest.json",
+        "/tmp/lma-r8-13e-prod-l3-restart/20260612T024553Z",
+        "/tmp/lma-r8-13e-prod-l3-smoke/20260612T024649Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z",
+        "/tmp/lma-r8-13f-prod-e2e/20260612T030650Z"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "ebd8ce3604a562bd608bf871b400c3ac3244bb1ae519404a79fc0b8b6a63caf3",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/tmp/lma-r8-13f-prod-e2e-llm-report/20260612T030735Z",
+        "/tmp/lma-r8-13f-prod-e2e/20260612T030650Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/传统企业估值智能体/service.py",
+        "/sdb/dlut/prod/元学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/机器学习企业估值智能体/service.py",
+        "/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z",
+        "/tmp/lma-r8-13g-value-l2-resmoke/20260612T033846Z",
+        "/tmp/lma-r8-13g-value-l2-restart/20260612T033801Z",
+        "/tmp/lma-r8-13g-value-l2-stance-backfill/20260612T033501Z"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "0b073cda83246020cbeecb46428d4a98f4ce268ebf68aa439a0fa6dfe3f71ac8",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/r8/R8_13G_VALUE_L2_STANCE_REMEDIATION.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [
+        "/sdb/dlut/prod/传统企业估值智能体/service.py",
+        "/sdb/dlut/prod/元学习企业估值智能体/service.py",
+        "/sdb/dlut/prod/机器学习企业估值智能体/service.py",
+        "/tmp/lma-r8-13g-prod-e2e-llm-report/20260612T033912Z",
+        "/tmp/lma-r8-13g-value-l2-resmoke/20260612T033846Z",
+        "/tmp/lma-r8-13g-value-l2-restart/20260612T033801Z",
+        "/tmp/lma-r8-13g-value-l2-stance-backfill/20260612T033501Z"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "7cbeb15b25a186993935c465d88de9b691511ba85bbb4b7703372b5a90804164",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_1R2_RECURSIVE_COVERAGE_REPAIR.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_1R2_RECURSIVE_COVERAGE_REPAIR.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "f9cd67be84b16acf59b38aaef4bcf8deb339bfa93d6a9bea2499c9c011354b80",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_1R_P2S_WRITE_SAFETY_REPAIR.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/sandbox/r8-13a/services/prod"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "4ee825d3b139d4795f6526d78406a5d86207bf3511d30306a3512affa917fb50",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_1_READ_ONLY_PLANNER.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_1_READ_ONLY_PLANNER.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/sandbox/r8-13a/services/prod"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/sandbox"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "10901945ee46675556e35dba1c9f06d8e7730bd3e1a5f7f6b7338ce9603e1478",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_P2S_WRITER_DRY_RUN.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/sandbox"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "42b1d2955bbf62ed2b203a70a1370c2a71b4f09730373227ffe0e6e23a5a55ee",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_R1_SOURCE_POLICY_AND_FULL_SCALE_REHEARSAL.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "6a0549124a10ac67201e21e1af82034efc645572f03549b68df17f562a1978c3",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_R2_EXECUTABLE_PLAN_AND_STAGED_APPROVAL.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut",
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "8b01bcda634b8ff6fb9dc7b93c553a5dc49e2d4ad8f1068d2bdd9c2a5e4a468d",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_R3_ARTIFACT_STORE_BOOTSTRAP.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut",
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "255946eead83cf1d960c1c71ba1a97d65faabd56cf56c7cc5131f9c66cc7f4d1",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_R4_BOOTSTRAP_ROLLBACK_ATOMICITY.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "7184dcd666b42ee137fc2438df561882d979aac8fe99648e06a9276b47f50190",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2A_R5_STABLE_ENVIRONMENT_BINDING.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "e3eb7c3af2b1d6001faebc4eabaf7522072671d5df959ff4da0d37ac21736f8a",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2B0_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts",
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/ops-artifacts/agent-sync/STORE_METADATA.json",
+        "/sdb/dlut/ops-artifacts/agent-sync/approvals",
+        "/sdb/dlut/ops-artifacts/agent-sync/backups",
+        "/sdb/dlut/ops-artifacts/agent-sync/baselines",
+        "/sdb/dlut/ops-artifacts/agent-sync/experiments",
+        "/sdb/dlut/ops-artifacts/agent-sync/indexes",
+        "/sdb/dlut/ops-artifacts/agent-sync/locks",
+        "/sdb/dlut/ops-artifacts/agent-sync/plans",
+        "/sdb/dlut/ops-artifacts/agent-sync/runs",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services"
+      ],
+      "backup_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync/backups"
+      ],
+      "classification": "historical_evidence",
+      "content_sha256": "c869d4e92b524739a705fc466f01bc361739fdf1d8764068ffc39b7d0b4d50be",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2B0_R1_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2B0_R1_DURABLE_ARTIFACT_STORE_BOOTSTRAP.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts",
+        "/sdb/dlut/ops-artifacts/agent-sync",
+        "/sdb/dlut/ops-artifacts/agent-sync/STORE_METADATA.json",
+        "/sdb/dlut/ops-artifacts/agent-sync/approvals",
+        "/sdb/dlut/ops-artifacts/agent-sync/backups",
+        "/sdb/dlut/ops-artifacts/agent-sync/baselines",
+        "/sdb/dlut/ops-artifacts/agent-sync/experiments",
+        "/sdb/dlut/ops-artifacts/agent-sync/indexes",
+        "/sdb/dlut/ops-artifacts/agent-sync/locks",
+        "/sdb/dlut/ops-artifacts/agent-sync/plans",
+        "/sdb/dlut/ops-artifacts/agent-sync/runs",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync/runs/run_fbb3e73cd466",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services",
+        "/sdb/dlut/sandbox/r8-13a/services/prod"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "73968a59843808e4916409d8f71557eb9735b5d9314ea9c2a3e94715b558a512",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2B1_REAL_P2S_STAGE_VERIFY.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2B1_REAL_P2S_STAGE_VERIFY.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync/runs/run_fbb3e73cd466",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services",
+        "/sdb/dlut/sandbox/r8-13a/services/prod"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync/runs/run_2b2x_3a3e19c9aff4",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "6d5c54c73accf028540cd3095c1c43f2d9a81ea23556fe5d26f8fb5cff578c06",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_2B2X_P2S_ACTIVATION_ROLLBACK_CLOSEOUT.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/ops-artifacts/agent-sync/runs/run_2b2x_3a3e19c9aff4",
+        "/sdb/dlut/sandbox/prod-baselines/20260624T060045Z/fixed-dag-services"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "cb6707d4ef3e61d6e3d4c280c56092ccf8bcdc8c63ff1230d352055262245135",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_3X_SANDBOX_TO_PROD_AUTOMATION.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "4e73eed6429f7b161abb750203e32822a1adfbe87a1e1ed8071569a7208e3809",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_4X_PUBLISH_AND_REBASE_CYCLE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_4X_PUBLISH_AND_REBASE_CYCLE.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "a399cd517d1f5302395a1a3a88af01a1a0fcbeba392e6bd10df82b462820a436",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_FIRST_NONZERO_CYCLE_QUALIFICATION.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_FIRST_NONZERO_CYCLE_QUALIFICATION.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "45d61174237d1740d251cc08a168b0d252a5f7b9921f616340dcf2e166dee352",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R1X_SOURCE_AUTHORITY_AND_FINAL_FREEZE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R1X_SOURCE_AUTHORITY_AND_FINAL_FREEZE.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "c4bc9f9597c1ef01c6c9d805b5855bc6ee41b882aad4e92d6876bd03f26b4dd2",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "37e9f59bd4817f05343db7a4acafd3b78a6a7656b9e2643cbcc2c36d4ed16ae2",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R3X_APPROVED_LAUNCH_AUTHORITY.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R3X_APPROVED_LAUNCH_AUTHORITY.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "8d777f64d706c65dab0c94e51c0ce3b49cbe339c340118ce8c2a2cd09f8440c7",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R4X_REAL_SHADOW_CANARY_AND_APPROVAL_CHAIN.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R4X_REAL_SHADOW_CANARY_AND_APPROVAL_CHAIN.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [
+        "/sdb/dlut/prod/.agent-sync-archive-risk-fraud-<v5-plan-id>",
+        "/sdb/dlut/prod/.agent-sync-risk-fraud-cutover-<v5-plan-id>",
+        "/sdb/dlut/prod/财务造假风险智能体"
+      ],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "5037ab683d2d0be64fef7b76b7d4b9b641721a398793ec20fb7b57f8bde1003c",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R5X_SOURCE_LOSS_CUTOVER_CONTRACT.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R5X_SOURCE_LOSS_CUTOVER_CONTRACT.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [
+        "/sdb/dlut/prod/.agent-sync-archive-risk-fraud-<v5-plan-id>",
+        "/sdb/dlut/prod/.agent-sync-risk-fraud-cutover-<v5-plan-id>",
+        "/sdb/dlut/prod/财务造假风险智能体"
+      ],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "dd958e9894f46f2c505f5431cffe07ec21db4699ad500d5fe635f96a4fa0730f",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R6X_CLEAN_CUTOVER_CANDIDATE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R6X_CLEAN_CUTOVER_CANDIDATE.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "c6c2f1833dddc26c98a594de3e75eec282d266cfe19f09c5f46d94371ff2cce1",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5A_R7X_CUTOVER_TREE_DIGEST_PARITY.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5A_R7X_CUTOVER_TREE_DIGEST_PARITY.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "50bb90484e65e95fa0cc3f3ee07678c493e4d50e69f9ea2af3041febe174294d",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5B_X_SOURCE_LOSS_AND_P2S_CLOSEOUT.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5B_X_SOURCE_LOSS_AND_P2S_CLOSEOUT.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "4c24cc8a33c7d04f8c2918df2624d10efb0bcfeeb31979ebd27f548b3714c186",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5C_FINAL_STRICT_CYCLE_CLOSEOUT.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5C_FINAL_STRICT_CYCLE_CLOSEOUT.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "content_sha256": "a865d4e31606efddaa160bbf4189277d1005af0275a2057b1eafe2b338df3f51",
+      "date_range": "2026-06 historical reset phase",
+      "historical_path": "docs/history/sync-ops/SYNC_OPS_5C_R1_STRICT_CYCLE_ENVELOPE.md",
+      "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
+      "original_path": "docs/SYNC_OPS_5C_R1_STRICT_CYCLE_ENVELOPE.md",
+      "owner_handoff_references": [],
+      "phase": "sync-ops",
+      "retained_references": [],
+      "retention_reason": "phase evidence / rollback / artifact references",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/INDEX.md"
+      ]
+    }
+  ],
+  "schema_version": "repo_docs_history_manifest_v1"
+}

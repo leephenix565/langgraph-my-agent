@@ -43,6 +43,22 @@ npm --prefix apps/web run build -- --outDir <repo-external-temp-dir>
 The runner creates a temporary repo-external frontend build directory and
 cleans it up after the build. It must not write `apps/web/dist`.
 
+## Documentation Authority And History Policy
+
+Current maintained docs remain in the static quality surface. Historical phase
+records under `docs/history/` are validated through manifest, link, and
+reference-preservation checks during documentation migration work rather than by
+treating every historical record as current authority prose.
+
+Old top-level paths for moved historical documents are retained as stubs so
+existing quality targets and external references continue to resolve. The stubs
+point to `docs/history/MANIFEST.json` and the current authority entrypoints.
+
+Docs-only consolidation does not change runtime behavior, catalog entries,
+runtime bindings, public schemas, sync schemas, graph topology, process actions,
+endpoint calls, provider calls, prod state, sandbox state, or owner-dev
+repositories.
+
 ## Manual, Live, And Archived Gates
 
 These checks are not default reset mainline gates:

@@ -233,59 +233,24 @@ git pull --ff-only origin reset/fixed-dag-v1
 
 ## Documentation Authority
 
-当前主系统文档分三层。
+Current authority is intentionally small. Start with:
 
-### Current Authority
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/INDEX.md`
+4. `docs/CURRENT_STATUS.md`
+5. `docs/ARCHITECTURE_FIXED_DAG.md`
+6. `docs/CONTRACTS.md`
+7. `docs/QUALITY.md`
+8. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
 
-这些文档是当前入口，应优先看：
+`docs/INDEX.md` is navigation only. `docs/CURRENT_STATUS.md` is the status and
+roadmap entry. Historical phase records are retained under `docs/history/` and
+mapped by `docs/history/MANIFEST.json`.
 
-| Path | Purpose |
-| --- | --- |
-| `README.md` | 主系统阶段摘要和关键 non-claims。 |
-| `docs/INDEX.md` | 文档地图和权威入口。 |
-| `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md` | dev/prod/sandbox 目录职责、同步方式和文档整理策略。 |
-| `docs/PRE_BACKFILL_AUDIT_FIXED_DAG.md` | Backfill 前总账：说明主系统已合入内容、sandbox agent 实验、prod 运行目录状态、L4 compute-default runtime 和后续回填边界。 |
-| `docs/SYSTEM_MAP.md` | 当前主系统运行拓扑。 |
-| `docs/ARCHITECTURE_FIXED_DAG.md` | 固定 DAG 架构和 27-agent 结构。 |
-| `docs/CONTRACTS.md` | 主系统 contract、adapter 和 public/runtime 边界。 |
-| `docs/DEMO_EXTERNAL_COMPUTE_DAG_RUNBOOK.md` | default-off external compute demo 运行方式。 |
-| `docs/LOCAL_REMOTE_AGENT_DEMO_RUNBOOK.md` | 本地电脑通过 SSH tunnel 访问服务器 production agent 的 demo/dev 方法。 |
-| `docs/AGENT_READINESS_MATRIX_FIXED_DAG.md` | 当前 production readiness/problem playbook。 |
-| `docs/DEVELOPER_AGENT_FIX_PROMPTS_FIXED_DAG.md` | 面向外部智能体 owner 的修复提示词手册。 |
-| `docs/CONTROLLED_READINESS_SMOKE_LOG.md` | 受控 smoke、trace、non-claims 记录。 |
-
-### Phase Records
-
-这些文档是阶段证据和交接记录，应保留但不作为“当前唯一入口”：
-
-```text
-docs/R8_13D_SANDBOX_L3_BACKFILL_HANDOFF.md
-docs/R8_13E_PRODUCTION_L3_BACKFILL_SMOKE.md
-docs/R8_13F_END_TO_END_PRODUCTION_TRACE_QA.md
-docs/R8_13G_VALUE_L2_STANCE_REMEDIATION.md
-docs/AGENT_READINESS_MATRIX_R8_8N.md
-docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md
-```
-
-这些文件不要轻易删除，因为它们保存了具体阶段的备份路径、smoke artifact、
-修改范围、non-claims 和回滚线索。
-
-### Candidate Future Merge
-
-后续如果文档数量继续膨胀，可以按下面方向合并，而不是直接删除：
-
-| Candidate | Suggested Destination |
-| --- | --- |
-| `R8_13D/E/F/G` 阶段文档 | 摘要并入 `CONTROLLED_READINESS_SMOKE_LOG.md`，保留原文件为历史 phase record。 |
-| `AGENT_READINESS_MATRIX_R8_8N.md` | 保留为 R8-8N 历史快照，当前入口指向 `AGENT_READINESS_MATRIX_FIXED_DAG.md`。 |
-| `DEPLOYED_AGENT_INVENTORY_DEFERRED.md` | 如内容过期，合并摘要到 readiness matrix 的 deferred/problem section。 |
-| 过长的 README 阶段流水 | 后续可把旧阶段细节迁入 `docs/INDEX.md` caveat 或 `docs/CHANGELOG.md`，README 保留最新摘要。 |
-
-当前不建议删除任何阶段文档。更安全的做法是：
-
-1. 更新 `docs/INDEX.md` 标明当前权威入口。
-2. 在阶段文档中保留历史上下文。
-3. 等生产链路稳定后，再做一次专门的 docs compaction phase。
+Smoke logs, readiness ledgers, source-loss closeouts, and sync phase records
+remain audit evidence. They are not runtime binding authority and should not be
+used to override current code, config, schemas, or the current status document.
 
 ## Non-Claims
 
@@ -304,68 +269,11 @@ docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md
 
 ## Sync Planner Boundary
 
-After P2S-CLOSE-R1, `/sdb/dlut/sandbox/r8-13a/services/prod` is the active
-production-derived external-agent baseline. It is not an experiment workspace.
-Future experiments should fork a versioned baseline, carry an experiment
-manifest, and use the read-only `agent-sync` planner to produce an immutable
-P2S/S2P/cycle plan before any approved write phase.
+The current sync workflow authority is `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`.
+The active sandbox baseline is immutable; experiments fork registered baselines,
+register exact change units, generate exact S2P/P2S plans, and execute only with
+machine approval for the strict cycle envelope.
 
-SYNC-OPS-1R further requires P2S to materialize a new versioned stage before
-activation. Observed diff rows are review evidence only; they are not file
-actions. Sanitized derivatives and sandbox-local secret-requirement metadata
-must remain explicitly modeled and must not be treated as raw production
-source.
-
-SYNC-OPS-1R2 adds recursive source/support-root coverage and parity checks.
-The active sandbox is still immutable input; temp reconstruction is allowed only
-under repo-external `/tmp` and is used to prove the planned safe tree, not to
-create the real sandbox stage.
-
-SYNC-OPS-2A adds writer primitives but keeps execution in temporary fixtures.
-Real P2S stage, activate, and rollback require a separate machine approval,
-matching environment snapshot, locks, and approved artifact-store root. The
-configured durable artifact root remains `/sdb/dlut/ops-artifacts/agent-sync`,
-but SYNC-OPS-2A does not create or write it.
-
-SYNC-OPS-2A-R1 closes source selection before any real P2S execution. Local
-tool metadata, backups, generated outputs/results/reports, data/model assets,
-runtime noise, sensitive files, and unknown files are not copied into a new
-sandbox baseline by default. The actual current P2S plan must pass full-scale
-stage/verify/activate/rollback rehearsal under repo-external `/tmp`; the real
-active sandbox and pointer remain immutable inputs until a later approved
-execution phase.
-
-SYNC-OPS-2A-R2 freezes the executable plan contract and approval split. A real
-stage/verify run requires a stage-only machine approval, but it no longer
-initializes the durable artifact store. SYNC-OPS-2A-R3 makes
-`/sdb/dlut/ops-artifacts/agent-sync` a separate one-time bootstrap target with
-its own plan, environment hash, approval request, and `STORE_METADATA.json`.
-Activation and rollback are a separate later approval bound to the real stage
-run and digest; stage-only approval cannot switch the active sandbox or update
-the pointer. SYNC-OPS-2A-R4 tightens bootstrap rollback: store metadata records
-an ownership ledger, blocked rollback is a true zero-mutation no-op, and
-approval requests are not machine approvals. SYNC-OPS-2B0 attempted the first
-real bootstrap but stopped before approval because the current environment
-snapshot drifted from the approved snapshot. SYNC-OPS-2A-R5 replaces that
-volatile snapshot boundary with stable approval binding, execution
-constraints, and diagnostic observations. SYNC-OPS-2B0-R1 then created the
-durable artifact store and metadata. SYNC-OPS-2B1 created and verified the
-versioned P2S stage while leaving the active sandbox and pointer unchanged. The
-next write approval boundary is activation/rollback; it must bind the real
-stage run id, artifact index SHA, stage digest, stage validation SHA, current
-active pointer SHA, and current active tree SHA before any sandbox switch.
-SYNC-OPS-2B2X completes that boundary: first activation, controlled rollback
-restoration, separate post-rollback reactivation approval, final reactivation,
-and P2S topic closure are complete. The active sandbox now points to baseline
-`20260624T060045Z`, while production sources, owner-dev repositories,
-endpoints, process state, and S2P remain out of scope.
-
-SYNC-OPS-5A-R7X records the current source-loss cutover approval boundary for
-`risk_financial_fraud`: the R4X canary result is valid evidence, but production
-cutover requires a V7 clean pre-start candidate projection from the 67 approved
-file actions, explicit directory mode actions, matching projected/materialized
-physical tree digests, a separate classification manifest digest,
-non-mutating offline validation, canonical archive, production launch
-authority, exact action ids, and roll-forward state machine. This guide still
-treats `/sdb/dlut/prod/*` as runtime state that must only be changed by a
-separate exact machine approval.
+Historical SYNC-OPS ledgers moved to `docs/history/sync-ops/`. They preserve
+artifact, approval, rollback, source-loss, and closeout evidence, but current
+operators should use the current runbook and `AGENTS.md` for execution policy.

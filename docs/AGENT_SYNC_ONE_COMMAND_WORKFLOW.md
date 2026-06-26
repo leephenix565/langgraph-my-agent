@@ -1,5 +1,9 @@
 # Agent Sync One-Command Workflow
 
+Current status for the completed first strict non-zero cycle lives in
+`docs/CURRENT_STATUS.md`. Historical SYNC-OPS phase records live under
+`docs/history/sync-ops/` and are indexed by `docs/history/MANIFEST.json`.
+
 This runbook is the normal operator path for future sandbox-to-prod publishes.
 It assumes the durable artifact store at
 `/sdb/dlut/ops-artifacts/agent-sync` is available and that the current active

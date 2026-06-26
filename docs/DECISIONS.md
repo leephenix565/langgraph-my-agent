@@ -3,6 +3,27 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-159: Repository Docs Authority Separates Current State From Historical Evidence
+
+Status: accepted for REPO-CONSOLIDATION-M1.
+
+Decision: current repository authority is concentrated in the short reading
+order recorded by `docs/INDEX.md` and `docs/CURRENT_STATUS.md`. Historical
+phase records are retained under `docs/history/` with a manifest and old-path
+stubs.
+
+Reason: phase ledgers, smoke logs, and closeouts preserve important evidence,
+but they should not compete with current code, config, schemas, and current
+status documents as runtime authority.
+
+Consequence: new sessions can start from a small current entry set, while audit,
+backup, rollback, artifact, and owner handoff references remain discoverable in
+history.
+
+Non-consequence: this decision does not change runtime behavior, catalog
+entries, runtime bindings, public schemas, graph topology, sync schemas,
+approval semantics, prod state, sandbox state, or owner-dev repositories.
+
 ## ADR-158: Exact Rehearsal Action Semantics Qualify Final Cutover Plans
 
 Status: accepted for SYNC-OPS-5A-R7X.

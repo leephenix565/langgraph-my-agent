@@ -1,114 +1,23 @@
 # System Map
 
-This file is the reset branch operational map for Phase R8-12D.
+This file is the current operational map for the Fixed DAG reset branch.
+Phase names in lower sections are provenance notes only; current status lives in
+`docs/CURRENT_STATUS.md`.
 
-## Phase
+## Current Operating Status
 
-- Current branch: `reset/fixed-dag-v1`.
-- Current phase: R8-12D LLM report synthesizer over the
-  existing fixed-DAG runtime skeleton, selected-routing boundary, R8-6B internal
-  LLM placeholder boundary, R7-I web presentation surface, R8-7B/R8-8C/R8-10B
-  provider-free adapter seams, and R7-G v2.3.1 scaffold package.
-- Current runtime milestone: R3 plan-driven fixed DAG execution orchestration.
-- Phase purpose: replace the active old Router/Manager/Fair-Fusion protocol with
-  a deterministic provider-free fixed DAG skeleton whose execution order is
-  derived from validated `dag_steps[].depends_on` and whose payloads are built
-  by explicit constructors, normalizers, validators, and executor seams.
+- Branch: `reset/fixed-dag-v1`.
+- Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
+- Active backend catalog source: `config/fixed_dag/agent_catalog.json`.
+- Active backend runtime binding source: `config/fixed_dag/runtime_bindings.json`.
+- Public workflow contract: `workflow_snapshot_v2`.
+- L4 runtime default: compute-only external defaults for `decision_synthesizer`
+  and `report_generator`; this is not an `/invoke` path.
+- Bidirectional sync workflow: strict non-zero publish-and-rebase has been
+  verified; future cycles use exact experiment/change-unit/approval contracts.
+- Current repository theme: documentation authority consolidation followed by
+  active-core consolidation planning.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
-- R4 roster baseline input:
-  `新架构_固定DAG_最终分层级智能体表_v4_反馈修正版.xlsx`.
-- Active backend catalog source:
-  `config/fixed_dag/agent_catalog.json`.
-- Active backend runtime binding source:
-  `config/fixed_dag/runtime_bindings.json`.
-- Selected routing contract seams:
-  `route_intent_v1` and `selected_fixed_dag_plan_v1` in
-  `src/react_agent/fixed_dag_contracts.py`. R8-2 adds
-  `compile_selected_fixed_dag_plan`, `validate_selected_dag_steps`, and
-  `topological_batches_for_selected_plan` as deterministic selected compiler
-  and validation seams, not active runtime defaults. R8-3 adds
-  `build_default_route_intent`, `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT`,
-  `build_route_intent_prompt`, `parse_route_intent_json`, and
-  `normalize_route_intent` as provider-free planner seam pieces. R8-4 adds
-  `src/react_agent/route_eval.py` and `tests/fixtures/route_eval_gold.jsonl`
-  as the provider-free RouteEval baseline for route intent selections. R8-5
-  adds `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` as the
-  default-off graph integration boundary. R8-6B adds
-  `Context.enable_internal_llm_placeholders` /
-  `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` as an independent default-off L2
-  placeholder boundary. R8-7B adds
-  `src/react_agent/fixed_dag_external_adapter.py` as a provider-free pure
-  mapping seam for already-available external payload dictionaries.
-  R8-12 adds `Context.enable_external_compute_demo` /
-  `ENABLE_EXTERNAL_COMPUTE_DEMO=1` plus
-  `EXTERNAL_COMPUTE_DEMO_ALLOWLIST` as a default-off demo bridge boundary for
-  production `/v1/agent/compute`; with flags off or an empty allowlist, no
-  bridge module is loaded and no external HTTP call is made.
-  R8-12C adds `report_input_bundle_v1` as the public-safe report-generator
-  input package. It summarizes L2 agent signals and L3 composite inputs for
-  report generation and workflow drilldown without storing raw external
-  responses, endpoints, secrets, error stacks, or internal reasoning drafts.
-  R8-12D adds `Context.enable_llm_report_synthesis` /
-  `ENABLE_LLM_REPORT_SYNTHESIS=1` as a default-off report synthesis boundary.
-  With that flag enabled, the main system may load the configured chat model
-  and generate the final report from `report_input_bundle_v1`; invalid or
-  unsafe output falls back to the template report.
-  The dev L4 handoff phase adds compute-only adapter and bridge support for
-  `decision_synthesizer` (`decision_result_v1`) and `report_generator`
-  (`report_result_v1`). These L4 ids can be overlaid only through the explicit
-  default-off external compute demo allowlist; this does not modify runtime
-  bindings, set live flags, call `/v1/agent/invoke`, or make sandbox L4
-  services production-default. R8-13J verifies provider-backed production-source
-  L4 `/v1/agent/compute`, and R8-13K/R8-13L add transcript-safety and runtime
-  review gates, but the active runtime bindings still use the deterministic L4
-  seams as the default graph path. R8-13M adds a metadata-only
-  `build_l4_runtime_binding_dry_run` helper so maintainers can inspect future
-  L4 runtime prerequisites without editing runtime bindings. R8-13N adds a
-  local `build_l4_runtime_review_evidence_package` helper that packages safe
-  provider-compute, transcript-safety, rollback, and operator-approval evidence
-  before any explicit runtime-binding phase may be opened. R8-13O records the
-  current candidate evidence package and leaves operator approval as the only
-  remaining runtime-review evidence blocker. R8-13P adds a non-mutating phase
-  preflight and records that schema/executor support for an external L4
-  compute-default path is still required before any config edit. R8-13Q adds
-  that support and switches the two L4 runtime bindings to compute-only
-  external defaults on ports `10025` and `10026`.
-  POST-BF-B2X adds a separate production non-L4 compute orchestration path
-  sourced from `config/fixed_dag/non_l4_external_compute_policy.json` and
-  implemented by `src/react_agent/fixed_dag_production_external_compute.py`.
-  It is not the demo bridge and not the L4 runtime binding path. Demo mode
-  suppresses production non-L4 for the run, and
-  `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1` rolls back only non-L4 defaults.
-  `runtime_bindings.json` remains unchanged with only the two L4
-  `external_compute_default` rows.
-- Active external developer handoff docs:
-  `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`,
-  `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`,
-  `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`, and
-  `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`.
-- Repo-external scaffold distribution working copy restored from the tracked
-  mirror when missing:
-  `E:\muti-agent\external_agent_scaffold`.
-- Tracked repo mirror and audit truth for that package:
-  `examples/fixed_dag_external_agent_scaffold/`.
-- Active frontend contract:
-  `apps/web` renders the fixed DAG workflow inspector from
-  `workflow_snapshot_v2` stage, step, dimension, batch, result, provenance, and
-  `reset_skeleton` source fields, with localized Chinese visible copy, reduced
-  default engineering/status noise, professional business-facing dimension,
-  step, and answer-card evidence copy, and raw technical ids/enum values
-  retained in expanded details where needed for debugging. R7-I adds a
-  report-first "研判思维链" disclosure derived from the same public workflow
-  snapshot; it is the normal user-facing workflow surface below the assistant
-  report, not a backend runtime change or extra public agent lane. The full
-  WorkflowPanel remains available as a technical inspector behind "技术流程详情".
-  R8-12C lets selected workflow step details render `agent_evidence` and
-  `composite_evidence` when present, so the Web view can show the bounded
-  public summaries that the report generator consumed.
-  R8-13Q changes only the L4 runtime default: `decision_synthesizer` and
-  `report_generator` are now compute-only external defaults backed by
-  production-source `/v1/agent/compute` services. This is not an invoke path and
-  does not enable external runtime defaults for L1, L2, or L3 services.
 
 ## Current Runtime Entry
 
@@ -362,7 +271,7 @@ The v4 feedback-aligned roster removes the enterprise financial analysis target.
 `sentiment_company_radar` is a market-dimension L2 agent and does not route
 directly to `risk_composite`.
 
-## Deleted Old-Lineage Boundary
+## Historical Deleted Old-Lineage Boundary
 
 R1-A removed:
 
@@ -395,7 +304,7 @@ R3.6 did not delete or migrate:
 - generated `log/**`, `tmp/**`, or `outputs/benchmarks/**` artifacts; these
   have been removed from the reset branch and should stay untracked
 
-## Deferred
+## Historical Deferred Items
 
 Later phases own:
 

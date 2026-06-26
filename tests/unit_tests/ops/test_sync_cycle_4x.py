@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import subprocess
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
@@ -36,6 +37,14 @@ from react_agent.ops.sync_s2p import (
     digest_descriptor,
     validate_s2p_plan_contract,
 )
+
+
+def _future_cycle_expiry() -> str:
+    return (datetime.now(UTC) + timedelta(days=7)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
+
+
+def _expired_cycle_expiry() -> str:
+    return (datetime.now(UTC) - timedelta(days=1)).replace(microsecond=0).isoformat().replace("+00:00", "Z")
 
 
 def test_s2p_mapping_accepts_recovered_risk_fraud_and_shared_members(tmp_path: Path) -> None:
@@ -342,7 +351,7 @@ def test_strict_cycle_builder_binds_frozen_children_and_actions() -> None:
         projected_prod_after=projected,
         p2s_child_plan=p2s,
         created_at="2026-06-25T00:00:00Z",
-        expires_at="2026-06-26T00:00:00Z",
+        expires_at=_future_cycle_expiry(),
     )
 
     assert plan["schema_version"] == "agent_sync_publish_and_rebase_cycle_v1"
@@ -370,7 +379,7 @@ def test_strict_cycle_approval_request_is_not_machine_approval() -> None:
         projected_prod_after=projected,
         p2s_child_plan=p2s,
         created_at="2026-06-25T00:00:00Z",
-        expires_at="2026-06-26T00:00:00Z",
+        expires_at=_future_cycle_expiry(),
     )
     request = build_strict_cycle_approval_request(plan)
 
@@ -387,6 +396,26 @@ def test_strict_cycle_approval_request_is_not_machine_approval() -> None:
     assert "s2p_plan_sha256_mismatch" in drift["blockers"]
 
 
+def test_strict_cycle_approval_request_expired_fails_closed() -> None:
+    summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
+    plan = build_strict_cycle_plan_from_children(
+        summary_cycle=summary,
+        experiment_manifest=experiment,
+        change_unit=change,
+        s2p_child_plan=s2p,
+        projected_prod_after=projected,
+        p2s_child_plan=p2s,
+        created_at="2026-06-25T00:00:00Z",
+        expires_at=_expired_cycle_expiry(),
+    )
+    request = build_strict_cycle_approval_request(plan)
+
+    request_validation = validate_cycle_approval_request(request, plan)
+    assert request_validation["valid"] is False
+    assert "approval_request_expired" in request_validation["blockers"]
+    assert validate_cycle_approval_bundle(request, plan)["valid"] is False
+
+
 def test_cli_publish_and_rebase_dry_run_accepts_strict_request(tmp_path: Path) -> None:
     summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
     plan = build_strict_cycle_plan_from_children(
@@ -397,7 +426,7 @@ def test_cli_publish_and_rebase_dry_run_accepts_strict_request(tmp_path: Path) -
         projected_prod_after=projected,
         p2s_child_plan=p2s,
         created_at="2026-06-25T00:00:00Z",
-        expires_at="2026-06-26T00:00:00Z",
+        expires_at=_future_cycle_expiry(),
     )
     request = build_strict_cycle_approval_request(plan)
     plan_path = tmp_path / "strict_cycle_plan.json"
@@ -493,7 +522,7 @@ def test_strict_nonzero_cycle_executes_one_file_publish_and_rebase(tmp_path: Pat
         projected_prod_after=projected,
         p2s_child_plan=p2s,
         created_at="2026-06-25T00:00:00Z",
-        expires_at="2026-06-26T00:00:00Z",
+        expires_at=_future_cycle_expiry(),
     )
     plan["baseline"].update(
         {

@@ -3,6 +3,26 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Repository documentation authority consolidation
+
+### Changed
+
+- Added `docs/CURRENT_STATUS.md` as the current status and next-theme entry.
+- Moved historical phase records under `docs/history/` and added
+  `docs/history/MANIFEST.json` to preserve original paths, content hashes, and
+  artifact/backup/owner-reference classes.
+- Reworked `README.md`, `docs/INDEX.md`, `docs/SYSTEM_MAP.md`,
+  `docs/REPO_ENVIRONMENT_AND_DOCS_GUIDE.md`, and `docs/QUALITY.md` so current
+  authority is separated from historical evidence.
+- Retained old historical paths as compatibility stubs for link stability and
+  existing maintained-doc quality targets.
+
+### Not Done
+
+- No source/runtime/config behavior change, catalog change, runtime binding
+  change, public contract change, endpoint call, process action, provider call,
+  prod write, sandbox write, artifact-store write, or owner-dev write.
+
 ## 2026-06-25 - REPO-CONSOLIDATION-M1A quality baseline closure
 
 ### Fixed

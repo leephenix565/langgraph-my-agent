@@ -1,68 +1,14 @@
-# SYNC-OPS-5A-R2X Source-Loss Recovery And Final Freeze
+# Historical Document Moved
 
-SYNC-OPS-5A-R2X hardens the R1X source-recovery plan before any real
-production execution. It does not write prod, active sandbox, baseline pointers,
-owner-dev repositories, endpoints, processes, or machine approvals.
+This document has moved to: [docs/history/sync-ops/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md](history/sync-ops/SYNC_OPS_5A_R2X_SOURCE_LOSS_RECOVERY_AND_FINAL_FREEZE.md).
 
-## Source-Loss Semantics
+Current authority:
 
-`risk_financial_fraud` is an irreversible source-loss incident:
-`source_deleted_process_still_alive`.
+- [`docs/INDEX.md`](INDEX.md)
+- [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md)
 
-The current process can still listen on port `10013`, but its current prod cwd
-has no source-bearing files. Once that in-memory process is stopped, the old
-runtime cannot be restored by writing an empty tree back. Recovery therefore
-uses `verified_roll_forward`, not ordinary file rollback.
+Historical status:
 
-The R1X recovery plan is superseded because it planned in-place writes into the
-current cwd and described empty-tree backup restore as rollback. The R1X P2S
-projection is also superseded because it retained placeholder paths and lacked
-a complete physical materialization manifest.
-
-## Recovery V2
-
-The V2 contract requires:
-
-- materialize the verified 67-file source package into a sibling candidate;
-- keep the incumbent process running until offline tests and a shadow canary
-  pass;
-- run shadow canary only on loopback with an alternate approved port;
-- compare incumbent and canary at contract level without persisting raw bodies;
-- require explicit irreversible source-loss cutover acknowledgement;
-- cut over by rolling forward to the verified candidate;
-- preserve source-loss evidence and fail closed to manual intervention if
-  roll-forward cannot settle.
-
-## Launch Authority
-
-The source package integrity audit passes, but current launch authority is
-blocked. The process is not owned by a discovered systemd/supervisor unit, the
-registry still names scaffold `service.py`, live argv is `python3 -u -m
-app.main`, and the live `0.0.0.0:10013` bind depends on environment state that
-R2X did not read or reproduce.
-
-The current acceptance is therefore `blocked_source_loss_launch_authority`.
-The next safe step is to create a durable launch authority contract: exact
-launcher, cwd, environment source references, required variable names, stop
-method, startup timeout, log path, and process ownership. Environment values
-remain out of artifacts.
-
-## P2S And Candidate
-
-R2X defines the full P2S rebase shape: concrete stage/candidate/archive paths,
-26 Agent dispositions, full materialization manifest, recovered risk-fraud file
-count `67`, and stage/activation approval split.
-
-For the first user change after recovery, `market_capital_flow_chip` contract
-test material is the selected low-risk candidate. It is classified
-`A_docs_tests_material` with no process, live, or delete requirement. The
-previous `financial_data_service` candidate remains superseded as a runtime
-wrapper change.
-
-## Non-Claims
-
-R2X does not execute recovery, P2S rebase, experiment materialization, first
-cycle, process actions, endpoint calls, or approvals.
-
-R3X supersedes the R2X frozen plans after productizing launch authority and
-closing 67/67 source provenance. R2X artifacts remain evidence, not approval.
+- Retained for audit, artifact, backup, rollback, or owner handoff evidence.
+- Do not treat this stub or the moved phase record as current runtime authority.
+- Manifest row: [`docs/history/MANIFEST.json`](history/MANIFEST.json).

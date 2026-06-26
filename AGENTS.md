@@ -34,6 +34,24 @@ Use subagents only when work can be split into clear, mostly read-only tasks. Ty
 
 The final repository edits must be integrated by a single writer. Do not let multiple writers modify overlapping files in the same phase.
 
+## Repository Documentation Authority
+
+For new sessions, use the current authority reading order:
+
+1. `README.md`
+2. `AGENTS.md`
+3. `docs/INDEX.md`
+4. `docs/CURRENT_STATUS.md`
+5. `docs/ARCHITECTURE_FIXED_DAG.md`
+6. `docs/CONTRACTS.md`
+7. `docs/QUALITY.md`
+8. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
+
+Historical phase records under `docs/history/` are evidence and rollback
+context, not current runtime/config authority. Do not promote a historical
+ledger, smoke log, or closeout over current code, config, schema, and current
+status docs.
+
 ## Documentation Sync
 
 Implementation changes must update the relevant reset docs:
