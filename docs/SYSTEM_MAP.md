@@ -1,8 +1,10 @@
 # System Map
 
-This file is the current operational map for the Fixed DAG reset branch.
-Phase names in lower sections are provenance notes only; current status lives in
-`docs/CURRENT_STATUS.md`.
+This file is the current operational map for the fixed-DAG reset branch after
+the Repository Authority & Active-Core Consolidation closeout. Phase names in
+lower sections are provenance notes only; current status lives in
+`docs/CURRENT_STATUS.md`, and the consolidation closeout is recorded in
+`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
 
 ## Current Operating Status
 
@@ -15,8 +17,11 @@ Phase names in lower sections are provenance notes only; current status lives in
   and `report_generator`; this is not an `/invoke` path.
 - Bidirectional sync workflow: strict non-zero publish-and-rebase has been
   verified; future cycles use exact experiment/change-unit/approval contracts.
-- Current repository theme: documentation authority consolidation followed by
-  active-core consolidation planning.
+- Current repository phase: post-consolidation normal maintenance / product
+  engineering.
+- Repository consolidation status: complete; see
+  `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+- Current status entry point: `docs/CURRENT_STATUS.md`.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 
 ## Current Runtime Entry

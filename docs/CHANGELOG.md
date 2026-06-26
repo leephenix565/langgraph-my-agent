@@ -3,6 +3,19 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - System map post-closeout polish
+
+### Changed
+
+- Refreshed `docs/SYSTEM_MAP.md` heading and current-phase wording after the
+  repository consolidation closeout.
+
+### Not Done
+
+- No source code, config, runtime binding, public contract, catalog, graph
+  topology, endpoint, process, provider, prod, sandbox, owner-dev, or
+  artifact-store change.
+
 ## 2026-06-26 - Repository authority and active-core consolidation closeout
 
 ### Changed
