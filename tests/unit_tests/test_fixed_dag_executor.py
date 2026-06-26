@@ -49,11 +49,13 @@ def test_executor_execution_package_preserves_old_import_facade() -> None:
     import react_agent.fixed_dag_executor as executor
     from react_agent.fixed_dag.execution import (
         constants,
+        runner,
         step_results,
         topology,
         validation,
     )
 
+    assert executor.execute_fixed_dag_plan is runner.execute_fixed_dag_plan
     assert executor.FIXED_DAG_EXECUTION_SCHEMA_VERSION == constants.FIXED_DAG_EXECUTION_SCHEMA_VERSION
     assert executor.FIXED_DAG_STEP_RESULT_SCHEMA_VERSION == constants.FIXED_DAG_STEP_RESULT_SCHEMA_VERSION
     assert executor.LEGAL_STEP_STATUSES == constants.LEGAL_STEP_STATUSES
@@ -854,12 +856,18 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
         }
 
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+    monkeypatch.setattr(
+        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        lambda _model: (_ for _ in ()).throw(
+            AssertionError("mapped L4 report must suppress internal LLM report synthesis")
+        ),
+    )
 
     result = execute_fixed_dag_plan(
         _plan(),
         question="q",
         as_of="2026-06-04",
-        context=Context(),
+        context=Context(enable_llm_report_synthesis=True),
     )
     valid, reason = validate_dag_execution_result(result)
 
@@ -875,6 +883,9 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
         "report_generator",
     ]
     assert result["provenance"]["external_invoked"] is False
+    assert result["provenance"]["provider_invoked"] is False
+    assert result["provenance"]["llm_report_synthesis_attempted"] is False
+    assert result["provenance"]["llm_report_synthesis_used"] is False
     assert result["decision_result"]["decision"] == "manual_review"
     assert result["report_result"]["title"] == "外部 L4 默认报告"
     assert result["step_results"]["decision_synthesizer"]["status"] == "complete"

@@ -19,6 +19,11 @@ binding internals into `src/react_agent/fixed_dag/runtime/`. The bridge remains
 compute-only, `/v1/agent/invoke` remains forbidden, runtime bindings remain
 metadata authority, and L4 default runtime behavior remains bound to
 `runtime_bindings.json`.
+M2E keeps `react_agent.fixed_dag_executor` as the public compatibility facade
+while moving `execute_fixed_dag_plan` into
+`src/react_agent/fixed_dag/execution/runner.py`. The fixed-DAG execution
+contract, selected routing behavior, report precedence, workflow snapshot, and
+old import path are unchanged.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

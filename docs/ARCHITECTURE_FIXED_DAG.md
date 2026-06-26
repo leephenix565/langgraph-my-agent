@@ -34,6 +34,14 @@ validation, lookup, annotation, and L4 review helpers. The old
 facades. Demo/default runtime behavior, `/v1/agent/compute` only enforcement,
 runtime binding JSON, graph topology, and public API semantics are unchanged.
 
+M2E completes the executor runner boundary: `execute_fixed_dag_plan` and its
+runner-local orchestration helpers live in
+`src/react_agent/fixed_dag/execution/runner.py`, while
+`src/react_agent/fixed_dag_executor.py` remains the compatibility facade and
+current executor import authority. Execution order, report precedence,
+external compute demo/default semantics, graph topology, and public API
+semantics are unchanged.
+
 ## Active Skeleton Flow
 
 ```mermaid

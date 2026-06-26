@@ -3,6 +3,25 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Fixed-DAG executor runner boundary completion
+
+### Changed
+
+- Added `src/react_agent/fixed_dag/execution/runner.py` as the internal owner
+  of `execute_fixed_dag_plan` and runner-local orchestration helpers.
+- Preserved `react_agent.fixed_dag_executor` as the compatibility facade and
+  public executor import path for graph, tests, and external callers.
+- Added focused coverage proving the old facade delegates to the internal
+  runner and that mapped L4 `report_generator` results suppress internal LLM
+  report synthesis.
+
+### Not Done
+
+- No external adapter extraction, context/state compatibility isolation,
+  compatibility deletion, public contract semantic change, catalog change,
+  runtime binding change, endpoint call, process action, provider call, prod
+  write, sandbox write, artifact-store write, or owner-dev write.
+
 ## 2026-06-26 - Fixed-DAG external bridge and runtime registry boundary split
 
 ### Changed
