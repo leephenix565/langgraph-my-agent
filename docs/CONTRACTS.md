@@ -12,6 +12,13 @@ validation helpers, and step-result helpers into the internal
 `src/react_agent/fixed_dag/execution/` package. Deterministic execution,
 selected routing, workflow snapshots, graph topology, and public schemas are
 unchanged.
+M2D keeps `react_agent.fixed_dag_external_compute_bridge` and
+`react_agent.fixed_dag_runtime_registry` as public compatibility facades while
+moving bridge internals into `src/react_agent/fixed_dag/external/` and runtime
+binding internals into `src/react_agent/fixed_dag/runtime/`. The bridge remains
+compute-only, `/v1/agent/invoke` remains forbidden, runtime bindings remain
+metadata authority, and L4 default runtime behavior remains bound to
+`runtime_bindings.json`.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

@@ -24,6 +24,16 @@ topology helpers, validation helpers, and step-result helpers live under
 current executor import authority. The runner, external compute bridge, runtime
 registry, adapter, graph, and public API semantics are unchanged.
 
+M2D splits external compute and runtime binding internals without changing
+their contracts: `src/react_agent/fixed_dag/external/` owns bridge constants,
+entry types, request builders, loopback transport, and payload safety helpers,
+and `src/react_agent/fixed_dag/runtime/` owns runtime binding metadata,
+validation, lookup, annotation, and L4 review helpers. The old
+`react_agent.fixed_dag_external_compute_bridge` and
+`react_agent.fixed_dag_runtime_registry` import paths remain compatibility
+facades. Demo/default runtime behavior, `/v1/agent/compute` only enforcement,
+runtime binding JSON, graph topology, and public API semantics are unchanged.
+
 ## Active Skeleton Flow
 
 ```mermaid

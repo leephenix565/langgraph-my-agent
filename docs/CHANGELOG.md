@@ -3,6 +3,27 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Fixed-DAG external bridge and runtime registry boundary split
+
+### Changed
+
+- Added the internal `src/react_agent/fixed_dag/external/` package for
+  external compute constants, typed entries, demo registry metadata, request
+  builders, loopback transport, and payload safety helpers.
+- Added the internal `src/react_agent/fixed_dag/runtime/` package for runtime
+  binding constants, typed metadata, validation, lookup, annotation, and L4
+  review helpers.
+- Preserved `react_agent.fixed_dag_external_compute_bridge` and
+  `react_agent.fixed_dag_runtime_registry` as compatibility facades and public
+  import paths for this consolidation phase.
+
+### Not Done
+
+- No executor runner extraction, external adapter extraction, context/state
+  compatibility isolation, runtime binding/config/schema semantic change,
+  endpoint call, process action, provider call, prod write, sandbox write,
+  artifact-store write, or owner-dev write.
+
 ## 2026-06-26 - Fixed-DAG executor foundational extraction
 
 ### Changed

@@ -25,6 +25,42 @@ from react_agent.fixed_dag_external_compute_bridge import (
 )
 
 
+def test_external_bridge_facade_preserves_new_module_symbols() -> None:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+    from react_agent.fixed_dag.external import (
+        constants,
+        default_runtime,
+        registry,
+        request,
+        safety,
+        transport,
+        types,
+    )
+
+    assert bridge.COMPUTE_PATH == constants.COMPUTE_PATH
+    assert bridge.EXTERNAL_COMPUTE_DEFAULT_SOURCE == constants.EXTERNAL_COMPUTE_DEFAULT_SOURCE
+    assert bridge.ExternalComputeDemoEntry is types.ExternalComputeDemoEntry
+    assert bridge.DEMO_COMPUTE_SERVICE_REGISTRY is registry.DEMO_COMPUTE_SERVICE_REGISTRY
+    assert bridge.normalize_demo_allowlist is request.normalize_demo_allowlist
+    assert bridge.build_external_compute_request is request.build_external_compute_request
+    assert bridge.validate_demo_entry is safety.validate_demo_entry
+    assert bridge._post_json_loopback is transport._post_json_loopback
+    assert bridge._timeout_from_context is default_runtime._timeout_from_context
+
+
+def test_runtime_compute_entries_from_bindings_are_compute_only_l4_entries() -> None:
+    entries = runtime_compute_entries_from_bindings()
+
+    assert tuple(entries) == ("decision_synthesizer", "report_generator")
+    assert entries["decision_synthesizer"].base_url == "http://127.0.0.1:10025"
+    assert entries["decision_synthesizer"].compute_path == COMPUTE_PATH
+    assert entries["decision_synthesizer"].external_agent_id == "l4_decision_synthesizer"
+    assert entries["report_generator"].base_url == "http://127.0.0.1:10026"
+    assert entries["report_generator"].compute_path == COMPUTE_PATH
+    assert entries["report_generator"].external_agent_id == "l4_report_generator"
+    assert entries["report_generator"].timeout_seconds == 120.0
+
+
 def _agent_conclusion(
     agent_id: str = "value_ml_valuation",
     *,

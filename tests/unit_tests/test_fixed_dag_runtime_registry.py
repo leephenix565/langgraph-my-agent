@@ -24,6 +24,29 @@ from react_agent.fixed_dag_runtime_registry import (
 )
 
 
+def test_runtime_registry_facade_preserves_new_module_symbols() -> None:
+    import react_agent.fixed_dag_runtime_registry as registry
+    from react_agent.fixed_dag.runtime import (
+        annotation,
+        bindings,
+        constants,
+        l4_review,
+        types,
+        validation,
+    )
+
+    assert (
+        registry.FIXED_DAG_RUNTIME_BINDINGS_SCHEMA_VERSION
+        == constants.FIXED_DAG_RUNTIME_BINDINGS_SCHEMA_VERSION
+    )
+    assert registry.FixedDagRuntimeBinding is types.FixedDagRuntimeBinding
+    assert registry.load_fixed_dag_runtime_bindings is bindings.load_fixed_dag_runtime_bindings
+    assert registry.binding_by_agent_id is bindings.binding_by_agent_id
+    assert registry.validate_fixed_dag_runtime_bindings is validation.validate_fixed_dag_runtime_bindings
+    assert registry.annotate_step_result_with_binding is annotation.annotate_step_result_with_binding
+    assert registry.build_l4_runtime_binding_dry_run is l4_review.build_l4_runtime_binding_dry_run
+
+
 def test_runtime_binding_file_exists_and_matches_catalog() -> None:
     assert FIXED_DAG_RUNTIME_BINDINGS_PATH == Path(__file__).resolve().parents[2] / "config" / "fixed_dag" / "runtime_bindings.json"
     assert FIXED_DAG_RUNTIME_BINDINGS_PATH.exists()
@@ -533,3 +556,31 @@ def test_annotate_step_result_adds_binding_metadata_without_live_invocation() ->
     assert result["external_agent_id"] == "financial_data_service"
     assert result["invoke_enabled"] is False
     assert result["live_verified"] is False
+
+
+def test_annotate_step_result_adds_l4_default_runtime_metadata() -> None:
+    for agent_id, external_agent_id in (
+        ("decision_synthesizer", "l4_decision_synthesizer"),
+        ("report_generator", "l4_report_generator"),
+    ):
+        result = annotate_step_result_with_binding(
+            {
+                "schema_version": "fixed_dag_step_result_v1",
+                "step_id": agent_id,
+                "agent_id": agent_id,
+                "stage": "l4_synthesis",
+                "dimension": "l4",
+                "status": "complete",
+                "depends_on": [],
+                "output_ref": agent_id,
+                "summary": "complete",
+                "warnings": [],
+            }
+        )
+
+        assert result["runtime_kind"] == "external_compute_default"
+        assert result["implementation_status"] == "external_compute_default_enabled"
+        assert result["binding_source"] == "config/fixed_dag/runtime_bindings.json"
+        assert result["external_agent_id"] == external_agent_id
+        assert result["invoke_enabled"] is False
+        assert result["live_verified"] is True
