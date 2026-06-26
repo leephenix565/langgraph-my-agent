@@ -1,5 +1,12 @@
+import hashlib
 import json
 
+import react_agent.fixed_dag_contracts as fixed_dag_contracts
+from react_agent.context import Context
+from react_agent.fixed_dag import constants as fixed_dag_constants
+from react_agent.fixed_dag import labels as fixed_dag_labels
+from react_agent.fixed_dag import safety as fixed_dag_safety
+from react_agent.fixed_dag import types as fixed_dag_types
 from react_agent.fixed_dag_contracts import (
     DIMENSION_GROUPS,
     FIXED_DAG_STAGE_ORDER,
@@ -44,6 +51,13 @@ from react_agent.fixed_dag_contracts import (
     validate_selected_fixed_dag_plan,
     validate_workflow_snapshot_v2,
 )
+from react_agent.fixed_dag_executor import execute_fixed_dag_plan
+from react_agent.public_mapping import build_workflow_snapshot
+
+
+def _canonical_hash(value) -> str:
+    payload = json.dumps(value, ensure_ascii=False, sort_keys=True, separators=(",", ":"), default=str)
+    return hashlib.sha256(payload.encode()).hexdigest()
 
 
 def _contains_key(value, key: str) -> bool:
@@ -52,6 +66,63 @@ def _contains_key(value, key: str) -> bool:
     if isinstance(value, list):
         return any(_contains_key(item, key) for item in value)
     return False
+
+
+def test_fixed_dag_contract_facade_exports_foundational_symbols() -> None:
+    assert fixed_dag_contracts.__all__ == sorted(fixed_dag_contracts.__all__)
+    for name in (
+        "FIXED_DAG_SCHEMA_VERSION",
+        "RESET_RUNTIME_AGENT_IDS",
+        "DIMENSION_GROUPS",
+        "FixedDagPlan",
+        "RouteIntent",
+        "AGENT_TITLE_LABELS",
+        "DIMENSION_TITLE_LABELS",
+        "build_default_fixed_dag_plan",
+        "compile_selected_fixed_dag_plan",
+    ):
+        assert name in fixed_dag_contracts.__all__
+
+    assert fixed_dag_contracts.FIXED_DAG_SCHEMA_VERSION is fixed_dag_constants.FIXED_DAG_SCHEMA_VERSION
+    assert fixed_dag_contracts.RESET_RUNTIME_AGENT_IDS is fixed_dag_constants.RESET_RUNTIME_AGENT_IDS
+    assert fixed_dag_contracts.DIMENSION_GROUPS is fixed_dag_constants.DIMENSION_GROUPS
+    assert fixed_dag_contracts.FixedDagPlan is fixed_dag_types.FixedDagPlan
+    assert fixed_dag_contracts.RouteIntent is fixed_dag_types.RouteIntent
+    assert fixed_dag_contracts.AGENT_TITLE_LABELS is fixed_dag_labels.AGENT_TITLE_LABELS
+    assert fixed_dag_contracts._contains_legacy_key is fixed_dag_safety._contains_legacy_key
+
+
+def test_fixed_dag_foundational_extraction_keeps_canonical_outputs() -> None:
+    plan = build_default_fixed_dag_plan("M2B deterministic question", as_of="2026-06-26")
+    intent = build_default_route_intent("Should I invest in example company?")
+    selected = compile_selected_fixed_dag_plan(
+        intent,
+        user_text="Should I invest in example company?",
+        as_of="2026-06-26",
+    )
+    execution = execute_fixed_dag_plan(
+        plan,
+        question="M2B deterministic question",
+        as_of="2026-06-26",
+        context=Context(disable_external_compute_default=True),
+    )
+    workflow = build_workflow_snapshot(
+        {
+            "fixed_dag_plan": plan,
+            "dag_execution": execution,
+            "dag_step_results": execution["step_results"],
+            "execution_batches": execution["execution_batches"],
+            "l2_conclusions": execution["l2_conclusions"],
+            "dimension_results": execution["dimension_results"],
+            "decision_result": execution["decision_result"],
+            "report_result": execution["report_result"],
+        },
+        "replay",
+    ).model_dump(mode="json", by_alias=True)
+
+    assert _canonical_hash(plan) == "52d71147ec4a7cd71933d8f3375905a7d9d22367e470762e594befe0e54048bd"
+    assert _canonical_hash(selected) == "8ee97bad6224c9b34bd61b8b75cbff42f5257b3f6bf2dd07039ecab49a465cbf"
+    assert _canonical_hash(workflow) == "8e4debcc7ddb76cf50275cb9b4dd229071eed84fb7f9cedce8faa095f8c6abb3"
 
 
 def test_roster_constants_are_v4_feedback_aligned() -> None:

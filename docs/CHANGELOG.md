@@ -3,6 +3,26 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-26 - Fixed-DAG contracts foundational extraction
+
+### Changed
+
+- Added the internal `src/react_agent/fixed_dag/` package for foundational
+  contract constants, types, labels, and public-safety helpers.
+- Preserved `react_agent.fixed_dag_contracts` as the compatibility facade and
+  public contract import path for this consolidation phase.
+- Added focused facade/golden coverage proving old/new import equivalence and
+  unchanged deterministic fixed-DAG plan, selected-plan, and workflow snapshot
+  outputs.
+
+### Not Done
+
+- No executor extraction, external bridge extraction, runtime registry
+  extraction, context/state compatibility isolation, public contract semantic
+  change, catalog change, runtime binding change, endpoint call, process
+  action, provider call, prod write, sandbox write, artifact-store write, or
+  owner-dev write.
+
 ## 2026-06-26 - Repository documentation authority consolidation
 
 ### Changed

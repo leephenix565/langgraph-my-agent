@@ -11,368 +11,88 @@ from __future__ import annotations
 import json
 import re
 from collections.abc import Mapping
-from typing import Any, Literal, NotRequired, TypedDict, cast
+from typing import Any, cast
 
-from react_agent.fixed_dag_catalog import (
-    fixed_dag_agent_ids,
-    fixed_dag_agents_by_dimension,
-    fixed_dag_agents_by_layer,
-    load_fixed_dag_catalog,
-    validate_fixed_dag_catalog,
+from react_agent.fixed_dag.constants import (
+    AGENT_DIMENSIONS,
+    AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION,
+    AGENT_TASK_SCHEMA_VERSION,
+    CONCLUSION_OBJECT_SCHEMA_VERSION,
+    DATA_BUNDLE_SCHEMA_VERSION,
+    DECISION_RESULT_SCHEMA_VERSION,
+    DEFAULT_AS_OF,
+    DIMENSION_COMPOSITE_AGENT_IDS,
+    DIMENSION_COMPOSITE_SCHEMA_VERSION,
+    DIMENSION_GROUPS,
+    ENTITY_RELATION_BUNDLE_SCHEMA_VERSION,
+    EXECUTED_STEP_STATUSES,
+    FIXED_DAG_SCHEMA_VERSION,
+    FIXED_DAG_STAGE_ORDER,
+    INVESTMENT_JUDGMENT_TASK_TYPES,
+    L1_AGENT_IDS,
+    L2_CONCLUSION_AGENT_IDS,
+    L3_COMPOSITE_AGENT_IDS,
+    L4_AGENT_IDS,
+    MACRO_AGENT_IDS,
+    MARKET_AGENT_IDS,
+    REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
+    REPORT_RESULT_SCHEMA_VERSION,
+    RESET_RUNTIME_AGENT_IDS,
+    RESET_SOURCE,
+    RISK_AGENT_IDS,
+    ROUTE_INTENT_SCHEMA_VERSION,
+    ROUTE_TASK_TYPES,
+    SELECTED_FIXED_DAG_SCHEMA_VERSION,
+    SELECTED_PLAN_FALLBACK_TARGETS,
+    SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES,
+    VALUE_AGENT_IDS,
+    WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
 )
-
-FIXED_DAG_SCHEMA_VERSION = "fixed_dag_plan_v1"
-ROUTE_INTENT_SCHEMA_VERSION = "route_intent_v1"
-SELECTED_FIXED_DAG_SCHEMA_VERSION = "selected_fixed_dag_plan_v1"
-DATA_BUNDLE_SCHEMA_VERSION = "data_bundle_v1"
-ENTITY_RELATION_BUNDLE_SCHEMA_VERSION = "entity_relation_bundle_v1"
-CONCLUSION_OBJECT_SCHEMA_VERSION = "conclusion_object_v1"
-DIMENSION_COMPOSITE_SCHEMA_VERSION = "dimension_composite_result_v1"
-DECISION_RESULT_SCHEMA_VERSION = "decision_result_v1"
-REPORT_INPUT_BUNDLE_SCHEMA_VERSION = "report_input_bundle_v1"
-AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION = "agent_evidence_bundle_v1"
-REPORT_RESULT_SCHEMA_VERSION = "report_result_v1"
-WORKFLOW_SNAPSHOT_SCHEMA_VERSION = "workflow_snapshot_v2"
-AGENT_TASK_SCHEMA_VERSION = "agent_task_v1"
-RESET_SOURCE = "reset_skeleton"
-DEFAULT_AS_OF = "not_available"
-
-FixedDagStage = Literal[
-    "planning",
-    "evidence",
-    "l2_analysis",
-    "dimension_composite",
-    "decision",
-    "report",
-]
-ConclusionStatus = Literal["pending_implementation", "partial", "complete", "error"]
-DimensionName = Literal["value", "market", "risk", "macro"]
-FixedDagDimension = Literal["l1", "value", "market", "risk", "macro", "l4"]
-RouteTaskType = Literal["single", "compare", "screen", "macro", "sentiment", "industry", "event", "general"]
-FixedDagStepStatus = Literal[
-    "complete",
-    "pending_implementation",
-    "skipped",
-    "blocked",
-    "failed",
-]
-
-FIXED_DAG_STAGE_ORDER: tuple[FixedDagStage, ...] = (
-    "planning",
-    "evidence",
-    "l2_analysis",
-    "dimension_composite",
-    "decision",
-    "report",
+from react_agent.fixed_dag.labels import (
+    AGENT_TITLE_LABELS,
+    DIMENSION_TITLE_LABELS,
+    STAGE_TITLE_LABELS,
 )
-
-_CATALOG_VALID, _CATALOG_VALIDATION_REASON = validate_fixed_dag_catalog(load_fixed_dag_catalog())
-if not _CATALOG_VALID:
-    raise RuntimeError(f"Invalid fixed DAG catalog: {_CATALOG_VALIDATION_REASON}")
-
-_AGENTS_BY_LAYER = fixed_dag_agents_by_layer()
-_AGENTS_BY_DIMENSION = fixed_dag_agents_by_dimension()
-
-L1_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L1"]
-VALUE_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["value"]
-MARKET_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["market"]
-RISK_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["risk"]
-MACRO_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_DIMENSION["macro"]
-L2_CONCLUSION_AGENT_IDS: tuple[str, ...] = (
-    *VALUE_AGENT_IDS,
-    *MARKET_AGENT_IDS,
-    *RISK_AGENT_IDS,
-    *MACRO_AGENT_IDS,
+from react_agent.fixed_dag.safety import (
+    LEGACY_CONTRACT_KEYS,  # noqa: F401 - re-exported by the compatibility facade.
+    LEGACY_DISPATCH_VALUES,  # noqa: F401 - re-exported by the compatibility facade.
+    REPORT_BUNDLE_UNSAFE_KEYS,
+    SELECTED_PLAN_FORBIDDEN_KEYS,  # noqa: F401 - re-exported by the compatibility facade.
+    SELECTED_PLAN_PUBLIC_UNSAFE_TEXT_TOKENS,  # noqa: F401 - re-exported by the compatibility facade.
+    _contains_legacy_dispatch_value,
+    _contains_legacy_key,
+    _contains_public_unsafe_text,
+    _contains_selected_plan_forbidden_key,
+    _contains_unsafe_report_key,
+    _looks_like_legacy_agent_id,
+    _safe_public_detail_list,
+    _safe_public_detail_mapping,
+    _safe_public_detail_value,  # noqa: F401 - re-exported by the compatibility facade.
+    _safe_public_float,
+    _safe_public_mapping,
+    _safe_public_text,
+    _safe_public_text_list,
 )
-L3_COMPOSITE_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L3"]
-L4_AGENT_IDS: tuple[str, ...] = _AGENTS_BY_LAYER["L4"]
-RESET_RUNTIME_AGENT_IDS: tuple[str, ...] = fixed_dag_agent_ids()
-
-DIMENSION_GROUPS: dict[str, tuple[str, ...]] = {
-    "value": VALUE_AGENT_IDS,
-    "market": MARKET_AGENT_IDS,
-    "risk": RISK_AGENT_IDS,
-    "macro": MACRO_AGENT_IDS,
-}
-ROUTE_TASK_TYPES: tuple[RouteTaskType, ...] = (
-    "single",
-    "compare",
-    "screen",
-    "macro",
-    "sentiment",
-    "industry",
-    "event",
-    "general",
+from react_agent.fixed_dag.types import (
+    AgentTask,
+    ConclusionObject,
+    ConclusionStatus,
+    DataBundle,
+    DecisionResult,
+    DimensionCompositeResult,
+    DimensionName,
+    EntityRelationBundle,
+    FixedDagDimension,  # noqa: F401 - re-exported by the compatibility facade.
+    FixedDagPlan,
+    FixedDagStage,
+    FixedDagStep,
+    FixedDagStepStatus,  # noqa: F401 - re-exported by the compatibility facade.
+    ReportInputBundle,
+    ReportResult,
+    RouteIntent,
+    RouteTaskType,
+    SelectedFixedDagPlan,
 )
-INVESTMENT_JUDGMENT_TASK_TYPES = {"single", "compare", "screen", "industry", "event"}
-SELECTED_PLAN_FALLBACK_TARGETS = {"full_dag", "none"}
-DIMENSION_COMPOSITE_AGENT_IDS: dict[str, str] = {
-    "value": "value_composite",
-    "market": "market_composite",
-    "risk": "risk_composite",
-    "macro": "macro_composite",
-}
-AGENT_DIMENSIONS: dict[str, str] = {
-    **{agent_id: "value" for agent_id in VALUE_AGENT_IDS},
-    **{agent_id: "market" for agent_id in MARKET_AGENT_IDS},
-    **{agent_id: "risk" for agent_id in RISK_AGENT_IDS},
-    **{agent_id: "macro" for agent_id in MACRO_AGENT_IDS},
-}
-SENTIMENT_COMPANY_RADAR_OUTPUT_ROUTES: tuple[str, ...] = ("market_composite",)
-LEGACY_CONTRACT_KEYS = {
-    "mode",
-    "layerMode",
-    "layer_mode",
-    "layerPlan",
-    "layer_plan",
-    "fusionSteps",
-    "fusion_verdict",
-    "baseline_bundle",
-}
-SELECTED_PLAN_FORBIDDEN_KEYS = {
-    "runtime_kind",
-    "implementation_status",
-    "binding_source",
-    "legacy_agent_id",
-    "external_agent_id",
-    "invoke_enabled",
-    "live_verified",
-    "env_var",
-    "default_url",
-    "endpoint",
-    "provider_response",
-    "external_response",
-}
-SELECTED_PLAN_PUBLIC_UNSAFE_TEXT_TOKENS = (
-    "provider",
-    "external endpoint",
-    "env_var",
-    "secret",
-    "chain-of-thought",
-    "pending_implementation",
-    "placeholder",
-    "runtime binding",
-    "default_url",
-    "traceback",
-)
-LEGACY_DISPATCH_VALUES = {"Star", "Chain", "Debate", "Tree"}
-EXECUTED_STEP_STATUSES = {"complete", "pending_implementation"}
-
-STAGE_TITLE_LABELS: dict[str, str] = {
-    "planning": "规划",
-    "evidence": "证据接入",
-    "l2_analysis": "L2 分析",
-    "dimension_composite": "维度综合",
-    "decision": "决策",
-    "report": "报告",
-}
-
-AGENT_TITLE_LABELS: dict[str, str] = {
-    "route_planner": "路径规划器",
-    "financial_data_service": "金融数据服务",
-    "entity_relation_extractor": "实体关系抽取器",
-    "value_traditional_valuation": "传统企业估值",
-    "value_ml_valuation": "机器学习企业估值",
-    "value_meta_valuation": "元学习企业估值",
-    "value_research_synthesis": "研报观点综合",
-    "market_stock_technical": "个股技术分析",
-    "market_fund_manager_behavior": "基金经理行为分析",
-    "market_ipo_investor_behavior": "IPO 投资者行为分析",
-    "market_capital_flow_chip": "资金流与筹码分析",
-    "sentiment_company_radar": "企业舆情雷达",
-    "risk_crash": "股价崩盘风险",
-    "risk_financial_fraud": "财务欺诈风险",
-    "risk_identification": "风险识别",
-    "risk_compliance_review": "公告合规审查",
-    "macro_analysis": "宏观分析",
-    "macro_commodity_pricing": "商品定价分析",
-    "macro_index_valuation": "股票指数估值",
-    "macro_sentiment": "宏观情绪感知",
-    "macro_industry_hotspot": "行业热点洞察",
-    "value_composite": "价值综合",
-    "market_composite": "市场综合",
-    "risk_composite": "风险综合",
-    "macro_composite": "宏观综合",
-    "decision_synthesizer": "决策综合器",
-    "report_generator": "报告生成器",
-}
-
-DIMENSION_TITLE_LABELS: dict[str, str] = {
-    "value": "价值综合",
-    "market": "市场综合",
-    "risk": "风险综合",
-    "macro": "宏观综合",
-}
-
-
-class FixedDagStep(TypedDict):
-    id: str
-    stage: FixedDagStage
-    title: str
-    description: str
-    agent_id: NotRequired[str]
-    target_ids: NotRequired[list[str]]
-    dimension: NotRequired[str]
-    depends_on: NotRequired[list[str]]
-    status: str
-
-
-class FixedDagPlan(TypedDict):
-    schema: str
-    schema_version: str
-    plan_id: str
-    user_text: str
-    as_of: str
-    stages: list[dict[str, Any]]
-    steps: list[FixedDagStep]
-    dag_steps: list[FixedDagStep]
-    target_agent_ids: list[str]
-    target: list[str]
-    dimension_groups: dict[str, list[str]]
-    provenance: dict[str, Any]
-
-
-class RouteIntent(TypedDict):
-    schema: str
-    schema_version: str
-    task_type: RouteTaskType
-    targets: list[str]
-    selected_dimensions: list[DimensionName]
-    selected_agents: list[str]
-    task_brief_by_agent: dict[str, str]
-    route_confidence: float
-    needs_clarification: bool
-    clarification_question: str
-    fallback_reason: str
-    provenance: dict[str, Any]
-
-
-class SelectedFixedDagPlan(FixedDagPlan):
-    selected_dimensions: list[DimensionName]
-    selected_agents: list[str]
-    omitted_dimensions: list[DimensionName]
-    omitted_agents: list[str]
-    route_intent: RouteIntent
-    fallback_to: str
-    fallback_reason: str
-
-
-class EntityRelationBundle(TypedDict):
-    schema: str
-    schema_version: str
-    status: ConclusionStatus
-    as_of: str
-    data_as_of: str
-    entities: list[dict[str, Any]]
-    relations: list[dict[str, Any]]
-    notes: list[str]
-
-
-class DataBundle(TypedDict):
-    schema: str
-    schema_version: str
-    status: ConclusionStatus
-    as_of: str
-    data_as_of: str
-    sources: list[str]
-    notes: list[str]
-
-
-class ConclusionObject(TypedDict):
-    schema: str
-    schema_version: str
-    agent_id: str
-    dimension: str
-    stance: str
-    confidence: float
-    status: ConclusionStatus
-    evidence: list[dict[str, Any]]
-    as_of: str
-    data_as_of: str
-    event_flags: NotRequired[list[str]]
-    output_routes: NotRequired[list[str]]
-    provenance: dict[str, Any]
-
-
-class DimensionCompositeResult(TypedDict):
-    schema: str
-    schema_version: str
-    agent_id: str
-    dimension: str
-    stance: str
-    confidence: float
-    status: ConclusionStatus
-    contributing_agents: list[str]
-    evidence_refs: list[str]
-    as_of: str
-    data_as_of: str
-    vote_type: NotRequired[str]
-    gate: NotRequired[str]
-    veto: NotRequired[bool]
-    penalty: NotRequired[float]
-    risk_score: NotRequired[float]
-    regime: NotRequired[str]
-    dimension_weights: NotRequired[dict[str, float]]
-    risk_sensitivity: NotRequired[str | float]
-    provenance: NotRequired[dict[str, Any]]
-
-
-class DecisionResult(TypedDict):
-    schema: str
-    schema_version: str
-    decision: str
-    score: float
-    target_price_range: dict[str, float | None]
-    dimension_views: dict[str, dict[str, Any]]
-    reasoning_trace: list[dict[str, Any]]
-    confidence: float
-    status: ConclusionStatus
-    as_of: str
-
-
-class ReportInputBundle(TypedDict):
-    schema: str
-    schema_version: str
-    question: str
-    status: ConclusionStatus
-    agent_task_summaries: NotRequired[list[dict[str, Any]]]
-    agent_evidence_bundle: NotRequired[dict[str, Any]]
-    l2_agent_summaries: list[dict[str, Any]]
-    l3_composite_summaries: list[dict[str, Any]]
-    risk_gate: dict[str, Any]
-    macro_regulator: dict[str, Any]
-    decision_context: dict[str, Any]
-    limitations: list[str]
-    provenance: dict[str, Any]
-
-
-class ReportResult(TypedDict):
-    schema: str
-    schema_version: str
-    title: str
-    answer: str
-    status: ConclusionStatus
-    sections: list[dict[str, Any]]
-    evidence_cards: list[dict[str, Any]]
-    limitations: list[str]
-
-
-class AgentTask(TypedDict):
-    schema: str
-    schema_version: str
-    agent_id: str
-    display_name: str
-    layer: str
-    dimension: str
-    user_question: str
-    task_instruction: str
-    target: str
-    as_of: str
-    data_bundle: dict[str, Any]
-    entity_relation_bundle: dict[str, Any]
-    upstream_results: dict[str, Any]
-    required_output_schema: str
-    provenance: dict[str, Any]
 
 
 def _as_of(value: str | None = None) -> str:
@@ -390,45 +110,6 @@ def _data_not_after(data_as_of: Any, as_of: Any) -> bool:
     if not left or not right:
         return False
     return left <= right
-
-
-def _contains_legacy_key(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(
-            key in LEGACY_CONTRACT_KEYS or _contains_legacy_key(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, list):
-        return any(_contains_legacy_key(item) for item in value)
-    return False
-
-
-def _contains_selected_plan_forbidden_key(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(
-            key in SELECTED_PLAN_FORBIDDEN_KEYS or _contains_selected_plan_forbidden_key(item)
-            for key, item in value.items()
-        )
-    if isinstance(value, list):
-        return any(_contains_selected_plan_forbidden_key(item) for item in value)
-    return False
-
-
-def _contains_legacy_dispatch_value(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        return any(_contains_legacy_dispatch_value(item) for item in value.values())
-    if isinstance(value, list):
-        return any(_contains_legacy_dispatch_value(item) for item in value)
-    return isinstance(value, str) and value.strip() in LEGACY_DISPATCH_VALUES
-
-
-def _contains_public_unsafe_text(value: str) -> bool:
-    lowered = str(value or "").lower()
-    return any(token in lowered for token in SELECTED_PLAN_PUBLIC_UNSAFE_TEXT_TOKENS)
-
-
-def _looks_like_legacy_agent_id(agent_id: str) -> bool:
-    return agent_id.startswith("a") and len(agent_id) >= 3 and agent_id[1:3].isdigit()
 
 
 def _status_for_expected(
@@ -2270,119 +1951,6 @@ def validate_decision_result(obj: Mapping[str, Any]) -> tuple[bool, str]:
     return True, "ok"
 
 
-REPORT_BUNDLE_UNSAFE_KEYS = {
-    "api_key",
-    "secret",
-    "token",
-    "password",
-    "authorization",
-    "cookie",
-    "set-cookie",
-    "traceback",
-    "chain-of-thought",
-    "raw_provider_response",
-    "raw_response",
-    "raw_external_json",
-    "private",
-    "endpoint",
-    "base_url",
-}
-
-
-def _safe_public_text(value: Any, *, limit: int = 180) -> str:
-    text = str(value or "").strip()
-    text = text.replace("\n", " ").replace("\r", " ")
-    if len(text) > limit:
-        text = text[: max(limit - 3, 0)].rstrip() + "..."
-    lowered = text.lower()
-    if any(token in lowered for token in REPORT_BUNDLE_UNSAFE_KEYS):
-        return ""
-    return text
-
-
-def _safe_public_float(value: Any, *, default: float = 0.0) -> float:
-    try:
-        number = float(value)
-    except (TypeError, ValueError):
-        return default
-    if number < 0.0:
-        return 0.0
-    if number > 1.0:
-        return 1.0
-    return number
-
-
-def _safe_public_mapping(value: Any, *, allowed_keys: set[str]) -> dict[str, Any]:
-    if not isinstance(value, Mapping):
-        return {}
-    result: dict[str, Any] = {}
-    for key, raw in value.items():
-        text_key = str(key)
-        if text_key not in allowed_keys:
-            continue
-        if isinstance(raw, int | float):
-            result[text_key] = _safe_public_float(raw)
-        else:
-            result[text_key] = _safe_public_text(raw, limit=80)
-    return result
-
-
-def _safe_public_detail_value(value: Any, *, depth: int = 0) -> Any:
-    if depth > 3:
-        return None
-    if isinstance(value, bool):
-        return value
-    if isinstance(value, int | float):
-        return value
-    if isinstance(value, str):
-        return _safe_public_text(value, limit=240) or None
-    if isinstance(value, Mapping):
-        result: dict[str, Any] = {}
-        for key, raw in list(value.items())[:14]:
-            text_key = _safe_public_text(key, limit=80)
-            if not text_key or text_key.lower() in REPORT_BUNDLE_UNSAFE_KEYS:
-                continue
-            bounded = _safe_public_detail_value(raw, depth=depth + 1)
-            if bounded not in (None, "", [], {}):
-                result[text_key] = bounded
-        return result or None
-    if isinstance(value, list):
-        items: list[Any] = []
-        for raw in value[:14]:
-            bounded = _safe_public_detail_value(raw, depth=depth + 1)
-            if bounded not in (None, "", [], {}):
-                items.append(bounded)
-        return items or None
-    return _safe_public_text(value, limit=160) or None
-
-
-def _safe_public_detail_mapping(value: Any, *, limit: int = 18) -> dict[str, Any]:
-    if not isinstance(value, Mapping):
-        return {}
-    result: dict[str, Any] = {}
-    for key, raw in value.items():
-        text_key = _safe_public_text(key, limit=80)
-        if not text_key or text_key.lower() in REPORT_BUNDLE_UNSAFE_KEYS:
-            continue
-        bounded = _safe_public_detail_value(raw)
-        if bounded not in (None, "", [], {}):
-            result[text_key] = bounded
-        if len(result) >= limit:
-            break
-    return result
-
-
-def _safe_public_detail_list(value: Any, *, limit: int = 10) -> list[Any]:
-    if not isinstance(value, list):
-        return []
-    result: list[Any] = []
-    for raw in value[:limit]:
-        bounded = _safe_public_detail_value(raw)
-        if bounded not in (None, "", [], {}):
-            result.append(bounded)
-    return result
-
-
 def _target_from_question(question: str, *, default: str = "600519.SH") -> str:
     match = re.search(r"\b\d{6}\.(?:SH|SZ|BJ)\b", str(question or "").upper())
     if match:
@@ -2756,19 +2324,6 @@ def _safe_evidence_summary(evidence: Any) -> str:
             if text:
                 return text
     return ""
-
-
-def _safe_public_text_list(value: Any, *, limit: int = 6, item_limit: int = 80) -> list[str]:
-    if not isinstance(value, list):
-        return []
-    items: list[str] = []
-    for item in value:
-        text = _safe_public_text(item, limit=item_limit)
-        if text and text not in items:
-            items.append(text)
-        if len(items) >= limit:
-            break
-    return items
 
 
 def _l2_quality_notes(result: Mapping[str, Any]) -> list[str]:
@@ -3213,21 +2768,6 @@ def build_report_input_bundle(
             "external_invoked": False,
         },
     }
-
-
-def _contains_unsafe_report_key(value: Any) -> bool:
-    if isinstance(value, Mapping):
-        for key, item in value.items():
-            if str(key).lower() in REPORT_BUNDLE_UNSAFE_KEYS:
-                return True
-            if _contains_unsafe_report_key(item):
-                return True
-    if isinstance(value, list):
-        return any(_contains_unsafe_report_key(item) for item in value)
-    if isinstance(value, str):
-        lowered = value.lower()
-        return any(token in lowered for token in ("raw_response", "chain-of-thought", "traceback"))
-    return False
 
 
 def validate_report_input_bundle(obj: Mapping[str, Any]) -> tuple[bool, str]:
@@ -4070,3 +3610,18 @@ def build_reset_multi_agent_bundle(
         "report_input_bundle": dict(report_input_bundle or {}),
         "report_result": dict(report_result),
     }
+
+
+__all__ = sorted(
+    name
+    for name in globals()
+    if not name.startswith("_")
+    and name
+    not in {
+        "Any",
+        "Mapping",
+        "cast",
+        "json",
+        "re",
+    }
+)

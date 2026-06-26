@@ -1,8 +1,12 @@
 # Contracts
 
-This document names the Phase R3 Fixed DAG contracts implemented by
-`src/react_agent/fixed_dag_contracts.py` and
-`src/react_agent/fixed_dag_executor.py`.
+This document names the Phase R3 Fixed DAG contracts exposed through
+`src/react_agent/fixed_dag_contracts.py` and executed by
+`src/react_agent/fixed_dag_executor.py`. M2B keeps
+`react_agent.fixed_dag_contracts` as the public compatibility facade while
+moving foundational constants, typed shapes, labels, and safety helpers into
+the internal `src/react_agent/fixed_dag/` package. Contract semantics and old
+imports are unchanged.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

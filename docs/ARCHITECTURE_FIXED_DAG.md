@@ -11,6 +11,12 @@ The skeleton is deterministic, provider-free, plan-driven, and backed by
 explicit catalog, binding, contract, executor, and function seams. It is not a
 completed business analysis engine.
 
+M2B starts the active-core source split without changing runtime behavior:
+foundational contract constants, types, labels, and public-safety helpers live
+under `src/react_agent/fixed_dag/`, while
+`src/react_agent/fixed_dag_contracts.py` remains the compatibility facade and
+current import authority for existing callers.
+
 ## Active Skeleton Flow
 
 ```mermaid

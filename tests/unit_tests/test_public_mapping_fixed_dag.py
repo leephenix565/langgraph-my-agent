@@ -1,5 +1,6 @@
 import json
 
+from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     DIMENSION_GROUPS,
     build_default_fixed_dag_plan,
@@ -27,7 +28,12 @@ def test_public_workflow_fallback_uses_fixed_dag_snapshot_contract() -> None:
 
 def test_public_workflow_preserves_execution_batches_and_step_results() -> None:
     plan = build_default_fixed_dag_plan("q", as_of="2026-06-04")
-    execution = execute_fixed_dag_plan(plan, question="q", as_of="2026-06-04")
+    execution = execute_fixed_dag_plan(
+        plan,
+        question="q",
+        as_of="2026-06-04",
+        context=Context(disable_external_compute_default=True),
+    )
     workflow = build_workflow_snapshot(
         {
             "fixed_dag_plan": plan,
