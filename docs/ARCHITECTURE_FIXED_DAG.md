@@ -99,7 +99,10 @@ coverage rows for `value_research_synthesis`, `market_stock_technical`,
 `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT` without changing runtime bindings.
 RQ3B does not change that policy; it only lets the adapter accept a partial
 `risk_composite` when a non-contributing risk member is excluded from weighted
-evidence and preserved as a coverage limitation.
+evidence and preserved as a coverage limitation. RQ3C keeps the same adapter
+boundary and filters `risk_composite` evidence references that still point at
+non-contributing members before final L3 validation; the filtered references
+are preserved only as coverage-limit metadata.
 
 ## Target IDs
 

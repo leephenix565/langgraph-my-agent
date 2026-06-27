@@ -847,6 +847,55 @@ def test_risk_conclusion_positive_weight_member_without_material_maps_as_limitat
             "confidence": 0.0,
         }
     ]
+    assert mapped["provenance"]["dropped_evidence_refs"] == []
+    assert "risk_compliance_review" not in mapped["contributing_agents"]
+    _assert_safe_public_payload(mapped)
+
+
+def test_risk_conclusion_drops_noncontributor_evidence_refs() -> None:
+    payload = _risk_conclusion_payload()
+    payload["members"][1] = {
+        "agent_id": "risk_compliance_review",
+        "confidence": 0.0,
+        "weight": 0.6,
+        "status": "ok",
+    }
+    payload["contributing_agents"] = ["risk_identification", "risk_compliance_review"]
+    payload["evidence"] = [
+        {
+            "id": "risk_identification",
+            "source": "risk_identification",
+            "fact": "Real risk contributor has bounded evidence.",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+        {
+            "id": "risk_compliance_review",
+            "source": "risk_compliance_review",
+            "fact": "Failed compliance member must not remain a contributor evidence ref.",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["status"] == "partial"
+    assert mapped["contributing_agents"] == ["risk_identification"]
+    assert mapped["evidence_refs"] == ["risk_identification"]
+    assert mapped["provenance"]["dropped_evidence_refs"] == [
+        {
+            "agent_id": "risk_compliance_review",
+            "reason": "evidence_ref_from_non_contributor_dropped",
+            "evidence_ref": "risk_compliance_review",
+        }
+    ]
+    assert mapped["provenance"]["missing_or_degraded_members"] == [
+        "risk_compliance_review"
+    ]
     _assert_safe_public_payload(mapped)
 
 

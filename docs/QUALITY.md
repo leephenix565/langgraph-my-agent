@@ -162,6 +162,11 @@ coverage, not scoring relaxation: a `risk_composite` result can count as mapped
 only when real risk contributors remain in `contributing_agents`; unsupported
 or evidence-free members stay visible as limitations and do not become fake
 evidence.
+RQ3C preserves that rule and removes only invalid `risk_composite`
+`evidence_refs` that point to non-contributing members. The removed references
+are recorded as public-safe coverage limitations, while
+`risk_compliance_review` unsupported-schema output remains a known backlog item
+and does not become fake evidence.
 
 RQ2E non-claims:
 

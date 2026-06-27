@@ -817,6 +817,44 @@ def _evidence_refs_member_ids(value: Any) -> set[str]:
     return member_ids
 
 
+def _filter_evidence_refs_to_contributors(
+    value: Any,
+    *,
+    non_contributor_ids: set[str],
+) -> tuple[Any, list[dict[str, str]]]:
+    if not isinstance(value, list) or not non_contributor_ids:
+        return value, []
+    filtered: list[Any] = []
+    dropped: list[dict[str, str]] = []
+    for index, item in enumerate(value, start=1):
+        if not isinstance(item, Mapping):
+            filtered.append(item)
+            continue
+        item_refs = {
+            text
+            for key in ("agent_id", "source", "id")
+            if (text := _safe_string(item.get(key), limit=160))
+        }
+        offending_refs = sorted(item_refs & non_contributor_ids)
+        if not offending_refs:
+            filtered.append(item)
+            continue
+        dropped.append(
+            {
+                "agent_id": offending_refs[0],
+                "reason": "evidence_ref_from_non_contributor_dropped",
+                "evidence_ref": _safe_string(
+                    item.get("id")
+                    or item.get("source")
+                    or item.get("fact")
+                    or f"evidence_{index}",
+                    limit=160,
+                ),
+            }
+        )
+    return filtered, dropped[:12]
+
+
 def _numeric_in_range(value: Any, *, field: str, minimum: float = 0.0, maximum: float = 1.0) -> tuple[float, str]:
     try:
         number = float(value)
@@ -1670,6 +1708,8 @@ def map_external_risk_conclusion_to_dimension_composite_result(
         )
     contributing_agents = declared_contributing_agents
     members_value = payload.get("members")
+    evidence_value = payload.get("evidence")
+    dropped_evidence_refs: list[dict[str, str]] = []
     if isinstance(members_value, list):
         member_items = [item for item in members_value if isinstance(item, Mapping)]
         weights: dict[str, float] = {}
@@ -1677,11 +1717,22 @@ def map_external_risk_conclusion_to_dimension_composite_result(
             member_agent_id = str(item.get("agent_id") or "").strip()
             if member_agent_id in DIMENSION_GROUPS["risk"]:
                 weights[member_agent_id] = _bounded_float(item.get("weight"), default=0.0)
+        non_contributor_limitations = _non_contributor_member_limitations(
+            member_items,
+            weights=weights,
+        )
+        non_contributor_ids = {
+            item["agent_id"] for item in non_contributor_limitations if item.get("agent_id")
+        }
+        evidence_value, dropped_evidence_refs = _filter_evidence_refs_to_contributors(
+            evidence_value,
+            non_contributor_ids=non_contributor_ids,
+        )
         real_contributors, contribution_reason = _validate_l3_real_contributors(
             members=member_items,
             weights=weights,
             declared_contributing_agents=declared_contributing_agents,
-            evidence=payload.get("evidence"),
+            evidence=evidence_value,
             allow_non_contributor_limitations=True,
         )
         if contribution_reason:
@@ -1692,10 +1743,6 @@ def map_external_risk_conclusion_to_dimension_composite_result(
                 schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
             )
         contributing_agents = real_contributors
-        non_contributor_limitations = _non_contributor_member_limitations(
-            member_items,
-            weights=weights,
-        )
     else:
         non_contributor_limitations = []
     risk_score, reason = _numeric_in_range(payload.get("risk_score"), field="risk_score")
@@ -1744,7 +1791,7 @@ def map_external_risk_conclusion_to_dimension_composite_result(
         "confidence": confidence,
         "status": status,
         "contributing_agents": contributing_agents,
-        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "evidence_refs": _safe_evidence_refs(evidence_value),
         "as_of": as_of,
         "data_as_of": data_as_of,
         "gate": gate,
@@ -1762,6 +1809,7 @@ def map_external_risk_conclusion_to_dimension_composite_result(
                 "missing_or_degraded_members": [
                     item["agent_id"] for item in non_contributor_limitations
                 ],
+                "dropped_evidence_refs": dropped_evidence_refs,
                 "triggered_flags": _safe_string_list(payload.get("triggered_flags"), limit=12),
                 "red_lines": _safe_string_list(payload.get("red_lines"), limit=12),
                 "event_flags": _safe_event_flags(payload.get("event_flags")),

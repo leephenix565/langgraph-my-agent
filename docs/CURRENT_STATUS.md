@@ -50,7 +50,10 @@ records.
   remaining blocker to the risk branch adapter: `risk_compliance_review`
   remains an honest adapter-failed coverage limitation, while RQ3B narrows the
   fix to allowing `risk_composite` partial mapping when a non-contributing risk
-  member must be excluded from weighted evidence.
+  member must be excluded from weighted evidence. RQ3C keeps that scope narrow:
+  `risk_composite` evidence references that still point to non-contributors are
+  dropped before final L3 validation and recorded as coverage limitations;
+  `risk_compliance_review` unsupported-schema mapping is not fixed in RQ3C.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

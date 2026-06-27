@@ -64,6 +64,10 @@ binding change and not sandbox demo acceptance.
 RQ3B keeps that policy unchanged and narrows the remaining report-quality lift
 to adapter handling for the risk branch: `risk_composite` may map as partial
 when a non-contributing risk member is retained only as a coverage limitation.
+RQ3C keeps the same scope and additionally drops risk-composite evidence
+references that point at non-contributing members before final L3 validation;
+`risk_compliance_review` unsupported-schema output remains an honest backlog
+limitation rather than fabricated evidence.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

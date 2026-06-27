@@ -101,7 +101,10 @@ authority, not live verification, and not default graph invocation.
 The same pure adapter is also used by the source-controlled production
 compute-only path; RQ3B keeps risk-branch failures honest by allowing
 `risk_composite` to map as partial only when non-contributing risk members are
-excluded from `contributing_agents` and retained as coverage limitations.
+excluded from `contributing_agents` and retained as coverage limitations. RQ3C
+adds the matching evidence-reference cleanup so refs pointing at those
+non-contributors are dropped from mapped `risk_composite` evidence and recorded
+only as coverage-limit metadata.
 
 R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from

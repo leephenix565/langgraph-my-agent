@@ -3,6 +3,27 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - RQ3C risk composite evidence reference cleanup
+
+### Changed
+
+- Updated the fixed-DAG external adapter so `risk_conclusion_v1` drops
+  `risk_composite` evidence references that point to non-contributing risk
+  members before final L3 validation.
+- Preserved public-safe coverage metadata for dropped evidence refs and kept
+  failed/non-real members out of `contributing_agents` instead of converting
+  them into fake evidence.
+- Added focused adapter coverage for the RQ3B live failure
+  `evidence_ref_from_non_contributor` while preserving the prior
+  `positive_weight_no_evidence_member` regression.
+
+### Not Done
+
+- No `risk_compliance_review` schema compatibility mapper, runtime binding,
+  catalog, non-L4 policy, graph topology, public schema breaking, quality
+  scoring threshold, `/v1/agent/invoke`, provider, process, env-value,
+  service-source, or sandbox-demo acceptance change.
+
 ## 2026-06-27 - RQ3B risk composite adapter coverage lift
 
 ### Changed
