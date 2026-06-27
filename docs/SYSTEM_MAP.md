@@ -98,6 +98,10 @@ rejects `/v1/agent/invoke`, maps responses through
 `fixed_dag_external_adapter.py`, and stores only bounded mapped contracts plus
 public-safe workflow/report summaries. It is not `runtime_bindings.json`
 authority, not live verification, and not default graph invocation.
+The same pure adapter is also used by the source-controlled production
+compute-only path; RQ3B keeps risk-branch failures honest by allowing
+`risk_composite` to map as partial only when non-contributing risk members are
+excluded from `contributing_agents` and retained as coverage limitations.
 
 R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from

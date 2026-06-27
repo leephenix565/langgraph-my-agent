@@ -46,6 +46,11 @@ records.
   safely but scored `27/45`; RQ3A treats this as a production coverage and
   report-projection gap, not as sandbox drift or a reason to accept sandbox demo
   output.
+- RQ3A lifted production-mode live quality to `28/45` and isolated the
+  remaining blocker to the risk branch adapter: `risk_compliance_review`
+  remains an honest adapter-failed coverage limitation, while RQ3B narrows the
+  fix to allowing `risk_composite` partial mapping when a non-contributing risk
+  member must be excluded from weighted evidence.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

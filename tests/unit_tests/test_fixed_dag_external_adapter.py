@@ -818,6 +818,38 @@ def test_risk_conclusion_partial_member_with_real_material_still_maps() -> None:
     _assert_safe_public_payload(mapped)
 
 
+def test_risk_conclusion_positive_weight_member_without_material_maps_as_limitation() -> None:
+    payload = _risk_conclusion_payload()
+    payload["members"][1] = {
+        "agent_id": "risk_compliance_review",
+        "confidence": 0.0,
+        "weight": 0.6,
+        "status": "ok",
+    }
+    payload["contributing_agents"] = ["risk_identification", "risk_compliance_review"]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["status"] == "partial"
+    assert mapped["contributing_agents"] == ["risk_identification"]
+    assert mapped["provenance"]["missing_or_degraded_members"] == [
+        "risk_compliance_review"
+    ]
+    assert mapped["provenance"]["non_contributor_members"] == [
+        {
+            "agent_id": "risk_compliance_review",
+            "reason": "positive_weight_no_evidence_member",
+            "status": "ok",
+            "weight": 0.6,
+            "confidence": 0.0,
+        }
+    ]
+    _assert_safe_public_payload(mapped)
+
+
 def test_risk_conclusion_manual_review_maps_and_preserves_gate() -> None:
     payload = _risk_conclusion_payload(gate="manual_review")
     payload["penalty"] = 0.0

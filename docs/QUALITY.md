@@ -157,6 +157,12 @@ evidence, limitations, sections, value/market/risk/macro coverage, action
 implication, research-point use, and source-label hygiene, but those supporting
 checks do not replace the explicit DoD above.
 
+RQ3B keeps the `>=29/45` score floor unchanged. Its risk-branch fix is adapter
+coverage, not scoring relaxation: a `risk_composite` result can count as mapped
+only when real risk contributors remain in `contributing_agents`; unsupported
+or evidence-free members stay visible as limitations and do not become fake
+evidence.
+
 RQ2E non-claims:
 
 - RQ2E preflight and report-quality audit work does not call

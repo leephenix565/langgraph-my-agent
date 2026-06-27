@@ -97,6 +97,9 @@ coverage rows for `value_research_synthesis`, `market_stock_technical`,
 `risk_compliance_review`, `macro_commodity_pricing`, `market_composite`,
 `risk_composite`, and `macro_composite`. Rollback uses
 `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT` without changing runtime bindings.
+RQ3B does not change that policy; it only lets the adapter accept a partial
+`risk_composite` when a non-contributing risk member is excluded from weighted
+evidence and preserved as a coverage limitation.
 
 ## Target IDs
 

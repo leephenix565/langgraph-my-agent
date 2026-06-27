@@ -61,6 +61,9 @@ recorded as invoke evidence; `/v1/agent/invoke` remains out of the default path.
 RQ3A expands the non-L4 policy with optional, fail-soft production coverage
 rows to improve report quality in production mode; this is not a runtime
 binding change and not sandbox demo acceptance.
+RQ3B keeps that policy unchanged and narrows the remaining report-quality lift
+to adapter handling for the risk branch: `risk_composite` may map as partial
+when a non-contributing risk member is retained only as a coverage limitation.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

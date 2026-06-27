@@ -936,6 +936,7 @@ def _validate_l3_real_contributors(
     weights: Mapping[str, float],
     declared_contributing_agents: Any,
     evidence: Any,
+    allow_non_contributor_limitations: bool = False,
 ) -> tuple[list[str], str]:
     real_contributors: list[str] = []
     non_contributors: set[str] = set()
@@ -945,18 +946,45 @@ def _validate_l3_real_contributors(
             real_contributors.append(member_agent_id)
             continue
         non_contributors.add(member_agent_id)
-        if weights.get(member_agent_id, 0.0) > 0.0:
+        if weights.get(member_agent_id, 0.0) > 0.0 and not allow_non_contributor_limitations:
             return [], _non_contributor_weight_reason(item)
 
     declared = _safe_string_list(declared_contributing_agents, limit=20)
     if declared:
-        if not set(declared) <= set(real_contributors):
+        if allow_non_contributor_limitations:
+            if not set(real_contributors) <= set(declared):
+                return [], "real_contributor_not_declared"
+        elif not set(declared) <= set(real_contributors):
             return [], "contributing_agent_not_real_contributor"
 
     evidence_member_refs = _evidence_refs_member_ids(evidence)
     if evidence_member_refs & non_contributors:
         return [], "evidence_ref_from_non_contributor"
     return real_contributors, ""
+
+
+def _non_contributor_member_limitations(
+    members: list[Mapping[str, Any]],
+    *,
+    weights: Mapping[str, float],
+) -> list[dict[str, Any]]:
+    limitations: list[dict[str, Any]] = []
+    for item in members:
+        if _l3_member_real_contributor(item):
+            continue
+        member_agent_id = _safe_string(item.get("agent_id"), limit=120)
+        if not member_agent_id:
+            continue
+        limitation: dict[str, Any] = {
+            "agent_id": member_agent_id,
+            "reason": _non_contributor_weight_reason(item),
+            "status": _safe_code(item.get("status")),
+            "weight": _bounded_float(weights.get(member_agent_id, item.get("weight")), default=0.0),
+        }
+        if item.get("confidence") is not None:
+            limitation["confidence"] = _bounded_float(item.get("confidence"), default=0.0)
+        limitations.append(limitation)
+    return limitations[:12]
 
 
 def _bounded_float_mapping(value: Any, *, allowed_keys: set[str], require_exact_keys: bool) -> tuple[dict[str, float], str]:
@@ -1654,6 +1682,7 @@ def map_external_risk_conclusion_to_dimension_composite_result(
             weights=weights,
             declared_contributing_agents=declared_contributing_agents,
             evidence=payload.get("evidence"),
+            allow_non_contributor_limitations=True,
         )
         if contribution_reason:
             return _adapter_failure(
@@ -1663,6 +1692,12 @@ def map_external_risk_conclusion_to_dimension_composite_result(
                 schema_version=EXTERNAL_RISK_CONCLUSION_SCHEMA_VERSION,
             )
         contributing_agents = real_contributors
+        non_contributor_limitations = _non_contributor_member_limitations(
+            member_items,
+            weights=weights,
+        )
+    else:
+        non_contributor_limitations = []
     risk_score, reason = _numeric_in_range(payload.get("risk_score"), field="risk_score")
     if reason:
         return _adapter_failure(
@@ -1698,6 +1733,8 @@ def map_external_risk_conclusion_to_dimension_composite_result(
     )
     if failure is not None:
         return failure
+    if non_contributor_limitations and status == "complete":
+        status = "partial"
     result: DimensionCompositeResult = {
         "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
@@ -1721,6 +1758,10 @@ def map_external_risk_conclusion_to_dimension_composite_result(
             envelope=envelope,
             extra={
                 "member_weight_summary": _member_weight_summary(payload.get("members")),
+                "non_contributor_members": non_contributor_limitations,
+                "missing_or_degraded_members": [
+                    item["agent_id"] for item in non_contributor_limitations
+                ],
                 "triggered_flags": _safe_string_list(payload.get("triggered_flags"), limit=12),
                 "red_lines": _safe_string_list(payload.get("red_lines"), limit=12),
                 "event_flags": _safe_event_flags(payload.get("event_flags")),

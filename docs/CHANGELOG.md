@@ -3,6 +3,27 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - RQ3B risk composite adapter coverage lift
+
+### Changed
+
+- Updated the fixed-DAG external adapter so `risk_conclusion_v1` can map a
+  partial `risk_composite` when an upstream risk member has positive service
+  weight but no public-safe business material. Such members are excluded from
+  `contributing_agents` and retained as explicit coverage limitations in
+  provenance instead of failing the whole L3 adapter mapping.
+- Added focused adapter coverage for the live-like
+  `positive_weight_no_evidence_member` case exposed by RQ3A.
+
+### Not Done
+
+- No runtime binding, catalog, graph topology, public schema breaking,
+  quality-scoring threshold, non-L4 policy, `/v1/agent/invoke`, provider,
+  process, env-value, service-source, or sandbox-demo acceptance change.
+- `risk_compliance_review` remains represented honestly when its own adapter
+  mapping fails; RQ3B does not convert failed compliance material into fake
+  evidence.
+
 ## 2026-06-27 - RQ3A production coverage and projection lift
 
 ### Changed
