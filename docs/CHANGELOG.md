@@ -24,6 +24,14 @@ Historical changelog entries before this reset branch are preserved by tag
   scoring threshold, `/v1/agent/invoke`, provider, process, env-value,
   service-source, or sandbox-demo acceptance change.
 
+### Closeout
+
+- RQ3C production-mode live verification reached `29/45` with
+  `renderer_quality_gate.passed=true`, mapped `20/21` compute calls, and
+  retained `risk_compliance_review` unsupported schema as the only adapter
+  failure. This closes the report-quality theme at the minimum production-mode
+  acceptance boundary.
+
 ## 2026-06-27 - RQ3B risk composite adapter coverage lift
 
 ### Changed

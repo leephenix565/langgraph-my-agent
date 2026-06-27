@@ -68,6 +68,9 @@ RQ3C keeps the same scope and additionally drops risk-composite evidence
 references that point at non-contributing members before final L3 validation;
 `risk_compliance_review` unsupported-schema output remains an honest backlog
 limitation rather than fabricated evidence.
+The RQ3C production-mode live verification reached the minimum report-quality
+acceptance score `29/45` with `renderer_quality_gate.passed=true`, closing the
+current report-quality theme at the compute-only boundary.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

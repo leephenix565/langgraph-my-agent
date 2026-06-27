@@ -54,6 +54,12 @@ records.
   `risk_composite` evidence references that still point to non-contributors are
   dropped before final L3 validation and recorded as coverage limitations;
   `risk_compliance_review` unsupported-schema mapping is not fixed in RQ3C.
+- RQ3C production-mode live verification reached `29/45` with
+  `renderer_quality_gate.passed=true`, unsafe scan pass, traceability `1.0`,
+  answer/section parity `1.0`, and research-point utilization `1.0`. The
+  compute-only boundary held: `/v1/agent/invoke=0`, provider calls `0`, process
+  actions `0`, env-value access `0`, and raw response retention `false`.
+  `risk_compliance_review` remains a non-blocking backlog limitation.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.
