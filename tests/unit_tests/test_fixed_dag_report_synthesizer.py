@@ -1,6 +1,10 @@
 import json
 
 from react_agent.context import Context
+from react_agent.fixed_dag.report_quality_renderer import (
+    build_enriched_report_result_from_bundle,
+    render_improved_artifact,
+)
 from react_agent.fixed_dag_contracts import (
     build_decision_result,
     build_default_fixed_dag_plan,
@@ -243,3 +247,145 @@ def test_provider_config_status_is_secret_free(monkeypatch) -> None:
     assert status["credential_status"] == "present"
     assert "not_printed" not in rendered
     assert "api_key" not in rendered
+
+
+def _rq2_evidence_bundle() -> dict:
+    return {
+        "schema": "agent_evidence_bundle_v1",
+        "question": "请从估值、市场、风险和宏观角度分析 600519.SH。",
+        "quality_summary": {
+            "l2_total": 2,
+            "l2_complete": 1,
+            "l2_partial": 1,
+            "l3_total": 4,
+            "l3_complete": 1,
+            "l3_partial": 3,
+        },
+        "decision_output": {"decision": "research_hold"},
+        "l2_agent_outputs": [
+            {
+                "agent_id": "risk_crash",
+                "display_name": "股价崩盘风险",
+                "dimension": "risk",
+                "status": "complete",
+                "confidence": 0.71,
+                "summary": "崩盘风险模型给出低风险档位。",
+                "research_points": [
+                    {"claim": "模型把该标的归入 低风险 的崩盘风险档位。"},
+                    {"claim": "本次判级的主要解释来自模型特征表，而不是 LLM 主观判断。"},
+                ],
+                "evidence_items": [
+                    {"fact": "风险评分 0.2523。", "source": "unit_test"},
+                ],
+                "domain_metrics": {"risk_bridge": {"risk_score": 0.2523}},
+            },
+            {
+                "agent_id": "macro_index_valuation",
+                "display_name": "股票指数估值",
+                "dimension": "macro",
+                "status": "partial",
+                "confidence": 0.63,
+                "summary": "指数估值和情绪都偏高。",
+                "research_points": [
+                    {"claim": "沪深300 的估值信号偏向 很高。"},
+                ],
+                "evidence_items": [
+                    {"fact": "估值百分位为 88.15%。", "source": "unit_test"},
+                ],
+                "domain_metrics": {"index_valuation": {"pe_percentile": 88.15}},
+            },
+        ],
+        "l3_composite_outputs": [
+            {
+                "agent_id": "value_composite",
+                "display_name": "价值综合",
+                "dimension": "value",
+                "status": "complete",
+                "confidence": 0.62,
+                "summary": "估值材料存在分歧，需要安全边际确认。",
+                "members": [{"display_name": "传统估值", "weight": 0.6, "confidence": 0.7}],
+            },
+            {
+                "agent_id": "market_composite",
+                "display_name": "市场综合",
+                "dimension": "market",
+                "status": "partial",
+                "confidence": 0.45,
+                "summary": "市场确认度不足。",
+                "members": [{"display_name": "技术分析", "weight": 1.0, "confidence": 0.5}],
+            },
+            {
+                "agent_id": "risk_composite",
+                "display_name": "风险综合",
+                "dimension": "risk",
+                "status": "partial",
+                "confidence": 0.58,
+                "summary": "风险门未阻断，但合规审查缺口需要保留。",
+                "gate": "manual_review",
+                "risk_score": 0.32,
+                "members": [{"display_name": "股价崩盘风险", "weight": 0.5, "confidence": 0.71}],
+            },
+            {
+                "agent_id": "macro_composite",
+                "display_name": "宏观综合",
+                "dimension": "macro",
+                "status": "partial",
+                "confidence": 0.51,
+                "summary": "宏观调节器提示仓位约束。",
+                "regime": "cautious",
+                "dimension_weights": {"value": 0.55, "market": 0.45},
+                "members": [{"display_name": "股票指数估值", "weight": 0.6, "confidence": 0.63}],
+            },
+        ],
+    }
+
+
+def test_rq2_renderer_builds_public_safe_complete_report() -> None:
+    report = build_enriched_report_result_from_bundle(
+        question="请分析 600519.SH。",
+        agent_evidence_bundle=_rq2_evidence_bundle(),
+        existing_report_result={"limitations": ["当前为本地固定流程模式。"]},
+    )
+    rendered = json.dumps(report, ensure_ascii=False).lower()
+    valid, reason = validate_report_result(report)
+
+    assert valid, reason
+    assert report["status"] == "complete"
+    assert "核心结论与行动含义" in report["answer"]
+    assert "价值维度：估值分歧与安全边际" in report["answer"]
+    assert "risk_compliance_review 未成功映射" in rendered
+    assert "模型把该标的归入 低风险" in rendered
+    assert len(report["sections"]) >= 7
+    assert len(report["limitations"]) >= 4
+    assert "raw_response" not in rendered
+    assert "/v1/agent/invoke" not in rendered
+
+
+def test_rq2_renderer_writes_offline_artifact(tmp_path) -> None:
+    artifact_root = tmp_path / "artifact"
+    run_dir = artifact_root / "run"
+    run_dir.mkdir(parents=True)
+    (run_dir / "summary.json").write_text(
+        json.dumps(
+            {
+                "question": "请分析 600519.SH。",
+                "report_result": {"limitations": ["当前为本地固定流程模式。"]},
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+    (run_dir / "agent_evidence_bundle.json").write_text(
+        json.dumps(_rq2_evidence_bundle(), ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (run_dir / "workflow_trace.json").write_text("{}", encoding="utf-8")
+    (run_dir / "agent_tasks.json").write_text("[]", encoding="utf-8")
+
+    output_dir = tmp_path / "out"
+    report = render_improved_artifact(artifact_root=artifact_root, output_dir=output_dir)
+
+    assert report["status"] == "complete"
+    assert (output_dir / "run" / "summary.json").exists()
+    assert (output_dir / "run" / "final_report.md").exists()
+    assert (output_dir / "sandbox_rq2_report_result.json").exists()

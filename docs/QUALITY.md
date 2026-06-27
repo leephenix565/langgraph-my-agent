@@ -85,6 +85,54 @@ store. It is not a live readiness check and is not wired to require the real
 `/tmp` artifact in default mainline. Threshold mode can be run manually before
 future RQ2/RQ3/RQ4 report-quality implementation waves.
 
+## Sandbox Report Renderer Experiment
+
+RQ2S adds a sandbox-only offline renderer experiment. It can rewrite a
+sanitized E2E artifact into an improved report artifact without changing the
+default graph/runtime path:
+
+```powershell
+python -m react_agent.fixed_dag.report_quality_renderer --artifact-root <sanitized-e2e-artifact-root> --output-dir <repo-external-output-dir>
+python scripts/quality/report_quality_audit.py --artifact-root <repo-external-output-dir> --output-dir <audit-output-dir>
+```
+
+The experiment uses the RQ1 harness as the measuring tool. It must retain
+sections, evidence cards, limitations, failed-agent coverage, partial coverage,
+and unsafe-scan behavior. It does not call endpoints, providers, services, or
+processes, and it does not change runtime bindings, catalog entries, public
+schemas, graph topology, prompts, adapters, or L4 services.
+
+This is not dev formalization. If the sandbox result is accepted, the next
+step is an explicit RQ2D dev implementation contract.
+
+RQ2S-R1 keeps the original pipeline quality score intact and adds a separate
+renderer gate for sandbox validation. The original score can remain `29/45`
+when upstream L3 partial coverage or an adapter failure caps the pipeline
+rubric; the renderer gate checks the renderer-controlled surface instead:
+template phrases, research-point utilization, answer/section parity,
+traceability, unsafe scan, retained limitations/evidence/sections, value/market/
+risk/macro coverage, action implication, and core source-label leakage.
+
+This gate is still offline and sandbox-only. It does not call endpoints,
+providers, services, or processes, and it does not change runtime bindings,
+catalog entries, public schemas, graph topology, prompts, adapters, or L4
+services. Passing the renderer gate means the renderer design is ready for a
+separate RQ2D dev formalization review; it does not mean upstream agents are
+production-ready.
+
+RQ2D formalizes that renderer in dev and keeps the quality surfaces separate:
+`pipeline_quality_score` remains the original 0-45 score and can still be capped
+by upstream adapter failures or partial L3 coverage, while
+`renderer_quality_gate` measures the renderer-controlled surface. The runtime
+gate is deterministic and only replaces a report result when the existing result
+is missing, pending, template-like, or weak; a complete high-quality external L4
+report is not overwritten. If enrichment validation or unsafe scanning fails,
+the original report result is retained.
+
+The default quality story remains endpoint-free and provider-free. RQ2D does
+not change runtime bindings, catalog entries, public schemas, graph topology,
+prompts, adapters, or external L4 services.
+
 ## Manual, Live, And Archived Gates
 
 These checks are not default reset mainline gates:

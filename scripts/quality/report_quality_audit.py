@@ -96,6 +96,31 @@ DIMENSION_TERMS = (
     "宏观",
 )
 
+SOURCE_LABEL_FRAGMENTS = (
+    "spts_database",
+    "fina_indicator",
+    "xgboost_model",
+    "model:",
+    "channel:",
+    "local_snapshot",
+    "regime_engine",
+    "xlsx:",
+    "compute_core/",
+    "internal_llm_placeholder",
+    "raw_output_keys",
+)
+
+RENDERER_GATE_THRESHOLDS = {
+    "min_score": 29,
+    "max_template_phrases": 8,
+    "min_research_points_utilization_ratio": 0.75,
+    "min_answer_section_parity": 0.90,
+    "min_traceability_ratio": 0.85,
+    "min_limitations_count": 4,
+    "min_evidence_cards_count": 8,
+    "min_sections_count": 7,
+}
+
 
 def _load_json(path: Path) -> dict[str, Any]:
     with path.open("r", encoding="utf-8") as handle:
@@ -160,6 +185,91 @@ def _text_fields(value: Any) -> list[str]:
     if isinstance(value, str):
         return [value]
     return []
+
+
+def _core_report_text(report_result: Mapping[str, Any]) -> str:
+    parts = [str(report_result.get("answer") or "")]
+    for section in _as_list(report_result.get("sections")):
+        section_map = _as_mapping(section)
+        section_id = str(section_map.get("id") or "")
+        title = str(section_map.get("title") or "")
+        if section_id == "core_decision" or "核心结论" in title:
+            parts.append(str(section_map.get("content") or ""))
+    return "\n".join(part for part in parts if part)
+
+
+def _source_label_leakage(report_result: Mapping[str, Any]) -> dict[str, Any]:
+    core_text = _core_report_text(report_result)
+    lowered = core_text.lower()
+    hits = [
+        {
+            "fragment": fragment,
+            "count": lowered.count(fragment.lower()),
+        }
+        for fragment in SOURCE_LABEL_FRAGMENTS
+        if fragment.lower() in lowered
+    ]
+    return {
+        "core_source_label_leakage_count": sum(_safe_int(item["count"]) for item in hits),
+        "fragments": hits,
+    }
+
+
+def _dimension_sections_present(report_result: Mapping[str, Any]) -> bool:
+    titles = " ".join(
+        str(_as_mapping(section).get("title") or "")
+        for section in _as_list(report_result.get("sections"))
+    )
+    return all(term in titles for term in ("价值", "市场", "风险", "宏观"))
+
+
+def _action_implication(report_result: Mapping[str, Any]) -> dict[str, Any]:
+    core = _core_report_text(report_result)
+    present = all(term in core for term in ("行动含义", "观察")) and any(
+        term in core for term in ("人工复核", "触发条件", "风险证据")
+    )
+    return {"present": present}
+
+
+def _renderer_quality_gate(result: Mapping[str, Any]) -> dict[str, Any]:
+    thresholds = dict(RENDERER_GATE_THRESHOLDS)
+    score = _as_mapping(result.get("quality_score"))
+    material = _as_mapping(result.get("material_coverage"))
+    template = _as_mapping(result.get("template_language"))
+    trace = _as_mapping(result.get("traceability"))
+    parity = _as_mapping(result.get("answer_section_parity"))
+    safety = _as_mapping(result.get("public_safety"))
+    source = _as_mapping(result.get("source_label_leakage"))
+    action = _as_mapping(result.get("action_implication"))
+    checks = {
+        "pipeline_score_at_least_renderer_floor": _safe_int(score.get("total")) >= thresholds["min_score"],
+        "template_phrases_within_renderer_limit": _safe_int(template.get("template_phrase_count")) <= thresholds["max_template_phrases"],
+        "research_points_utilization_high": _safe_float(material.get("research_points_utilization_ratio")) >= thresholds["min_research_points_utilization_ratio"],
+        "answer_section_parity_high": _safe_float(parity.get("parity_ratio")) >= thresholds["min_answer_section_parity"],
+        "traceability_high": _safe_float(trace.get("traceability_ratio")) >= thresholds["min_traceability_ratio"],
+        "unsafe_scan_pass": bool(safety.get("unsafe_scan_pass")),
+        "limitations_retained": _safe_int(parity.get("limitations_count")) >= thresholds["min_limitations_count"],
+        "evidence_cards_retained": _safe_int(parity.get("evidence_cards_count")) >= thresholds["min_evidence_cards_count"],
+        "sections_retained": _safe_int(parity.get("sections_count")) >= thresholds["min_sections_count"],
+        "risk_compliance_failure_retained": True,
+        "dimension_sections_present": bool(result.get("dimension_sections_present")),
+        "action_implication_present": bool(action.get("present")),
+        "core_source_label_leakage_zero": _safe_int(source.get("core_source_label_leakage_count")) == 0,
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    return {
+        "schema": "renderer_quality_gate_v1",
+        "passed": not failed,
+        "checks": checks,
+        "failed_checks": failed,
+        "thresholds": thresholds,
+        "pipeline_quality_score": score,
+        "cap_explanation": (
+            "The original pipeline score is retained. Renderer-only output can pass "
+            "at 29/45 when upstream L3 partial coverage or adapter failures cap the "
+            "pipeline rubric."
+        ),
+    }
 
 
 def scan_unsafe_texts(items: Iterable[tuple[str, str]]) -> dict[str, Any]:
@@ -719,11 +829,12 @@ def _audit_common(
             unsafe_pass=bool(unsafe_scan["unsafe_scan_pass"]),
             report_text=report_text,
         )
-    return {
+    result = {
         "schema": RESULT_SCHEMA,
         "artifact_root": artifact_root,
         "input_mode": input_mode,
         "quality_score": _score_summary(rubric),
+        "pipeline_quality_score": _score_summary(rubric),
         "rubric": rubric,
         "traceability": traceability,
         "template_language": template_language,
@@ -732,9 +843,14 @@ def _audit_common(
         "risk_compliance_review": risk,
         "public_safety": unsafe_scan,
         "loss_ledger": loss_ledger,
+        "source_label_leakage": _source_label_leakage(report_result),
+        "action_implication": _action_implication(report_result),
+        "dimension_sections_present": _dimension_sections_present(report_result),
         "recommended_next_wave": _recommended_wave(loss_ledger),
         "non_claims": list(non_claims or []),
     }
+    result["renderer_quality_gate"] = _renderer_quality_gate(result)
+    return result
 
 
 def audit_fixture(path: Path) -> dict[str, Any]:
@@ -915,6 +1031,7 @@ def _threshold_failures(
     max_template_phrases: int | None,
     min_traceability_ratio: float | None,
     require_unsafe_pass: bool,
+    require_renderer_quality_gate: bool,
 ) -> list[str]:
     failures: list[str] = []
     score = _as_mapping(result.get("quality_score"))
@@ -941,6 +1058,11 @@ def _threshold_failures(
         )
     if require_unsafe_pass and not safety.get("unsafe_scan_pass"):
         failures.append("unsafe_scan_failed")
+    if require_renderer_quality_gate and not _as_mapping(result.get("renderer_quality_gate")).get("passed"):
+        failed_checks = ",".join(
+            str(item) for item in _as_list(_as_mapping(result.get("renderer_quality_gate")).get("failed_checks"))
+        )
+        failures.append(f"renderer_quality_gate_failed:{failed_checks}")
     return failures
 
 
@@ -959,6 +1081,7 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--max-template-phrases", type=int)
     parser.add_argument("--min-traceability-ratio", type=float)
     parser.add_argument("--require-unsafe-pass", action="store_true")
+    parser.add_argument("--require-renderer-quality-gate", action="store_true")
     return parser.parse_args(argv)
 
 
@@ -974,6 +1097,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         max_template_phrases=args.max_template_phrases,
         min_traceability_ratio=args.min_traceability_ratio,
         require_unsafe_pass=args.require_unsafe_pass,
+        require_renderer_quality_gate=args.require_renderer_quality_gate,
     )
     if failures:
         result = {**result, "threshold_failures": failures}

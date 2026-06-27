@@ -3,6 +3,32 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-161: Deterministic Report Enrichment Gate Preserves L4 Compute Boundary
+
+Status: accepted for REPORT-QUALITY-RQ2D.
+
+Decision: keep external L4 `report_generator` as the primary source when it
+returns a complete high-quality report. Use deterministic report enrichment only
+when the existing `report_result_v1` is missing, pending, template-like, or weak.
+The enrichment reads only bounded public-safe `report_input_bundle_v1` material
+and does not change runtime bindings, public schemas, or graph topology.
+
+Reason: L4 compute-default can return a valid but template-style report result,
+while the main-system `report_input_bundle_v1` already contains enough bounded
+L2/L3, risk-gate, macro-regulator, and decision context to produce a clearer
+public report. A deterministic gate improves report readability without
+loosening the external compute boundary or exposing raw service/provider
+material.
+
+Consequence: pending/template reports can be enriched into value/market/risk/
+macro sections with explicit action implications and retained limitations. If
+the existing L4 report is already high quality, or enrichment validation/unsafe
+scan fails, the original report result is retained.
+
+Non-consequence: this does not call providers, call endpoints, enable
+`/v1/agent/invoke`, alter L4 runtime bindings, change the catalog, change public
+contracts, modify external services, or make non-L4 services default runtime.
+
 ## ADR-160: Repository Consolidation Ends With No Proven Dead-Code Deletion
 
 Status: accepted for REPO-CONSOLIDATION-FINAL.

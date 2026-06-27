@@ -238,6 +238,57 @@ def test_threshold_failure_and_pass_behaviors(tmp_path) -> None:
     assert pass_result.returncode == 0, pass_result.stderr
 
 
+def test_renderer_quality_gate_threshold_behavior(tmp_path) -> None:
+    baseline_fail = _run_cli(
+        "--fixture",
+        str(FIXTURE_PATH),
+        "--output-dir",
+        str(tmp_path / "renderer-gate-baseline"),
+        "--fail-on-threshold",
+        "--require-renderer-quality-gate",
+    )
+    assert baseline_fail.returncode == 2
+
+    rendered_dir = tmp_path / "rendered"
+    render = subprocess.run(
+        [
+            sys.executable,
+            "-m",
+            "react_agent.fixed_dag.report_quality_renderer",
+            "--fixture",
+            str(FIXTURE_PATH),
+            "--output-dir",
+            str(rendered_dir),
+        ],
+        cwd=REPO_ROOT,
+        check=False,
+        capture_output=True,
+        text=True,
+    )
+    assert render.returncode == 0, render.stderr
+
+    gate_pass = _run_cli(
+        "--artifact-root",
+        str(rendered_dir),
+        "--output-dir",
+        str(tmp_path / "renderer-gate-pass"),
+        "--fail-on-threshold",
+        "--require-renderer-quality-gate",
+        "--require-unsafe-pass",
+    )
+    payload = json.loads(
+        (tmp_path / "renderer-gate-pass" / "report_quality_audit_result.json").read_text(
+            encoding="utf-8"
+        )
+    )
+
+    assert gate_pass.returncode == 0, gate_pass.stderr
+    assert payload["pipeline_quality_score"] == payload["quality_score"]
+    assert payload["renderer_quality_gate"]["passed"] is True
+    assert payload["source_label_leakage"]["core_source_label_leakage_count"] == 0
+    assert payload["action_implication"]["present"] is True
+
+
 def test_harness_source_has_no_live_runtime_dependencies() -> None:
     source = SCRIPT_PATH.read_text(encoding="utf-8")
 

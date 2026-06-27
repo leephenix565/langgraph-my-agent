@@ -456,6 +456,43 @@ def _augment_report_with_external_compute_demo(
     }
 
 
+def _maybe_enrich_weak_report_result(
+    report_result: dict[str, Any],
+    *,
+    question: str,
+    report_input_bundle: Mapping[str, Any],
+    decision_result: Mapping[str, Any],
+) -> dict[str, Any]:
+    from react_agent.fixed_dag.report_quality_renderer import (  # noqa: PLC0415
+        build_enriched_report_result_from_bundle,
+        report_result_has_unsafe_markers,
+        should_enrich_report_result,
+    )
+
+    should_enrich, _reason = should_enrich_report_result(
+        existing_report_result=report_result,
+        report_input_bundle=report_input_bundle,
+        decision_result=decision_result,
+    )
+    if not should_enrich:
+        return report_result
+    evidence_bundle = report_input_bundle.get("agent_evidence_bundle")
+    if not isinstance(evidence_bundle, Mapping):
+        return report_result
+    try:
+        enriched = build_enriched_report_result_from_bundle(
+            question=question,
+            agent_evidence_bundle=evidence_bundle,
+            existing_report_result=report_result,
+        )
+    except (TypeError, ValueError):
+        return report_result
+    valid, _validate_reason = validate_report_result(enriched)
+    if not valid or report_result_has_unsafe_markers(enriched):
+        return report_result
+    return dict(enriched)
+
+
 def execute_fixed_dag_plan(
     plan: Mapping[str, Any],
     *,
@@ -902,6 +939,13 @@ def execute_fixed_dag_plan(
             external_demo_summary,
             external_l4_decision_run,
             external_l4_report_run,
+        )
+    if valid_report_input_bundle:
+        report_result = _maybe_enrich_weak_report_result(
+            report_result,
+            question=question,
+            report_input_bundle=report_input_bundle,
+            decision_result=decision_result,
         )
     llm_report_synthesis_used = False
     llm_report_synthesis_attempted = False

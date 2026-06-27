@@ -3,6 +3,58 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - Report renderer enrichment gate
+
+### Added
+
+- Formalized the sandbox renderer experiment into dev as
+  `react_agent.fixed_dag.report_quality_renderer`.
+- Added a deterministic report enrichment gate in the fixed-DAG report stage:
+  pending/template-style report results can be rebuilt from bounded
+  `report_input_bundle` material, while high-quality external L4 reports remain
+  primary.
+- Added runtime and harness coverage for enrichment, no-overwrite guards,
+  invalid/unsafe fallback, renderer quality gate metrics, and source-label
+  leakage checks.
+
+### Not Done
+
+- No runtime binding, catalog, public schema, graph topology, L4 service,
+  prompt, adapter, endpoint, provider, process, prod, sandbox, or owner-dev
+  change.
+
+## 2026-06-26 - Sandbox renderer runtime-gate followup
+
+### Changed
+
+- Polished the sandbox-only offline report renderer to keep core conclusions
+  business-first and remove source-label leakage from the action summary.
+- Added a pure renderer enrichment gate and a separate `renderer_quality_gate`
+  to the offline report-quality harness while preserving the original pipeline
+  score.
+- Added focused tests for renderer gate true/false behavior, fixture rendering,
+  source-label leakage, action implication, and threshold exits.
+
+### Not Done
+
+- No dev formalization, prod deployment, runtime binding change, catalog
+  change, public contract change, endpoint call, provider call, process action,
+  service modification, or default runtime behavior change.
+
+## 2026-06-26 - Sandbox report renderer experiment
+
+### Added
+
+- Added sandbox-only offline `react_agent.fixed_dag.report_quality_renderer`
+  for deterministic report-result enrichment from sanitized E2E artifacts.
+- Added unit coverage for the pure renderer and artifact rewrite path.
+
+### Not Done
+
+- No dev formalization, prod deployment, runtime binding change, catalog
+  change, public contract change, endpoint call, provider call, process action,
+  service modification, or report-generation default behavior change.
+
 ## 2026-06-26 - Report quality artifact harness
 
 ### Added

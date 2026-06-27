@@ -32,6 +32,12 @@ bindings.
 REPO-CONSOLIDATION-FINAL closes the consolidation theme with these compatibility
 facades retained. M4A found no P4 deletion candidates, so no M4B deletion is
 performed and public contracts remain unchanged.
+RQ2D allows `report_result_v1` to be deterministically enriched from the
+bounded public-safe `report_input_bundle_v1` when the existing report result is
+missing, pending, template-like, or weak. A complete high-quality external L4
+report remains primary. Enrichment must not use raw external output, provider
+output, endpoint URLs, credentials, graph messages, or hidden reasoning drafts,
+and it does not add required public fields or change the public schema.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

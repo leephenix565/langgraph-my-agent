@@ -328,6 +328,59 @@ def _macro_conclusion() -> dict[str, object]:
     }
 
 
+def _high_quality_report(question: str = "q") -> dict[str, object]:
+    section_titles = [
+        "核心结论与行动含义",
+        "价值维度：估值分歧与安全边际",
+        "市场维度：价格、资金与情绪确认度",
+        "风险维度：风险门与缺失合规证据",
+        "宏观维度：宏观调节器与仓位约束",
+    ]
+    answer = (
+        "研判流程高质量报告：行动含义是研究观察和人工复核。"
+        "本报告覆盖 " + "；".join(section_titles) + "。"
+        "风险门和宏观调节器都已在正文中说明。"
+    )
+    return {
+        **build_report_result(build_decision_result({}, as_of="2026-06-04"), question=question),
+        "title": "外部 L4 默认报告",
+        "answer": answer,
+        "status": "complete",
+        "sections": [
+            {
+                "id": "core_decision",
+                "title": "核心结论与行动含义",
+                "content": "行动含义：当前是研究观察，需人工复核风险证据和市场确认。",
+            },
+            {
+                "id": "value_dimension",
+                "title": "价值维度：估值分歧与安全边际",
+                "content": "价值维度说明估值分歧和安全边际。",
+            },
+            {
+                "id": "market_dimension",
+                "title": "市场维度：价格、资金与情绪确认度",
+                "content": "市场维度说明价格、资金与情绪确认度。",
+            },
+            {
+                "id": "risk_dimension",
+                "title": "风险维度：风险门与缺失合规证据",
+                "content": "风险维度说明风险门和缺失合规证据。",
+            },
+            {
+                "id": "macro_dimension",
+                "title": "宏观维度：宏观调节器与仓位约束",
+                "content": "宏观维度说明宏观调节器和仓位约束。",
+            },
+        ],
+        "evidence_cards": [
+            {"title": "价值证据", "note": "估值分歧来自结构化固定 DAG 材料。"},
+            {"title": "风险证据", "note": "风险门和合规缺口已保留。"},
+        ],
+        "limitations": ["仍需人工复核，且不构成正式投资建议。"],
+    }
+
+
 def _data_bundle() -> dict[str, object]:
     return {
         "schema_version": "data_bundle_v1",
@@ -623,7 +676,12 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert "evidence_count" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
     assert "detail_notes" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
     assert "composite_evidence" in result["step_results"]["dimension:value"]
-    assert "报告生成输入摘要" in result["report_result"]["answer"]
+    assert "核心结论与行动含义" in result["report_result"]["answer"]
+    section_titles = {section["title"] for section in result["report_result"]["sections"]}
+    assert "价值维度：估值分歧与安全边际" in section_titles
+    assert "市场维度：价格、资金与情绪确认度" in section_titles
+    assert "风险维度：风险门与缺失合规证据" in section_titles
+    assert "宏观维度：宏观调节器与仓位约束" in section_titles
     assert "sentiment_company_radar" not in result["step_results"]["dimension:risk"]["depends_on"]
     payload = json.dumps(result)
     for forbidden in ("layerMode", "fusionSteps", "layerPlan", "value_financial_analysis"):
@@ -834,15 +892,7 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
                 _compute_envelope(
                     "report_generator",
                     "l4_report_generator",
-                    {
-                        **build_report_result(
-                            build_decision_result({}, as_of="2026-06-04"),
-                            question="q",
-                        ),
-                        "title": "外部 L4 默认报告",
-                        "answer": "外部 L4 默认 /compute 已生成报告。",
-                        "status": "complete",
-                    },
+                    _high_quality_report(),
                 )
             )
         else:
@@ -888,9 +938,112 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
     assert result["provenance"]["llm_report_synthesis_used"] is False
     assert result["decision_result"]["decision"] == "manual_review"
     assert result["report_result"]["title"] == "外部 L4 默认报告"
+    assert result["report_result"]["answer"] == _high_quality_report()["answer"]
     assert result["step_results"]["decision_synthesizer"]["status"] == "complete"
     assert result["step_results"]["report_generator"]["status"] == "complete"
     assert "external_compute_default_runtime_binding" in result["step_results"]["report_generator"]["warnings"]
+
+
+def _run_demo_report_generator(monkeypatch, report_tool_result: dict[str, object]) -> dict:
+    import react_agent.fixed_dag_external_compute_bridge as bridge
+
+    def fake_invoke(entry, **_kwargs):
+        if entry.agent_id == "value_ml_valuation":
+            tool_result = _agent_conclusion()
+        elif entry.agent_id == "report_generator":
+            tool_result = report_tool_result
+        else:
+            raise AssertionError(f"unexpected demo agent {entry.agent_id}")
+        mapped = map_external_response_to_fixed_dag_object(
+            _compute_envelope(entry.agent_id, entry.external_agent_id, tool_result)
+        )
+        return {
+            "agent_id": entry.agent_id,
+            "status": "pass",
+            "mapped": mapped,
+            "failure_code": "",
+            "warning": "",
+        }
+
+    monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
+    return execute_fixed_dag_plan(
+        _plan(),
+        question="请分析 600519.SH",
+        as_of="2026-06-04",
+        context=Context(
+            enable_external_compute_demo=True,
+            external_compute_demo_allowlist=("value_ml_valuation", "report_generator"),
+        ),
+    )
+
+
+def test_report_enrichment_gate_enriches_pending_external_l4_report(monkeypatch) -> None:
+    pending_report = build_report_result(
+        build_decision_result({}, as_of="2026-06-04"),
+        question="请分析 600519.SH",
+    )
+
+    result = _run_demo_report_generator(monkeypatch, pending_report)
+    valid, reason = validate_dag_execution_result(result)
+
+    assert valid, reason
+    assert result["report_result"]["status"] == "complete"
+    assert result["report_result"]["title"] == "固定 DAG 研判报告"
+    assert "核心结论与行动含义" in result["report_result"]["answer"]
+    assert "价值维度：估值分歧与安全边际" in result["report_result"]["answer"]
+    assert "风险维度：风险门与缺失合规证据" in result["report_result"]["answer"]
+    assert "行动含义" in result["report_result"]["sections"][0]["content"]
+
+
+def test_report_enrichment_gate_does_not_overwrite_rich_external_l4_report(monkeypatch) -> None:
+    rich_report = _high_quality_report("请分析 600519.SH")
+
+    result = _run_demo_report_generator(monkeypatch, rich_report)
+
+    assert result["report_result"]["title"] == rich_report["title"]
+    assert result["report_result"]["answer"] == rich_report["answer"]
+    assert result["report_result"]["status"] == "complete"
+
+
+def test_report_enrichment_gate_keeps_original_when_enrichment_invalid(monkeypatch) -> None:
+    import react_agent.fixed_dag.report_quality_renderer as renderer
+
+    pending_report = build_report_result(
+        build_decision_result({}, as_of="2026-06-04"),
+        question="请分析 600519.SH",
+    )
+
+    def fail_builder(**_kwargs):
+        raise ValueError("invalid enrichment")
+
+    monkeypatch.setattr(renderer, "build_enriched_report_result_from_bundle", fail_builder)
+    result = _run_demo_report_generator(monkeypatch, pending_report)
+
+    assert result["report_result"]["status"] == "pending_implementation"
+    assert result["report_result"]["title"] == pending_report["title"]
+
+
+def test_report_enrichment_gate_keeps_original_when_enrichment_unsafe(monkeypatch) -> None:
+    import react_agent.fixed_dag.report_quality_renderer as renderer
+
+    pending_report = build_report_result(
+        build_decision_result({}, as_of="2026-06-04"),
+        question="请分析 600519.SH",
+    )
+    unsafe_report = {
+        **_high_quality_report("请分析 600519.SH"),
+        "answer": _high_quality_report("请分析 600519.SH")["answer"] + " raw_response",
+    }
+
+    monkeypatch.setattr(
+        renderer,
+        "build_enriched_report_result_from_bundle",
+        lambda **_kwargs: unsafe_report,
+    )
+    result = _run_demo_report_generator(monkeypatch, pending_report)
+
+    assert result["report_result"]["status"] == "pending_implementation"
+    assert result["report_result"]["title"] == pending_report["title"]
 
 
 def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
@@ -1256,9 +1409,14 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
     assert result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]["stance"] == "demo_positive"
     assert result["step_results"]["dimension:risk"]["composite_evidence"]["gate"] == "pass"
     assert result["report_input_bundle"]["risk_gate"]["gate"] == "pass"
-    assert "单体智能体输入" in result["report_result"]["answer"]
-    assert "综合智能体输入" in result["report_result"]["answer"]
-    assert "外部计算演示摘要" in result["report_result"]["answer"]
+    assert "核心结论与行动含义" in result["report_result"]["answer"]
+    assert "风险维度：风险门与缺失合规证据" in result["report_result"]["answer"]
+    assert result["report_input_bundle"]["l2_agent_summaries"]
+    assert result["report_input_bundle"]["l3_composite_summaries"]
+    assert any(
+        item["agent_id"] == "value_ml_valuation"
+        for item in result["report_input_bundle"]["l2_agent_summaries"]
+    )
     assert "live_verified" not in result["report_result"]["answer"]
     assert "/v1/agent/invoke" not in result["report_result"]["answer"]
     assert "http://127.0.0.1" not in rendered
@@ -1432,7 +1590,8 @@ def test_external_compute_overlays_task_aware_llm_placeholders(monkeypatch) -> N
     assert result["step_results"]["dimension:market"]["agent_task"]["upstream_agent_ids"]
     assert result["provenance"]["external_compute_demo_mapped_agents"] == ["value_ml_valuation"]
     assert result["provenance"]["internal_llm_placeholder_conclusions"] > 0
-    assert "agent_task_v1" in result["report_result"]["answer"]
+    assert "核心结论与行动含义" in result["report_result"]["answer"]
+    assert "agent_task_v1" in json.dumps(result["report_input_bundle"], ensure_ascii=False)
     assert "raw_response" not in rendered
     assert "/v1/agent/invoke" not in rendered
 
