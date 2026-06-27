@@ -91,9 +91,12 @@ call `/v1/agent/invoke`. The current policy is `enabled_by_default=true` for
 the required ids `value_traditional_valuation`, `value_ml_valuation`,
 `value_meta_valuation`, `market_ipo_investor_behavior`,
 `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
-`macro_index_valuation`, and `value_composite`, plus optional canary
-`macro_composite`. Rollback uses `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT`
-without changing runtime bindings.
+`macro_index_valuation`, and `value_composite`. RQ3A adds optional enabled
+coverage rows for `value_research_synthesis`, `market_stock_technical`,
+`sentiment_company_radar`, `risk_financial_fraud`, `risk_identification`,
+`risk_compliance_review`, `macro_commodity_pricing`, `market_composite`,
+`risk_composite`, and `macro_composite`. Rollback uses
+`DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT` without changing runtime bindings.
 
 ## Target IDs
 

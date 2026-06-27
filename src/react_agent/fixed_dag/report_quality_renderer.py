@@ -197,16 +197,94 @@ def _stance_summary(items: Sequence[Mapping[str, Any]]) -> tuple[int, int, int]:
     return positive, negative, neutral
 
 
+def _item_status(item: Mapping[str, Any]) -> str:
+    return _safe_text(item.get("status"), limit=80)
+
+
+def _is_reportable_item(item: Mapping[str, Any]) -> bool:
+    """Return whether an item has public-safe material worth rendering as evidence."""
+    status = _item_status(item)
+    source = _safe_text(item.get("source"), limit=120)
+    if status in {"error", "failed"}:
+        return False
+    has_structured_material = any(
+        (
+            _as_list(item.get("research_points")),
+            _as_list(item.get("evidence_items")),
+            _as_mapping(item.get("domain_metrics")),
+            _as_list(item.get("drivers")),
+            _as_mapping(item.get("data_quality")),
+        )
+    )
+    if has_structured_material and source not in {"reset_skeleton", "internal_llm_placeholder"}:
+        return True
+    if status in {"complete", "partial"} and source not in {"reset_skeleton", "internal_llm_placeholder"}:
+        summary = _safe_text(item.get("summary"), limit=240)
+        return bool(summary and not _looks_like_source_list(summary))
+    return False
+
+
+def _reportable_items(items: Sequence[Mapping[str, Any]]) -> list[Mapping[str, Any]]:
+    return [item for item in items if _is_reportable_item(item)]
+
+
+def _coverage_gap_line(items: Sequence[Mapping[str, Any]], *, limit: int = 6) -> str:
+    gaps: list[str] = []
+    for item in items:
+        if _is_reportable_item(item):
+            continue
+        name = _safe_text(item.get("display_name") or item.get("agent_id"), limit=60)
+        status = _status_label(item.get("status"))
+        if name:
+            gaps.append(f"{name}={status or '未形成材料'}")
+        if len(gaps) >= limit:
+            break
+    if not gaps:
+        return ""
+    suffix = "等" if len(gaps) < len([item for item in items if not _is_reportable_item(item)]) else ""
+    return "覆盖限制：" + "；".join(gaps) + suffix
+
+
+def _runtime_status_by_id(evidence_bundle: Mapping[str, Any]) -> Mapping[str, Any]:
+    return _as_mapping(evidence_bundle.get("agent_runtime_status_by_id"))
+
+
+def _agent_runtime_status(
+    evidence_bundle: Mapping[str, Any],
+    agent_id: str,
+) -> Mapping[str, Any]:
+    return _as_mapping(_runtime_status_by_id(evidence_bundle).get(agent_id))
+
+
+def _risk_compliance_state(
+    *,
+    l2_items: Sequence[Mapping[str, Any]],
+    evidence_bundle: Mapping[str, Any],
+) -> tuple[str, str]:
+    item = _find_agent(l2_items, "risk_compliance_review")
+    runtime = _agent_runtime_status(evidence_bundle, "risk_compliance_review")
+    if runtime.get("mapped"):
+        return "mapped", "公告合规审查已通过 production compute 映射，可作为风险维度的降权证据。"
+    if runtime.get("failed") or (runtime.get("attempted") and not runtime.get("mapped")):
+        code = _safe_text(runtime.get("adapter_failure_code"), limit=100) or "adapter_failed"
+        return "adapter_failed", f"公告合规审查已尝试 production compute，但 adapter 映射失败（{code}）。"
+    if _is_reportable_item(item):
+        return "mapped", "公告合规审查已有 public-safe 降权材料。"
+    return "not_called", "公告合规审查未被当前 production policy 调用，不能写成已完成合规证据。"
+
+
 def _dimension_thesis(
     *,
     dimension: str,
     l2_items: Sequence[Mapping[str, Any]],
     l3_item: Mapping[str, Any],
+    evidence_bundle: Mapping[str, Any] | None = None,
 ) -> str:
-    complete = sum(1 for item in l2_items if str(item.get("status") or "") == "complete")
-    partial = sum(1 for item in l2_items if str(item.get("status") or "") == "partial")
+    reportable = _reportable_items(l2_items)
+    complete = sum(1 for item in reportable if str(item.get("status") or "") == "complete")
+    partial = sum(1 for item in reportable if str(item.get("status") or "") == "partial")
     confidence = _safe_float(l3_item.get("confidence"))
-    positive, negative, neutral = _stance_summary(l2_items)
+    positive, negative, neutral = _stance_summary(reportable)
     if dimension == "value":
         if positive and negative:
             return (
@@ -225,8 +303,17 @@ def _dimension_thesis(
         )
     if dimension == "risk":
         gate = _safe_text(l3_item.get("gate"), limit=60) or "未给出"
+        state, state_text = _risk_compliance_state(
+            l2_items=l2_items,
+            evidence_bundle=_as_mapping(evidence_bundle),
+        )
+        if state == "mapped":
+            return (
+                f"风险维度的风险门为 {gate}，合规审查已有降权材料，"
+                "但最终仍应结合崩盘、欺诈和识别信号人工复核。"
+            )
         return (
-            f"风险维度的风险门为 {gate}，但合规审查材料未成功映射，"
+            f"风险维度的风险门为 {gate}，但{state_text}"
             "因此风险结论只能支持人工复核后的研究观察，不能写成风险已完全解除。"
         )
     if dimension == "macro":
@@ -321,6 +408,8 @@ def _member_line(item: Mapping[str, Any], *, limit: int = 5) -> str:
         confidence = _safe_float(member.get("confidence"))
         status = _status_label(member.get("status"))
         stance = _safe_text(member.get("stance"), limit=40)
+        if status in {"未接入真实材料", "未形成评价"} and not (weight or confidence):
+            continue
         fragments = [name]
         if weight:
             fragments.append(f"权重{weight:.2f}")
@@ -339,12 +428,18 @@ def _dimension_section(
     dimension: str,
     l2_items: Sequence[Mapping[str, Any]],
     l3_item: Mapping[str, Any],
+    evidence_bundle: Mapping[str, Any],
 ) -> dict[str, str]:
     lines: list[str] = []
     l3_summary = _safe_text(l3_item.get("summary"), limit=240)
     status = _status_label(l3_item.get("status"))
     confidence = _safe_float(l3_item.get("confidence"))
-    thesis = _dimension_thesis(dimension=dimension, l2_items=l2_items, l3_item=l3_item)
+    thesis = _dimension_thesis(
+        dimension=dimension,
+        l2_items=l2_items,
+        l3_item=l3_item,
+        evidence_bundle=evidence_bundle,
+    )
     lines.append(f"业务判断：{thesis}")
     if l3_summary and not _looks_like_source_list(l3_summary):
         lines.append(f"综合层补充结论：{l3_summary}。")
@@ -353,7 +448,10 @@ def _dimension_section(
     members = _member_line(l3_item)
     if members:
         lines.append(f"{_DIMENSION_LABELS[dimension]}成员权重与覆盖情况：{members}。")
-    for item in l2_items[:5]:
+    gap_line = _coverage_gap_line(l2_items)
+    if gap_line:
+        lines.append(gap_line + "。")
+    for item in _reportable_items(l2_items)[:5]:
         name = _safe_text(item.get("display_name") or item.get("agent_id"), limit=60)
         status = _status_label(item.get("status"))
         confidence = _safe_float(item.get("confidence"))
@@ -377,9 +475,13 @@ def _dimension_section(
     if dimension == "risk":
         gate = _safe_text(l3_item.get("gate"), limit=40)
         risk_score = _safe_float(l3_item.get("risk_score"))
+        _state, state_text = _risk_compliance_state(
+            l2_items=l2_items,
+            evidence_bundle=evidence_bundle,
+        )
         lines.append(
             f"风险门需要显式看待：当前风险门为 {gate or '未给出'}，风险分约 {risk_score:.2f}；"
-            "risk_compliance_review 未成功映射，因此合规审查不能被写成已完成证据。"
+            f"{state_text}"
         )
     if dimension == "macro":
         regime = _safe_text(l3_item.get("regime"), limit=80)
@@ -419,14 +521,23 @@ def _limitations(
     evidence_bundle: Mapping[str, Any],
 ) -> list[str]:
     quality = _as_mapping(evidence_bundle.get("quality_summary"))
+    l2_items = [
+        _as_mapping(item)
+        for item in _as_list(evidence_bundle.get("l2_agent_outputs"))
+        if isinstance(item, Mapping)
+    ]
+    _state, risk_text = _risk_compliance_state(
+        l2_items=l2_items,
+        evidence_bundle=evidence_bundle,
+    )
     limitations: list[str] = []
     if _as_list(original_report.get("limitations")):
         limitations.append("原报告中的运行范围、连接状态和报告生成路径限制仍然保留。")
     required = [
         "本次为 deterministic report enrichment，只重排 public-safe 材料，不改变 runtime、catalog 或 runtime bindings。",
-        "risk_compliance_review 返回结果未被当前 adapter 映射，风险维度必须保留合规审查缺口。",
+        f"{risk_text}风险维度必须保留合规审查边界。",
         f"L2 partial 数量为 {quality.get('l2_partial', 0)}，L3 partial 数量为 {quality.get('l3_partial', 0)}；这些覆盖限制没有被隐藏。",
-        "本报告不调用 provider、不调用 endpoint，也不使用 invoke 路径。",
+        "本报告只使用已进入 public-safe bundle 的材料；live 验证边界为 compute-only、no-invoke、no-provider、no-raw-response。",
     ]
     for item in required:
         if item not in limitations:
@@ -449,7 +560,7 @@ def _evidence_cards(
     ]
     for agent_id in preferred:
         item = _find_agent(l2_items, agent_id)
-        if not item:
+        if not item or not _is_reportable_item(item):
             continue
         title = _safe_text(item.get("display_name") or agent_id, limit=80)
         claims = _research_claims(item, limit=1)
@@ -457,7 +568,24 @@ def _evidence_cards(
         note = "；".join([*claims, *facts]) or _safe_text(item.get("summary"), limit=260)
         if title and note:
             cards.append({"title": title, "note": _safe_text(note, limit=_MAX_NOTE)})
+    for item in l2_items:
+        if len(cards) >= 8:
+            break
+        if not _is_reportable_item(item):
+            continue
+        title = _safe_text(item.get("display_name") or item.get("agent_id"), limit=80)
+        if not title or any(card.get("title") == title for card in cards):
+            continue
+        claims = _research_claims(item, limit=1)
+        facts = _evidence_facts(item, limit=1)
+        metrics = _metrics_line(item, limit=1)
+        note = "；".join([part for part in [*claims, *facts, metrics] if part])
+        note = note or _safe_text(item.get("summary"), limit=260)
+        if note:
+            cards.append({"title": title, "note": _safe_text(note, limit=_MAX_NOTE)})
     for item in l3_items:
+        if not _is_reportable_item(item):
+            continue
         title = _safe_text(item.get("display_name") or item.get("agent_id"), limit=80)
         note = _safe_text(item.get("summary"), limit=260)
         if title and note:
@@ -773,19 +901,19 @@ def build_enriched_report_result_from_bundle(
     ]
     decision = _decision_label(_as_mapping(agent_evidence_bundle.get("decision_output")).get("decision"))
     quality = _as_mapping(agent_evidence_bundle.get("quality_summary"))
+    question_summary = _safe_text(str(question).split("。")[0], limit=220)
     answer_lines = [
         (
             "研判流程输出的核心结论与行动含义：当前材料支持研究观察和人工复核，"
             "不支持直接买入或卖出的单点结论。"
         ),
-        f"用户问题：{_safe_text(question, limit=240)}",
+        f"用户问题覆盖估值、市场、风险和宏观四个维度：{question_summary}。",
         "本报告正文与 sections 保持一致，依次覆盖：" + "；".join(section_titles) + "。",
-        "单体智能体输入和综合智能体输入已压缩为业务判断、证据卡片和限制说明，不展示 raw agent JSON。",
-        "外部计算演示摘要仅作为接入路径说明，具体判断以各维度业务 section 为准。",
+        "价值、市场、风险和宏观材料已压缩为业务判断、证据卡片和限制说明。",
         (
-            f"行动含义：{decision or '未给出'}；L2 完成 {quality.get('l2_complete', 0)}/{quality.get('l2_total', 0)}，"
+            f"估值、市场、风险和宏观行动含义：{decision or '未给出'}；L2 完成 {quality.get('l2_complete', 0)}/{quality.get('l2_total', 0)}，"
             f"L3 完成 {quality.get('l3_complete', 0)}/{quality.get('l3_total', 0)}。"
-            "触发条件包括市场确认改善、风险合规材料补齐、宏观压力缓和，"
+            "估值、市场、风险和宏观触发条件包括市场确认改善、风险合规材料补齐、宏观压力缓和，"
             "以及估值分歧被更多完整成员共同确认。"
         ),
     ]
@@ -793,15 +921,19 @@ def build_enriched_report_result_from_bundle(
         item = l3_by_dimension.get(dimension, {})
         answer_lines.append(
             f"{_DIMENSION_LABELS[dimension]}："
-            f"{_dimension_thesis(dimension=dimension, l2_items=l2_by_dimension[dimension], l3_item=item)}"
+            f"{_dimension_thesis(dimension=dimension, l2_items=l2_by_dimension[dimension], l3_item=item, evidence_bundle=agent_evidence_bundle)}"
         )
-    risk_crash = _find_agent(l2_items, "risk_crash")
-    risk_fraud = _find_agent(l2_items, "risk_financial_fraud")
-    macro_index = _find_agent(l2_items, "macro_index_valuation")
-    for item in (risk_crash, risk_fraud, macro_index):
+    research_items = [*_reportable_items(l2_items), *_reportable_items(l3_items)]
+    research_line_count = 0
+    for item in research_items:
         name = _safe_text(item.get("display_name") or item.get("agent_id"), limit=80)
-        for claim in _research_claims(item, limit=4):
+        for claim in _research_claims(item, limit=8):
             answer_lines.append(f"{name}研究判断引用：{claim}")
+            research_line_count += 1
+            if research_line_count >= 18:
+                break
+        if research_line_count >= 18:
+            break
     sections = [
         {
             "id": "core_decision",
@@ -811,7 +943,7 @@ def build_enriched_report_result_from_bundle(
                 "风险门未形成阻断但合规审查缺口需要保留，宏观调节器提示仓位应受约束。"
                 f" 决策输出为 {decision or '未给出'}，行动含义是先建立观察触发条件，"
                 "再等待市场确认、风险证据补强和宏观压力缓和。"
-                "这不是正式投资建议，也不替代人工投研判断。",
+                "风险提示：这不是正式投资建议，也不替代人工投研判断。",
                 limit=_MAX_SECTION,
             ),
         },
@@ -820,6 +952,7 @@ def build_enriched_report_result_from_bundle(
                 dimension=dimension,
                 l2_items=l2_by_dimension[dimension],
                 l3_item=l3_by_dimension.get(dimension, {}),
+                evidence_bundle=agent_evidence_bundle,
             )
             for dimension in ("value", "market", "risk", "macro")
         ],
@@ -828,9 +961,9 @@ def build_enriched_report_result_from_bundle(
             "id": "coverage_limitations",
             "title": "覆盖范围与不能下结论的部分",
             "content": _safe_text(
-                "本轮保留失败、partial 和占位覆盖说明。risk_compliance_review 未成功映射，"
-                "不能把合规审查写成已完成；未完成成员只影响覆盖范围，不被当作真实证据。"
-                "外部 L4 report_generator 已返回结构化结果；deterministic enrichment 只对现有 public-safe 材料做有界重排。",
+                "本轮保留失败、partial 和未调用覆盖说明。未完成成员只影响覆盖范围，"
+                "不被当作真实证据。外部 L4 report_generator 已返回结构化结果；"
+                "deterministic enrichment 只对现有 public-safe 材料做有界重排。",
                 limit=_MAX_SECTION,
             ),
         },

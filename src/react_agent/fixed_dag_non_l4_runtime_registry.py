@@ -52,22 +52,24 @@ NON_L4_REQUIRED_AGENT_IDS = (
     "macro_index_valuation",
     "value_composite",
 )
-NON_L4_OPTIONAL_AGENT_IDS = ("macro_composite",)
-NON_L4_EXCLUDED_AGENT_IDS = (
-    "entity_relation_extractor",
-    "sentiment_company_radar",
-    "market_fund_manager_behavior",
-    "macro_sentiment",
-    "macro_industry_hotspot",
-    "financial_data_service",
+NON_L4_OPTIONAL_AGENT_IDS = (
     "value_research_synthesis",
     "market_stock_technical",
+    "sentiment_company_radar",
     "risk_financial_fraud",
     "risk_identification",
     "risk_compliance_review",
     "macro_commodity_pricing",
     "market_composite",
     "risk_composite",
+    "macro_composite",
+)
+NON_L4_EXCLUDED_AGENT_IDS = (
+    "entity_relation_extractor",
+    "market_fund_manager_behavior",
+    "macro_sentiment",
+    "macro_industry_hotspot",
+    "financial_data_service",
     "decision_synthesizer",
     "report_generator",
 )
@@ -82,6 +84,8 @@ NON_L4_ALLOWED_LAYER_BY_STAGE = {
 }
 NON_L4_COMPOSITE_DIMENSION_BY_AGENT = {
     "value_composite": "value",
+    "market_composite": "market",
+    "risk_composite": "risk",
     "macro_composite": "macro",
 }
 NON_L4_ACTIVATION_SOURCE_ARTIFACT = "production_activation_candidate_set.json"

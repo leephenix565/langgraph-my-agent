@@ -160,7 +160,7 @@ def test_enriched_report_has_business_first_core_and_no_core_source_labels() -> 
     assert "行动含义" in core
     assert "触发条件" in core
     assert "人工复核" in core
-    assert "risk_compliance_review 未成功映射" in json.dumps(report, ensure_ascii=False)
+    assert "公告合规审查未被当前 production policy 调用" in json.dumps(report, ensure_ascii=False)
     assert "spts_database" not in core
     assert "xgboost_model" not in core
     assert "crash_risk_model" not in core

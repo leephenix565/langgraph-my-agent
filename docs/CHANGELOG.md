@@ -3,6 +3,30 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - RQ3A production coverage and projection lift
+
+### Changed
+
+- Expanded the source-controlled non-L4 production compute policy with
+  optional, fail-soft coverage rows for `value_research_synthesis`,
+  `market_stock_technical`, `sentiment_company_radar`,
+  `risk_financial_fraud`, `risk_identification`,
+  `risk_compliance_review`, `macro_commodity_pricing`, `market_composite`,
+  and `risk_composite`.
+- Updated deterministic report enrichment to use public-safe runtime status,
+  distinguish `risk_compliance_review` not-called / adapter-failed / mapped
+  states, remove production-visible demo wording, and project available
+  `research_points` more fully into the report surface.
+- Updated current authority docs to record that RQ2E live scored `27/45`
+  because of production coverage/projection gaps, and that RQ3A acceptance must
+  come from production-mode live evidence rather than sandbox demo output.
+
+### Not Done
+
+- No runtime binding, catalog, public schema, graph topology, quality scoring
+  threshold, `/v1/agent/invoke`, provider, process, env-value, service-source,
+  or sandbox-demo acceptance change.
+
 ## 2026-06-27 - RQ2E authority and manifest readiness notes
 
 ### Changed

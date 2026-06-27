@@ -58,6 +58,9 @@ of that runtime boundary: the non-L4 production compute policy is
 `enabled_by_default=true`, and L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`. Compute evidence must not be
 recorded as invoke evidence; `/v1/agent/invoke` remains out of the default path.
+RQ3A expands the non-L4 policy with optional, fail-soft production coverage
+rows to improve report quality in production mode; this is not a runtime
+binding change and not sandbox demo acceptance.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

@@ -18,11 +18,16 @@ lower sections are provenance notes only; current status lives in
 - Non-L4 production compute policy:
   `config/fixed_dag/non_l4_external_compute_policy.json` is
   `enabled_by_default=true` and separate from runtime bindings. It is
-  `/v1/agent/compute` only for `value_traditional_valuation`,
-  `value_ml_valuation`, `value_meta_valuation`,
-  `market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
-  `macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
-  canary `macro_composite`.
+  `/v1/agent/compute` only. Required enabled ids are
+  `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `market_ipo_investor_behavior`,
+  `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
+  `macro_index_valuation`, and `value_composite`; optional enabled RQ3A
+  coverage rows are `value_research_synthesis`, `market_stock_technical`,
+  `sentiment_company_radar`, `risk_financial_fraud`,
+  `risk_identification`, `risk_compliance_review`,
+  `macro_commodity_pricing`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
 - Bidirectional sync workflow: strict non-zero publish-and-rebase has been
   verified; future cycles use exact experiment/change-unit/approval contracts.
 - Current repository phase: post-consolidation normal maintenance / product

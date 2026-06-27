@@ -170,12 +170,21 @@ RQ2E non-claims:
 
 The current non-L4 production compute policy is source-controlled in
 `config/fixed_dag/non_l4_external_compute_policy.json`, separate from
-`runtime_bindings.json`, and `enabled_by_default=true` for
+`runtime_bindings.json`, and `enabled_by_default=true`. Required enabled ids are
 `value_traditional_valuation`, `value_ml_valuation`, `value_meta_valuation`,
 `market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
-`macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
-canary `macro_composite`. L4 `external_compute_default` remains limited to
+`macro_analysis`, `macro_index_valuation`, and `value_composite`. RQ3A adds
+optional enabled coverage rows for `value_research_synthesis`,
+`market_stock_technical`, `sentiment_company_radar`,
+`risk_financial_fraud`, `risk_identification`, `risk_compliance_review`,
+`macro_commodity_pricing`, `market_composite`, `risk_composite`, and
+`macro_composite`; they remain compute-only, fail-soft, and outside
+`runtime_bindings.json`. L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`; both are compute-only paths.
+
+RQ3A follows a production-mode acceptance rule: sandbox/demo artifacts may
+explain score deltas, but only a controlled production-mode live E2E from the
+synced prod repo can be acceptance evidence.
 
 ## Manual, Live, And Archived Gates
 

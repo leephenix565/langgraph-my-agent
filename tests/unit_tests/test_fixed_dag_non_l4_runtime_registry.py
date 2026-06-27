@@ -37,9 +37,9 @@ def test_non_l4_policy_file_validates_and_matches_activation_set() -> None:
     summary = non_l4_policy_summary(policy)
     assert tuple(summary["required_agent_ids"]) == NON_L4_REQUIRED_AGENT_IDS
     assert tuple(summary["optional_agent_ids"]) == NON_L4_OPTIONAL_AGENT_IDS
-    assert non_l4_policy_enabled_agent_ids(policy) == (
-        NON_L4_REQUIRED_AGENT_IDS + NON_L4_OPTIONAL_AGENT_IDS
-    )
+    enabled_ids = non_l4_policy_enabled_agent_ids(policy)
+    assert set(enabled_ids) == set(NON_L4_REQUIRED_AGENT_IDS + NON_L4_OPTIONAL_AGENT_IDS)
+    assert len(enabled_ids) == len(NON_L4_REQUIRED_AGENT_IDS + NON_L4_OPTIONAL_AGENT_IDS)
 
 
 def test_non_l4_policy_entries_are_loopback_compute_only() -> None:
@@ -73,10 +73,10 @@ def test_non_l4_policy_rejects_duplicate_unknown_and_l4_agents() -> None:
 
 def test_non_l4_policy_rejects_excluded_or_mismatched_agents() -> None:
     excluded = _policy()
-    excluded["agents"][0]["agent_id"] = "sentiment_company_radar"
+    excluded["agents"][0]["agent_id"] = "market_fund_manager_behavior"
     valid, reason = validate_non_l4_external_compute_policy(excluded)
     assert not valid
-    assert reason == "excluded_agent_present:sentiment_company_radar"
+    assert reason == "excluded_agent_present:market_fund_manager_behavior"
 
     layer = _policy()
     layer["agents"][0]["layer"] = "L3"

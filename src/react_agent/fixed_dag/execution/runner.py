@@ -456,6 +456,47 @@ def _augment_report_with_external_compute_demo(
     }
 
 
+def _attach_agent_runtime_status_to_report_input_bundle(
+    report_input_bundle: dict[str, Any],
+    *,
+    production_non_l4_summary: Mapping[str, Any],
+    external_l4_compute_default_summary: Mapping[str, Any],
+    external_demo_summary: Mapping[str, Any],
+) -> None:
+    evidence_bundle = report_input_bundle.get("agent_evidence_bundle")
+    if not isinstance(evidence_bundle, dict):
+        return
+    status_by_id: dict[str, dict[str, Any]] = {}
+
+    def merge_run(summary: Mapping[str, Any], runtime_source: str) -> None:
+        called = {str(agent_id) for agent_id in summary.get("called_agents", [])}
+        mapped = {str(agent_id) for agent_id in summary.get("mapped_agents", [])}
+        failed = {str(agent_id) for agent_id in summary.get("failed_agents", [])}
+        fallback = {str(agent_id) for agent_id in summary.get("fallback_agents", [])}
+        for agent_id in sorted(called | mapped | failed | fallback):
+            row = status_by_id.setdefault(agent_id, {"agent_id": agent_id})
+            row["runtime_source"] = runtime_source
+            row["attempted"] = bool(row.get("attempted")) or agent_id in called
+            row["mapped"] = bool(row.get("mapped")) or agent_id in mapped
+            row["failed"] = bool(row.get("failed")) or agent_id in failed
+            row["fallback"] = bool(row.get("fallback")) or agent_id in fallback
+        for warning in summary.get("warnings", []):
+            text = str(warning or "")
+            parts = text.split(":")
+            if len(parts) < 3:
+                continue
+            agent_id = parts[1]
+            row = status_by_id.setdefault(agent_id, {"agent_id": agent_id})
+            row.setdefault("runtime_source", runtime_source)
+            row["adapter_failure_code"] = parts[-1][:120]
+
+    merge_run(production_non_l4_summary, "production_external_compute")
+    merge_run(external_l4_compute_default_summary, "external_compute_default")
+    merge_run(external_demo_summary, "external_compute_demo")
+    if status_by_id:
+        evidence_bundle["agent_runtime_status_by_id"] = status_by_id
+
+
 def _maybe_enrich_weak_report_result(
     report_result: dict[str, Any],
     *,
@@ -858,6 +899,12 @@ def execute_fixed_dag_plan(
         agent_tasks=agent_tasks,
         data_bundle=data_bundle,
         entity_relation_bundle=entity_relation_bundle,
+    )
+    _attach_agent_runtime_status_to_report_input_bundle(
+        report_input_bundle,
+        production_non_l4_summary=production_non_l4_summary,
+        external_l4_compute_default_summary=external_l4_compute_default_summary,
+        external_demo_summary=external_demo_summary,
     )
     valid_report_input_bundle, _report_input_bundle_reason = validate_report_input_bundle(
         report_input_bundle

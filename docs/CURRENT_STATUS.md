@@ -27,16 +27,25 @@ records.
 - Non-L4 production external compute is governed by
   `config/fixed_dag/non_l4_external_compute_policy.json`, not by
   `runtime_bindings.json`. The policy is currently `enabled_by_default=true`
-  and compute-only for these enabled ids: `value_traditional_valuation`,
-  `value_ml_valuation`, `value_meta_valuation`,
-  `market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
-  `macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
-  canary `macro_composite`.
+  and compute-only. Required enabled ids remain
+  `value_traditional_valuation`, `value_ml_valuation`,
+  `value_meta_valuation`, `market_ipo_investor_behavior`,
+  `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
+  `macro_index_valuation`, and `value_composite`. RQ3A adds optional enabled
+  coverage rows for `value_research_synthesis`, `market_stock_technical`,
+  `sentiment_company_radar`, `risk_financial_fraud`,
+  `risk_identification`, `risk_compliance_review`,
+  `macro_commodity_pricing`, `market_composite`, `risk_composite`, and
+  `macro_composite`.
 
 ## Report Quality RQ2E Status
 
 - Current target: `REPORT-QUALITY-RQ2E Controlled Online E2E Verification After
   Main-System Sync`.
+- RQ2E live at commit `12faf7635a9e29b3392ca8c64e83924c0fbb2f4e` completed
+  safely but scored `27/45`; RQ3A treats this as a production coverage and
+  report-projection gap, not as sandbox drift or a reason to accept sandbox demo
+  output.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.
