@@ -87,7 +87,13 @@ and validated by `src/react_agent/fixed_dag_non_l4_runtime_registry.py`, and
 the executor uses `src/react_agent/fixed_dag_production_external_compute.py` to
 overlay the approved non-L4 `/v1/agent/compute` results. This path does not
 modify `runtime_bindings.json`, does not use demo URL overrides, and does not
-call `/v1/agent/invoke`.
+call `/v1/agent/invoke`. The current policy is `enabled_by_default=true` for
+the required ids `value_traditional_valuation`, `value_ml_valuation`,
+`value_meta_valuation`, `market_ipo_investor_behavior`,
+`market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
+`macro_index_valuation`, and `value_composite`, plus optional canary
+`macro_composite`. Rollback uses `DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT`
+without changing runtime bindings.
 
 ## Target IDs
 
@@ -118,8 +124,8 @@ call `/v1/agent/invoke`.
 | market_composite | L3 | market | market dimension composite |
 | risk_composite | L3 | risk | risk dimension composite |
 | macro_composite | L3 | macro | macro dimension composite |
-| decision_synthesizer | L4 | decision | deterministic decision seam; optional default-off compute overlay |
-| report_generator | L4 | report | deterministic report seam; optional default-off compute overlay |
+| decision_synthesizer | L4 | decision | deterministic fallback plus active compute-only `external_compute_default` binding |
+| report_generator | L4 | report | deterministic fallback plus active compute-only `external_compute_default` binding |
 
 The company sentiment radar output route is `market_composite` only. Generic
 event flags may still exist in conclusion contracts, but the radar is not a
@@ -156,27 +162,15 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   `research_points` and `provenance.llm_explanation` to L3 outputs, but it must
   not change fusion fields such as `stance`, `confidence`, `gate`, `risk_score`,
   `dimension_weights`, member weights, status, or contributing agents.
-- L4 produces deterministic decision and report outputs with stable fields.
-  When the default-off external compute demo bridge is explicitly enabled and
-  the L4 ids are allowlisted, `decision_synthesizer` may overlay
-  `decision_result_v1` from a loopback compute service and `report_generator`
-  may overlay `report_result_v1`. This does not change runtime bindings, live
-  flags, or the compute-only boundary. R8-13J provider-backed L4 compute pass
-  proves the external service contract, not default runtime readiness; R8-13L
-  keeps external L4 runtime binding review as a separate checklist-gated phase.
-  R8-13M adds a metadata-only L4 runtime dry run that can report missing
-  prerequisites without changing active graph behavior. R8-13N packages the
-  required runtime-review evidence as safe local metadata before any explicit
-  runtime-binding phase may be opened. R8-13O records the candidate package
-  with compute, transcript-safety, and rollback evidence passing while operator
-  approval remains pending. R8-13P preflights the binding phase and keeps
-  config edits blocked until runtime schema and executor support an external L4
-  compute-default path. R8-13Q adds that schema/executor support, switches only
-  the two L4 runtime bindings to `external_compute_default`, and validates a
-  controlled default run against production-source `/v1/agent/compute` ports
-  `10025`/`10026`. This L4 default path is compute-only, does not call
-  `/v1/agent/invoke`, and can be disabled for rollback/tests through
-  `disable_external_compute_default`.
+- L4 builds deterministic decision and report fallback outputs with stable
+  fields, then the active R8-13Q runtime may overlay them through the two L4
+  `external_compute_default` runtime bindings. Only `decision_synthesizer` and
+  `report_generator` use that runtime kind; both target production-source
+  `/v1/agent/compute` ports `10025`/`10026`, do not call `/v1/agent/invoke`,
+  and can be disabled for rollback/tests through
+  `disable_external_compute_default`. The older default-off external compute
+  demo bridge remains a separate controlled/demo path and is not
+  `runtime_bindings.json` authority.
 - Public output remains a single assistant answer.
 - R3 placeholders use `status=pending_implementation` until real business
   implementations replace them.

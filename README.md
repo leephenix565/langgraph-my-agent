@@ -28,7 +28,9 @@ they are evidence, not current authority.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
   `config/fixed_dag/agent_catalog.json`.
-- Runtime binding authority: `config/fixed_dag/runtime_bindings.json`.
+- Runtime binding authority: `config/fixed_dag/runtime_bindings.json`; the
+  source-controlled non-L4 production compute policy is separate and lives in
+  `config/fixed_dag/non_l4_external_compute_policy.json`.
 - Sync workflow: strict publish-and-rebase has completed a real non-zero cycle;
   future work uses normal experiment/change-unit/approval flow.
 - Repository Authority & Active-Core Consolidation: complete; M4A found no P4
@@ -38,7 +40,7 @@ they are evidence, not current authority.
 
 ## Active Runtime Skeleton
 
-The active graph is now deterministic and provider-free:
+The active graph is provider-free and has no external `/v1/agent/invoke` path:
 
 ```text
 user input
@@ -51,7 +53,11 @@ user input
 
 `execute_fixed_dag` walks the 27-agent `fixed_dag_plan_v1` by validated
 dependencies, produces topological batches, records per-step execution results,
-and fills the L2/L3/L4 placeholder result contracts.
+and fills the L2/L3/L4 result contracts. Current compute-only defaults are part
+of that runtime boundary: the non-L4 production compute policy is
+`enabled_by_default=true`, and L4 `external_compute_default` remains limited to
+`decision_synthesizer` and `report_generator`. Compute evidence must not be
+recorded as invoke evidence; `/v1/agent/invoke` remains out of the default path.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and
@@ -153,12 +159,14 @@ records how each id currently maps to one of these runtime categories:
 
 - deterministic skeleton seams
 - external HTTP candidates
+- external compute defaults
 - pending placeholders
 
-External HTTP candidates are disabled by default and are not live verified.
-Legacy aNN ids may appear only as `legacy_agent_id` migration notes, never as
-primary reset ids. Endpoint URLs and env var names are registry metadata for
-later adapter work; R4-B does not call them.
+Only `decision_synthesizer` and `report_generator` are
+`external_compute_default`, and those bindings target loopback
+`/v1/agent/compute`, not `/v1/agent/invoke`. Other external HTTP candidates
+remain disabled by default. Legacy aNN ids may appear only as `legacy_agent_id`
+migration notes, never as primary reset ids.
 
 The executor annotates `fixed_dag_step_result_v1` records with binding metadata
 such as `runtime_kind`, `implementation_status`, `binding_source`,
@@ -287,6 +295,15 @@ conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py
 repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
+
+`REPORT-QUALITY-RQ2E Controlled Online E2E Verification After Main-System Sync`
+is the current report-quality live-verification target. Its controlled online
+E2E artifact must pass the offline report-quality audit with score `>=29/45`,
+`renderer_quality_gate.passed=true`, unsafe scan pass,
+`template_phrase_count<=8`, answer/section parity `>=0.90`, and traceability
+`>=0.85`. RQ2E preflight/audit work does not call `/v1/agent/invoke`, make
+direct provider calls, perform process actions, read env values, or retain raw
+service/provider responses.
 
 For R8-2 selected compiler changes, use the narrow additive gate:
 

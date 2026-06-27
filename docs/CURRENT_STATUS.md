@@ -22,8 +22,29 @@ records.
 - L4 `decision_synthesizer` and `report_generator` are the current
   compute-default external bindings. This is a compute path, not an invoke
   path.
-- `invoke_enabled_by_default` remains false for the catalog/runtime binding
-  boundary.
+- `default_external_invoke_enabled=false` remains the runtime-binding default.
+  The two L4 compute-default rows also keep `invoke_enabled_by_default=false`.
+- Non-L4 production external compute is governed by
+  `config/fixed_dag/non_l4_external_compute_policy.json`, not by
+  `runtime_bindings.json`. The policy is currently `enabled_by_default=true`
+  and compute-only for these enabled ids: `value_traditional_valuation`,
+  `value_ml_valuation`, `value_meta_valuation`,
+  `market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
+  `macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
+  canary `macro_composite`.
+
+## Report Quality RQ2E Status
+
+- Current target: `REPORT-QUALITY-RQ2E Controlled Online E2E Verification After
+  Main-System Sync`.
+- RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
+  approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
+  digests, authority docs in sync, and checksum-verifiable input artifacts.
+- RQ2E acceptance uses the report-quality audit output for the controlled
+  online E2E artifact: score `>=29/45`, `renderer_quality_gate.passed=true`,
+  unsafe scan pass, `template_phrase_count<=8`,
+  `answer_section_parity.parity_ratio>=0.90`, and
+  `traceability.traceability_ratio>=0.85`.
 
 ## Sync Workflow Status
 
@@ -66,6 +87,13 @@ change is part of this closeout.
 - Current docs do not add runtime bindings, live flags, process actions, or
   provider calls.
 - Default validation and sync quality gates do not call `/v1/agent/invoke`.
+- RQ2E authority and preflight work does not call `/v1/agent/invoke`, make a
+  provider direct call, start/stop/signal services, retain raw service/provider
+  responses, or read env values.
+- Compute evidence must not be recorded as invoke evidence. `externalInvoked`
+  and invoke-default flags are `/v1/agent/invoke` claims only; they are not
+  proof that no `/v1/agent/compute` call occurred in a later explicit live
+  verification phase.
 - The smoke/evidence ledgers in `docs/history/` are historical evidence, not
   runtime or configuration authority.
 - Public transcripts must not expose secrets, raw graph messages, provider raw

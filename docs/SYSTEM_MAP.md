@@ -15,6 +15,14 @@ lower sections are provenance notes only; current status lives in
 - Public workflow contract: `workflow_snapshot_v2`.
 - L4 runtime default: compute-only external defaults for `decision_synthesizer`
   and `report_generator`; this is not an `/invoke` path.
+- Non-L4 production compute policy:
+  `config/fixed_dag/non_l4_external_compute_policy.json` is
+  `enabled_by_default=true` and separate from runtime bindings. It is
+  `/v1/agent/compute` only for `value_traditional_valuation`,
+  `value_ml_valuation`, `value_meta_valuation`,
+  `market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
+  `macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
+  canary `macro_composite`.
 - Bidirectional sync workflow: strict non-zero publish-and-rebase has been
   verified; future cycles use exact experiment/change-unit/approval contracts.
 - Current repository phase: post-consolidation normal maintenance / product
@@ -109,6 +117,10 @@ Active skeleton properties:
 - No provider call on the default path.
 - No search call.
 - No external `/v1/agent/invoke` call.
+- Non-L4 production compute may overlay approved `/v1/agent/compute` results
+  from the source-controlled non-L4 policy when not disabled by rollback
+  context. This is separate from `runtime_bindings.json` and is not `/invoke`
+  evidence.
 - L4 may call production-source `/v1/agent/compute` by default through the
   approved R8-13Q `external_compute_default` bindings for
   `decision_synthesizer` and `report_generator`; this can be disabled with
@@ -129,9 +141,9 @@ Active skeleton properties:
   `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` is explicitly enabled. Provider failures
   fail soft to deterministic pending conclusions.
 - `fixed_dag_external_adapter.py` is active only for approved compute mappings:
-  the default-off demo bridge and the R8-13Q L4 `external_compute_default`
-  path. It is still not an `/invoke` client and it rejects unsafe public
-  payload material.
+  the default-off demo bridge, the production non-L4 compute overlay, and the
+  R8-13Q L4 `external_compute_default` path. It is still not an `/invoke`
+  client and it rejects unsafe public payload material.
 - R4-B annotates `step_results` with runtime binding metadata. This metadata
   is registry evidence only and does not trigger provider or external calls.
 - R4-C isolates legacy aNN registry/bootstrap so active `react_agent.graph`

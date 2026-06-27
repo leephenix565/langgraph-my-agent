@@ -134,6 +134,49 @@ The default quality story remains endpoint-free and provider-free. RQ2D does
 not change runtime bindings, catalog entries, public schemas, graph topology,
 prompts, adapters, or external L4 services.
 
+## Report Quality RQ2E Authority Entry
+
+`REPORT-QUALITY-RQ2E Controlled Online E2E Verification After Main-System Sync`
+is the named report-quality live-verification target after main-system sync and
+preflight readiness pass. Its acceptance is measured by the offline
+`scripts/quality/report_quality_audit.py` output produced from the controlled
+online E2E artifact; the audit's existing 0-45 score fields are
+`pipeline_quality_score.total` and `quality_score.total`.
+
+RQ2E DoD:
+
+- score `>=29/45`;
+- `renderer_quality_gate.passed=true`;
+- unsafe scan pass;
+- `template_language.template_phrase_count<=8`;
+- `answer_section_parity.parity_ratio>=0.90`;
+- `traceability.traceability_ratio>=0.85`.
+
+The renderer gate also expects the renderer-controlled surface to retain enough
+evidence, limitations, sections, value/market/risk/macro coverage, action
+implication, research-point use, and source-label hygiene, but those supporting
+checks do not replace the explicit DoD above.
+
+RQ2E non-claims:
+
+- RQ2E preflight and report-quality audit work does not call
+  `/v1/agent/invoke`.
+- It does not make direct provider calls, perform process actions, read env
+  values, or retain raw service/provider responses.
+- Passing RQ2E does not change runtime bindings, catalog entries, public
+  schemas, graph topology, service state, provider policy, or sync approvals.
+- Compute evidence from `/v1/agent/compute` must not be recorded as
+  `/v1/agent/invoke` evidence.
+
+The current non-L4 production compute policy is source-controlled in
+`config/fixed_dag/non_l4_external_compute_policy.json`, separate from
+`runtime_bindings.json`, and `enabled_by_default=true` for
+`value_traditional_valuation`, `value_ml_valuation`, `value_meta_valuation`,
+`market_ipo_investor_behavior`, `market_capital_flow_chip`, `risk_crash`,
+`macro_analysis`, `macro_index_valuation`, `value_composite`, and optional
+canary `macro_composite`. L4 `external_compute_default` remains limited to
+`decision_synthesizer` and `report_generator`; both are compute-only paths.
+
 ## Manual, Live, And Archived Gates
 
 These checks are not default reset mainline gates:

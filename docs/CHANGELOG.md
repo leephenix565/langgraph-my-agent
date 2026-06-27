@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - RQ2E authority and manifest readiness notes
+
+### Changed
+
+- Added the current RQ2E authority entry and report-quality acceptance DoD:
+  score `>=29/45`, `renderer_quality_gate.passed=true`, unsafe scan pass,
+  `template_phrase_count<=8`, answer/section parity `>=0.90`, and traceability
+  `>=0.85`.
+- Documented the current compute-only boundary: L4 `external_compute_default`
+  remains limited to `decision_synthesizer` and `report_generator`, and the
+  source-controlled non-L4 production compute policy is separate from
+  `runtime_bindings.json` with `enabled_by_default=true`.
+- Clarified that compute evidence must not be recorded as invoke evidence and
+  that RQ2E preflight/audit work does not call `/v1/agent/invoke`, make direct
+  provider calls, perform process actions, read env values, or retain raw
+  service/provider responses.
+
+### Not Done
+
+- No runtime code, public schema, graph topology, renderer/enrichment gate,
+  quality scoring, runtime binding, catalog, non-L4 policy, service, endpoint,
+  provider, process, env-value, prod owner-dev, or historical artifact mutation.
+
 ## 2026-06-27 - Documentation top-level history stub cleanup
 
 ### Changed
