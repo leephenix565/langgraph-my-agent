@@ -31,28 +31,25 @@ def test_router_prompt_does_not_restore_broad_or_mode_logic() -> None:
 
 
 def test_route_intent_prompt_is_separate_provider_free_contract() -> None:
-    rendered = prompts.build_route_intent_prompt(
-        "Should I evaluate example company?",
-        catalog_summary={
-            "allowed_agents": ["value_research_synthesis", "risk_identification"],
-            "dimensions": {
-                "value": ["value_research_synthesis"],
-                "risk": ["risk_identification"],
-            },
-        },
-    )
+    rendered = prompts.build_route_intent_prompt("Should I evaluate example company?")
 
     assert "route_intent_v1" in rendered
     assert "selected_dimensions" in rendered
-    assert "selected_agents" in rendered
+    assert '"selected_agents":' not in rendered
+    assert "Do not emit selected_agents" in rendered
+    assert "dimension" in rendered
     assert "dag_steps" in rendered
     assert "depends_on" in rendered
-    assert "Do not emit dag_steps" in rendered
     assert "Do not claim that a provider" in rendered
-    assert "value_research_synthesis" in rendered
-    assert "risk_identification" in rendered
+    assert "value_research_synthesis" not in rendered
+    assert "risk_identification" not in rendered
     assert "old numbered ids" in rendered
     assert "route-mode dispatch labels" in rendered
+    assert "endpoint fields" in rendered
+    assert "env fields" in rendered
+    assert "secrets" in rendered
+    assert "raw responses" in rendered
+    assert "chain-of-thought" in rendered
 
 
 def test_active_router_prompt_remains_full_dag_plan_prompt() -> None:

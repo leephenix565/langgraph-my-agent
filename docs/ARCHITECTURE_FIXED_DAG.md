@@ -209,6 +209,9 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   selection quality without changing the active graph default.
 - R8-5 owns default-off selected routing graph integration through explicit
   context/env flagging while preserving the full DAG default.
+- Router M1A owns default-off internal dimension routing: selected routing can
+  use a provider-free dimension-only intent, while the compiler expands
+  dimensions into concrete agents deterministically.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -288,8 +291,11 @@ Planner seam behavior:
 
 - `build_default_route_intent` builds a provider-free deterministic/mock route
   intent for tests and future feature-flag experiments;
+- `build_default_dimension_route_intent` builds the M1A provider-free
+  dimension-only route intent used by the default-off graph seam;
 - `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` defines the future LLM or semantic
-  planner contract and targets `route_intent_v1` only;
+  planner contract and targets `route_intent_v1` only; in M1A it asks only for
+  `selected_dimensions` and forbids concrete agent ids;
 - `build_route_intent_prompt` renders that prompt with a fixed DAG catalog
   summary without invoking any provider;
 - `parse_route_intent_json` extracts provider-style JSON, filters unknown
@@ -346,17 +352,28 @@ Runtime behavior:
   boolean env parser;
 - default graph invocations still build and execute the full
   `fixed_dag_plan_v1`;
-- selected graph invocations use provider-free `build_default_route_intent`;
+- selected graph invocations use provider-free
+  `build_default_dimension_route_intent`;
 - the route intent is compiled by `compile_selected_fixed_dag_plan`;
+- M1A route intent is dimension-only: planner output may select only `value`,
+  `market`, `risk`, and `macro`; concrete L2/L3/L4 agents are expanded by the
+  deterministic compiler from current catalog/constants;
 - selected plans execute through `validate_selected_dag_steps` and
   `topological_batches_for_selected_plan`;
 - selected L2 conclusions, dimension composites, step results, and
   `workflow_snapshot_v2` are projected as selected subsets;
+- `workflow_snapshot_v2.provenance` may expose selected-routing summary fields
+  (`selectedRoutingRequested`, `selectedRoutingFallback`, `fallbackReason`,
+  `routeGranularity`, `selectedDimensions`, `expandedAgentCount`) without raw
+  provider/LLM output, prompts, endpoints, secrets, or chain-of-thought;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
 R8-5 does not call an LLM/provider, search backend, external
 `/v1/agent/invoke`, or runtime binding adapter. It does not change the fixed
-DAG roster, runtime bindings, public API contracts, frontend, RouteEval
-threshold policy, external adapter readiness, or real business-agent
-implementation status.
+DAG roster, runtime bindings, RouteEval threshold policy, external adapter
+readiness, or real business-agent implementation status. M1A adds only
+public-safe workflow metadata for the selected-routing summary; it does not
+create an external router service, assign ports, copy scaffold material, move
+`report_generator` from port `10026`, or promote the `10028/8028` planning
+reservation to runtime authority.

@@ -41,28 +41,26 @@ Return exactly one JSON object. The only target schema is route_intent_v1:
   "task_type": "single|compare|screen|macro|sentiment|industry|event|general",
   "targets": ["public target string"],
   "selected_dimensions": ["value|market|risk|macro"],
-  "selected_agents": ["fixed_dag_agent_id"],
-  "task_brief_by_agent": {"fixed_dag_agent_id": "brief"},
   "route_confidence": 0.0,
   "needs_clarification": false,
   "clarification_question": "",
   "fallback_reason": "",
-  "provenance": {"source": "route_intent_planner"}
+  "provenance": {"source": "route_intent_planner", "route_granularity": "dimension"}
 }
 
 Rules:
-- Output route_intent_v1 only. Do not output an executable DAG.
-- Do not emit dag_steps, depends_on, runtime bindings, provider responses,
-  external responses, endpoint fields, environment fields, or secrets.
-- Select only snake_case ids from the supplied fixed DAG reset roster.
+- Output route_intent_v1 only. Do not output an executable DAG or concrete
+  fixed-DAG agent ids.
+- Select dimensions only from value, market, risk, and macro. The system
+  compiler expands dimensions into concrete fixed-DAG agents.
+- Do not emit selected_agents, task_brief_by_agent, dag_steps, depends_on,
+  runtime bindings, provider responses, external responses, endpoint fields,
+  environment fields, env fields, secrets, raw responses, or chain-of-thought.
 - Do not use removed ids, old numbered ids, layer/fusion fields, or legacy
   route-mode dispatch labels such as Star, Chain, Debate, or Tree.
-- sentiment_company_radar is market-only.
 - Risk is a gate, not a directional vote. Macro is a regulator.
-- Investment-like tasks must include the risk dimension and at least one risk
-  L2 agent. The system compiler owns decision/report insertion.
-- report_generator is always added by the deterministic compiler; you do not
-  need to select it.
+- Investment-like tasks should include the risk dimension. The system compiler
+  owns concrete L2/L3/L4 agent expansion.
 - If the routing target is unclear, set needs_clarification=true and provide a
   short clarification_question.
 - Do not claim that a provider, search backend, or external service was called.
@@ -75,17 +73,12 @@ def build_route_intent_prompt(
 ) -> str:
     """Render the R8-3 route-intent prompt without invoking a provider."""
     if catalog_summary is None:
-        from react_agent.fixed_dag_contracts import (  # noqa: PLC0415
-            DIMENSION_GROUPS,
-            RESET_RUNTIME_AGENT_IDS,
-        )
+        from react_agent.fixed_dag_contracts import DIMENSION_GROUPS  # noqa: PLC0415
 
         catalog_summary = {
-            "allowed_agents": list(RESET_RUNTIME_AGENT_IDS),
-            "dimensions": {
-                dimension: list(agent_ids)
-                for dimension, agent_ids in DIMENSION_GROUPS.items()
-            },
+            "allowed_dimensions": list(DIMENSION_GROUPS),
+            "route_granularity": "dimension",
+            "compiler_expands_dimensions": True,
         }
     catalog_text = json.dumps(catalog_summary, ensure_ascii=False, sort_keys=True)
     return "\n\n".join(

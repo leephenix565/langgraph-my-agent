@@ -234,9 +234,9 @@ async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) ->
     assert res["l2_conclusions"]["value_ml_valuation"]["status"] == "complete"
     assert res["report_input_bundle"]["schema"] == "report_input_bundle_v1"
     assert res["dag_step_results"]["l2:value_ml_valuation"]["agent_evidence"]["stance"] == "demo_positive"
-    assert "单体智能体输入" in res["messages"][-1].content
-    assert "综合智能体输入" in res["messages"][-1].content
-    assert "外部计算演示摘要" in res["messages"][-1].content
+    assert "研判流程输出" in res["messages"][-1].content
+    assert "贵州茅台" in res["messages"][-1].content
+    assert "外部计算演示摘要" not in res["messages"][-1].content
     assert "http://127.0.0.1" not in rendered
     assert "/v1/agent/invoke" not in res["messages"][-1].content
     assert "raw_response" not in rendered
@@ -359,12 +359,21 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert valid, reason
     assert res["fixed_dag_plan"]["provenance"]["selected_routing_requested"] is True
     assert res["fixed_dag_plan"]["provenance"]["selected_routing_fallback"] is False
+    assert res["fixed_dag_plan"]["provenance"]["route_granularity"] == "dimension"
+    assert res["fixed_dag_plan"]["selected_agents"] == res["fixed_dag_plan"]["target_agent_ids"]
+    assert set(DIMENSION_GROUPS["value"]) <= set(res["fixed_dag_plan"]["target_agent_ids"])
     assert res["dag_execution"]["provenance"]["provider_invoked"] is False
     assert res["dag_execution"]["provenance"]["external_invoked"] is False
     assert set(res["dag_step_results"]) == {step["id"] for step in res["fixed_dag_plan"]["steps"]}
-    assert "decision_synthesizer" not in res["dag_step_results"]
+    assert "decision_synthesizer" in res["dag_step_results"]
     assert set(res["workflow_snapshot"]["completedSteps"]) == set(res["dag_step_results"])
     assert {item["id"] for item in res["workflow_snapshot"]["dimensionGroups"]} == {"value"}
+    assert res["workflow_snapshot"]["provenance"]["selectedRoutingRequested"] is True
+    assert res["workflow_snapshot"]["provenance"]["selectedRoutingFallback"] is False
+    assert res["workflow_snapshot"]["provenance"]["routeGranularity"] == "dimension"
+    assert res["workflow_snapshot"]["provenance"]["selectedDimensions"] == ["value"]
+    assert res["workflow_snapshot"]["provenance"]["providerInvoked"] is False
+    assert res["workflow_snapshot"]["provenance"]["externalInvoked"] is False
 
 
 async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(monkeypatch) -> None:
@@ -400,7 +409,8 @@ async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(m
     )
 
     assert res["fixed_dag_plan"]["schema"] == "selected_fixed_dag_plan_v1"
-    assert set(res["l2_conclusions"]) == {"sentiment_company_radar"}
+    assert set(DIMENSION_GROUPS["market"]) <= set(res["fixed_dag_plan"]["target_agent_ids"])
+    assert set(res["l2_conclusions"]) == set(DIMENSION_GROUPS["market"])
     conclusion = res["l2_conclusions"]["sentiment_company_radar"]
     assert conclusion["status"] == "partial"
     assert conclusion["confidence"] <= 0.4
@@ -408,10 +418,14 @@ async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(m
     assert conclusion["provenance"]["provider_invoked"] is True
     assert conclusion["provenance"]["external_invoked"] is False
     assert res["dag_execution"]["provenance"]["internal_llm_placeholders_enabled"] is True
-    assert res["dag_execution"]["provenance"]["internal_llm_placeholder_conclusions"] == 1
+    assert res["dag_execution"]["provenance"]["internal_llm_placeholder_conclusions"] == len(
+        DIMENSION_GROUPS["market"]
+    )
     assert res["dag_execution"]["provenance"]["external_invoked"] is False
     assert set(res["dag_step_results"]) == {step["id"] for step in res["fixed_dag_plan"]["steps"]}
     assert {item["id"] for item in res["workflow_snapshot"]["dimensionGroups"]} == {"market"}
+    assert res["workflow_snapshot"]["provenance"]["routeGranularity"] == "dimension"
+    assert res["workflow_snapshot"]["provenance"]["selectedDimensions"] == ["market"]
     assert "risk" not in res["dimension_results"]
 
 
@@ -436,6 +450,10 @@ async def test_selected_routing_failure_falls_back_to_full_dag(monkeypatch) -> N
     assert plan["provenance"]["fallback_reason"] == "selected_routing_compile_failed:ValueError"
     assert plan["provenance"]["provider_invoked"] is False
     assert plan["provenance"]["external_invoked"] is False
+    assert res["workflow_snapshot"]["provenance"]["selectedRoutingRequested"] is True
+    assert res["workflow_snapshot"]["provenance"]["selectedRoutingFallback"] is True
+    assert res["workflow_snapshot"]["provenance"]["fallbackReason"] == "selected_routing_compile_failed:ValueError"
+    assert res["workflow_snapshot"]["provenance"]["routeGranularity"] == "dimension"
     assert "provider" not in plan["provenance"]["fallback_reason"]
     valid, reason = validate_dag_execution_result(res["dag_execution"])
     assert valid, reason

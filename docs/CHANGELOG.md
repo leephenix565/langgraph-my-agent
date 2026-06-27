@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - Router M1A default-off dimension route planning
+
+### Changed
+
+- Added an internal provider-free dimension router seam behind the existing
+  default-off selected-routing flag. Planner output may select only `value`,
+  `market`, `risk`, and `macro`; concrete agent ids are not accepted from the
+  planner in dimension-only mode.
+- Extended route-intent parsing and validation so invalid dimensions,
+  low-confidence or clarification outputs, legacy route modes, runtime-binding
+  fields, endpoint/env/secret/raw-response material, and agent-level selections
+  fail soft to full-DAG fallback.
+- Updated `compile_selected_fixed_dag_plan` so dimension-only intents expand
+  deterministically from current `DIMENSION_GROUPS` and
+  `DIMENSION_COMPOSITE_AGENT_IDS`, including required L1 evidence seams and
+  L4 `decision_synthesizer` / `report_generator`.
+- Added public-safe workflow provenance summary fields for selected routing:
+  `selectedRoutingRequested`, `selectedRoutingFallback`, `fallbackReason`,
+  `routeGranularity`, `selectedDimensions`, and `expandedAgentCount`.
+- Added focused parser, prompt, compiler, graph, and public workflow tests for
+  dimension-only selected routing and fallback behavior.
+
+### Not Done
+
+- No runtime binding, agent catalog, non-L4 policy, graph default behavior,
+  external service directory, scaffold copy, route-planner port assignment,
+  `10028/8028` runtime implementation, `10026/10027` migration,
+  `/v1/agent/compute`, `/v1/agent/invoke`, provider, process, env-value, or raw
+  response retention change.
+
 ## 2026-06-27 - RQ3C risk composite evidence reference cleanup
 
 ### Changed

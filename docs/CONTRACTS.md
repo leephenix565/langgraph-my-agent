@@ -552,7 +552,10 @@ normalizing route intent. R8-4 adds provider-free RouteEval over this contract.
 R8-5 wires the provider-free planner seam into the graph behind
 `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1`. The active
 graph still does not call an LLM planner and selected routing remains
-default-off.
+default-off. Router M1A keeps that default-off boundary and adds a
+dimension-only planner mode: the planner output may select only `value`,
+`market`, `risk`, and `macro`, while concrete agents are expanded by the
+deterministic compiler.
 
 Fields:
 
@@ -580,16 +583,25 @@ invocation claim. L2 agents must match their selected dimension; in particular
 `sentiment_company_radar` remains market-only. `task_brief_by_agent` keys must
 be a subset of `selected_agents`. Clarification requests require a non-empty
 question. Empty selected-agent intents require a fallback reason unless they
-need clarification.
+need clarification or explicitly declare `provenance.route_granularity` as
+`dimension` with non-empty selected dimensions.
 
 Policy gates:
 
 - `route_intent_v1` records requested dimensions and business agents. Fixed
   system dependencies, composites, `decision_synthesizer`, and
   `report_generator` are compiler responsibilities.
+- In M1A dimension-only mode, LLM/router output must not include
+  `selected_agents` or `task_brief_by_agent`; if agent-level selection appears,
+  parser normalization falls back to the full DAG with
+  `agent_level_route_not_allowed_in_dimension_mode`.
 - Investment-judgment task types (`single`, `compare`, `screen`, `industry`,
-  `event`) require the risk dimension and at least one selected risk L2 agent.
-- `general`, `macro`, and `sentiment` intents may omit risk and decision.
+  `event`) require the risk dimension. Agent-level intents still require at
+  least one selected risk L2 agent; dimension-only intents expand risk L2
+  deterministically from `DIMENSION_GROUPS`.
+- Agent-level `general`, `macro`, and `sentiment` intents may omit risk and
+  decision. M1A dimension-only intents include the L4 decision/report chain
+  after deterministic dimension expansion.
 - Fallback text must stay public-safe; it must not expose provider, endpoint,
   env var, secret, traceback, runtime binding, placeholder, or similar raw
   implementation language.
@@ -598,10 +610,12 @@ Seams:
 
 - `build_route_intent`
 - `build_default_route_intent`
+- `build_default_dimension_route_intent`
 - `validate_route_intent`
 - `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT`
 - `build_route_intent_prompt`
 - `parse_route_intent_json`
+- `parse_dimension_route_intent_json`
 - `normalize_route_intent`
 - `compile_selected_fixed_dag_plan`
 - `load_route_eval_cases`
@@ -620,6 +634,10 @@ R8-3 prompt/parser boundary:
 - removed ids, legacy numbered ids, selected sentiment-to-risk misuse,
   investment intents without risk, and provider/external invocation claims are
   rejected or normalized to fallback.
+- M1A extends parser guards to reject endpoint/env/secret/raw-response and
+  chain-of-thought material. Dimension-only parser mode rejects unknown or
+  empty dimensions, low confidence, clarification requests, legacy route-mode
+  values, runtime-binding fields, and any concrete agent-level selection.
 
 ## RouteEval baseline
 
@@ -669,8 +687,9 @@ explicit default-off boundary.
 
 R8-5 adds `Context.enable_selected_routing` with env support through
 `ENABLE_SELECTED_ROUTING=1`. When the flag is false, `route_planner_node` still
-returns the full `fixed_dag_plan_v1` baseline. When the flag is true, the graph
-uses `build_default_route_intent`, compiles the intent with
+returns the full `fixed_dag_plan_v1` baseline. In M1A, when the flag is true,
+the graph uses provider-free `build_default_dimension_route_intent`, compiles
+the dimension-only intent with
 `compile_selected_fixed_dag_plan`, and passes the resulting
 `selected_fixed_dag_plan_v1` to the existing execution path.
 
@@ -683,6 +702,11 @@ Failure policy:
 - fallback provenance keeps `provider_invoked=false` and
   `external_invoked=false`;
 - the LLM/provider must never generate executable `depends_on` or `dag_steps`.
+- workflow snapshot provenance may expose public-safe selected-routing
+  metadata: `selectedRoutingRequested`, `selectedRoutingFallback`,
+  `fallbackReason`, `routeGranularity`, `selectedDimensions`, and
+  `expandedAgentCount`. It must not expose raw LLM/provider output, prompts,
+  endpoint URLs, secrets, or chain-of-thought.
 
 Non-claims:
 
@@ -724,9 +748,13 @@ deterministically:
 - adds `route_planner`, `financial_data_service`, and
   `entity_relation_extractor`;
 - keeps selected L2 business agents only;
+- in M1A dimension-only mode, expands every selected dimension to the current
+  formal same-dimension L2 roster from `DIMENSION_GROUPS`;
 - adds selected dimension composites and points each composite at selected
   same-dimension L2 agents;
 - adds `decision_synthesizer` for investment-judgment task types;
+- in M1A dimension-only mode, also includes `decision_synthesizer` before
+  `report_generator` as the required L4 decision step;
 - always adds `report_generator`;
 - makes report depend on decision when present, otherwise on selected dimension
   composites;

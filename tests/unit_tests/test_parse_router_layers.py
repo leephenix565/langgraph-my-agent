@@ -10,6 +10,7 @@ from react_agent.fixed_dag_contracts import (
 from react_agent.router_parse import (
     normalize_route_intent,
     parse_fixed_dag_plan_with_stats,
+    parse_dimension_route_intent_json,
     parse_route_intent_json,
 )
 
@@ -104,6 +105,128 @@ def test_parse_route_intent_json_parses_valid_intent() -> None:
     assert intent["provenance"]["external_invoked"] is False
 
 
+def test_parse_dimension_route_intent_json_accepts_dimensions_only() -> None:
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": ["example company"],
+        "selected_dimensions": ["value"],
+        "route_confidence": 0.74,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "unit_fixture"},
+    }
+    intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert stats["parse_ok"] is True
+    assert stats["used_fallback"] is False
+    assert stats["route_granularity"] == "dimension"
+    assert stats["selected_dimensions"] == ["value"]
+    assert intent["selected_dimensions"] == ["value"]
+    assert intent["selected_agents"] == []
+    assert intent["provenance"]["route_granularity"] == "dimension"
+    assert intent["provenance"]["provider_invoked"] is False
+    assert intent["provenance"]["external_invoked"] is False
+
+
+def test_parse_dimension_route_intent_json_accepts_risk_macro_dimensions() -> None:
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": ["example company"],
+        "selected_dimensions": ["risk", "macro"],
+        "route_confidence": 0.86,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "unit_fixture"},
+    }
+    intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+    assert stats["parse_ok"] is True
+    assert stats["used_fallback"] is False
+    assert intent["selected_dimensions"] == ["risk", "macro"]
+    assert intent["selected_agents"] == []
+
+
+def test_parse_dimension_route_intent_json_falls_back_for_invalid_dimension_shape() -> None:
+    for dimensions, reason in (
+        (["value", "unknown"], "unknown_selected_dimension"),
+        ([], "selected_dimensions_missing"),
+    ):
+        payload = {
+            "schema": "route_intent_v1",
+            "schema_version": "route_intent_v1",
+            "task_type": "general",
+            "targets": [],
+            "selected_dimensions": dimensions,
+            "route_confidence": 0.8,
+            "needs_clarification": False,
+            "clarification_question": "",
+            "fallback_reason": "",
+            "provenance": {"source": "unit_fixture"},
+        }
+        intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+        assert stats["parse_ok"] is False
+        assert stats["used_fallback"] is True
+        assert stats["fallback_reason"] == reason
+        assert intent["needs_clarification"] is True
+
+
+def test_parse_dimension_route_intent_json_falls_back_for_low_confidence_or_clarification() -> None:
+    for confidence, needs_clarification, reason in (
+        (0.2, False, "low_route_confidence"),
+        (0.9, True, "route_intent_needs_clarification"),
+    ):
+        payload = {
+            "schema": "route_intent_v1",
+            "schema_version": "route_intent_v1",
+            "task_type": "general",
+            "targets": [],
+            "selected_dimensions": ["value"],
+            "route_confidence": confidence,
+            "needs_clarification": needs_clarification,
+            "clarification_question": "Which target?" if needs_clarification else "",
+            "fallback_reason": "",
+            "provenance": {"source": "unit_fixture"},
+        }
+        intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+        assert stats["parse_ok"] is False
+        assert stats["used_fallback"] is True
+        assert stats["fallback_reason"] == reason
+        assert intent["needs_clarification"] is True
+
+
+def test_parse_dimension_route_intent_json_blocks_agent_level_selection() -> None:
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": [],
+        "selected_dimensions": ["value"],
+        "selected_agents": ["value_research_synthesis"],
+        "route_confidence": 0.8,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "unit_fixture"},
+    }
+    intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+    assert stats["parse_ok"] is False
+    assert stats["used_fallback"] is True
+    assert stats["fallback_reason"] == "agent_level_route_not_allowed_in_dimension_mode"
+    assert stats["agent_level_selection_blocked"] is True
+    assert intent["needs_clarification"] is True
+
+
 def test_parse_route_intent_json_filters_unknown_agent_when_valid_agents_remain() -> None:
     payload = _valid_route_intent_payload()
     payload["selected_agents"] = [
@@ -127,6 +250,11 @@ def test_parse_route_intent_json_falls_back_for_legacy_or_executable_fields() ->
         ("fusionSteps", []),
         ("dag_steps", []),
         ("depends_on", ["route_planner"]),
+        ("endpoint", "http://127.0.0.1:10028/v1/agent/compute"),
+        ("env", {"ROUTER_TOKEN": "redacted"}),
+        ("secrets", ["redacted"]),
+        ("raw_response", {"body": "redacted"}),
+        ("chain_of_thought", "redacted"),
     ):
         payload = _valid_route_intent_payload()
         payload[field] = value
@@ -146,6 +274,16 @@ def test_parse_route_intent_json_falls_back_for_legacy_mode_values() -> None:
 
     assert stats["parse_ok"] is False
     assert stats["fallback_reason"] == "legacy_route_value_present"
+    assert intent["needs_clarification"] is True
+
+
+def test_parse_route_intent_json_falls_back_for_nested_unsafe_fields() -> None:
+    payload = _valid_route_intent_payload()
+    payload["provenance"]["endpoint"] = "http://127.0.0.1:10028/v1/agent/compute"
+    intent, stats = parse_route_intent_json(json.dumps(payload))
+
+    assert stats["parse_ok"] is False
+    assert stats["fallback_reason"] == "forbidden_route_intent_field_present"
     assert intent["needs_clarification"] is True
 
 

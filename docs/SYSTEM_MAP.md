@@ -72,8 +72,11 @@ R8-7B does not change frontend rendering, active graph execution, or the public
 workflow schema. The default public path still receives
 the full default `workflow_snapshot_v2` produced from the active fixed DAG
 skeleton. When selected routing is explicitly enabled, the same public workflow
-contract can project selected DAG steps and selected dimension groups; no new
-public contract fields are added.
+contract can project selected DAG steps and selected dimension groups. Router
+M1A adds public-safe selected-routing provenance summary fields to that
+workflow payload: `selectedRoutingRequested`, `selectedRoutingFallback`,
+`fallbackReason`, `routeGranularity`, `selectedDimensions`, and
+`expandedAgentCount`.
 
 R8-6B keeps the default path provider-free and external-free. If
 `ENABLE_INTERNAL_LLM_PLACEHOLDERS=1` is explicitly enabled, only L2 conclusions
@@ -145,7 +148,9 @@ Active skeleton properties:
   emit payloads are generated from `fixed_dag_contracts.py` seams.
 - `route_planner` still builds the default full `fixed_dag_plan_v1` unless
   `Context.enable_selected_routing` / `ENABLE_SELECTED_ROUTING=1` is explicitly
-  enabled.
+  enabled. When enabled in M1A, route planning is internal and dimension-only:
+  only `value`, `market`, `risk`, and `macro` may be selected by planner
+  intent, and concrete agents are expanded deterministically by the compiler.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only
@@ -163,6 +168,9 @@ Active skeleton properties:
   or external wrapper tools.
 - Invalid plans fail soft to the deterministic default plan and surface degraded
   fallback provenance in the workflow snapshot.
+- M1A creates no external `route_planner` service, assigns no
+  `route_planner` port, leaves `10028/8028` as planning-only reservation, and
+  preserves `report_generator` on production compute port `10026`.
 
 ## Retained But Inactive Infrastructure
 

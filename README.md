@@ -129,6 +129,21 @@ falls back to the full `fixed_dag_plan_v1` with public-safe provenance
 reason). R8-5 still does not call an LLM/provider, search backend, external
 `/v1/agent/invoke`, or runtime binding adapter.
 
+Router M1A keeps the same default-off boundary and updates the internal
+selected-routing seam to dimension-level planning. With selected routing
+explicitly enabled, the internal route planner now builds a provider-free
+dimension-only intent: the planner may select only `value`, `market`, `risk`,
+and `macro`; it does not select concrete agent ids. The deterministic compiler
+expands selected dimensions from the current catalog/constants into
+same-dimension L2 agents, matching L3 composites, required L1 evidence seams,
+and L4 `decision_synthesizer` / `report_generator`. Invalid, unsafe,
+low-confidence, clarification, legacy Star/Chain/Debate/Tree, runtime-binding,
+endpoint/env/secret/raw-response, or agent-level route output falls back to the
+full DAG. M1A creates no external router service, assigns no route-planner
+port, leaves `10028/8028` as planning-only reservation, preserves
+`report_generator` on port `10026`, and does not modify runtime bindings,
+agent catalog, or non-L4 policy.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

@@ -38,10 +38,28 @@ records.
   `macro_commodity_pricing`, `market_composite`, `risk_composite`, and
   `macro_composite`.
 
+## Router L1 Status
+
+- Current Router theme: `ROUTER-L1-LLM-DIMENSION-ROUTING`.
+- M1A implements an internal, default-off dimension router seam. Default
+  production behavior remains the full `fixed_dag_plan_v1`.
+- When `Context.enable_selected_routing=True` or
+  `ENABLE_SELECTED_ROUTING=1` is explicitly set, `route_planner_node` uses a
+  provider-free dimension-only route intent. The planner selects only
+  `value`, `market`, `risk`, and `macro`; it does not select concrete agent
+  ids.
+- Concrete L2/L3/L4 steps are expanded deterministically from current
+  catalog/constants. Invalid, unsafe, low-confidence, clarification,
+  legacy-mode, runtime-binding, endpoint/env/secret/raw-response, or
+  agent-level route output falls back to the full DAG.
+- No external `route_planner` service, no scaffold copy, no port assignment,
+  no runtime binding, no catalog, and no non-L4 policy change is part of M1A.
+  `report_generator` remains on production compute port `10026`; `10028/8028`
+  remains only a future external route-planner planning reservation.
+
 ## Report Quality RQ2E Status
 
-- Current target: `REPORT-QUALITY-RQ2E Controlled Online E2E Verification After
-  Main-System Sync`.
+- Report-quality theme status: closed by RQ3C production-mode live verification.
 - RQ2E live at commit `12faf7635a9e29b3392ca8c64e83924c0fbb2f4e` completed
   safely but scored `27/45`; RQ3A treats this as a production coverage and
   report-projection gap, not as sandbox drift or a reason to accept sandbox demo
@@ -95,7 +113,9 @@ records.
 ## Current Engineering Theme
 
 Repository Authority & Active-Core Consolidation is complete. The final
-closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. The report-quality
+theme is also closed by RQ3C. Current product work is the Router L1
+dimension-routing theme.
 
 M4A found P4 count `0`, so M4B deletion implementation is skipped. Current
 mode returns to normal maintenance and product engineering on top of the fixed

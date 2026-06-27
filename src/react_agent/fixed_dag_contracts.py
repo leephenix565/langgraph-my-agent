@@ -676,6 +676,55 @@ def _unique_text_values(values: list[str] | tuple[str, ...] | None) -> list[str]
     return selected
 
 
+_ROUTE_INTENT_UNSAFE_KEYS = {
+    ".env",
+    "chain-of-thought",
+    "chain_of_thought",
+    "endpoint",
+    "endpoint_url",
+    "env",
+    "environment",
+    "external_payload",
+    "external_response",
+    "provider_payload",
+    "provider_response",
+    "raw_provider_response",
+    "raw_response",
+    "raw_responses",
+    "secret",
+    "secrets",
+}
+_ROUTE_INTENT_UNSAFE_TEXT_TOKENS = (
+    "/v1/agent/compute",
+    "/v1/agent/invoke",
+    ".env",
+    "chain-of-thought",
+    "chain_of_thought",
+    "endpoint",
+    "raw provider",
+    "raw_provider_response",
+    "raw_response",
+    "secret",
+)
+
+
+def _contains_route_intent_unsafe_material(value: Any) -> bool:
+    if isinstance(value, Mapping):
+        for key, item in value.items():
+            key_text = str(key or "").strip()
+            if key_text in _ROUTE_INTENT_UNSAFE_KEYS:
+                return True
+            if _contains_route_intent_unsafe_material(item):
+                return True
+        return False
+    if isinstance(value, list):
+        return any(_contains_route_intent_unsafe_material(item) for item in value)
+    if isinstance(value, str):
+        lowered = value.lower()
+        return any(token in lowered for token in _ROUTE_INTENT_UNSAFE_TEXT_TOKENS)
+    return False
+
+
 def _agent_dimension(agent_id: str) -> str:
     if agent_id in AGENT_DIMENSIONS:
         return AGENT_DIMENSIONS[agent_id]
@@ -817,6 +866,59 @@ def build_default_route_intent(
     )
 
 
+def build_default_dimension_route_intent(
+    question: str,
+    *,
+    task_type: RouteTaskType = "general",
+) -> RouteIntent:
+    """Build a provider-free dimension-only intent for the internal router seam."""
+    inferred_task_type = _infer_route_task_type(question, str(task_type or "general"))
+    if inferred_task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
+        selected_dimensions: list[DimensionName] = ["value", "risk"]
+    elif inferred_task_type == "macro":
+        selected_dimensions = ["macro"]
+    elif inferred_task_type == "sentiment":
+        selected_dimensions = ["market"]
+    else:
+        selected_dimensions = ["value"]
+
+    intent = build_route_intent(
+        task_type=inferred_task_type,
+        targets=[],
+        selected_dimensions=selected_dimensions,
+        selected_agents=[],
+        route_confidence=0.62,
+        fallback_reason="",
+        provenance={
+            "source": "deterministic_dimension_route_planner",
+            "planner": "m1a_provider_free_dimension_route_intent",
+            "route_granularity": "dimension",
+            "dimension_only": True,
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+    valid, reason = validate_route_intent(intent)
+    if valid:
+        return intent
+    return build_route_intent(
+        task_type="general",
+        selected_dimensions=[],
+        selected_agents=[],
+        route_confidence=0.0,
+        needs_clarification=True,
+        clarification_question="Please clarify the routing target before selected planning.",
+        fallback_reason=f"planner_dimension_default_failed:{reason}",
+        provenance={
+            "source": "deterministic_dimension_route_planner",
+            "planner": "m1a_provider_free_dimension_route_intent",
+            "route_granularity": "dimension",
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+
+
 def validate_fixed_dag_plan(plan: Mapping[str, Any]) -> tuple[bool, str]:
     if not isinstance(plan, Mapping):
         return False, "plan_not_mapping"
@@ -918,22 +1020,31 @@ def validate_route_intent(intent: Mapping[str, Any]) -> tuple[bool, str]:
     needs_clarification = bool(intent.get("needs_clarification"))
     clarification_question = str(intent.get("clarification_question") or "").strip()
     fallback_reason = str(intent.get("fallback_reason") or "").strip()
-    if needs_clarification and not clarification_question:
-        return False, "clarification_question_missing"
-    if not selected_agents and not needs_clarification and not fallback_reason:
-        return False, "fallback_reason_missing"
-    if fallback_reason and _contains_public_unsafe_text(fallback_reason):
-        return False, "fallback_reason_not_public_safe"
-    task_type = str(intent.get("task_type") or "")
-    if selected_agents and not needs_clarification:
-        if task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
-            if "risk" not in selected_dimension_set:
-                return False, "risk_dimension_required"
-            if not any(agent_id in RISK_AGENT_IDS for agent_id in selected_agents):
-                return False, "risk_agent_required"
     provenance = intent.get("provenance", {})
     if not isinstance(provenance, Mapping):
         return False, "invalid_provenance"
+    dimension_only = (
+        bool(selected_dimensions)
+        and not selected_agents
+        and provenance.get("route_granularity") == "dimension"
+    )
+    if needs_clarification and not clarification_question:
+        return False, "clarification_question_missing"
+    if not selected_agents and not needs_clarification and not fallback_reason and not dimension_only:
+        return False, "fallback_reason_missing"
+    if fallback_reason and _contains_public_unsafe_text(fallback_reason):
+        return False, "fallback_reason_not_public_safe"
+    if _contains_route_intent_unsafe_material(
+        {key: value for key, value in intent.items() if key != "fallback_reason"}
+    ):
+        return False, "route_intent_unsafe_material_present"
+    task_type = str(intent.get("task_type") or "")
+    if not needs_clarification and task_type in INVESTMENT_JUDGMENT_TASK_TYPES:
+        if "risk" not in selected_dimension_set:
+            return False, "risk_dimension_required"
+        if selected_agents:
+            if not any(agent_id in RISK_AGENT_IDS for agent_id in selected_agents):
+                return False, "risk_agent_required"
     if provenance.get("provider_invoked") or provenance.get("external_invoked"):
         return False, "live_invocation_claim_present"
     return True, "ok"
@@ -980,17 +1091,27 @@ def _selected_l2_agents_by_dimension(selected_agents: list[str]) -> dict[str, li
     }
 
 
+def _effective_l2_agents_by_dimension(intent: Mapping[str, Any]) -> dict[str, list[str]]:
+    selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
+    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
+    explicit_l2_by_dimension = _selected_l2_agents_by_dimension(selected_agents)
+    effective: dict[str, list[str]] = {}
+    for dimension in selected_dimensions:
+        explicit_l2_agents = explicit_l2_by_dimension[dimension]
+        effective[dimension] = (
+            list(explicit_l2_agents)
+            if explicit_l2_agents
+            else list(DIMENSION_GROUPS[dimension])
+        )
+    return effective
+
+
 def _compiled_agent_ids_for_intent(intent: Mapping[str, Any]) -> list[str]:
     selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
     selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
     if not selected_dimensions:
         raise ValueError("selected_dimensions_missing")
-    l2_by_dimension = _selected_l2_agents_by_dimension(selected_agents)
-    missing_l2_dimensions = [
-        dimension for dimension in selected_dimensions if not l2_by_dimension[dimension]
-    ]
-    if missing_l2_dimensions:
-        raise ValueError("selected_dimension_l2_agents_missing")
+    l2_by_dimension = _effective_l2_agents_by_dimension(intent)
 
     compiled: set[str] = {
         "route_planner",
@@ -1003,7 +1124,14 @@ def _compiled_agent_ids_for_intent(intent: Mapping[str, Any]) -> list[str]:
         compiled.add(DIMENSION_COMPOSITE_AGENT_IDS[dimension])
 
     task_type = str(intent.get("task_type") or "")
-    if task_type in INVESTMENT_JUDGMENT_TASK_TYPES or "decision_synthesizer" in selected_agents:
+    provenance = intent.get("provenance", {})
+    provenance = provenance if isinstance(provenance, Mapping) else {}
+    dimension_only = provenance.get("route_granularity") == "dimension" and not selected_agents
+    if (
+        dimension_only
+        or task_type in INVESTMENT_JUDGMENT_TASK_TYPES
+        or "decision_synthesizer" in selected_agents
+    ):
         compiled.add("decision_synthesizer")
 
     return [agent_id for agent_id in RESET_RUNTIME_AGENT_IDS if agent_id in compiled]
@@ -1014,8 +1142,7 @@ def _compiled_steps_for_intent(
     compiled_agent_ids: list[str],
 ) -> list[FixedDagStep]:
     selected_dimensions = _unique_known_dimensions(cast(list[str] | None, intent.get("selected_dimensions")))
-    selected_agents = _unique_known_agents(cast(list[str] | None, intent.get("selected_agents")))
-    l2_by_dimension = _selected_l2_agents_by_dimension(selected_agents)
+    l2_by_dimension = _effective_l2_agents_by_dimension(intent)
     compiled_agent_set = set(compiled_agent_ids)
     include_decision = "decision_synthesizer" in compiled_agent_set
     terminal_dimension_step_ids = [
@@ -1137,18 +1264,36 @@ def compile_selected_fixed_dag_plan(
 
     compiled_agent_ids = _compiled_agent_ids_for_intent(route_intent)
     selected_steps = _compiled_steps_for_intent(route_intent, compiled_agent_ids)
+    route_intent_provenance = route_intent.get("provenance", {})
+    route_intent_provenance = (
+        route_intent_provenance if isinstance(route_intent_provenance, Mapping) else {}
+    )
+    route_granularity = str(route_intent_provenance.get("route_granularity") or "").strip()
+    expanded_from_dimensions = not _unique_known_agents(
+        cast(list[str] | None, route_intent.get("selected_agents"))
+    )
+    compiler_provenance: dict[str, Any] = {
+        "source": "deterministic_selected_dag_compiler",
+        "compiler": "r8_2_deterministic_selected_dag_compiler",
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    if route_granularity:
+        compiler_provenance.update(
+            {
+                "route_granularity": route_granularity,
+                "expanded_from_selected_dimensions": expanded_from_dimensions,
+                "expanded_dimensions": list(route_intent.get("selected_dimensions", []) or []),
+                "expanded_agent_count": len(compiled_agent_ids),
+            }
+        )
     plan = build_selected_fixed_dag_plan(
         route_intent=route_intent,
         user_text=user_text,
         as_of=as_of,
         selected_steps=selected_steps,
         fallback_reason=str(route_intent.get("fallback_reason") or "fallback to full DAG"),
-        provenance={
-            "source": "deterministic_selected_dag_compiler",
-            "compiler": "r8_2_deterministic_selected_dag_compiler",
-            "provider_invoked": False,
-            "external_invoked": False,
-        },
+        provenance=compiler_provenance,
     )
     valid, reason = validate_selected_fixed_dag_plan(plan)
     if not valid:
@@ -3442,6 +3587,8 @@ def build_workflow_snapshot_v2(
         for dimension in DIMENSION_GROUPS
         if dimension in normalized_plan.get("dimension_groups", {})
     ]
+    plan_provenance = normalized_plan.get("provenance", {})
+    plan_provenance = plan_provenance if isinstance(plan_provenance, Mapping) else {}
     return {
         "schema": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
         "schemaVersion": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
@@ -3507,6 +3654,33 @@ def build_workflow_snapshot_v2(
             "limitations": list(dag_execution.get("limitations", []) or [])
             if isinstance(dag_execution, Mapping)
             else [],
+            "selectedRoutingRequested": bool(
+                plan_provenance.get("selected_routing_requested")
+            ),
+            "selectedRoutingFallback": bool(
+                plan_provenance.get("selected_routing_fallback")
+            ),
+            "fallbackReason": _safe_public_text(
+                plan_provenance.get("fallback_reason"),
+                limit=120,
+            ),
+            "routeGranularity": _safe_public_text(
+                plan_provenance.get("route_granularity"),
+                limit=40,
+            ),
+            "selectedDimensions": [
+                dimension
+                for dimension in plan_provenance.get(
+                    "selected_dimensions",
+                    normalized_plan.get("selected_dimensions", []),
+                )
+                if isinstance(dimension, str) and dimension in DIMENSION_GROUPS
+            ],
+            "expandedAgentCount": (
+                int(plan_provenance.get("expanded_agent_count"))
+                if isinstance(plan_provenance.get("expanded_agent_count"), int)
+                else len(normalized_plan.get("target_agent_ids", []) or [])
+            ),
         },
         "finalSource": RESET_SOURCE,
     }

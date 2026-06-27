@@ -21,7 +21,7 @@ from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_decision_result,
     build_default_fixed_dag_plan,
-    build_default_route_intent,
+    build_default_dimension_route_intent,
     build_dimension_results,
     build_emitted_bundle,
     build_entity_relation_bundle,
@@ -105,6 +105,9 @@ def _full_plan_with_selected_fallback_provenance(
         "selected_routing_requested": True,
         "selected_routing_fallback": True,
         "fallback_reason": reason,
+        "route_granularity": "dimension",
+        "selected_dimensions": [],
+        "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
         "provider_invoked": False,
         "external_invoked": False,
     }
@@ -116,7 +119,7 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
     if context is None or not context.enable_selected_routing:
         return build_default_fixed_dag_plan(question, as_of=as_of)
     try:
-        route_intent = build_default_route_intent(question)
+        route_intent = build_default_dimension_route_intent(question)
         plan = compile_selected_fixed_dag_plan(route_intent, user_text=question, as_of=as_of)
     except Exception as exc:
         return _full_plan_with_selected_fallback_provenance(
@@ -128,6 +131,9 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
         **plan["provenance"],
         "selected_routing_requested": True,
         "selected_routing_fallback": False,
+        "route_granularity": "dimension",
+        "selected_dimensions": list(plan.get("selected_dimensions", []) or []),
+        "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
         "provider_invoked": False,
         "external_invoked": False,
     }

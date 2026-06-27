@@ -24,6 +24,7 @@ from react_agent.fixed_dag_contracts import (
     build_agent_tasks_for_plan,
     build_data_bundle,
     build_decision_result,
+    build_default_dimension_route_intent,
     build_default_fixed_dag_plan,
     build_default_route_intent,
     build_dimension_results,
@@ -331,6 +332,36 @@ def test_default_route_intent_handles_non_investment_tasks_without_risk() -> Non
     assert "risk" not in general["selected_dimensions"]
 
 
+def test_default_dimension_route_intent_is_provider_free_and_dimension_only() -> None:
+    intent = build_default_dimension_route_intent("Should I invest in example company?")
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert intent["task_type"] == "single"
+    assert intent["selected_dimensions"] == ["value", "risk"]
+    assert intent["selected_agents"] == []
+    assert intent["fallback_reason"] == ""
+    assert intent["provenance"]["route_granularity"] == "dimension"
+    assert intent["provenance"]["provider_invoked"] is False
+    assert intent["provenance"]["external_invoked"] is False
+
+
+def test_route_intent_allows_dimension_only_with_dimension_provenance() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["估值方法说明"],
+        selected_dimensions=["value"],
+        selected_agents=[],
+        route_confidence=0.74,
+        provenance={"route_granularity": "dimension"},
+    )
+    valid, reason = validate_route_intent(intent)
+
+    assert valid, reason
+    assert intent["selected_dimensions"] == ["value"]
+    assert intent["selected_agents"] == []
+
+
 def test_route_intent_allows_general_value_only_selection() -> None:
     intent = build_route_intent(
         task_type="general",
@@ -436,6 +467,20 @@ def test_route_intent_enforces_clarification_and_policy_gates() -> None:
     assert not valid
     assert reason == "fallback_reason_not_public_safe"
 
+    unsafe_provenance = build_route_intent(
+        task_type="general",
+        selected_dimensions=["value"],
+        selected_agents=[],
+        route_confidence=0.74,
+        provenance={
+            "route_granularity": "dimension",
+            "endpoint": "http://127.0.0.1:10028/v1/agent/compute",
+        },
+    )
+    valid, reason = validate_route_intent(unsafe_provenance)
+    assert not valid
+    assert reason == "route_intent_unsafe_material_present"
+
 
 def test_route_intent_preserves_sentiment_market_boundary() -> None:
     intent = build_route_intent(
@@ -522,6 +567,70 @@ def test_compile_selected_fixed_dag_plan_builds_value_only_dependency_closure() 
     assert not _contains_key(plan, "fusionSteps")
 
 
+def test_compile_selected_fixed_dag_plan_expands_dimension_only_value_intent() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["valuation method"],
+        selected_dimensions=["value"],
+        selected_agents=[],
+        route_confidence=0.74,
+        provenance={"route_granularity": "dimension"},
+    )
+    plan = compile_selected_fixed_dag_plan(
+        intent,
+        user_text="explain valuation method",
+        as_of="2026-06-09",
+    )
+    steps = {step["id"]: step for step in plan["steps"]}
+    selected_valid, selected_reason = validate_selected_fixed_dag_plan(plan)
+
+    assert selected_valid, selected_reason
+    assert plan["provenance"]["route_granularity"] == "dimension"
+    assert plan["provenance"]["expanded_from_selected_dimensions"] is True
+    assert plan["dimension_groups"]["value"] == list(DIMENSION_GROUPS["value"])
+    assert set(plan["selected_dimensions"]) == {"value"}
+    assert all(agent_id in plan["target_agent_ids"] for agent_id in DIMENSION_GROUPS["value"])
+    assert "value_composite" in plan["target_agent_ids"]
+    assert "decision_synthesizer" in plan["target_agent_ids"]
+    assert "report_generator" in plan["target_agent_ids"]
+    assert steps["dimension:value"]["target_ids"] == list(DIMENSION_GROUPS["value"])
+    assert steps["dimension:value"]["depends_on"] == [
+        f"l2:{agent_id}" for agent_id in DIMENSION_GROUPS["value"]
+    ]
+    assert steps["decision_synthesizer"]["depends_on"] == ["dimension:value"]
+    assert steps["report_generator"]["depends_on"] == ["decision_synthesizer"]
+    assert set(plan["omitted_dimensions"]) == {"market", "risk", "macro"}
+
+
+def test_compile_selected_fixed_dag_plan_expands_dimension_only_risk_macro_intent() -> None:
+    intent = build_route_intent(
+        task_type="general",
+        targets=["risk and macro"],
+        selected_dimensions=["risk", "macro"],
+        selected_agents=[],
+        route_confidence=0.82,
+        provenance={"route_granularity": "dimension"},
+    )
+    plan = compile_selected_fixed_dag_plan(intent, user_text="risk and macro")
+    steps = {step["id"]: step for step in plan["steps"]}
+    selected_valid, selected_reason = validate_selected_fixed_dag_plan(plan)
+
+    assert selected_valid, selected_reason
+    assert plan["dimension_groups"]["risk"] == list(DIMENSION_GROUPS["risk"])
+    assert plan["dimension_groups"]["macro"] == list(DIMENSION_GROUPS["macro"])
+    assert all(agent_id in plan["target_agent_ids"] for agent_id in DIMENSION_GROUPS["risk"])
+    assert all(agent_id in plan["target_agent_ids"] for agent_id in DIMENSION_GROUPS["macro"])
+    assert "risk_composite" in plan["target_agent_ids"]
+    assert "macro_composite" in plan["target_agent_ids"]
+    assert "decision_synthesizer" in plan["target_agent_ids"]
+    assert set(steps["decision_synthesizer"]["depends_on"]) == {
+        "dimension:risk",
+        "dimension:macro",
+    }
+    assert steps["report_generator"]["depends_on"] == ["decision_synthesizer"]
+    assert set(plan["omitted_dimensions"]) == {"value", "market"}
+
+
 def test_compile_selected_fixed_dag_plan_builds_investment_plan_with_risk_and_decision() -> None:
     intent = build_route_intent(
         task_type="single",
@@ -570,18 +679,27 @@ def test_compile_selected_fixed_dag_plan_rejects_invalid_or_incomplete_intent() 
     else:
         raise AssertionError("expected invalid investment intent to fail")
 
-    missing_l2 = build_route_intent(
+    missing_dimensions = build_route_intent(
+        task_type="general",
+        selected_dimensions=[],
+        selected_agents=[],
+        fallback_reason="fallback to full DAG",
+    )
+    try:
+        compile_selected_fixed_dag_plan(missing_dimensions)
+    except ValueError as exc:
+        assert str(exc) == "selected_dimensions_missing"
+    else:
+        raise AssertionError("expected missing selected dimensions to fail")
+
+    dimension_only_with_non_l2_agent = build_route_intent(
         task_type="general",
         selected_dimensions=["value"],
         selected_agents=["value_composite"],
         fallback_reason="fallback to full DAG",
     )
-    try:
-        compile_selected_fixed_dag_plan(missing_l2)
-    except ValueError as exc:
-        assert str(exc) == "selected_dimension_l2_agents_missing"
-    else:
-        raise AssertionError("expected missing L2 selected dimension to fail")
+    plan = compile_selected_fixed_dag_plan(dimension_only_with_non_l2_agent)
+    assert plan["dimension_groups"]["value"] == list(DIMENSION_GROUPS["value"])
 
 
 def test_selected_fixed_dag_plan_validates_subset_and_omissions() -> None:
