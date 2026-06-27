@@ -234,7 +234,7 @@ def test_l4_runtime_review_evidence_package_rejects_unsafe_or_weak_records() -> 
         evidence={
             "provider_compute_pass": {
                 "passed": True,
-                "reference": "docs/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
+                "reference": "docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
                 "summary": "provider compute smoke passed",
             },
             "transcript_safety_pass": {
@@ -277,7 +277,7 @@ def test_l4_runtime_review_evidence_package_ready_is_still_metadata_only() -> No
         evidence={
             "provider_compute_pass": {
                 "passed": True,
-                "reference": "docs/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
+                "reference": "docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
                 "summary": "provider-backed compute evidence is recorded",
                 "validated_by": "codex",
                 "validated_at": "2026-06-19",
@@ -372,7 +372,7 @@ def test_l4_runtime_binding_phase_plan_ready_package_reports_existing_config() -
         evidence={
             "provider_compute_pass": {
                 "passed": True,
-                "reference": "docs/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
+                "reference": "docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md#r8-13j",
             },
             "transcript_safety_pass": {
                 "passed": True,
@@ -380,7 +380,7 @@ def test_l4_runtime_binding_phase_plan_ready_package_reports_existing_config() -
             },
             "rollback_plan_ready": {
                 "passed": True,
-                "reference": "docs/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md",
+                "reference": "docs/history/r8/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md",
             },
             "operator_approval": {
                 "passed": True,

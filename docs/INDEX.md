@@ -88,4 +88,7 @@ Historical records are retained under [`docs/history/`](history/README.md):
 - `releases/` - 1 retained historical records.
 - `sync-ops/` - 26 retained historical records.
 
-Use [`docs/history/MANIFEST.json`](history/MANIFEST.json) for original-path mapping, content hashes, and retained reference classes.
+Use [`docs/history/MANIFEST.json`](history/MANIFEST.json) for original-path
+mapping, content hashes, and retained reference classes. Moved historical
+records are not duplicated as top-level docs; start from this index or
+`docs/history/README.md` when historical phase evidence is needed.

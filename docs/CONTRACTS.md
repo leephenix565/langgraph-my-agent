@@ -335,10 +335,10 @@ enter executor state or report bundles.
 
 R7-G external handoff docs and scaffold package are contract-facing guidance:
 
-- `docs/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
+- `docs/history/misc/EXTERNAL_AGENT_HANDOFF_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_PAYLOAD_MAPPING_FIXED_DAG.md`
 - `docs/EXTERNAL_AGENT_READINESS_LADDER_FIXED_DAG.md`
-- `docs/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`
+- `docs/history/misc/EXTERNAL_AGENT_SAMPLE_PAYLOADS_FIXED_DAG.md`
 - `examples/fixed_dag_external_agent_scaffold/`
 - `E:\muti-agent\external_agent_scaffold`
 
@@ -1251,7 +1251,7 @@ Current status:
 
 The phase-plan preflight now reports `runtime_binding_configured_pending_smoke`
 after the config edit, and the controlled smoke evidence is recorded in
-`docs/CONTROLLED_READINESS_SMOKE_LOG.md`.
+`docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md`.
 
 ## L3 LLM explanation seam
 

@@ -3,6 +3,22 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-27 - Documentation top-level history stub cleanup
+
+### Changed
+
+- Removed top-level `Historical Document Moved` stubs for archived phase
+  records; historical evidence now resolves through `docs/history/README.md`
+  and `docs/history/MANIFEST.json`.
+- Updated maintained-doc quality targets and historical evidence references to
+  use `docs/history/...` paths directly.
+
+### Not Done
+
+- No runtime behavior, public schema, graph topology, runtime binding, catalog,
+  endpoint, provider, process, prod, sandbox, external service, or owner-dev
+  change.
+
 ## 2026-06-27 - Report renderer enrichment gate
 
 ### Added

@@ -25,7 +25,7 @@ L4_RUNTIME_REVIEW_CANDIDATE_EVIDENCE = {
     "provider_compute_pass": {
         "passed": True,
         "reference": (
-            "docs/CONTROLLED_READINESS_SMOKE_LOG.md"
+            "docs/history/misc/CONTROLLED_READINESS_SMOKE_LOG.md"
             "#r8-13j-l4-provider-backed-controlled-compute-smoke"
         ),
         "summary": "production-source provider-backed L4 compute evidence recorded",
@@ -44,7 +44,7 @@ L4_RUNTIME_REVIEW_CANDIDATE_EVIDENCE = {
     },
     "rollback_plan_ready": {
         "passed": True,
-        "reference": "docs/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md#rollback-plan",
+        "reference": "docs/history/r8/L4_RUNTIME_REVIEW_EVIDENCE_R8_13O.md#rollback-plan",
         "summary": "deterministic L4 fallback and config rollback plan documented",
         "validated_by": "codex",
         "validated_at": "2026-06-19",

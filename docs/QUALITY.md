@@ -50,9 +50,10 @@ records under `docs/history/` are validated through manifest, link, and
 reference-preservation checks during documentation migration work rather than by
 treating every historical record as current authority prose.
 
-Old top-level paths for moved historical documents are retained as stubs so
-existing quality targets and external references continue to resolve. The stubs
-point to `docs/history/MANIFEST.json` and the current authority entrypoints.
+Moved historical documents are resolved through `docs/history/MANIFEST.json`
+and `docs/history/README.md`. Top-level compatibility stubs are not maintained
+as current documentation because they make the active docs surface look like a
+collection of phase fragments.
 
 Docs-only consolidation does not change runtime behavior, catalog entries,
 runtime bindings, public schemas, sync schemas, graph topology, process actions,

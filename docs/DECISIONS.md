@@ -1478,8 +1478,8 @@ evidence, adapter mapping review, and explicit runtime-binding review.
 
 Status: accepted.
 
-Decision: the main-system docs now include
-`docs/NEXT_PHASE_ROADMAP_FIXED_DAG.md` as the current roadmap entry point. The
+Decision: the main-system docs then included
+`docs/history/misc/NEXT_PHASE_ROADMAP_FIXED_DAG.md` as the roadmap record. The
 roadmap consolidates current fixed DAG progress, A/B/C agent work classes,
 near-term demo trace and A-class remediation priorities, medium/long-term
 runtime preparation, and documentation cleanup guidance.
