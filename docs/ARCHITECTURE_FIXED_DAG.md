@@ -418,16 +418,21 @@ Runtime behavior:
   for dimension-only `route_intent_v1` output. These helpers do not create
   clients, read env values, call providers, store prompts/messages, or retain
   raw responses;
+- M1F5 adds pure OpenAI-compatible endpoint path normalization to the same
+  wrapper. A future dry-run base path ending in `/v1` maps to
+  `/v1/chat/completions`; a base path without `/v1` maps to
+  `/v1/chat/completions` under that base path. Endpoint/base URL values are for
+  in-memory dry-run use only and remain forbidden in artifacts;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
-R8-5/M1A/M1D/M1F0/M1F3 do not call a real LLM/provider, search backend, external
-`/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and M1F0 do not
-invoke `load_chat_model`, and M1F3 keeps that boundary. These phases do not
-read provider credentials, change the fixed DAG roster, runtime bindings,
-RouteEval threshold policy, external adapter readiness, or real business-agent
-implementation status. M1A, M1D, M1F0, and M1F3 add only public-safe
-selected-routing/provider-router metadata and safety contracts; they do not
-create an external router service, assign ports, copy scaffold material, move
-`report_generator` from port `10026`, or promote the `10028/8028` planning
-reservation to runtime authority.
+R8-5/M1A/M1D/M1F0/M1F3/M1F5 do not call a real LLM/provider, search backend,
+external `/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and
+M1F0 do not invoke `load_chat_model`, and M1F3/M1F5 keep that boundary. These
+phases do not read provider credentials, change the fixed DAG roster, runtime
+bindings, RouteEval threshold policy, external adapter readiness, or real
+business-agent implementation status. M1A, M1D, M1F0, M1F3, and M1F5 add only
+public-safe selected-routing/provider-router metadata and safety contracts;
+they do not create an external router service, assign ports, copy scaffold
+material, move `report_generator` from port `10026`, or promote the
+`10028/8028` planning reservation to runtime authority.

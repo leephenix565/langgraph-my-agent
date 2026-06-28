@@ -186,6 +186,14 @@ env values, do not create a provider client, do not retain prompts/messages or
 raw responses, and do not change runtime bindings, route-planner ports, or
 default full-DAG behavior.
 
+Router M1F5 persists the remaining OpenAI-compatible endpoint path contract.
+The router-only wrapper now exposes a pure helper that builds the chat
+completions endpoint by appending `/chat/completions` when the configured base
+path already ends in `/v1`, or `/v1/chat/completions` otherwise. The helper is
+for controlled dry-run use only; it does not read env values, create clients,
+call providers, retain endpoint values in artifacts, assign a route-planner
+port, or change default full-DAG behavior.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

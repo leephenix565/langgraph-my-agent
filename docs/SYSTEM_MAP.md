@@ -174,6 +174,10 @@ Active skeleton properties:
   future dry-runs use a JSON object response contract for dimension-only
   `route_intent_v1`. This still does not create clients, read env values, call
   providers, assign route-planner ports, or change the default full DAG.
+- M1F5 adds pure OpenAI-compatible endpoint path normalization to the wrapper:
+  future dry-runs can derive the `/v1/chat/completions` endpoint from a base
+  URL in memory while keeping endpoint/base URL values out of artifacts and
+  public workflow metadata.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only

@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1F5 provider endpoint path contract
+
+### Changed
+
+- Added a pure router-provider endpoint normalization helper for future
+  OpenAI-compatible controlled dry-runs. The helper maps base paths ending in
+  `/v1` to `/v1/chat/completions`, maps base paths without `/v1` to
+  `/v1/chat/completions` under that base path, preserves already complete chat
+  completions paths, and rejects unsupported URL shapes.
+- Extended router-provider artifact allowlisting with safe booleans for
+  chat-completions path normalization and whether a `/v1` path was added.
+- Added focused unit coverage for missing `/v1`, existing `/v1`, complete
+  endpoint passthrough, unsafe URL shape rejection, and artifact-safety
+  metadata.
+
+### Not Done
+
+- No real provider call, env-value access, endpoint/base URL value retention,
+  `load_chat_model` invocation, OpenAI/DeepSeek client creation, runtime
+  binding change, route-planner port assignment, `10028/8028` runtime
+  implementation, report-generator port change, process action, prompt/message
+  retention, or raw provider response/hash retention change.
+
 ## 2026-06-28 - Router M1F3 provider compatibility contract
 
 ### Changed

@@ -11,6 +11,7 @@ import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 ROUTER_PROVIDER_ENV_VAR_NAMES: tuple[str, ...] = (
     "ROUTER_MODEL",
@@ -59,6 +60,8 @@ ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
         "model_normalized",
         "response_format_json_object",
         "request_contract_version",
+        "chat_completions_path_normalized",
+        "v1_path_added",
     }
 )
 ROUTER_PROVIDER_ARTIFACT_FORBIDDEN_FIELDS: frozenset[str] = frozenset(
@@ -207,6 +210,23 @@ class RouterProviderModelNormalizationResult:
     reason_code: str
 
 
+@dataclass(frozen=True)
+class RouterProviderEndpointNormalizationResult:
+    """OpenAI-compatible chat completions endpoint normalization result.
+
+    The URL fields are for in-memory dry-run use only. Public artifacts should
+    record only the boolean flags and safe reason code.
+    """
+
+    input_base_url: str
+    chat_completions_url: str
+    valid: bool
+    base_url_has_v1_path: bool
+    chat_completions_path_normalized: bool
+    v1_path_added: bool
+    reason_code: str
+
+
 def build_default_router_provider_policy() -> RouterProviderPolicy:
     """Return the default fail-closed router-provider policy."""
     return RouterProviderPolicy()
@@ -337,6 +357,83 @@ def build_router_provider_request_contract(
     }
 
 
+def build_openai_compatible_chat_completions_url(
+    base_url: str,
+) -> RouterProviderEndpointNormalizationResult:
+    """Build an OpenAI-compatible `/v1/chat/completions` URL.
+
+    The helper is pure and intentionally conservative. It does not read env
+    values, create clients, call providers, or decide authorization.
+    """
+
+    text = str(base_url or "").strip()
+    if not text:
+        return RouterProviderEndpointNormalizationResult(
+            input_base_url="",
+            chat_completions_url="",
+            valid=False,
+            base_url_has_v1_path=False,
+            chat_completions_path_normalized=False,
+            v1_path_added=False,
+            reason_code="base_url_missing",
+        )
+
+    parsed = urlsplit(text)
+    if parsed.scheme not in {"http", "https"} or not parsed.netloc:
+        return RouterProviderEndpointNormalizationResult(
+            input_base_url=text,
+            chat_completions_url="",
+            valid=False,
+            base_url_has_v1_path=False,
+            chat_completions_path_normalized=False,
+            v1_path_added=False,
+            reason_code="base_url_invalid_scheme_or_host",
+        )
+    if parsed.query or parsed.fragment:
+        return RouterProviderEndpointNormalizationResult(
+            input_base_url=text,
+            chat_completions_url="",
+            valid=False,
+            base_url_has_v1_path=False,
+            chat_completions_path_normalized=False,
+            v1_path_added=False,
+            reason_code="base_url_query_or_fragment_not_allowed",
+        )
+
+    path = parsed.path.rstrip("/")
+    base_url_has_v1_path = path.endswith("/v1")
+    v1_path_added = False
+    if path.endswith("/chat/completions"):
+        endpoint_path = path
+        reason_code = "chat_completions_path_passthrough"
+    elif base_url_has_v1_path:
+        endpoint_path = f"{path}/chat/completions"
+        reason_code = "chat_completions_path_appended"
+    else:
+        endpoint_path = f"{path}/v1/chat/completions" if path else "/v1/chat/completions"
+        v1_path_added = True
+        reason_code = "v1_chat_completions_path_appended"
+
+    endpoint = urlunsplit(
+        (
+            parsed.scheme,
+            parsed.netloc,
+            endpoint_path,
+            "",
+            "",
+        )
+    )
+    return RouterProviderEndpointNormalizationResult(
+        input_base_url=text,
+        chat_completions_url=endpoint,
+        valid=True,
+        base_url_has_v1_path=base_url_has_v1_path,
+        chat_completions_path_normalized=True,
+        v1_path_added=v1_path_added,
+        reason_code=reason_code,
+    )
+
+
 def router_provider_preflight(
     policy: RouterProviderPolicy | None = None,
     *,
@@ -453,6 +550,8 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
             "unsafe_scan_pass",
             "model_normalized",
             "response_format_json_object",
+            "chat_completions_path_normalized",
+            "v1_path_added",
         }:
             clean[key] = bool(value)
         elif key in _RETENTION_STATUS_FIELDS:
@@ -541,10 +640,12 @@ __all__ = [
     "ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT",
     "RouterProviderFactoryResult",
     "RouterProviderInvocationOptions",
+    "RouterProviderEndpointNormalizationResult",
     "RouterProviderModelNormalizationResult",
     "RouterProviderPolicy",
     "RouterProviderPreflightResult",
     "build_default_router_provider_policy",
+    "build_openai_compatible_chat_completions_url",
     "build_router_provider_request_contract",
     "build_router_provider_artifact",
     "build_router_provider_factory_result",

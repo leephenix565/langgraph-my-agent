@@ -790,6 +790,20 @@ These helpers do not authorize provider use, do not read `.env` or runtime env
 values, do not create a client, do not call `load_chat_model`, and do not change
 default full-DAG behavior.
 
+M1F5 adds pure endpoint path normalization for future OpenAI-compatible dry-run
+requests. The helper builds a chat-completions endpoint from a configured base
+URL by:
+
+- appending `/chat/completions` when the base path already ends in `/v1`;
+- appending `/v1/chat/completions` when `/v1` is absent;
+- preserving an already complete `/chat/completions` path;
+- rejecting missing values, unsupported schemes/hosts, and query or fragment
+  components.
+
+Endpoint and base URL values are not artifact-safe. Public-safe metadata may
+record only booleans such as `chat_completions_path_normalized` and
+`v1_path_added`, plus safe reason codes.
+
 Non-claims:
 
 - the selected flag does not enable provider, search, or external invocation;

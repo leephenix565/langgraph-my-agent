@@ -5,6 +5,7 @@ from react_agent import router_provider
 from react_agent.router_provider import (
     RouterProviderInvocationOptions,
     RouterProviderPolicy,
+    build_openai_compatible_chat_completions_url,
     build_default_router_provider_policy,
     build_router_provider_artifact,
     build_router_provider_factory_result,
@@ -129,6 +130,55 @@ def test_router_provider_request_contract_uses_json_mode_without_sensitive_field
         assert forbidden not in contract
 
 
+def test_openai_compatible_chat_completions_url_appends_v1_when_missing() -> None:
+    result = build_openai_compatible_chat_completions_url("https://provider.example/api")
+
+    assert result.valid is True
+    assert result.chat_completions_url == "https://provider.example/api/v1/chat/completions"
+    assert result.base_url_has_v1_path is False
+    assert result.chat_completions_path_normalized is True
+    assert result.v1_path_added is True
+    assert result.reason_code == "v1_chat_completions_path_appended"
+
+
+def test_openai_compatible_chat_completions_url_uses_existing_v1_path() -> None:
+    result = build_openai_compatible_chat_completions_url("https://provider.example/v1/")
+
+    assert result.valid is True
+    assert result.chat_completions_url == "https://provider.example/v1/chat/completions"
+    assert result.base_url_has_v1_path is True
+    assert result.chat_completions_path_normalized is True
+    assert result.v1_path_added is False
+    assert result.reason_code == "chat_completions_path_appended"
+
+
+def test_openai_compatible_chat_completions_url_preserves_full_endpoint_path() -> None:
+    result = build_openai_compatible_chat_completions_url(
+        "https://provider.example/v1/chat/completions"
+    )
+
+    assert result.valid is True
+    assert result.chat_completions_url == "https://provider.example/v1/chat/completions"
+    assert result.chat_completions_path_normalized is True
+    assert result.v1_path_added is False
+    assert result.reason_code == "chat_completions_path_passthrough"
+
+
+def test_openai_compatible_chat_completions_url_rejects_unsafe_shapes() -> None:
+    missing = build_openai_compatible_chat_completions_url("")
+    scheme = build_openai_compatible_chat_completions_url("file:///tmp/provider")
+    query = build_openai_compatible_chat_completions_url(
+        "https://provider.example/v1?secret=value"
+    )
+
+    assert missing.valid is False
+    assert missing.reason_code == "base_url_missing"
+    assert scheme.valid is False
+    assert scheme.reason_code == "base_url_invalid_scheme_or_host"
+    assert query.valid is False
+    assert query.reason_code == "base_url_query_or_fragment_not_allowed"
+
+
 def test_router_provider_contract_metadata_is_artifact_safe() -> None:
     clean = build_router_provider_artifact(
         {
@@ -148,6 +198,8 @@ def test_router_provider_contract_metadata_is_artifact_safe() -> None:
             "model_normalized": True,
             "request_contract_version": "router_dimension_json_v1",
             "response_format_json_object": True,
+            "chat_completions_path_normalized": True,
+            "v1_path_added": True,
             "raw_response_retained": False,
             "prompt_retained": False,
             "messages_retained": False,
@@ -158,6 +210,8 @@ def test_router_provider_contract_metadata_is_artifact_safe() -> None:
     assert clean["model_normalized"] is True
     assert clean["request_contract_version"] == "router_dimension_json_v1"
     assert clean["response_format_json_object"] is True
+    assert clean["chat_completions_path_normalized"] is True
+    assert clean["v1_path_added"] is True
     assert router_provider_unsafe_scan(clean)["pass"] is True
 
 

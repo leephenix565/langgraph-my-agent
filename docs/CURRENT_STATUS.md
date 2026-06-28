@@ -94,6 +94,12 @@ records.
   no provider is called, no prompt/messages or raw response are retained, and
   default production behavior remains the full fixed DAG unless later phases
   explicitly authorize a dry-run.
+- M1F5 adds the missing OpenAI-compatible chat-completions endpoint path
+  normalization contract to the same wrapper. Future controlled dry-runs should
+  build the endpoint by appending `/chat/completions` to base paths ending in
+  `/v1`, or `/v1/chat/completions` when `/v1` is absent. Only sanitized booleans
+  such as path-normalized and v1-added are artifact-safe; endpoint/base URL
+  values remain forbidden.
 
 ## Report Quality RQ2E Status
 
