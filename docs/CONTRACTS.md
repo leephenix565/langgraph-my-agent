@@ -558,7 +558,12 @@ dimension-only planner mode: the planner output may select only `value`,
 deterministic compiler. Router M1D adds a fake-provider-only seam for the
 future internal LLM dimension router. It is gated by a separate default-false
 provider-router flag and accepts only dimension-only `route_intent_v1` JSON
-from injected fake providers; real provider calls remain out of scope.
+from injected fake providers. Router M1H closes the default-off real-provider
+dimension-router milestone: after the router-only provider wrapper,
+compatibility helpers, strict JSON response contract, and M1G2
+`task_type="general"` provider draft patch, a dev-only five-case stability
+matrix produced 5 parseable dimension-only intents and 5 compiled selected
+plans with selected-agent output rejected.
 
 Fields:
 
@@ -647,6 +652,15 @@ R8-3 prompt/parser boundary:
   confidence, clarification requests, provider exceptions, simulated timeouts,
   or unavailable fake providers fall back to full DAG with public-safe reason
   codes.
+- Router-provider real-output ingress follows the same rule: provider output is
+  parsed immediately as dimension-only `route_intent_v1`, raw response text and
+  raw hashes are not retained, prompts/messages remain in-memory request
+  material only, selected agents are rejected, and the deterministic compiler is
+  the only path from selected dimensions to executable selected DAG steps.
+  Provider dimension-router drafts use `task_type="general"` because they are
+  analysis-dimension selection intents. The fixed-DAG investment safeguard is
+  preserved: `task_type="single"` and related investment-judgment task types
+  still require the `risk` dimension.
 
 ## RouteEval baseline
 

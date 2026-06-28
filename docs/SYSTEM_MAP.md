@@ -188,6 +188,14 @@ Active skeleton properties:
   `task_type="general"` lane because it only selects analysis dimensions; the
   fixed-DAG risk requirement for investment task types such as `single` remains
   intact.
+- M1H closes the Router M1 default-off LLM dimension-routing milestone. The
+  persisted path was verified in a dev-only five-case real-provider stability
+  matrix: 5 provider calls, 5 `2xx` responses, 5 parseable dimension-only
+  intents, 5 compiled selected fixed-DAG plans, no selected agents accepted, no
+  under-routing failures, and safety scans passing with no raw response/hash,
+  prompt/messages, endpoint/base URL, env value, key, traceback, or
+  chain-of-thought retention. Two conservative over-routing warnings remain
+  non-blocking backlog items.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only
@@ -217,6 +225,11 @@ Active skeleton properties:
   capped at one provider call, no streaming, retry `0`, timeout `<=8s`, max
   tokens `<=220`, no raw response/hash retention, no prompt/message retention,
   no endpoint/process/external-service action, and no runtime binding change.
+- M1H does not alter active runtime authority: selected routing and provider
+  routing remain default-off, the full DAG remains the default production path,
+  no external `route_planner` service exists, no route-planner port is assigned,
+  `10028/8028` remains a future planning reservation only, and
+  `report_generator` remains on `10026`.
 
 ## Retained But Inactive Infrastructure
 

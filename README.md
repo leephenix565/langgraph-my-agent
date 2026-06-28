@@ -215,6 +215,23 @@ types still require the `risk` dimension. This still does not create a provider
 client, read env values, call a provider, assign a route-planner port, or change
 default full-DAG behavior.
 
+Router M1H closes the internal default-off LLM dimension-routing milestone.
+The persisted router path has been verified through a dev-only real-provider
+stability matrix after the M1G2 task-type patch: 5 provider calls returned
+`2xx`, all 5 provider outputs parsed as dimension-only `route_intent_v1`, all 5
+selected plans compiled, selected agents were not accepted, under-routing
+failures were `0`, and safety scans passed with no raw response/hash,
+prompt/message, env, base URL, key, traceback, or chain-of-thought retention.
+Two non-blocking conservative over-routing warnings remain in backlog:
+`risk_compliance_focus` selected `value+risk`, and
+`market_short_term_focus` selected `value+market`. M1H is a milestone closeout,
+not production enablement: selected routing and provider routing remain
+default-off, there is no external `route_planner` service or route-planner
+port, `10028/8028` remains a future planning reservation, `report_generator`
+stays on `10026`, runtime bindings are unchanged, and the next phase should
+plan controlled graph integration / selected-routing graph E2E under the same
+default-off boundary.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

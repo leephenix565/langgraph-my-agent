@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1H LLM dimension-routing closeout
+
+### Closed
+
+- Closed Router M1 internal default-off LLM dimension routing after the M1G2
+  task-type compatibility patch and M1G rerun stability matrix.
+- Recorded that the persisted real-provider router path completed a dev-only
+  five-case matrix with provider calls `5`, real LLM calls `5`, all calls
+  `2xx`, parse_ok `5/5`, selected plan compiled `5/5`, selected agents accepted
+  `false`, under-routing failures `0`, artifact whitelist pass, unsafe scan
+  pass, and no raw response/hash, prompt/messages, env/base URL/key,
+  traceback, or chain-of-thought retention.
+- Recorded two non-blocking conservative over-routing warnings:
+  `risk_compliance_focus` selected `value+risk`, and
+  `market_short_term_focus` selected `value+market`.
+
+### Not Done
+
+- No runtime code change, test change, provider call, env-value access,
+  endpoint call, process action, runtime binding change, agent catalog change,
+  non-L4 policy change, external route-planner service, route-planner port
+  assignment, `10028/8028` runtime implementation, `report_generator` `10026`
+  change, selected-routing production enablement, external compute E2E, or
+  report generation E2E.
+
 ## 2026-06-28 - Router M1G2 provider task-type compatibility
 
 ### Changed

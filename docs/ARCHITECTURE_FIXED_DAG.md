@@ -220,6 +220,14 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   safety wrapper for a future controlled real-provider dry-run. It is
   fail-closed, creates no model client, reads no env values, and does not enter
   the active graph runtime path.
+- Router M1H closes the internal default-off LLM dimension-routing milestone.
+  The persisted provider path has passed a dev-only five-case real-provider
+  stability matrix: all calls returned `2xx`, all 5 route intents parsed, all 5
+  selected fixed-DAG plans compiled, selected-agent output was not accepted,
+  and raw response/hash, prompt/message, endpoint, env, key, traceback, and
+  chain-of-thought retention stayed false. The matrix leaves only
+  non-blocking conservative over-routing warnings where risk and market focused
+  prompts also selected `value`.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -440,11 +448,13 @@ Runtime behavior:
 
 R8-5/M1A/M1D/M1F0/M1F3/M1F5/M1F7 do not call a real LLM/provider, search backend,
 external `/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and
-M1F0 do not invoke `load_chat_model`, and M1F3/M1F5/M1F7 keep that boundary. These
-phases do not read provider credentials, change the fixed DAG roster, runtime
-bindings, RouteEval threshold policy, external adapter readiness, or real
-business-agent implementation status. M1A, M1D, M1F0, M1F3, M1F5, and M1F7 add only
-public-safe selected-routing/provider-router metadata and safety contracts;
-they do not create an external router service, assign ports, copy scaffold
-material, move `report_generator` from port `10026`, or promote the
+M1F0 do not invoke `load_chat_model`, and M1F3/M1F5/M1F7 keep that boundary.
+M1G/M1H add controlled dev-only real-provider verification evidence for the
+persisted router-provider path, but do not production-enable it. These phases
+do not change the fixed DAG roster, runtime bindings, RouteEval threshold
+policy, external adapter readiness, or real business-agent implementation
+status. M1A, M1D, M1F0, M1F3, M1F5, M1F7, and M1H add only public-safe
+selected-routing/provider-router metadata, safety contracts, and closeout
+evidence; they do not create an external router service, assign ports, copy
+scaffold material, move `report_generator` from port `10026`, or promote the
 `10028/8028` planning reservation to runtime authority.

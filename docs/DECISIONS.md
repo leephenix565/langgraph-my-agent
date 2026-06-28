@@ -3,6 +3,35 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-162: Router M1 Closes As Default-Off LLM Dimension Routing, Not Production Enablement
+
+Status: accepted for ROUTER-L1-M1H.
+
+Decision: close Router M1 as an internal default-off LLM dimension-routing
+milestone. The accepted runtime boundary is a dimension-only provider seam that
+can parse real-provider `route_intent_v1` JSON and compile selected
+fixed-DAG plans under explicit authorization, while the default production path
+remains the full fixed DAG.
+
+Reason: M1G2 preserved the fixed-DAG investment safeguard by moving provider
+dimension-router drafts to `task_type="general"` instead of relaxing the
+`task_type="single"` risk requirement. The M1G rerun then showed the persisted
+code path can make five dev-only real-provider calls, parse all five
+dimension-only intents, compile all five selected plans, reject selected-agent
+output, and preserve raw-response, prompt/message, env, endpoint, key,
+traceback, and chain-of-thought safety boundaries.
+
+Consequence: Router M1 is ready for M2 planning around controlled graph
+integration / selected-routing graph E2E under the same default-off boundary.
+The two conservative over-routing warnings are backlog calibration items, not
+M1 blockers.
+
+Non-consequence: this decision does not production-enable selected routing or
+provider routing, create an external `route_planner` service, assign a
+route-planner port, implement `10028/8028`, change `report_generator` `10026`,
+modify runtime bindings, change the agent catalog, change non-L4 policy, run
+external compute E2E, or make `/v1/agent/invoke` part of the default runtime.
+
 ## ADR-161: Deterministic Report Enrichment Gate Preserves L4 Compute Boundary
 
 Status: accepted for REPORT-QUALITY-RQ2D.

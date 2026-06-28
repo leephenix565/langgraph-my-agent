@@ -115,6 +115,23 @@ records.
   can validate as dimension selection. It does not relax the fixed-DAG
   investment safeguard: `task_type="single"` and related investment-judgment
   task types still require the `risk` dimension.
+- M1H closes Router M1. The persisted default-off provider path has passed a
+  dev-only five-case real-provider stability matrix after the M1G2 patch:
+  provider calls `5`, real LLM calls `5`, all status classes `2xx`, parse_ok
+  cases `5/5`, selected plan compiled cases `5/5`, selected agents accepted
+  `false`, under-routing failures `0`, artifact whitelist pass, unsafe scan
+  pass, and no raw response/hash, prompt/messages, env values, endpoint/base
+  URL, API key, traceback, or chain-of-thought retention. Two non-blocking
+  conservative over-routing warnings remain: `risk_compliance_focus` selected
+  `value+risk`, and `market_short_term_focus` selected `value+market`.
+- Router M1 does not production-enable provider routing. Selected routing and
+  the LLM dimension-router flag remain default-off; the default production
+  graph remains the full fixed DAG. No external `route_planner` service exists,
+  no route-planner port is assigned, `10028/8028` remains a future planning
+  reservation only, `report_generator` remains on `10026`, `/invoke` is not the
+  default runtime, and M1H does not change runtime bindings, agent catalog,
+  non-L4 policy, external compute E2E, report generation E2E, or production
+  rollout.
 
 ## Report Quality RQ2E Status
 
@@ -173,8 +190,10 @@ records.
 
 Repository Authority & Active-Core Consolidation is complete. The final
 closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. The report-quality
-theme is also closed by RQ3C. Current product work is the Router L1
-dimension-routing theme.
+theme is also closed by RQ3C. Router L1 M1 is closed by M1H. The next Router
+phase should start from controlled M2 planning for default-off selected-routing
+graph integration / selected graph E2E, with external route-planner service,
+route-planner port authority, and production enablement kept as later phases.
 
 M4A found P4 count `0`, so M4B deletion implementation is skipped. Current
 mode returns to normal maintenance and product engineering on top of the fixed
