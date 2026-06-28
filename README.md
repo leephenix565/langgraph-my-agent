@@ -160,6 +160,21 @@ full DAG with safe fallback codes. M1D still creates no external
 planning-only reservation, preserves `report_generator` on port `10026`, and
 does not modify runtime bindings, agent catalog, or non-L4 policy.
 
+Router M1F0 adds the router-only provider preflight factory used by the next
+controlled dry-run phase. It is still default-off and fail-closed: the factory
+does not call a real provider, does not invoke `load_chat_model`, does not read
+env values, does not create an OpenAI/DeepSeek client, and does not call any
+endpoint. The preflight gate records env var names only and requires explicit
+future authorization for selected routing, the LLM dimension-router flag,
+real-provider use, env-value access, and one provider call. The first real
+dry-run contract is bounded to call cap `1`, streaming `false`, retry `0`,
+timeout `<=8s`, max tokens `<=220`, no raw response/hash retention, no
+prompt/message retention, no endpoint/process/external service, and
+route-plan/snapshot-only evidence. M1F0 also adds a router-provider artifact
+whitelist and unsafe scan for raw responses, hashes, prompts, messages,
+endpoints, env values, secrets, tracebacks, chain-of-thought, selected agents,
+runtime bindings, and DAG steps.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

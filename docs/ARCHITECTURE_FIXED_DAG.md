@@ -216,6 +216,10 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
   a separate provider-router flag defaults false, is gated behind selected
   routing, parses fake structured output immediately, and keeps real provider
   integration for a later controlled phase.
+- Router M1F0 owns the router-only provider preflight factory and artifact
+  safety wrapper for a future controlled real-provider dry-run. It is
+  fail-closed, creates no model client, reads no env values, and does not enter
+  the active graph runtime path.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -301,6 +305,11 @@ Planner seam behavior:
   only dimension-only `route_intent_v1` JSON from injected fake providers,
   parses it immediately, and discards the raw output before state or workflow
   projection;
+- M1F0 adds `src/react_agent/router_provider.py` as the future real-provider
+  preflight boundary. It stores only provider policy booleans, env var names,
+  bounded call options, factory/preflight results, and sanitized artifact
+  metadata. It does not call `load_chat_model`, create a model client, read env
+  values, or invoke providers;
 - `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` defines the future LLM or semantic
   planner contract and targets `route_intent_v1` only; in M1A it asks only for
   `selected_dimensions` and forbids concrete agent ids;
@@ -390,16 +399,27 @@ Runtime behavior:
   `selected_agents`, unknown dimensions, legacy Star/Chain/Debate/Tree modes,
   low confidence, clarification requests, exceptions, timeouts, or unavailable
   fake providers fall back to the full DAG with safe reason codes;
+- M1F0 adds a router-only preflight factory/wrapper for future real-provider
+  use. It requires selected routing, the LLM dimension-router flag, explicit
+  real-provider authorization, explicit env-value access authorization,
+  explicit provider-call authorization, call cap `1`, streaming `false`, retry
+  `0`, timeout `<=8s`, max tokens `<=220`, whitelist-enabled artifacts, no raw
+  response retention, and no prompt/message retention before it reports a
+  future single-call dry-run as ready. Even then, M1F0 returns a deferred
+  factory result and does not create a provider client;
+- M1F0 artifact safety is allowlist-only and rejects or omits raw responses,
+  raw response hashes, prompts, messages, endpoint/base URL material, env
+  values, secrets, tracebacks, chain-of-thought, `selected_agents`,
+  `runtime_bindings`, `dag_steps`, and `depends_on`;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
-R8-5/M1A/M1D do not call a real LLM/provider, search backend, external
-`/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D does not invoke
-`load_chat_model` and does not read provider credentials. These phases do not
-change the fixed DAG roster, runtime bindings, RouteEval threshold policy,
-external adapter readiness, or real business-agent implementation status. M1A
-and M1D add only public-safe workflow metadata for selected routing and the
-fake provider-router summary; they do not create an external router service,
-assign ports, copy scaffold material, move `report_generator` from port
-`10026`, or promote the `10028/8028` planning reservation to runtime
-authority.
+R8-5/M1A/M1D/M1F0 do not call a real LLM/provider, search backend, external
+`/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and M1F0 do not
+invoke `load_chat_model` and do not read provider credentials. These phases do
+not change the fixed DAG roster, runtime bindings, RouteEval threshold policy,
+external adapter readiness, or real business-agent implementation status. M1A,
+M1D, and M1F0 add only public-safe selected-routing/provider-router metadata
+and safety contracts; they do not create an external router service, assign
+ports, copy scaffold material, move `report_generator` from port `10026`, or
+promote the `10028/8028` planning reservation to runtime authority.

@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1F0 router-only provider preflight factory
+
+### Changed
+
+- Added `src/react_agent/router_provider.py` as a router-only provider
+  factory/preflight safety wrapper for a future controlled real-provider
+  single-call dry-run.
+- Added fail-closed preflight policy for selected routing, LLM dimension-router
+  enablement, explicit real-provider authorization, explicit env-value access
+  authorization, provider-call authorization, call cap `1`, streaming `false`,
+  retry `0`, timeout `<=8s`, max tokens `<=220`, artifact whitelist, no raw
+  response retention, and no prompt/message retention.
+- Added router-provider artifact allowlisting and unsafe scanning for raw
+  responses, raw response hashes, prompts, messages, endpoint/base URL
+  material, env values, API keys, secrets, tokens, tracebacks,
+  chain-of-thought, `selected_agents`, `runtime_bindings`, and `dag_steps`.
+- Added focused unit coverage for factory default-off behavior, preflight
+  failure/pass-ready cases, no client creation, no `load_chat_model` usage, no
+  env-value reads, no raw/hash retention, whitelist enforcement, and unsafe
+  scan behavior.
+
+### Not Done
+
+- No real provider call, `load_chat_model` invocation, OpenAI/DeepSeek client
+  creation, env-value access, runtime binding, agent catalog, non-L4 policy,
+  external service directory, scaffold copy, route-planner port assignment,
+  `10028/8028` runtime implementation, `10026/10027` migration,
+  `/v1/agent/compute`, `/v1/agent/invoke`, `/health`, process action, or raw
+  provider/LLM response/hash retention change.
+
 ## 2026-06-28 - Router M1D fake provider seam for dimension routing
 
 ### Changed

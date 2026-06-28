@@ -739,11 +739,49 @@ Failure policy:
   prompts, model messages, provider payloads, endpoint URLs, env values,
   secrets, tracebacks, or chain-of-thought.
 
+M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
+preflight and artifact-safety contract for a later controlled real-provider
+dry-run. This module does not call a real provider, does not invoke
+`load_chat_model`, does not create an OpenAI/DeepSeek client, and does not read
+env values. It stores env var names only and returns fail-closed factory
+results unless all dry-run preflight requirements are satisfied.
+
+M1F0 preflight requirements:
+
+- selected routing explicitly enabled;
+- LLM dimension-router flag explicitly enabled;
+- real-provider use explicitly authorized;
+- env-value access explicitly authorized;
+- provider call explicitly authorized;
+- provider call cap `1`;
+- streaming `false`;
+- retry count `0`;
+- timeout `<=8s`;
+- max tokens `<=220`;
+- artifact whitelist enabled;
+- raw response retention `false`;
+- prompt/message retention `false`.
+
+Even when those requirements are satisfied, the M1F0 factory result does not
+create a client. It reports only that a future M1F single-call dry-run is ready
+to be attempted under a separate explicit authorization contract.
+
+M1F0 router-provider artifact metadata is allowlist-only. Allowed fields are
+bounded provider-router enabled/invoked/mode/parse status, selected dimensions,
+safe fallback/error codes, latency/call/cap settings, streaming/retry/timeout/
+max-token settings, explicit no-retention booleans, and unsafe-scan pass/fail.
+Forbidden fields include raw responses, raw response hashes, prompts, messages,
+endpoint/base URL material, env values, API keys, secrets, tokens, tracebacks,
+chain-of-thought, `selected_agents`, `runtime_bindings`, `dag_steps`, and
+`depends_on`.
+
 Non-claims:
 
 - the selected flag does not enable provider, search, or external invocation;
 - the provider-router flag does not enable a real provider and does not call
   `load_chat_model` in M1D;
+- the M1F0 router-provider factory does not itself enable a real provider and
+  does not authorize env-value access;
 - the selected flag does not modify runtime bindings or external readiness;
 - the selected flag does not make RouteEval a formal >=80% acceptance gate;
 - the selected flag does not implement real business-agent logic.

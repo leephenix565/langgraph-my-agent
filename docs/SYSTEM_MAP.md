@@ -160,6 +160,14 @@ Active skeleton properties:
   prompts, endpoint material, env values, tracebacks, and chain-of-thought are
   not projected into graph state, workflow snapshots, final emits, or public
   output.
+- M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
+  preflight factory/wrapper for future controlled real-provider dry-runs. The
+  wrapper is not part of the default graph path, does not call
+  `load_chat_model`, does not create provider clients, does not read env
+  values, and returns only fail-closed preflight/factory results until a later
+  explicitly authorized M1F dry run. It also owns router-provider artifact
+  whitelisting and unsafe scanning for no raw response/no hash/no prompt/no
+  endpoint/no secret retention.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only
@@ -184,6 +192,11 @@ Active skeleton properties:
   `load_chat_model` live invocation, no endpoint call, no external
   route-planner service, no runtime binding change, and no route-planner port
   authority.
+- M1F0 keeps the same runtime boundaries and adds no route-planner runtime
+  authority. Future real-provider use must be dev-only, explicitly authorized,
+  capped at one provider call, no streaming, retry `0`, timeout `<=8s`, max
+  tokens `<=220`, no raw response/hash retention, no prompt/message retention,
+  no endpoint/process/external-service action, and no runtime binding change.
 
 ## Retained But Inactive Infrastructure
 

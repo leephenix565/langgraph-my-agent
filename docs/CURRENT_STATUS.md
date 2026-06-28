@@ -70,6 +70,22 @@ records.
   reason codes. Public workflow metadata may expose only bounded router
   summaries such as provider-router enabled/invoked, mode `fake`, parse
   status, selected dimensions, and fallback reason.
+- M1F0 adds a router-only provider preflight factory/wrapper for the future
+  controlled real-provider dry run. It remains default-off and fail-closed: it
+  records env var names only, does not read env values, does not call
+  `load_chat_model`, does not create an OpenAI/DeepSeek client, and does not
+  call a provider or endpoint. Future real-provider use must separately
+  authorize selected routing, the LLM dimension router, env-value access, one
+  provider call, call cap `1`, streaming `false`, retry `0`, timeout `<=8s`,
+  max tokens `<=220`, no raw response/hash retention, no prompt/message
+  retention, no process action, and route-plan/snapshot-only evidence.
+- M1F0 also adds a router-provider artifact whitelist and unsafe scan. Allowed
+  metadata is limited to provider-router enabled/invoked/mode/parse status,
+  selected dimensions, safe fallback/error codes, latency/call/cap settings,
+  and explicit no-retention booleans. Raw responses, raw response hashes,
+  prompts, messages, endpoint/base URL material, env values, secrets,
+  tracebacks, chain-of-thought, selected agents, runtime bindings, and DAG
+  steps are rejected or omitted.
 
 ## Report Quality RQ2E Status
 
