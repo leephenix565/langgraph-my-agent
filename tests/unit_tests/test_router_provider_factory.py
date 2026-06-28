@@ -8,6 +8,8 @@ from react_agent.router_provider import (
     build_default_router_provider_policy,
     build_router_provider_artifact,
     build_router_provider_factory_result,
+    build_router_provider_request_contract,
+    normalize_router_provider_model_for_openai_compatible_api,
     router_provider_preflight,
     router_provider_required_env_var_names,
     router_provider_unsafe_scan,
@@ -70,6 +72,93 @@ def test_factory_result_never_creates_client_even_when_preflight_ready() -> None
     assert result.client_available is False
     assert result.client_created is False
     assert result.reason_code == "real_provider_client_creation_deferred_until_m1f"
+
+
+def test_openai_compatible_model_normalization_strips_known_provider_prefix() -> None:
+    result = normalize_router_provider_model_for_openai_compatible_api(
+        "deepseek/deepseek-chat"
+    )
+
+    assert result.provider_api_model == "deepseek-chat"
+    assert result.normalized is True
+    assert result.reason_code == "deepseek_provider_prefix_removed"
+
+
+def test_model_normalization_keeps_api_model_ids_and_unknown_prefixes() -> None:
+    plain = normalize_router_provider_model_for_openai_compatible_api("deepseek-chat")
+    unknown = normalize_router_provider_model_for_openai_compatible_api(
+        "vendor/custom-model"
+    )
+    url_like = normalize_router_provider_model_for_openai_compatible_api(
+        "https://example.invalid/model"
+    )
+
+    assert plain.provider_api_model == "deepseek-chat"
+    assert plain.normalized is False
+    assert plain.reason_code == "model_passthrough"
+    assert unknown.provider_api_model == "vendor/custom-model"
+    assert unknown.normalized is False
+    assert unknown.reason_code == "provider_prefix_not_normalized"
+    assert url_like.provider_api_model == "https://example.invalid/model"
+    assert url_like.normalized is False
+    assert url_like.reason_code == "model_passthrough"
+
+
+def test_router_provider_request_contract_uses_json_mode_without_sensitive_fields() -> None:
+    contract = build_router_provider_request_contract()
+
+    assert contract["request_contract_version"] == "router_dimension_json_v1"
+    assert contract["response_format_json_object"] is True
+    assert contract["response_format"] == {"type": "json_object"}
+    assert contract["max_tokens"] == 220
+    assert contract["timeout_seconds"] == 8.0
+    assert contract["retry_count"] == 0
+    assert contract["streaming"] is False
+    assert contract["raw_response_retained"] is False
+    assert contract["prompt_retained"] is False
+    assert contract["messages_retained"] is False
+    for forbidden in (
+        "prompt",
+        "messages",
+        "endpoint",
+        "base_url",
+        "api_key",
+        "raw_response",
+        "raw_response_hash",
+    ):
+        assert forbidden not in contract
+
+
+def test_router_provider_contract_metadata_is_artifact_safe() -> None:
+    clean = build_router_provider_artifact(
+        {
+            "phase": "m1f3",
+            "provider_router_enabled": True,
+            "provider_router_invoked": True,
+            "provider_router_mode": "real_dry_run",
+            "provider_router_parse_ok": True,
+            "selected_dimensions": ["value", "market", "risk", "macro"],
+            "fallback_reason_code": "",
+            "provider_error_code": "",
+            "call_count": 1,
+            "timeout_seconds": 8.0,
+            "max_tokens": 220,
+            "retry_count": 0,
+            "streaming": False,
+            "model_normalized": True,
+            "request_contract_version": "router_dimension_json_v1",
+            "response_format_json_object": True,
+            "raw_response_retained": False,
+            "prompt_retained": False,
+            "messages_retained": False,
+        }
+    )
+
+    assert clean["unsafe_scan_pass"] is True
+    assert clean["model_normalized"] is True
+    assert clean["request_contract_version"] == "router_dimension_json_v1"
+    assert clean["response_format_json_object"] is True
+    assert router_provider_unsafe_scan(clean)["pass"] is True
 
 
 def test_preflight_requires_selected_routing_and_router_flag() -> None:

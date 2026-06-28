@@ -175,6 +175,17 @@ whitelist and unsafe scan for raw responses, hashes, prompts, messages,
 endpoints, env values, secrets, tracebacks, chain-of-thought, selected agents,
 runtime bindings, and DAG steps.
 
+Router M1F3 persists the compatibility contract learned from the controlled
+dry-run diagnostics without enabling live provider use. The router-only
+provider wrapper now exposes a pure model-normalization helper for
+OpenAI-compatible HTTP APIs, so project-level `provider/model` router model ids
+can be converted to the provider API model id inside an explicitly authorized
+dry-run. It also exposes a safe request contract requiring JSON object response
+format for dimension-only `route_intent_v1` output. These helpers do not read
+env values, do not create a provider client, do not retain prompts/messages or
+raw responses, and do not change runtime bindings, route-planner ports, or
+default full-DAG behavior.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

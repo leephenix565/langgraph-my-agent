@@ -86,6 +86,14 @@ records.
   prompts, messages, endpoint/base URL material, env values, secrets,
   tracebacks, chain-of-thought, selected agents, runtime bindings, and DAG
   steps are rejected or omitted.
+- M1F3 persists the controlled dry-run compatibility fix inside the
+  router-only wrapper. It adds a pure OpenAI-compatible model normalization
+  helper for project-style `provider/model` router model ids and a JSON object
+  request contract for dimension-only `route_intent_v1` output. This is still
+  not live provider enablement: no env values are read, no client is created,
+  no provider is called, no prompt/messages or raw response are retained, and
+  default production behavior remains the full fixed DAG unless later phases
+  explicitly authorize a dry-run.
 
 ## Report Quality RQ2E Status
 

@@ -168,6 +168,12 @@ Active skeleton properties:
   explicitly authorized M1F dry run. It also owns router-provider artifact
   whitelisting and unsafe scanning for no raw response/no hash/no prompt/no
   endpoint/no secret retention.
+- M1F3 extends that wrapper with pure compatibility helpers for the controlled
+  provider path: project-style `provider/model` router model ids can be
+  normalized to provider API model ids for OpenAI-compatible HTTP clients, and
+  future dry-runs use a JSON object response contract for dimension-only
+  `route_intent_v1`. This still does not create clients, read env values, call
+  providers, assign route-planner ports, or change the default full DAG.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only

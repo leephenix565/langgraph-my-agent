@@ -396,7 +396,7 @@ Runtime behavior:
   enabled/invoked, mode `fake`, parse status, selected dimensions, and fallback
   reason;
 - malformed provider text, markdown/code fences, forbidden fields,
-  `selected_agents`, unknown dimensions, legacy Star/Chain/Debate/Tree modes,
+  `selected_agents`, unknown dimensions, legacy named route modes,
   low confidence, clarification requests, exceptions, timeouts, or unavailable
   fake providers fall back to the full DAG with safe reason codes;
 - M1F0 adds a router-only preflight factory/wrapper for future real-provider
@@ -411,15 +411,23 @@ Runtime behavior:
   raw response hashes, prompts, messages, endpoint/base URL material, env
   values, secrets, tracebacks, chain-of-thought, `selected_agents`,
   `runtime_bindings`, `dag_steps`, and `depends_on`;
+- M1F3 adds pure compatibility helpers to the same router-only wrapper:
+  provider-prefixed router model ids such as `provider/model` can be normalized
+  to the provider API model id for OpenAI-compatible HTTP clients, and the
+  future real-provider request contract requires JSON object response format
+  for dimension-only `route_intent_v1` output. These helpers do not create
+  clients, read env values, call providers, store prompts/messages, or retain
+  raw responses;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
-R8-5/M1A/M1D/M1F0 do not call a real LLM/provider, search backend, external
+R8-5/M1A/M1D/M1F0/M1F3 do not call a real LLM/provider, search backend, external
 `/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and M1F0 do not
-invoke `load_chat_model` and do not read provider credentials. These phases do
-not change the fixed DAG roster, runtime bindings, RouteEval threshold policy,
-external adapter readiness, or real business-agent implementation status. M1A,
-M1D, and M1F0 add only public-safe selected-routing/provider-router metadata
-and safety contracts; they do not create an external router service, assign
-ports, copy scaffold material, move `report_generator` from port `10026`, or
-promote the `10028/8028` planning reservation to runtime authority.
+invoke `load_chat_model`, and M1F3 keeps that boundary. These phases do not
+read provider credentials, change the fixed DAG roster, runtime bindings,
+RouteEval threshold policy, external adapter readiness, or real business-agent
+implementation status. M1A, M1D, M1F0, and M1F3 add only public-safe
+selected-routing/provider-router metadata and safety contracts; they do not
+create an external router service, assign ports, copy scaffold material, move
+`report_generator` from port `10026`, or promote the `10028/8028` planning
+reservation to runtime authority.

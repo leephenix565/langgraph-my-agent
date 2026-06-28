@@ -3,6 +3,31 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1F3 provider compatibility contract
+
+### Changed
+
+- Added pure router-provider model normalization for controlled
+  OpenAI-compatible dry-runs. Known project-style `provider/model` ids can now
+  be converted to provider API model ids without reading env values, creating a
+  client, or calling a provider.
+- Added a safe router-provider request contract requiring JSON object response
+  format for dimension-only `route_intent_v1` output, with no prompt/message,
+  raw response, or raw response hash retention.
+- Extended router-provider artifact allowlisting to cover model-normalization
+  status, JSON response-format status, and the request contract version.
+- Added focused unit coverage for model normalization, JSON request-contract
+  metadata, and artifact/unsafe-scan safety.
+
+### Not Done
+
+- No real provider call, `load_chat_model` invocation, OpenAI/DeepSeek client
+  creation, env-value access, runtime binding, agent catalog, non-L4 policy,
+  external service directory, route-planner port assignment, `10028/8028`
+  runtime implementation, `report_generator` port change, endpoint call,
+  process action, prompt/message retention, or raw provider response/hash
+  retention change.
+
 ## 2026-06-28 - Router M1F0 router-only provider preflight factory
 
 ### Changed

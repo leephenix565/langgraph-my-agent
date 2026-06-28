@@ -28,6 +28,12 @@ ROUTER_PROVIDER_DIMENSIONS: tuple[str, ...] = ("value", "market", "risk", "macro
 ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT = 8.0
 ROUTER_PROVIDER_MAX_TOKENS_LIMIT = 220
 ROUTER_PROVIDER_CALL_CAP_LIMIT = 1
+ROUTER_PROVIDER_JSON_RESPONSE_FORMAT: Mapping[str, str] = {"type": "json_object"}
+ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION = "router_dimension_json_v1"
+_OPENAI_COMPATIBLE_PROVIDER_PREFIXES: frozenset[str] = frozenset(
+    {"deepseek", "openai"}
+)
+_MODEL_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,120}$")
 
 ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
     {
@@ -50,6 +56,9 @@ ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
         "prompt_retained",
         "messages_retained",
         "unsafe_scan_pass",
+        "model_normalized",
+        "response_format_json_object",
+        "request_contract_version",
     }
 )
 ROUTER_PROVIDER_ARTIFACT_FORBIDDEN_FIELDS: frozenset[str] = frozenset(
@@ -182,6 +191,22 @@ class RouterProviderFactoryResult:
     policy_summary: Mapping[str, Any]
 
 
+@dataclass(frozen=True)
+class RouterProviderModelNormalizationResult:
+    """Secret-free model identifier normalization result.
+
+    Router config may use project-level provider/model identifiers while direct
+    OpenAI-compatible HTTP clients commonly expect only the provider API model
+    id. Model ids are not credentials, but callers should still avoid placing
+    them in public artifacts unless a phase explicitly allows it.
+    """
+
+    input_model: str
+    provider_api_model: str
+    normalized: bool
+    reason_code: str
+
+
 def build_default_router_provider_policy() -> RouterProviderPolicy:
     """Return the default fail-closed router-provider policy."""
     return RouterProviderPolicy()
@@ -226,6 +251,89 @@ def _policy_summary(policy: RouterProviderPolicy) -> dict[str, Any]:
         "prompt_retention": bool(options.prompt_retention),
         "messages_retention": bool(options.messages_retention),
         "artifact_whitelist_enabled": bool(options.artifact_whitelist_enabled),
+    }
+
+
+def normalize_router_provider_model_for_openai_compatible_api(
+    model_name: str,
+) -> RouterProviderModelNormalizationResult:
+    """Normalize provider-prefixed router model ids for direct HTTP clients.
+
+    The helper is deliberately narrow: it strips only known `provider/model`
+    prefixes for OpenAI-compatible providers and leaves all other values
+    unchanged. It does not read configuration, create clients, or call providers.
+    """
+
+    text = str(model_name or "").strip()
+    if not text:
+        return RouterProviderModelNormalizationResult(
+            input_model="",
+            provider_api_model="",
+            normalized=False,
+            reason_code="model_missing",
+        )
+    if "://" in text or "/" not in text:
+        return RouterProviderModelNormalizationResult(
+            input_model=text,
+            provider_api_model=text,
+            normalized=False,
+            reason_code="model_passthrough",
+        )
+
+    parts = [part.strip() for part in text.split("/")]
+    if len(parts) != 2:
+        return RouterProviderModelNormalizationResult(
+            input_model=text,
+            provider_api_model=text,
+            normalized=False,
+            reason_code="model_passthrough",
+        )
+
+    provider_prefix, api_model = parts
+    if provider_prefix.lower() not in _OPENAI_COMPATIBLE_PROVIDER_PREFIXES:
+        return RouterProviderModelNormalizationResult(
+            input_model=text,
+            provider_api_model=text,
+            normalized=False,
+            reason_code="provider_prefix_not_normalized",
+        )
+    if not _MODEL_SEGMENT_RE.match(api_model):
+        return RouterProviderModelNormalizationResult(
+            input_model=text,
+            provider_api_model=text,
+            normalized=False,
+            reason_code="api_model_segment_invalid",
+        )
+    return RouterProviderModelNormalizationResult(
+        input_model=text,
+        provider_api_model=api_model,
+        normalized=True,
+        reason_code=f"{provider_prefix.lower()}_provider_prefix_removed",
+    )
+
+
+def build_router_provider_request_contract(
+    options: RouterProviderInvocationOptions | None = None,
+) -> dict[str, Any]:
+    """Return the safe OpenAI-compatible request contract for router dry runs.
+
+    The returned data is safe to place in internal artifacts after allowlist
+    filtering because it contains only bounded options and JSON mode metadata;
+    it intentionally omits prompt text, messages, endpoint URLs, and credentials.
+    """
+
+    effective = options or RouterProviderInvocationOptions()
+    return {
+        "request_contract_version": ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION,
+        "response_format_json_object": True,
+        "response_format": dict(ROUTER_PROVIDER_JSON_RESPONSE_FORMAT),
+        "max_tokens": int(effective.max_tokens),
+        "timeout_seconds": float(effective.timeout_seconds),
+        "retry_count": int(effective.retry_count),
+        "streaming": False,
+        "raw_response_retained": False,
+        "prompt_retained": False,
+        "messages_retained": False,
     }
 
 
@@ -343,11 +451,19 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
             "provider_router_parse_ok",
             "streaming",
             "unsafe_scan_pass",
+            "model_normalized",
+            "response_format_json_object",
         }:
             clean[key] = bool(value)
         elif key in _RETENTION_STATUS_FIELDS:
             clean[key] = False
-        elif key in {"phase", "provider_router_mode", "fallback_reason_code", "provider_error_code"}:
+        elif key in {
+            "phase",
+            "provider_router_mode",
+            "fallback_reason_code",
+            "provider_error_code",
+            "request_contract_version",
+        }:
             clean[key] = _safe_code(value)
         elif key == "selected_dimensions":
             clean[key] = _normalize_dimensions(value)
@@ -419,15 +535,20 @@ __all__ = [
     "ROUTER_PROVIDER_CALL_CAP_LIMIT",
     "ROUTER_PROVIDER_COMPAT_ENV_VAR_NAMES",
     "ROUTER_PROVIDER_ENV_VAR_NAMES",
+    "ROUTER_PROVIDER_JSON_RESPONSE_FORMAT",
     "ROUTER_PROVIDER_MAX_TOKENS_LIMIT",
+    "ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION",
     "ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT",
     "RouterProviderFactoryResult",
     "RouterProviderInvocationOptions",
+    "RouterProviderModelNormalizationResult",
     "RouterProviderPolicy",
     "RouterProviderPreflightResult",
     "build_default_router_provider_policy",
+    "build_router_provider_request_contract",
     "build_router_provider_artifact",
     "build_router_provider_factory_result",
+    "normalize_router_provider_model_for_openai_compatible_api",
     "router_provider_preflight",
     "router_provider_required_env_var_names",
     "router_provider_unsafe_scan",

@@ -769,11 +769,26 @@ to be attempted under a separate explicit authorization contract.
 M1F0 router-provider artifact metadata is allowlist-only. Allowed fields are
 bounded provider-router enabled/invoked/mode/parse status, selected dimensions,
 safe fallback/error codes, latency/call/cap settings, streaming/retry/timeout/
-max-token settings, explicit no-retention booleans, and unsafe-scan pass/fail.
+max-token settings, explicit no-retention booleans, model-normalization status,
+JSON object response-format status, request contract version, and unsafe-scan
+pass/fail.
 Forbidden fields include raw responses, raw response hashes, prompts, messages,
 endpoint/base URL material, env values, API keys, secrets, tokens, tracebacks,
 chain-of-thought, `selected_agents`, `runtime_bindings`, `dag_steps`, and
 `depends_on`.
+
+M1F3 adds two pure router-provider compatibility helpers to the same contract:
+
+- provider-prefixed router model ids may be normalized for OpenAI-compatible
+  HTTP APIs by removing only known provider prefixes and using the provider API
+  model id for a future authorized dry-run;
+- the future real-provider request contract must request JSON object output for
+  dimension-only `route_intent_v1` responses, while still retaining no
+  prompt/messages, no raw response, and no raw response hash.
+
+These helpers do not authorize provider use, do not read `.env` or runtime env
+values, do not create a client, do not call `load_chat_model`, and do not change
+default full-DAG behavior.
 
 Non-claims:
 
