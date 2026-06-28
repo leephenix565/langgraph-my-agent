@@ -207,7 +207,11 @@ free-form provider generation. The contract allows only dimension-level
 analysis/report prose, and no markdown around the JSON. The request-contract
 metadata records only safe booleans, contract
 versions, and the sanitized layout name; prompts/messages remain forbidden in
-artifacts and public workflow metadata. This still does not create a provider
+artifacts and public workflow metadata. M1G2 makes that provider dimension
+router draft use `task_type="general"` because it is an analysis-dimension
+selection contract, not an investment judgment. The fixed-DAG safeguard for
+investment task types is unchanged: `task_type="single"` and related investment
+types still require the `risk` dimension. This still does not create a provider
 client, read env values, call a provider, assign a route-planner port, or change
 default full-DAG behavior.
 

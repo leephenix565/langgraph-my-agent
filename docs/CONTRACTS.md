@@ -821,6 +821,12 @@ sent for provider echo validation. Provider output is still parsed through the
 dimension-only `route_intent_v1` parser and compiled deterministically; the
 provider never gains authority to select concrete agents.
 
+M1G2 keeps this provider dimension-router draft on `task_type="general"` because
+the wrapper is selecting analysis dimensions, not issuing an investment judgment.
+The investment-judgment policy gate is unchanged: `task_type="single"` and the
+other investment task types still require the `risk` dimension, and provider
+output containing `selected_agents` remains invalid in dimension mode.
+
 The prompt/messages are not artifact-safe. Public-safe artifacts may record only
 the message contract version, route-intent schema name, strict-schema boolean,
 allowed dimensions, sanitized message layout name, and explicit no-retention

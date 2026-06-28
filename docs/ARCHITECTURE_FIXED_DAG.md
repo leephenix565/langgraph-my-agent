@@ -429,7 +429,11 @@ Runtime behavior:
   `route_intent_v1` JSON object from deterministic dimension hints. The parser
   and compiler remain authoritative, concrete agent ids and legacy route modes
   are forbidden, and analysis/report prose or markdown wrappers are invalid. The
-  prompt/messages are request-only material and remain forbidden in graph state,
+  M1G2 compatibility patch keeps these provider dimension-router drafts on
+  `task_type="general"` so focused value-only or market-only analysis routes do
+  not trip investment-judgment risk gates. The fixed-DAG rule that
+  `task_type="single"` requires `risk` remains unchanged. The prompt/messages
+  are request-only material and remain forbidden in graph state,
   workflow snapshots, public output, and artifacts;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.

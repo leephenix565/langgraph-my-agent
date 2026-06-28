@@ -110,7 +110,11 @@ records.
   modes, and rejects analysis/report prose or markdown-wrapped output. The
   messages are in-memory request material only: artifacts may record safe
   contract versions, booleans, and the sanitized layout name, but prompt/message
-  text remains forbidden.
+  text remains forbidden. M1G2 changes the provider dimension-router draft to
+  `task_type="general"` so focused value-only and market-only analysis routes
+  can validate as dimension selection. It does not relax the fixed-DAG
+  investment safeguard: `task_type="single"` and related investment-judgment
+  task types still require the `risk` dimension.
 
 ## Report Quality RQ2E Status
 

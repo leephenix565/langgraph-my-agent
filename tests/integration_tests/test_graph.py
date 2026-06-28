@@ -439,6 +439,7 @@ def _dimension_router_payload(dimensions: list[str], **overrides: object) -> str
     ("dimensions", "expected_dimensions"),
     [
         (["value"], {"value"}),
+        (["market"], {"market"}),
         (["risk", "macro"], {"risk", "macro"}),
     ],
 )

@@ -2,6 +2,11 @@ from dataclasses import replace
 import inspect
 import json
 
+from react_agent.fixed_dag_contracts import (
+    DIMENSION_GROUPS,
+    compile_selected_fixed_dag_plan,
+    validate_selected_fixed_dag_plan,
+)
 from react_agent import router_provider
 from react_agent.router_provider import (
     ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION,
@@ -157,6 +162,7 @@ def test_router_provider_route_intent_messages_are_strict_json_contract() -> Non
     assert "first character must be {" in joined
     assert "last character must be }" in joined
     assert "route_intent_v1" in joined
+    assert '"task_type":"general"' in joined
     assert (
         '"selected_dimensions":["value","market","risk","macro"]'
         in joined
@@ -175,10 +181,54 @@ def test_router_provider_route_intent_draft_parses_for_explicit_dimensions() -> 
         question="请从估值、市场、风险和宏观角度分析贵州茅台。",
     )
 
+    assert draft["task_type"] == "general"
+    assert "selected_agents" not in draft
     assert stats["parse_ok"] is True
     assert stats["used_fallback"] is False
     assert intent["selected_dimensions"] == ["value", "market", "risk", "macro"]
     assert intent["route_confidence"] == 0.95
+
+
+def test_router_provider_focused_dimension_drafts_compile_without_risk() -> None:
+    cases = (
+        (
+            "请只从估值角度判断贵州茅台是否被高估。",
+            ["value"],
+            "value_composite",
+        ),
+        (
+            "请只从价格走势、资金流和市场情绪角度分析贵州茅台。",
+            ["market"],
+            "market_composite",
+        ),
+    )
+
+    for question, expected_dimensions, composite_id in cases:
+        draft = build_router_provider_route_intent_draft(question)
+        intent, stats = parse_dimension_route_intent_json(
+            json.dumps(draft, ensure_ascii=False),
+            question=question,
+        )
+        plan = compile_selected_fixed_dag_plan(
+            intent,
+            user_text=question,
+            as_of="2026-06-28",
+        )
+        valid, reason = validate_selected_fixed_dag_plan(plan)
+
+        assert draft["task_type"] == "general"
+        assert "selected_agents" not in draft
+        assert stats["parse_ok"] is True
+        assert intent["selected_dimensions"] == expected_dimensions
+        assert valid, reason
+        assert plan["selected_dimensions"] == expected_dimensions
+        assert plan["dimension_groups"][expected_dimensions[0]] == list(
+            DIMENSION_GROUPS[expected_dimensions[0]]
+        )
+        assert composite_id in plan["target_agent_ids"]
+        assert "decision_synthesizer" in plan["target_agent_ids"]
+        assert "report_generator" in plan["target_agent_ids"]
+        assert "risk_identification" not in plan["target_agent_ids"]
 
 
 def test_router_provider_dimension_hint_detects_explicit_dimensions() -> None:

@@ -184,7 +184,10 @@ Active skeleton properties:
   deterministic dimension hints, asks the provider to echo that JSON, and still
   lets the parser/compiler be the authority. Prompt/message text remains
   in-memory request material only and is not projected into artifacts or public
-  workflow metadata.
+  workflow metadata. M1G2 keeps this provider draft in the non-investment
+  `task_type="general"` lane because it only selects analysis dimensions; the
+  fixed-DAG risk requirement for investment task types such as `single` remains
+  intact.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only

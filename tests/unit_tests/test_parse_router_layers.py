@@ -133,6 +133,28 @@ def test_parse_dimension_route_intent_json_accepts_dimensions_only() -> None:
     assert intent["provenance"]["external_invoked"] is False
 
 
+def test_parse_dimension_route_intent_json_preserves_single_risk_policy() -> None:
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "single",
+        "targets": ["example company"],
+        "selected_dimensions": ["value"],
+        "route_confidence": 0.74,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "unit_fixture"},
+    }
+    intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+    assert stats["parse_ok"] is False
+    assert stats["used_fallback"] is True
+    assert stats["fallback_reason"] == "validation_error:risk_dimension_required"
+    assert stats["selected_dimensions"] == ["value"]
+    assert intent["needs_clarification"] is True
+
+
 def test_parse_dimension_route_intent_json_accepts_risk_macro_dimensions() -> None:
     payload = {
         "schema": "route_intent_v1",

@@ -3,6 +3,19 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1G2 provider task-type compatibility
+
+### Changed
+
+- Changed the router-provider dimension draft from `task_type="single"` to
+  `task_type="general"` so focused value-only and market-only dimension routes
+  validate and compile as analysis routing rather than investment judgments.
+- Preserved the fixed-DAG investment safeguard: `task_type="single"` and related
+  investment task types still require the `risk` dimension, and provider
+  `selected_agents` remain rejected in dimension mode.
+- Added wrapper, parser, and graph regression coverage for focused provider
+  drafts and the unchanged `single` risk requirement.
+
 ## 2026-06-28 - Router M1F7 strict provider route-intent message contract
 
 ### Changed

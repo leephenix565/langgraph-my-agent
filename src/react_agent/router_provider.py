@@ -456,7 +456,7 @@ def build_router_provider_route_intent_draft(question: str) -> dict[str, Any]:
     return {
         "schema": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
         "schema_version": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
-        "task_type": "single",
+        "task_type": "general",
         "targets": [user_question],
         "selected_dimensions": list(suggest_router_provider_dimensions(user_question)),
         "route_confidence": 0.95,
