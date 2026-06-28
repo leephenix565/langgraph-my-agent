@@ -144,6 +144,22 @@ port, leaves `10028/8028` as planning-only reservation, preserves
 `report_generator` on port `10026`, and does not modify runtime bindings,
 agent catalog, or non-L4 policy.
 
+Router M1D adds the next internal seam without enabling a real provider:
+`Context.enable_llm_dimension_router` / `ENABLE_LLM_DIMENSION_ROUTER=1` is a
+fake-provider-only router-provider flag, defaults false, and is gated behind
+selected routing. `ENABLE_SELECTED_ROUTING=1` alone still does not call a
+provider. When both flags are enabled in tests, fake structured JSON is parsed
+immediately through the dimension-only `route_intent_v1` parser; raw provider
+text, prompts, messages, endpoint material, env values, tracebacks, and
+chain-of-thought are not retained in graph state, workflow snapshots, final
+emit payloads, artifacts, or public output. Invalid provider output, provider
+exceptions, simulated timeouts, `selected_agents`, forbidden fields, legacy
+route modes, low confidence, and clarification requests all fail soft to the
+full DAG with safe fallback codes. M1D still creates no external
+`route_planner` service, assigns no route-planner port, leaves `10028/8028` as
+planning-only reservation, preserves `report_generator` on port `10026`, and
+does not modify runtime bindings, agent catalog, or non-L4 policy.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

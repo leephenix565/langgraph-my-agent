@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1D fake provider seam for dimension routing
+
+### Changed
+
+- Added `Context.enable_llm_dimension_router` /
+  `ENABLE_LLM_DIMENSION_ROUTER=1` as a default-false fake-provider-only router
+  provider flag gated behind selected routing. Selected routing alone still
+  uses the M1A provider-free dimension path, and the provider flag alone keeps
+  the full DAG when selected routing is disabled.
+- Added an internal `route_planner` seam that accepts injected fake structured
+  dimension-only `route_intent_v1` JSON, parses it immediately through the
+  dimension parser, compiles a deterministic selected plan on valid output, and
+  falls back to the full DAG on invalid or failed fake provider output.
+- Added public-safe workflow provenance fields for fake provider-router
+  metadata: enabled/invoked, mode, parse status, selected dimensions, fallback
+  reason, and bounded error code.
+- Added focused graph tests for default-off behavior, selected routing without
+  provider, valid fake provider dimensions, selected-agent/unknown-dimension/
+  forbidden-field/legacy/low-confidence/clarification/malformed JSON fallback,
+  fake provider exception and timeout fallback, raw-output non-retention, and
+  no real model factory invocation.
+
+### Not Done
+
+- No real provider call, `load_chat_model` live invocation, runtime binding,
+  agent catalog, non-L4 policy, external service directory, scaffold copy,
+  route-planner port assignment, `10028/8028` runtime implementation,
+  `10026/10027` migration, `/v1/agent/compute`, `/v1/agent/invoke`, `/health`,
+  process action, env-value access, or raw provider/LLM response retention
+  change.
+
 ## 2026-06-27 - Router M1A default-off dimension route planning
 
 ### Changed

@@ -212,6 +212,10 @@ direct `risk_composite` input in this v4 feedback-aligned roster.
 - Router M1A owns default-off internal dimension routing: selected routing can
   use a provider-free dimension-only intent, while the compiler expands
   dimensions into concrete agents deterministically.
+- Router M1D owns the fake-provider-only internal LLM dimension-router seam:
+  a separate provider-router flag defaults false, is gated behind selected
+  routing, parses fake structured output immediately, and keeps real provider
+  integration for a later controlled phase.
 
 ## R8-1 Selected Routing Contract Boundary
 
@@ -293,6 +297,10 @@ Planner seam behavior:
   intent for tests and future feature-flag experiments;
 - `build_default_dimension_route_intent` builds the M1A provider-free
   dimension-only route intent used by the default-off graph seam;
+- M1D adds a fake-provider-only graph seam for later LLM routing. It accepts
+  only dimension-only `route_intent_v1` JSON from injected fake providers,
+  parses it immediately, and discards the raw output before state or workflow
+  projection;
 - `FIXED_DAG_ROUTE_INTENT_SYSTEM_PROMPT` defines the future LLM or semantic
   planner contract and targets `route_intent_v1` only; in M1A it asks only for
   `selected_dimensions` and forbids concrete agent ids;
@@ -366,14 +374,32 @@ Runtime behavior:
   (`selectedRoutingRequested`, `selectedRoutingFallback`, `fallbackReason`,
   `routeGranularity`, `selectedDimensions`, `expandedAgentCount`) without raw
   provider/LLM output, prompts, endpoints, secrets, or chain-of-thought;
+- M1D adds a separate default-false fake provider-router flag
+  (`Context.enable_llm_dimension_router` / `ENABLE_LLM_DIMENSION_ROUTER=1`).
+  The flag is effective only when selected routing is also enabled. Selected
+  routing alone continues to use the provider-free M1A path; the provider flag
+  alone keeps the full DAG and records `selected_routing_disabled` without
+  invoking the fake seam;
+- when both flags are enabled and an injected fake provider returns valid
+  dimension-only JSON, the graph parses it through
+  `parse_dimension_route_intent_json`, compiles the deterministic selected
+  plan, and exposes only bounded public-safe metadata such as provider-router
+  enabled/invoked, mode `fake`, parse status, selected dimensions, and fallback
+  reason;
+- malformed provider text, markdown/code fences, forbidden fields,
+  `selected_agents`, unknown dimensions, legacy Star/Chain/Debate/Tree modes,
+  low confidence, clarification requests, exceptions, timeouts, or unavailable
+  fake providers fall back to the full DAG with safe reason codes;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
-R8-5 does not call an LLM/provider, search backend, external
-`/v1/agent/invoke`, or runtime binding adapter. It does not change the fixed
-DAG roster, runtime bindings, RouteEval threshold policy, external adapter
-readiness, or real business-agent implementation status. M1A adds only
-public-safe workflow metadata for the selected-routing summary; it does not
-create an external router service, assign ports, copy scaffold material, move
-`report_generator` from port `10026`, or promote the `10028/8028` planning
-reservation to runtime authority.
+R8-5/M1A/M1D do not call a real LLM/provider, search backend, external
+`/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D does not invoke
+`load_chat_model` and does not read provider credentials. These phases do not
+change the fixed DAG roster, runtime bindings, RouteEval threshold policy,
+external adapter readiness, or real business-agent implementation status. M1A
+and M1D add only public-safe workflow metadata for selected routing and the
+fake provider-router summary; they do not create an external router service,
+assign ports, copy scaffold material, move `report_generator` from port
+`10026`, or promote the `10028/8028` planning reservation to runtime
+authority.

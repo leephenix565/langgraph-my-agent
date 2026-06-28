@@ -70,6 +70,12 @@ async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypa
     monkeypatch.setenv("ENABLE_SELECTED_ROUTING", "1")
     assert Context().enable_selected_routing is True
 
+    monkeypatch.delenv("ENABLE_LLM_DIMENSION_ROUTER", raising=False)
+    assert Context().enable_llm_dimension_router is False
+
+    monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "1")
+    assert Context().enable_llm_dimension_router is True
+
     monkeypatch.delenv("ENABLE_INTERNAL_LLM_PLACEHOLDERS", raising=False)
     assert Context().enable_internal_llm_placeholders is False
 
@@ -341,12 +347,20 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     def fail_external_client(*args, **kwargs):
         raise AssertionError("external HTTP should not be called by selected routing flag")
 
+    def fail_router_provider(*args, **kwargs):
+        raise AssertionError("router provider seam should not be called by selected routing flag")
+
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
+    monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", fail_router_provider)
 
     res = await graph_module.graph.ainvoke(
         {"messages": [("user", "Explain discounted cash flow in simple terms.")]},  # type: ignore[arg-type]
-        context=Context(enable_selected_routing=True),
+        context=Context(
+            enable_selected_routing=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
     )
 
     assert res["fixed_dag_plan"]["schema"] == "selected_fixed_dag_plan_v1"
@@ -374,6 +388,252 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert res["workflow_snapshot"]["provenance"]["selectedDimensions"] == ["value"]
     assert res["workflow_snapshot"]["provenance"]["providerInvoked"] is False
     assert res["workflow_snapshot"]["provenance"]["externalInvoked"] is False
+    assert res["workflow_snapshot"]["provenance"]["providerRouterEnabled"] is False
+    assert res["workflow_snapshot"]["provenance"]["providerRouterInvoked"] is False
+
+
+async def test_llm_dimension_router_flag_alone_keeps_full_dag_and_does_not_invoke(
+    monkeypatch,
+) -> None:
+    def fail_router_provider(*args, **kwargs):
+        raise AssertionError("provider flag alone must not call router provider seam")
+
+    monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", fail_router_provider)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "Explain discounted cash flow in simple terms.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    assert plan["schema"] == "fixed_dag_plan_v1"
+    assert plan["provenance"]["provider_router_enabled"] is True
+    assert plan["provenance"]["provider_router_invoked"] is False
+    assert plan["provenance"]["provider_router_fallback_reason"] == "selected_routing_disabled"
+    assert res["workflow_snapshot"]["provenance"]["providerRouterEnabled"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterInvoked"] is False
+
+
+def _dimension_router_payload(dimensions: list[str], **overrides: object) -> str:
+    payload: dict[str, object] = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": ["example company"],
+        "selected_dimensions": dimensions,
+        "route_confidence": 0.84,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "fake_provider_fixture"},
+    }
+    payload.update(overrides)
+    return json.dumps(payload, ensure_ascii=False)
+
+
+@pytest.mark.parametrize(
+    ("dimensions", "expected_dimensions"),
+    [
+        (["value"], {"value"}),
+        (["risk", "macro"], {"risk", "macro"}),
+    ],
+)
+async def test_selected_routing_with_fake_llm_dimension_router_builds_selected_plan(
+    monkeypatch,
+    dimensions: list[str],
+    expected_dimensions: set[str],
+) -> None:
+    raw_marker = "NEVER_STORE_FAKE_ROUTER_RAW_MARKER"
+
+    def fake_router_provider(_question, _context):
+        return _dimension_router_payload(
+            dimensions,
+            provenance={
+                "source": "fake_provider_fixture",
+                "raw_marker": raw_marker,
+            },
+        )
+
+    def fail_model_factory(*args, **kwargs):
+        raise AssertionError("load_chat_model must not be called by fake router seam")
+
+    monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", fake_router_provider)
+    monkeypatch.setattr("react_agent.utils.load_chat_model", fail_model_factory)
+    monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_model_factory)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    rendered = json.dumps(
+        {
+            "plan": res["fixed_dag_plan"],
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    plan = res["fixed_dag_plan"]
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    valid, reason = validate_selected_fixed_dag_plan(plan)
+    assert valid, reason
+    assert set(plan["selected_dimensions"]) == expected_dimensions
+    for dimension in expected_dimensions:
+        assert set(DIMENSION_GROUPS[dimension]) <= set(plan["target_agent_ids"])
+    assert plan["provenance"]["provider_router_enabled"] is True
+    assert plan["provenance"]["provider_router_invoked"] is True
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert plan["provenance"]["provider_invoked"] is False
+    assert plan["provenance"]["external_invoked"] is False
+    assert res["workflow_snapshot"]["provenance"]["providerRouterEnabled"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterInvoked"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterMode"] == "fake"
+    assert res["workflow_snapshot"]["provenance"]["providerRouterParseOk"] is True
+    assert raw_marker not in rendered
+    assert "raw_response" not in rendered.lower()
+    assert "/v1/agent/invoke" not in rendered
+
+
+@pytest.mark.parametrize(
+    ("raw_output", "expected_reason"),
+    [
+        (
+            _dimension_router_payload(["value"], selected_agents=["value_research_synthesis"]),
+            "agent_level_route_not_allowed_in_dimension_mode",
+        ),
+        (_dimension_router_payload(["credit"]), "unknown_selected_dimension"),
+        (
+            _dimension_router_payload(["value"], provenance={"source": "fixture", "route_mode": "Star"}),
+            "legacy_route_value_present",
+        ),
+        (
+            _dimension_router_payload(
+                ["value"],
+                runtime_bindings={"route_planner": "x"},
+            ),
+            "forbidden_route_intent_field_present",
+        ),
+        ("```json\n{\"schema\":\"route_intent_v1\"}\n```", "router_provider_invalid_json"),
+        (_dimension_router_payload(["value"], route_confidence=0.1), "low_route_confidence"),
+        (
+            _dimension_router_payload(
+                ["value"],
+                needs_clarification=True,
+                clarification_question="Which target?",
+            ),
+            "route_intent_needs_clarification",
+        ),
+    ],
+)
+async def test_selected_routing_with_fake_llm_dimension_router_invalid_output_falls_back(
+    monkeypatch,
+    raw_output: str,
+    expected_reason: str,
+) -> None:
+    monkeypatch.setattr(
+        graph_module,
+        "_invoke_dimension_router_provider",
+        lambda _question, _context: raw_output,
+    )
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    rendered = json.dumps(
+        {
+            "plan": res["fixed_dag_plan"],
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    plan = res["fixed_dag_plan"]
+    assert plan["schema"] == "fixed_dag_plan_v1"
+    valid, reason = validate_fixed_dag_plan(plan)
+    assert valid, reason
+    assert plan["provenance"]["selected_routing_requested"] is True
+    assert plan["provenance"]["selected_routing_fallback"] is True
+    assert plan["provenance"]["fallback_reason"] == expected_reason
+    assert plan["provenance"]["provider_router_enabled"] is True
+    assert plan["provenance"]["provider_router_invoked"] is True
+    assert plan["provenance"]["provider_router_parse_ok"] is False
+    assert plan["provenance"]["provider_router_error_code"] == expected_reason
+    assert plan["provenance"]["provider_invoked"] is False
+    assert res["workflow_snapshot"]["provenance"]["providerRouterInvoked"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterFallbackReason"] == expected_reason
+    assert raw_output not in rendered
+
+
+@pytest.mark.parametrize(
+    ("provider", "expected_reason", "expected_invoked"),
+    [
+        (lambda _question, _context: None, "router_provider_missing_output", False),
+        (
+            lambda _question, _context: (_ for _ in ()).throw(TimeoutError("slow")),
+            "router_provider_timeout",
+            True,
+        ),
+        (
+            lambda _question, _context: (_ for _ in ()).throw(RuntimeError("secret details")),
+            "router_provider_exception",
+            True,
+        ),
+    ],
+)
+async def test_selected_routing_with_fake_llm_dimension_router_provider_failure_falls_back(
+    monkeypatch,
+    provider,
+    expected_reason: str,
+    expected_invoked: bool,
+) -> None:
+    monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", provider)
+
+    res = await graph_module.graph.ainvoke(
+        {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    rendered = json.dumps(
+        {
+            "plan": res["fixed_dag_plan"],
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    plan = res["fixed_dag_plan"]
+    assert plan["schema"] == "fixed_dag_plan_v1"
+    assert plan["provenance"]["fallback_reason"] == expected_reason
+    assert plan["provenance"]["provider_router_invoked"] is expected_invoked
+    assert plan["provenance"]["provider_router_error_code"] in {
+        "router_provider_unavailable",
+        expected_reason,
+    }
+    assert plan["provenance"]["provider_invoked"] is False
+    assert "secret details" not in rendered
+    assert "Traceback" not in rendered
 
 
 async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(monkeypatch) -> None:

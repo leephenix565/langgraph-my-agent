@@ -3681,6 +3681,35 @@ def build_workflow_snapshot_v2(
                 if isinstance(plan_provenance.get("expanded_agent_count"), int)
                 else len(normalized_plan.get("target_agent_ids", []) or [])
             ),
+            "providerRouterEnabled": bool(
+                plan_provenance.get("provider_router_enabled")
+            ),
+            "providerRouterInvoked": bool(
+                plan_provenance.get("provider_router_invoked")
+            ),
+            "providerRouterMode": _safe_public_text(
+                plan_provenance.get("provider_router_mode"),
+                limit=40,
+            ),
+            "providerRouterParseOk": bool(
+                plan_provenance.get("provider_router_parse_ok")
+            ),
+            "providerRouterFallbackReason": _safe_public_text(
+                plan_provenance.get("provider_router_fallback_reason"),
+                limit=120,
+            ),
+            "providerRouterErrorCode": _safe_public_text(
+                plan_provenance.get("provider_router_error_code"),
+                limit=80,
+            ),
+            "providerRouterSelectedDimensions": [
+                dimension
+                for dimension in plan_provenance.get(
+                    "provider_router_selected_dimensions",
+                    [],
+                )
+                if isinstance(dimension, str) and dimension in DIMENSION_GROUPS
+            ],
         },
         "finalSource": RESET_SOURCE,
     }

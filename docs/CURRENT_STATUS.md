@@ -56,6 +56,20 @@ records.
   no runtime binding, no catalog, and no non-L4 policy change is part of M1A.
   `report_generator` remains on production compute port `10026`; `10028/8028`
   remains only a future external route-planner planning reservation.
+- M1D adds a fake-provider-only internal LLM dimension-router seam for later
+  provider integration. The provider-router flag
+  `Context.enable_llm_dimension_router` / `ENABLE_LLM_DIMENSION_ROUTER=1`
+  defaults false and is gated behind selected routing; selected routing alone
+  does not call a provider, and the provider flag alone does not run when
+  selected routing is disabled.
+- M1D does not call a real provider, does not invoke `load_chat_model`, and
+  does not retain raw fake/provider output. Fake structured output is parsed
+  immediately as dimension-only `route_intent_v1`; invalid, unsafe, malformed,
+  low-confidence, clarification, selected-agent, legacy-mode, exception,
+  timeout, or unavailable provider cases fall back to the full DAG with safe
+  reason codes. Public workflow metadata may expose only bounded router
+  summaries such as provider-router enabled/invoked, mode `fake`, parse
+  status, selected dimensions, and fallback reason.
 
 ## Report Quality RQ2E Status
 

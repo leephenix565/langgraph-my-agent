@@ -98,6 +98,13 @@ class Context:
             "Defaults off so the active graph keeps the full DAG path."
         },
     )
+    enable_llm_dimension_router: bool = field(
+        default=False,
+        metadata={
+            "description": "Enable the fake-provider-only internal LLM dimension router seam. "
+            "This is gated behind selected routing and does not create a real provider client."
+        },
+    )
     enable_internal_llm_placeholders: bool = field(
         default=False,
         metadata={
@@ -222,6 +229,7 @@ class Context:
             "baseline_force_search": "BASELINE_FORCE_SEARCH",
             "enable_fair_fusion_source_switch": "ENABLE_FAIR_FUSION_SOURCE_SWITCH",
             "enable_selected_routing": "ENABLE_SELECTED_ROUTING",
+            "enable_llm_dimension_router": "ENABLE_LLM_DIMENSION_ROUTER",
             "enable_internal_llm_placeholders": "ENABLE_INTERNAL_LLM_PLACEHOLDERS",
             "enable_external_compute_demo": "ENABLE_EXTERNAL_COMPUTE_DEMO",
             "disable_external_compute_default": "DISABLE_EXTERNAL_COMPUTE_DEFAULT",

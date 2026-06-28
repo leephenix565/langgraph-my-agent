@@ -10,6 +10,7 @@ execution seams.
 from __future__ import annotations
 
 import uuid
+from collections.abc import Mapping
 from typing import Any
 
 from langchain_core.messages import AIMessage
@@ -35,6 +36,7 @@ from react_agent.fixed_dag_contracts import (
 )
 from react_agent.fixed_dag_executor import execute_fixed_dag_plan
 from react_agent.graph_entry import compile_graph_variants, select_graph_for_invoke
+from react_agent.router_parse import parse_dimension_route_intent_json
 from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
@@ -93,11 +95,140 @@ def _context_fixed_dag_as_of(context: Context | None) -> str | None:
     return text or None
 
 
+def _is_llm_dimension_router_enabled(context: Context | None) -> bool:
+    return bool(
+        context is not None
+        and getattr(context, "enable_llm_dimension_router", False)
+    )
+
+
+def _provider_router_provenance(
+    *,
+    enabled: bool,
+    invoked: bool = False,
+    parse_ok: bool = False,
+    fallback_reason: str = "",
+    selected_dimensions: list[str] | None = None,
+    error_code: str = "",
+) -> dict[str, Any]:
+    return {
+        "provider_router_enabled": enabled,
+        "provider_router_invoked": invoked,
+        "provider_router_mode": "fake" if enabled else "",
+        "provider_router_parse_ok": parse_ok,
+        "provider_router_fallback_reason": fallback_reason,
+        "provider_router_selected_dimensions": list(selected_dimensions or []),
+        "provider_router_error_code": error_code,
+    }
+
+
+def _safe_provider_router_reason(stats_reason: str | None) -> str:
+    reason = str(stats_reason or "").strip()
+    if not reason:
+        return "router_provider_parse_failed"
+    if reason.startswith("json_decode_error:"):
+        return "router_provider_invalid_json"
+    if reason == "missing_json":
+        return "router_provider_missing_output"
+    if reason == "not_object":
+        return "router_provider_non_object"
+    return reason
+
+
+def _invoke_dimension_router_provider(
+    question: str,
+    context: Context | None,
+) -> str | None:
+    """Fake-provider seam for tests; real provider wiring is intentionally absent."""
+    del question, context
+    return None
+
+
+def _route_intent_from_llm_dimension_provider(
+    question: str,
+    context: Context | None,
+) -> tuple[Mapping[str, Any] | None, dict[str, Any]]:
+    meta = _provider_router_provenance(enabled=True)
+    try:
+        raw_output = _invoke_dimension_router_provider(question, context)
+    except TimeoutError:
+        return None, {
+            **meta,
+            "provider_router_invoked": True,
+            "provider_router_fallback_reason": "router_provider_timeout",
+            "provider_router_error_code": "router_provider_timeout",
+        }
+    except Exception:
+        return None, {
+            **meta,
+            "provider_router_invoked": True,
+            "provider_router_fallback_reason": "router_provider_exception",
+            "provider_router_error_code": "router_provider_exception",
+        }
+
+    if not isinstance(raw_output, str) or not raw_output.strip():
+        return None, {
+            **meta,
+            "provider_router_invoked": bool(raw_output is not None),
+            "provider_router_fallback_reason": "router_provider_missing_output",
+            "provider_router_error_code": "router_provider_unavailable"
+            if raw_output is None
+            else "router_provider_missing_output",
+        }
+    stripped = raw_output.strip()
+    if not (stripped.startswith("{") and stripped.endswith("}")):
+        return None, {
+            **meta,
+            "provider_router_invoked": True,
+            "provider_router_fallback_reason": "router_provider_invalid_json",
+            "provider_router_error_code": "router_provider_invalid_json",
+        }
+
+    route_intent, stats = parse_dimension_route_intent_json(
+        stripped,
+        question=question,
+    )
+    parse_ok = bool(stats.get("parse_ok") and not stats.get("used_fallback"))
+    selected_dimensions = [
+        str(item)
+        for item in stats.get("selected_dimensions", [])
+        if isinstance(item, str)
+    ]
+    fallback_reason = _safe_provider_router_reason(stats.get("fallback_reason"))
+    if not parse_ok or route_intent.get("needs_clarification"):
+        return None, {
+            **meta,
+            "provider_router_invoked": True,
+            "provider_router_parse_ok": False,
+            "provider_router_fallback_reason": fallback_reason,
+            "provider_router_selected_dimensions": selected_dimensions,
+            "provider_router_error_code": fallback_reason,
+        }
+    route_intent = dict(route_intent)
+    route_intent["provenance"] = {
+        "source": "fake_llm_dimension_router",
+        "normalizer": "m1d_fake_provider_dimension_router",
+        "route_granularity": "dimension",
+        "dimension_only": True,
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    return route_intent, {
+        **meta,
+        "provider_router_invoked": True,
+        "provider_router_parse_ok": True,
+        "provider_router_selected_dimensions": list(
+            route_intent.get("selected_dimensions", []) or []
+        ),
+    }
+
+
 def _full_plan_with_selected_fallback_provenance(
     question: str,
     reason: str,
     *,
     as_of: str | None = None,
+    provider_router: dict[str, Any] | None = None,
 ) -> dict[str, Any]:
     plan = build_default_fixed_dag_plan(question, as_of=as_of)
     plan["provenance"] = {
@@ -110,6 +241,7 @@ def _full_plan_with_selected_fallback_provenance(
         "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
         "provider_invoked": False,
         "external_invoked": False,
+        **dict(provider_router or {}),
     }
     return plan
 
@@ -117,15 +249,44 @@ def _full_plan_with_selected_fallback_provenance(
 def _route_plan_for_context(question: str, context: Context | None) -> dict[str, Any]:
     as_of = _context_fixed_dag_as_of(context)
     if context is None or not context.enable_selected_routing:
-        return build_default_fixed_dag_plan(question, as_of=as_of)
+        plan = build_default_fixed_dag_plan(question, as_of=as_of)
+        if _is_llm_dimension_router_enabled(context):
+            plan["provenance"] = {
+                **plan["provenance"],
+                **_provider_router_provenance(
+                    enabled=True,
+                    fallback_reason="selected_routing_disabled",
+                ),
+            }
+        return plan
+    provider_router = _provider_router_provenance(
+        enabled=_is_llm_dimension_router_enabled(context)
+    )
     try:
-        route_intent = build_default_dimension_route_intent(question)
+        if _is_llm_dimension_router_enabled(context):
+            route_intent, provider_router = _route_intent_from_llm_dimension_provider(
+                question,
+                context,
+            )
+            if route_intent is None:
+                return _full_plan_with_selected_fallback_provenance(
+                    question,
+                    str(
+                        provider_router.get("provider_router_fallback_reason")
+                        or "router_provider_unavailable"
+                    ),
+                    as_of=as_of,
+                    provider_router=provider_router,
+                )
+        else:
+            route_intent = build_default_dimension_route_intent(question)
         plan = compile_selected_fixed_dag_plan(route_intent, user_text=question, as_of=as_of)
     except Exception as exc:
         return _full_plan_with_selected_fallback_provenance(
             question,
             f"selected_routing_compile_failed:{type(exc).__name__}",
             as_of=as_of,
+            provider_router=provider_router,
         )
     plan["provenance"] = {
         **plan["provenance"],
@@ -136,6 +297,7 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
         "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
         "provider_invoked": False,
         "external_invoked": False,
+        **provider_router,
     }
     return plan
 

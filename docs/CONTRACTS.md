@@ -555,7 +555,10 @@ graph still does not call an LLM planner and selected routing remains
 default-off. Router M1A keeps that default-off boundary and adds a
 dimension-only planner mode: the planner output may select only `value`,
 `market`, `risk`, and `macro`, while concrete agents are expanded by the
-deterministic compiler.
+deterministic compiler. Router M1D adds a fake-provider-only seam for the
+future internal LLM dimension router. It is gated by a separate default-false
+provider-router flag and accepts only dimension-only `route_intent_v1` JSON
+from injected fake providers; real provider calls remain out of scope.
 
 Fields:
 
@@ -638,6 +641,12 @@ R8-3 prompt/parser boundary:
   chain-of-thought material. Dimension-only parser mode rejects unknown or
   empty dimensions, low confidence, clarification requests, legacy route-mode
   values, runtime-binding fields, and any concrete agent-level selection.
+- M1D keeps the same parser as the only provider-output ingress. Fake provider
+  output is parsed immediately and the raw text is discarded. Markdown/code
+  fences, malformed JSON, selected agents, forbidden fields, legacy modes, low
+  confidence, clarification requests, provider exceptions, simulated timeouts,
+  or unavailable fake providers fall back to full DAG with public-safe reason
+  codes.
 
 ## RouteEval baseline
 
@@ -693,6 +702,21 @@ the dimension-only intent with
 `compile_selected_fixed_dag_plan`, and passes the resulting
 `selected_fixed_dag_plan_v1` to the existing execution path.
 
+M1D adds `Context.enable_llm_dimension_router` with env support through
+`ENABLE_LLM_DIMENSION_ROUTER=1`. This flag is a fake-provider-only internal
+LLM router seam, defaults false, and is gated behind selected routing:
+
+- selected routing false, provider-router false: full DAG, no provider router;
+- selected routing false, provider-router true: full DAG,
+  `providerRouterInvoked=false`, fallback reason `selected_routing_disabled`;
+- selected routing true, provider-router false: M1A provider-free dimension
+  path, `providerRouterInvoked=false`;
+- selected routing true, provider-router true with valid injected fake output:
+  fake seam invoked, output parsed immediately, deterministic selected plan
+  compiled;
+- selected routing true, provider-router true with invalid fake output or
+  provider failure: full DAG fallback with safe reason code.
+
 Failure policy:
 
 - invalid route intent, compiler failure, or selected validation failure falls
@@ -705,12 +729,21 @@ Failure policy:
 - workflow snapshot provenance may expose public-safe selected-routing
   metadata: `selectedRoutingRequested`, `selectedRoutingFallback`,
   `fallbackReason`, `routeGranularity`, `selectedDimensions`, and
-  `expandedAgentCount`. It must not expose raw LLM/provider output, prompts,
-  endpoint URLs, secrets, or chain-of-thought.
+  `expandedAgentCount`.
+- M1D workflow snapshot provenance may additionally expose public-safe fake
+  provider-router metadata: `providerRouterEnabled`,
+  `providerRouterInvoked`, `providerRouterMode`, `providerRouterParseOk`,
+  `providerRouterFallbackReason`, `providerRouterErrorCode`, and
+  `providerRouterSelectedDimensions`.
+- Workflow metadata must not expose raw LLM/provider output, fake raw output,
+  prompts, model messages, provider payloads, endpoint URLs, env values,
+  secrets, tracebacks, or chain-of-thought.
 
 Non-claims:
 
 - the selected flag does not enable provider, search, or external invocation;
+- the provider-router flag does not enable a real provider and does not call
+  `load_chat_model` in M1D;
 - the selected flag does not modify runtime bindings or external readiness;
 - the selected flag does not make RouteEval a formal >=80% acceptance gate;
 - the selected flag does not implement real business-agent logic.

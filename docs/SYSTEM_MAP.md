@@ -151,6 +151,15 @@ Active skeleton properties:
   enabled. When enabled in M1A, route planning is internal and dimension-only:
   only `value`, `market`, `risk`, and `macro` may be selected by planner
   intent, and concrete agents are expanded deterministically by the compiler.
+- M1D adds a second default-false provider-router flag,
+  `Context.enable_llm_dimension_router` /
+  `ENABLE_LLM_DIMENSION_ROUTER=1`. It is fake-provider-only and is ignored
+  unless selected routing is also enabled. Valid injected fake output is parsed
+  immediately as dimension-only `route_intent_v1`; invalid output or fake
+  provider failure falls back to the full DAG. Raw fake/provider text,
+  prompts, endpoint material, env values, tracebacks, and chain-of-thought are
+  not projected into graph state, workflow snapshots, final emits, or public
+  output.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only
@@ -171,6 +180,10 @@ Active skeleton properties:
 - M1A creates no external `route_planner` service, assigns no
   `route_planner` port, leaves `10028/8028` as planning-only reservation, and
   preserves `report_generator` on production compute port `10026`.
+- M1D keeps those boundaries unchanged: no real provider, no
+  `load_chat_model` live invocation, no endpoint call, no external
+  route-planner service, no runtime binding change, and no route-planner port
+  authority.
 
 ## Retained But Inactive Infrastructure
 
