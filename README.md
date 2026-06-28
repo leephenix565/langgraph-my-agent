@@ -194,6 +194,23 @@ for controlled dry-run use only; it does not read env values, create clients,
 call providers, retain endpoint values in artifacts, assign a route-planner
 port, or change default full-DAG behavior.
 
+Router M1F7 persists the strict route-intent message contract needed by the
+controlled real-provider dry-run. The router-only wrapper now exposes a pure
+messages builder for OpenAI-compatible chat requests. The compatibility layout
+is a single strict user message because controlled diagnostics showed that this
+provider returns parseable JSON with that layout while system+user routing
+messages were not stable. The message asks the provider to echo an exact
+locally-built `route_intent_v1` JSON object from deterministic dimension hints,
+so routing correctness is still guarded by the parser and compiler rather than
+free-form provider generation. The contract allows only dimension-level
+`selected_dimensions`, no agent-level choices, no legacy route modes, no
+analysis/report prose, and no markdown around the JSON. The request-contract
+metadata records only safe booleans, contract
+versions, and the sanitized layout name; prompts/messages remain forbidden in
+artifacts and public workflow metadata. This still does not create a provider
+client, read env values, call a provider, assign a route-planner port, or change
+default full-DAG behavior.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

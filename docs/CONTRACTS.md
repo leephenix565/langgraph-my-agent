@@ -804,6 +804,28 @@ Endpoint and base URL values are not artifact-safe. Public-safe metadata may
 record only booleans such as `chat_completions_path_normalized` and
 `v1_path_added`, plus safe reason codes.
 
+M1F7 adds a pure strict route-intent messages contract for future controlled
+OpenAI-compatible dry-runs. Callers must use the router-only wrapper helper to
+build the provider-compatible single user-message layout that requires:
+
+- exactly one valid JSON object with schema `route_intent_v1`;
+- `selected_dimensions` only from `value`, `market`, `risk`, and `macro`;
+- no `selected_agents`, `task_brief_by_agent`, `dag_steps`, `depends_on`,
+  `runtime_bindings`, provider/external responses, endpoint/env/secret fields,
+  raw responses, or chain-of-thought;
+- no legacy route modes such as Star, Chain, Debate, or Tree;
+- no markdown, code fences, prose, tool calls, or extra text around the JSON.
+
+The JSON object is locally drafted from deterministic dimension hints and then
+sent for provider echo validation. Provider output is still parsed through the
+dimension-only `route_intent_v1` parser and compiled deterministically; the
+provider never gains authority to select concrete agents.
+
+The prompt/messages are not artifact-safe. Public-safe artifacts may record only
+the message contract version, route-intent schema name, strict-schema boolean,
+allowed dimensions, sanitized message layout name, and explicit no-retention
+booleans.
+
 Non-claims:
 
 - the selected flag does not enable provider, search, or external invocation;

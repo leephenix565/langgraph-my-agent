@@ -1,21 +1,29 @@
 from dataclasses import replace
 import inspect
+import json
 
 from react_agent import router_provider
 from react_agent.router_provider import (
+    ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION,
+    ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT,
+    ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
     RouterProviderInvocationOptions,
     RouterProviderPolicy,
     build_openai_compatible_chat_completions_url,
     build_default_router_provider_policy,
     build_router_provider_artifact,
     build_router_provider_factory_result,
+    build_router_provider_route_intent_draft,
+    build_router_provider_route_intent_messages,
     build_router_provider_request_contract,
     normalize_router_provider_model_for_openai_compatible_api,
     router_provider_preflight,
     router_provider_required_env_var_names,
     router_provider_unsafe_scan,
     sanitize_router_provider_artifact,
+    suggest_router_provider_dimensions,
 )
+from react_agent.router_parse import parse_dimension_route_intent_json
 
 
 def _authorized_policy(**overrides):
@@ -109,6 +117,14 @@ def test_router_provider_request_contract_uses_json_mode_without_sensitive_field
     contract = build_router_provider_request_contract()
 
     assert contract["request_contract_version"] == "router_dimension_json_v1"
+    assert (
+        contract["route_intent_message_contract_version"]
+        == ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION
+    )
+    assert contract["route_intent_message_layout"] == ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT
+    assert contract["route_intent_schema_name"] == ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME
+    assert contract["strict_route_intent_json_schema"] is True
+    assert contract["allowed_dimensions"] == ["value", "market", "risk", "macro"]
     assert contract["response_format_json_object"] is True
     assert contract["response_format"] == {"type": "json_object"}
     assert contract["max_tokens"] == 220
@@ -128,6 +144,73 @@ def test_router_provider_request_contract_uses_json_mode_without_sensitive_field
         "raw_response_hash",
     ):
         assert forbidden not in contract
+
+
+def test_router_provider_route_intent_messages_are_strict_json_contract() -> None:
+    messages = build_router_provider_route_intent_messages(
+        "请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH 当前是否值得关注。"
+    )
+
+    assert [message["role"] for message in messages] == ["user"]
+    joined = "\n".join(message["content"] for message in messages)
+    assert "Return exactly this JSON object and nothing else." in joined
+    assert "first character must be {" in joined
+    assert "last character must be }" in joined
+    assert "route_intent_v1" in joined
+    assert (
+        '"selected_dimensions":["value","market","risk","macro"]'
+        in joined
+    )
+    assert "markdown" in joined
+    assert "api_key" not in joined.lower()
+    assert "bearer" not in joined.lower()
+
+
+def test_router_provider_route_intent_draft_parses_for_explicit_dimensions() -> None:
+    draft = build_router_provider_route_intent_draft(
+        "请从估值、市场、风险和宏观角度分析贵州茅台 600519.SH 当前是否值得关注。"
+    )
+    intent, stats = parse_dimension_route_intent_json(
+        json.dumps(draft, ensure_ascii=False),
+        question="请从估值、市场、风险和宏观角度分析贵州茅台。",
+    )
+
+    assert stats["parse_ok"] is True
+    assert stats["used_fallback"] is False
+    assert intent["selected_dimensions"] == ["value", "market", "risk", "macro"]
+    assert intent["route_confidence"] == 0.95
+
+
+def test_router_provider_dimension_hint_detects_explicit_dimensions() -> None:
+    assert suggest_router_provider_dimensions(
+        "请从估值、市场、风险和宏观角度分析贵州茅台。"
+    ) == ("value", "market", "risk", "macro")
+    assert suggest_router_provider_dimensions("只看风险和宏观环境。") == (
+        "risk",
+        "macro",
+    )
+
+
+def test_router_provider_route_intent_messages_are_not_artifact_safe_if_retained() -> None:
+    messages = build_router_provider_route_intent_messages("route the request")
+
+    clean = build_router_provider_artifact(
+        {
+            "phase": "m1f7",
+            "provider_router_invoked": True,
+            "provider_router_parse_ok": True,
+            "messages": messages,
+            "prompt_retained": True,
+            "messages_retained": True,
+            "raw_response_retained": True,
+        }
+    )
+
+    assert "messages" not in clean
+    assert clean["prompt_retained"] is False
+    assert clean["messages_retained"] is False
+    assert clean["raw_response_retained"] is False
+    assert clean["unsafe_scan_pass"] is False
 
 
 def test_openai_compatible_chat_completions_url_appends_v1_when_missing() -> None:
@@ -197,6 +280,11 @@ def test_router_provider_contract_metadata_is_artifact_safe() -> None:
             "streaming": False,
             "model_normalized": True,
             "request_contract_version": "router_dimension_json_v1",
+            "route_intent_message_contract_version": "router_route_intent_messages_v2",
+            "route_intent_message_layout": "single_user_exact_json_echo",
+            "route_intent_schema_name": "route_intent_v1",
+            "strict_route_intent_json_schema": True,
+            "allowed_dimensions": ["value", "market", "risk", "macro"],
             "response_format_json_object": True,
             "chat_completions_path_normalized": True,
             "v1_path_added": True,
@@ -209,6 +297,13 @@ def test_router_provider_contract_metadata_is_artifact_safe() -> None:
     assert clean["unsafe_scan_pass"] is True
     assert clean["model_normalized"] is True
     assert clean["request_contract_version"] == "router_dimension_json_v1"
+    assert clean["route_intent_message_contract_version"] == (
+        "router_route_intent_messages_v2"
+    )
+    assert clean["route_intent_message_layout"] == "single_user_exact_json_echo"
+    assert clean["route_intent_schema_name"] == "route_intent_v1"
+    assert clean["strict_route_intent_json_schema"] is True
+    assert clean["allowed_dimensions"] == ["value", "market", "risk", "macro"]
     assert clean["response_format_json_object"] is True
     assert clean["chat_completions_path_normalized"] is True
     assert clean["v1_path_added"] is True

@@ -8,6 +8,7 @@ router-provider dry run must satisfy before any real provider code is allowed.
 from __future__ import annotations
 
 import re
+import json
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -31,10 +32,61 @@ ROUTER_PROVIDER_MAX_TOKENS_LIMIT = 220
 ROUTER_PROVIDER_CALL_CAP_LIMIT = 1
 ROUTER_PROVIDER_JSON_RESPONSE_FORMAT: Mapping[str, str] = {"type": "json_object"}
 ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION = "router_dimension_json_v1"
+ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION = (
+    "router_route_intent_messages_v2"
+)
+ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT = "single_user_exact_json_echo"
+ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME = "route_intent_v1"
 _OPENAI_COMPATIBLE_PROVIDER_PREFIXES: frozenset[str] = frozenset(
     {"deepseek", "openai"}
 )
 _MODEL_SEGMENT_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.:-]{0,120}$")
+_DIMENSION_CUE_KEYWORDS: Mapping[str, tuple[str, ...]] = {
+    "value": (
+        "估值",
+        "价值",
+        "基本面",
+        "财务",
+        "valuation",
+        "value",
+        "fundamental",
+        "financial",
+    ),
+    "market": (
+        "市场",
+        "技术",
+        "情绪",
+        "资金",
+        "股价",
+        "market",
+        "technical",
+        "sentiment",
+        "flow",
+    ),
+    "risk": (
+        "风险",
+        "下行",
+        "合规",
+        "欺诈",
+        "暴跌",
+        "risk",
+        "downside",
+        "compliance",
+        "fraud",
+    ),
+    "macro": (
+        "宏观",
+        "政策",
+        "利率",
+        "行业",
+        "指数",
+        "macro",
+        "policy",
+        "rate",
+        "industry",
+        "index",
+    ),
+}
 
 ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
     {
@@ -60,6 +112,11 @@ ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
         "model_normalized",
         "response_format_json_object",
         "request_contract_version",
+        "route_intent_message_contract_version",
+        "route_intent_message_layout",
+        "route_intent_schema_name",
+        "strict_route_intent_json_schema",
+        "allowed_dimensions",
         "chat_completions_path_normalized",
         "v1_path_added",
     }
@@ -345,6 +402,13 @@ def build_router_provider_request_contract(
     effective = options or RouterProviderInvocationOptions()
     return {
         "request_contract_version": ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION,
+        "route_intent_message_contract_version": (
+            ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION
+        ),
+        "route_intent_message_layout": ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT,
+        "route_intent_schema_name": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
+        "strict_route_intent_json_schema": True,
+        "allowed_dimensions": list(ROUTER_PROVIDER_DIMENSIONS),
         "response_format_json_object": True,
         "response_format": dict(ROUTER_PROVIDER_JSON_RESPONSE_FORMAT),
         "max_tokens": int(effective.max_tokens),
@@ -355,6 +419,80 @@ def build_router_provider_request_contract(
         "prompt_retained": False,
         "messages_retained": False,
     }
+
+
+def suggest_router_provider_dimensions(question: str) -> tuple[str, ...]:
+    """Return deterministic dimension hints for provider routing prompts."""
+
+    text = str(question or "").strip().lower()
+    if not text:
+        return ROUTER_PROVIDER_DIMENSIONS
+    selected: list[str] = []
+    for dimension in ROUTER_PROVIDER_DIMENSIONS:
+        keywords = _DIMENSION_CUE_KEYWORDS.get(dimension, ())
+        if any(keyword in text for keyword in keywords):
+            selected.append(dimension)
+    if not selected and any(
+        keyword in text
+        for keyword in (
+            "是否值得关注",
+            "是否值得买",
+            "投资",
+            "研判",
+            "分析",
+            "should i invest",
+            "investment",
+            "analyze",
+        )
+    ):
+        selected.extend(("value", "market", "risk"))
+    return tuple(selected or ROUTER_PROVIDER_DIMENSIONS)
+
+
+def build_router_provider_route_intent_draft(question: str) -> dict[str, Any]:
+    """Build a deterministic route-intent draft for provider echo validation."""
+
+    user_question = str(question or "").strip() or "not provided"
+    return {
+        "schema": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
+        "schema_version": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
+        "task_type": "single",
+        "targets": [user_question],
+        "selected_dimensions": list(suggest_router_provider_dimensions(user_question)),
+        "route_confidence": 0.95,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {
+            "source": "route_intent_planner",
+            "route_granularity": "dimension",
+        },
+    }
+
+
+def build_router_provider_route_intent_messages(
+    question: str,
+) -> tuple[dict[str, str], ...]:
+    """Build strict JSON-only messages for a router-provider dry run.
+
+    These messages are for in-memory provider requests only. Callers must not
+    persist them in graph state, workflow snapshots, artifacts, or public output.
+    """
+
+    draft = build_router_provider_route_intent_draft(question)
+    draft_json = json.dumps(draft, ensure_ascii=False, separators=(",", ":"))
+    content = "\n".join(
+        [
+            "Return exactly this JSON object and nothing else.",
+            "The first character must be { and the last character must be }.",
+            "Do not analyze, explain, translate, reformat, wrap in markdown, or add keys.",
+            "This is a routing task, not an analysis task. Do not analyze the stock, "
+            "do not provide investment advice, and do not write a report.",
+            "不要分析股票，不要输出研报或解释；只回显下面的 JSON 路由对象。",
+            draft_json,
+        ]
+    )
+    return ({"role": "user", "content": content},)
 
 
 def build_openai_compatible_chat_completions_url(
@@ -550,6 +688,7 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
             "unsafe_scan_pass",
             "model_normalized",
             "response_format_json_object",
+            "strict_route_intent_json_schema",
             "chat_completions_path_normalized",
             "v1_path_added",
         }:
@@ -562,9 +701,12 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
             "fallback_reason_code",
             "provider_error_code",
             "request_contract_version",
+            "route_intent_message_contract_version",
+            "route_intent_message_layout",
+            "route_intent_schema_name",
         }:
             clean[key] = _safe_code(value)
-        elif key == "selected_dimensions":
+        elif key in {"selected_dimensions", "allowed_dimensions"}:
             clean[key] = _normalize_dimensions(value)
         elif key == "route_confidence":
             try:
@@ -637,6 +779,9 @@ __all__ = [
     "ROUTER_PROVIDER_JSON_RESPONSE_FORMAT",
     "ROUTER_PROVIDER_MAX_TOKENS_LIMIT",
     "ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION",
+    "ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION",
+    "ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT",
+    "ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME",
     "ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT",
     "RouterProviderFactoryResult",
     "RouterProviderInvocationOptions",
@@ -646,6 +791,7 @@ __all__ = [
     "RouterProviderPreflightResult",
     "build_default_router_provider_policy",
     "build_openai_compatible_chat_completions_url",
+    "build_router_provider_route_intent_messages",
     "build_router_provider_request_contract",
     "build_router_provider_artifact",
     "build_router_provider_factory_result",

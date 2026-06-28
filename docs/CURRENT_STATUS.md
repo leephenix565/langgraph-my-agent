@@ -100,6 +100,17 @@ records.
   `/v1`, or `/v1/chat/completions` when `/v1` is absent. Only sanitized booleans
   such as path-normalized and v1-added are artifact-safe; endpoint/base URL
   values remain forbidden.
+- M1F7 persists the strict route-intent message contract used by future
+  controlled real-provider dry-runs. The router-only wrapper can now build
+  OpenAI-compatible chat messages using a single strict user-message layout,
+  which is the provider-compatible layout verified by controlled diagnostics.
+  The message asks the provider to echo an exact locally-built
+  `route_intent_v1` JSON object from deterministic dimension hints, allows only
+  dimension-level `selected_dimensions`, forbids concrete agents and legacy route
+  modes, and rejects analysis/report prose or markdown-wrapped output. The
+  messages are in-memory request material only: artifacts may record safe
+  contract versions, booleans, and the sanitized layout name, but prompt/message
+  text remains forbidden.
 
 ## Report Quality RQ2E Status
 

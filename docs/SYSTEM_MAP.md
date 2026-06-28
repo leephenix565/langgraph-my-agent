@@ -178,6 +178,13 @@ Active skeleton properties:
   future dry-runs can derive the `/v1/chat/completions` endpoint from a base
   URL in memory while keeping endpoint/base URL values out of artifacts and
   public workflow metadata.
+- M1F7 adds the strict route-intent message builder to the same wrapper. Future
+  dry-runs should use this persisted helper for the provider-compatible single
+  user-message exact JSON echo layout. The wrapper drafts `route_intent_v1` from
+  deterministic dimension hints, asks the provider to echo that JSON, and still
+  lets the parser/compiler be the authority. Prompt/message text remains
+  in-memory request material only and is not projected into artifacts or public
+  workflow metadata.
 - `execute_fixed_dag` validates dependencies, produces `execution_batches`, and
   records per-step `step_results`.
 - `execute_fixed_dag` may use internal LLM placeholders for L2 conclusions only

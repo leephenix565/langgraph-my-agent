@@ -423,15 +423,23 @@ Runtime behavior:
   `/v1/chat/completions`; a base path without `/v1` maps to
   `/v1/chat/completions` under that base path. Endpoint/base URL values are for
   in-memory dry-run use only and remain forbidden in artifacts;
+- M1F7 adds a pure strict route-intent messages builder to the same wrapper. A
+  future authorized dry-run can send the provider-compatible single user-message
+  layout that asks the provider to echo an exact locally-built
+  `route_intent_v1` JSON object from deterministic dimension hints. The parser
+  and compiler remain authoritative, concrete agent ids and legacy route modes
+  are forbidden, and analysis/report prose or markdown wrappers are invalid. The
+  prompt/messages are request-only material and remain forbidden in graph state,
+  workflow snapshots, public output, and artifacts;
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
-R8-5/M1A/M1D/M1F0/M1F3/M1F5 do not call a real LLM/provider, search backend,
+R8-5/M1A/M1D/M1F0/M1F3/M1F5/M1F7 do not call a real LLM/provider, search backend,
 external `/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and
-M1F0 do not invoke `load_chat_model`, and M1F3/M1F5 keep that boundary. These
+M1F0 do not invoke `load_chat_model`, and M1F3/M1F5/M1F7 keep that boundary. These
 phases do not read provider credentials, change the fixed DAG roster, runtime
 bindings, RouteEval threshold policy, external adapter readiness, or real
-business-agent implementation status. M1A, M1D, M1F0, M1F3, and M1F5 add only
+business-agent implementation status. M1A, M1D, M1F0, M1F3, M1F5, and M1F7 add only
 public-safe selected-routing/provider-router metadata and safety contracts;
 they do not create an external router service, assign ports, copy scaffold
 material, move `report_generator` from port `10026`, or promote the

@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-28 - Router M1F7 strict provider route-intent message contract
+
+### Changed
+
+- Added a pure router-provider messages builder for future controlled
+  OpenAI-compatible dry-runs. The builder produces in-memory chat messages that
+  use the provider-compatible single user-message exact JSON echo layout. It
+  drafts `route_intent_v1` locally from deterministic dimension hints, asks the
+  provider to echo that JSON, and still relies on the parser/compiler as the
+  authority. The contract allows only dimension-only `selected_dimensions`, no
+  concrete agent ids, no legacy route modes, and no analysis/report prose or
+  markdown around the JSON.
+- Extended the router-provider request-contract metadata and artifact allowlist
+  with safe route-intent message contract fields: contract version, schema name,
+  strict-schema boolean, sanitized layout name, and allowed dimensions.
+- Added focused unit coverage for the strict route-intent messages contract and
+  for rejecting retained prompt/messages through the router-provider unsafe
+  scan.
+
+### Not Done
+
+- No real provider call, env-value access, endpoint/base URL value retention,
+  `load_chat_model` invocation, OpenAI/DeepSeek client creation, runtime binding
+  change, route-planner port assignment, `10028/8028` runtime implementation,
+  report-generator port change, process action, prompt/message retention, or raw
+  provider response/hash retention change.
+
 ## 2026-06-28 - Router M1F5 provider endpoint path contract
 
 ### Changed
