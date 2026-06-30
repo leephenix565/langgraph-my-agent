@@ -1,26 +1,27 @@
-from dataclasses import replace
 import inspect
 import json
+from dataclasses import replace
 
+from react_agent import router_provider
 from react_agent.fixed_dag_contracts import (
     DIMENSION_GROUPS,
     compile_selected_fixed_dag_plan,
     validate_selected_fixed_dag_plan,
 )
-from react_agent import router_provider
+from react_agent.router_parse import parse_dimension_route_intent_json
 from react_agent.router_provider import (
     ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION,
     ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT,
     ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
     RouterProviderInvocationOptions,
     RouterProviderPolicy,
-    build_openai_compatible_chat_completions_url,
     build_default_router_provider_policy,
+    build_openai_compatible_chat_completions_url,
     build_router_provider_artifact,
     build_router_provider_factory_result,
+    build_router_provider_request_contract,
     build_router_provider_route_intent_draft,
     build_router_provider_route_intent_messages,
-    build_router_provider_request_contract,
     normalize_router_provider_model_for_openai_compatible_api,
     router_provider_preflight,
     router_provider_required_env_var_names,
@@ -28,7 +29,6 @@ from react_agent.router_provider import (
     sanitize_router_provider_artifact,
     suggest_router_provider_dimensions,
 )
-from react_agent.router_parse import parse_dimension_route_intent_json
 
 
 def _authorized_policy(**overrides):

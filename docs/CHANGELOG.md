@@ -3,6 +3,87 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-30 - Sync cycle offline pytest environment isolation
+
+### Changed
+
+- Cleared inherited `PYTEST_ADDOPTS` for strict sync-cycle offline child pytest
+  runs so parent quality-gate basetemp settings cannot invalidate the child
+  repo-local smoke command.
+- Added the sync-cycle implementation and focused test file to static ruff
+  coverage.
+
+### Tests
+
+- Added a regression that simulates parent `PYTEST_ADDOPTS` while executing the
+  one-file strict publish-and-rebase cycle.
+
+## 2026-06-30 - P2S package lockfile source classification
+
+### Changed
+
+- Classified a bounded set of package-manager lockfiles, including `uv.lock`,
+  as `package_metadata` so current P2S source selection no longer treats
+  ordinary dependency lockfiles as unknown binary material.
+- Kept the P2S validator strict: arbitrary `.lock` files and other unknown
+  files remain blocked until explicitly classified.
+
+### Tests
+
+- Added source-policy and inventory regressions for accepted package lockfiles
+  and a negative arbitrary `.lock` case.
+
+## 2026-06-30 - Router M2 quality blocker resolution
+
+### Changed
+
+- Hardened the SYNC-OPS-5A-R5X readonly listener probe so sandbox-denied local
+  socket creation fails closed as a missing-listener blocker instead of
+  crashing the quality gate.
+- Switched the frontend quality smoke step to `node --import tsx` from
+  `apps/web`, preserving the same smoke assertions while avoiding the `tsx` CLI
+  IPC server in restricted quality sandboxes.
+
+### Tests
+
+- Added focused regressions for fail-closed readonly listener probes, single
+  preflight listener-probe reuse, and the no-IPC frontend smoke dispatch.
+
+## 2026-06-30 - Router M2 default-off selected-routing E2E report closure
+
+### Changed
+
+- Closed the minimal default-off selected-routing graph E2E report path:
+  explicit selected-routing context now has focused coverage from
+  dimension-only `route_intent_v1` through `selected_fixed_dag_plan_v1`,
+  selected executor orchestration, L4 `decision_synthesizer` /
+  `report_generator`, `final_emit`, and public assistant/workflow mapping.
+- Added additive public-safe selected-routing/provider-router provenance fields
+  to `WorkflowProvenanceModel` and mapped them field-by-field only from
+  sanitized `workflow_snapshot_v2.provenance`.
+- Added an internal explicit `Context` override to public runtime preparation
+  and invoke helpers so endpoint-free tests can exercise selected routing
+  without public HTTP schema changes.
+- Updated frontend workflow types, mock workflow provenance, and the technical
+  provenance view to understand the additive safe fields.
+- Reconciled `enable_llm_dimension_router` in Context/State compatibility
+  metadata and expanded static quality targets to include router helper
+  surfaces.
+
+### Tests
+
+- Added focused public mapping/runtime and graph assertions for selected report
+  closure, selected public provenance, default false/empty provenance fields,
+  fake-provider no-leak behavior, and explicit context propagation.
+
+### Not Done
+
+- No default selected-routing enablement, real provider call, endpoint call,
+  `/v1/agent/invoke`, `/v1/agent/compute` test call, runtime binding change,
+  catalog change, non-L4 policy change, external `route_planner` service,
+  route-planner port assignment, production/sandbox write, process action,
+  env-value access, or raw response retention change.
+
 ## 2026-06-28 - Router M1H LLM dimension-routing closeout
 
 ### Closed

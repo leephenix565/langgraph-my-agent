@@ -121,10 +121,10 @@ adapter readiness.
 R8-5 wires the selected route intent and compiler pipeline into
 `route_planner_node` behind an explicit default-off flag. With
 `Context(enable_selected_routing=True)` or `ENABLE_SELECTED_ROUTING=1`, the
-graph builds `route_intent_v1` through `build_default_route_intent`, compiles
-it into `selected_fixed_dag_plan_v1`, and executes selected DAG steps through
-the selected executor validation path. Compile or selected validation failure
-falls back to the full `fixed_dag_plan_v1` with public-safe provenance
+graph builds `route_intent_v1` through `build_default_dimension_route_intent`,
+compiles it into `selected_fixed_dag_plan_v1`, and executes selected DAG steps
+through the selected executor validation path. Compile or selected validation
+failure falls back to the full `fixed_dag_plan_v1` with public-safe provenance
 (`selected_routing_requested`, `selected_routing_fallback`, and a safe fallback
 reason). R8-5 still does not call an LLM/provider, search backend, external
 `/v1/agent/invoke`, or runtime binding adapter.
@@ -228,9 +228,19 @@ Two non-blocking conservative over-routing warnings remain in backlog:
 not production enablement: selected routing and provider routing remain
 default-off, there is no external `route_planner` service or route-planner
 port, `10028/8028` remains a future planning reservation, `report_generator`
-stays on `10026`, runtime bindings are unchanged, and the next phase should
-plan controlled graph integration / selected-routing graph E2E under the same
-default-off boundary.
+stays on `10026`, runtime bindings are unchanged, and Router M2 owns the
+controlled selected-routing graph E2E closure under the same default-off
+boundary.
+
+Router M2 closes the minimal default-off selected-routing E2E report path. An
+explicit selected-routing context can produce a dimension-only `route_intent_v1`,
+compile `selected_fixed_dag_plan_v1`, execute the selected legal subgraph
+through `execute_fixed_dag`, retain L4 `decision_synthesizer` /
+`report_generator` report closure, and expose public-safe selected-routing
+provenance through the public workflow model. Default `Context()` still runs
+the full DAG. Provider routing remains default-off/fake-only, tests disable
+external compute defaults, runtime bindings/catalog/non-L4 policy are
+unchanged, and `/v1/agent/invoke` is still not a default runtime path.
 
 The reset target has 27 formal agent ids:
 
@@ -412,14 +422,12 @@ repo-external Vite build `--outDir`; it must not write `apps/web/dist`.
 
 Do not use successful tests as production readiness evidence.
 
-`REPORT-QUALITY-RQ2E Controlled Online E2E Verification After Main-System Sync`
-is the current report-quality live-verification target. Its controlled online
-E2E artifact must pass the offline report-quality audit with score `>=29/45`,
-`renderer_quality_gate.passed=true`, unsafe scan pass,
-`template_phrase_count<=8`, answer/section parity `>=0.90`, and traceability
-`>=0.85`. RQ2E preflight/audit work does not call `/v1/agent/invoke`, make
-direct provider calls, perform process actions, read env values, or retain raw
-service/provider responses.
+The report-quality theme is closed by RQ3C production-mode live verification:
+score `29/45`, `renderer_quality_gate.passed=true`, unsafe scan pass,
+answer/section parity `1.0`, traceability `1.0`, and research-point
+utilization `1.0`. Historical RQ2E preflight/audit work did not call
+`/v1/agent/invoke`, make direct provider calls, perform process actions, read
+env values, or retain raw service/provider responses.
 
 For R8-2 selected compiler changes, use the narrow additive gate:
 

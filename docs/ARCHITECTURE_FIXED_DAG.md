@@ -446,6 +446,36 @@ Runtime behavior:
 - compile or selected validation failure falls back to the full DAG with
   public-safe fallback provenance.
 
+## Router L1 M2 Selected-Routing E2E Closure
+
+Router M2 keeps the same linear graph topology and closes the selected-routing
+report path at planner time. It does not add graph-level conditional edges.
+
+M2 runtime behavior:
+
+- default `Context()` still produces and executes the full `fixed_dag_plan_v1`;
+- explicit `Context(enable_selected_routing=True)` produces a dimension-only
+  `route_intent_v1`, compiles `selected_fixed_dag_plan_v1`, and sends that plan
+  through the existing `execute_fixed_dag` node;
+- selected execution still includes required L1 evidence seams and L4
+  `decision_synthesizer` / `report_generator`, so the final assistant turn has
+  a report result and emitted bundle;
+- `public_contracts.WorkflowProvenanceModel` exposes only additive
+  public-safe selected-routing/provider-router fields copied from sanitized
+  `workflow_snapshot_v2.provenance`;
+- `public_runtime.prepare_public_turn_invoke` and `invoke_public_turn` accept an
+  internal explicit `Context` override for endpoint-free tests; the public HTTP
+  request schema is unchanged.
+
+M2 non-claims:
+
+- no default selected-routing enablement;
+- no default provider routing;
+- no real provider calls;
+- no `/v1/agent/invoke` path;
+- no runtime binding, catalog, or non-L4 policy changes;
+- no external `route_planner` service or port assignment.
+
 R8-5/M1A/M1D/M1F0/M1F3/M1F5/M1F7 do not call a real LLM/provider, search backend,
 external `/v1/agent/invoke`, `/health`, or runtime binding adapter. M1D and
 M1F0 do not invoke `load_chat_model`, and M1F3/M1F5/M1F7 keep that boundary.

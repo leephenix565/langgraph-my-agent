@@ -40,7 +40,7 @@ records.
 
 ## Router L1 Status
 
-- Current Router theme: `ROUTER-L1-LLM-DIMENSION-ROUTING`.
+- Current Router theme: `ROUTER-L1-M2-SELECTED-ROUTING-IMPLEMENTATION`.
 - M1A implements an internal, default-off dimension router seam. Default
   production behavior remains the full `fixed_dag_plan_v1`.
 - When `Context.enable_selected_routing=True` or
@@ -132,6 +132,18 @@ records.
   default runtime, and M1H does not change runtime bindings, agent catalog,
   non-L4 policy, external compute E2E, report generation E2E, or production
   rollout.
+- Router M2 closes the minimal default-off selected-routing graph E2E report
+  path. When an explicit context enables selected routing, `route_planner_node`
+  emits dimension-only `route_intent_v1`, compiles
+  `selected_fixed_dag_plan_v1`, `execute_fixed_dag` executes the selected legal
+  subgraph, L4 `decision_synthesizer` / `report_generator` still close the
+  final report path, and the public workflow model exposes only public-safe
+  selected-routing/provider-router provenance fields. Default `Context()`
+  remains the full DAG; provider routing remains default-off/fake-only.
+- Router M2 also adds an internal public-runtime context override seam for
+  endpoint-free tests. It does not change the public HTTP request schema,
+  production defaults, runtime bindings, catalog, non-L4 policy, or route
+  planner service/port authority.
 
 ## Report Quality RQ2E Status
 
@@ -190,10 +202,11 @@ records.
 
 Repository Authority & Active-Core Consolidation is complete. The final
 closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. The report-quality
-theme is also closed by RQ3C. Router L1 M1 is closed by M1H. The next Router
-phase should start from controlled M2 planning for default-off selected-routing
-graph integration / selected graph E2E, with external route-planner service,
-route-planner port authority, and production enablement kept as later phases.
+theme is also closed by RQ3C. Router L1 M1 is closed by M1H, and Router L1 M2
+now closes default-off selected-routing graph E2E report behavior with
+public-safe provenance. External route-planner service, route-planner port
+authority, real provider routing, live endpoint E2E, and production enablement
+remain later phases.
 
 M4A found P4 count `0`, so M4B deletion implementation is skipped. Current
 mode returns to normal maintenance and product engineering on top of the fixed

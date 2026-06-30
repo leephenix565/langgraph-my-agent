@@ -9,8 +9,8 @@ from react_agent.fixed_dag_contracts import (
 )
 from react_agent.router_parse import (
     normalize_route_intent,
-    parse_fixed_dag_plan_with_stats,
     parse_dimension_route_intent_json,
+    parse_fixed_dag_plan_with_stats,
     parse_route_intent_json,
 )
 

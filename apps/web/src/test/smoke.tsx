@@ -287,6 +287,10 @@ function runWorkflowFixtureContractChecks() {
   assert.equal(workflow.stepResults.entity_relation_extractor?.runtime_kind, "pending_placeholder");
   assert.equal(workflow.stepResults.value_traditional_valuation?.runtime_kind, "external_http_candidate");
   assert.equal(workflow.stepResults.sentiment_company_radar?.runtime_kind, "pending_placeholder");
+  assert.equal(workflow.provenance?.selectedRoutingRequested, false);
+  assert.deepEqual(workflow.provenance?.selectedDimensions, []);
+  assert.equal(workflow.provenance?.providerRouterEnabled, false);
+  assert.equal(workflow.provenance?.providerRouterInvoked, false);
   assertNoForbiddenSerializedTokens(serialized);
 }
 

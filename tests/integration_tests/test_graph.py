@@ -109,7 +109,7 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
     monkeypatch.setattr(graph_module, "compile_selected_fixed_dag_plan", fail_selected_compiler)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
         context=Context(model="deepseek/deepseek-chat", system_prompt="inactive"),
     )
@@ -162,7 +162,7 @@ async def test_fixed_dag_context_as_of_propagates_to_plan(monkeypatch) -> None:
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_provider)
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "请分析 600519.SH")]},  # type: ignore[arg-type]
         context=Context(
             model="deepseek/deepseek-chat",
@@ -213,7 +213,7 @@ async def test_external_compute_demo_graph_path_uses_fake_bridge(monkeypatch) ->
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_legacy_external_client)
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "请从估值角度分析贵州茅台 600519.SH 当前是否值得关注。")]},  # type: ignore[arg-type]
         context=Context(
             enable_external_compute_demo=True,
@@ -308,7 +308,7 @@ async def test_graph_path_can_synthesize_llm_report_from_external_evidence(monke
     )
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "请分析贵州茅台 600519.SH 当前是否值得关注。")]},  # type: ignore[arg-type]
         context=Context(
             enable_external_compute_demo=True,
@@ -354,7 +354,7 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
     monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", fail_router_provider)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Explain discounted cash flow in simple terms.")]},  # type: ignore[arg-type]
         context=Context(
             enable_selected_routing=True,
@@ -371,6 +371,10 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert valid, reason
     valid, reason = validate_dag_execution_result(res["dag_execution"])
     assert valid, reason
+    valid, reason = validate_decision_result(res["decision_result"])
+    assert valid, reason
+    valid, reason = validate_report_result(res["report_result"])
+    assert valid, reason
     assert res["fixed_dag_plan"]["provenance"]["selected_routing_requested"] is True
     assert res["fixed_dag_plan"]["provenance"]["selected_routing_fallback"] is False
     assert res["fixed_dag_plan"]["provenance"]["route_granularity"] == "dimension"
@@ -380,7 +384,13 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert res["dag_execution"]["provenance"]["external_invoked"] is False
     assert set(res["dag_step_results"]) == {step["id"] for step in res["fixed_dag_plan"]["steps"]}
     assert "decision_synthesizer" in res["dag_step_results"]
+    assert "report_generator" in res["dag_step_results"]
+    assert res["report_result"]["answer"].strip()
+    assert res["emitted_bundle"]["answer"] == res["report_result"]["answer"]
+    assert res["messages"][-1].content == res["report_result"]["answer"]
     assert set(res["workflow_snapshot"]["completedSteps"]) == set(res["dag_step_results"])
+    valid, reason = validate_workflow_snapshot_v2(res["workflow_snapshot"])
+    assert valid, reason
     assert {item["id"] for item in res["workflow_snapshot"]["dimensionGroups"]} == {"value"}
     assert res["workflow_snapshot"]["provenance"]["selectedRoutingRequested"] is True
     assert res["workflow_snapshot"]["provenance"]["selectedRoutingFallback"] is False
@@ -390,6 +400,19 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert res["workflow_snapshot"]["provenance"]["externalInvoked"] is False
     assert res["workflow_snapshot"]["provenance"]["providerRouterEnabled"] is False
     assert res["workflow_snapshot"]["provenance"]["providerRouterInvoked"] is False
+    rendered = json.dumps(
+        {
+            "workflow": res["workflow_snapshot"],
+            "emit": res["emitted_bundle"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert "raw_response" not in rendered.lower()
+    assert "/v1/agent/invoke" not in rendered
+    assert "endpoint" not in rendered.lower()
+    assert "secret" not in rendered.lower()
+    assert "Traceback" not in rendered
 
 
 async def test_llm_dimension_router_flag_alone_keeps_full_dag_and_does_not_invoke(
@@ -400,7 +423,7 @@ async def test_llm_dimension_router_flag_alone_keeps_full_dag_and_does_not_invok
 
     monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", fail_router_provider)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Explain discounted cash flow in simple terms.")]},  # type: ignore[arg-type]
         context=Context(
             enable_llm_dimension_router=True,
@@ -466,7 +489,7 @@ async def test_selected_routing_with_fake_llm_dimension_router_builds_selected_p
     monkeypatch.setattr("react_agent.utils.load_chat_model", fail_model_factory)
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_model_factory)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
         context=Context(
             enable_selected_routing=True,
@@ -547,7 +570,7 @@ async def test_selected_routing_with_fake_llm_dimension_router_invalid_output_fa
         lambda _question, _context: raw_output,
     )
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
         context=Context(
             enable_selected_routing=True,
@@ -606,7 +629,7 @@ async def test_selected_routing_with_fake_llm_dimension_router_provider_failure_
 ) -> None:
     monkeypatch.setattr(graph_module, "_invoke_dimension_router_provider", provider)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
         context=Context(
             enable_selected_routing=True,
@@ -661,7 +684,7 @@ async def test_selected_routing_and_internal_llm_placeholder_flags_can_coexist(m
     )
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Please summarize public opinion and sentiment for this company.")]},  # type: ignore[arg-type]
         context=Context(
             enable_selected_routing=True,
@@ -696,7 +719,7 @@ async def test_selected_routing_failure_falls_back_to_full_dag(monkeypatch) -> N
 
     monkeypatch.setattr(graph_module, "compile_selected_fixed_dag_plan", fail_compile)
 
-    res = await graph_module.graph.ainvoke(
+    res = graph_module.graph.invoke(
         {"messages": [("user", "Explain discounted cash flow in simple terms.")]},  # type: ignore[arg-type]
         context=Context(enable_selected_routing=True),
     )

@@ -77,6 +77,7 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/ops/sync_artifacts.py",
     "src/react_agent/ops/sync_bootstrap.py",
     "src/react_agent/ops/sync_contracts.py",
+    "src/react_agent/ops/sync_cycle.py",
     "src/react_agent/ops/sync_diff.py",
     "src/react_agent/ops/sync_environment.py",
     "src/react_agent/ops/sync_inventory.py",
@@ -93,6 +94,9 @@ STATIC_RUFF_TARGETS = (
     "src/react_agent/public_mapping.py",
     "src/react_agent/public_runtime.py",
     "src/react_agent/public_store.py",
+    "src/react_agent/route_eval.py",
+    "src/react_agent/router_parse.py",
+    "src/react_agent/router_provider.py",
     "src/react_agent/state.py",
     "tests/integration_tests/test_public_api.py",
     "tests/integration_tests/test_graph.py",
@@ -100,6 +104,7 @@ STATIC_RUFF_TARGETS = (
     "tests/unit_tests/ops/test_sync_artifact_store_bootstrap.py",
     "tests/unit_tests/ops/test_sync_contracts.py",
     "tests/unit_tests/ops/test_sync_coverage_materialize.py",
+    "tests/unit_tests/ops/test_sync_cycle_4x.py",
     "tests/unit_tests/ops/test_sync_5a_r1x.py",
     "tests/unit_tests/ops/test_sync_5a_r2x.py",
     "tests/unit_tests/ops/test_sync_5a_r3x.py",
@@ -124,6 +129,11 @@ STATIC_RUFF_TARGETS = (
     "tests/unit_tests/test_no_route_prior_runtime_contract.py",
     "tests/unit_tests/test_public_mapping_fixed_dag.py",
     "tests/unit_tests/test_public_runtime_streaming.py",
+    "tests/unit_tests/test_parse_router_layers.py",
+    "tests/unit_tests/test_route_eval.py",
+    "tests/unit_tests/test_router_parse_stats.py",
+    "tests/unit_tests/test_router_prompt_format.py",
+    "tests/unit_tests/test_router_provider_factory.py",
     "tests/unit_tests/test_quality_runner_codespell.py",
     "tests/unit_tests/test_quality_runner_dispatch.py",
 )
@@ -293,7 +303,7 @@ def run_frontend() -> None:
             "apps/web/tsconfig.json",
         )
     )
-    _run((npm, "--prefix", "apps/web", "run", "test"))
+    _run(("node", "--import", "tsx", "src/test/smoke.tsx"), cwd=REPO_ROOT / "apps" / "web")
     with tempfile.TemporaryDirectory(prefix="lma-web-build-") as out_dir_name:
         out_dir = Path(out_dir_name)
         _assert_repo_external_build_dir(out_dir)

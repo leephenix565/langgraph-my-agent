@@ -931,9 +931,12 @@ def run_temp_source_loss_cutover_simulation(tmp_root: Path) -> tuple[dict[str, A
 
 
 def port_listening(port: int) -> bool:
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.settimeout(0.2)
-        return sock.connect_ex(("127.0.0.1", port)) == 0
+    try:
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+            sock.settimeout(0.2)
+            return sock.connect_ex(("127.0.0.1", port)) == 0
+    except OSError:
+        return False
 
 
 def read_proc_identity(pid: str) -> dict[str, Any]:
@@ -972,11 +975,12 @@ def build_real_readonly_preflight(
     fresh = Path(str(recovery_v5.get("fresh_cutover_candidate_path") or ""))
     archive = Path(str(recovery_v5.get("archive_path") or ""))
     blockers: list[str] = []
+    listener_10013 = port_listening(PRODUCTION_PORT)
     if str(current.get("start_ticks") or "") != str(expected_runtime_identity.get("start_ticks") or ""):
         blockers.append("incumbent_start_ticks_drift")
     if str(current.get("cwd") or "") != str(expected_runtime_identity.get("cwd") or ""):
         blockers.append("incumbent_cwd_drift")
-    if not port_listening(PRODUCTION_PORT):
+    if not listener_10013:
         blockers.append("production_port_not_listening")
     if not canonical_target.exists():
         blockers.append("canonical_target_missing")
@@ -995,7 +999,7 @@ def build_real_readonly_preflight(
         "schema_version": "agent_sync_real_readonly_source_loss_preflight_v5",
         "incumbent_identity": current,
         "expected_incumbent_identity": dict(expected_runtime_identity),
-        "listener_10013": port_listening(PRODUCTION_PORT),
+        "listener_10013": listener_10013,
         "canonical_full_tree_descriptor": canonical,
         "canonical_source_file_count": int(_as_mapping(canonical.get("source_bearing_descriptor")).get("file_count") or 0),
         "canary_full_tree_descriptor": canary,

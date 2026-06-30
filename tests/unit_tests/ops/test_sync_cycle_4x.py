@@ -463,7 +463,11 @@ def test_cli_publish_and_rebase_dry_run_accepts_strict_request(tmp_path: Path) -
     assert payload["delete_actions"] == 0
 
 
-def test_strict_nonzero_cycle_executes_one_file_publish_and_rebase(tmp_path: Path) -> None:
+def test_strict_nonzero_cycle_executes_one_file_publish_and_rebase(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setenv("PYTEST_ADDOPTS", f"--basetemp {tmp_path}")
     summary, experiment, change, s2p, projected, p2s = _strict_first_nonzero_children()
     prod_root = tmp_path / "prod" / "risk_financial_fraud"
     experiment_root = tmp_path / "experiment" / "fixed-dag-services" / "risk_financial_fraud"

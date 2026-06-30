@@ -7,8 +7,8 @@ router-provider dry run must satisfy before any real provider code is allowed.
 
 from __future__ import annotations
 
-import re
 import json
+import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
 from typing import Any
@@ -340,7 +340,6 @@ def normalize_router_provider_model_for_openai_compatible_api(
     prefixes for OpenAI-compatible providers and leaves all other values
     unchanged. It does not read configuration, create clients, or call providers.
     """
-
     text = str(model_name or "").strip()
     if not text:
         return RouterProviderModelNormalizationResult(
@@ -398,7 +397,6 @@ def build_router_provider_request_contract(
     filtering because it contains only bounded options and JSON mode metadata;
     it intentionally omits prompt text, messages, endpoint URLs, and credentials.
     """
-
     effective = options or RouterProviderInvocationOptions()
     return {
         "request_contract_version": ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION,
@@ -423,7 +421,6 @@ def build_router_provider_request_contract(
 
 def suggest_router_provider_dimensions(question: str) -> tuple[str, ...]:
     """Return deterministic dimension hints for provider routing prompts."""
-
     text = str(question or "").strip().lower()
     if not text:
         return ROUTER_PROVIDER_DIMENSIONS
@@ -451,7 +448,6 @@ def suggest_router_provider_dimensions(question: str) -> tuple[str, ...]:
 
 def build_router_provider_route_intent_draft(question: str) -> dict[str, Any]:
     """Build a deterministic route-intent draft for provider echo validation."""
-
     user_question = str(question or "").strip() or "not provided"
     return {
         "schema": ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME,
@@ -478,7 +474,6 @@ def build_router_provider_route_intent_messages(
     These messages are for in-memory provider requests only. Callers must not
     persist them in graph state, workflow snapshots, artifacts, or public output.
     """
-
     draft = build_router_provider_route_intent_draft(question)
     draft_json = json.dumps(draft, ensure_ascii=False, separators=(",", ":"))
     content = "\n".join(
@@ -503,7 +498,6 @@ def build_openai_compatible_chat_completions_url(
     The helper is pure and intentionally conservative. It does not read env
     values, create clients, call providers, or decide authorization.
     """
-
     text = str(base_url or "").strip()
     if not text:
         return RouterProviderEndpointNormalizationResult(

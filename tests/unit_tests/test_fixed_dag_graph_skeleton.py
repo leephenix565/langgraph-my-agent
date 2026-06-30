@@ -16,7 +16,7 @@ def _contains_key(value, key: str) -> bool:
     return False
 
 
-async def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) -> None:
+def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) -> None:
     def fail_load_model(*args, **kwargs):
         raise AssertionError("provider should not be called")
 
@@ -26,9 +26,12 @@ async def test_graph_skeleton_invokes_without_provider_or_external(monkeypatch) 
     monkeypatch.setattr("react_agent.default_agents.load_chat_model", fail_load_model)
     monkeypatch.setattr("react_agent.external_http_agents.httpx.AsyncClient", fail_external_client)
 
-    result = await graph_module.graph.ainvoke(
+    result = graph_module.graph.invoke(
         {"messages": [("user", "Demo question")]},
-        context=Context(),
+        context=Context(
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
     )
 
     assert result["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"

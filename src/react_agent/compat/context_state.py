@@ -28,6 +28,7 @@ CONTEXT_FIELDS: tuple[str, ...] = (
     "baseline_force_search",
     "enable_fair_fusion_source_switch",
     "enable_selected_routing",
+    "enable_llm_dimension_router",
     "enable_internal_llm_placeholders",
     "enable_external_compute_demo",
     "enable_llm_report_synthesis",
@@ -49,6 +50,7 @@ CONTEXT_FIELDS: tuple[str, ...] = (
 CONTEXT_ACTIVE_FIELDS: tuple[str, ...] = (
     "model",
     "enable_selected_routing",
+    "enable_llm_dimension_router",
     "enable_internal_llm_placeholders",
     "enable_external_compute_demo",
     "enable_llm_report_synthesis",

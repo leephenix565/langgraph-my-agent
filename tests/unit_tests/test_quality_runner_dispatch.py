@@ -29,18 +29,20 @@ def test_mainline_dispatch_includes_reset_modes_and_excludes_fusion(
 def test_frontend_gate_typecheck_smoke_and_repo_external_build(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
-    commands: list[tuple[str, ...]] = []
+    calls: list[tuple[tuple[str, ...], Path | None]] = []
 
     monkeypatch.setattr(run_quality, "_npm_executable", lambda: "npm")
     monkeypatch.setattr(
         run_quality,
         "_run",
-        lambda command, **_: commands.append(tuple(command)),
+        lambda command, **kwargs: calls.append(
+            (tuple(command), kwargs.get("cwd"))
+        ),
     )
 
     run_quality.run_frontend()
 
-    assert commands[0] == (
+    assert calls[0][0] == (
         "npm",
         "--prefix",
         "apps/web",
@@ -51,9 +53,13 @@ def test_frontend_gate_typecheck_smoke_and_repo_external_build(
         "--project",
         "apps/web/tsconfig.json",
     )
-    assert commands[1] == ("npm", "--prefix", "apps/web", "run", "test")
+    assert calls[0][1] is None
+    assert calls[1] == (
+        ("node", "--import", "tsx", "src/test/smoke.tsx"),
+        run_quality.REPO_ROOT / "apps" / "web",
+    )
 
-    build_command = commands[2]
+    build_command = calls[2][0]
     assert build_command[:7] == (
         "npm",
         "--prefix",

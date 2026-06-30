@@ -353,7 +353,7 @@ def test_rq2_renderer_builds_public_safe_complete_report() -> None:
     assert report["status"] == "complete"
     assert "核心结论与行动含义" in report["answer"]
     assert "价值维度：估值分歧与安全边际" in report["answer"]
-    assert "risk_compliance_review 未成功映射" in rendered
+    assert "公告合规审查未被当前 production policy 调用" in rendered
     assert "模型把该标的归入 低风险" in rendered
     assert len(report["sections"]) >= 7
     assert len(report["limitations"]) >= 4

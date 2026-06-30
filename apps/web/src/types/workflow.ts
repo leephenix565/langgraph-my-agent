@@ -135,6 +135,19 @@ export interface WorkflowProvenance {
   executionStatus?: string | null;
   fallbackUsed: boolean;
   limitations: string[];
+  selectedRoutingRequested: boolean;
+  selectedRoutingFallback: boolean;
+  fallbackReason?: string | null;
+  routeGranularity?: string | null;
+  selectedDimensions: string[];
+  expandedAgentCount?: number | null;
+  providerRouterEnabled: boolean;
+  providerRouterInvoked: boolean;
+  providerRouterMode?: string | null;
+  providerRouterParseOk: boolean;
+  providerRouterFallbackReason?: string | null;
+  providerRouterErrorCode?: string | null;
+  providerRouterSelectedDimensions: string[];
   summary: string;
 }
 

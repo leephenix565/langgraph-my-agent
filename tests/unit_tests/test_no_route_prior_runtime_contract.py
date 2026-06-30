@@ -1,15 +1,14 @@
-import asyncio
-
 import react_agent.graph as graph_module
 from react_agent.context import Context
 
 
 def test_graph_import_and_run_without_route_prior_runtime_seam() -> None:
-    result = asyncio.run(
-        graph_module.graph.ainvoke(
-            {"messages": [("user", "q")]},
-            context=Context(),
-        )
+    result = graph_module.graph.invoke(
+        {"messages": [("user", "q")]},
+        context=Context(
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
     )
     assert result["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"
     assert "route_prior" not in result

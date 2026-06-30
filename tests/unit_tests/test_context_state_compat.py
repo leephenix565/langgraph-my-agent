@@ -26,6 +26,7 @@ def test_context_metadata_groups_cover_dataclass_fields() -> None:
     valid, reason = metadata.validate_context_field_classification(Context)
     assert valid, reason
     assert metadata.classify_context_field("enable_selected_routing") == metadata.ACTIVE
+    assert metadata.classify_context_field("enable_llm_dimension_router") == metadata.ACTIVE
     assert metadata.classify_context_field("baseline_model") == metadata.COMPAT
     assert metadata.classify_context_field("router_model") == metadata.LEGACY
     assert (
@@ -101,6 +102,12 @@ def test_context_dataclass_surface_is_stable() -> None:
             False,
             "Enable provider-free selected fixed DAG routing. "
             "Defaults off so the active graph keeps the full DAG path.",
+        ),
+        (
+            "enable_llm_dimension_router",
+            False,
+            "Enable the fake-provider-only internal LLM dimension router seam. "
+            "This is gated behind selected routing and does not create a real provider client.",
         ),
         (
             "enable_internal_llm_placeholders",
@@ -181,8 +188,9 @@ def test_context_dataclass_surface_is_stable() -> None:
             "The maximum number of search results to return for each search query.",
         ),
     ]
-    assert fs[25].default_factory() == prompts.ANALYST_PROFILES
-    assert fs[25].default_factory() is not prompts.ANALYST_PROFILES
+    analyst_profiles_field = next(field for field in fs if field.name == "analyst_profiles")
+    assert analyst_profiles_field.default_factory() == prompts.ANALYST_PROFILES
+    assert analyst_profiles_field.default_factory() is not prompts.ANALYST_PROFILES
 
     hints = get_type_hints(Context, include_extras=True)
     assert get_origin(hints["model"]) is Annotated

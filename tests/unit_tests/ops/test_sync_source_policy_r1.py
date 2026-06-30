@@ -74,6 +74,21 @@ def test_source_policy_excludes_hidden_backup_generated_and_runtime_noise(tmp_pa
         assert safety["source_category"] == category
 
 
+def test_source_policy_treats_known_lockfiles_as_package_metadata(tmp_path: Path) -> None:
+    lockfile = tmp_path / "uv.lock"
+    lockfile.write_text("# lock metadata\n", encoding="utf-8")
+    safety = should_include_source_file(tmp_path, lockfile)
+    assert safety["include"] is True
+    assert safety["source_category"] == "package_metadata"
+    assert safety["source_category_reason"] == "package_lockfile_metadata"
+
+    arbitrary_lock = tmp_path / "service.lock"
+    arbitrary_lock.write_text("not a package-manager lockfile\n", encoding="utf-8")
+    arbitrary_safety = should_include_source_file(tmp_path, arbitrary_lock)
+    assert arbitrary_safety["include"] is False
+    assert arbitrary_safety["source_category"] == "unknown_blocked"
+
+
 def test_extensionless_text_is_scanned_and_classified(tmp_path: Path) -> None:
     text = tmp_path / "指令"
     text.write_text("safe text only\n", encoding="utf-8")

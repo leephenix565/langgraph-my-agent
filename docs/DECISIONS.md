@@ -3,9 +3,61 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-164: Known Package Lockfiles Are P2S Package Metadata
+
+Status: accepted for SYNC-P2S source classification.
+
+Decision: classify a bounded set of package-manager lockfiles as
+`package_metadata` during P2S source selection. The accepted set is explicit
+and includes `uv.lock`, `poetry.lock`, `pdm.lock`, `Cargo.lock`,
+`yarn.lock`, and `pnpm-lock.yaml`.
+
+Reason: package lockfiles are source-bearing dependency metadata. Treating
+them as unknown binary material blocks otherwise valid source trees, while a
+broad `*.lock` rule would hide unrelated lock files.
+
+Consequence: known package lockfiles pass through the existing secret and
+large-asset checks and can be materialized as source metadata. Current P2S plan
+validation can remain strict about unknown files.
+
+Non-consequence: arbitrary `.lock` files are not allowed, runtime assets are
+not broadened, generated/vendor extraction trees are not globally excluded,
+and `validate_plan` is not relaxed for unknown source categories.
+
+## ADR-163: Router M2 Exposes Public-Safe Selected-Routing Provenance
+
+Status: accepted for ROUTER-L1-M2.
+
+Decision: close Router M2 as a default-off selected-routing graph E2E report
+closure and expose minimal public-safe selected-routing/provider-router
+provenance as additive optional/default public workflow fields.
+
+Reason: selected routing is only operationally useful if the public assistant
+turn and workflow payload can prove which safe routing path was used without
+exposing raw route intent internals, provider text, endpoint material, secrets,
+prompts, tracebacks, or chain-of-thought. The internal `workflow_snapshot_v2`
+already emits sanitized selected-routing/provider-router fields; M2 makes the
+closed public model intentionally preserve those fields.
+
+Consequence: explicit selected-routing context can be tested from route intent
+through selected plan, selected fixed-DAG execution, L4 report closure, final
+emit, and public workflow provenance. Public runtime accepts an internal
+explicit `Context` override for endpoint-free tests while default `Context()`
+keeps full-DAG behavior.
+
+Non-consequence: this decision does not production-enable selected routing or
+provider routing, authorize real provider calls, add a public HTTP request
+field, create an external `route_planner` service, assign a route-planner port,
+change runtime bindings, change the agent catalog, change non-L4 policy, make
+`/v1/agent/invoke` a runtime path, or mark live endpoint verification complete.
+
 ## ADR-162: Router M1 Closes As Default-Off LLM Dimension Routing, Not Production Enablement
 
 Status: accepted for ROUTER-L1-M1H.
+
+Follow-up: ADR-163 records the Router M2 implementation decision. The M1H
+consequence below is historical M1 closeout context, not current next-step
+authority.
 
 Decision: close Router M1 as an internal default-off LLM dimension-routing
 milestone. The accepted runtime boundary is a dimension-only provider seam that

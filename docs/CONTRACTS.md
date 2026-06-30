@@ -752,6 +752,22 @@ Failure policy:
 - Workflow metadata must not expose raw LLM/provider output, fake raw output,
   prompts, model messages, provider payloads, endpoint URLs, env values,
   secrets, tracebacks, or chain-of-thought.
+- Router M2 makes these selected-routing/provider-router metadata fields part
+  of the closed public workflow provenance model as additive optional/default
+  fields. Public mapping copies them field-by-field only from sanitized
+  `workflow_snapshot_v2.provenance`; it must not pass through raw
+  `route_intent.provenance`, raw provider output, prompts/messages, endpoint
+  material, env values, secrets, tracebacks, or chain-of-thought.
+- The public-safe M2 fields are `selectedRoutingRequested`,
+  `selectedRoutingFallback`, `fallbackReason`, `routeGranularity`,
+  `selectedDimensions`, `expandedAgentCount`, `providerRouterEnabled`,
+  `providerRouterInvoked`, `providerRouterMode`, `providerRouterParseOk`,
+  `providerRouterFallbackReason`, `providerRouterErrorCode`, and
+  `providerRouterSelectedDimensions`.
+- Public runtime may receive an internal explicit `Context` override for tests
+  and adapter calls. If omitted, it constructs `Context()` and selected routing
+  remains default-off unless an operator has intentionally set existing
+  environment semantics. No public HTTP request schema field is added by M2.
 
 M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
 preflight and artifact-safety contract for a later controlled real-provider

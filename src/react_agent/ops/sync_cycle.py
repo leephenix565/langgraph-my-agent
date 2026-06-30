@@ -777,6 +777,7 @@ def _run_focused_offline_test(cwd: Path, test_path: str) -> dict[str, Any]:
         "XDG_CACHE_HOME": str(temp_root / "xdg-cache"),
         "HOME": str(temp_root / "home"),
     }
+    env.pop("PYTEST_ADDOPTS", None)
     (temp_root / "home").mkdir(parents=True, mode=0o700, exist_ok=True)
     command = [
         str(Path("/sdb/dlut/dev/langgraph-my-agent/.venv/bin/python")),

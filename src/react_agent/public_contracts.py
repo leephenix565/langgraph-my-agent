@@ -114,6 +114,19 @@ class WorkflowProvenanceModel(PublicBaseModel):
     executionStatus: str | None = None
     fallbackUsed: bool = False
     limitations: List[str] = Field(default_factory=list)
+    selectedRoutingRequested: bool = False
+    selectedRoutingFallback: bool = False
+    fallbackReason: str | None = None
+    routeGranularity: str | None = None
+    selectedDimensions: List[str] = Field(default_factory=list)
+    expandedAgentCount: int | None = None
+    providerRouterEnabled: bool = False
+    providerRouterInvoked: bool = False
+    providerRouterMode: str | None = None
+    providerRouterParseOk: bool = False
+    providerRouterFallbackReason: str | None = None
+    providerRouterErrorCode: str | None = None
+    providerRouterSelectedDimensions: List[str] = Field(default_factory=list)
     summary: str
 
 

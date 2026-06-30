@@ -160,6 +160,14 @@ Active skeleton properties:
   prompts, endpoint material, env values, tracebacks, and chain-of-thought are
   not projected into graph state, workflow snapshots, final emits, or public
   output.
+- Router M2 makes that planner-time seam an endpoint-free E2E report closure:
+  explicit selected routing produces `route_intent_v1` and
+  `selected_fixed_dag_plan_v1`, `execute_fixed_dag` runs the selected legal
+  subgraph, `decision_synthesizer` / `report_generator` remain on the report
+  closure path, and `public_mapping.py` projects only sanitized
+  `workflow_snapshot_v2.provenance` selected-routing/provider-router fields
+  into the closed public workflow model. Default `Context()` still uses the
+  full DAG, and provider routing remains default-off/fake-only.
 - M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
   preflight factory/wrapper for future controlled real-provider dry-runs. The
   wrapper is not part of the default graph path, does not call
@@ -309,12 +317,13 @@ mapping, frontend rendering, runtime bindings, or external adapter readiness.
 
 In R8-5, selected routing is connected to `route_planner_node` behind an
 explicit default-off graph boundary. The selected path uses
-`build_default_route_intent` and `compile_selected_fixed_dag_plan`, then runs
-through selected executor validation and selected topological batches. Selected
-execution emits selected step results, selected L2 conclusions, selected
-dimension composites, and a selected-subset `workflow_snapshot_v2`. The default
-graph path remains the full DAG. Selected compile/validation failures fall back
-to the full DAG with public-safe provenance. R8-5 still does not call an
+`build_default_dimension_route_intent` and `compile_selected_fixed_dag_plan`,
+then runs through selected executor validation and selected topological
+batches. Selected execution emits selected step results, selected L2
+conclusions, selected dimension composites, L4 report output, and a
+selected-subset `workflow_snapshot_v2`. The default graph path remains the full
+DAG. Selected compile/validation failures fall back to the full DAG with
+public-safe provenance. R8-5 still does not call an
 LLM/provider, search backend, external `/v1/agent/invoke`, runtime binding
 adapter, or real business agent.
 

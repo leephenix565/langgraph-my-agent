@@ -21,8 +21,8 @@ from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_decision_result,
-    build_default_fixed_dag_plan,
     build_default_dimension_route_intent,
+    build_default_fixed_dag_plan,
     build_dimension_results,
     build_emitted_bundle,
     build_entity_relation_bundle,

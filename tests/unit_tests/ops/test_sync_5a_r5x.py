@@ -7,6 +7,7 @@ import subprocess
 import sys
 from pathlib import Path
 
+from react_agent.ops import sync_5a_r5x
 from react_agent.ops.sync_5a_r2x import reselect_first_candidate
 from react_agent.ops.sync_5a_r5x import (
     R4X_CANARY_PATH,
@@ -21,6 +22,7 @@ from react_agent.ops.sync_5a_r5x import (
     build_real_readonly_preflight,
     build_source_loss_cutover_approval_request_v5,
     build_source_loss_recovery_plan_v5,
+    port_listening,
     run_temp_source_loss_cutover_simulation,
     validate_conditional_approval_chain_v5,
     validate_full_p2s_rebase_plan_v5,
@@ -257,6 +259,41 @@ def test_readonly_preflight_reports_no_actions_with_fixture_runtime() -> None:
         runtime_identity=_runtime(),
     )
     preflight = build_real_readonly_preflight(expected_runtime_identity=_runtime(), recovery_v5=recovery)
+    assert preflight["endpoint_calls"] == 0
+    assert preflight["process_actions"] == 0
+    assert preflight["canonical_writes"] == 0
+    assert preflight["env_values_read"] is False
+
+
+def test_port_listening_fails_closed_when_socket_probe_is_denied(monkeypatch) -> None:
+    def deny_socket(*_args, **_kwargs):
+        raise PermissionError("sandbox socket creation denied")
+
+    monkeypatch.setattr(sync_5a_r5x.socket, "socket", deny_socket)
+
+    assert port_listening(sync_5a_r5x.PRODUCTION_PORT) is False
+
+
+def test_readonly_preflight_reuses_fail_closed_listener_probe(monkeypatch) -> None:
+    calls: list[int] = []
+
+    def denied_listener_probe(port: int) -> bool:
+        calls.append(port)
+        return False
+
+    monkeypatch.setattr(sync_5a_r5x, "port_listening", denied_listener_probe)
+    recovery = build_source_loss_recovery_plan_v5(
+        final_head="c523280a77171ebbc81e6dccb40b2fc77cb74639",
+        precutover_closeout=_closeout(),
+        runtime_identity=_runtime(),
+    )
+
+    preflight = build_real_readonly_preflight(expected_runtime_identity=_runtime(), recovery_v5=recovery)
+
+    assert calls == [sync_5a_r5x.PRODUCTION_PORT]
+    assert preflight["listener_10013"] is False
+    assert preflight["valid"] is False
+    assert "production_port_not_listening" in preflight["blockers"]
     assert preflight["endpoint_calls"] == 0
     assert preflight["process_actions"] == 0
     assert preflight["canonical_writes"] == 0

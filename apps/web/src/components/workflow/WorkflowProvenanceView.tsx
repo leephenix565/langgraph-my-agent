@@ -19,6 +19,10 @@ function renderTechnicalValue(label: string, raw: string) {
   );
 }
 
+function listLabel(values: string[] | undefined) {
+  return values?.length ? values.join(", ") : "-";
+}
+
 export function WorkflowProvenanceView({ workflow }: WorkflowProvenanceViewProps) {
   const provenance = workflow.provenance;
 
@@ -56,7 +60,82 @@ export function WorkflowProvenanceView({ workflow }: WorkflowProvenanceViewProps
             <dd>{renderTechnicalValue(executionStatusLabel(provenance.executionStatus), provenance.executionStatus)}</dd>
           </div>
         ) : null}
+        {provenance ? (
+          <>
+            <div>
+              <dt>{zhCN.workflow.provenance.selectedRoutingRequested}</dt>
+              <dd>{boolLabel(provenance.selectedRoutingRequested)}</dd>
+            </div>
+            <div>
+              <dt>{zhCN.workflow.provenance.selectedRoutingFallback}</dt>
+              <dd>{boolLabel(provenance.selectedRoutingFallback)}</dd>
+            </div>
+            {provenance.routeGranularity ? (
+              <div>
+                <dt>{zhCN.workflow.provenance.routeGranularity}</dt>
+                <dd>{renderTechnicalValue(provenance.routeGranularity, provenance.routeGranularity)}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>{zhCN.workflow.provenance.selectedDimensions}</dt>
+              <dd>{listLabel(provenance.selectedDimensions)}</dd>
+            </div>
+            {typeof provenance.expandedAgentCount === "number" ? (
+              <div>
+                <dt>{zhCN.workflow.provenance.expandedAgentCount}</dt>
+                <dd>{provenance.expandedAgentCount}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>{zhCN.workflow.provenance.providerRouterEnabled}</dt>
+              <dd>{boolLabel(provenance.providerRouterEnabled)}</dd>
+            </div>
+            <div>
+              <dt>{zhCN.workflow.provenance.providerRouterInvoked}</dt>
+              <dd>{boolLabel(provenance.providerRouterInvoked)}</dd>
+            </div>
+            {provenance.providerRouterMode ? (
+              <div>
+                <dt>{zhCN.workflow.provenance.providerRouterMode}</dt>
+                <dd>{renderTechnicalValue(provenance.providerRouterMode, provenance.providerRouterMode)}</dd>
+              </div>
+            ) : null}
+            <div>
+              <dt>{zhCN.workflow.provenance.providerRouterParseOk}</dt>
+              <dd>{boolLabel(provenance.providerRouterParseOk)}</dd>
+            </div>
+          </>
+        ) : null}
       </dl>
+      {provenance?.fallbackReason || provenance?.providerRouterFallbackReason || provenance?.providerRouterErrorCode ? (
+        <div className="workflow-warning-list">
+          <strong>{zhCN.workflow.provenance.rawDetails}</strong>
+          <ul>
+            {provenance.fallbackReason ? (
+              <li>{renderTechnicalValue(zhCN.workflow.provenance.fallbackReason, provenance.fallbackReason)}</li>
+            ) : null}
+            {provenance.providerRouterFallbackReason ? (
+              <li>
+                {renderTechnicalValue(
+                  zhCN.workflow.provenance.providerRouterFallbackReason,
+                  provenance.providerRouterFallbackReason,
+                )}
+              </li>
+            ) : null}
+            {provenance.providerRouterErrorCode ? (
+              <li>{renderTechnicalValue(zhCN.workflow.provenance.providerRouterErrorCode, provenance.providerRouterErrorCode)}</li>
+            ) : null}
+            {provenance.providerRouterSelectedDimensions.length ? (
+              <li>
+                {renderTechnicalValue(
+                  zhCN.workflow.provenance.providerRouterSelectedDimensions,
+                  listLabel(provenance.providerRouterSelectedDimensions),
+                )}
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
       {provenance?.limitations?.length ? (
         <div className="workflow-warning-list">
           <strong>{zhCN.workflow.provenance.limitations}</strong>

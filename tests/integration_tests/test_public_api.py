@@ -1,6 +1,9 @@
+import asyncio
 import json
+from types import TracebackType
+from typing import Any
 
-from fastapi.testclient import TestClient
+import httpx
 
 from react_agent import public_api
 from react_agent.fixed_dag_contracts import RESET_RUNTIME_AGENT_IDS
@@ -163,7 +166,51 @@ def _structured_input(**overrides) -> StructuredInputModel:
     return StructuredInputModel(**payload)
 
 
-def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> TestClient:
+class _AsgiStreamContext:
+    def __init__(self, response: httpx.Response) -> None:
+        self.response = response
+
+    def __enter__(self) -> httpx.Response:
+        return self.response
+
+    def __exit__(
+        self,
+        exc_type: type[BaseException] | None,
+        exc: BaseException | None,
+        traceback: TracebackType | None,
+    ) -> None:
+        asyncio.run(self.response.aclose())
+
+
+class _AsgiTestClient:
+    def __init__(self, app: Any) -> None:
+        self.app = app
+
+    async def _request_async(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        transport = httpx.ASGITransport(app=self.app)
+        async with httpx.AsyncClient(
+            transport=transport,
+            base_url="http://testserver",
+        ) as client:
+            return await client.request(method, url, **kwargs)
+
+    def request(self, method: str, url: str, **kwargs: Any) -> httpx.Response:
+        return asyncio.run(self._request_async(method, url, **kwargs))
+
+    def get(self, url: str, **kwargs: Any) -> httpx.Response:
+        return self.request("GET", url, **kwargs)
+
+    def post(self, url: str, **kwargs: Any) -> httpx.Response:
+        return self.request("POST", url, **kwargs)
+
+    def delete(self, url: str, **kwargs: Any) -> httpx.Response:
+        return self.request("DELETE", url, **kwargs)
+
+    def stream(self, method: str, url: str, **kwargs: Any) -> _AsgiStreamContext:
+        return _AsgiStreamContext(self.request(method, url, **kwargs))
+
+
+def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> _AsgiTestClient:
     reset_public_guardrail_state()
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
@@ -175,7 +222,7 @@ def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> TestC
         return _assistant_turn(continuity_mode), continuity_mode
 
     monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
-    return TestClient(public_api.app)
+    return _AsgiTestClient(public_api.app)
 
 
 def _stream_lines(response) -> list[dict]:
@@ -235,14 +282,14 @@ def test_public_api_stream_active_limit_returns_safe_429(tmp_path, monkeypatch):
     monkeypatch.setenv("PUBLIC_API_MAX_ACTIVE_STREAMS_PER_IP", "1")
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
-    acquire_stream_slot("testclient")
+    acquire_stream_slot("127.0.0.1")
     try:
         response = client.post(
             f"/api/threads/{thread_id}/messages/stream",
             json={"text": "Stream while another stream is active."},
         )
     finally:
-        release_stream_slot("testclient")
+        release_stream_slot("127.0.0.1")
     assert response.status_code == 429
     assert response.json()["detail"]["code"] == "public_stream_limit_exceeded"
 
@@ -389,7 +436,7 @@ def test_send_message_runtime_failure_contract(tmp_path, monkeypatch):
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
     monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
-    client = TestClient(public_api.app)
+    client = _AsgiTestClient(public_api.app)
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
 
     async def _failing_invoke_public_turn(*, thread_id, history_turns, user_text):
@@ -449,7 +496,7 @@ def test_send_message_stream_success_persists_only_final_turns(tmp_path, monkeyp
         )
 
     monkeypatch.setattr(public_api, "stream_public_turn", _fake_stream_public_turn)
-    client = TestClient(public_api.app)
+    client = _AsgiTestClient(public_api.app)
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
     with client.stream(
         "POST",
@@ -497,7 +544,7 @@ def test_send_message_stream_emits_error_and_does_not_persist_failed_turn(tmp_pa
         )
 
     monkeypatch.setattr(public_api, "stream_public_turn", _failing_stream_public_turn)
-    client = TestClient(public_api.app)
+    client = _AsgiTestClient(public_api.app)
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
     with client.stream(
         "POST",

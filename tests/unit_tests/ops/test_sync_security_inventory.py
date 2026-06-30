@@ -38,6 +38,29 @@ def test_file_policy_blocks_env_secret_large_and_special(tmp_path: Path) -> None
     assert should_include_source_file(tmp_path, large)["classification"] == "large_asset_reference"
 
 
+def test_package_manager_lockfiles_are_package_metadata(tmp_path: Path) -> None:
+    for name in (
+        "uv.lock",
+        "poetry.lock",
+        "pdm.lock",
+        "Cargo.lock",
+        "yarn.lock",
+        "pnpm-lock.yaml",
+    ):
+        lockfile = tmp_path / name
+        lockfile.write_text("# lock metadata\n", encoding="utf-8")
+        safety = should_include_source_file(tmp_path, lockfile)
+        assert safety["include"] is True
+        assert safety["source_category"] == "package_metadata"
+        assert safety["source_category_reason"] == "package_lockfile_metadata"
+
+    opaque_lock = tmp_path / "service.lock"
+    opaque_lock.write_text("not a package-manager lockfile\n", encoding="utf-8")
+    opaque_safety = should_include_source_file(tmp_path, opaque_lock)
+    assert opaque_safety["include"] is False
+    assert opaque_safety["source_category"] == "unknown_blocked"
+
+
 def test_inventory_digest_ignores_mtime_but_tracks_executable(tmp_path: Path) -> None:
     file_path = tmp_path / "agent.py"
     file_path.write_text("print('ok')\n", encoding="utf-8")

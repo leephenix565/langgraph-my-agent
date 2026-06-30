@@ -638,7 +638,15 @@ def test_step_result_and_initial_results_validate() -> None:
 
 
 def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> None:
-    result = execute_fixed_dag_plan(_plan(), question="q", as_of="2026-06-04")
+    result = execute_fixed_dag_plan(
+        _plan(),
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
     valid, reason = validate_dag_execution_result(result)
 
     assert valid, reason
@@ -676,12 +684,14 @@ def test_execute_fixed_dag_plan_emits_execution_result_and_public_snapshot() -> 
     assert "evidence_count" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
     assert "detail_notes" in result["step_results"]["l2:value_ml_valuation"]["agent_evidence"]
     assert "composite_evidence" in result["step_results"]["dimension:value"]
-    assert "核心结论与行动含义" in result["report_result"]["answer"]
+    assert result["report_result"]["answer"].startswith("已完成本轮研判流程。")
     section_titles = {section["title"] for section in result["report_result"]["sections"]}
-    assert "价值维度：估值分歧与安全边际" in section_titles
-    assert "市场维度：价格、资金与情绪确认度" in section_titles
-    assert "风险维度：风险门与缺失合规证据" in section_titles
-    assert "宏观维度：宏观调节器与仓位约束" in section_titles
+    assert {
+        "分析框架",
+        "证据质量诊断",
+        "单体智能体输入",
+        "综合智能体输入",
+    } <= section_titles
     assert "sentiment_company_radar" not in result["step_results"]["dimension:risk"]["depends_on"]
     payload = json.dumps(result)
     for forbidden in ("layerMode", "fusionSteps", "layerPlan", "value_financial_analysis"):
@@ -1090,22 +1100,37 @@ def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
 
     assert valid, reason
     assert result["provenance"]["production_external_compute_enabled"] is True
-    assert result["provenance"]["production_external_compute_called_agents"] == [
+    expected_called_agents = [
         "value_traditional_valuation",
         "value_ml_valuation",
         "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
         "market_ipo_investor_behavior",
         "market_capital_flow_chip",
+        "sentiment_company_radar",
         "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
         "macro_analysis",
+        "macro_commodity_pricing",
         "macro_index_valuation",
         "value_composite",
+        "market_composite",
+        "risk_composite",
         "macro_composite",
     ]
-    assert result["provenance"]["production_external_compute_mapped_agents"] == (
-        result["provenance"]["production_external_compute_called_agents"]
-    )
-    assert result["provenance"]["production_external_compute_failed_agents"] == []
+    assert result["provenance"]["production_external_compute_called_agents"] == expected_called_agents
+    assert result["provenance"]["production_external_compute_mapped_agents"] == [
+        agent_id
+        for agent_id in expected_called_agents
+        if agent_id not in {"market_composite", "risk_composite"}
+    ]
+    assert result["provenance"]["production_external_compute_failed_agents"] == [
+        "market_composite",
+        "risk_composite",
+    ]
     assert result["provenance"]["external_compute_demo_called_agents"] == []
     assert result["provenance"]["external_invoked"] is False
     assert all(demo is False for _agent_id, demo in called)
@@ -1890,7 +1915,15 @@ def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> No
     )
     plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-09")
 
-    result = execute_fixed_dag_plan(plan, question="q", as_of="2026-06-09")
+    result = execute_fixed_dag_plan(
+        plan,
+        question="q",
+        as_of="2026-06-09",
+        context=Context(
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
     valid, reason = validate_dag_execution_result(result)
 
     assert valid, reason

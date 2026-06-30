@@ -96,6 +96,14 @@ SOURCE_BASENAMES = {
     "README",
     "README.md",
 }
+PACKAGE_LOCKFILE_BASENAMES = {
+    "Cargo.lock",
+    "pdm.lock",
+    "pnpm-lock.yaml",
+    "poetry.lock",
+    "uv.lock",
+    "yarn.lock",
+}
 SECRET_NAME_RE = re.compile(
     r"(?i)(api[_-]?key|secret|password|passwd|token|credential|private[_-]?key|dsn)"
 )
@@ -274,6 +282,8 @@ def classify_source_category(root: Path, path: Path, *, explicit_asset: bool = F
         return "generated_artifact", "report_or_figure_artifact"
     if suffix in {".zip", ".rar", ".tgz", ".tar", ".gz"}:
         return "generated_artifact", "archive_artifact"
+    if name in PACKAGE_LOCKFILE_BASENAMES or lower_name in {item.lower() for item in PACKAGE_LOCKFILE_BASENAMES}:
+        return "package_metadata", "package_lockfile_metadata"
     if name in SOURCE_BASENAMES or lower_name in {item.lower() for item in SOURCE_BASENAMES}:
         if "runbook" in lower_name or "startup" in lower_name:
             return "startup_runbook", "startup_or_runbook_basename"

@@ -36,12 +36,14 @@ scripts, and maintained docs. It is not a full-tree legacy/offline lint gate.
 
 ```powershell
 npm --prefix apps/web exec -- tsc --noEmit --project apps/web/tsconfig.json
-npm --prefix apps/web run test
+cd apps/web && node --import tsx src/test/smoke.tsx
 npm --prefix apps/web run build -- --outDir <repo-external-temp-dir>
 ```
 
 The runner creates a temporary repo-external frontend build directory and
-cleans it up after the build. It must not write `apps/web/dist`.
+cleans it up after the build. It must not write `apps/web/dist`. The smoke step
+uses the Node loader form to avoid the `tsx` CLI IPC server in restricted
+quality sandboxes.
 
 ## Documentation Authority And History Policy
 
@@ -645,6 +647,30 @@ Passing R8-5 validation does not mean that a provider-backed LLM planner,
 external adapter, runtime binding enablement, final Route F1 acceptance gate,
 frontend selected-routing UI, or real business-agent result mapping is
 implemented.
+
+## Router L1 M2 Selected-Routing E2E Gate
+
+Router M2 closes default-off selected-routing graph E2E report behavior and
+public-safe provenance. Its focused validation gate is:
+
+```powershell
+DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_parse_router_layers.py tests/integration_tests/test_graph.py -q
+DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_router_provider_factory.py tests/unit_tests/test_router_prompt_format.py tests/unit_tests/test_router_parse_stats.py tests/unit_tests/test_route_eval.py -q
+DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_public_runtime_context_invoke.py tests/unit_tests/test_public_runtime_streaming.py tests/integration_tests/test_public_api.py -q
+git diff --check
+python scripts/quality/run_quality.py --mode mainline
+```
+
+This gate confirms that default `Context()` remains full DAG, explicit selected
+routing can execute a selected legal subgraph through L4 report closure, public
+assistant/workflow payloads expose only safe selected-routing provenance, the
+LLM dimension-router flag remains default-off/fake-only, and accidental
+external compute defaults are disabled during focused tests.
+
+Passing Router M2 validation does not mean real provider routing, production
+selected-routing enablement, external route-planner service readiness, route
+planner port authority, live endpoint E2E, `/v1/agent/invoke`, or runtime
+binding/catalog/non-L4 policy changes.
 
 ## R8-6B Internal LLM Placeholder Gate
 
@@ -1357,7 +1383,10 @@ SYNC-OPS-5A-R5X adds focused regressions for source-loss cutover approval:
   rename failure, start retry, contract degradation, PID reuse, and crash
   recovery without mutating real prod.
 - `agent-sync source-loss execute` rejects missing machine approval with
-  `exit=4`.
+  `exit=7`.
+- The readonly preflight listener probe fails closed when local socket creation
+  or connection probing is denied; it records a missing-listener blocker rather
+  than crashing or marking the preflight valid.
 
 Default gates still must not stop the incumbent, create a real fresh candidate,
 modify canonical prod target, start recovered production, execute P2S, mutate

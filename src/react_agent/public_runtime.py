@@ -238,6 +238,7 @@ def prepare_public_turn_invoke(
     thread_id: str,
     history_turns: Sequence[PublicTurn],
     user_text: str,
+    context: Context | None = None,
 ) -> PreparedPublicTurnInvoke:
     """Prepare a public-safe invoke session shared by sync and stream entrypoints."""
     probe = probe_public_runtime()
@@ -251,7 +252,7 @@ def prepare_public_turn_invoke(
     graph_app = probe.graph_module.get_graph_for_invoke(
         thread_id if probe.continuity_mode == "persistent" else None
     )
-    invoke_kwargs: Dict[str, Any] = {"context": Context()}
+    invoke_kwargs: Dict[str, Any] = {"context": context or Context()}
     if probe.continuity_mode == "persistent":
         invoke_input = {"messages": [("user", user_text)]}
         invoke_kwargs["config"] = {"configurable": {"thread_id": thread_id}}
@@ -408,11 +409,29 @@ async def stream_public_turn(
     yield last_stage_event
 
     try:
-        async for state in prepared.graph_app.astream(
-            prepared.invoke_input,
-            stream_mode="values",
-            **prepared.invoke_kwargs,
-        ):
+        stream = getattr(prepared.graph_app, "stream", None)
+        if callable(stream):
+            state_iterable = stream(
+                prepared.invoke_input,
+                stream_mode="values",
+                **prepared.invoke_kwargs,
+            )
+        else:
+            state_iterable = prepared.graph_app.astream(
+                prepared.invoke_input,
+                stream_mode="values",
+                **prepared.invoke_kwargs,
+            )
+        if hasattr(state_iterable, "__aiter__"):
+            state_source = state_iterable
+        else:
+            async def _sync_state_source() -> AsyncIterator[Any]:
+                for item in state_iterable:
+                    yield item
+
+            state_source = _sync_state_source()
+
+        async for state in state_source:
             if not isinstance(state, dict):
                 continue
             last_state = state
@@ -435,7 +454,7 @@ async def stream_public_turn(
                     yield next_snapshot_event
     except Exception as exc:
         _debug_runtime_exception(
-            "stream_public_turn.astream",
+            "stream_public_turn.stream",
             exc,
             thread_id=thread_id,
             continuity_mode=continuity_mode,
@@ -495,19 +514,28 @@ async def invoke_public_turn(
     thread_id: str,
     history_turns: Sequence[PublicTurn],
     user_text: str,
+    context: Context | None = None,
 ) -> tuple[PublicTurn, ContinuityMode]:
     """Invoke the runtime and map a completed state to a safe assistant turn."""
     prepared = prepare_public_turn_invoke(
         thread_id=thread_id,
         history_turns=history_turns,
         user_text=user_text,
+        context=context,
     )
 
     try:
-        state = await prepared.graph_app.ainvoke(prepared.invoke_input, **prepared.invoke_kwargs)
+        invoke = getattr(prepared.graph_app, "invoke", None)
+        if callable(invoke):
+            state = invoke(prepared.invoke_input, **prepared.invoke_kwargs)
+        else:
+            state = await prepared.graph_app.ainvoke(
+                prepared.invoke_input,
+                **prepared.invoke_kwargs,
+            )
     except Exception as exc:
         _debug_runtime_exception(
-            "invoke_public_turn.ainvoke",
+            "invoke_public_turn.invoke",
             exc,
             thread_id=thread_id,
             continuity_mode=prepared.continuity_mode,

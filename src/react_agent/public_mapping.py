@@ -65,6 +65,16 @@ def _optional_str(value: Any) -> str | None:
     return normalized or None
 
 
+def _optional_int(value: Any) -> int | None:
+    return value if isinstance(value, int) else None
+
+
+def _string_list(value: Any) -> List[str]:
+    if not isinstance(value, list):
+        return []
+    return [normalized for item in value if (normalized := _coerce_str(item))]
+
+
 def _normalize_materials(raw: Any) -> List[str]:
     if not isinstance(raw, list):
         return []
@@ -308,6 +318,27 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         ]
         if isinstance(provenance_raw.get("limitations", []), list)
         else [],
+        selectedRoutingRequested=bool(
+            provenance_raw.get("selectedRoutingRequested", False)
+        ),
+        selectedRoutingFallback=bool(provenance_raw.get("selectedRoutingFallback", False)),
+        fallbackReason=_optional_str(provenance_raw.get("fallbackReason")),
+        routeGranularity=_optional_str(provenance_raw.get("routeGranularity")),
+        selectedDimensions=_string_list(provenance_raw.get("selectedDimensions")),
+        expandedAgentCount=_optional_int(provenance_raw.get("expandedAgentCount")),
+        providerRouterEnabled=bool(provenance_raw.get("providerRouterEnabled", False)),
+        providerRouterInvoked=bool(provenance_raw.get("providerRouterInvoked", False)),
+        providerRouterMode=_optional_str(provenance_raw.get("providerRouterMode")),
+        providerRouterParseOk=bool(provenance_raw.get("providerRouterParseOk", False)),
+        providerRouterFallbackReason=_optional_str(
+            provenance_raw.get("providerRouterFallbackReason")
+        ),
+        providerRouterErrorCode=_optional_str(
+            provenance_raw.get("providerRouterErrorCode")
+        ),
+        providerRouterSelectedDimensions=_string_list(
+            provenance_raw.get("providerRouterSelectedDimensions")
+        ),
         summary=(
             "本轮研判流程已完成，详细执行信息可在技术详情中查看。"
         ),
