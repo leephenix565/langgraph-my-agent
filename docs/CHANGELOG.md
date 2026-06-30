@@ -3,6 +3,19 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-06-30 - Router M2 sandbox validation isolation
+
+### Changed
+
+- Isolated the L4 external-compute default unit regression from the production
+  non-L4 default path so sandbox mainline validation cannot inherit a bridge
+  fake through first-import timing.
+
+### Tests
+
+- Preserved runtime defaults while making the affected unit tests' L4-only and
+  invalid-plan fallback scopes explicit with non-L4 rollback contexts.
+
 ## 2026-06-30 - Sync cycle offline pytest environment isolation
 
 ### Changed

@@ -927,7 +927,10 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
         _plan(),
         question="q",
         as_of="2026-06-04",
-        context=Context(enable_llm_report_synthesis=True),
+        context=Context(
+            enable_llm_report_synthesis=True,
+            disable_non_l4_external_compute_default=True,
+        ),
     )
     valid, reason = validate_dag_execution_result(result)
 
@@ -2000,7 +2003,12 @@ def test_invalid_plan_falls_back_to_deterministic_default_without_raising() -> N
     bad = copy.deepcopy(_plan())
     bad["steps"][0]["agent_id"] = "bad_agent"
 
-    result = execute_fixed_dag_plan(bad, question="q", as_of="2026-06-04")
+    result = execute_fixed_dag_plan(
+        bad,
+        question="q",
+        as_of="2026-06-04",
+        context=Context(disable_non_l4_external_compute_default=True),
+    )
     valid, reason = validate_dag_execution_result(result)
 
     assert valid, reason
