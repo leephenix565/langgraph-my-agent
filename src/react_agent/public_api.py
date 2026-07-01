@@ -68,11 +68,12 @@ from react_agent.public_store import (
 )
 
 API_VERSION = "phase-r3"
-PUBLIC_API_CONTRACT_VERSION = "public_api_contract_v4"
+PUBLIC_API_CONTRACT_VERSION = "public_api_contract_v5"
 SELECTED_ROUTING_REQUEST_SCHEMA = "routing.mode.selected"
-SOURCE_VERSION_MARKER = "fixed_dag_public_api_f81b5da"
+SOURCE_VERSION_MARKER = "fixed_dag_public_api_llm_router"
 _PROCESS_STARTED = time.time()
 _PROCESS_STARTED_LABEL = datetime.fromtimestamp(_PROCESS_STARTED, tz=UTC).isoformat()
+_TRUTHY_ENV_VALUES = {"1", "true", "yes", "on"}
 
 
 def _store_path_from_env() -> Path:
@@ -143,6 +144,21 @@ def _process_uptime_seconds() -> int:
     return max(0, int(time.time() - _PROCESS_STARTED))
 
 
+def _public_selected_routing_llm_router_enabled() -> bool:
+    return (
+        str(os.environ.get("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", "") or "")
+        .strip()
+        .lower()
+        in _TRUTHY_ENV_VALUES
+    )
+
+
+def _selected_routing_router_mode() -> str:
+    if _public_selected_routing_llm_router_enabled():
+        return "llm_real"
+    return "deterministic"
+
+
 def _attach_request_total_ms(turn: PublicTurn, started: float) -> None:
     workflow = turn.workflow
     if workflow is None or workflow.provenance is None:
@@ -163,6 +179,8 @@ async def health() -> HealthResponse:
         publicApiContractVersion=PUBLIC_API_CONTRACT_VERSION,
         routingRequestSupported=True,
         selectedRoutingRequestSchema=SELECTED_ROUTING_REQUEST_SCHEMA,
+        selectedRoutingRouterMode=_selected_routing_router_mode(),
+        llmDimensionRouterEnabled=_public_selected_routing_llm_router_enabled(),
         computeRegistryVersion="fixed_dag_compute_registry_v1",
         computeRegistryAgentCount=len(DEMO_COMPUTE_SERVICE_REGISTRY),
         processStartTime=_PROCESS_STARTED_LABEL,
@@ -276,7 +294,10 @@ def _prepare_user_message(payload: SendMessageRequest) -> tuple[str, StructuredI
 
 def _context_for_public_routing(routing: PublicRoutingRequest | None) -> Context | None:
     if routing is not None and routing.mode == "selected":
-        return Context(enable_selected_routing=True)
+        context = Context(enable_selected_routing=True)
+        context.enable_llm_dimension_router = _public_selected_routing_llm_router_enabled()
+        context.llm_dimension_router_mode = "real" if context.enable_llm_dimension_router else ""
+        return context
     return None
 
 

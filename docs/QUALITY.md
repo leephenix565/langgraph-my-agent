@@ -716,13 +716,21 @@ python scripts/quality/run_quality.py --mode mainline
 This gate confirms that default `Context()` remains full DAG, explicit selected
 routing can execute a selected legal subgraph through L4 report closure, public
 assistant/workflow payloads expose only safe selected-routing provenance, the
-LLM dimension-router flag remains default-off/fake-only, and accidental
-external compute defaults are disabled during focused tests.
+LLM dimension-router flag remains default-off unless an operator explicitly
+enables the public real-router daemon mode, and accidental external compute
+defaults are disabled during focused tests.
 
 Passing Router M2 validation does not mean real provider routing, production
 selected-routing enablement, external route-planner service readiness, route
 planner port authority, live endpoint E2E, `/v1/agent/invoke`, or runtime
 binding/catalog/non-L4 policy changes.
+
+The public LLM router enablement gate additionally covers
+`PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1` context mapping, the
+OpenAI-compatible JSON router seam, public-safe `providerRouter*` provenance,
+and the health fields that distinguish deterministic selected routing from
+`llm_real` mode. These tests must not retain raw provider responses, prompts,
+messages, endpoint URLs, env values, API keys, tracebacks, or chain-of-thought.
 
 ## Router M2 Public Selected-Routing API Gate
 

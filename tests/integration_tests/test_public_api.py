@@ -259,14 +259,16 @@ def test_health_contract(tmp_path, monkeypatch):
     assert response.status_code == 200
     payload = response.json()
     assert payload["apiVersion"] == "phase-r3"
-    assert payload["publicApiContractVersion"] == "public_api_contract_v4"
+    assert payload["publicApiContractVersion"] == "public_api_contract_v5"
     assert payload["routingRequestSupported"] is True
     assert payload["selectedRoutingRequestSchema"] == "routing.mode.selected"
+    assert payload["selectedRoutingRouterMode"] == "deterministic"
+    assert payload["llmDimensionRouterEnabled"] is False
     assert payload["computeRegistryVersion"] == "fixed_dag_compute_registry_v1"
     assert payload["computeRegistryAgentCount"] == 26
     assert payload["processStartTime"]
     assert isinstance(payload["processUptimeSeconds"], int)
-    assert payload["sourceVersionMarker"] == "fixed_dag_public_api_f81b5da"
+    assert payload["sourceVersionMarker"] == "fixed_dag_public_api_llm_router"
     assert payload["overallStatus"] == "degraded"
     assert payload["providerEnv"]["code"] == "provider_env_missing_optional_for_reset"
     assert payload["searchEnv"]["code"] == "search_env_missing_optional_for_reset"
@@ -479,6 +481,8 @@ def test_send_message_omitted_and_null_routing_keep_default_context(tmp_path, mo
 
 
 def test_send_message_selected_routing_passes_selected_context(tmp_path, monkeypatch):
+    monkeypatch.delenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", raising=False)
+    monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "1")
     captured: dict[str, Any] = {}
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
@@ -501,6 +505,7 @@ def test_send_message_selected_routing_passes_selected_context(tmp_path, monkeyp
     assert isinstance(captured["context"], Context)
     assert captured["context"].enable_selected_routing is True
     assert captured["context"].enable_llm_dimension_router is False
+    assert captured["context"].llm_dimension_router_mode == ""
     assert captured["context"].enable_external_compute_demo is False
     provenance = response.json()["assistantTurn"]["workflow"]["provenance"]
     assert provenance["selectedRoutingRequested"] is True
@@ -510,11 +515,42 @@ def test_send_message_selected_routing_passes_selected_context(tmp_path, monkeyp
     assert provenance["providerRouterInvoked"] is False
 
 
+def test_send_message_selected_routing_can_enable_real_llm_router_context(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", "1")
+    captured: dict[str, Any] = {}
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
+        captured["context"] = context
+        return _selected_assistant_turn("replay"), "replay"
+
+    monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    health_payload = client.get("/api/health").json()
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Run LLM selected routing.", "routing": {"mode": "selected"}},
+    )
+
+    assert response.status_code == 200
+    assert health_payload["selectedRoutingRouterMode"] == "llm_real"
+    assert health_payload["llmDimensionRouterEnabled"] is True
+    assert isinstance(captured["context"], Context)
+    assert captured["context"].enable_selected_routing is True
+    assert captured["context"].enable_llm_dimension_router is True
+    assert captured["context"].llm_dimension_router_mode == "real"
+
+
 def test_send_message_selected_routing_endpoint_free_e2e_report(tmp_path, monkeypatch):
     monkeypatch.setenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", "1")
     monkeypatch.setenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", "1")
     monkeypatch.setenv("ENABLE_EXTERNAL_COMPUTE_DEMO", "0")
     monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "0")
+    monkeypatch.delenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", raising=False)
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
     monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
@@ -681,6 +717,8 @@ def test_send_message_stream_success_persists_only_final_turns(tmp_path, monkeyp
 
 def test_send_message_stream_selected_routing_passes_selected_context(tmp_path, monkeypatch):
     monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    monkeypatch.delenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", raising=False)
+    monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "1")
     captured: dict[str, Any] = {}
     store = PublicThreadStore(tmp_path / "threads.json")
     monkeypatch.setattr(public_api, "store", store)
@@ -722,6 +760,7 @@ def test_send_message_stream_selected_routing_passes_selected_context(tmp_path, 
     assert isinstance(captured["context"], Context)
     assert captured["context"].enable_selected_routing is True
     assert captured["context"].enable_llm_dimension_router is False
+    assert captured["context"].llm_dimension_router_mode == ""
 
 
 def test_send_message_stream_omitted_and_null_routing_keep_default_context(tmp_path, monkeypatch):

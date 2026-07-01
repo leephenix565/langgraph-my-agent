@@ -354,9 +354,11 @@ class PerformanceTelemetryModel(PublicBaseModel):
 class HealthResponse(PublicBaseModel):
     status: Literal["ok"]
     apiVersion: str
-    publicApiContractVersion: str = "public_api_contract_v4"
+    publicApiContractVersion: str = "public_api_contract_v5"
     routingRequestSupported: bool = True
     selectedRoutingRequestSchema: str = "routing.mode.selected"
+    selectedRoutingRouterMode: str = "deterministic"
+    llmDimensionRouterEnabled: bool = False
     computeRegistryVersion: str | None = None
     computeRegistryAgentCount: int | None = None
     processStartTime: str | None = None

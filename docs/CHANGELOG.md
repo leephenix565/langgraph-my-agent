@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Public LLM selected-router production enablement
+
+### Changed
+
+- Added an explicit `llm_dimension_router_mode` context field so the existing
+  LLM dimension-router seam can remain fake by default while supporting a real
+  OpenAI-compatible router path under operator authorization.
+- Wired the real router provider path to a bounded JSON-only chat-completions
+  request and projected only public-safe `providerRouter*` provenance.
+- Added public API health fields for selected-routing router mode and LLM
+  router enablement; selected public requests use the real LLM router only when
+  the daemon is started with `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`.
+
+### Tests
+
+- Added focused coverage for real-router OpenAI-compatible request shaping,
+  selected plan compilation, public API context mapping, and health contract
+  freshness.
+
+### Not Done
+
+- No public provider/model/key controls, no selected-routing default-on
+  behavior for omitted requests, no runtime binding/catalog/non-L4 policy
+  changes, no `/v1/agent/invoke`, no raw provider response retention, and no
+  push.
+
 ## 2026-07-01 - Production performance telemetry and freshness guard
 
 ### Changed

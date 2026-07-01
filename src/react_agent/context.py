@@ -101,8 +101,17 @@ class Context:
     enable_llm_dimension_router: bool = field(
         default=False,
         metadata={
-            "description": "Enable the fake-provider-only internal LLM dimension router seam. "
-            "This is gated behind selected routing and does not create a real provider client."
+            "description": "Enable the internal LLM dimension router seam. "
+            "This is gated behind selected routing; real provider calls also require "
+            "`llm_dimension_router_mode=real` and provider credentials."
+        },
+    )
+    llm_dimension_router_mode: str = field(
+        default="",
+        metadata={
+            "description": "Optional LLM dimension router mode. Empty keeps the fake seam; "
+            "`real` allows an explicitly enabled router to use the OpenAI-compatible "
+            "router provider path."
         },
     )
     enable_internal_llm_placeholders: bool = field(

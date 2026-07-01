@@ -3,6 +3,33 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-167: Public Selected Routing Uses Server-Side LLM Router Enablement
+
+Status: accepted for LLM-ROUTER-PUBLIC-API-PRODUCTION-ENABLEMENT.
+
+Decision: keep the public request contract unchanged (`routing:
+{"mode":"selected"}`) and enable the real LLM dimension router only through
+server-side operator configuration. When the public API daemon has
+`PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, selected public requests set
+`Context(enable_selected_routing=True)`, `enable_llm_dimension_router=True`,
+and `llm_dimension_router_mode="real"`. Without that daemon flag, selected
+requests use deterministic selected routing.
+
+Reason: users need public HTTP/Web selected-routing requests to use the real
+LLM dimension router in production, but exposing provider/model/base URL/API
+key/env controls in the public request would expand the API trust boundary and
+make safe E2E validation harder.
+
+Consequence: public API health reports the selected-routing router mode and
+LLM-router enablement, and workflow provenance records real router use through
+sanitized `providerRouter*` fields. The route intent and selected plan contracts
+still reject raw provider material and generic live-invocation claims.
+
+Non-consequence: this does not make selected routing default-on for omitted
+requests, expose provider controls to clients, create a route-planner service
+or port, call `/v1/agent/invoke`, change runtime bindings, change the agent
+catalog, change non-L4 policy, retain raw provider responses, or push commits.
+
 ## ADR-166: Public Performance Telemetry Is Sanitized Observability Only
 
 Status: accepted for PROD-PERFORMANCE-TELEMETRY-AND-DEPLOYMENT-FRESHNESS-GUARD.

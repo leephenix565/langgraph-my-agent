@@ -124,14 +124,13 @@ records.
   URL, API key, traceback, or chain-of-thought retention. Two non-blocking
   conservative over-routing warnings remain: `risk_compliance_focus` selected
   `value+risk`, and `market_short_term_focus` selected `value+market`.
-- Router M1 does not production-enable provider routing. Selected routing and
-  the LLM dimension-router flag remain default-off; the default production
-  graph remains the full fixed DAG. No external `route_planner` service exists,
-  no route-planner port is assigned, `10028/8028` remains a future planning
-  reservation only, `report_generator` remains on `10026`, `/invoke` is not the
-  default runtime, and M1H does not change runtime bindings, agent catalog,
-  non-L4 policy, external compute E2E, report generation E2E, or production
-  rollout.
+- Router M1 did not production-enable provider routing, but the current public
+  API can now production-enable the persisted LLM dimension-router path through
+  server-side operator configuration. Default `Context()` and omitted public
+  `routing` still run the full fixed DAG. No external `route_planner` service
+  exists, no route-planner port is assigned, `10028/8028` remains a future
+  planning reservation only, `report_generator` remains on `10026`, and
+  `/invoke` is not the default runtime.
 - Router M2 closes the minimal default-off selected-routing graph E2E report
   path. When an explicit context enables selected routing, `route_planner_node`
   emits dimension-only `route_intent_v1`, compiles
@@ -144,16 +143,20 @@ records.
   endpoint-free tests. The public HTTP/Web surface now adds a request-level
   `routing: {"mode": "selected"}` opt-in for sync and stream sends. Omitted or
   null `routing` keeps the existing server default and selected routing remains
-  default-off. This does not add an explicit public `full_dag` force-off mode,
-  provider router control, compute/invoke control, runtime binding change,
+  default-off. When the daemon runs with
+  `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, that selected request uses the
+  real OpenAI-compatible LLM dimension router; otherwise it stays deterministic.
+  This does not add an explicit public `full_dag` force-off mode, public
+  provider/model/key control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port
   authority.
 - The public API health contract now includes freshness/capability markers:
   `publicApiContractVersion`, `routingRequestSupported`,
-  `selectedRoutingRequestSchema`, `computeRegistryVersion`,
+  `selectedRoutingRequestSchema`, `selectedRoutingRouterMode`,
+  `llmDimensionRouterEnabled`, `computeRegistryVersion`,
   `computeRegistryAgentCount`, `processStartTime`, `processUptimeSeconds`, and
-  `sourceVersionMarker`. These fields make daemon drift visible without
-  exposing env values or raw endpoint material.
+  `sourceVersionMarker`. These fields make daemon drift and router-mode drift
+  visible without exposing env values or raw endpoint material.
 - Public workflow provenance may include `performanceTelemetry` with bounded
   request, graph, compute, and per-agent timing/status summaries. Provider and
   DB timings are populated only when a service reports safe counts/durations;

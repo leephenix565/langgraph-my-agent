@@ -76,6 +76,12 @@ async def test_selected_routing_context_defaults_off_and_env_can_enable(monkeypa
     monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "1")
     assert Context().enable_llm_dimension_router is True
 
+    monkeypatch.delenv("LLM_DIMENSION_ROUTER_MODE", raising=False)
+    assert Context().llm_dimension_router_mode == ""
+
+    monkeypatch.setenv("LLM_DIMENSION_ROUTER_MODE", "real")
+    assert Context().llm_dimension_router_mode == "real"
+
     monkeypatch.delenv("ENABLE_INTERNAL_LLM_PLACEHOLDERS", raising=False)
     assert Context().enable_internal_llm_placeholders is False
 
@@ -529,6 +535,87 @@ async def test_selected_routing_with_fake_llm_dimension_router_builds_selected_p
     assert res["workflow_snapshot"]["provenance"]["providerRouterMode"] == "fake"
     assert res["workflow_snapshot"]["provenance"]["providerRouterParseOk"] is True
     assert raw_marker not in rendered
+    assert "raw_response" not in rendered.lower()
+    assert "/v1/agent/invoke" not in rendered
+
+
+async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compatible_json(
+    monkeypatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": _dimension_router_payload(["market"]),
+                        }
+                    }
+                ]
+            }
+
+    class FakeClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, *, headers, json):
+            requests.append({"url": url, "headers": headers, "json": json})
+            return FakeResponse()
+
+    monkeypatch.setattr(graph_module.httpx, "Client", FakeClient)
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "只看 000001 的市场交易面和资金流。")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            llm_dimension_router_mode="real",
+            router_model="deepseek/deepseek-chat",
+            router_openai_base_url="https://provider.example",
+            router_openai_api_key="test-key",
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert requests
+    request = requests[0]
+    assert request["url"] == "https://provider.example/v1/chat/completions"
+    assert request["headers"]["Authorization"] == "Bearer test-key"
+    assert request["json"]["model"] == "deepseek-chat"
+    assert request["json"]["response_format"] == {"type": "json_object"}
+    assert request["json"]["max_tokens"] == 220
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["selected_dimensions"] == ["market"]
+    assert plan["provenance"]["provider_invoked"] is False
+    assert plan["provenance"]["provider_router_mode"] == "real"
+    assert plan["provenance"]["provider_router_invoked"] is True
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterMode"] == "real"
+    assert res["workflow_snapshot"]["provenance"]["providerRouterSelectedDimensions"] == [
+        "market"
+    ]
+    assert "test-key" not in rendered
+    assert "provider.example" not in rendered
     assert "raw_response" not in rendered.lower()
     assert "/v1/agent/invoke" not in rendered
 

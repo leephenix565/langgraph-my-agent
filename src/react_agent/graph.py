@@ -9,10 +9,12 @@ execution seams.
 
 from __future__ import annotations
 
+import os
 import uuid
 from collections.abc import Mapping
 from typing import Any
 
+import httpx
 from langchain_core.messages import AIMessage
 from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
@@ -37,6 +39,15 @@ from react_agent.fixed_dag_contracts import (
 from react_agent.fixed_dag_executor import execute_fixed_dag_plan
 from react_agent.graph_entry import compile_graph_variants, select_graph_for_invoke
 from react_agent.router_parse import parse_dimension_route_intent_json
+from react_agent.router_provider import (
+    ROUTER_PROVIDER_JSON_RESPONSE_FORMAT,
+    RouterProviderInvocationOptions,
+    RouterProviderPolicy,
+    build_openai_compatible_chat_completions_url,
+    build_router_provider_request_contract,
+    normalize_router_provider_model_for_openai_compatible_api,
+    router_provider_preflight,
+)
 from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
@@ -102,9 +113,15 @@ def _is_llm_dimension_router_enabled(context: Context | None) -> bool:
     )
 
 
+def _llm_dimension_router_mode(context: Context | None) -> str:
+    raw = str(getattr(context, "llm_dimension_router_mode", "") or "").strip().lower()
+    return "real" if raw == "real" else "fake"
+
+
 def _provider_router_provenance(
     *,
     enabled: bool,
+    mode: str = "fake",
     invoked: bool = False,
     parse_ok: bool = False,
     fallback_reason: str = "",
@@ -114,7 +131,7 @@ def _provider_router_provenance(
     return {
         "provider_router_enabled": enabled,
         "provider_router_invoked": invoked,
-        "provider_router_mode": "fake" if enabled else "",
+        "provider_router_mode": mode if enabled else "",
         "provider_router_parse_ok": parse_ok,
         "provider_router_fallback_reason": fallback_reason,
         "provider_router_selected_dimensions": list(selected_dimensions or []),
@@ -139,16 +156,136 @@ def _invoke_dimension_router_provider(
     question: str,
     context: Context | None,
 ) -> str | None:
-    """Fake-provider seam for tests; real provider wiring is intentionally absent."""
-    del question, context
-    return None
+    """Invoke the explicitly enabled router provider without retaining raw output."""
+    if _llm_dimension_router_mode(context) != "real":
+        return None
+    if context is None:
+        return None
+
+    options = RouterProviderInvocationOptions()
+    preflight = router_provider_preflight(
+        RouterProviderPolicy(
+            real_provider_authorized=True,
+            env_value_access_authorized=True,
+            provider_call_authorized=True,
+            options=options,
+        ),
+        selected_routing_enabled=bool(getattr(context, "enable_selected_routing", False)),
+        llm_dimension_router_enabled=bool(
+            getattr(context, "enable_llm_dimension_router", False)
+        ),
+    )
+    if not preflight.ready:
+        return None
+
+    model_name = _router_config_value(
+        context,
+        "router_model",
+        ("ROUTER_MODEL", "MODEL"),
+    ) or str(getattr(context, "model", "") or "")
+    api_key = _router_config_value(
+        context,
+        "router_openai_api_key",
+        ("ROUTER_OPENAI_API_KEY", "DEEPSEEK_API_KEY", "OPENAI_API_KEY"),
+    )
+    base_url = _router_config_value(
+        context,
+        "router_openai_base_url",
+        ("ROUTER_OPENAI_BASE_URL", "DEEPSEEK_BASE_URL", "OPENAI_BASE_URL"),
+    )
+    if not base_url and str(model_name).startswith("deepseek/"):
+        base_url = "https://api.deepseek.com"
+    if not model_name or not api_key or not base_url:
+        return None
+
+    normalized_model = normalize_router_provider_model_for_openai_compatible_api(
+        model_name
+    )
+    endpoint = build_openai_compatible_chat_completions_url(base_url)
+    if not endpoint.valid or not normalized_model.provider_api_model:
+        return None
+
+    body = {
+        "model": normalized_model.provider_api_model,
+        "messages": _build_live_dimension_router_messages(question),
+        "temperature": 0,
+        "max_tokens": int(options.max_tokens),
+        "response_format": dict(ROUTER_PROVIDER_JSON_RESPONSE_FORMAT),
+    }
+    timeout = httpx.Timeout(float(options.timeout_seconds))
+    with httpx.Client(timeout=timeout) as client:
+        response = client.post(
+            endpoint.chat_completions_url,
+            headers={
+                "Authorization": f"Bearer {api_key}",
+                "Content-Type": "application/json",
+            },
+            json=body,
+        )
+    if response.status_code < 200 or response.status_code >= 300:
+        return None
+    payload = response.json()
+    choices = payload.get("choices") if isinstance(payload, dict) else None
+    if not isinstance(choices, list) or not choices:
+        return None
+    first = choices[0]
+    if not isinstance(first, Mapping):
+        return None
+    message = first.get("message")
+    if not isinstance(message, Mapping):
+        return None
+    content = message.get("content")
+    return content if isinstance(content, str) else None
+
+
+def _router_config_value(
+    context: Context,
+    attr_name: str,
+    env_names: tuple[str, ...],
+) -> str:
+    direct = str(getattr(context, attr_name, "") or "").strip()
+    if direct:
+        return direct
+    for env_name in env_names:
+        value = str(os.environ.get(env_name, "") or "").strip()
+        if value:
+            return value
+    return ""
+
+
+def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]:
+    contract = build_router_provider_request_contract()
+    allowed = ", ".join(contract["allowed_dimensions"])
+    user_question = str(question or "").strip() or "not provided"
+    system = (
+        "You are a strict fixed-DAG dimension router. Return only one JSON object. "
+        "Do not include markdown, prose, selected agent ids, endpoints, prompts, "
+        "secrets, SQL, or provider payloads."
+    )
+    user = (
+        "Classify the user request into fixed-DAG dimensions. "
+        f"Allowed dimensions: {allowed}. "
+        "Use value for valuation/fundamental/financial questions, market for "
+        "technical/trading/flow/sentiment questions, risk for downside/compliance/"
+        "fraud/crash questions, and macro for macro/policy/rate/index/industry questions. "
+        "Select only directly requested dimensions. If unclear, choose the minimal "
+        "safe set and keep needs_clarification false unless the request is impossible. "
+        "Return JSON with exactly these public fields: schema, schema_version, task_type, "
+        "targets, selected_dimensions, route_confidence, needs_clarification, "
+        "clarification_question, fallback_reason, provenance. "
+        "Use schema and schema_version route_intent_v1, task_type general, "
+        "route_confidence between 0.70 and 1.0, and provenance.source live_llm_dimension_router. "
+        f"User request: {user_question}"
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
 
 
 def _route_intent_from_llm_dimension_provider(
     question: str,
     context: Context | None,
 ) -> tuple[Mapping[str, Any] | None, dict[str, Any]]:
-    meta = _provider_router_provenance(enabled=True)
+    mode = _llm_dimension_router_mode(context)
+    meta = _provider_router_provenance(enabled=True, mode=mode)
     try:
         raw_output = _invoke_dimension_router_provider(question, context)
     except TimeoutError:
@@ -206,10 +343,12 @@ def _route_intent_from_llm_dimension_provider(
         }
     route_intent = dict(route_intent)
     route_intent["provenance"] = {
-        "source": "fake_llm_dimension_router",
-        "normalizer": "m1d_fake_provider_dimension_router",
+        "source": f"{mode}_llm_dimension_router",
+        "normalizer": f"{mode}_provider_dimension_router",
         "route_granularity": "dimension",
         "dimension_only": True,
+        # `route_intent_v1` itself remains a pure planning contract. The outer
+        # fixed-DAG plan/workflow provenance records real router invocation.
         "provider_invoked": False,
         "external_invoked": False,
     }
@@ -260,7 +399,8 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
             }
         return plan
     provider_router = _provider_router_provenance(
-        enabled=_is_llm_dimension_router_enabled(context)
+        enabled=_is_llm_dimension_router_enabled(context),
+        mode=_llm_dimension_router_mode(context),
     )
     try:
         if _is_llm_dimension_router_enabled(context):

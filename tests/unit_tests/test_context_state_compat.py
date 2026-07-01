@@ -27,6 +27,7 @@ def test_context_metadata_groups_cover_dataclass_fields() -> None:
     assert valid, reason
     assert metadata.classify_context_field("enable_selected_routing") == metadata.ACTIVE
     assert metadata.classify_context_field("enable_llm_dimension_router") == metadata.ACTIVE
+    assert metadata.classify_context_field("llm_dimension_router_mode") == metadata.ACTIVE
     assert metadata.classify_context_field("baseline_model") == metadata.COMPAT
     assert metadata.classify_context_field("router_model") == metadata.LEGACY
     assert (
@@ -106,8 +107,16 @@ def test_context_dataclass_surface_is_stable() -> None:
         (
             "enable_llm_dimension_router",
             False,
-            "Enable the fake-provider-only internal LLM dimension router seam. "
-            "This is gated behind selected routing and does not create a real provider client.",
+            "Enable the internal LLM dimension router seam. "
+            "This is gated behind selected routing; real provider calls also require "
+            "`llm_dimension_router_mode=real` and provider credentials.",
+        ),
+        (
+            "llm_dimension_router_mode",
+            "",
+            "Optional LLM dimension router mode. Empty keeps the fake seam; "
+            "`real` allows an explicitly enabled router to use the OpenAI-compatible "
+            "router provider path.",
         ),
         (
             "enable_internal_llm_placeholders",

@@ -791,11 +791,17 @@ Failure policy:
 
   `routing` may be omitted or null to preserve the server default. The only
   accepted public mode is `selected`; other values and extra routing keys are
-  rejected by the closed public model. The request toggle maps only to
-  `Context(enable_selected_routing=True)` for that call. It does not expose an
-  explicit `full_dag` force-off mode, provider router control, compute/invoke
-  control, model/base URL/API key/env controls, raw route intent, raw selected
-  plan, raw provider response, or endpoint material.
+  rejected by the closed public model. The request toggle maps to
+  `Context(enable_selected_routing=True)` for that call. If the public API
+  daemon is started with `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, the
+  adapter also enables `Context.enable_llm_dimension_router` and
+  `llm_dimension_router_mode="real"`, causing the route planner to call the
+  bounded OpenAI-compatible dimension router before compiling the selected DAG.
+  If that server-side flag is absent, the same request stays on deterministic
+  selected routing. The request itself does not expose an explicit `full_dag`
+  force-off mode, provider router control, compute/invoke control,
+  model/base URL/API key/env controls, raw route intent, raw selected plan, raw
+  provider response, or endpoint material.
 
 ## public API freshness and performance telemetry
 
@@ -805,6 +811,8 @@ metadata:
 - `publicApiContractVersion`
 - `routingRequestSupported`
 - `selectedRoutingRequestSchema`
+- `selectedRoutingRouterMode`
+- `llmDimensionRouterEnabled`
 - `computeRegistryVersion`
 - `computeRegistryAgentCount`
 - `processStartTime`

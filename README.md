@@ -90,6 +90,13 @@ provenance. This lets operators distinguish stale daemons from current
 contract-capable ones and profile request/graph/compute/agent timing without
 exposing raw responses, SQL, prompts, provider payloads, endpoint URLs, env
 values, or secrets.
+The LLM router enablement follow-up keeps selected routing default-off for
+omitted requests but allows operators to set
+`PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1` for the public API daemon. In
+that mode, a request-level `routing: {"mode": "selected"}` call uses the
+OpenAI-compatible LLM dimension router before compiling the selected fixed DAG;
+the public request still cannot provide provider, model, base URL, API key,
+compute, or invoke controls.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and
@@ -265,7 +272,10 @@ The public HTTP/Web surface now offers a per-request selected-routing opt-in:
 `routing: {"mode": "selected"}` on `/api/threads/{thread_id}/messages` and the
 matching stream route. Omitting `routing` or sending `routing: null` preserves
 the server default and keeps selected routing default-off. This public switch
-only maps to `Context(enable_selected_routing=True)` for that request; it does
+maps to `Context(enable_selected_routing=True)` for that request. When the
+server-side `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1` flag is set, it also
+enables `Context.enable_llm_dimension_router` with `llm_dimension_router_mode`
+`real`; otherwise it stays on deterministic selected routing. The request does
 not expose provider router, compute, invoke, model, base URL, API key, or env
 controls, and it does not provide an explicit `full_dag` force-off mode.
 
