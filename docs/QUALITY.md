@@ -239,6 +239,16 @@ compute-enabled report E2E, selected value/risk compute-enabled report E2E,
 unsafe scan, and bounded call ledger. The default mainline remains
 external-endpoint-free and provider-free.
 
+The report-quality semantics follow-up makes contributor integrity a
+source-controlled offline quality check. The harness records
+`l3_contributor_integrity_v1` and fails if non-contributors remain in
+`contributing_agents`, retain evidence refs, or keep positive mapped member
+weights. Selected value/risk compute E2E must also produce public-safe trust
+artifacts: selected plan summary, workflow trace summary, agent evidence bundle
+summary, final report summary, public provenance summary, and unsafe scan.
+The controlled full DAG compute report E2E acceptance remains
+`score >=29/45` with `renderer_quality_gate.passed=true`.
+
 CS1-C3R adds a source-controlled phase artifact integrity helper and L3
 real-contributor regression tests. The helper writes relative-path SHA256
 manifests only after primary artifacts and validation files are finalized, and

@@ -123,7 +123,7 @@ def test_fixed_dag_foundational_extraction_keeps_canonical_outputs() -> None:
 
     assert _canonical_hash(plan) == "52d71147ec4a7cd71933d8f3375905a7d9d22367e470762e594befe0e54048bd"
     assert _canonical_hash(selected) == "8ee97bad6224c9b34bd61b8b75cbff42f5257b3f6bf2dd07039ecab49a465cbf"
-    assert _canonical_hash(workflow) == "3ff7e42bad827a2510036a275532165a0bb056e61d47dc8684c8fc5693bc32d7"
+    assert _canonical_hash(workflow) == "50048210629b5cef75c7a26bc3f34ecbc3c157a12d9a19e271a6160561c259ee"
 
 
 def test_roster_constants_are_v4_feedback_aligned() -> None:
@@ -1239,6 +1239,25 @@ def test_deterministic_l3_contributing_agents_are_real_contributors_only() -> No
             ],
         }
     )
+    conclusions["market_fund_manager_behavior"].update(
+        {
+            "status": "partial",
+            "stance": "positive",
+            "confidence": 0.32,
+            "summary": "LLM 不可用/解析失败(compute_no_llm_deterministic_fallback)，使用确定性替身兜底输出",
+            "evidence": [
+                {
+                    "id": "fund-fallback",
+                    "fact": "fallback evidence must not be promoted.",
+                    "source": "market_fund_manager_behavior",
+                }
+            ],
+            "provenance": {
+                **conclusions["market_fund_manager_behavior"]["provenance"],
+                "raw_output_keys": ["degraded", "fallback", "fallback_reason"],
+            },
+        }
+    )
 
     dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
     valid, reason = validate_dimension_composite_result(dimensions["market"])
@@ -1246,6 +1265,10 @@ def test_deterministic_l3_contributing_agents_are_real_contributors_only() -> No
     assert valid, reason
     assert dimensions["market"]["contributing_agents"] == ["market_stock_technical"]
     assert "market_fund_manager_behavior" not in dimensions["market"]["contributing_agents"]
+    assert all(
+        "基金经理行为" not in evidence_ref
+        for evidence_ref in dimensions["market"]["evidence_refs"]
+    )
 
 
 def test_deterministic_l3_pending_without_real_contributors_remains_valid() -> None:

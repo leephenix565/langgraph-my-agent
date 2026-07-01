@@ -114,7 +114,12 @@ zero-confidence, no-evidence, deterministic placeholder, and external-failure
 fallback slots must carry zero weight, must not enter `contributing_agents`,
 must not emit `evidence_refs`, and must not be described as a main contributor
 in public report text. Partial members with real bounded business material may
-contribute positive weight and must remain labeled partial/degraded.
+contribute positive weight and must remain labeled partial/degraded. The
+adapter and deterministic reducer both enforce this rule, and public-safe trust
+artifacts preserve `member_weight_summary`, `non_contributor_members`,
+`missing_or_degraded_members`, and `dropped_evidence_refs` so the offline
+report-quality harness can verify the boundary without retaining raw external
+responses.
 
 BF-COMPLETE-X records the final sandbox-to-prod backfill contract closure for
 the remaining L1/L2 sandbox units. `entity_relation_extractor` production

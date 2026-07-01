@@ -213,6 +213,84 @@ def test_cli_real_artifact_mode_can_run_on_temp_fixture_artifact(tmp_path) -> No
     assert payload["material_coverage"]["l4_report_mapped"] is True
 
 
+def test_cli_real_artifact_flags_l3_contributor_integrity_violation(tmp_path) -> None:
+    fixture = json.loads(FIXTURE_PATH.read_text(encoding="utf-8"))
+    artifact_root = tmp_path / "direct-artifact"
+    artifact_root.mkdir(parents=True)
+    summary = {
+        "provenance": {
+            "external_compute_demo_called_agents": ["risk_composite"],
+            "external_compute_demo_mapped_agents": ["risk_composite"],
+            "external_compute_demo_failed_agents": [],
+        },
+        "l2_agent_outputs": {},
+        "l3_composite_outputs": {
+            "risk": {
+                "agent_id": "risk_composite",
+                "dimension": "risk",
+                "status": "partial",
+                "contributing_agents": ["risk_compliance_review"],
+            }
+        },
+        "report_result": fixture["report_result"],
+        "non_claims": fixture["non_claims"],
+        "workflow_step_count": 27,
+    }
+    evidence_bundle = {
+        "quality_summary": fixture["quality_summary"],
+        "l2_agent_outputs": [],
+        "l3_composite_outputs": [
+            {
+                "agent_id": "risk_composite",
+                "display_name": "风险综合",
+                "dimension": "risk",
+                "status": "partial",
+                "contributing_agents": ["risk_compliance_review"],
+                "evidence_refs": ["risk_compliance_review"],
+                "provenance_notes": {
+                    "non_contributor_members": [
+                        {"agent_id": "risk_compliance_review", "weight": 0.0}
+                    ],
+                    "member_weight_summary": [
+                        {"agent_id": "risk_compliance_review", "weight": 0.0}
+                    ],
+                },
+            }
+        ],
+    }
+    (artifact_root / "summary.json").write_text(
+        json.dumps(summary, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (artifact_root / "agent_evidence_bundle.json").write_text(
+        json.dumps(evidence_bundle, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    (artifact_root / "workflow_trace.json").write_text("{}", encoding="utf-8")
+    (artifact_root / "final_report.md").write_text("# Fixture report\n", encoding="utf-8")
+
+    output_dir = tmp_path / "audit"
+    result = _run_cli(
+        "--artifact-root",
+        str(artifact_root),
+        "--output-dir",
+        str(output_dir),
+    )
+
+    assert result.returncode == 0, result.stderr
+    payload = json.loads(
+        (output_dir / "report_quality_audit_result.json").read_text(encoding="utf-8")
+    )
+    assert payload["input_mode"] == "real_artifact"
+    assert payload["l3_contributor_integrity"]["passed"] is False
+    assert {
+        item["reason"] for item in payload["l3_contributor_integrity"]["violations"]
+    } >= {
+        "non_contributor_listed_as_contributor",
+        "non_contributor_evidence_ref_retained",
+    }
+
+
 def test_threshold_failure_and_pass_behaviors(tmp_path) -> None:
     fail_result = _run_cli(
         "--fixture",

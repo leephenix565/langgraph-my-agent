@@ -1245,6 +1245,10 @@ public report wording. That made missing evidence look like real contribution.
 
 Consequence: adapters, deterministic L3 builders, trace summaries, and report
 projection now separate formal coverage slots from real evidence contribution.
+The offline report-quality harness also audits this split through
+`l3_contributor_integrity_v1`, so a report cannot pass the current controlled
+`29/45` gate while retaining fallback/stand-in/no-evidence members as public
+contributors or evidence refs.
 
 Non-consequence: this does not change business fusion algorithms, model
 weights, features, scoring, training, data sources, or runtime bindings.

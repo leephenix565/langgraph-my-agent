@@ -3,6 +3,37 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Real-agent report-quality contributor semantics
+
+### Changed
+
+- Tightened L3 real-contributor semantics in both the external adapter and the
+  deterministic reducer. Fallback, stand-in, no-evidence, `not_evaluated`, and
+  zero-weight members no longer survive as report contributors or evidence
+  refs; public-safe provenance records the dropped refs and degraded members.
+- Added `l3_contributor_integrity_v1` to the offline report-quality harness and
+  made L3 transparency depend on that integrity check before passing the
+  `29/45` report-quality floor.
+- Updated the macro placeholder services and market composite service in the
+  prod agent directories so placeholder/fallback members are exposed as
+  downgraded non-contributors rather than report-grade evidence.
+
+### Tests
+
+- Added focused adapter and deterministic reducer regressions for fallback and
+  no-evidence contributor exclusion.
+- Revalidated full DAG compute-enabled report E2E at `29/45` with
+  `renderer_quality_gate.passed=true` and zero L3 contributor-integrity
+  violations.
+- Generated selected value/risk compute E2E trust artifacts with selected-plan,
+  workflow, evidence-bundle, report, provenance, and unsafe-scan summaries.
+
+### Not Done
+
+- No runtime binding, catalog, non-L4 policy, selected-routing default,
+  `/v1/agent/invoke`, provider, env-value, raw-response, external agent dev
+  directory, or push change.
+
 ## 2026-07-01 - Real-agent compute E2E status closeout
 
 ### Changed

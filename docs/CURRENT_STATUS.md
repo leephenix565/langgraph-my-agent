@@ -182,6 +182,14 @@ records.
   compute-enabled report E2E with a final report. The boundary remained
   compute-only: `/v1/agent/invoke=0`, provider calls `0`, env-value access `0`,
   and raw response retention `0`.
+- The report-quality semantics follow-up keeps `26/26` external compute
+  mapping while tightening L3 contributor semantics in the adapter and
+  deterministic reducer. Fallback/stand-in/no-evidence/zero-weight members are
+  retained only as degraded limitations, selected value/risk trust artifacts are
+  generated, and the offline report-quality harness now records
+  `l3_contributor_integrity_v1`. The full DAG compute report E2E passes the
+  source-controlled floor at `29/45` with `renderer_quality_gate.passed=true`
+  and no L3 contributor-integrity violations.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

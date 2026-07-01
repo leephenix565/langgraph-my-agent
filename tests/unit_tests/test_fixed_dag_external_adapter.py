@@ -667,7 +667,7 @@ def test_dimension_conclusion_zero_weight_pending_member_is_not_contributor() ->
     _assert_safe_public_payload(mapped)
 
 
-def test_dimension_conclusion_rejects_noncontributor_evidence_ref() -> None:
+def test_dimension_conclusion_drops_noncontributor_evidence_ref() -> None:
     payload = _dimension_conclusion_payload(
         agent_id="market_composite",
         dimension="market",
@@ -700,9 +700,83 @@ def test_dimension_conclusion_rejects_noncontributor_evidence_ref() -> None:
     ]
 
     mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
 
-    assert mapped["schema"] == ADAPTER_FAILURE_SCHEMA_VERSION
-    assert mapped["reason"] == "evidence_ref_from_non_contributor"
+    assert valid, reason
+    assert mapped["status"] == "partial"
+    assert mapped["contributing_agents"] == ["market_stock_technical"]
+    assert mapped["evidence_refs"] == []
+    assert mapped["provenance"]["dropped_evidence_refs"] == [
+        {
+            "agent_id": "sentiment_company_radar",
+            "reason": "evidence_ref_from_non_contributor_dropped",
+            "evidence_ref": "sentiment_company_radar",
+        }
+    ]
+    _assert_safe_public_payload(mapped)
+
+
+def test_dimension_conclusion_downgrades_fallback_member_with_positive_weight() -> None:
+    payload = _dimension_conclusion_payload(
+        agent_id="market_composite",
+        dimension="market",
+        members=[
+            {
+                "agent_id": "market_stock_technical",
+                "stance": -0.2,
+                "confidence": 0.6,
+                "weight": 0.95,
+                "status": "ok",
+            },
+            {
+                "agent_id": "market_fund_manager_behavior",
+                "stance": 0.15,
+                "confidence": 0.26,
+                "weight": 0.05,
+                "status": "partial",
+                "summary": "LLM 不可用/解析失败(compute_no_llm_deterministic_fallback)，使用确定性替身兜底输出",
+            },
+        ],
+    )
+    payload["contributing_agents"] = [
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+    ]
+    payload["evidence"] = [
+        {
+            "id": "technical-evidence",
+            "source": "market_stock_technical",
+            "fact": "技术面提供当前轮次可读材料。",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+        {
+            "id": "fund-fallback",
+            "source": "market_fund_manager_behavior",
+            "fact": "fallback must not survive as contributor evidence.",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["status"] == "partial"
+    assert mapped["contributing_agents"] == ["market_stock_technical"]
+    assert mapped["evidence_refs"] == ["technical-evidence"]
+    assert mapped["provenance"]["member_weight_summary"][1]["weight"] == 0.0
+    assert mapped["provenance"]["member_weight_summary"][1]["original_weight"] == 0.05
+    assert mapped["provenance"]["non_contributor_members"] == [
+        {
+            "agent_id": "market_fund_manager_behavior",
+            "reason": "positive_weight_fallback_or_standin_member",
+            "status": "partial",
+            "weight": 0.05,
+            "confidence": 0.26,
+        }
+    ]
     _assert_safe_public_payload(mapped)
 
 

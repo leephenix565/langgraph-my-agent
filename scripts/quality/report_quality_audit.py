@@ -241,6 +241,7 @@ def _renderer_quality_gate(result: Mapping[str, Any]) -> dict[str, Any]:
     safety = _as_mapping(result.get("public_safety"))
     source = _as_mapping(result.get("source_label_leakage"))
     action = _as_mapping(result.get("action_implication"))
+    l3_integrity = _as_mapping(result.get("l3_contributor_integrity"))
     checks = {
         "pipeline_score_at_least_renderer_floor": _safe_int(score.get("total")) >= thresholds["min_score"],
         "template_phrases_within_renderer_limit": _safe_int(template.get("template_phrase_count")) <= thresholds["max_template_phrases"],
@@ -255,6 +256,7 @@ def _renderer_quality_gate(result: Mapping[str, Any]) -> dict[str, Any]:
         "dimension_sections_present": bool(result.get("dimension_sections_present")),
         "action_implication_present": bool(action.get("present")),
         "core_source_label_leakage_zero": _safe_int(source.get("core_source_label_leakage_count")) == 0,
+        "l3_contributor_integrity_pass": bool(l3_integrity.get("passed", True)),
     }
     failed = [name for name, passed in checks.items() if not passed]
     return {
@@ -562,6 +564,7 @@ def _coverage_row(
             if _clean_text(_as_mapping(item).get("claim") or _as_mapping(item).get("support"), limit=180)
         ],
         "limitations_count": len(_as_list(detail.get("limitations"))),
+        "contributing_agents": _as_list(detail.get("contributing_agents")),
     }
 
 
@@ -686,12 +689,14 @@ def _score_rubric(
     template_count: int,
     unsafe_pass: bool,
     report_text: str,
+    l3_integrity: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     l3_total = _safe_int(material.get("l3_complete")) + _safe_int(material.get("l3_partial"))
     limitations_count = len(_as_list(report_result.get("limitations")))
     risk_failed = "risk_compliance_review" in set(_as_list(material.get("failed_agents")))
     has_risk_text = "风险" in report_text or "risk" in report_text.lower()
     has_macro_text = "宏观" in report_text or "macro" in report_text.lower()
+    l3_integrity_pass = bool(_as_mapping(l3_integrity).get("passed", True))
     score_by_name = {
         "Evidence grounding": 3
         if _safe_int(material.get("agents_mapped")) >= 20 and _safe_int(material.get("evidence_cards_count", 5)) >= 5
@@ -699,7 +704,7 @@ def _score_rubric(
         "Cross-dimension synthesis": 2 if all(term in report_text for term in ("估值", "市场", "风险", "宏观")) else 1,
         "Risk handling": 3 if risk_failed and has_risk_text else 2 if has_risk_text else 1,
         "Macro handling": 2 if has_macro_text and _safe_int(material.get("l3_partial")) else 3 if has_macro_text else 1,
-        "L3 transparency": 3 if l3_total >= 4 else 2,
+        "L3 transparency": 4 if l3_total >= 4 and l3_integrity_pass else 3 if l3_total >= 4 else 2,
         "Decision clarity": 1
         if str(report_result.get("status") or "") == "pending_implementation"
         else 3
@@ -782,6 +787,99 @@ def _recommended_wave(loss_ledger: Sequence[Mapping[str, Any]]) -> str:
     return "RQ2 Bundle/report renderer improvement"
 
 
+def _l3_ref_matches_non_contributor(ref: str, agent_id: str) -> bool:
+    ref_clean = str(ref or "").strip()
+    agent_clean = str(agent_id or "").strip()
+    return bool(
+        ref_clean
+        and agent_clean
+        and (
+            ref_clean == agent_clean
+            or ref_clean.startswith(f"{agent_clean}(")
+            or ref_clean.startswith(f"{agent_clean}:")
+            or ref_clean.startswith(f"{agent_clean}/")
+            or ref_clean.startswith(f"{agent_clean}：")
+        )
+    )
+
+
+def _l3_contributor_integrity(evidence_bundle: Mapping[str, Any]) -> dict[str, Any]:
+    rows = [_as_mapping(item) for item in _as_list(evidence_bundle.get("l3_composite_outputs"))]
+    violations: list[dict[str, Any]] = []
+    checked = 0
+    for row in rows:
+        if not row:
+            continue
+        checked += 1
+        agent_id = str(row.get("agent_id") or "")
+        status = str(row.get("status") or "")
+        notes = _as_mapping(row.get("provenance_notes"))
+        contributing = {
+            str(item)
+            for item in (_as_list(row.get("contributing_agents")) or _as_list(notes.get("contributing_agents")))
+            if str(item)
+        }
+        evidence_refs = [str(item) for item in _as_list(row.get("evidence_refs")) if str(item)]
+        non_contributors = [
+            _as_mapping(item)
+            for item in _as_list(notes.get("non_contributor_members"))
+            if _as_mapping(item).get("agent_id")
+        ]
+        non_ids = {str(item.get("agent_id")) for item in non_contributors}
+        for non_id in sorted(non_ids & contributing):
+            violations.append(
+                {
+                    "agent_id": agent_id,
+                    "member": non_id,
+                    "reason": "non_contributor_listed_as_contributor",
+                }
+            )
+        for non_id in sorted(non_ids):
+            for ref in evidence_refs:
+                if _l3_ref_matches_non_contributor(ref, non_id):
+                    violations.append(
+                        {
+                            "agent_id": agent_id,
+                            "member": non_id,
+                            "reason": "non_contributor_evidence_ref_retained",
+                            "evidence_ref": _clean_text(ref, limit=160),
+                        }
+                    )
+        for item in _as_list(notes.get("member_weight_summary")):
+            item_map = _as_mapping(item)
+            member_id = str(item_map.get("agent_id") or "")
+            if member_id in non_ids and _safe_float(item_map.get("weight"), default=0.0) > 0.0:
+                violations.append(
+                    {
+                        "agent_id": agent_id,
+                        "member": member_id,
+                        "reason": "reported_member_weight_not_zeroed",
+                        "weight": _safe_float(item_map.get("weight"), default=0.0),
+                    }
+                )
+        if _as_list(notes.get("dropped_evidence_refs")) and status == "complete":
+            violations.append(
+                {
+                    "agent_id": agent_id,
+                    "reason": "dropped_evidence_without_degraded_status",
+                }
+            )
+        if status in {"complete", "partial"} and not contributing and evidence_refs:
+            violations.append(
+                {
+                    "agent_id": agent_id,
+                    "reason": "evidence_refs_without_real_contributors",
+                }
+            )
+    return {
+        "schema": "l3_contributor_integrity_v1",
+        "passed": not violations,
+        "l3_rows_checked": checked,
+        "violation_count": len(violations),
+        "violations": violations[:20],
+    }
+
+
 def _audit_common(
     *,
     artifact_root: str,
@@ -794,6 +892,7 @@ def _audit_common(
     fixture_rubric: Sequence[Mapping[str, Any]] | None = None,
     fixture_loss_ledger: Sequence[Mapping[str, Any]] | None = None,
     non_claims: Sequence[str] | None = None,
+    l3_contributor_integrity: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     report_text = _report_text_from_result(report_result, markdown)
     unsafe_scan = scan_unsafe_texts(
@@ -828,6 +927,7 @@ def _audit_common(
             template_count=_safe_int(template_language.get("template_phrase_count")),
             unsafe_pass=bool(unsafe_scan["unsafe_scan_pass"]),
             report_text=report_text,
+            l3_integrity=l3_contributor_integrity,
         )
     result = {
         "schema": RESULT_SCHEMA,
@@ -841,6 +941,10 @@ def _audit_common(
         "material_coverage": material,
         "answer_section_parity": answer_section_parity,
         "risk_compliance_review": risk,
+        "l3_contributor_integrity": dict(
+            l3_contributor_integrity
+            or {"schema": "l3_contributor_integrity_v1", "passed": True, "l3_rows_checked": 0}
+        ),
         "public_safety": unsafe_scan,
         "loss_ledger": loss_ledger,
         "source_label_leakage": _source_label_leakage(report_result),
@@ -878,11 +982,11 @@ def audit_fixture(path: Path) -> dict[str, Any]:
 
 
 def audit_artifact_root(path: Path) -> dict[str, Any]:
-    run_dir = path / "run"
+    run_dir = path / "run" if (path / "run" / "summary.json").is_file() else path
     summary = _load_json(run_dir / "summary.json")
     evidence_bundle = _load_json(run_dir / "agent_evidence_bundle.json")
     workflow_trace = _load_json(run_dir / "workflow_trace.json")
-    markdown_parts = [_read_text(run_dir / "final_report.md")]
+    markdown_parts = [_read_text(run_dir / "final_report.md")] if (run_dir / "final_report.md").is_file() else []
     public_report = path / "public_agent_report.md"
     if public_report.exists():
         markdown_parts.append(_read_text(public_report))
@@ -902,6 +1006,7 @@ def audit_artifact_root(path: Path) -> dict[str, Any]:
         quality_summary=quality_summary,
         markdown=markdown,
         non_claims=_as_list(summary.get("non_claims")),
+        l3_contributor_integrity=_l3_contributor_integrity(evidence_bundle),
     )
 
 

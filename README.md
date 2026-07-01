@@ -72,7 +72,12 @@ without changing runtime bindings, the fixed-DAG catalog, or the non-L4
 production default policy.
 The RQ3C production-mode live verification reached the minimum report-quality
 acceptance score `29/45` with `renderer_quality_gate.passed=true`, closing the
-current report-quality theme at the compute-only boundary.
+current report-quality theme at the compute-only boundary. The later
+real-agent report-quality semantics pass keeps that floor but tightens the
+meaning of L3 support: fallback, stand-in, zero-weight, no-evidence, and
+`not_evaluated` members are filtered out of `contributing_agents` and
+`evidence_refs`, and the offline harness now audits those public-safe
+contributor-integrity fields before passing the `29/45` gate.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

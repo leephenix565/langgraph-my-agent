@@ -766,6 +766,31 @@ def _safe_string_list(value: Any, *, limit: int = 20, item_limit: int = 120) -> 
     return items
 
 
+_NON_CONTRIBUTOR_MEMBER_MARKERS = (
+    "placeholder",
+    "standin",
+    "stand-in",
+    "stand_in",
+    "llm_standin",
+    "deterministic_fallback",
+    "deterministic fallback",
+    "compute_no_llm_deterministic_fallback",
+    "fallback",
+    "not_evaluated",
+    "no_evidence",
+    "zero_evidence",
+    "no_matching_records",
+    "local_snapshot_no_matching_records",
+    "data_unavailable",
+    "not_available",
+    "unavailable",
+    "占位",
+    "兜底",
+    "替身",
+    "不可用",
+)
+
+
 def _member_looks_placeholder(item: Mapping[str, Any], fallback_id: str) -> bool:
     marker_text = " ".join(
         str(value or "")
@@ -777,9 +802,28 @@ def _member_looks_placeholder(item: Mapping[str, Any], fallback_id: str) -> bool
             item.get("summary"),
             item.get("source"),
             item.get("credibility"),
+            item.get("status"),
+            item.get("label"),
         )
     ).lower()
-    return any(token in marker_text for token in ("placeholder", "standin", "占位"))
+    for key in ("raw_output", "domain_metrics", "quality", "data_quality", "provenance"):
+        value = item.get(key)
+        if isinstance(value, Mapping):
+            marker_text += " " + " ".join(str(part or "") for part in value.keys()).lower()
+            marker_text += " " + " ".join(str(part or "") for part in value.values()).lower()
+    evidence = item.get("evidence")
+    if isinstance(evidence, list):
+        marker_text += " " + " ".join(
+            str(part or "")
+            for evidence_item in evidence[:3]
+            if isinstance(evidence_item, Mapping)
+            for part in (
+                evidence_item.get("source"),
+                evidence_item.get("id"),
+                evidence_item.get("fact"),
+            )
+        ).lower()
+    return any(token in marker_text for token in _NON_CONTRIBUTOR_MEMBER_MARKERS)
 
 
 def _safe_evidence_refs(value: Any, *, limit: int = 12) -> list[str]:
@@ -835,7 +879,11 @@ def _filter_evidence_refs_to_contributors(
             for key in ("agent_id", "source", "id")
             if (text := _safe_string(item.get(key), limit=160))
         }
-        offending_refs = sorted(item_refs & non_contributor_ids)
+        offending_refs = sorted(
+            non_id
+            for non_id in non_contributor_ids
+            if any(_evidence_ref_matches_non_contributor(ref, non_id) for ref in item_refs)
+        )
         if not offending_refs:
             filtered.append(item)
             continue
@@ -853,6 +901,19 @@ def _filter_evidence_refs_to_contributors(
             }
         )
     return filtered, dropped[:12]
+
+
+def _evidence_ref_matches_non_contributor(ref: str, non_contributor_id: str) -> bool:
+    ref_clean = ref.strip()
+    non_clean = non_contributor_id.strip()
+    if not ref_clean or not non_clean:
+        return False
+    return (
+        ref_clean == non_clean
+        or ref_clean.startswith(f"{non_clean}(")
+        or ref_clean.startswith(f"{non_clean}:")
+        or ref_clean.startswith(f"{non_clean}/")
+    )
 
 
 def _numeric_in_range(value: Any, *, field: str, minimum: float = 0.0, maximum: float = 1.0) -> tuple[float, str]:
@@ -888,8 +949,12 @@ def _member_weight_summary(members: Any) -> list[dict[str, Any]]:
                 limit=120,
             ),
         }
+        is_real_contributor = _l3_member_real_contributor(item)
         if item.get("weight") is not None:
-            member["weight"] = _bounded_float(item.get("weight"))
+            raw_weight = _bounded_float(item.get("weight"))
+            member["weight"] = raw_weight if is_real_contributor else 0.0
+            if not is_real_contributor and raw_weight > 0.0:
+                member["original_weight"] = raw_weight
         if item.get("confidence") is not None:
             member["confidence"] = _bounded_float(item.get("confidence"))
         if item.get("stance") is not None:
@@ -927,7 +992,8 @@ _NON_CONTRIBUTOR_MEMBER_STATUSES = {
 
 
 def _member_has_bounded_business_material(item: Mapping[str, Any]) -> bool:
-    if item.get("stance") not in (None, ""):
+    stance = _safe_string(item.get("stance"), limit=80).lower()
+    if stance and stance not in {"not_evaluated", "not evaluated", "unknown", "n/a"}:
         return True
     if item.get("risk_score") not in (None, ""):
         return True
@@ -946,6 +1012,10 @@ def _l3_member_real_contributor(item: Mapping[str, Any]) -> bool:
     status = _safe_code(item.get("status"))
     if status in _NON_CONTRIBUTOR_MEMBER_STATUSES:
         return False
+    if item.get("weight") is not None and _bounded_float(item.get("weight"), default=0.0) <= 0.0:
+        return False
+    if _member_looks_placeholder(item, str(item.get("agent_id") or "")):
+        return False
     confidence = _bounded_float(item.get("confidence"), default=0.0)
     if confidence <= 0.0:
         return False
@@ -954,6 +1024,8 @@ def _l3_member_real_contributor(item: Mapping[str, Any]) -> bool:
 
 def _non_contributor_weight_reason(item: Mapping[str, Any]) -> str:
     status = _safe_code(item.get("status"))
+    if _member_looks_placeholder(item, str(item.get("agent_id") or "")):
+        return "positive_weight_fallback_or_standin_member"
     if status in {
         "missing",
         "not_available",
@@ -984,8 +1056,12 @@ def _validate_l3_real_contributors(
             real_contributors.append(member_agent_id)
             continue
         non_contributors.add(member_agent_id)
-        if weights.get(member_agent_id, 0.0) > 0.0 and not allow_non_contributor_limitations:
-            return [], _non_contributor_weight_reason(item)
+        if weights.get(member_agent_id, 0.0) > 0.0:
+            reason = _non_contributor_weight_reason(item)
+            if not allow_non_contributor_limitations:
+                return [], reason
+            if reason in {"positive_weight_pending_member", "positive_weight_error_member"}:
+                return [], reason
 
     declared = _safe_string_list(declared_contributing_agents, limit=20)
     if declared:
@@ -996,7 +1072,11 @@ def _validate_l3_real_contributors(
             return [], "contributing_agent_not_real_contributor"
 
     evidence_member_refs = _evidence_refs_member_ids(evidence)
-    if evidence_member_refs & non_contributors:
+    if any(
+        _evidence_ref_matches_non_contributor(ref, non_id)
+        for ref in evidence_member_refs
+        for non_id in non_contributors
+    ):
         return [], "evidence_ref_from_non_contributor"
     return real_contributors, ""
 
@@ -1562,11 +1642,24 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
             external_agent_id=external_agent_id,
                 schema_version=EXTERNAL_DIMENSION_CONCLUSION_SCHEMA_VERSION,
             )
+    evidence_value = payload.get("evidence")
+    non_contributor_limitations = _non_contributor_member_limitations(
+        members,
+        weights=weights,
+    )
+    non_contributor_ids = {
+        item["agent_id"] for item in non_contributor_limitations if item.get("agent_id")
+    }
+    evidence_value, dropped_evidence_refs = _filter_evidence_refs_to_contributors(
+        evidence_value,
+        non_contributor_ids=non_contributor_ids,
+    )
     contributing_agents, contribution_reason = _validate_l3_real_contributors(
         members=members,
         weights=weights,
         declared_contributing_agents=payload.get("contributing_agents"),
-        evidence=payload.get("evidence"),
+        evidence=evidence_value,
+        allow_non_contributor_limitations=True,
     )
     if contribution_reason:
         return _adapter_failure(
@@ -1591,6 +1684,8 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
     )
     if failure is not None:
         return failure
+    if non_contributor_limitations and status == "complete":
+        status = "partial"
     result: DimensionCompositeResult = {
         "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
@@ -1600,7 +1695,7 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
         "confidence": confidence,
         "status": status,
         "contributing_agents": contributing_agents,
-        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "evidence_refs": _safe_evidence_refs(evidence_value),
         "as_of": as_of,
         "data_as_of": data_as_of,
         "vote_type": _safe_string(
@@ -1614,6 +1709,11 @@ def map_external_dimension_conclusion_to_dimension_composite_result(
             envelope=envelope,
             extra={
                 "member_weight_summary": _member_weight_summary(members),
+                "non_contributor_members": non_contributor_limitations,
+                "missing_or_degraded_members": [
+                    item["agent_id"] for item in non_contributor_limitations
+                ],
+                "dropped_evidence_refs": dropped_evidence_refs,
                 "event_flags": _safe_event_flags(payload.get("event_flags")),
                 **_public_safe_l3_business_context(payload),
             },

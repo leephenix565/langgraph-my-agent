@@ -263,6 +263,8 @@ def _member_summary_text(agent_id: str, result: Mapping[str, Any]) -> str:
 
 
 def _member_evidence_refs(agent_id: str, result: Mapping[str, Any]) -> list[str]:
+    if not _l2_result_real_contributor(agent_id, result):
+        return []
     refs: list[str] = []
     evidence = result.get("evidence")
     if isinstance(evidence, list):
@@ -288,10 +290,14 @@ def _member_weight_summary(
     for agent_id in expected_agent_ids:
         raw_result = conclusions.get(agent_id)
         status = _member_status(raw_result)
+        is_real_contributor = isinstance(raw_result, Mapping) and _l2_result_real_contributor(
+            agent_id,
+            raw_result,
+        )
         member: dict[str, Any] = {
             "agent_id": agent_id,
             "status": status,
-            "weight": round(_bounded_composite_float(weights.get(agent_id)), 4),
+            "weight": round(_bounded_composite_float(weights.get(agent_id)) if is_real_contributor else 0.0, 4),
         }
         if isinstance(raw_result, Mapping):
             member["stance"] = _bounded_composite_text(
@@ -389,8 +395,100 @@ def _composite_candidates(
         confidence = _bounded_composite_float(result.get("confidence"))
         if confidence <= 0.0:
             continue
+        if not _l2_result_real_contributor(agent_id, result):
+            continue
         candidates.append((agent_id, result, confidence))
     return candidates
+
+
+_NON_CONTRIBUTOR_L2_MARKERS = (
+    "placeholder",
+    "standin",
+    "stand-in",
+    "stand_in",
+    "llm_standin",
+    "deterministic_fallback",
+    "compute_no_llm_deterministic_fallback",
+    "fallback",
+    "not_evaluated",
+    "no_evidence",
+    "zero_evidence",
+    "no_matching_records",
+    "local_snapshot_no_matching_records",
+    "data_unavailable",
+    "not_available",
+    "unavailable",
+    "占位",
+    "兜底",
+    "替身",
+    "不可用",
+)
+
+
+def _l2_result_looks_non_contributor(result: Mapping[str, Any]) -> bool:
+    parts: list[str] = []
+    for key in ("status", "stance", "summary", "label", "quality_label"):
+        text = _bounded_composite_text(result.get(key), limit=260)
+        if text:
+            parts.append(text)
+    provenance = result.get("provenance")
+    if isinstance(provenance, Mapping):
+        for key in ("reason", "external_status", "stance_source", "confidence_source"):
+            text = _bounded_composite_text(provenance.get(key), limit=260)
+            if text:
+                parts.append(text)
+        for nested_key in ("raw_output_keys", "quality_keys"):
+            value = provenance.get(nested_key)
+            if isinstance(value, list):
+                parts.extend(_bounded_composite_text(item, limit=120) for item in value[:12])
+        for nested_key in ("domain_metrics", "data_quality"):
+            value = provenance.get(nested_key)
+            if isinstance(value, Mapping):
+                parts.extend(_bounded_composite_text(item, limit=120) for item in value.keys())
+                parts.extend(_bounded_composite_text(item, limit=120) for item in value.values())
+    evidence = result.get("evidence")
+    if isinstance(evidence, list):
+        for item in evidence[:3]:
+            if not isinstance(item, Mapping):
+                continue
+            for key in ("source", "id", "fact"):
+                text = _bounded_composite_text(item.get(key), limit=260)
+                if text:
+                    parts.append(text)
+    marker_text = " ".join(parts).lower()
+    return any(token in marker_text for token in _NON_CONTRIBUTOR_L2_MARKERS)
+
+
+def _l2_result_has_real_material(result: Mapping[str, Any]) -> bool:
+    stance = _bounded_composite_text(result.get("stance"), limit=80).lower()
+    if stance and stance not in {"not_evaluated", "not evaluated", "unknown", "n/a"}:
+        return True
+    if result.get("risk_score") not in (None, ""):
+        return True
+    evidence = result.get("evidence")
+    if isinstance(evidence, list) and evidence:
+        return True
+    provenance = result.get("provenance")
+    if isinstance(provenance, Mapping):
+        for key in ("research_points", "drivers", "domain_metrics"):
+            value = provenance.get(key)
+            if isinstance(value, list) and value:
+                return True
+            if isinstance(value, Mapping) and value:
+                return True
+    return False
+
+
+def _l2_result_real_contributor(agent_id: str, result: Mapping[str, Any]) -> bool:
+    status = _member_status(result)
+    if status not in {"complete", "partial"}:
+        return False
+    confidence = _bounded_composite_float(result.get("confidence"))
+    if confidence <= 0.0:
+        return False
+    if _l2_result_looks_non_contributor(result):
+        return False
+    return _l2_result_has_real_material(result)
 
 
 def _direction_candidates(
@@ -1649,6 +1747,8 @@ def _build_dimension_composite(
     status = _status_for_expected(expected_agent_ids, conclusions)
     available_candidates = _composite_candidates(expected_agent_ids, conclusions)
     direction_candidates = _direction_candidates(expected_agent_ids, conclusions)
+    if not available_candidates:
+        status = "pending_implementation"
     direction_weights = _normalized_weights(direction_candidates)
     all_weights = _normalized_weights(available_candidates)
     weighted_score = _weighted_direction_score(direction_candidates)
@@ -2659,6 +2759,19 @@ def _provenance_notes(provenance: Any) -> dict[str, Any]:
         values = _safe_public_text_list(provenance.get(key), limit=10, item_limit=80)
         if values:
             notes[key] = values
+    for key in ("contributing_agents", "missing_or_degraded_members"):
+        values = _safe_public_text_list(provenance.get(key), limit=12, item_limit=120)
+        if values:
+            notes[key] = values
+    member_summary = _safe_public_detail_list(provenance.get("member_weight_summary"), limit=12)
+    if member_summary:
+        notes["member_weight_summary"] = member_summary
+    non_contributors = _safe_public_detail_list(provenance.get("non_contributor_members"), limit=12)
+    if non_contributors:
+        notes["non_contributor_members"] = non_contributors
+    dropped_refs = _safe_public_detail_list(provenance.get("dropped_evidence_refs"), limit=12)
+    if dropped_refs:
+        notes["dropped_evidence_refs"] = dropped_refs
     domain_metrics = _safe_public_detail_mapping(provenance.get("domain_metrics"), limit=18)
     if domain_metrics:
         notes["domain_metrics"] = domain_metrics
@@ -2719,6 +2832,11 @@ def _l3_composite_evidence_detail(result: Mapping[str, Any]) -> dict[str, Any]:
         ]
         if isinstance(evidence_refs, list)
         else [],
+        "contributing_agents": _safe_public_text_list(
+            result.get("contributing_agents"),
+            limit=12,
+            item_limit=120,
+        ),
         "provenance_notes": provenance_notes,
     }
     for key in ("domain_metrics", "drivers", "research_points", "data_quality"):
