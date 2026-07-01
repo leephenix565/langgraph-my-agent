@@ -3,6 +3,33 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Real-agent compute E2E status closeout
+
+### Changed
+
+- Added macro-composite adapter fail-soft handling for declared members that do
+  not qualify as real contributors. The adapter now records those members as
+  `missing_or_degraded_members`, drops their evidence refs from the mapped
+  macro result, and downgrades a complete macro payload to partial instead of
+  returning `fixed_dag_external_adapter_failure_v1`.
+- Kept the macro identity, member-roster, dimension-weight, date, unsafe-text,
+  and no-`stance` gates strict; the change only mirrors the existing risk
+  composite contributor-limitation behavior for bounded macro partial coverage.
+
+### Tests
+
+- Added a unit regression for macro declared non-contributors.
+- Revalidated the service-layer repair with targeted six-agent smoke,
+  all-agent `/v1/agent/compute` smoke, full DAG compute-enabled report E2E, and
+  selected value/risk compute-enabled report E2E under the no-invoke/no-provider
+  boundary.
+
+### Not Done
+
+- No runtime binding, catalog, non-L4 policy, selected-routing default, provider,
+  `/v1/agent/invoke`, external provider, env-value, raw-response, or external
+  agent dev-directory change.
+
 ## 2026-07-01 - Real-agent compute registry formalization closeout
 
 ### Changed

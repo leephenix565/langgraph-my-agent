@@ -1015,6 +1015,69 @@ def test_macro_conclusion_rejects_pending_member_with_nonzero_weight() -> None:
     _assert_safe_public_payload(mapped)
 
 
+def test_macro_conclusion_downgrades_declared_noncontributor_member() -> None:
+    payload = _macro_conclusion_payload()
+    payload["members"] = {
+        "macro_analysis": {
+            "status": "ok",
+            "confidence": 0.8,
+            "summary": "Macro trend has bounded evidence.",
+            "weight": 0.7,
+        },
+        "macro_index_valuation": {
+            "status": "ok",
+            "confidence": 0.0,
+            "weight": 0.0,
+        },
+    }
+    payload["contributing_agents"] = ["macro_analysis", "macro_index_valuation"]
+    payload["evidence"] = [
+        {
+            "id": "macro_analysis",
+            "fact": "Real macro contributor has bounded evidence.",
+            "source": "macro_analysis",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+        {
+            "id": "macro_index_valuation",
+            "fact": "Degraded member must not remain a contributor evidence ref.",
+            "source": "macro_index_valuation",
+            "as_of": "2026-06-05",
+            "data_as_of": "2026-06-05",
+        },
+    ]
+
+    mapped = map_external_response_to_fixed_dag_object(payload)
+    valid, reason = validate_dimension_composite_result(mapped)
+
+    assert valid, reason
+    assert mapped["schema"] == "dimension_composite_result_v1"
+    assert mapped["status"] == "partial"
+    assert mapped["contributing_agents"] == ["macro_analysis"]
+    assert mapped["evidence_refs"] == ["macro_analysis"]
+    assert mapped["provenance"]["missing_or_degraded_members"] == [
+        "macro_index_valuation"
+    ]
+    assert mapped["provenance"]["non_contributor_members"] == [
+        {
+            "agent_id": "macro_index_valuation",
+            "reason": "positive_weight_no_evidence_member",
+            "status": "ok",
+            "weight": 0.0,
+            "confidence": 0.0,
+        }
+    ]
+    assert mapped["provenance"]["dropped_evidence_refs"] == [
+        {
+            "agent_id": "macro_index_valuation",
+            "reason": "evidence_ref_from_non_contributor_dropped",
+            "evidence_ref": "macro_index_valuation",
+        }
+    ]
+    _assert_safe_public_payload(mapped)
+
+
 def test_external_compute_envelope_maps_l3_tool_result() -> None:
     payload = _compute_envelope(_risk_conclusion_payload())
     payload["agent_id"] = "risk_composite"

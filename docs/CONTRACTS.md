@@ -401,7 +401,12 @@ the same provider-free adapter boundary to L3 composite payloads:
 - `macro_conclusion_v1` maps into `dimension_composite_result_v1` for
   `macro_composite`. `dimension_weights` are restricted to `value` and
   `market`; `risk` remains the independent gate and `macro` remains the
-  regulator.
+  regulator. If a service declares a macro member as a contributor but that
+  member has no bounded business material or positive confidence, the adapter
+  does not admit that member as a real contributor. It records the member under
+  public-safe `missing_or_degraded_members` / `non_contributor_members`, drops
+  evidence refs to the non-contributor, and maps the macro result as partial
+  when the rest of the macro payload is valid.
 - `raw_output` and `quality` do not enter graph state verbatim; bounded
   public-safe report material may appear in provenance/report bundles after
   adapter validation.

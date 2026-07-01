@@ -1962,17 +1962,31 @@ def map_external_macro_conclusion_to_dimension_composite_result(
         ]
     elif isinstance(raw_members, list):
         member_items = [item for item in raw_members if isinstance(item, Mapping)]
+    evidence_value = payload.get("evidence")
+    dropped_evidence_refs: list[dict[str, str]] = []
     if member_items:
         weights: dict[str, float] = {}
         for item in member_items:
             member_agent_id = str(item.get("agent_id") or "").strip()
             if member_agent_id in DIMENSION_GROUPS["macro"]:
                 weights[member_agent_id] = _bounded_float(item.get("weight"), default=0.0)
+        non_contributor_limitations = _non_contributor_member_limitations(
+            member_items,
+            weights=weights,
+        )
+        non_contributor_ids = {
+            item["agent_id"] for item in non_contributor_limitations if item.get("agent_id")
+        }
+        evidence_value, dropped_evidence_refs = _filter_evidence_refs_to_contributors(
+            evidence_value,
+            non_contributor_ids=non_contributor_ids,
+        )
         real_contributors, contribution_reason = _validate_l3_real_contributors(
             members=member_items,
             weights=weights,
             declared_contributing_agents=declared_contributing_agents,
-            evidence=payload.get("evidence"),
+            evidence=evidence_value,
+            allow_non_contributor_limitations=True,
         )
         if contribution_reason:
             return _adapter_failure(
@@ -1982,6 +1996,10 @@ def map_external_macro_conclusion_to_dimension_composite_result(
                 schema_version=EXTERNAL_MACRO_CONCLUSION_SCHEMA_VERSION,
             )
         contributing_agents = real_contributors
+    else:
+        non_contributor_limitations = []
+    if non_contributor_limitations and status == "complete":
+        status = "partial"
     result: DimensionCompositeResult = {
         "schema": DIMENSION_COMPOSITE_SCHEMA_VERSION,
         "schema_version": DIMENSION_COMPOSITE_SCHEMA_VERSION,
@@ -1991,7 +2009,7 @@ def map_external_macro_conclusion_to_dimension_composite_result(
         "confidence": confidence,
         "status": status,
         "contributing_agents": contributing_agents,
-        "evidence_refs": _safe_evidence_refs(payload.get("evidence")),
+        "evidence_refs": _safe_evidence_refs(evidence_value),
         "as_of": as_of,
         "data_as_of": data_as_of,
         "regime": regime,
@@ -2004,6 +2022,11 @@ def map_external_macro_conclusion_to_dimension_composite_result(
             envelope=envelope,
             extra={
                 "member_weight_summary": _member_weight_summary(payload.get("members")),
+                "non_contributor_members": non_contributor_limitations,
+                "missing_or_degraded_members": [
+                    item["agent_id"] for item in non_contributor_limitations
+                ],
+                "dropped_evidence_refs": dropped_evidence_refs,
                 "style_bias": style_bias,
                 "event_flags": _safe_event_flags(payload.get("event_flags")),
                 **_public_safe_l3_business_context(payload),

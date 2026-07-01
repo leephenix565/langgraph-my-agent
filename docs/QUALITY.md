@@ -230,6 +230,15 @@ static/mainline quality. Service-local focused tests for production wrappers
 remain outside default mainline and must be run only in explicit controlled
 service phases.
 
+The real-agent compute content/status closeout adds one more durable mainline
+regression: macro-composite declared non-contributor members must be mapped as
+public-safe partial coverage limitations instead of adapter failures. The
+manual evidence for that phase is still the controlled service/E2E artifact:
+targeted six-agent resmoke, all-agent compute resmoke, full DAG
+compute-enabled report E2E, selected value/risk compute-enabled report E2E,
+unsafe scan, and bounded call ledger. The default mainline remains
+external-endpoint-free and provider-free.
+
 CS1-C3R adds a source-controlled phase artifact integrity helper and L3
 real-contributor regression tests. The helper writes relative-path SHA256
 manifests only after primary artifacts and validation files are finalized, and

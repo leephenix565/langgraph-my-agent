@@ -173,6 +173,15 @@ records.
   no-data compute output and direct all-agent smoke mapped `26/26` external
   services with hard unsafe marker count `0`; that repair did not alter
   runtime bindings, the agent catalog, or non-L4 production default policy.
+- The follow-up real-agent content/status closeout repaired the remaining
+  scoped service-level status blockers and added macro-composite adapter
+  fail-soft handling for declared but non-real contributors. Controlled
+  verification reached `26/26` external service health, `26/26` compute JSON,
+  `26/26` adapter mapping, hard unsafe marker count `0`, full DAG
+  compute-enabled report E2E with `failed_agents=[]`, and selected value/risk
+  compute-enabled report E2E with a final report. The boundary remained
+  compute-only: `/v1/agent/invoke=0`, provider calls `0`, env-value access `0`,
+  and raw response retention `0`.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

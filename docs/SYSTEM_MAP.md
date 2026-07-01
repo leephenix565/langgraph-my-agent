@@ -115,6 +115,13 @@ excluded from `contributing_agents` and retained as coverage limitations. RQ3C
 adds the matching evidence-reference cleanup so refs pointing at those
 non-contributors are dropped from mapped `risk_composite` evidence and recorded
 only as coverage-limit metadata.
+The real-agent compute content/status closeout applies the same fail-soft
+principle to `macro_composite`: declared macro members that are not real
+contributors are recorded as degraded coverage, their evidence refs are
+dropped, and the macro result maps as partial instead of an adapter failure.
+Controlled manual verification reached 26/26 external compute mappings, full
+DAG compute-enabled report output, and selected value/risk compute-enabled
+report output without `/v1/agent/invoke` or provider calls.
 
 R8-4 did not change public workflow projection or frontend rendering. The
 public path still receives the full default `workflow_snapshot_v2` produced from
