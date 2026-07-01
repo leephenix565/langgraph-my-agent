@@ -309,6 +309,60 @@ def test_l4_report_generator_uses_provider_sized_default_timeout() -> None:
     assert bridge._timeout_from_context(context, entry) == 120.0
 
 
+def test_demo_registry_covers_all_external_fixed_dag_compute_services() -> None:
+    expected_external_agents = {
+        "financial_data_service",
+        "entity_relation_extractor",
+        "value_traditional_valuation",
+        "value_ml_valuation",
+        "value_meta_valuation",
+        "value_research_synthesis",
+        "market_stock_technical",
+        "market_fund_manager_behavior",
+        "market_ipo_investor_behavior",
+        "market_capital_flow_chip",
+        "sentiment_company_radar",
+        "risk_crash",
+        "risk_financial_fraud",
+        "risk_identification",
+        "risk_compliance_review",
+        "macro_analysis",
+        "macro_commodity_pricing",
+        "macro_index_valuation",
+        "macro_sentiment",
+        "macro_industry_hotspot",
+        "value_composite",
+        "market_composite",
+        "risk_composite",
+        "macro_composite",
+        "decision_synthesizer",
+        "report_generator",
+    }
+
+    assert set(DEMO_COMPUTE_SERVICE_REGISTRY) == expected_external_agents
+    assert len(DEMO_COMPUTE_SERVICE_REGISTRY) == 26
+    for entry in DEMO_COMPUTE_SERVICE_REGISTRY.values():
+        valid, reason = validate_demo_entry(entry)
+        assert valid, f"{entry.agent_id}: {reason}"
+        assert entry.compute_path == "/v1/agent/compute"
+
+
+def test_repaired_service_entries_use_formal_loopback_identity() -> None:
+    fund = DEMO_COMPUTE_SERVICE_REGISTRY["market_fund_manager_behavior"]
+    sentiment = DEMO_COMPUTE_SERVICE_REGISTRY["macro_sentiment"]
+    hotspot = DEMO_COMPUTE_SERVICE_REGISTRY["macro_industry_hotspot"]
+
+    assert fund.base_url == "http://127.0.0.1:8503"
+    assert fund.dimension == "market"
+    assert fund.external_agent_id == "fund_manager_behavior"
+    assert sentiment.base_url == "http://127.0.0.1:10018"
+    assert sentiment.dimension == "macro"
+    assert sentiment.external_agent_id == "macro_sentiment"
+    assert hotspot.base_url == "http://127.0.0.1:10019"
+    assert hotspot.dimension == "macro"
+    assert hotspot.external_agent_id == "macro_industry_hotspot"
+
+
 def test_demo_base_url_env_override_is_loopback_only_for_l2_and_l3(monkeypatch) -> None:
     import react_agent.fixed_dag_external_compute_bridge as bridge
 

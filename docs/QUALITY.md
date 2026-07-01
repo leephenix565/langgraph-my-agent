@@ -166,15 +166,16 @@ or evidence-free members stay visible as limitations and do not become fake
 evidence.
 RQ3C preserves that rule and removes only invalid `risk_composite`
 `evidence_refs` that point to non-contributing members. The removed references
-are recorded as public-safe coverage limitations, while
-`risk_compliance_review` unsupported-schema output remains a known backlog item
-and does not become fake evidence.
+are recorded as public-safe coverage limitations. A later real-agent service
+repair fixed `risk_compliance_review` service-side no-data output to a typed
+`agent_conclusion_v1`, so direct all-agent compute smoke can now map that agent
+without fabricating evidence.
 
 The RQ3C controlled production-mode live verification reached score `29/45`
 with `renderer_quality_gate.passed=true`, so the report-quality theme has met
 the minimum production-mode quality acceptance. The result does not relax
-quality thresholds and does not close the separate
-`risk_compliance_review` schema backlog.
+quality thresholds; later service-repair smoke evidence is separate from the
+RQ3C acceptance artifact.
 
 RQ2E non-claims:
 

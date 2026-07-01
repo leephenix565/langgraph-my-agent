@@ -101,6 +101,13 @@ rejects `/v1/agent/invoke`, maps responses through
 `fixed_dag_external_adapter.py`, and stores only bounded mapped contracts plus
 public-safe workflow/report summaries. It is not `runtime_bindings.json`
 authority, not live verification, and not default graph invocation.
+After the real-agent service repair, the demo/manual compute registry records
+all 26 external fixed-DAG service ids, including
+`market_fund_manager_behavior`, `macro_sentiment`, and
+`macro_industry_hotspot`. Those three remain excluded from the source-controlled
+non-L4 production default policy; registry visibility is for explicit
+demo/manual compute verification and does not make them default production
+calls.
 The same pure adapter is also used by the source-controlled production
 compute-only path; RQ3B keeps risk-branch failures honest by allowing
 `risk_composite` to map as partial only when non-contributing risk members are

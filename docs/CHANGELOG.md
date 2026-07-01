@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Real-agent compute registry formalization closeout
+
+### Changed
+
+- Added the three repaired/manual compute services
+  `market_fund_manager_behavior`, `macro_sentiment`, and
+  `macro_industry_hotspot` to the explicit demo/manual `/v1/agent/compute`
+  registry so all 26 external fixed-DAG service ids are visible for controlled
+  compute verification.
+- Formalized `market_fund_manager_behavior` ops registry metadata with port
+  `8503`, `/v1/agent/compute`, and external agent id `fund_manager_behavior`;
+  also recorded repaired service-local ids for compliance, sentiment, and macro
+  placeholder services.
+- Updated current status and quality docs to distinguish the older RQ3C
+  `risk_compliance_review` limitation from the later service-side repair that
+  mapped `26/26` external agents in direct all-agent compute smoke.
+
+### Tests
+
+- Added focused registry tests proving all 26 external service ids are covered
+  by loopback compute-only demo entries.
+- Added policy-boundary coverage showing
+  `market_fund_manager_behavior`, `macro_sentiment`, and
+  `macro_industry_hotspot` remain excluded from the non-L4 production default
+  policy.
+
+### Not Done
+
+- No runtime binding, fixed-DAG catalog, non-L4 policy, graph default,
+  `/v1/agent/invoke`, provider, endpoint call, process action, env-value access,
+  raw response retention, prod/sandbox source write, or service restart change.
+
 ## 2026-07-01 - Frontend selected-routing boundary docs closeout
 
 ### Changed

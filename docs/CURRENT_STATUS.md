@@ -158,18 +158,21 @@ records.
   output.
 - RQ3A lifted production-mode live quality to `28/45` and isolated the
   remaining blocker to the risk branch adapter: `risk_compliance_review`
-  remains an honest adapter-failed coverage limitation, while RQ3B narrows the
-  fix to allowing `risk_composite` partial mapping when a non-contributing risk
-  member must be excluded from weighted evidence. RQ3C keeps that scope narrow:
-  `risk_composite` evidence references that still point to non-contributors are
-  dropped before final L3 validation and recorded as coverage limitations;
-  `risk_compliance_review` unsupported-schema mapping is not fixed in RQ3C.
+  remained an honest adapter-failed coverage limitation at that time, while
+  RQ3B narrowed the fix to allowing `risk_composite` partial mapping when a
+  non-contributing risk member must be excluded from weighted evidence. RQ3C
+  kept that scope narrow: `risk_composite` evidence references that still point
+  to non-contributors are dropped before final L3 validation and recorded as
+  coverage limitations.
 - RQ3C production-mode live verification reached `29/45` with
   `renderer_quality_gate.passed=true`, unsafe scan pass, traceability `1.0`,
   answer/section parity `1.0`, and research-point utilization `1.0`. The
   compute-only boundary held: `/v1/agent/invoke=0`, provider calls `0`, process
   actions `0`, env-value access `0`, and raw response retention `false`.
-  `risk_compliance_review` remains a non-blocking backlog limitation.
+  A later real-agent service repair fixed `risk_compliance_review` service-side
+  no-data compute output and direct all-agent smoke mapped `26/26` external
+  services with hard unsafe marker count `0`; that repair did not alter
+  runtime bindings, the agent catalog, or non-L4 production default policy.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

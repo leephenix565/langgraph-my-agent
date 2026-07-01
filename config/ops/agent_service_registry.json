@@ -745,7 +745,7 @@
           "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior"
         ],
         "entrypoint": "service.py",
-        "port": null,
+        "port": 8503,
         "health_path": "/health",
         "compute_path": "/v1/agent/compute",
         "process_manager": "documented_manual_or_unknown",
@@ -776,7 +776,7 @@
         ]
       },
       "contract": {
-        "external_agent_id": "",
+        "external_agent_id": "fund_manager_behavior",
         "health_schema": "external_agent_health_v0",
         "compute_envelope_schema": "external_agent_compute_v0",
         "output_contract": "conclusion_object_v1",
@@ -789,7 +789,7 @@
         "secret_policy": "block_or_sanitize_derivative",
         "restart_required_after_source_change": true,
         "transaction_root": "/sdb/dlut/prod/市场面综合智能体/subagents/fund_manager_behavior",
-        "process_group_key": "market_fund_manager_behavior",
+        "process_group_key": "port:8503",
         "source_unit_ids": [
           "market_composite_shared_support"
         ]
@@ -798,7 +798,8 @@
         "config/fixed_dag/agent_catalog.json",
         "config/fixed_dag/runtime_bindings.json",
         "/tmp/lma-p2s-sensitive-closure-20260623T060342Z/final_agent_sync_matrix.json",
-        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json"
+        "/tmp/lma-prod-to-sandbox-agent-refresh-20260623T050419Z/prod_agent_inventory.json",
+        "/tmp/lma-real-agent-blocker-prod-service-repair-and-resmoke-20260701T075033Z/all_agent_compute_resmoke_result.json"
       ],
       "conflicts": [
         "market_fund_manager_shared_support_root"
@@ -1052,7 +1053,7 @@
         ]
       },
       "contract": {
-        "external_agent_id": "",
+        "external_agent_id": "company_radar_agent",
         "health_schema": "external_agent_health_v0",
         "compute_envelope_schema": "external_agent_compute_v0",
         "output_contract": "conclusion_object_v1",
@@ -1402,7 +1403,7 @@
       "prod": {
         "root": "/sdb/dlut/prod/公告合规审查智能体",
         "support_subroots": [],
-        "entrypoint": "app.py",
+        "entrypoint": "service.py",
         "port": 10011,
         "health_path": "/health",
         "compute_path": "/v1/agent/compute",
@@ -1447,7 +1448,7 @@
         ]
       },
       "contract": {
-        "external_agent_id": "",
+        "external_agent_id": "announcement_compliance",
         "health_schema": "external_agent_health_v0",
         "compute_envelope_schema": "external_agent_compute_v0",
         "output_contract": "conclusion_object_v1",
@@ -1823,7 +1824,7 @@
         ]
       },
       "contract": {
-        "external_agent_id": "",
+        "external_agent_id": "macro_sentiment",
         "health_schema": "external_agent_health_v0",
         "compute_envelope_schema": "external_agent_compute_v0",
         "output_contract": "conclusion_object_v1",
@@ -1912,7 +1913,7 @@
         ]
       },
       "contract": {
-        "external_agent_id": "",
+        "external_agent_id": "macro_industry_hotspot",
         "health_schema": "external_agent_health_v0",
         "compute_envelope_schema": "external_agent_compute_v0",
         "output_contract": "conclusion_object_v1",

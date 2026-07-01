@@ -72,11 +72,16 @@ def test_non_l4_policy_rejects_duplicate_unknown_and_l4_agents() -> None:
 
 
 def test_non_l4_policy_rejects_excluded_or_mismatched_agents() -> None:
-    excluded = _policy()
-    excluded["agents"][0]["agent_id"] = "market_fund_manager_behavior"
-    valid, reason = validate_non_l4_external_compute_policy(excluded)
-    assert not valid
-    assert reason == "excluded_agent_present:market_fund_manager_behavior"
+    for agent_id in (
+        "market_fund_manager_behavior",
+        "macro_sentiment",
+        "macro_industry_hotspot",
+    ):
+        excluded = _policy()
+        excluded["agents"][0]["agent_id"] = agent_id
+        valid, reason = validate_non_l4_external_compute_policy(excluded)
+        assert not valid
+        assert reason == f"excluded_agent_present:{agent_id}"
 
     layer = _policy()
     layer["agents"][0]["layer"] = "L3"
