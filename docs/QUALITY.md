@@ -45,6 +45,24 @@ cleans it up after the build. It must not write `apps/web/dist`. The smoke step
 uses the Node loader form to avoid the `tsx` CLI IPC server in restricted
 quality sandboxes.
 
+## Public API Freshness And Telemetry Gate
+
+For public API freshness and performance telemetry changes, the minimum
+focused regression set is:
+
+```powershell
+python -m pytest tests/integration_tests/test_public_api.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_fixed_dag_external_compute_bridge.py tests/unit_tests/test_fixed_dag_executor.py -q
+python scripts/quality/run_quality.py --mode static
+python scripts/quality/run_quality.py --mode mainline
+git diff --check
+```
+
+These regressions verify additive health freshness fields, closed
+selected-routing request support, public-safe telemetry projection, external
+compute telemetry sanitization, and fixed-DAG executor provenance. They do not
+call `/v1/agent/invoke`, do not directly call providers, do not read env
+values, and do not retain raw service/provider responses.
+
 ## Documentation Authority And History Policy
 
 Current maintained docs remain in the static quality surface. Historical phase

@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Production performance telemetry and freshness guard
+
+### Changed
+
+- Added public health freshness fields so a live daemon can expose the current
+  public API contract version, selected-routing request support, compute
+  registry size, process start time, uptime, and a source-version marker.
+- Added a public-safe performance telemetry model under workflow provenance.
+  The model records request/graph/compute timing, compute call count, bounded
+  per-agent timing/status rows, and explicit instrumentation gaps for provider
+  or database timing that services do not report.
+- Extended the compute bridge and fixed-DAG executor to carry sanitized service
+  telemetry when it is present and to keep raw response, endpoint, prompt, SQL,
+  provider payload, and secret material out of public projection.
+
+### Tests
+
+- Added focused regressions for the health contract, public workflow telemetry
+  projection, and external compute telemetry sanitizer.
+- Revalidated the public API, public mapping, external compute bridge, and
+  fixed-DAG executor focused suite.
+
+### Not Done
+
+- No runtime binding, catalog, non-L4 policy, selected-routing default,
+  `/v1/agent/invoke`, direct provider, env-value, raw-response, external agent
+  dev-directory, or push change.
+
 ## 2026-07-01 - Real-agent report bundle and renderer quality
 
 ### Changed

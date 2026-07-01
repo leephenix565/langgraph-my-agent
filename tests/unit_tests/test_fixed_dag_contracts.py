@@ -123,7 +123,7 @@ def test_fixed_dag_foundational_extraction_keeps_canonical_outputs() -> None:
 
     assert _canonical_hash(plan) == "52d71147ec4a7cd71933d8f3375905a7d9d22367e470762e594befe0e54048bd"
     assert _canonical_hash(selected) == "8ee97bad6224c9b34bd61b8b75cbff42f5257b3f6bf2dd07039ecab49a465cbf"
-    assert _canonical_hash(workflow) == "50048210629b5cef75c7a26bc3f34ecbc3c157a12d9a19e271a6160561c259ee"
+    assert _canonical_hash(workflow) == "ee4c132a1bb0223418c718af6641b223a7eac761ed180af88b437225c6b897c2"
 
 
 def test_roster_constants_are_v4_feedback_aligned() -> None:

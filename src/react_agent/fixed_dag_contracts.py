@@ -3854,6 +3854,12 @@ def build_workflow_snapshot_v2(
     ]
     plan_provenance = normalized_plan.get("provenance", {})
     plan_provenance = plan_provenance if isinstance(plan_provenance, Mapping) else {}
+    execution_provenance = (
+        dag_execution.get("provenance", {})
+        if isinstance(dag_execution, Mapping)
+        and isinstance(dag_execution.get("provenance"), Mapping)
+        else {}
+    )
     return {
         "schema": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
         "schemaVersion": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
@@ -3899,16 +3905,14 @@ def build_workflow_snapshot_v2(
         "provenance": {
             "source": RESET_SOURCE,
             "providerInvoked": bool(
-                dag_execution.get("provenance", {}).get("provider_invoked")
+                execution_provenance.get("provider_invoked")
             )
-            if isinstance(dag_execution, Mapping)
-            and isinstance(dag_execution.get("provenance"), Mapping)
+            if execution_provenance
             else False,
             "externalInvoked": bool(
-                dag_execution.get("provenance", {}).get("external_invoked")
+                execution_provenance.get("external_invoked")
             )
-            if isinstance(dag_execution, Mapping)
-            and isinstance(dag_execution.get("provenance"), Mapping)
+            if execution_provenance
             else False,
             "executionStatus": str(dag_execution.get("status"))
             if isinstance(dag_execution, Mapping) and dag_execution.get("status")
@@ -3975,6 +3979,10 @@ def build_workflow_snapshot_v2(
                 )
                 if isinstance(dimension, str) and dimension in DIMENSION_GROUPS
             ],
+            "performanceTelemetry": dict(execution_provenance.get("performance_telemetry", {}))
+            if isinstance(execution_provenance.get("performance_telemetry"), Mapping)
+            and execution_provenance.get("performance_telemetry")
+            else None,
         },
         "finalSource": RESET_SOURCE,
     }

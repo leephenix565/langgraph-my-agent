@@ -259,6 +259,14 @@ def test_health_contract(tmp_path, monkeypatch):
     assert response.status_code == 200
     payload = response.json()
     assert payload["apiVersion"] == "phase-r3"
+    assert payload["publicApiContractVersion"] == "public_api_contract_v4"
+    assert payload["routingRequestSupported"] is True
+    assert payload["selectedRoutingRequestSchema"] == "routing.mode.selected"
+    assert payload["computeRegistryVersion"] == "fixed_dag_compute_registry_v1"
+    assert payload["computeRegistryAgentCount"] == 26
+    assert payload["processStartTime"]
+    assert isinstance(payload["processUptimeSeconds"], int)
+    assert payload["sourceVersionMarker"] == "fixed_dag_public_api_f81b5da"
     assert payload["overallStatus"] == "degraded"
     assert payload["providerEnv"]["code"] == "provider_env_missing_optional_for_reset"
     assert payload["searchEnv"]["code"] == "search_env_missing_optional_for_reset"

@@ -8,6 +8,7 @@ semantics unchanged.
 
 from __future__ import annotations
 
+import time
 from collections import deque as deque
 from collections.abc import Mapping
 from typing import Any, cast
@@ -273,6 +274,9 @@ def _merge_production_external_compute_runs(*runs: Mapping[str, Any]) -> dict[st
         "skipped_agents": [],
         "warnings": [],
         "latency_ms_by_agent": {},
+        "agent_telemetry_by_agent": {},
+        "mapped_schema_by_agent": {},
+        "mapped_status_by_agent": {},
         "required_failures": [],
         "optional_failures": [],
         "policy_enabled": False,
@@ -307,6 +311,21 @@ def _merge_production_external_compute_runs(*runs: Mapping[str, Any]) -> dict[st
                     merged["latency_ms_by_agent"][str(agent_id)] = int(value)
                 except (TypeError, ValueError):
                     continue
+        for key in (
+            "agent_telemetry_by_agent",
+            "mapped_schema_by_agent",
+            "mapped_status_by_agent",
+        ):
+            raw_mapping = run.get(key, {})
+            if not isinstance(raw_mapping, Mapping):
+                continue
+            for agent_id, value in raw_mapping.items():
+                if key == "agent_telemetry_by_agent" and isinstance(value, Mapping):
+                    merged[key][str(agent_id)] = dict(value)
+                    continue
+                text = str(value or "")
+                if text:
+                    merged[key][str(agent_id)] = text
         merged["policy_enabled"] = bool(merged["policy_enabled"] or run.get("policy_enabled"))
         merged["demo_suppressed"] = bool(merged["demo_suppressed"] or run.get("demo_suppressed"))
         merged["rollback_disabled"] = bool(
@@ -315,6 +334,143 @@ def _merge_production_external_compute_runs(*runs: Mapping[str, Any]) -> dict[st
         if not merged["policy_version"] and run.get("policy_version"):
             merged["policy_version"] = str(run["policy_version"])
     return merged
+
+
+def _safe_telemetry_int(value: Any, *, max_value: int = 86_400_000) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError):
+        return None
+    if parsed < 0:
+        return None
+    return min(parsed, max_value)
+
+
+def _step_metadata_by_agent(plan: Mapping[str, Any]) -> dict[str, dict[str, str]]:
+    metadata: dict[str, dict[str, str]] = {}
+    for step in _steps(plan):
+        agent_id = str(step.get("agent_id") or "")
+        if not agent_id:
+            continue
+        metadata[agent_id] = {
+            "stage": str(step.get("stage") or ""),
+            "dimension": str(step.get("dimension") or ""),
+        }
+    return metadata
+
+
+def _telemetry_sum(rows: list[dict[str, Any]], key: str) -> int | None:
+    total = 0
+    seen = False
+    for row in rows:
+        value = _safe_telemetry_int(row.get(key))
+        if value is None:
+            continue
+        total += value
+        seen = True
+    return total if seen else None
+
+
+def _performance_rows_for_summary(
+    summary: Mapping[str, Any],
+    *,
+    runtime_source: str,
+    step_metadata: Mapping[str, Mapping[str, str]],
+) -> list[dict[str, Any]]:
+    called = [str(item) for item in summary.get("called_agents", []) if str(item)]
+    failed = {str(item) for item in summary.get("failed_agents", []) if str(item)}
+    fallback = {str(item) for item in summary.get("fallback_agents", []) if str(item)}
+    latencies = summary.get("latency_ms_by_agent", {})
+    latencies = latencies if isinstance(latencies, Mapping) else {}
+    service_telemetry = summary.get("agent_telemetry_by_agent", {})
+    service_telemetry = service_telemetry if isinstance(service_telemetry, Mapping) else {}
+    schema_by_agent = summary.get("mapped_schema_by_agent", {})
+    schema_by_agent = schema_by_agent if isinstance(schema_by_agent, Mapping) else {}
+    status_by_agent = summary.get("mapped_status_by_agent", {})
+    status_by_agent = status_by_agent if isinstance(status_by_agent, Mapping) else {}
+    rows: list[dict[str, Any]] = []
+    for agent_id in called:
+        meta = step_metadata.get(agent_id, {})
+        telemetry = service_telemetry.get(agent_id, {})
+        telemetry = telemetry if isinstance(telemetry, Mapping) else {}
+        elapsed = _safe_telemetry_int(latencies.get(agent_id))
+        row: dict[str, Any] = {
+            "agentId": agent_id,
+            "stage": str(meta.get("stage") or "") or None,
+            "dimension": str(meta.get("dimension") or "") or None,
+            "runtimeSource": runtime_source,
+            "elapsedMs": elapsed,
+            "httpStatusClass": "2xx" if agent_id not in failed else None,
+            "mappedSchema": str(schema_by_agent.get(agent_id) or "") or None,
+            "mappedStatus": str(status_by_agent.get(agent_id) or "") or None,
+            "fallback": agent_id in fallback,
+            "degraded": agent_id in failed or agent_id in fallback,
+            "timeout": str(telemetry.get("timeout_flag")).lower() == "true",
+        }
+        for source_key, target_key in (
+            ("provider_call_count", "providerCallCount"),
+            ("provider_total_ms", "providerTotalMs"),
+            ("db_query_count", "dbQueryCount"),
+            ("db_total_ms", "dbTotalMs"),
+        ):
+            value = _safe_telemetry_int(telemetry.get(source_key))
+            if value is not None:
+                row[target_key] = value
+        if isinstance(telemetry.get("cache_hit"), bool):
+            row["cacheHit"] = bool(telemetry["cache_hit"])
+        reason = str(telemetry.get("telemetry_unavailable_reason") or "").strip()
+        if reason:
+            row["telemetryUnavailableReason"] = reason[:80]
+        rows.append(row)
+    return rows
+
+
+def _build_performance_telemetry(
+    *,
+    plan: Mapping[str, Any],
+    execute_started: float,
+    production_non_l4_summary: Mapping[str, Any],
+    external_l4_compute_default_summary: Mapping[str, Any],
+    external_demo_summary: Mapping[str, Any],
+) -> dict[str, Any]:
+    step_metadata = _step_metadata_by_agent(plan)
+    rows = [
+        *_performance_rows_for_summary(
+            production_non_l4_summary,
+            runtime_source="production_external_compute",
+            step_metadata=step_metadata,
+        ),
+        *_performance_rows_for_summary(
+            external_l4_compute_default_summary,
+            runtime_source="external_compute_default",
+            step_metadata=step_metadata,
+        ),
+        *_performance_rows_for_summary(
+            external_demo_summary,
+            runtime_source="external_compute_demo",
+            step_metadata=step_metadata,
+        ),
+    ]
+    if not rows:
+        return {}
+    gaps = []
+    if any(row.get("providerCallCount") is None for row in rows):
+        gaps.append("provider_timing_not_reported_by_some_services")
+    if any(row.get("dbQueryCount") is None for row in rows):
+        gaps.append("db_timing_not_reported_by_some_services")
+    return {
+        "graphTotalMs": max(0, int(round((time.monotonic() - execute_started) * 1000))),
+        "executeFixedDagMs": max(0, int(round((time.monotonic() - execute_started) * 1000))),
+        "computeCallCount": len(rows),
+        "providerCallCount": _telemetry_sum(rows, "providerCallCount"),
+        "providerTotalMs": _telemetry_sum(rows, "providerTotalMs"),
+        "dbQueryCount": _telemetry_sum(rows, "dbQueryCount"),
+        "dbTotalMs": _telemetry_sum(rows, "dbTotalMs"),
+        "perAgentCompute": rows,
+        "instrumentationGaps": gaps,
+    }
 
 
 def _safe_report_value(value: Any, *, limit: int = 80) -> str:
@@ -542,6 +698,7 @@ def execute_fixed_dag_plan(
     context: Any | None = None,
 ) -> dict:
     """Execute a fixed DAG plan without external agent calls."""
+    execute_started = time.monotonic()
     execution_plan, fallback_used, fallback_reason = _execution_plan_or_fallback(
         plan,
         question=question,
@@ -1202,6 +1359,13 @@ def execute_fixed_dag_plan(
             "llm_l3_explanation_used": llm_l3_explanation_used,
             "llm_l3_explanation_fallback_reason": llm_l3_explanation_fallback_reason,
             "llm_l3_explanation_provider_config": llm_l3_explanation_provider_config,
+            "performance_telemetry": _build_performance_telemetry(
+                plan=execution_plan,
+                execute_started=execute_started,
+                production_non_l4_summary=production_non_l4_summary,
+                external_l4_compute_default_summary=external_l4_compute_default_summary,
+                external_demo_summary=external_demo_summary,
+            ),
         },
     }
     workflow_snapshot = build_workflow_snapshot_v2(

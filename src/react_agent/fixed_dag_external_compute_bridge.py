@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import http.client
 import importlib
+import time
 from collections.abc import Mapping
 from typing import Any
 from urllib.parse import urlsplit
@@ -56,6 +57,62 @@ _external_registry = importlib.reload(_external_registry)
 DEMO_COMPUTE_SERVICE_REGISTRY = _external_registry.DEMO_COMPUTE_SERVICE_REGISTRY
 _demo_base_url = _external_registry._demo_base_url
 
+_SAFE_TELEMETRY_INT_FIELDS = {
+    "agent_total_ms",
+    "db_query_count",
+    "db_total_ms",
+    "provider_call_count",
+    "provider_total_ms",
+}
+_SAFE_TELEMETRY_BOOL_FIELDS = {"cache_hit", "timeout_flag"}
+_SAFE_TELEMETRY_TEXT_FIELDS = {"fallback_reason", "telemetry_unavailable_reason"}
+
+
+def _safe_non_negative_int(value: Any, *, max_value: int = 86_400_000) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        parsed = int(float(value))
+    except (TypeError, ValueError):
+        return None
+    if parsed < 0:
+        return None
+    return min(parsed, max_value)
+
+
+def sanitize_external_compute_telemetry(response: Mapping[str, Any]) -> dict[str, Any]:
+    """Project optional external service timing metadata into a public-safe shape."""
+    raw = response.get("telemetry")
+    telemetry = raw if isinstance(raw, Mapping) else {}
+    sanitized: dict[str, Any] = {}
+    for field in _SAFE_TELEMETRY_INT_FIELDS:
+        value = _safe_non_negative_int(telemetry.get(field))
+        if value is not None:
+            sanitized[field] = value
+    for field in _SAFE_TELEMETRY_BOOL_FIELDS:
+        value = telemetry.get(field)
+        if isinstance(value, bool):
+            sanitized[field] = value
+    for field in _SAFE_TELEMETRY_TEXT_FIELDS:
+        text = str(telemetry.get(field) or "").strip()
+        if text:
+            sanitized[field] = _safe_code(text)
+
+    elapsed = _safe_non_negative_int(response.get("elapsed_ms"))
+    if elapsed is not None and "agent_total_ms" not in sanitized:
+        sanitized["agent_total_ms"] = elapsed
+
+    metadata = response.get("metadata")
+    if isinstance(metadata, Mapping):
+        provider_invoked = metadata.get("provider_invoked")
+        if isinstance(provider_invoked, bool) and "provider_call_count" not in sanitized:
+            sanitized["provider_call_count"] = 1 if provider_invoked else 0
+        if metadata.get("provider_output_retained") is False:
+            sanitized.setdefault("telemetry_unavailable_reason", "provider_timing_not_reported")
+    if not sanitized:
+        sanitized["telemetry_unavailable_reason"] = "service_telemetry_not_reported"
+    return sanitized
+
 
 def invoke_external_compute(
     entry: ExternalComputeDemoEntry,
@@ -73,6 +130,7 @@ def invoke_external_compute(
     transport: Transport | None = None,
 ) -> dict[str, Any]:
     """Call one allowlisted compute endpoint and map its response safely."""
+    started = time.monotonic()
     valid, reason = validate_demo_entry(entry)
     if not valid:
         return _failed_entry(entry.agent_id, reason)
@@ -115,6 +173,8 @@ def invoke_external_compute(
     temporal_failure = _mapped_temporal_failure(mapped, as_of)
     if temporal_failure:
         return _failed_entry(entry.agent_id, temporal_failure)
+    mapped_schema = str(mapped.get("schema") or "")
+    mapped_status = str(mapped.get("status") or "")
     return {
         "agent_id": entry.agent_id,
         "status": "pass",
@@ -122,6 +182,10 @@ def invoke_external_compute(
         "failure_code": "",
         "warning": "",
         "agent_task": dict(agent_task) if isinstance(agent_task, Mapping) else {},
+        "elapsed_ms": int(round((time.monotonic() - started) * 1000)),
+        "mapped_schema": mapped_schema,
+        "mapped_status": mapped_status,
+        "telemetry": sanitize_external_compute_telemetry(response),
     }
 
 
@@ -274,6 +338,10 @@ def run_external_compute_for_plan(
         "mapped_agents": [],
         "failed_agents": [],
         "warnings": [],
+        "latency_ms_by_agent": {},
+        "agent_telemetry_by_agent": {},
+        "mapped_schema_by_agent": {},
+        "mapped_status_by_agent": {},
     }
     if not allowlist:
         return result
@@ -322,6 +390,15 @@ def run_external_compute_for_plan(
             transport=transport,
         )
         result["called_agents"].append(agent_id)
+        if isinstance(mapped_result.get("elapsed_ms"), int):
+            result["latency_ms_by_agent"][agent_id] = int(mapped_result["elapsed_ms"])
+        telemetry = mapped_result.get("telemetry")
+        if isinstance(telemetry, Mapping):
+            result["agent_telemetry_by_agent"][agent_id] = dict(telemetry)
+        if mapped_result.get("mapped_schema"):
+            result["mapped_schema_by_agent"][agent_id] = str(mapped_result["mapped_schema"])
+        if mapped_result.get("mapped_status"):
+            result["mapped_status_by_agent"][agent_id] = str(mapped_result["mapped_status"])
         mapped = mapped_result.get("mapped")
         if mapped_result.get("status") != "pass" or not isinstance(mapped, Mapping):
             warning = str(mapped_result.get("warning") or "external_compute_demo_failed")
@@ -421,13 +498,40 @@ def merge_external_compute_demo_runs(*runs: Mapping[str, Any]) -> dict[str, Any]
         "mapped_agents": [],
         "failed_agents": [],
         "warnings": [],
+        "latency_ms_by_agent": {},
+        "agent_telemetry_by_agent": {},
+        "mapped_schema_by_agent": {},
+        "mapped_status_by_agent": {},
     }
     for run in runs:
         for key in merged:
+            if key.endswith("_by_agent"):
+                continue
             for item in run.get(key, []) if isinstance(run, Mapping) else []:
                 text = str(item or "")
                 if text and text not in merged[key]:
                     merged[key].append(text)
+        for key in (
+            "latency_ms_by_agent",
+            "agent_telemetry_by_agent",
+            "mapped_schema_by_agent",
+            "mapped_status_by_agent",
+        ):
+            raw_mapping = run.get(key, {}) if isinstance(run, Mapping) else {}
+            if not isinstance(raw_mapping, Mapping):
+                continue
+            for agent_id, value in raw_mapping.items():
+                if key == "latency_ms_by_agent":
+                    parsed = _safe_non_negative_int(value)
+                    if parsed is not None:
+                        merged[key][str(agent_id)] = parsed
+                    continue
+                if isinstance(value, Mapping):
+                    merged[key][str(agent_id)] = dict(value)
+                else:
+                    text = str(value or "")
+                    if text:
+                        merged[key][str(agent_id)] = text
     return merged
 
 
@@ -447,5 +551,6 @@ __all__ = [
     "normalize_demo_allowlist",
     "runtime_compute_entries_from_bindings",
     "run_external_compute_for_plan",
+    "sanitize_external_compute_telemetry",
     "validate_demo_entry",
 ]

@@ -21,6 +21,7 @@ from react_agent.fixed_dag_external_compute_bridge import (
     normalize_demo_allowlist,
     run_external_compute_for_plan,
     runtime_compute_entries_from_bindings,
+    sanitize_external_compute_telemetry,
     validate_demo_entry,
 )
 
@@ -599,6 +600,44 @@ def test_build_external_compute_request_projects_gate_member_provenance_risk_sco
     assert upstream["risk_score"] == 0.0646
     assert "must_not_leak" not in rendered
     assert "raw_response" not in rendered
+
+
+def test_sanitize_external_compute_telemetry_projects_only_safe_fields() -> None:
+    response = {
+        "elapsed_ms": 321,
+        "telemetry": {
+            "agent_total_ms": 300,
+            "db_query_count": 2,
+            "db_total_ms": 90,
+            "provider_call_count": 1,
+            "provider_total_ms": 210,
+            "cache_hit": False,
+            "timeout_flag": False,
+            "fallback_reason": "upstream data unavailable",
+            "sql": "must_not_project",
+            "endpoint": "must_not_project",
+            "prompt": "must_not_project",
+            "raw_provider_response": "must_not_project",
+        },
+        "metadata": {"provider_invoked": True, "provider_output_retained": False},
+    }
+
+    telemetry = sanitize_external_compute_telemetry(response)
+    rendered = json.dumps(telemetry, ensure_ascii=False).lower()
+
+    assert telemetry["agent_total_ms"] == 300
+    assert telemetry["db_query_count"] == 2
+    assert telemetry["db_total_ms"] == 90
+    assert telemetry["provider_call_count"] == 1
+    assert telemetry["provider_total_ms"] == 210
+    assert telemetry["cache_hit"] is False
+    assert telemetry["timeout_flag"] is False
+    assert telemetry["fallback_reason"] == "upstream_data_unavailable"
+    assert "must_not_project" not in rendered
+    assert "sql" not in rendered
+    assert "endpoint" not in rendered
+    assert "prompt" not in rendered
+    assert "raw_provider_response" not in rendered
 
 
 def test_fake_l2_external_compute_maps_to_conclusion_object() -> None:

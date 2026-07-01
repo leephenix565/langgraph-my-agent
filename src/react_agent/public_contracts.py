@@ -128,6 +128,7 @@ class WorkflowProvenanceModel(PublicBaseModel):
     providerRouterFallbackReason: str | None = None
     providerRouterErrorCode: str | None = None
     providerRouterSelectedDimensions: List[str] = Field(default_factory=list)
+    performanceTelemetry: PerformanceTelemetryModel | None = None
     summary: str
 
 
@@ -315,9 +316,52 @@ class ErrorDetail(PublicBaseModel):
     category: ErrorCategory
 
 
+class AgentPerformanceTelemetryModel(PublicBaseModel):
+    agentId: str
+    stage: str | None = None
+    dimension: str | None = None
+    runtimeSource: str | None = None
+    elapsedMs: int | None = None
+    httpStatusClass: str | None = None
+    mappedSchema: str | None = None
+    mappedStatus: str | None = None
+    fallback: bool = False
+    degraded: bool = False
+    timeout: bool = False
+    providerCallCount: int | None = None
+    providerTotalMs: int | None = None
+    dbQueryCount: int | None = None
+    dbTotalMs: int | None = None
+    cacheHit: bool | None = None
+    telemetryUnavailableReason: str | None = None
+
+
+class PerformanceTelemetryModel(PublicBaseModel):
+    requestTotalMs: int | None = None
+    graphTotalMs: int | None = None
+    routePlannerMs: int | None = None
+    executeFixedDagMs: int | None = None
+    finalEmitMs: int | None = None
+    computeCallCount: int = 0
+    providerCallCount: int | None = None
+    providerTotalMs: int | None = None
+    dbQueryCount: int | None = None
+    dbTotalMs: int | None = None
+    perAgentCompute: List[AgentPerformanceTelemetryModel] = Field(default_factory=list)
+    instrumentationGaps: List[str] = Field(default_factory=list)
+
+
 class HealthResponse(PublicBaseModel):
     status: Literal["ok"]
     apiVersion: str
+    publicApiContractVersion: str = "public_api_contract_v4"
+    routingRequestSupported: bool = True
+    selectedRoutingRequestSchema: str = "routing.mode.selected"
+    computeRegistryVersion: str | None = None
+    computeRegistryAgentCount: int | None = None
+    processStartTime: str | None = None
+    processUptimeSeconds: int | None = None
+    sourceVersionMarker: str | None = None
     overallStatus: OverallStatus
     checkpointer: CheckpointerStatus
     continuityDefault: ContinuityMode

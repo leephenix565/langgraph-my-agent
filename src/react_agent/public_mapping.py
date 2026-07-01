@@ -14,6 +14,7 @@ from react_agent.fixed_dag_contracts import (
     build_workflow_snapshot_v2,
 )
 from react_agent.public_contracts import (
+    AgentPerformanceTelemetryModel,
     AnswerCardModel,
     ChatSessionSummary,
     CitationModel,
@@ -22,6 +23,7 @@ from react_agent.public_contracts import (
     DimensionGroupModel,
     EvidenceCardModel,
     FinalSource,
+    PerformanceTelemetryModel,
     PublicThreadDetail,
     PublicTurn,
     ReportSectionModel,
@@ -69,10 +71,111 @@ def _optional_int(value: Any) -> int | None:
     return value if isinstance(value, int) else None
 
 
+def _bounded_non_negative_int(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        integer = int(value)
+    except (TypeError, ValueError):
+        return None
+    if integer < 0:
+        return None
+    return min(integer, 86_400_000)
+
+
+def _bounded_count(value: Any) -> int | None:
+    if isinstance(value, bool):
+        return None
+    try:
+        integer = int(value)
+    except (TypeError, ValueError):
+        return None
+    if integer < 0:
+        return None
+    return min(integer, 10_000)
+
+
 def _string_list(value: Any) -> List[str]:
     if not isinstance(value, list):
         return []
     return [normalized for item in value if (normalized := _coerce_str(item))]
+
+
+def _performance_agent_telemetry(raw: Any) -> AgentPerformanceTelemetryModel | None:
+    if not isinstance(raw, dict):
+        return None
+    agent_id = _coerce_str(raw.get("agentId") or raw.get("agent_id"))
+    if not agent_id:
+        return None
+    return AgentPerformanceTelemetryModel(
+        agentId=agent_id,
+        stage=_optional_str(raw.get("stage")),
+        dimension=_optional_str(raw.get("dimension")),
+        runtimeSource=_optional_str(raw.get("runtimeSource") or raw.get("runtime_source")),
+        elapsedMs=_bounded_non_negative_int(raw.get("elapsedMs") or raw.get("elapsed_ms")),
+        httpStatusClass=_optional_str(raw.get("httpStatusClass") or raw.get("http_status_class")),
+        mappedSchema=_optional_str(raw.get("mappedSchema") or raw.get("mapped_schema")),
+        mappedStatus=_optional_str(raw.get("mappedStatus") or raw.get("mapped_status")),
+        fallback=bool(raw.get("fallback", False)),
+        degraded=bool(raw.get("degraded", False)),
+        timeout=bool(raw.get("timeout", False)),
+        providerCallCount=_bounded_count(
+            raw.get("providerCallCount") if "providerCallCount" in raw else raw.get("provider_call_count")
+        ),
+        providerTotalMs=_bounded_non_negative_int(
+            raw.get("providerTotalMs") if "providerTotalMs" in raw else raw.get("provider_total_ms")
+        ),
+        dbQueryCount=_bounded_count(
+            raw.get("dbQueryCount") if "dbQueryCount" in raw else raw.get("db_query_count")
+        ),
+        dbTotalMs=_bounded_non_negative_int(
+            raw.get("dbTotalMs") if "dbTotalMs" in raw else raw.get("db_total_ms")
+        ),
+        cacheHit=raw.get("cacheHit") if isinstance(raw.get("cacheHit"), bool) else raw.get("cache_hit")
+        if isinstance(raw.get("cache_hit"), bool)
+        else None,
+        telemetryUnavailableReason=_optional_str(
+            raw.get("telemetryUnavailableReason") or raw.get("telemetry_unavailable_reason")
+        ),
+    )
+
+
+def _performance_telemetry(raw: Any) -> PerformanceTelemetryModel | None:
+    if not isinstance(raw, dict):
+        return None
+    agents = []
+    raw_agents = raw.get("perAgentCompute") or raw.get("per_agent_compute") or []
+    if isinstance(raw_agents, list):
+        for item in raw_agents[:64]:
+            telemetry = _performance_agent_telemetry(item)
+            if telemetry is not None:
+                agents.append(telemetry)
+    gaps = _string_list(raw.get("instrumentationGaps") or raw.get("instrumentation_gaps"))
+    return PerformanceTelemetryModel(
+        requestTotalMs=_bounded_non_negative_int(raw.get("requestTotalMs") or raw.get("request_total_ms")),
+        graphTotalMs=_bounded_non_negative_int(raw.get("graphTotalMs") or raw.get("graph_total_ms")),
+        routePlannerMs=_bounded_non_negative_int(raw.get("routePlannerMs") or raw.get("route_planner_ms")),
+        executeFixedDagMs=_bounded_non_negative_int(
+            raw.get("executeFixedDagMs") or raw.get("execute_fixed_dag_ms")
+        ),
+        finalEmitMs=_bounded_non_negative_int(raw.get("finalEmitMs") or raw.get("final_emit_ms")),
+        computeCallCount=_bounded_count(
+            raw.get("computeCallCount") if "computeCallCount" in raw else raw.get("compute_call_count")
+        )
+        or 0,
+        providerCallCount=_bounded_count(
+            raw.get("providerCallCount") if "providerCallCount" in raw else raw.get("provider_call_count")
+        ),
+        providerTotalMs=_bounded_non_negative_int(
+            raw.get("providerTotalMs") if "providerTotalMs" in raw else raw.get("provider_total_ms")
+        ),
+        dbQueryCount=_bounded_count(
+            raw.get("dbQueryCount") if "dbQueryCount" in raw else raw.get("db_query_count")
+        ),
+        dbTotalMs=_bounded_non_negative_int(raw.get("dbTotalMs") if "dbTotalMs" in raw else raw.get("db_total_ms")),
+        perAgentCompute=agents,
+        instrumentationGaps=gaps[:12],
+    )
 
 
 def _normalize_materials(raw: Any) -> List[str]:
@@ -339,6 +442,7 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         providerRouterSelectedDimensions=_string_list(
             provenance_raw.get("providerRouterSelectedDimensions")
         ),
+        performanceTelemetry=_performance_telemetry(provenance_raw.get("performanceTelemetry")),
         summary=(
             "本轮研判流程已完成，详细执行信息可在技术详情中查看。"
         ),

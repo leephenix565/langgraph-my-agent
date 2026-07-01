@@ -797,6 +797,46 @@ Failure policy:
   control, model/base URL/API key/env controls, raw route intent, raw selected
   plan, raw provider response, or endpoint material.
 
+## public API freshness and performance telemetry
+
+The public health response is additive and exposes only capability/freshness
+metadata:
+
+- `publicApiContractVersion`
+- `routingRequestSupported`
+- `selectedRoutingRequestSchema`
+- `computeRegistryVersion`
+- `computeRegistryAgentCount`
+- `processStartTime`
+- `processUptimeSeconds`
+- `sourceVersionMarker`
+
+These fields are intended to prevent a stale public API daemon from being
+accepted as current-ready solely because `/api/health` returns HTTP 200. They
+do not expose environment values, process argv, credentials, endpoint URLs, or
+raw service payloads.
+
+`workflow_snapshot_v2.provenance.performanceTelemetry` is an optional
+public-safe observability contract. It may include request, graph,
+`execute_fixed_dag`, and final-emit timing, compute call count, provider/DB
+count and duration totals when services report them safely, and bounded
+per-agent rows:
+
+- `agentId`, `stage`, `dimension`, and `runtimeSource`
+- `elapsedMs`
+- `httpStatusClass`
+- `mappedSchema` and `mappedStatus`
+- fallback, degraded, and timeout booleans
+- optional provider/DB count and duration fields
+- optional `cacheHit`
+- optional safe `telemetryUnavailableReason`
+
+The compute bridge may pass through only allowlisted telemetry keys from an
+external `/v1/agent/compute` envelope. It must drop raw response bodies, SQL
+text, prompts, provider payloads, endpoint URLs, credentials, tracebacks, and
+any non-allowlisted service metadata. Missing service-side provider or DB
+timing is represented as an instrumentation gap, not guessed.
+
 M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
 preflight and artifact-safety contract for a later controlled real-provider
 dry-run. This module does not call a real provider, does not invoke

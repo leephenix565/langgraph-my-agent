@@ -148,6 +148,18 @@ records.
   provider router control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port
   authority.
+- The public API health contract now includes freshness/capability markers:
+  `publicApiContractVersion`, `routingRequestSupported`,
+  `selectedRoutingRequestSchema`, `computeRegistryVersion`,
+  `computeRegistryAgentCount`, `processStartTime`, `processUptimeSeconds`, and
+  `sourceVersionMarker`. These fields make daemon drift visible without
+  exposing env values or raw endpoint material.
+- Public workflow provenance may include `performanceTelemetry` with bounded
+  request, graph, compute, and per-agent timing/status summaries. Provider and
+  DB timings are populated only when a service reports safe counts/durations;
+  otherwise the telemetry records explicit instrumentation gaps. This remains
+  `/v1/agent/compute` observability and does not expose `/invoke`, raw provider
+  payloads, SQL, prompts, endpoint URLs, or secrets.
 
 ## Report Quality RQ2E Status
 

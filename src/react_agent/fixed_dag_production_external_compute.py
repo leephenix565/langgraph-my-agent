@@ -135,6 +135,9 @@ def _empty_result(
         "skipped_agents": [],
         "warnings": [],
         "latency_ms_by_agent": {},
+        "agent_telemetry_by_agent": {},
+        "mapped_schema_by_agent": {},
+        "mapped_status_by_agent": {},
         "required_failures": [],
         "optional_failures": [],
         "policy_enabled": policy_enabled,
@@ -344,6 +347,13 @@ def run_production_external_compute_for_plan(
                 mapped_result = {}
             result["called_agents"].append(agent_id)
             result["latency_ms_by_agent"][agent_id] = int(outcome.get("latency_ms") or 0)
+            telemetry = mapped_result.get("telemetry")
+            if isinstance(telemetry, Mapping):
+                result["agent_telemetry_by_agent"][agent_id] = dict(telemetry)
+            if mapped_result.get("mapped_schema"):
+                result["mapped_schema_by_agent"][agent_id] = str(mapped_result["mapped_schema"])
+            if mapped_result.get("mapped_status"):
+                result["mapped_status_by_agent"][agent_id] = str(mapped_result["mapped_status"])
             mapped = mapped_result.get("mapped")
             if mapped_result.get("status") != "pass" or not isinstance(mapped, Mapping):
                 warning = _normalize_warning(agent_id, mapped_result)

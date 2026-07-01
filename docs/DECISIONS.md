@@ -3,6 +3,34 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-166: Public Performance Telemetry Is Sanitized Observability Only
+
+Status: accepted for PROD-PERFORMANCE-TELEMETRY-AND-DEPLOYMENT-FRESHNESS-GUARD.
+
+Decision: add additive public API health freshness fields and optional
+`workflow_snapshot_v2.provenance.performanceTelemetry` summaries for production
+E2E performance diagnosis. Health may expose public contract capability,
+selected-routing request support, compute registry size, process start/uptime,
+and a source-version marker. Workflow telemetry may expose bounded request,
+graph, compute, per-agent timing/status, and safe provider/DB count-duration
+fields when services report them.
+
+Reason: production validation showed that an old public API daemon can return
+HTTP 200 while missing the current selected-routing request contract, and that
+black-box case latency is insufficient to diagnose whether time is spent in the
+public API, fixed-DAG executor, compute bridge, a specific agent, DB access,
+provider use, or L4.
+
+Consequence: public API E2E artifacts can compare daemon contract freshness and
+sanitized performance timing without retaining raw responses. Missing service
+provider/DB timing is recorded as an instrumentation gap rather than inferred.
+
+Non-consequence: this does not expose raw provider responses, raw service
+responses, SQL text, prompts, endpoint URLs, env values, secrets, tracebacks,
+chain-of-thought, `/v1/agent/invoke`, direct provider calls, runtime binding
+changes, catalog changes, non-L4 policy changes, or selected-routing default-on
+behavior.
+
 ## ADR-165: Public HTTP Selected Routing Is Per-Request Opt-In Only
 
 Status: accepted for ROUTER-M2-PUBLIC-SELECTED-ROUTING-API.

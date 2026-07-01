@@ -4,7 +4,9 @@
 from __future__ import annotations
 
 import os
+import time
 import uuid
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any, List
 
@@ -14,6 +16,7 @@ from fastapi.responses import JSONResponse, StreamingResponse
 
 from react_agent.context import Context
 from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
+from react_agent.fixed_dag_external_compute_bridge import DEMO_COMPUTE_SERVICE_REGISTRY
 from react_agent.public_contracts import (
     AgentCatalogResponse,
     AnswerFinalEvent,
@@ -22,6 +25,7 @@ from react_agent.public_contracts import (
     CreateThreadRequest,
     ErrorDetail,
     HealthResponse,
+    PerformanceTelemetryModel,
     PublicRoutingRequest,
     PublicThreadDetail,
     PublicTurn,
@@ -64,6 +68,11 @@ from react_agent.public_store import (
 )
 
 API_VERSION = "phase-r3"
+PUBLIC_API_CONTRACT_VERSION = "public_api_contract_v4"
+SELECTED_ROUTING_REQUEST_SCHEMA = "routing.mode.selected"
+SOURCE_VERSION_MARKER = "fixed_dag_public_api_f81b5da"
+_PROCESS_STARTED = time.time()
+_PROCESS_STARTED_LABEL = datetime.fromtimestamp(_PROCESS_STARTED, tz=UTC).isoformat()
 
 
 def _store_path_from_env() -> Path:
@@ -130,12 +139,35 @@ def _build_agent_catalog_response() -> AgentCatalogResponse:
     return AgentCatalogResponse(**fixed_dag_public_agent_catalog())
 
 
+def _process_uptime_seconds() -> int:
+    return max(0, int(time.time() - _PROCESS_STARTED))
+
+
+def _attach_request_total_ms(turn: PublicTurn, started: float) -> None:
+    workflow = turn.workflow
+    if workflow is None or workflow.provenance is None:
+        return
+    telemetry = workflow.provenance.performanceTelemetry
+    if telemetry is None:
+        telemetry = PerformanceTelemetryModel()
+        workflow.provenance.performanceTelemetry = telemetry
+    telemetry.requestTotalMs = max(0, int(round((time.monotonic() - started) * 1000)))
+
+
 @app.get("/api/health", response_model=HealthResponse)
 async def health() -> HealthResponse:
     probe = _readiness_probe()
     return HealthResponse(
         status="ok",
         apiVersion=API_VERSION,
+        publicApiContractVersion=PUBLIC_API_CONTRACT_VERSION,
+        routingRequestSupported=True,
+        selectedRoutingRequestSchema=SELECTED_ROUTING_REQUEST_SCHEMA,
+        computeRegistryVersion="fixed_dag_compute_registry_v1",
+        computeRegistryAgentCount=len(DEMO_COMPUTE_SERVICE_REGISTRY),
+        processStartTime=_PROCESS_STARTED_LABEL,
+        processUptimeSeconds=_process_uptime_seconds(),
+        sourceVersionMarker=SOURCE_VERSION_MARKER,
         overallStatus=probe.overall_status,
         checkpointer=probe.checkpointer,
         continuityDefault=probe.continuity_mode,
@@ -304,6 +336,7 @@ async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessa
     detail = _get_thread_detail(thread_id)
     user_text, structured_input, user_turn = _prepare_user_message(payload)
     context = _context_for_public_routing(payload.routing)
+    started = time.monotonic()
     try:
         assistant_turn, continuity_mode = await invoke_public_turn(
             thread_id=thread_id,
@@ -322,6 +355,7 @@ async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessa
             message="Public runtime failed before a safe response could be produced.",
             category="runtime",
         ) from exc
+    _attach_request_total_ms(assistant_turn, started)
 
     updated_detail = append_turns(detail, user_turn, assistant_turn, continuity_mode)
     try:
@@ -373,6 +407,7 @@ async def send_message_stream(thread_id: str, request: Request, payload: SendMes
 
     async def _event_stream():
         completion: StreamPublicTurnCompleted | None = None
+        started = time.monotonic()
         try:
             try:
                 async for event in stream_public_turn(
@@ -426,6 +461,7 @@ async def send_message_stream(thread_id: str, request: Request, payload: SendMes
                 )
                 return
 
+            _attach_request_total_ms(completion.assistant_turn, started)
             updated_detail = append_turns(detail, user_turn, completion.assistant_turn, completion.continuity_mode)
             try:
                 store.upsert_thread(updated_detail)

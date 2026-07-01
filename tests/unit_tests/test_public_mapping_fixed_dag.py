@@ -72,6 +72,74 @@ def test_public_workflow_preserves_execution_batches_and_step_results() -> None:
     assert payload["completedSteps"] == list(execution["step_results"])
 
 
+def test_public_workflow_projects_public_safe_performance_telemetry() -> None:
+    plan = build_default_fixed_dag_plan("q", as_of="2026-06-04")
+    execution = execute_fixed_dag_plan(
+        plan,
+        question="q",
+        as_of="2026-06-04",
+        context=Context(
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+    execution["provenance"]["performance_telemetry"] = {
+        "requestTotalMs": 1500,
+        "graphTotalMs": 1400,
+        "executeFixedDagMs": 1390,
+        "computeCallCount": 1,
+        "providerCallCount": 0,
+        "dbQueryCount": 2,
+        "dbTotalMs": 42,
+        "instrumentationGaps": ["provider_timing_not_reported_by_some_services"],
+        "perAgentCompute": [
+            {
+                "agentId": "financial_data_service",
+                "stage": "l1",
+                "dimension": "data",
+                "runtimeSource": "production_external_compute",
+                "elapsedMs": 41,
+                "httpStatusClass": "2xx",
+                "mappedSchema": "data_bundle_v1",
+                "mappedStatus": "complete",
+                "dbQueryCount": 2,
+                "dbTotalMs": 39,
+                "cacheHit": False,
+                "endpoint": "must_not_project",
+                "raw_response": "must_not_project",
+            }
+        ],
+    }
+
+    workflow = build_workflow_snapshot(
+        {
+            "fixed_dag_plan": plan,
+            "dag_execution": execution,
+            "dag_step_results": execution["step_results"],
+            "execution_batches": execution["execution_batches"],
+            "l2_conclusions": execution["l2_conclusions"],
+            "dimension_results": execution["dimension_results"],
+            "decision_result": execution["decision_result"],
+            "report_result": execution["report_result"],
+        },
+        "replay",
+    )
+    payload = workflow.model_dump(mode="json", by_alias=True)
+    telemetry = payload["provenance"]["performanceTelemetry"]
+    rendered = json.dumps(payload, ensure_ascii=False).lower()
+
+    assert telemetry["requestTotalMs"] == 1500
+    assert telemetry["computeCallCount"] == 1
+    assert telemetry["providerCallCount"] == 0
+    assert telemetry["dbQueryCount"] == 2
+    assert telemetry["perAgentCompute"][0]["agentId"] == "financial_data_service"
+    assert telemetry["perAgentCompute"][0]["httpStatusClass"] == "2xx"
+    assert telemetry["perAgentCompute"][0]["dbTotalMs"] == 39
+    assert "must_not_project" not in rendered
+    assert "raw_response" not in rendered
+    assert "endpoint" not in rendered
+
+
 def test_public_workflow_preserves_selected_routing_provenance_safely() -> None:
     intent = build_default_dimension_route_intent("Explain discounted cash flow in simple terms.")
     plan = compile_selected_fixed_dag_plan(intent, user_text="q", as_of="2026-06-04")

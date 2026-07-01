@@ -84,6 +84,12 @@ runs render only selected dimensions as active analysis and place unselected
 dimensions in an explicit uncovered-scope section. The harness now also checks
 evidence-bundle completeness, selected-scope integrity, unselected-dimension
 overstatement count `0`, and risk-compliance zero-evidence wording.
+The public API production-observability follow-up adds a freshness guard to
+`/api/health` and a bounded `performanceTelemetry` projection in workflow
+provenance. This lets operators distinguish stale daemons from current
+contract-capable ones and profile request/graph/compute/agent timing without
+exposing raw responses, SQL, prompts, provider payloads, endpoint URLs, env
+values, or secrets.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

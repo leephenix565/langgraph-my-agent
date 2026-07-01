@@ -188,6 +188,17 @@ Active skeleton properties:
   call. Omitting `routing` or sending `routing: null` preserves the server
   default; public clients cannot control provider routing, compute, invoke,
   model, base URL, API key, env, runtime bindings, catalog, or non-L4 policy.
+- Public health/readiness exposes additive freshness fields for the public API
+  contract version, selected-routing request support, compute registry version
+  and size, process start time, uptime, and source-version marker. These fields
+  are public-safe capability markers and are intended to catch old daemon code
+  that can still return HTTP 200.
+- `workflow_snapshot_v2.provenance.performanceTelemetry` carries bounded
+  public-safe timing summaries for public API E2E validation: total request and
+  graph timing, compute call count, per-agent compute elapsed time, mapped
+  schema/status, fallback/degraded/timeout flags, and optional provider/DB
+  count/duration fields when a service reports them safely. Missing service
+  telemetry is explicit instrumentation gap metadata, not inferred data.
 - M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
   preflight factory/wrapper for future controlled real-provider dry-runs. The
   wrapper is not part of the default graph path, does not call
