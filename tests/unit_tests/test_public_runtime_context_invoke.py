@@ -1,8 +1,10 @@
 import pytest
 
+from react_agent import public_api
 from react_agent.context import Context
 from react_agent.public_contracts import (
     CheckpointerStatus,
+    PublicRoutingRequest,
     PublicTurn,
     ReadinessSurface,
 )
@@ -13,6 +15,22 @@ from react_agent.public_runtime import (
 )
 
 pytestmark = pytest.mark.anyio
+
+
+def test_public_routing_selected_builds_selected_context_only(monkeypatch) -> None:
+    monkeypatch.delenv("ENABLE_LLM_DIMENSION_ROUTER", raising=False)
+    monkeypatch.delenv("ENABLE_EXTERNAL_COMPUTE_DEMO", raising=False)
+
+    context = public_api._context_for_public_routing(PublicRoutingRequest(mode="selected"))
+
+    assert isinstance(context, Context)
+    assert context.enable_selected_routing is True
+    assert context.enable_llm_dimension_router is False
+    assert context.enable_external_compute_demo is False
+
+
+def test_public_routing_none_keeps_default_runtime_context() -> None:
+    assert public_api._context_for_public_routing(None) is None
 
 
 def _probe(fake_module, *, continuity_mode: str = "replay") -> RuntimeReadinessProbe:

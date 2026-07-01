@@ -242,6 +242,14 @@ the full DAG. Provider routing remains default-off/fake-only, tests disable
 external compute defaults, runtime bindings/catalog/non-L4 policy are
 unchanged, and `/v1/agent/invoke` is still not a default runtime path.
 
+The public HTTP/Web surface now offers a per-request selected-routing opt-in:
+`routing: {"mode": "selected"}` on `/api/threads/{thread_id}/messages` and the
+matching stream route. Omitting `routing` or sending `routing: null` preserves
+the server default and keeps selected routing default-off. This public switch
+only maps to `Context(enable_selected_routing=True)` for that request; it does
+not expose provider router, compute, invoke, model, base URL, API key, or env
+controls, and it does not provide an explicit `full_dag` force-off mode.
+
 The reset target has 27 formal agent ids:
 
 - L1 planning/evidence seams: 3 target ids.

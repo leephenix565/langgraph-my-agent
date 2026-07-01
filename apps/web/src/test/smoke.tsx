@@ -11,7 +11,7 @@ import { agentNameLabel } from "../content/zh-CN";
 import { AGENT_CATALOG } from "../mocks/agents";
 import { TRANSCRIPTS_BY_SESSION } from "../mocks/transcript";
 import { createWorkflowVariant } from "../mocks/workflow";
-import type { PublicTurn, StructuredInputModel } from "../types/chat";
+import type { PublicTurn, RoutingRequestModel, StructuredInputModel } from "../types/chat";
 import type { WorkflowModel, WorkflowStageKey, WorkflowStageStatus } from "../types/workflow";
 import { composeStructuredPrompt, parseStructuredUserTurn, toStructuredInputModel } from "../utils/structuredInput";
 
@@ -644,7 +644,12 @@ async function runComposerLengthLimitChecks() {
 async function runStreamingSuccessScenario() {
   dom.reconfigure({ url: "http://localhost/" });
   const user = userEvent.setup({ document: dom.window.document });
-  const sentPayloads: Array<{ text: string; structuredInput?: StructuredInputModel }> = [];
+  const sentPayloads: Array<{
+    text: string;
+    structuredInput?: StructuredInputModel;
+    routing?: RoutingRequestModel | null;
+    hasRouting: boolean;
+  }> = [];
   let finalRoles: string[] = [];
 
   const createdThread = {
@@ -670,10 +675,13 @@ async function runStreamingSuccessScenario() {
       const payload = JSON.parse(String(init?.body ?? "{}")) as {
         text?: string;
         structuredInput?: StructuredInputModel;
+        routing?: RoutingRequestModel | null;
       };
       sentPayloads.push({
         text: payload.text ?? "",
         structuredInput: payload.structuredInput,
+        routing: payload.routing,
+        hasRouting: "routing" in payload,
       });
       const answer = "简短实时摘要，先给结论。";
       const finalTurns: PublicTurn[] = [
@@ -768,7 +776,104 @@ async function runStreamingSuccessScenario() {
 
   assert.equal(sentPayloads[0].text, "Summarize the market risk profile.");
   assert.deepEqual(sentPayloads[0].structuredInput, { task: "Summarize the market risk profile." });
+  assert.equal(sentPayloads[0].hasRouting, false);
   assert.deepEqual(finalRoles, ["user", "assistant"]);
+  assertNoForbiddenUiTokens(view.container.textContent);
+  cleanup();
+}
+
+async function runSelectedRoutingToggleScenario() {
+  dom.reconfigure({ url: "http://localhost/" });
+  const user = userEvent.setup({ document: dom.window.document });
+  const sentPayloads: Array<{
+    text: string;
+    structuredInput?: StructuredInputModel;
+    routing?: RoutingRequestModel | null;
+    hasRouting: boolean;
+  }> = [];
+
+  installFetchMock(async (url, init) => {
+    const method = init?.method ?? "GET";
+    if (url.endsWith("/api/health")) {
+      return jsonResponse(degradedHealthPayload());
+    }
+    if (url.endsWith("/api/threads") && method === "GET") {
+      return jsonResponse({ threads: [] });
+    }
+    if (url.endsWith("/api/threads") && method === "POST") {
+      return jsonResponse({
+        thread: threadSummary("新会话", "等待第一条消息。"),
+        turns: [],
+      });
+    }
+    if (url.endsWith("/api/agents") && method === "GET") {
+      return jsonResponse(AGENT_CATALOG);
+    }
+    if (url.endsWith("/api/threads/thread-live-1/messages/stream") && method === "POST") {
+      const payload = JSON.parse(String(init?.body ?? "{}")) as {
+        text?: string;
+        structuredInput?: StructuredInputModel;
+        routing?: RoutingRequestModel | null;
+      };
+      sentPayloads.push({
+        text: payload.text ?? "",
+        structuredInput: payload.structuredInput,
+        routing: payload.routing,
+        hasRouting: "routing" in payload,
+      });
+      const answer = "已按选择路由生成摘要。";
+      return ndjsonResponse([
+        {
+          type: "run.started",
+          data: { threadId: "thread-live-1", continuityMode: "replay" },
+        },
+        {
+          type: "answer.final",
+          data: {
+            response: {
+              thread: threadSummary("选择路由摘要", answer),
+              assistantTurn: assistantTurn("assistant-selected-1", answer),
+              turns: [
+                {
+                  id: "user-selected-1",
+                  role: "user",
+                  text: payload.text ?? "",
+                  createdAt: "2026-04-04 18:05",
+                  structuredInput: payload.structuredInput,
+                },
+                assistantTurn("assistant-selected-1", answer),
+              ],
+            },
+          },
+        },
+      ]);
+    }
+
+    return jsonResponse(
+      { detail: { code: "unhandled_request", message: `Unhandled request: ${method} ${url}`, category: "request" } },
+      500,
+    );
+  });
+
+  const view = render(<App />);
+
+  await waitFor(() => {
+    assert.equal((view.container.querySelector("#chat-composer") as HTMLTextAreaElement).disabled, false);
+  });
+  assert.ok(view.getByText("选择路由（默认关闭）"));
+  assert.ok(view.getByText("开启后，系统会尝试按问题选择更细粒度的路由；关闭时沿用固定研判流程。"));
+
+  const taskInput = view.container.querySelector("#chat-composer") as HTMLTextAreaElement;
+  await user.type(taskInput, "Analyze the valuation drivers.");
+  await user.click(view.container.querySelector("#chat-selected-routing") as HTMLInputElement);
+  await user.click(view.container.querySelector(".composer__submit") as HTMLButtonElement);
+
+  await waitFor(() => {
+    assert.ok(view.getByText("已按选择路由生成摘要。"));
+  });
+  assert.deepEqual(sentPayloads[0].routing, { mode: "selected" });
+  assert.equal(sentPayloads[0].hasRouting, true);
+  assert.deepEqual(sentPayloads[0].structuredInput, { task: "Analyze the valuation drivers." });
   assertNoForbiddenUiTokens(view.container.textContent);
   cleanup();
 }
@@ -861,6 +966,7 @@ async function runSmoke() {
   await runThoughtChainDynamicStageChecks();
   await runComposerLengthLimitChecks();
   await runStreamingSuccessScenario();
+  await runSelectedRoutingToggleScenario();
   await runStreamingErrorScenario();
   console.log("Frontend fixed DAG contract smoke checks passed.");
 }

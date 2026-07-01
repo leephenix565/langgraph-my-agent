@@ -3,12 +3,12 @@ import { Composer } from "../components/shell/Composer";
 import { MessageList } from "../components/shell/MessageList";
 import { ThreadHeader } from "../components/shell/ThreadHeader";
 import { errorCategoryLabel, zhCN } from "../content/zh-CN";
-import type { ChatSessionSummary, HealthResponse, PublicTurn, StructuredInputModel } from "../types/chat";
+import type { ChatSessionSummary, HealthResponse, PublicTurn, RoutingRequestModel, StructuredInputModel } from "../types/chat";
 
 interface ChatPageProps {
   session: ChatSessionSummary | null;
   turns: PublicTurn[];
-  onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onSendMessage: (value: string, structuredInput?: StructuredInputModel, routing?: RoutingRequestModel | null) => void;
   onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;

@@ -9,6 +9,7 @@ from pydantic import BaseModel, ConfigDict, Field
 
 FinalSource = Literal["reset_skeleton"]
 ContinuityMode = Literal["persistent", "replay"]
+PublicRoutingMode = Literal["selected"]
 AgentLayer = Literal["L1", "L2", "L3", "L4"]
 DagStepStatus = Literal[
     "complete",
@@ -212,9 +213,14 @@ class CreateThreadRequest(PublicBaseModel):
     title: str | None = None
 
 
+class PublicRoutingRequest(PublicBaseModel):
+    mode: PublicRoutingMode
+
+
 class SendMessageRequest(PublicBaseModel):
     text: str
     structuredInput: StructuredInputModel | None = None
+    routing: PublicRoutingRequest | None = None
 
 
 class SendMessageResponse(PublicBaseModel):

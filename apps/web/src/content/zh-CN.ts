@@ -136,6 +136,8 @@ export const zhCN = {
     collapseStructured: "隐藏结构化输入",
     structuredLabel: "结构化输入",
     structuredHelper: "补充上下文、材料、约束和输出偏好，便于重放与审计。",
+    selectedRoutingLabel: "选择路由（默认关闭）",
+    selectedRoutingHelper: "开启后，系统会尝试按问题选择更细粒度的路由；关闭时沿用固定研判流程。",
     contextLabel: "上下文/材料",
     contextPlaceholder: "已知事实、来源笔记或需要考虑的背景",
     constraintsLabel: "约束",

@@ -3,12 +3,12 @@ import { AgentsPage } from "../pages/AgentsPage";
 import { ChatPage } from "../pages/ChatPage";
 import { SettingsPage } from "../pages/SettingsPage";
 import type { ApiError } from "../services/api";
-import type { ChatSessionSummary, HealthResponse, PublicTurn, StructuredInputModel } from "../types/chat";
+import type { ChatSessionSummary, HealthResponse, PublicTurn, RoutingRequestModel, StructuredInputModel } from "../types/chat";
 
 export interface AppRoutesProps {
   activeSession: ChatSessionSummary | null;
   activeTurns: PublicTurn[];
-  onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onSendMessage: (value: string, structuredInput?: StructuredInputModel, routing?: RoutingRequestModel | null) => void;
   onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;

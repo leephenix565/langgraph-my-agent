@@ -672,6 +672,28 @@ selected-routing enablement, external route-planner service readiness, route
 planner port authority, live endpoint E2E, `/v1/agent/invoke`, or runtime
 binding/catalog/non-L4 policy changes.
 
+## Router M2 Public Selected-Routing API Gate
+
+The public HTTP/Web request toggle is validated as an additive, default-off
+contract:
+
+```powershell
+DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/integration_tests/test_public_api.py tests/unit_tests/test_public_runtime_context_invoke.py tests/unit_tests/test_public_mapping_fixed_dag.py tests/integration_tests/test_graph.py tests/unit_tests/test_router_provider_factory.py -q
+python scripts/quality/run_quality.py --mode frontend
+python scripts/quality/run_quality.py --mode static
+python scripts/quality/run_quality.py --mode mainline
+git diff --check
+```
+
+This gate confirms that omitted or null public `routing` keeps the server
+default, `routing: {"mode": "selected"}` maps only to
+`Context(enable_selected_routing=True)`, invalid routing values/extra keys are
+rejected, sync and stream routes stay aligned, the frontend toggle omits the
+field while off and serializes it while on, and public provenance remains
+sanitized. It does not authorize provider routing, `/v1/agent/invoke`,
+`/v1/agent/compute`, endpoint calls, service actions, runtime binding changes,
+catalog changes, or non-L4 policy changes.
+
 ## R8-6B Internal LLM Placeholder Gate
 
 R8-6B adds default-off internal LLM placeholders for fixed-DAG L2 conclusions.

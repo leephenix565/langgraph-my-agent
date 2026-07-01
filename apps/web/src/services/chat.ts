@@ -2,6 +2,7 @@ import type { AgentCatalogModel } from "../types/agents";
 import type {
   HealthResponse,
   PublicThreadDetail,
+  RoutingRequestModel,
   SendMessageRequest,
   SendMessageResponse,
   SendMessageStreamEvent,
@@ -45,8 +46,25 @@ export function clearThreadMessages(threadId: string) {
   });
 }
 
-export function sendMessage(threadId: string, text: string, structuredInput?: StructuredInputModel) {
+function buildSendMessagePayload(
+  text: string,
+  structuredInput?: StructuredInputModel,
+  routing?: RoutingRequestModel | null,
+): SendMessageRequest {
   const payload: SendMessageRequest = structuredInput ? { text, structuredInput } : { text };
+  if (routing) {
+    payload.routing = routing;
+  }
+  return payload;
+}
+
+export function sendMessage(
+  threadId: string,
+  text: string,
+  structuredInput?: StructuredInputModel,
+  routing?: RoutingRequestModel | null,
+) {
+  const payload = buildSendMessagePayload(text, structuredInput, routing);
   return apiRequest<SendMessageResponse>(`/api/threads/${threadId}/messages`, {
     method: "POST",
     body: JSON.stringify(payload),
@@ -57,9 +75,10 @@ export function sendMessageStream(
   threadId: string,
   text: string,
   structuredInput: StructuredInputModel | undefined,
+  routing: RoutingRequestModel | null | undefined,
   onEvent: (event: SendMessageStreamEvent) => void,
 ) {
-  const payload: SendMessageRequest = structuredInput ? { text, structuredInput } : { text };
+  const payload = buildSendMessagePayload(text, structuredInput, routing);
   return streamNdjson<SendMessageStreamEvent>(
     `/api/threads/${threadId}/messages/stream`,
     {

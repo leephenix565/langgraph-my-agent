@@ -12,6 +12,7 @@ from fastapi import FastAPI, HTTPException, Request, Response
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
 
+from react_agent.context import Context
 from react_agent.fixed_dag_catalog import fixed_dag_public_agent_catalog
 from react_agent.public_contracts import (
     AgentCatalogResponse,
@@ -21,6 +22,7 @@ from react_agent.public_contracts import (
     CreateThreadRequest,
     ErrorDetail,
     HealthResponse,
+    PublicRoutingRequest,
     PublicThreadDetail,
     PublicTurn,
     SendMessageRequest,
@@ -240,6 +242,12 @@ def _prepare_user_message(payload: SendMessageRequest) -> tuple[str, StructuredI
     return user_text, structured_input, build_user_turn(user_text, structured_input)
 
 
+def _context_for_public_routing(routing: PublicRoutingRequest | None) -> Context | None:
+    if routing is not None and routing.mode == "selected":
+        return Context(enable_selected_routing=True)
+    return None
+
+
 def _encode_ndjson_event(event: Any) -> bytes:
     return (event.model_dump_json() + "\n").encode("utf-8")
 
@@ -295,11 +303,13 @@ async def clear_thread_messages(thread_id: str) -> PublicThreadDetail:
 async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessageResponse:
     detail = _get_thread_detail(thread_id)
     user_text, structured_input, user_turn = _prepare_user_message(payload)
+    context = _context_for_public_routing(payload.routing)
     try:
         assistant_turn, continuity_mode = await invoke_public_turn(
             thread_id=thread_id,
             history_turns=detail.turns,
             user_text=user_text,
+            context=context,
         )
     except PublicRuntimeUnavailable as exc:
         raise _http_error(503, code=exc.code, message=exc.message, category=exc.category) from exc
@@ -335,11 +345,13 @@ async def send_message(thread_id: str, payload: SendMessageRequest) -> SendMessa
 async def send_message_stream(thread_id: str, request: Request, payload: SendMessageRequest) -> StreamingResponse:
     detail = _get_thread_detail(thread_id)
     user_text, structured_input, user_turn = _prepare_user_message(payload)
+    context = _context_for_public_routing(payload.routing)
     try:
         prepared = prepare_public_turn_invoke(
             thread_id=thread_id,
             history_turns=detail.turns,
             user_text=user_text,
+            context=context,
         )
     except PublicRuntimeUnavailable as exc:
         raise _http_error(503, code=exc.code, message=exc.message, category=exc.category) from exc

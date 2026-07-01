@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Public selected-routing request toggle
+
+### Changed
+
+- Added the default-off public HTTP/Web request toggle
+  `routing: {"mode": "selected"}` for sync and streaming message sends.
+- Mapped that request field only to per-call
+  `Context(enable_selected_routing=True)`, leaving omitted/null `routing` on the
+  existing server default path and avoiding a public `full_dag` force-off mode.
+- Added a default-off frontend composer switch that omits `routing` while off
+  and sends `{mode: "selected"}` while on.
+
+### Tests
+
+- Added public API sync/stream coverage for omitted, null, selected, and invalid
+  routing payloads, including an endpoint-free selected-routing report path.
+- Added public-runtime context helper coverage and frontend smoke assertions for
+  the selected-routing toggle and request serialization.
+
+### Not Done
+
+- No selected-routing default-on behavior, provider-router public control,
+  compute/invoke public control, endpoint call, provider call, runtime binding
+  change, catalog change, non-L4 policy change, prod/sandbox write, process
+  action, env-value access, or raw response retention change.
+
 ## 2026-06-30 - Router M2 sandbox validation isolation
 
 ### Changed

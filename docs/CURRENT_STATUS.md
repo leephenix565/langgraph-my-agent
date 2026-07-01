@@ -141,9 +141,13 @@ records.
   selected-routing/provider-router provenance fields. Default `Context()`
   remains the full DAG; provider routing remains default-off/fake-only.
 - Router M2 also adds an internal public-runtime context override seam for
-  endpoint-free tests. It does not change the public HTTP request schema,
-  production defaults, runtime bindings, catalog, non-L4 policy, or route
-  planner service/port authority.
+  endpoint-free tests. The public HTTP/Web surface now adds a request-level
+  `routing: {"mode": "selected"}` opt-in for sync and stream sends. Omitted or
+  null `routing` keeps the existing server default and selected routing remains
+  default-off. This does not add an explicit public `full_dag` force-off mode,
+  provider router control, compute/invoke control, runtime binding change,
+  catalog change, non-L4 policy change, or route-planner service/port
+  authority.
 
 ## Report Quality RQ2E Status
 

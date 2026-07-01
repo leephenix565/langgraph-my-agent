@@ -3,6 +3,31 @@
 This document records reset branch decisions. It is intentionally short; deeper
 historical context is preserved by the pre-reset tag.
 
+## ADR-165: Public HTTP Selected Routing Is Per-Request Opt-In Only
+
+Status: accepted for ROUTER-M2-PUBLIC-SELECTED-ROUTING-API.
+
+Decision: expose selected routing to public HTTP/Web callers only through the
+additive request field `routing: {"mode": "selected"}`. Omitted or null
+`routing` preserves the server default, and the public schema accepts no
+`full_dag` mode in this phase.
+
+Reason: the internal Router M2 path already proves selected plan, selected DAG,
+L4 report closure, and public-safe provenance. A request-level opt-in gives the
+web/API user an explicit E2E surface without making selected routing default-on
+or exposing lower-level runtime controls.
+
+Consequence: sync and stream public message handlers may translate the public
+field into `Context(enable_selected_routing=True)` for that call, and the
+frontend can offer a default-off composer toggle. Public provenance remains the
+observable proof surface for selected-routing execution and fallback behavior.
+
+Non-consequence: this does not expose provider router control, provider direct
+calls, `/v1/agent/invoke`, `/v1/agent/compute`, external compute demo,
+model/base URL/API key/env controls, raw route intent, raw selected plan,
+runtime binding changes, catalog changes, non-L4 policy changes, prod/sandbox
+writes, service actions, or live endpoint verification.
+
 ## ADR-164: Known Package Lockfiles Are P2S Package Metadata
 
 Status: accepted for SYNC-P2S source classification.

@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { PUBLIC_API_MAX_MESSAGE_CHARS } from "../../config/runtimeLimits";
 import { zhCN } from "../../content/zh-CN";
-import type { StructuredInputModel } from "../../types/chat";
+import type { RoutingRequestModel, StructuredInputModel } from "../../types/chat";
 import {
   composeStructuredPrompt,
   EMPTY_STRUCTURED_INPUT_DRAFT,
@@ -11,7 +11,7 @@ import {
 } from "../../utils/structuredInput";
 
 interface ComposerProps {
-  onSubmit: (value: string, structuredInput?: StructuredInputModel) => void;
+  onSubmit: (value: string, structuredInput?: StructuredInputModel, routing?: RoutingRequestModel | null) => void;
   disabled?: boolean;
   busy?: boolean;
   unavailable?: boolean;
@@ -26,6 +26,7 @@ export function Composer({
   maxMessageChars = PUBLIC_API_MAX_MESSAGE_CHARS,
 }: ComposerProps) {
   const [structuredOpen, setStructuredOpen] = useState(false);
+  const [selectedRouting, setSelectedRouting] = useState(false);
   const [draft, setDraft] = useState<StructuredInputDraft>(EMPTY_STRUCTURED_INPUT_DRAFT);
   const materialsLabel = "补充材料 / 笔记";
   const materialsPlaceholder =
@@ -47,7 +48,7 @@ export function Composer({
     if (!nextValue || !nextStructuredInput || inputTooLong || disabled || busy) {
       return;
     }
-    onSubmit(nextValue, nextStructuredInput);
+    onSubmit(nextValue, nextStructuredInput, selectedRouting ? { mode: "selected" } : undefined);
     setDraft(EMPTY_STRUCTURED_INPUT_DRAFT);
   }
 
@@ -82,6 +83,19 @@ export function Composer({
       >
         {structuredOpen ? zhCN.composer.collapseStructured : zhCN.composer.expandStructured}
       </button>
+      <label className="composer__routing" htmlFor="chat-selected-routing">
+        <input
+          id="chat-selected-routing"
+          type="checkbox"
+          checked={selectedRouting}
+          onChange={(event) => setSelectedRouting(event.target.checked)}
+          disabled={disabled || busy}
+        />
+        <span>
+          <strong>{zhCN.composer.selectedRoutingLabel}</strong>
+          <small>{zhCN.composer.selectedRoutingHelper}</small>
+        </span>
+      </label>
       {structuredOpen ? (
         <div className="composer__structured" aria-label={zhCN.composer.structuredLabel}>
           <p className="composer__structured-hint">{zhCN.composer.structuredHelper}</p>

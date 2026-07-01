@@ -6,6 +6,7 @@ from typing import Any
 import httpx
 
 from react_agent import public_api
+from react_agent.context import Context
 from react_agent.fixed_dag_contracts import RESET_RUNTIME_AGENT_IDS
 from react_agent.public_contracts import (
     AnswerCardModel,
@@ -135,6 +136,29 @@ def _assistant_turn(continuity_mode: str = "replay") -> PublicTurn:
     )
 
 
+def _selected_assistant_turn(continuity_mode: str = "replay") -> PublicTurn:
+    turn = _assistant_turn(continuity_mode)
+    assert turn.workflow is not None
+    turn.workflow.dimensionGroups = [
+        DimensionGroupModel(
+            id="value",
+            title="Value composite",
+            stepIds=["dimension:value"],
+            status="pending_implementation",
+            summary="Selected value dimension.",
+        )
+    ]
+    assert turn.workflow.provenance is not None
+    turn.workflow.provenance.selectedRoutingRequested = True
+    turn.workflow.provenance.selectedRoutingFallback = False
+    turn.workflow.provenance.routeGranularity = "dimension"
+    turn.workflow.provenance.selectedDimensions = ["value"]
+    turn.workflow.provenance.expandedAgentCount = 8
+    turn.workflow.provenance.providerRouterEnabled = False
+    turn.workflow.provenance.providerRouterInvoked = False
+    return turn
+
+
 def _probe(continuity_mode: str = "replay") -> RuntimeReadinessProbe:
     return RuntimeReadinessProbe(
         continuity_mode=continuity_mode,  # type: ignore[arg-type]
@@ -216,7 +240,7 @@ def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> _Asgi
     monkeypatch.setattr(public_api, "store", store)
     monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe(continuity_mode))
 
-    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text):
+    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
         assert thread_id
         assert user_text
         return _assistant_turn(continuity_mode), continuity_mode
@@ -418,6 +442,131 @@ def test_send_message_accepts_structured_input_and_replay_uses_text(tmp_path, mo
     assert replay_messages(turns, "Pending follow-up")[-1] == ("user", "Pending follow-up")
 
 
+def test_send_message_omitted_and_null_routing_keep_default_context(tmp_path, monkeypatch):
+    captured_contexts: list[Context | None] = []
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
+        captured_contexts.append(context)
+        return _assistant_turn("replay"), "replay"
+
+    monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    omitted = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Default routing request."},
+    )
+    null_routing = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Null routing request.", "routing": None},
+    )
+
+    assert omitted.status_code == 200
+    assert null_routing.status_code == 200
+    assert captured_contexts == [None, None]
+
+
+def test_send_message_selected_routing_passes_selected_context(tmp_path, monkeypatch):
+    captured: dict[str, Any] = {}
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
+        captured["context"] = context
+        return _selected_assistant_turn("replay"), "replay"
+
+    monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Run selected routing.", "routing": {"mode": "selected"}},
+    )
+
+    assert response.status_code == 200
+    assert isinstance(captured["context"], Context)
+    assert captured["context"].enable_selected_routing is True
+    assert captured["context"].enable_llm_dimension_router is False
+    assert captured["context"].enable_external_compute_demo is False
+    provenance = response.json()["assistantTurn"]["workflow"]["provenance"]
+    assert provenance["selectedRoutingRequested"] is True
+    assert provenance["selectedRoutingFallback"] is False
+    assert provenance["selectedDimensions"] == ["value"]
+    assert provenance["providerRouterEnabled"] is False
+    assert provenance["providerRouterInvoked"] is False
+
+
+def test_send_message_selected_routing_endpoint_free_e2e_report(tmp_path, monkeypatch):
+    monkeypatch.setenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", "1")
+    monkeypatch.setenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", "1")
+    monkeypatch.setenv("ENABLE_EXTERNAL_COMPUTE_DEMO", "0")
+    monkeypatch.setenv("ENABLE_LLM_DIMENSION_ROUTER", "0")
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={
+            "text": "Analyze the valuation outlook for 600519.SH.",
+            "routing": {"mode": "selected"},
+        },
+    )
+
+    assert response.status_code == 200
+    payload = response.json()
+    workflow = payload["assistantTurn"]["workflow"]
+    provenance = workflow["provenance"]
+    assert provenance["selectedRoutingRequested"] is True
+    assert provenance["selectedRoutingFallback"] is False
+    assert provenance["selectedDimensions"]
+    assert provenance["providerRouterEnabled"] is False
+    assert provenance["providerRouterInvoked"] is False
+    assert payload["assistantTurn"]["answerCard"]["answer"].strip()
+    assert workflow["currentStage"] == "report"
+    assert {group["id"] for group in workflow["dimensionGroups"]} <= {"value", "market", "risk", "macro"}
+    rendered = json.dumps(payload, ensure_ascii=False)
+    for forbidden in ["raw_response", "/v1/agent/invoke", "secret", "Traceback", "chain-of-thought"]:
+        assert forbidden not in rendered
+
+
+def test_send_message_rejects_invalid_routing_value_and_extra_key(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    invalid_value = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Invalid routing.", "routing": {"mode": "full_dag"}},
+    )
+    extra_key = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Invalid routing.", "routing": {"mode": "selected", "provider": "fake"}},
+    )
+
+    assert invalid_value.status_code == 422
+    assert extra_key.status_code == 422
+
+
+def test_send_message_stream_rejects_invalid_routing_value(tmp_path, monkeypatch):
+    client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    response = client.post(
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Invalid stream routing.", "routing": {"mode": "full_dag"}},
+    )
+
+    assert response.status_code == 422
+
+
 def test_send_message_rejects_structured_input_text_mismatch(tmp_path, monkeypatch):
     client = _configure_test_app(tmp_path, monkeypatch, continuity_mode="replay")
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
@@ -439,7 +588,7 @@ def test_send_message_runtime_failure_contract(tmp_path, monkeypatch):
     client = _AsgiTestClient(public_api.app)
     thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
 
-    async def _failing_invoke_public_turn(*, thread_id, history_turns, user_text):
+    async def _failing_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
         raise PublicRuntimeUnavailable(
             "LangGraph runtime is unavailable for public invocation.",
             code="runtime_import_unavailable",
@@ -515,6 +664,96 @@ def test_send_message_stream_success_persists_only_final_turns(tmp_path, monkeyp
     persisted = store.get_thread(thread_id)
     assert persisted is not None
     assert len(persisted.turns) == 2
+
+
+def test_send_message_stream_selected_routing_passes_selected_context(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    captured: dict[str, Any] = {}
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    def _fake_prepare_public_turn_invoke(**kwargs):
+        captured["context"] = kwargs.get("context")
+        return PreparedPublicTurnInvoke(
+            continuity_mode="replay",
+            graph_app=object(),
+            invoke_input={"messages": [("user", kwargs["user_text"])]},
+            invoke_kwargs={"context": kwargs.get("context")},
+        )
+
+    async def _fake_stream_public_turn(*, thread_id, user_text, prepared):
+        yield RunStartedEvent(
+            type="run.started",
+            data=RunStartedEventData(threadId=thread_id, continuityMode="replay"),
+        )
+        yield StreamPublicTurnCompleted(
+            assistant_turn=_assistant_turn("replay"),
+            continuity_mode="replay",
+        )
+
+    monkeypatch.setattr(public_api, "prepare_public_turn_invoke", _fake_prepare_public_turn_invoke)
+    monkeypatch.setattr(public_api, "stream_public_turn", _fake_stream_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    with client.stream(
+        "POST",
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Stream selected routing.", "routing": {"mode": "selected"}},
+    ) as response:
+        events = _stream_lines(response)
+
+    assert response.status_code == 200
+    assert events[-1]["type"] == "answer.final"
+    assert isinstance(captured["context"], Context)
+    assert captured["context"].enable_selected_routing is True
+    assert captured["context"].enable_llm_dimension_router is False
+
+
+def test_send_message_stream_omitted_and_null_routing_keep_default_context(tmp_path, monkeypatch):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    captured_contexts: list[Context | None] = []
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    def _fake_prepare_public_turn_invoke(**kwargs):
+        captured_contexts.append(kwargs.get("context"))
+        return PreparedPublicTurnInvoke(
+            continuity_mode="replay",
+            graph_app=object(),
+            invoke_input={"messages": [("user", kwargs["user_text"])]},
+            invoke_kwargs={"context": kwargs.get("context")},
+        )
+
+    async def _fake_stream_public_turn(*, thread_id, user_text, prepared):
+        yield RunStartedEvent(
+            type="run.started",
+            data=RunStartedEventData(threadId=thread_id, continuityMode="replay"),
+        )
+        yield StreamPublicTurnCompleted(
+            assistant_turn=_assistant_turn("replay"),
+            continuity_mode="replay",
+        )
+
+    monkeypatch.setattr(public_api, "prepare_public_turn_invoke", _fake_prepare_public_turn_invoke)
+    monkeypatch.setattr(public_api, "stream_public_turn", _fake_stream_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    omitted = client.post(
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Stream default routing."},
+    )
+    null_routing = client.post(
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Stream null routing.", "routing": None},
+    )
+
+    assert omitted.status_code == 200
+    assert null_routing.status_code == 200
+    assert captured_contexts == [None, None]
 
 
 def test_send_message_stream_emits_error_and_does_not_persist_failed_turn(tmp_path, monkeypatch):

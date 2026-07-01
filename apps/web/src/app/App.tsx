@@ -18,6 +18,7 @@ import type {
   HealthResponse,
   PublicThreadDetail,
   PublicTurn,
+  RoutingRequestModel,
   SendMessageResponse,
   SendMessageStreamEvent,
   StructuredInputModel,
@@ -42,7 +43,7 @@ interface WorkspaceFrameProps {
   onSelectSession: (sessionId: string) => void;
   onCreateThread: () => void;
   onDeleteThread: (sessionId: string) => void;
-  onSendMessage: (value: string, structuredInput?: StructuredInputModel) => void;
+  onSendMessage: (value: string, structuredInput?: StructuredInputModel, routing?: RoutingRequestModel | null) => void;
   onClearMessages: () => void;
   isLoading: boolean;
   isSending: boolean;
@@ -325,7 +326,7 @@ export default function App() {
     }
   }
 
-  async function handleSendMessage(value: string, structuredInput?: StructuredInputModel) {
+  async function handleSendMessage(value: string, structuredInput?: StructuredInputModel, routing?: RoutingRequestModel | null) {
     const sessionId = activeSessionId;
     if (!sessionId) {
       return;
@@ -351,7 +352,7 @@ export default function App() {
         finalResponse: null,
         error: null,
       };
-      const streamed = await sendMessageStream(sessionId, value, structuredInput, (event) => {
+      const streamed = await sendMessageStream(sessionId, value, structuredInput, routing, (event) => {
         if (event.type === "answer.final") {
           streamState.finalResponse = event.data.response;
           return;
@@ -371,7 +372,7 @@ export default function App() {
       });
 
       if (!streamed) {
-        const response = await sendMessage(sessionId, value, structuredInput);
+        const response = await sendMessage(sessionId, value, structuredInput, routing);
         await refreshHealthState();
         startTransition(() => {
           setTurnsBySession((current) => ({ ...current, [sessionId]: response.turns }));

@@ -168,6 +168,12 @@ Active skeleton properties:
   `workflow_snapshot_v2.provenance` selected-routing/provider-router fields
   into the closed public workflow model. Default `Context()` still uses the
   full DAG, and provider routing remains default-off/fake-only.
+- The public HTTP/Web entry point can request that same seam per message with
+  `routing: {"mode": "selected"}`. The request toggle is translated only into
+  `Context(enable_selected_routing=True)` for the current sync or streaming
+  call. Omitting `routing` or sending `routing: null` preserves the server
+  default; public clients cannot control provider routing, compute, invoke,
+  model, base URL, API key, env, runtime bindings, catalog, or non-L4 policy.
 - M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
   preflight factory/wrapper for future controlled real-provider dry-runs. The
   wrapper is not part of the default graph path, does not call

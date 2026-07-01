@@ -767,7 +767,25 @@ Failure policy:
 - Public runtime may receive an internal explicit `Context` override for tests
   and adapter calls. If omitted, it constructs `Context()` and selected routing
   remains default-off unless an operator has intentionally set existing
-  environment semantics. No public HTTP request schema field is added by M2.
+  environment semantics.
+- The public HTTP/Web request contract exposes a single default-off opt-in
+  field for this seam:
+
+  ```json
+  {
+    "text": "...",
+    "structuredInput": {},
+    "routing": {"mode": "selected"}
+  }
+  ```
+
+  `routing` may be omitted or null to preserve the server default. The only
+  accepted public mode is `selected`; other values and extra routing keys are
+  rejected by the closed public model. The request toggle maps only to
+  `Context(enable_selected_routing=True)` for that call. It does not expose an
+  explicit `full_dag` force-off mode, provider router control, compute/invoke
+  control, model/base URL/API key/env controls, raw route intent, raw selected
+  plan, raw provider response, or endpoint material.
 
 M1F0 adds `src/react_agent/router_provider.py` as a router-only provider
 preflight and artifact-safety contract for a later controlled real-provider

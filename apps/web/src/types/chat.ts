@@ -41,6 +41,10 @@ export interface StructuredInputModel {
   outputPreference?: string;
 }
 
+export interface RoutingRequestModel {
+  mode: "selected";
+}
+
 export interface PublicTurn {
   id: string;
   role: "user" | "assistant";
@@ -82,6 +86,7 @@ export interface SendMessageResponse {
 export interface SendMessageRequest {
   text: string;
   structuredInput?: StructuredInputModel;
+  routing?: RoutingRequestModel | null;
 }
 
 export interface RunStartedEvent {
