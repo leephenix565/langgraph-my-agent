@@ -1168,6 +1168,11 @@ public assistant answer card. The public transcript still remains a single
 assistant answer; these fields are structured report material for UI rendering
 and artifacts, not raw graph messages or raw agent JSON.
 
+Selected-routing reports are route-aware. A selected run renders only selected
+dimensions as active analysis sections; omitted dimensions may appear only as an
+explicit uncovered-scope section or limitation. Report prose must not imply that
+unselected dimensions received equal analysis.
+
 ## report_input_bundle_v1
 
 Purpose: describe the structured L2 and L3 evidence that the report generator
@@ -1181,6 +1186,8 @@ Runtime fields:
 - `status`
 - `agent_task_summaries`
 - `agent_evidence_bundle`
+- `routing_context`
+- `coverage_by_dimension`
 - `l2_agent_summaries`
 - `l3_composite_summaries`
 - `risk_gate`
@@ -1207,6 +1214,19 @@ public-safe report material:
   `claim`, `support`, `interpretation`, `decision_implication`, and `caveat`.
 - `data_quality`: bounded coverage, data-source, anti-lookahead, cached,
   missing-component, corpus, or composite-status notes.
+
+`routing_context` and `agent_evidence_bundle.routing_context` record
+public-safe report scope with `routing_mode`, `route_granularity`,
+`selected_dimensions`, and `unselected_dimensions`. They intentionally avoid the
+legacy dispatch key `mode`. `coverage_by_dimension` records selected status,
+bounded L2/L3 counts, true contributors, excluded contributors, degraded
+non-contributors, and evidence-ref counts for each dimension. These fields are
+report-quality inputs only; they do not expose raw responses, endpoint URLs,
+provider payloads, prompts, secrets, or runtime binding settings.
+
+If `risk_compliance_review` maps with zero readable evidence, it may appear only
+as coverage/limitation wording. It must not be treated as positive risk
+evidence, a true contributor, or a basis for reducing the reported risk gate.
 
 The public-safe allowlist can grow for service-owned report material without
 creating a new payload family. The June 18 sandbox wrapper pass added projection

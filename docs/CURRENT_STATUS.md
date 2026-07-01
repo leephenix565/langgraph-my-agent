@@ -190,6 +190,14 @@ records.
   `l3_contributor_integrity_v1`. The full DAG compute report E2E passes the
   source-controlled floor at `29/45` with `renderer_quality_gate.passed=true`
   and no L3 contributor-integrity violations.
+- The RQ2 bundle/renderer follow-up keeps the same compute-only boundary and
+  improves report trustworthiness: `report_input_bundle_v1` now carries
+  route-aware scope and dimension coverage metadata, selected value/risk reports
+  render only value/risk as active sections, market/macro are shown as
+  unselected scope, risk-compliance zero-readable-evidence wording is
+  limitation-only, and the controlled full DAG compute report audit reaches
+  `33/45` with renderer gate, selected-scope integrity, evidence-bundle
+  completeness, L3 contributor integrity, and unsafe scan passing.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

@@ -49,6 +49,15 @@ _DIMENSION_LABELS = {
     "macro": "宏观维度：宏观调节器与仓位约束",
 }
 
+_DIMENSION_SHORT_LABELS = {
+    "value": "价值",
+    "market": "市场",
+    "risk": "风险",
+    "macro": "宏观",
+}
+
+_DIMENSION_ORDER = ("value", "market", "risk", "macro")
+
 _STATUS_LABELS = {
     "complete": "已返回完整结构化材料",
     "partial": "证据不完整但可作降权参考",
@@ -154,6 +163,85 @@ def _as_mapping(value: Any) -> Mapping[str, Any]:
 
 def _as_list(value: Any) -> list[Any]:
     return value if isinstance(value, list) else []
+
+
+def _scope_context(evidence_bundle: Mapping[str, Any]) -> dict[str, Any]:
+    raw = _as_mapping(evidence_bundle.get("routing_context")) or _as_mapping(
+        evidence_bundle.get("selected_scope")
+    )
+    selected = [
+        str(item)
+        for item in _as_list(raw.get("selected_dimensions"))
+        if str(item) in _DIMENSION_LABELS
+    ]
+    if not selected:
+        selected = list(_DIMENSION_ORDER)
+    raw_mode = raw.get("routing_mode") or raw.get("mode")
+    mode = "selected" if raw_mode == "selected" and len(selected) < len(_DIMENSION_ORDER) else "full_dag"
+    unselected = [
+        str(item)
+        for item in _as_list(raw.get("unselected_dimensions"))
+        if str(item) in _DIMENSION_LABELS and str(item) not in selected
+    ]
+    if mode == "selected" and not unselected:
+        unselected = [dimension for dimension in _DIMENSION_ORDER if dimension not in set(selected)]
+    if mode == "full_dag":
+        selected = list(_DIMENSION_ORDER)
+        unselected = []
+    return {
+        "mode": mode,
+        "selected_dimensions": selected,
+        "unselected_dimensions": unselected,
+    }
+
+
+def _default_routing_context() -> dict[str, Any]:
+    return {
+        "schema": "report_routing_context_v1",
+        "routing_mode": "full_dag",
+        "route_granularity": "full_dag",
+        "selected_dimensions": list(_DIMENSION_ORDER),
+        "unselected_dimensions": [],
+        "selected_dimension_count": len(_DIMENSION_ORDER),
+        "unselected_dimension_count": 0,
+    }
+
+
+def _default_coverage_by_dimension(evidence_bundle: Mapping[str, Any]) -> dict[str, Any]:
+    l2_items = [_as_mapping(item) for item in _as_list(evidence_bundle.get("l2_agent_outputs"))]
+    l3_items = [_as_mapping(item) for item in _as_list(evidence_bundle.get("l3_composite_outputs"))]
+    return {
+        dimension: {
+            "selected": True,
+            "l2_total": sum(1 for item in l2_items if item.get("dimension") == dimension),
+            "l3_agent_id": next(
+                (str(item.get("agent_id")) for item in l3_items if item.get("dimension") == dimension),
+                "",
+            ),
+        }
+        for dimension in _DIMENSION_ORDER
+    }
+
+
+def _evidence_bundle_with_scope_defaults(evidence_bundle: Mapping[str, Any]) -> dict[str, Any]:
+    bundle = dict(evidence_bundle)
+    if not _as_mapping(bundle.get("routing_context")):
+        bundle["routing_context"] = _default_routing_context()
+    if not _as_mapping(bundle.get("selected_scope")):
+        bundle["selected_scope"] = dict(_as_mapping(bundle.get("routing_context")))
+    if not _as_mapping(bundle.get("coverage_by_dimension")):
+        bundle["coverage_by_dimension"] = _default_coverage_by_dimension(bundle)
+    quality = dict(_as_mapping(bundle.get("quality_summary")))
+    scope = _scope_context(bundle)
+    quality.setdefault("selected_dimension_count", len(scope["selected_dimensions"]))
+    quality.setdefault("unselected_dimension_count", len(scope["unselected_dimensions"]))
+    bundle["quality_summary"] = quality
+    return bundle
+
+
+def _dimension_names(dimensions: Sequence[str]) -> str:
+    labels = [_DIMENSION_SHORT_LABELS.get(dimension, dimension) for dimension in dimensions]
+    return "、".join(labels)
 
 
 def _safe_float(value: Any, *, default: float = 0.0) -> float:
@@ -263,6 +351,12 @@ def _risk_compliance_state(
 ) -> tuple[str, str]:
     item = _find_agent(l2_items, "risk_compliance_review")
     runtime = _agent_runtime_status(evidence_bundle, "risk_compliance_review")
+    evidence_count = int(item.get("evidence_count") or 0) if item else 0
+    if item and evidence_count <= 0:
+        return (
+            "zero_evidence",
+            "公告合规审查覆盖不足，未获得可用于合规结论的公告证据，不能作为降低风险的强证据。",
+        )
     if runtime.get("mapped"):
         return "mapped", "公告合规审查已通过 production compute 映射，可作为风险维度的降权证据。"
     if runtime.get("failed") or (runtime.get("attempted") and not runtime.get("mapped")):
@@ -515,6 +609,20 @@ def _quality_section(evidence_bundle: Mapping[str, Any]) -> dict[str, str]:
     }
 
 
+def _unselected_scope_section(unselected_dimensions: Sequence[str]) -> dict[str, str]:
+    names = _dimension_names(unselected_dimensions)
+    content = (
+        f"{names}不在本轮 selected routing 的真实分析范围内；"
+        "本报告不会把这些维度写成已经完成的同等分析。"
+        "如需覆盖这些维度，应发起 full DAG 请求或重新选择包含这些维度的路由。"
+    )
+    return {
+        "id": "unselected_scope",
+        "title": "未覆盖维度",
+        "content": _safe_text(content, limit=_MAX_SECTION),
+    }
+
+
 def _limitations(
     *,
     original_report: Mapping[str, Any],
@@ -530,6 +638,14 @@ def _limitations(
         l2_items=l2_items,
         evidence_bundle=evidence_bundle,
     )
+    scope = _scope_context(evidence_bundle)
+    scope_limitation = (
+        "本轮 selected routing 仅覆盖"
+        f"{_dimension_names(scope['selected_dimensions'])}；"
+        f"{_dimension_names(scope['unselected_dimensions'])}属于未选择维度，不被写成已完成分析。"
+        if scope["mode"] == "selected"
+        else "本轮 full DAG 报告覆盖价值、市场、风险和宏观四个维度。"
+    )
     limitations: list[str] = []
     if _as_list(original_report.get("limitations")):
         limitations.append("原报告中的运行范围、连接状态和报告生成路径限制仍然保留。")
@@ -537,6 +653,7 @@ def _limitations(
         "本次为 deterministic report enrichment，只重排 public-safe 材料，不改变 runtime、catalog 或 runtime bindings。",
         f"{risk_text}风险维度必须保留合规审查边界。",
         f"L2 partial 数量为 {quality.get('l2_partial', 0)}，L3 partial 数量为 {quality.get('l3_partial', 0)}；这些覆盖限制没有被隐藏。",
+        scope_limitation,
         "本报告只使用已进入 public-safe bundle 的材料；live 验证边界为 compute-only、no-invoke、no-provider、no-raw-response。",
     ]
     for item in required:
@@ -650,9 +767,14 @@ def _answer_section_parity(report_result: Mapping[str, Any] | None) -> float:
     return round(mentioned / len(titles), 4)
 
 
-def _has_dimension_sections(report_result: Mapping[str, Any] | None) -> bool:
+def _has_dimension_sections(
+    report_result: Mapping[str, Any] | None,
+    *,
+    dimensions: Sequence[str] | None = None,
+) -> bool:
     joined = "\n".join(_section_titles(report_result))
-    return all(term in joined for term in ("价值", "市场", "风险", "宏观"))
+    required = dimensions or _DIMENSION_ORDER
+    return all(_DIMENSION_SHORT_LABELS.get(dimension, dimension) in joined for dimension in required)
 
 
 def _has_action_implication(report_result: Mapping[str, Any] | None) -> bool:
@@ -690,6 +812,9 @@ def should_enrich_report_result(
         return False, "evidence_density_too_low"
     if _safe_float(quality.get("l2_complete")) + _safe_float(quality.get("l2_partial")) <= 0:
         return False, "no_usable_l2_evidence"
+    evidence_bundle = _as_mapping(bundle.get("agent_evidence_bundle"))
+    scope = _scope_context(evidence_bundle)
+    selected_dimensions = list(scope["selected_dimensions"])
     report = _as_mapping(existing_report_result)
     if not report:
         return True, "missing_existing_report_result"
@@ -709,11 +834,12 @@ def should_enrich_report_result(
     )
     if parity < 0.90:
         return True, "answer_section_parity_low"
-    if not _has_dimension_sections(report):
+    if not _has_dimension_sections(report, dimensions=selected_dimensions):
         return True, "missing_dimension_sections"
-    if "风险" not in _safe_text(report.get("answer"), limit=_MAX_TEXT):
+    answer = _safe_text(report.get("answer"), limit=_MAX_TEXT)
+    if "risk" in selected_dimensions and "风险" not in answer:
         return True, "risk_context_missing_from_answer"
-    if "宏观" not in _safe_text(report.get("answer"), limit=_MAX_TEXT):
+    if "macro" in selected_dimensions and "宏观" not in answer:
         return True, "macro_context_missing_from_answer"
     if not _has_action_implication(report):
         return True, "action_implication_missing"
@@ -781,10 +907,13 @@ def _minimal_report_input_bundle(
     ]
     risk_item = next((item for item in l3_items if item.get("dimension") == "risk"), {})
     macro_item = next((item for item in l3_items if item.get("dimension") == "macro"), {})
+    routing_context = _scope_context(agent_evidence_bundle)
     return {
         "schema": REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
         "schema_version": REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
         "status": "complete" if l2_items or l3_items else "pending_implementation",
+        "routing_context": dict(routing_context),
+        "coverage_by_dimension": dict(_as_mapping(agent_evidence_bundle.get("coverage_by_dimension"))),
         "agent_task_summaries": [],
         "agent_evidence_bundle": dict(agent_evidence_bundle),
         "l2_agent_summaries": [
@@ -863,9 +992,32 @@ def _fixture_evidence_bundle(data: Mapping[str, Any]) -> dict[str, Any]:
             l3_items.append(item)
         elif layer == "L2":
             l2_items.append(item)
+    routing_context = {
+        "schema": "report_routing_context_v1",
+        "routing_mode": "full_dag",
+        "route_granularity": "full_dag",
+        "selected_dimensions": list(_DIMENSION_ORDER),
+        "unselected_dimensions": [],
+        "selected_dimension_count": len(_DIMENSION_ORDER),
+        "unselected_dimension_count": 0,
+    }
+    coverage_by_dimension = {
+        dimension: {
+            "selected": True,
+            "l2_total": sum(1 for item in l2_items if item.get("dimension") == dimension),
+            "l3_agent_id": next(
+                (str(item.get("agent_id")) for item in l3_items if item.get("dimension") == dimension),
+                "",
+            ),
+        }
+        for dimension in _DIMENSION_ORDER
+    }
     return {
         "schema": "agent_evidence_bundle_v1",
         "question": "fixture report quality baseline",
+        "routing_context": routing_context,
+        "selected_scope": routing_context,
+        "coverage_by_dimension": coverage_by_dimension,
         "quality_summary": dict(_as_mapping(data.get("quality_summary"))),
         "decision_output": {"decision": "research_hold"},
         "l2_agent_outputs": l2_items,
@@ -881,6 +1033,7 @@ def build_enriched_report_result_from_bundle(
 ) -> ReportResult:
     """Build an enriched report_result_v1 from existing public-safe evidence."""
     original = existing_report_result or {}
+    agent_evidence_bundle = _evidence_bundle_with_scope_defaults(agent_evidence_bundle)
     l2_items = [
         _as_mapping(item)
         for item in _as_list(agent_evidence_bundle.get("l2_agent_outputs"))
@@ -893,37 +1046,62 @@ def build_enriched_report_result_from_bundle(
     ]
     l2_by_dimension = _items_by_dimension(l2_items)
     l3_by_dimension = {str(item.get("dimension") or ""): item for item in l3_items}
+    scope = _scope_context(agent_evidence_bundle)
+    active_dimensions = list(scope["selected_dimensions"])
+    unselected_dimensions = list(scope["unselected_dimensions"])
+    active_dimension_set = set(active_dimensions)
+    active_l2_items = [item for item in l2_items if str(item.get("dimension") or "") in active_dimension_set]
+    active_l3_items = [item for item in l3_items if str(item.get("dimension") or "") in active_dimension_set]
+    active_dimension_names = _dimension_names(active_dimensions)
+    unselected_dimension_names = _dimension_names(unselected_dimensions)
     section_titles = [
         "核心结论与行动含义",
-        *_DIMENSION_LABELS.values(),
+        *[_DIMENSION_LABELS[dimension] for dimension in active_dimensions],
+        *(["未覆盖维度"] if unselected_dimensions else []),
         "关键证据与观察触发条件",
         "覆盖范围与不能下结论的部分",
     ]
     decision = _decision_label(_as_mapping(agent_evidence_bundle.get("decision_output")).get("decision"))
     quality = _as_mapping(agent_evidence_bundle.get("quality_summary"))
     question_summary = _safe_text(str(question).split("。")[0], limit=220)
+    scope_line = (
+        f"本轮 selected routing 的真实分析范围为{active_dimension_names}；"
+        f"{unselected_dimension_names}不在本轮 selected scope 内。"
+        if scope["mode"] == "selected"
+        else f"用户问题按 full DAG 覆盖{active_dimension_names}四个维度。"
+    )
+    trigger_line = (
+        f"{active_dimension_names}行动含义：{decision or '未给出'}；"
+        if scope["mode"] == "selected"
+        else f"估值、市场、风险和宏观行动含义：{decision or '未给出'}；"
+    )
     answer_lines = [
         (
             "研判流程输出的核心结论与行动含义：当前材料支持研究观察和人工复核，"
             "不支持直接买入或卖出的单点结论。"
         ),
-        f"用户问题覆盖估值、市场、风险和宏观四个维度：{question_summary}。",
+        f"{scope_line} 用户问题：{question_summary}。",
         "本报告正文与 sections 保持一致，依次覆盖：" + "；".join(section_titles) + "。",
-        "价值、市场、风险和宏观材料已压缩为业务判断、证据卡片和限制说明。",
+        f"{active_dimension_names}材料已压缩为业务判断、证据卡片和限制说明。",
         (
-            f"估值、市场、风险和宏观行动含义：{decision or '未给出'}；L2 完成 {quality.get('l2_complete', 0)}/{quality.get('l2_total', 0)}，"
+            f"{trigger_line}L2 完成 {quality.get('l2_complete', 0)}/{quality.get('l2_total', 0)}，"
             f"L3 完成 {quality.get('l3_complete', 0)}/{quality.get('l3_total', 0)}。"
-            "估值、市场、风险和宏观触发条件包括市场确认改善、风险合规材料补齐、宏观压力缓和，"
-            "以及估值分歧被更多完整成员共同确认。"
+            f"{active_dimension_names}触发条件包括已选择维度证据继续补强、风险边界被明确记录、"
+            "以及研究分歧被更多完整成员共同确认。"
         ),
     ]
-    for dimension in ("value", "market", "risk", "macro"):
+    for dimension in active_dimensions:
         item = l3_by_dimension.get(dimension, {})
         answer_lines.append(
             f"{_DIMENSION_LABELS[dimension]}："
             f"{_dimension_thesis(dimension=dimension, l2_items=l2_by_dimension[dimension], l3_item=item, evidence_bundle=agent_evidence_bundle)}"
         )
-    research_items = [*_reportable_items(l2_items), *_reportable_items(l3_items)]
+    if unselected_dimensions:
+        answer_lines.append(
+            f"未覆盖维度：{unselected_dimension_names}未被本轮 selected routing 选中，"
+            "不能写成已完成分析或同等证据覆盖。"
+        )
+    research_items = [*_reportable_items(active_l2_items), *_reportable_items(active_l3_items)]
     research_line_count = 0
     for item in research_items:
         name = _safe_text(item.get("display_name") or item.get("agent_id"), limit=80)
@@ -934,15 +1112,22 @@ def build_enriched_report_result_from_bundle(
                 break
         if research_line_count >= 18:
             break
+    core_intro = (
+        "研判流程输出显示当前更适合研究观察和人工复核：价值维度有分歧，市场确认度不足，"
+        "风险门未形成阻断但合规审查缺口需要保留，宏观调节器提示仓位应受约束。"
+        if scope["mode"] == "full_dag"
+        else (
+            f"研判流程输出显示当前更适合研究观察和人工复核：本轮 selected routing 只覆盖{active_dimension_names}；"
+            f"{unselected_dimension_names}需要 full DAG 或再次请求补充，不能当作已完成分析。"
+        )
+    )
     sections = [
         {
             "id": "core_decision",
             "title": "核心结论与行动含义",
             "content": _safe_text(
-                "研判流程输出显示当前更适合研究观察和人工复核：价值维度有分歧，市场确认度不足，"
-                "风险门未形成阻断但合规审查缺口需要保留，宏观调节器提示仓位应受约束。"
-                f" 决策输出为 {decision or '未给出'}，行动含义是先建立观察触发条件，"
-                "再等待市场确认、风险证据补强和宏观压力缓和。"
+                f"{core_intro} 决策输出为 {decision or '未给出'}，行动含义是先建立观察触发条件，"
+                "再等待已选择维度证据补强和未覆盖维度补充。"
                 "风险提示：这不是正式投资建议，也不替代人工投研判断。",
                 limit=_MAX_SECTION,
             ),
@@ -954,15 +1139,22 @@ def build_enriched_report_result_from_bundle(
                 l3_item=l3_by_dimension.get(dimension, {}),
                 evidence_bundle=agent_evidence_bundle,
             )
-            for dimension in ("value", "market", "risk", "macro")
+            for dimension in active_dimensions
         ],
+        *([_unselected_scope_section(unselected_dimensions)] if unselected_dimensions else []),
         _quality_section(agent_evidence_bundle),
         {
             "id": "coverage_limitations",
             "title": "覆盖范围与不能下结论的部分",
             "content": _safe_text(
                 "本轮保留失败、partial 和未调用覆盖说明。未完成成员只影响覆盖范围，"
-                "不被当作真实证据。外部 L4 report_generator 已返回结构化结果；"
+                "不被当作真实证据。"
+                + (
+                    f"本轮 selected scope 为{active_dimension_names}，{unselected_dimension_names}只作为未覆盖范围说明。"
+                    if unselected_dimensions
+                    else "本轮按 full DAG 覆盖四个维度。"
+                )
+                + "外部 L4 report_generator 已返回结构化结果；"
                 "deterministic enrichment 只对现有 public-safe 材料做有界重排。",
                 limit=_MAX_SECTION,
             ),
@@ -975,7 +1167,7 @@ def build_enriched_report_result_from_bundle(
         "answer": _safe_text("\n".join(answer_lines), limit=_MAX_TEXT),
         "status": "complete",
         "sections": sections,
-        "evidence_cards": _evidence_cards(l2_items=l2_items, l3_items=l3_items),
+        "evidence_cards": _evidence_cards(l2_items=active_l2_items, l3_items=active_l3_items),
         "limitations": _limitations(
             original_report=original,
             evidence_bundle=agent_evidence_bundle,
@@ -1022,11 +1214,11 @@ def render_report_markdown(report_result: Mapping[str, Any]) -> str:
 
 def render_improved_artifact(*, artifact_root: Path, output_dir: Path) -> dict[str, Any]:
     """Write an improved sanitized artifact root and return the report result."""
-    run_dir = artifact_root / "run"
+    run_dir = artifact_root / "run" if (artifact_root / "run" / "summary.json").is_file() else artifact_root
     output_run_dir = output_dir / "run"
     output_run_dir.mkdir(parents=True, exist_ok=True)
     summary = _load_json(run_dir / "summary.json")
-    evidence_bundle = _load_json(run_dir / "agent_evidence_bundle.json")
+    evidence_bundle = _evidence_bundle_with_scope_defaults(_load_json(run_dir / "agent_evidence_bundle.json"))
     report_result = build_enriched_report_result_from_bundle(
         question=str(summary.get("question") or evidence_bundle.get("question") or ""),
         agent_evidence_bundle=evidence_bundle,
@@ -1054,7 +1246,11 @@ def render_improved_artifact(*, artifact_root: Path, output_dir: Path) -> dict[s
         json.dumps(improved_summary, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
-    for name in ("agent_evidence_bundle.json", "workflow_trace.json", "agent_tasks.json"):
+    (output_run_dir / "agent_evidence_bundle.json").write_text(
+        json.dumps(evidence_bundle, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
+        encoding="utf-8",
+    )
+    for name in ("workflow_trace.json", "agent_tasks.json"):
         source = run_dir / name
         if source.exists():
             shutil.copyfile(source, output_run_dir / name)

@@ -530,7 +530,12 @@ def test_send_message_selected_routing_endpoint_free_e2e_report(tmp_path, monkey
     assert provenance["selectedDimensions"]
     assert provenance["providerRouterEnabled"] is False
     assert provenance["providerRouterInvoked"] is False
-    assert payload["assistantTurn"]["answerCard"]["answer"].strip()
+    answer_card = payload["assistantTurn"]["answerCard"]
+    assert answer_card["answer"].strip()
+    if set(provenance["selectedDimensions"]) != {"value", "market", "risk", "macro"}:
+        section_ids = {section["id"] for section in answer_card["sections"]}
+        assert "unselected_scope" in section_ids
+        assert "用户问题覆盖估值、市场、风险和宏观四个维度" not in answer_card["answer"]
     assert workflow["currentStage"] == "report"
     assert {group["id"] for group in workflow["dimensionGroups"]} <= {"value", "market", "risk", "macro"}
     rendered = json.dumps(payload, ensure_ascii=False)

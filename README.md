@@ -78,6 +78,12 @@ meaning of L3 support: fallback, stand-in, zero-weight, no-evidence, and
 `not_evaluated` members are filtered out of `contributing_agents` and
 `evidence_refs`, and the offline harness now audits those public-safe
 contributor-integrity fields before passing the `29/45` gate.
+The RQ2 bundle/renderer follow-up raises the controlled full-DAG compute report
+quality to `33/45` and makes selected-routing reports route-aware: selected
+runs render only selected dimensions as active analysis and place unselected
+dimensions in an explicit uncovered-scope section. The harness now also checks
+evidence-bundle completeness, selected-scope integrity, unselected-dimension
+overstatement count `0`, and risk-compliance zero-evidence wording.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and

@@ -156,6 +156,8 @@ class ReportInputBundle(TypedDict):
     schema_version: str
     question: str
     status: ConclusionStatus
+    routing_context: NotRequired[dict[str, Any]]
+    coverage_by_dimension: NotRequired[dict[str, Any]]
     agent_task_summaries: NotRequired[list[dict[str, Any]]]
     agent_evidence_bundle: NotRequired[dict[str, Any]]
     l2_agent_summaries: list[dict[str, Any]]

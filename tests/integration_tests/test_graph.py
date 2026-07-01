@@ -386,6 +386,11 @@ async def test_selected_routing_flag_builds_and_executes_selected_plan(monkeypat
     assert "decision_synthesizer" in res["dag_step_results"]
     assert "report_generator" in res["dag_step_results"]
     assert res["report_result"]["answer"].strip()
+    report_section_ids = {section["id"] for section in res["report_result"]["sections"]}
+    assert "market_dimension" not in report_section_ids
+    assert "macro_dimension" not in report_section_ids
+    assert "unselected_scope" in report_section_ids
+    assert "用户问题覆盖估值、市场、风险和宏观四个维度" not in res["report_result"]["answer"]
     assert res["emitted_bundle"]["answer"] == res["report_result"]["answer"]
     assert res["messages"][-1].content == res["report_result"]["answer"]
     assert set(res["workflow_snapshot"]["completedSteps"]) == set(res["dag_step_results"])

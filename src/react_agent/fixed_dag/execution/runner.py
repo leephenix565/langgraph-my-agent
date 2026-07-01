@@ -899,6 +899,9 @@ def execute_fixed_dag_plan(
         agent_tasks=agent_tasks,
         data_bundle=data_bundle,
         entity_relation_bundle=entity_relation_bundle,
+        selected_dimensions=list(execution_plan.get("selected_dimensions") or [])
+        if execution_plan.get("schema") == SELECTED_FIXED_DAG_SCHEMA_VERSION
+        else None,
     )
     _attach_agent_runtime_status_to_report_input_bundle(
         report_input_bundle,

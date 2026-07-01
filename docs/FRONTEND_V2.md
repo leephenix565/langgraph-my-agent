@@ -14,6 +14,10 @@ report rendering material. They must not expose raw graph messages, raw agent
 JSON, endpoint URLs, provider raw responses, or secrets, and they do not create
 separate public agent chat lanes.
 
+For selected-routing turns, answer-card sections are route-aware. Dimensions
+outside the selected scope may be intentionally absent from active sections and
+shown only as uncovered scope or limitations.
+
 ## Current Router M2 Public Selected-Routing Request Boundary
 
 The public HTTP/Web surface exposes selected routing as a per-message,
@@ -43,6 +47,10 @@ explicit public `full_dag` force-off mode, provider-router controls,
 `/v1/agent/invoke` controls, `/v1/agent/compute` controls, model/base URL/API
 key controls, env controls, runtime binding changes, catalog changes, or non-L4
 policy changes.
+
+The rendered answer card must not imply full four-dimension coverage for a
+selected request. Unselected dimensions are represented as not covered in this
+turn and require a full-DAG request or another selected request to analyze.
 
 Selected-routing observability remains response-side provenance. The frontend
 may display the public-safe `workflow_snapshot_v2.provenance` fields such as

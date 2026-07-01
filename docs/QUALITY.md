@@ -159,6 +159,20 @@ evidence, limitations, sections, value/market/risk/macro coverage, action
 implication, research-point use, and source-label hygiene, but those supporting
 checks do not replace the explicit DoD above.
 
+RQ2 bundle/renderer quality extends that gate without changing the compute-only
+boundary. Full-DAG reports still require the four active dimensions, but
+selected-routing reports are scored against selected scope: unselected
+dimensions must be absent from active dimension sections and may appear only as
+uncovered-scope or limitation wording. The audit now records and gates:
+
+- `selected_scope_integrity.passed=true`;
+- `selected_scope_integrity.unselected_dimension_overstatement_count=0`;
+- `evidence_bundle_completeness.passed=true`;
+- `risk_compliance_zero_evidence_wording.passed=true`;
+- `limitations_honesty.passed=true`;
+- full-DAG score `>=32/45` for the RQ2 bundle/renderer improvement artifact, or
+  an explicit cap analysis if upstream data coverage prevents that score.
+
 RQ3B keeps the `>=29/45` score floor unchanged. Its risk-branch fix is adapter
 coverage, not scoring relaxation: a `risk_composite` result can count as mapped
 only when real risk contributors remain in `contributing_agents`; unsupported

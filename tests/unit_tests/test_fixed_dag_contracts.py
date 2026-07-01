@@ -1417,6 +1417,32 @@ def test_report_input_bundle_quality_summary_counts_l3_partial_outputs() -> None
     assert "L3 输出 4/4，complete 0，partial 4，error 0" in report["answer"]
 
 
+def test_report_input_bundle_records_selected_scope_and_dimension_coverage() -> None:
+    plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
+    conclusions = build_l2_conclusions(plan)
+    dimensions = build_dimension_results(conclusions, as_of="2026-06-04")
+    decision = build_decision_result(dimensions, as_of="2026-06-04")
+    bundle = build_report_input_bundle(
+        question="请分析 600519.SH",
+        l2_conclusions=conclusions,
+        dimension_results=dimensions,
+        decision_result=decision,
+        selected_dimensions=["value", "risk"],
+    )
+    valid, reason = validate_report_input_bundle(bundle)
+    evidence_bundle = bundle["agent_evidence_bundle"]
+
+    assert valid, reason
+    assert bundle["routing_context"]["routing_mode"] == "selected"
+    assert bundle["routing_context"]["selected_dimensions"] == ["value", "risk"]
+    assert bundle["routing_context"]["unselected_dimensions"] == ["market", "macro"]
+    assert evidence_bundle["selected_scope"] == bundle["routing_context"]
+    assert evidence_bundle["coverage_by_dimension"]["value"]["selected"] is True
+    assert evidence_bundle["coverage_by_dimension"]["market"]["selected"] is False
+    assert evidence_bundle["quality_summary"]["selected_dimension_count"] == 2
+    assert evidence_bundle["quality_summary"]["unselected_dimension_count"] == 2
+
+
 def test_agent_task_v1_carries_l1_and_l2_upstream_context_safely() -> None:
     plan = build_default_fixed_dag_plan("请分析 600519.SH", as_of="2026-06-04")
     data_bundle = build_data_bundle(plan)

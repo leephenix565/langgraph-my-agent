@@ -2892,6 +2892,91 @@ def _l3_composite_summary(result: Mapping[str, Any]) -> dict[str, Any]:
     return item
 
 
+def _dimension_order() -> tuple[str, ...]:
+    return ("value", "market", "risk", "macro")
+
+
+def _selected_dimension_scope(selected_dimensions: list[str] | tuple[str, ...] | None) -> dict[str, Any]:
+    selected = [
+        dimension
+        for dimension in _dimension_order()
+        if selected_dimensions and dimension in set(selected_dimensions)
+    ]
+    if selected:
+        mode = "selected"
+    else:
+        mode = "full_dag"
+        selected = list(_dimension_order())
+    unselected = [dimension for dimension in _dimension_order() if dimension not in set(selected)]
+    return {
+        "schema": "report_routing_context_v1",
+        "routing_mode": mode,
+        "route_granularity": "dimension" if mode == "selected" else "full_dag",
+        "selected_dimensions": selected,
+        "unselected_dimensions": unselected,
+        "selected_dimension_count": len(selected),
+        "unselected_dimension_count": len(unselected),
+    }
+
+
+def _coverage_by_dimension(
+    *,
+    l2_items: list[dict[str, Any]],
+    l3_items: list[dict[str, Any]],
+    routing_context: Mapping[str, Any],
+) -> dict[str, Any]:
+    selected_dimensions = set(_safe_public_text_list(routing_context.get("selected_dimensions")))
+    l3_by_dimension = {
+        str(item.get("dimension") or ""): item
+        for item in l3_items
+        if str(item.get("dimension") or "") in DIMENSION_GROUPS
+    }
+    coverage: dict[str, Any] = {}
+    for dimension in _dimension_order():
+        l2_for_dimension = [
+            item for item in l2_items if str(item.get("dimension") or "") == dimension
+        ]
+        l3_item = l3_by_dimension.get(dimension, {})
+        notes = (
+            cast(Mapping[str, Any], l3_item.get("provenance_notes"))
+            if isinstance(l3_item.get("provenance_notes"), Mapping)
+            else {}
+        )
+        coverage[dimension] = {
+            "selected": dimension in selected_dimensions,
+            "l2_agent_ids": [
+                _safe_public_text(item.get("agent_id"), limit=80)
+                for item in l2_for_dimension
+                if _safe_public_text(item.get("agent_id"), limit=80)
+            ],
+            "l2_total": len(l2_for_dimension),
+            "l2_complete": sum(1 for item in l2_for_dimension if item.get("status") == "complete"),
+            "l2_partial": sum(1 for item in l2_for_dimension if item.get("status") == "partial"),
+            "l2_without_readable_evidence": sum(
+                1 for item in l2_for_dimension if int(item.get("evidence_count") or 0) == 0
+            ),
+            "l3_agent_id": _safe_public_text(l3_item.get("agent_id"), limit=80),
+            "l3_status": _safe_public_text(l3_item.get("status"), limit=40),
+            "l3_confidence": _safe_public_float(l3_item.get("confidence")),
+            "evidence_refs_count": len(_safe_public_text_list(l3_item.get("evidence_refs"), limit=20)),
+            "true_contributors": _safe_public_text_list(
+                l3_item.get("contributing_agents"),
+                limit=12,
+                item_limit=120,
+            ),
+            "excluded_contributors": _safe_public_detail_list(
+                notes.get("non_contributor_members"),
+                limit=12,
+            ),
+            "degraded_non_contributors": _safe_public_text_list(
+                notes.get("missing_or_degraded_members"),
+                limit=12,
+                item_limit=120,
+            ),
+        }
+    return coverage
+
+
 def build_agent_evidence_bundle(
     *,
     question: str,
@@ -2901,6 +2986,7 @@ def build_agent_evidence_bundle(
     agent_tasks: Mapping[str, Any] | None = None,
     data_bundle: Mapping[str, Any] | None = None,
     entity_relation_bundle: Mapping[str, Any] | None = None,
+    selected_dimensions: list[str] | tuple[str, ...] | None = None,
 ) -> dict[str, Any]:
     """Build the richer public-safe bundle consumed by demo report generation."""
     task_summaries = build_agent_task_summaries(agent_tasks)
@@ -2914,10 +3000,19 @@ def build_agent_evidence_bundle(
         for dimension, result in dimension_results.items()
         if dimension in DIMENSION_GROUPS and isinstance(result, Mapping)
     ]
+    routing_context = _selected_dimension_scope(selected_dimensions)
+    coverage_by_dimension = _coverage_by_dimension(
+        l2_items=l2_items,
+        l3_items=l3_items,
+        routing_context=routing_context,
+    )
     return {
         "schema": AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION,
         "schema_version": AGENT_EVIDENCE_BUNDLE_SCHEMA_VERSION,
         "question": _safe_public_text(question, limit=500),
+        "routing_context": routing_context,
+        "selected_scope": routing_context,
+        "coverage_by_dimension": coverage_by_dimension,
         "l1_evidence": {
             "data_bundle_status": _safe_public_text(
                 (data_bundle or {}).get("status") if isinstance(data_bundle, Mapping) else "",
@@ -2958,6 +3053,15 @@ def build_agent_evidence_bundle(
             "l3_available": sum(
                 1 for item in l3_items if item.get("status") in {"complete", "partial"}
             ),
+            "selected_dimension_count": routing_context["selected_dimension_count"],
+            "unselected_dimension_count": routing_context["unselected_dimension_count"],
+            "coverage_dimensions_count": len(
+                [
+                    item
+                    for item in coverage_by_dimension.values()
+                    if item.get("l2_total") or item.get("l3_agent_id")
+                ]
+            ),
         },
         "provenance": {
             "source": "fixed_dag_agent_evidence_bundle",
@@ -2977,6 +3081,7 @@ def build_report_input_bundle(
     agent_tasks: Mapping[str, Any] | None = None,
     data_bundle: Mapping[str, Any] | None = None,
     entity_relation_bundle: Mapping[str, Any] | None = None,
+    selected_dimensions: list[str] | tuple[str, ...] | None = None,
 ) -> ReportInputBundle:
     l2_summaries = [
         _l2_agent_summary(agent_id, cast(Mapping[str, Any], result))
@@ -2996,21 +3101,26 @@ def build_report_input_bundle(
         (item for item in l3_summaries if item.get("dimension") == "macro"),
         {},
     )
+    routing_context = _selected_dimension_scope(selected_dimensions)
+    agent_evidence_bundle = build_agent_evidence_bundle(
+        question=question,
+        l2_conclusions=l2_conclusions,
+        dimension_results=dimension_results,
+        decision_result=decision_result,
+        agent_tasks=agent_tasks,
+        data_bundle=data_bundle,
+        entity_relation_bundle=entity_relation_bundle,
+        selected_dimensions=selected_dimensions,
+    )
     return {
         "schema": REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
         "schema_version": REPORT_INPUT_BUNDLE_SCHEMA_VERSION,
         "question": _safe_public_text(question, limit=500),
         "status": "complete" if l2_summaries or l3_summaries else "pending_implementation",
+        "routing_context": routing_context,
+        "coverage_by_dimension": agent_evidence_bundle["coverage_by_dimension"],
         "agent_task_summaries": build_agent_task_summaries(agent_tasks),
-        "agent_evidence_bundle": build_agent_evidence_bundle(
-            question=question,
-            l2_conclusions=l2_conclusions,
-            dimension_results=dimension_results,
-            decision_result=decision_result,
-            agent_tasks=agent_tasks,
-            data_bundle=data_bundle,
-            entity_relation_bundle=entity_relation_bundle,
-        ),
+        "agent_evidence_bundle": agent_evidence_bundle,
         "l2_agent_summaries": l2_summaries,
         "l3_composite_summaries": l3_summaries,
         "risk_gate": dict(risk_summary),
@@ -3412,7 +3522,14 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
         if isinstance(item, Mapping)
     ]
     evidence_bundle = report_input_bundle.get("agent_evidence_bundle", {})
+    routing_context = (
+        report_input_bundle.get("routing_context")
+        if isinstance(report_input_bundle.get("routing_context"), Mapping)
+        else {}
+    )
     if isinstance(evidence_bundle, Mapping):
+        if not routing_context and isinstance(evidence_bundle.get("routing_context"), Mapping):
+            routing_context = cast(Mapping[str, Any], evidence_bundle.get("routing_context"))
         l2_detail_items = evidence_bundle.get("l2_agent_outputs")
         if isinstance(l2_detail_items, list):
             l2_items = [
@@ -3469,7 +3586,35 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
                 l3_total=int(quality_summary.get("l3_total") or 0),
             )
         )
-    return [
+    sections: list[dict[str, str]] = []
+    if (
+        isinstance(routing_context, Mapping)
+        and routing_context.get("routing_mode") == "selected"
+    ):
+        selected = _safe_public_text_list(
+            routing_context.get("selected_dimensions"),
+            limit=4,
+            item_limit=40,
+        )
+        unselected = _safe_public_text_list(
+            routing_context.get("unselected_dimensions"),
+            limit=4,
+            item_limit=40,
+        )
+        if unselected:
+            sections.append(
+                {
+                    "id": "unselected_scope",
+                    "title": "未覆盖维度",
+                    "content": (
+                        f"本轮 selected routing 仅覆盖 {', '.join(selected)}；"
+                        f"{', '.join(unselected)} 不在本轮 selected scope 内，"
+                        "不得写成已完成分析或同等证据覆盖。"
+                    ),
+                }
+            )
+    sections.extend(
+        [
         {
             "id": "evidence_quality",
             "title": "证据质量诊断",
@@ -3490,7 +3635,9 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
             "title": "综合智能体输入",
             "content": "\n".join(l3_lines) or "本轮没有可展示的综合智能体结构化输入。",
         },
-    ]
+        ]
+    )
+    return sections
 
 
 def build_report_result(

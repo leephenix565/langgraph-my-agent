@@ -3,6 +3,38 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Real-agent report bundle and renderer quality
+
+### Changed
+
+- Added route-aware report scope metadata to `report_input_bundle_v1` and
+  `agent_evidence_bundle_v1`, including selected/unselected dimensions and
+  dimension coverage summaries.
+- Updated deterministic report enrichment so selected-routing reports render
+  only selected dimensions as active analysis and list unselected dimensions as
+  uncovered scope.
+- Tightened risk-compliance wording: zero readable evidence remains a
+  limitation and cannot be described as risk-reducing evidence.
+- Extended the offline report-quality harness with selected-scope integrity,
+  unselected-dimension overstatement, evidence-bundle completeness,
+  zero-evidence compliance wording, and limitations-honesty checks.
+
+### Tests
+
+- Added focused renderer, harness, contract, graph, and public API regressions.
+- Revalidated compute-enabled full DAG report E2E at `33/45` with renderer gate
+  pass, unsafe scan pass, evidence-bundle completeness pass, and selected-scope
+  integrity pass.
+- Revalidated selected value/risk compute report E2E with selected dimensions
+  `value,risk`, expanded agent count `15`, fallback `false`, and unselected
+  dimension overstatement count `0`.
+
+### Not Done
+
+- No runtime binding, catalog, non-L4 policy, selected-routing default,
+  `/v1/agent/invoke`, provider, env-value, raw-response, external agent dev
+  directory, or push change.
+
 ## 2026-07-01 - Real-agent report-quality contributor semantics
 
 ### Changed

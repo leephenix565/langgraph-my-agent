@@ -109,6 +109,32 @@ route-planner port, implement `10028/8028`, change `report_generator` `10026`,
 modify runtime bindings, change the agent catalog, change non-L4 policy, run
 external compute E2E, or make `/v1/agent/invoke` part of the default runtime.
 
+## ADR-162: Route-Aware Report Rendering Uses Selected Scope
+
+Status: accepted for REAL-AGENT-RQ2-BUNDLE-REPORT-RENDERER-QUALITY-IMPROVEMENT.
+
+Decision: deterministic report enrichment and report-quality audit consume
+public-safe routing scope from `report_input_bundle_v1` /
+`agent_evidence_bundle_v1`. Full-DAG reports render all four dimensions as
+active analysis. Selected-routing reports render only selected dimensions as
+active analysis and list unselected dimensions as uncovered scope or
+limitations.
+
+Reason: selected-routing evidence can be valid while a full-DAG template would
+overstate market/macro or other unselected dimensions. The report must reflect
+the actual selected graph, not a fixed four-dimension narrative.
+
+Consequence: report-quality scoring includes selected-scope integrity,
+unselected-dimension overstatement count `0`, evidence-bundle completeness,
+risk-compliance zero-evidence wording, and limitations honesty. Full-DAG and
+selected-route reports may have different section counts while still preserving
+answer/section parity and public safety.
+
+Non-consequence: this does not change runtime bindings, catalog, non-L4 policy,
+selected-routing defaults, provider routing, `/v1/agent/invoke`,
+`/v1/agent/compute` public controls, external service code, or public raw
+response exposure.
+
 ## ADR-161: Deterministic Report Enrichment Gate Preserves L4 Compute Boundary
 
 Status: accepted for REPORT-QUALITY-RQ2D.

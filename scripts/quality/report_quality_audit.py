@@ -96,6 +96,14 @@ DIMENSION_TERMS = (
     "宏观",
 )
 
+DIMENSION_ORDER = ("value", "market", "risk", "macro")
+DIMENSION_LABELS = {
+    "value": "价值",
+    "market": "市场",
+    "risk": "风险",
+    "macro": "宏观",
+}
+
 SOURCE_LABEL_FRAGMENTS = (
     "spts_database",
     "fina_indicator",
@@ -215,12 +223,93 @@ def _source_label_leakage(report_result: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
-def _dimension_sections_present(report_result: Mapping[str, Any]) -> bool:
+def _scope_from_evidence_bundle(evidence_bundle: Mapping[str, Any] | None) -> dict[str, Any]:
+    bundle = _as_mapping(evidence_bundle)
+    raw = _as_mapping(bundle.get("routing_context")) or _as_mapping(bundle.get("selected_scope"))
+    selected = [
+        str(item)
+        for item in _as_list(raw.get("selected_dimensions"))
+        if str(item) in DIMENSION_ORDER
+    ]
+    if not selected:
+        selected = list(DIMENSION_ORDER)
+    raw_mode = raw.get("routing_mode") or raw.get("mode")
+    mode = "selected" if raw_mode == "selected" and len(selected) < len(DIMENSION_ORDER) else "full_dag"
+    unselected = [
+        str(item)
+        for item in _as_list(raw.get("unselected_dimensions"))
+        if str(item) in DIMENSION_ORDER and str(item) not in selected
+    ]
+    if mode == "selected" and not unselected:
+        unselected = [dimension for dimension in DIMENSION_ORDER if dimension not in set(selected)]
+    if mode == "full_dag":
+        selected = list(DIMENSION_ORDER)
+        unselected = []
+    return {
+        "schema": "selected_scope_integrity_v1",
+        "mode": mode,
+        "selected_dimensions": selected,
+        "unselected_dimensions": unselected,
+    }
+
+
+def _dimension_sections_present(
+    report_result: Mapping[str, Any],
+    selected_dimensions: Sequence[str] | None = None,
+) -> bool:
     titles = " ".join(
         str(_as_mapping(section).get("title") or "")
         for section in _as_list(report_result.get("sections"))
     )
-    return all(term in titles for term in ("价值", "市场", "风险", "宏观"))
+    dimensions = list(selected_dimensions or DIMENSION_ORDER)
+    return all(DIMENSION_LABELS.get(dimension, dimension) in titles for dimension in dimensions)
+
+
+def _selected_scope_integrity(
+    report_result: Mapping[str, Any],
+    evidence_bundle: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    scope = _scope_from_evidence_bundle(evidence_bundle)
+    selected = list(scope["selected_dimensions"])
+    unselected = list(scope["unselected_dimensions"])
+    report_text = _report_text_from_result(report_result)
+    sections = [_as_mapping(section) for section in _as_list(report_result.get("sections"))]
+    violations: list[dict[str, str]] = []
+    if scope["mode"] == "selected":
+        for dimension in unselected:
+            expected_id = f"{dimension}_dimension"
+            label = DIMENSION_LABELS[dimension]
+            for section in sections:
+                title = str(section.get("title") or "")
+                section_id = str(section.get("id") or "")
+                if section_id == expected_id or (label in title and "未覆盖" not in title):
+                    violations.append(
+                        {
+                            "dimension": dimension,
+                            "reason": "unselected_dimension_rendered_as_active_section",
+                        }
+                    )
+            if label in report_text and not any(
+                marker in report_text
+                for marker in ("未覆盖", "未选择", "不在本轮", "selected scope")
+            ):
+                violations.append(
+                    {
+                        "dimension": dimension,
+                        "reason": "unselected_dimension_mentioned_without_scope_boundary",
+                    }
+                )
+    return {
+        **scope,
+        "passed": not violations,
+        "selected_dimension_section_count": sum(
+            1
+            for section in sections
+            if any(DIMENSION_LABELS[dimension] in str(section.get("title") or "") for dimension in selected)
+        ),
+        "unselected_dimension_overstatement_count": len(violations),
+        "violations": violations[:20],
+    }
 
 
 def _action_implication(report_result: Mapping[str, Any]) -> dict[str, Any]:
@@ -242,6 +331,13 @@ def _renderer_quality_gate(result: Mapping[str, Any]) -> dict[str, Any]:
     source = _as_mapping(result.get("source_label_leakage"))
     action = _as_mapping(result.get("action_implication"))
     l3_integrity = _as_mapping(result.get("l3_contributor_integrity"))
+    selected_scope = _as_mapping(result.get("selected_scope_integrity"))
+    completeness = _as_mapping(result.get("evidence_bundle_completeness"))
+    risk_wording = _as_mapping(result.get("risk_compliance_zero_evidence_wording"))
+    limitations = _as_mapping(result.get("limitations_honesty"))
+    sections_floor = thresholds["min_sections_count"]
+    if selected_scope.get("mode") == "selected":
+        sections_floor = max(5, len(_as_list(selected_scope.get("selected_dimensions"))) + 4)
     checks = {
         "pipeline_score_at_least_renderer_floor": _safe_int(score.get("total")) >= thresholds["min_score"],
         "template_phrases_within_renderer_limit": _safe_int(template.get("template_phrase_count")) <= thresholds["max_template_phrases"],
@@ -251,12 +347,20 @@ def _renderer_quality_gate(result: Mapping[str, Any]) -> dict[str, Any]:
         "unsafe_scan_pass": bool(safety.get("unsafe_scan_pass")),
         "limitations_retained": _safe_int(parity.get("limitations_count")) >= thresholds["min_limitations_count"],
         "evidence_cards_retained": _safe_int(parity.get("evidence_cards_count")) >= thresholds["min_evidence_cards_count"],
-        "sections_retained": _safe_int(parity.get("sections_count")) >= thresholds["min_sections_count"],
+        "sections_retained": _safe_int(parity.get("sections_count")) >= sections_floor,
         "risk_compliance_failure_retained": True,
         "dimension_sections_present": bool(result.get("dimension_sections_present")),
         "action_implication_present": bool(action.get("present")),
         "core_source_label_leakage_zero": _safe_int(source.get("core_source_label_leakage_count")) == 0,
         "l3_contributor_integrity_pass": bool(l3_integrity.get("passed", True)),
+        "selected_scope_integrity_pass": bool(selected_scope.get("passed", True)),
+        "unselected_dimension_overstatement_zero": _safe_int(
+            selected_scope.get("unselected_dimension_overstatement_count")
+        )
+        == 0,
+        "evidence_bundle_completeness_pass": bool(completeness.get("passed", False)),
+        "risk_compliance_zero_evidence_wording_pass": bool(risk_wording.get("passed", True)),
+        "limitations_honesty_pass": bool(limitations.get("passed", False)),
     }
     failed = [name for name, passed in checks.items() if not passed]
     return {
@@ -690,20 +794,41 @@ def _score_rubric(
     unsafe_pass: bool,
     report_text: str,
     l3_integrity: Mapping[str, Any] | None = None,
+    selected_scope_integrity: Mapping[str, Any] | None = None,
+    evidence_bundle_completeness: Mapping[str, Any] | None = None,
+    risk_zero_evidence_wording: Mapping[str, Any] | None = None,
+    limitations_honesty: Mapping[str, Any] | None = None,
 ) -> list[dict[str, Any]]:
     l3_total = _safe_int(material.get("l3_complete")) + _safe_int(material.get("l3_partial"))
     limitations_count = len(_as_list(report_result.get("limitations")))
-    risk_failed = "risk_compliance_review" in set(_as_list(material.get("failed_agents")))
     has_risk_text = "风险" in report_text or "risk" in report_text.lower()
     has_macro_text = "宏观" in report_text or "macro" in report_text.lower()
     l3_integrity_pass = bool(_as_mapping(l3_integrity).get("passed", True))
+    selected_scope_pass = bool(_as_mapping(selected_scope_integrity).get("passed", True))
+    bundle_complete = bool(_as_mapping(evidence_bundle_completeness).get("passed", False))
+    risk_wording_pass = bool(_as_mapping(risk_zero_evidence_wording).get("passed", True))
+    limitations_honesty_pass = bool(_as_mapping(limitations_honesty).get("passed", False))
     score_by_name = {
-        "Evidence grounding": 3
+        "Evidence grounding": 4
+        if (
+            _safe_int(material.get("agents_mapped")) >= 20
+            and _safe_int(material.get("evidence_cards_count", 5)) >= 8
+            and bundle_complete
+        )
+        else 3
         if _safe_int(material.get("agents_mapped")) >= 20 and _safe_int(material.get("evidence_cards_count", 5)) >= 5
         else 2,
-        "Cross-dimension synthesis": 2 if all(term in report_text for term in ("估值", "市场", "风险", "宏观")) else 1,
-        "Risk handling": 3 if risk_failed and has_risk_text else 2 if has_risk_text else 1,
-        "Macro handling": 2 if has_macro_text and _safe_int(material.get("l3_partial")) else 3 if has_macro_text else 1,
+        "Cross-dimension synthesis": 3
+        if selected_scope_pass and (all(term in report_text for term in ("估值", "市场", "风险", "宏观")) or _as_mapping(selected_scope_integrity).get("mode") == "selected")
+        else 2
+        if all(term in report_text for term in ("估值", "市场", "风险", "宏观"))
+        else 1,
+        "Risk handling": 3 if risk_wording_pass and has_risk_text else 2 if has_risk_text else 1,
+        "Macro handling": 3
+        if has_macro_text and limitations_honesty_pass
+        else 2
+        if has_macro_text and _safe_int(material.get("l3_partial"))
+        else 1,
         "L3 transparency": 4 if l3_total >= 4 and l3_integrity_pass else 3 if l3_total >= 4 else 2,
         "Decision clarity": 1
         if str(report_result.get("status") or "") == "pending_implementation"
@@ -880,6 +1005,115 @@ def _l3_contributor_integrity(evidence_bundle: Mapping[str, Any]) -> dict[str, A
     }
 
 
+def _summary_l2_ids(summary: Mapping[str, Any]) -> set[str]:
+    return {str(agent_id) for agent_id in _as_mapping(summary.get("l2_agent_outputs")) if str(agent_id)}
+
+
+def _summary_l3_ids(summary: Mapping[str, Any]) -> set[str]:
+    ids: set[str] = set()
+    for raw in _as_mapping(summary.get("l3_composite_outputs")).values():
+        item = _as_mapping(raw)
+        agent_id = str(item.get("agent_id") or "")
+        if agent_id:
+            ids.add(agent_id)
+    return ids
+
+
+def _evidence_l2_ids(evidence_bundle: Mapping[str, Any]) -> set[str]:
+    return {
+        str(_as_mapping(item).get("agent_id"))
+        for item in _as_list(evidence_bundle.get("l2_agent_outputs"))
+        if str(_as_mapping(item).get("agent_id") or "")
+    }
+
+
+def _evidence_l3_ids(evidence_bundle: Mapping[str, Any]) -> set[str]:
+    return {
+        str(_as_mapping(item).get("agent_id"))
+        for item in _as_list(evidence_bundle.get("l3_composite_outputs"))
+        if str(_as_mapping(item).get("agent_id") or "")
+    }
+
+
+def _evidence_bundle_completeness(
+    *,
+    summary: Mapping[str, Any],
+    evidence_bundle: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    bundle = _as_mapping(evidence_bundle)
+    required = [
+        "quality_summary",
+        "decision_output",
+        "l2_agent_outputs",
+        "l3_composite_outputs",
+        "routing_context",
+        "coverage_by_dimension",
+    ]
+    missing_required = [key for key in required if key not in bundle]
+    summary_l2 = _summary_l2_ids(summary)
+    summary_l3 = _summary_l3_ids(summary)
+    evidence_l2 = _evidence_l2_ids(bundle)
+    evidence_l3 = _evidence_l3_ids(bundle)
+    missing_l2 = sorted(summary_l2 - evidence_l2)
+    missing_l3 = sorted(summary_l3 - evidence_l3)
+    return {
+        "schema": "evidence_bundle_completeness_v1",
+        "passed": not missing_required and not missing_l2 and not missing_l3,
+        "missing_required_fields": missing_required,
+        "summary_l2_count": len(summary_l2),
+        "evidence_l2_count": len(evidence_l2),
+        "missing_l2_detail_ids": missing_l2[:20],
+        "summary_l3_count": len(summary_l3),
+        "evidence_l3_count": len(evidence_l3),
+        "missing_l3_detail_ids": missing_l3[:20],
+    }
+
+
+def _risk_compliance_zero_evidence_wording(
+    *,
+    report_result: Mapping[str, Any],
+    evidence_bundle: Mapping[str, Any] | None,
+) -> dict[str, Any]:
+    bundle = _as_mapping(evidence_bundle)
+    risk_item = {}
+    for raw in _as_list(bundle.get("l2_agent_outputs")):
+        item = _as_mapping(raw)
+        if item.get("agent_id") == "risk_compliance_review":
+            risk_item = item
+            break
+    zero_evidence = bool(risk_item) and _safe_int(risk_item.get("evidence_count")) <= 0
+    report_text = _report_text_from_result(report_result)
+    required_markers = ("覆盖不足", "未获得可用于合规结论", "不能作为降低风险的强证据")
+    optimistic_markers = ("合规审查已有降权材料", "合规审查已通过")
+    marker_present = any(marker in report_text for marker in required_markers)
+    optimistic_present = any(marker in report_text for marker in optimistic_markers)
+    passed = True if not zero_evidence else marker_present and not optimistic_present
+    return {
+        "schema": "risk_compliance_zero_evidence_wording_v1",
+        "zero_evidence": zero_evidence,
+        "passed": passed,
+        "required_marker_present": marker_present,
+        "optimistic_marker_present": optimistic_present,
+    }
+
+
+def _limitations_honesty(report_result: Mapping[str, Any]) -> dict[str, Any]:
+    text = _report_text_from_result({"limitations": report_result.get("limitations", [])})
+    checks = {
+        "deterministic_boundary": "deterministic" in text or "只重排 public-safe" in text,
+        "risk_boundary": "合规审查" in text,
+        "partial_counts": "partial" in text,
+        "compute_only_boundary": "no-invoke" in text and "no-provider" in text,
+    }
+    failed = [name for name, passed in checks.items() if not passed]
+    return {
+        "schema": "limitations_honesty_v1",
+        "passed": not failed,
+        "checks": checks,
+        "failed_checks": failed,
+    }
+
+
 def _audit_common(
     *,
     artifact_root: str,
@@ -889,6 +1123,7 @@ def _audit_common(
     agent_rows: Sequence[Mapping[str, Any]],
     quality_summary: Mapping[str, Any],
     markdown: str,
+    evidence_bundle: Mapping[str, Any] | None = None,
     fixture_rubric: Sequence[Mapping[str, Any]] | None = None,
     fixture_loss_ledger: Sequence[Mapping[str, Any]] | None = None,
     non_claims: Sequence[str] | None = None,
@@ -910,6 +1145,16 @@ def _audit_common(
     answer_section_parity = _answer_section_parity(report_result)
     material = _material_coverage(agent_rows, summary, quality_summary, report_text)
     material["evidence_cards_count"] = answer_section_parity["evidence_cards_count"]
+    selected_scope_integrity = _selected_scope_integrity(report_result, evidence_bundle)
+    evidence_bundle_completeness = _evidence_bundle_completeness(
+        summary=summary,
+        evidence_bundle=evidence_bundle,
+    )
+    risk_zero_evidence_wording = _risk_compliance_zero_evidence_wording(
+        report_result=report_result,
+        evidence_bundle=evidence_bundle,
+    )
+    limitations_honesty = _limitations_honesty(report_result)
     loss_ledger = list(fixture_loss_ledger or [])
     if not loss_ledger:
         loss_ledger = _loss_ledger_from_metrics(
@@ -928,6 +1173,10 @@ def _audit_common(
             unsafe_pass=bool(unsafe_scan["unsafe_scan_pass"]),
             report_text=report_text,
             l3_integrity=l3_contributor_integrity,
+            selected_scope_integrity=selected_scope_integrity,
+            evidence_bundle_completeness=evidence_bundle_completeness,
+            risk_zero_evidence_wording=risk_zero_evidence_wording,
+            limitations_honesty=limitations_honesty,
         )
     result = {
         "schema": RESULT_SCHEMA,
@@ -941,6 +1190,10 @@ def _audit_common(
         "material_coverage": material,
         "answer_section_parity": answer_section_parity,
         "risk_compliance_review": risk,
+        "selected_scope_integrity": selected_scope_integrity,
+        "evidence_bundle_completeness": evidence_bundle_completeness,
+        "risk_compliance_zero_evidence_wording": risk_zero_evidence_wording,
+        "limitations_honesty": limitations_honesty,
         "l3_contributor_integrity": dict(
             l3_contributor_integrity
             or {"schema": "l3_contributor_integrity_v1", "passed": True, "l3_rows_checked": 0}
@@ -949,7 +1202,10 @@ def _audit_common(
         "loss_ledger": loss_ledger,
         "source_label_leakage": _source_label_leakage(report_result),
         "action_implication": _action_implication(report_result),
-        "dimension_sections_present": _dimension_sections_present(report_result),
+        "dimension_sections_present": _dimension_sections_present(
+            report_result,
+            selected_scope_integrity.get("selected_dimensions"),
+        ),
         "recommended_next_wave": _recommended_wave(loss_ledger),
         "non_claims": list(non_claims or []),
     }
@@ -975,6 +1231,7 @@ def audit_fixture(path: Path) -> dict[str, Any]:
         agent_rows=rows,
         quality_summary=quality_summary,
         markdown=str(data.get("rendered_markdown_excerpt") or ""),
+        evidence_bundle=None,
         fixture_rubric=rubric,
         fixture_loss_ledger=loss_ledger,
         non_claims=_as_list(data.get("non_claims")),
@@ -1005,6 +1262,7 @@ def audit_artifact_root(path: Path) -> dict[str, Any]:
         agent_rows=rows,
         quality_summary=quality_summary,
         markdown=markdown,
+        evidence_bundle=evidence_bundle,
         non_claims=_as_list(summary.get("non_claims")),
         l3_contributor_integrity=_l3_contributor_integrity(evidence_bundle),
     )
@@ -1052,6 +1310,8 @@ def _summary_counts_from_real(
         "l3_partial": sum(
             1 for item in l3_outputs.values() if _as_mapping(item).get("status") == "partial"
         ),
+        "l2_agent_outputs": dict(l2_outputs),
+        "l3_composite_outputs": dict(l3_outputs),
         "l4_decision_mapped": "decision_synthesizer" in default_mapped,
         "l4_report_mapped": "report_generator" in default_mapped,
         "workflow_step_count": _safe_int(

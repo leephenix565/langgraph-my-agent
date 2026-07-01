@@ -23,9 +23,26 @@ FIXTURE_PATH = (
 
 
 def _evidence_bundle() -> dict:
+    routing_context = {
+        "schema": "report_routing_context_v1",
+        "routing_mode": "full_dag",
+        "route_granularity": "full_dag",
+        "selected_dimensions": ["value", "market", "risk", "macro"],
+        "unselected_dimensions": [],
+        "selected_dimension_count": 4,
+        "unselected_dimension_count": 0,
+    }
     return {
         "schema": "agent_evidence_bundle_v1",
         "question": "请从估值、市场、风险和宏观角度分析 600519.SH。",
+        "routing_context": routing_context,
+        "selected_scope": routing_context,
+        "coverage_by_dimension": {
+            "value": {"selected": True, "l2_total": 2, "l3_agent_id": "value_composite"},
+            "market": {"selected": True, "l2_total": 0, "l3_agent_id": "market_composite"},
+            "risk": {"selected": True, "l2_total": 1, "l3_agent_id": "risk_composite"},
+            "macro": {"selected": True, "l2_total": 1, "l3_agent_id": "macro_composite"},
+        },
         "quality_summary": {
             "l2_total": 4,
             "l2_complete": 3,
@@ -164,6 +181,69 @@ def test_enriched_report_has_business_first_core_and_no_core_source_labels() -> 
     assert "spts_database" not in core
     assert "xgboost_model" not in core
     assert "crash_risk_model" not in core
+
+
+def test_enriched_report_respects_selected_scope_dimensions() -> None:
+    evidence = json.loads(json.dumps(_evidence_bundle(), ensure_ascii=False))
+    evidence["routing_context"] = {
+        "schema": "report_routing_context_v1",
+        "routing_mode": "selected",
+        "route_granularity": "dimension",
+        "selected_dimensions": ["value", "risk"],
+        "unselected_dimensions": ["market", "macro"],
+        "selected_dimension_count": 2,
+        "unselected_dimension_count": 2,
+    }
+    evidence["selected_scope"] = evidence["routing_context"]
+    report = build_enriched_report_result_from_bundle(
+        question="请分析 600519.SH。",
+        agent_evidence_bundle=evidence,
+    )
+    section_ids = {section["id"] for section in report["sections"]}
+    rendered = json.dumps(report, ensure_ascii=False)
+
+    assert {"value_dimension", "risk_dimension", "unselected_scope"} <= section_ids
+    assert "market_dimension" not in section_ids
+    assert "macro_dimension" not in section_ids
+    assert "本轮 selected routing 的真实分析范围为价值、风险" in report["answer"]
+    assert "市场、宏观未被本轮 selected routing 选中" in report["answer"]
+    assert "用户问题覆盖估值、市场、风险和宏观四个维度" not in rendered
+    assert "市场维度：价格、资金与情绪确认度" not in rendered
+    assert "宏观维度：宏观调节器与仓位约束" not in rendered
+
+
+def test_enriched_report_risk_compliance_zero_evidence_wording_is_honest() -> None:
+    evidence = json.loads(json.dumps(_evidence_bundle(), ensure_ascii=False))
+    evidence["l2_agent_outputs"].append(
+        {
+            "agent_id": "risk_compliance_review",
+            "display_name": "公告合规审查",
+            "dimension": "risk",
+            "status": "partial",
+            "confidence": 0.0,
+            "summary": "公告合规审查输出无可读证据。",
+            "evidence_count": 0,
+            "evidence_items": [],
+        }
+    )
+    evidence["agent_runtime_status_by_id"] = {
+        "risk_compliance_review": {
+            "agent_id": "risk_compliance_review",
+            "attempted": True,
+            "mapped": True,
+            "failed": False,
+        }
+    }
+    report = build_enriched_report_result_from_bundle(
+        question="请分析 600519.SH。",
+        agent_evidence_bundle=evidence,
+    )
+    rendered = json.dumps(report, ensure_ascii=False)
+
+    assert "公告合规审查覆盖不足" in rendered
+    assert "未获得可用于合规结论的公告证据" in rendered
+    assert "不能作为降低风险的强证据" in rendered
+    assert "公告合规审查已通过 production compute 映射，可作为风险维度的降权证据" not in rendered
 
 
 def test_should_enrich_report_result_true_for_template_and_false_for_rich_complete() -> None:

@@ -291,6 +291,114 @@ def test_cli_real_artifact_flags_l3_contributor_integrity_violation(tmp_path) ->
     }
 
 
+def test_cli_real_artifact_flags_selected_scope_integrity_violation(tmp_path) -> None:
+    artifact_root = tmp_path / "selected-scope-artifact"
+    artifact_root.mkdir(parents=True)
+    report_result = {
+        "status": "complete",
+        "title": "selected report",
+        "answer": "本轮 selected routing 的真实分析范围为价值、风险，但错误展示市场维度。",
+        "sections": [
+            {"id": "core_decision", "title": "核心结论与行动含义", "content": "行动含义：观察。"},
+            {"id": "value_dimension", "title": "价值维度：估值分歧与安全边际", "content": "价值材料。"},
+            {"id": "market_dimension", "title": "市场维度：价格、资金与情绪确认度", "content": "市场材料。"},
+            {"id": "risk_dimension", "title": "风险维度：风险门与缺失合规证据", "content": "风险材料。"},
+            {"id": "unselected_scope", "title": "未覆盖维度", "content": "市场、宏观不在本轮。"},
+            {"id": "coverage_and_triggers", "title": "关键证据与观察触发条件", "content": "触发条件。"},
+        ],
+        "evidence_cards": [{"title": f"证据 {index}", "note": "public-safe"} for index in range(8)],
+        "limitations": ["deterministic 边界。", "合规审查边界。", "partial 计数。", "no-invoke no-provider。"],
+    }
+    summary = {
+        "provenance": {
+            "external_compute_demo_called_agents": ["value_composite", "risk_composite"],
+            "external_compute_demo_mapped_agents": ["value_composite", "risk_composite"],
+            "external_compute_demo_failed_agents": [],
+        },
+        "l2_agent_outputs": {
+            "value_ml_valuation": {"agent_id": "value_ml_valuation", "dimension": "value", "status": "complete"},
+            "risk_crash": {"agent_id": "risk_crash", "dimension": "risk", "status": "complete"},
+        },
+        "l3_composite_outputs": {
+            "value": {"agent_id": "value_composite", "dimension": "value", "status": "complete"},
+            "risk": {"agent_id": "risk_composite", "dimension": "risk", "status": "partial"},
+        },
+        "report_result": report_result,
+        "workflow_step_count": 15,
+    }
+    evidence_bundle = {
+        "routing_context": {
+            "schema": "report_routing_context_v1",
+            "routing_mode": "selected",
+            "selected_dimensions": ["value", "risk"],
+            "unselected_dimensions": ["market", "macro"],
+        },
+        "quality_summary": {"l2_total": 2, "l2_complete": 2, "l3_total": 2, "l3_complete": 1, "l3_partial": 1},
+        "decision_output": {"decision": "research_hold"},
+        "coverage_by_dimension": {"value": {"selected": True}, "risk": {"selected": True}},
+        "l2_agent_outputs": [
+            {"agent_id": "value_ml_valuation", "dimension": "value", "status": "complete", "research_points": [{"claim": "价值证据"}]},
+            {"agent_id": "risk_crash", "dimension": "risk", "status": "complete", "research_points": [{"claim": "风险证据"}]},
+        ],
+        "l3_composite_outputs": [
+            {"agent_id": "value_composite", "dimension": "value", "status": "complete"},
+            {"agent_id": "risk_composite", "dimension": "risk", "status": "partial"},
+        ],
+    }
+    (artifact_root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    (artifact_root / "agent_evidence_bundle.json").write_text(json.dumps(evidence_bundle, ensure_ascii=False), encoding="utf-8")
+    (artifact_root / "workflow_trace.json").write_text("{}", encoding="utf-8")
+    (artifact_root / "final_report.md").write_text("# selected report\n", encoding="utf-8")
+
+    output_dir = tmp_path / "audit"
+    result = _run_cli("--artifact-root", str(artifact_root), "--output-dir", str(output_dir))
+    payload = json.loads((output_dir / "report_quality_audit_result.json").read_text(encoding="utf-8"))
+
+    assert result.returncode == 0, result.stderr
+    assert payload["selected_scope_integrity"]["passed"] is False
+    assert payload["selected_scope_integrity"]["unselected_dimension_overstatement_count"] >= 1
+    assert payload["evidence_bundle_completeness"]["passed"] is True
+
+
+def test_cli_real_artifact_reports_evidence_bundle_completeness_gaps(tmp_path) -> None:
+    artifact_root = tmp_path / "incomplete-artifact"
+    artifact_root.mkdir(parents=True)
+    summary = {
+        "provenance": {"external_compute_demo_called_agents": [], "external_compute_demo_mapped_agents": [], "external_compute_demo_failed_agents": []},
+        "l2_agent_outputs": {
+            "value_ml_valuation": {"agent_id": "value_ml_valuation", "dimension": "value", "status": "complete"}
+        },
+        "l3_composite_outputs": {},
+        "report_result": {
+            "status": "complete",
+            "title": "report",
+            "answer": "行动含义：观察。",
+            "sections": [{"id": "core_decision", "title": "核心结论与行动含义", "content": "行动含义：观察。"}],
+            "evidence_cards": [],
+            "limitations": ["generic"],
+        },
+    }
+    evidence_bundle = {
+        "quality_summary": {"l2_total": 1, "l2_complete": 1},
+        "decision_output": {"decision": "research_hold"},
+        "l2_agent_outputs": [],
+        "l3_composite_outputs": [],
+    }
+    (artifact_root / "summary.json").write_text(json.dumps(summary, ensure_ascii=False), encoding="utf-8")
+    (artifact_root / "agent_evidence_bundle.json").write_text(json.dumps(evidence_bundle, ensure_ascii=False), encoding="utf-8")
+    (artifact_root / "workflow_trace.json").write_text("{}", encoding="utf-8")
+    (artifact_root / "final_report.md").write_text("# report\n", encoding="utf-8")
+
+    output_dir = tmp_path / "audit"
+    result = _run_cli("--artifact-root", str(artifact_root), "--output-dir", str(output_dir))
+    payload = json.loads((output_dir / "report_quality_audit_result.json").read_text(encoding="utf-8"))
+
+    assert result.returncode == 0, result.stderr
+    assert payload["evidence_bundle_completeness"]["passed"] is False
+    assert "routing_context" in payload["evidence_bundle_completeness"]["missing_required_fields"]
+    assert payload["evidence_bundle_completeness"]["missing_l2_detail_ids"] == ["value_ml_valuation"]
+
+
 def test_threshold_failure_and_pass_behaviors(tmp_path) -> None:
     fail_result = _run_cli(
         "--fixture",
