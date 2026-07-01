@@ -3,6 +3,18 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-01 - Frontend selected-routing boundary docs closeout
+
+### Changed
+
+- Documented the public selected-routing composer toggle and sync/stream request
+  shape in `docs/FRONTEND_V2.md`.
+- Recorded that omitted or null `routing` preserves the server default, while
+  `routing: {"mode": "selected"}` is the only public selected-routing opt-in.
+- Reaffirmed that the frontend does not expose public `full_dag`,
+  provider-router, compute, invoke, model, env, runtime-binding, catalog, or
+  non-L4 policy controls.
+
 ## 2026-07-01 - Public selected-routing request toggle
 
 ### Changed

@@ -14,6 +14,43 @@ report rendering material. They must not expose raw graph messages, raw agent
 JSON, endpoint URLs, provider raw responses, or secrets, and they do not create
 separate public agent chat lanes.
 
+## Current Router M2 Public Selected-Routing Request Boundary
+
+The public HTTP/Web surface exposes selected routing as a per-message,
+default-off composer option. The visible control is labeled "选择路由（默认关闭）".
+
+When the control is off, the frontend omits the request `routing` field. If a
+client sends `routing: null`, the backend treats it the same way. Both cases
+preserve the current server default.
+
+When the control is on, the frontend sends the only supported public routing
+request shape:
+
+```json
+{
+  "text": "...",
+  "structuredInput": {},
+  "routing": {
+    "mode": "selected"
+  }
+}
+```
+
+The sync and streaming message routes use the same request contract. The
+backend maps `routing: {"mode": "selected"}` only to
+`Context(enable_selected_routing=True)` for that request. It does not expose an
+explicit public `full_dag` force-off mode, provider-router controls,
+`/v1/agent/invoke` controls, `/v1/agent/compute` controls, model/base URL/API
+key controls, env controls, runtime binding changes, catalog changes, or non-L4
+policy changes.
+
+Selected-routing observability remains response-side provenance. The frontend
+may display the public-safe `workflow_snapshot_v2.provenance` fields such as
+`selectedRoutingRequested`, `selectedRoutingFallback`, `selectedDimensions`,
+and provider-router status flags, but it must not display raw route intent,
+raw selected plans, raw provider responses, raw graph messages, endpoint URLs,
+env values, secrets, tracebacks, or chain-of-thought.
+
 ## Current R5-B2 Workflow Inspector Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:
@@ -177,6 +214,7 @@ screenshot capture, and must not imply provider/live/external/demo readiness.
 
 ```text
 composer text
+  -> optional routing: {"mode": "selected"} when the composer toggle is on
   -> public API request
   -> Fixed DAG runtime skeleton
   -> execute_fixed_dag
@@ -273,6 +311,17 @@ composer text
   inspector.
 - Frontend smoke covers the report-first answer, collapsed/expanded thought
   chain, six stage labels, and default-surface leakage guards.
+
+## Router M2 Public Selected-Routing API Done
+
+- Composer adds a per-message, default-off selected-routing toggle.
+- The frontend omits `routing` while the toggle is off and sends
+  `routing: {"mode": "selected"}` while it is on.
+- Sync and streaming sends share the same typed request behavior.
+- Frontend smoke covers toggle visibility, off-by-default omission, and selected
+  request serialization.
+- The UI does not expose `full_dag`, provider-router, compute, invoke, model,
+  base URL, API key, env, runtime-binding, catalog, or non-L4 policy controls.
 
 ## Deferred Work
 
