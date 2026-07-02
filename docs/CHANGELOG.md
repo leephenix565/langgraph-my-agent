@@ -58,9 +58,9 @@ Historical changelog entries before this reset branch are preserved by tag
 - Increased the bounded single-call router-provider timeout from 8s to 20s for
   production selected-routing stability and classified `httpx` timeout
   exceptions as `router_provider_timeout`.
-- Allowed one bounded router-provider retry when the first response has no
-  usable public content or returns a transient non-2xx response; the call cap is
-  still two and retry does not retain raw responses, prompts, messages, or
+- Allowed two bounded router-provider retries when earlier responses have no
+  usable public content or return transient non-2xx responses; the call cap is
+  still three and retry does not retain raw responses, prompts, messages, or
   endpoint material.
 - Made the retry omit OpenAI JSON-mode `response_format` while keeping the same
   strict JSON-only prompt, so providers that intermittently return empty JSON
