@@ -223,13 +223,16 @@ def _invoke_dimension_router_provider(
     attempts = max(1, min(int(options.call_cap), int(options.retry_count) + 1))
     with httpx.Client(timeout=timeout) as client:
         for attempt in range(attempts):
+            request_body = dict(body)
+            if attempt > 0:
+                request_body.pop("response_format", None)
             response = client.post(
                 endpoint.chat_completions_url,
                 headers={
                     "Authorization": f"Bearer {api_key}",
                     "Content-Type": "application/json",
                 },
-                json=body,
+                json=request_body,
             )
             if response.status_code < 200 or response.status_code >= 300:
                 if attempt + 1 < attempts:

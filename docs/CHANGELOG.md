@@ -21,6 +21,9 @@ Historical changelog entries before this reset branch are preserved by tag
   usable public content or returns a transient non-2xx response; the call cap is
   still two and retry does not retain raw responses, prompts, messages, or
   endpoint material.
+- Made the retry omit OpenAI JSON-mode `response_format` while keeping the same
+  strict JSON-only prompt, so providers that intermittently return empty JSON
+  mode content can still produce extractable bounded JSON.
 
 ### Tests
 
@@ -31,6 +34,8 @@ Historical changelog entries before this reset branch are preserved by tag
   public-safe timeout reason code.
 - Added focused coverage for a missing first router-provider response retrying
   once and compiling the second valid response into a selected DAG.
+- Asserted that the retry request drops `response_format` while preserving the
+  same no-raw-retention selected-DAG safety path.
 
 ### Not Done
 

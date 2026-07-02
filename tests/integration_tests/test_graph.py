@@ -728,6 +728,8 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_missing_o
         ensure_ascii=False,
     )
     assert len(requests) == 2
+    assert requests[0]["json"]["response_format"] == {"type": "json_object"}
+    assert "response_format" not in requests[1]["json"]
     assert plan["schema"] == "selected_fixed_dag_plan_v1"
     assert plan["selected_dimensions"] == ["risk"]
     assert plan["provenance"]["provider_router_parse_ok"] is True
