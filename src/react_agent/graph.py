@@ -12,6 +12,7 @@ from __future__ import annotations
 import json
 import os
 import re
+import time
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -106,6 +107,11 @@ class _RouterProviderOutput:
     content: str | None
     invoked: bool
     error_code: str = ""
+    attempt_count: int = 0
+    elapsed_ms: int | None = None
+    output_shape: str = ""
+    retry_mode: str = ""
+    parse_stage: str = ""
 
 
 def _message_text(message: Any) -> str:
@@ -182,8 +188,13 @@ def _provider_router_provenance(
     fallback_reason: str = "",
     selected_dimensions: list[str] | None = None,
     error_code: str = "",
+    attempt_count: int | None = None,
+    elapsed_ms: int | None = None,
+    output_shape: str = "",
+    retry_mode: str = "",
+    parse_stage: str = "",
 ) -> dict[str, Any]:
-    return {
+    provenance: dict[str, Any] = {
         "provider_router_enabled": enabled,
         "provider_router_invoked": invoked,
         "provider_router_mode": mode if enabled else "",
@@ -192,6 +203,35 @@ def _provider_router_provenance(
         "provider_router_selected_dimensions": list(selected_dimensions or []),
         "provider_router_error_code": error_code,
     }
+    if attempt_count is not None:
+        provenance["provider_router_attempt_count"] = max(0, int(attempt_count))
+    if elapsed_ms is not None:
+        provenance["provider_router_elapsed_ms"] = max(0, int(elapsed_ms))
+    if error_code:
+        provenance["provider_router_last_error_code"] = error_code
+    if output_shape:
+        provenance["provider_router_output_shape"] = _safe_router_telemetry_code(
+            output_shape,
+            limit=60,
+        )
+    if retry_mode:
+        provenance["provider_router_retry_mode"] = _safe_router_telemetry_code(
+            retry_mode,
+            limit=60,
+        )
+    if parse_stage:
+        provenance["provider_router_parse_stage"] = _safe_router_telemetry_code(
+            parse_stage,
+            limit=60,
+        )
+    return provenance
+
+
+def _safe_router_telemetry_code(value: Any, *, limit: int = 80) -> str:
+    text = str(value or "").strip()
+    if not text:
+        return ""
+    return re.sub(r"[^a-zA-Z0-9_.:-]+", "_", text)[:limit]
 
 
 def _safe_provider_router_reason(stats_reason: str | None) -> str:
@@ -217,7 +257,7 @@ def _invoke_dimension_router_provider(
     if context is None:
         return None
 
-    options = RouterProviderInvocationOptions()
+    options = RouterProviderInvocationOptions(timeout_seconds=8.0, retry_count=1, call_cap=2)
     preflight = router_provider_preflight(
         RouterProviderPolicy(
             real_provider_authorized=True,
@@ -276,9 +316,44 @@ def _invoke_dimension_router_provider(
         pool=min(5.0, timeout_seconds),
     )
     attempts = max(1, min(int(options.call_cap), int(options.retry_count) + 1))
+    retry_mode = "json_then_dimension_text" if attempts > 1 else "json_only"
     last_error_code = "router_provider_missing_output"
-    with httpx.Client(timeout=timeout) as client:
+    last_output_shape = "not_called"
+    started = time.monotonic()
+
+    def finish(
+        *,
+        content: str | None = None,
+        invoked: bool = True,
+        error_code: str = "",
+        attempt_count: int = 0,
+        output_shape: str = "",
+        parse_stage: str = "",
+    ) -> _RouterProviderOutput:
+        return _RouterProviderOutput(
+            content=content,
+            invoked=invoked,
+            error_code=error_code,
+            attempt_count=attempt_count,
+            elapsed_ms=max(0, int(round((time.monotonic() - started) * 1000))),
+            output_shape=output_shape or last_output_shape,
+            retry_mode=retry_mode,
+            parse_stage=parse_stage,
+        )
+
+    try:
+        client_cm = httpx.Client(timeout=timeout)
+    except Exception:
+        return finish(
+            content=None,
+            invoked=False,
+            error_code="router_provider_client_init_failed",
+            attempt_count=0,
+            output_shape="client_init_failed",
+        )
+    with client_cm as client:
         for attempt in range(attempts):
+            attempt_count = attempt + 1
             request_body = dict(body)
             if attempt > 0:
                 request_body.pop("response_format", None)
@@ -298,19 +373,56 @@ def _invoke_dimension_router_provider(
                 last_error_code = "router_provider_timeout"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="timeout",
+                )
+            except httpx.ConnectError:
+                last_error_code = "router_provider_connect_error"
+                if attempt + 1 < attempts:
+                    continue
+                return finish(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="transport_error",
+                )
+            except httpx.RemoteProtocolError:
+                last_error_code = "router_provider_protocol_error"
+                if attempt + 1 < attempts:
+                    continue
+                return finish(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="protocol_error",
+                )
+            except httpx.RequestError:
+                last_error_code = "router_provider_transport_error"
+                if attempt + 1 < attempts:
+                    continue
+                return finish(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="transport_error",
                 )
             if response.status_code < 200 or response.status_code >= 300:
                 last_error_code = "router_provider_http_status"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="http_status_non_2xx",
                 )
             try:
                 payload = response.json()
@@ -318,61 +430,87 @@ def _invoke_dimension_router_provider(
                 last_error_code = "router_provider_invalid_response_json"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="invalid_response_json",
                 )
             choices = payload.get("choices") if isinstance(payload, dict) else None
             if not isinstance(choices, list) or not choices:
                 last_error_code = "router_provider_no_choices"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="no_choices",
                 )
             first = choices[0]
             if not isinstance(first, Mapping):
                 last_error_code = "router_provider_invalid_choice"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="invalid_choice",
                 )
             message = first.get("message")
             if not isinstance(message, Mapping):
                 last_error_code = "router_provider_missing_message"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="missing_message",
                 )
             content = _extract_router_message_content(message.get("content"))
             if content:
+                last_output_shape = _classify_router_output_shape(content)
                 if _router_provider_output_has_parseable_shape(content):
-                    return content
+                    return finish(
+                        content=content,
+                        invoked=True,
+                        error_code="",
+                        attempt_count=attempt_count,
+                        output_shape=last_output_shape,
+                        parse_stage="provider_output_parseable",
+                    )
                 last_error_code = "router_provider_unparseable_content"
                 if attempt + 1 < attempts:
                     continue
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape=last_output_shape,
                 )
             last_error_code = _classify_router_missing_content(first, message)
             if attempt + 1 >= attempts:
-                return _RouterProviderOutput(
+                return finish(
                     content=None,
                     invoked=True,
                     error_code=last_error_code,
+                    attempt_count=attempt_count,
+                    output_shape="missing_content",
                 )
-    return _RouterProviderOutput(content=None, invoked=True, error_code=last_error_code)
+    return finish(
+        content=None,
+        invoked=True,
+        error_code=last_error_code,
+        attempt_count=attempts,
+        output_shape=last_output_shape,
+    )
 
 
 def _extract_router_message_content(content: Any) -> str | None:
@@ -413,6 +551,27 @@ def _router_provider_output_has_parseable_shape(content: str) -> bool:
                 return _route_intent_json_from_malformed_dimension_text(text) is not None
             return isinstance(parsed, Mapping)
     return _route_intent_json_from_plain_dimension_text(text) is not None
+
+
+def _classify_router_output_shape(content: str) -> str:
+    text = str(content or "").strip()
+    if not text:
+        return "empty"
+    if "{" in text and "}" in text:
+        match = _ROUTER_TEXT_JSON_BLOCK_RE.search(text)
+        if match:
+            try:
+                parsed = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return (
+                    "malformed_dimension_text"
+                    if _route_intent_json_from_malformed_dimension_text(text) is not None
+                    else "malformed_json"
+                )
+            return "json_object" if isinstance(parsed, Mapping) else "json_non_object"
+    if _route_intent_json_from_plain_dimension_text(text) is not None:
+        return "plain_dimension_text"
+    return "unparseable_text"
 
 
 def _classify_router_missing_content(
@@ -644,6 +803,11 @@ def _route_intent_from_llm_dimension_provider(
         }
 
     output_error_code = "router_provider_missing_output"
+    output_attempt_count: int | None = None
+    output_elapsed_ms: int | None = None
+    output_shape = ""
+    output_retry_mode = ""
+    output_parse_stage = ""
     output_invoked = False
     raw_output: str | None
     if isinstance(provider_output, _RouterProviderOutput):
@@ -654,6 +818,11 @@ def _route_intent_from_llm_dimension_provider(
             else ""
         ) or output_error_code
         output_invoked = provider_output.invoked
+        output_attempt_count = provider_output.attempt_count
+        output_elapsed_ms = provider_output.elapsed_ms
+        output_shape = provider_output.output_shape
+        output_retry_mode = provider_output.retry_mode
+        output_parse_stage = provider_output.parse_stage
     elif isinstance(provider_output, str):
         raw_output = provider_output
         output_invoked = True
@@ -661,31 +830,42 @@ def _route_intent_from_llm_dimension_provider(
         raw_output = None
 
     if not isinstance(raw_output, str) or not raw_output.strip():
+        reason = output_error_code if output_invoked else "router_provider_unavailable"
         return None, {
             **meta,
             "provider_router_invoked": output_invoked,
-            "provider_router_fallback_reason": output_error_code,
-            "provider_router_error_code": "router_provider_unavailable"
-            if not output_invoked
-            else output_error_code,
+            "provider_router_fallback_reason": reason,
+            "provider_router_error_code": reason,
+            "provider_router_last_error_code": reason,
+            "provider_router_attempt_count": output_attempt_count or 0,
+            "provider_router_elapsed_ms": output_elapsed_ms,
+            "provider_router_output_shape": output_shape or "missing_output",
+            "provider_router_retry_mode": output_retry_mode,
+            "provider_router_parse_stage": output_parse_stage or "provider_unavailable",
         }
     route_intent, stats = parse_dimension_route_intent_json(
         raw_output,
         question=question,
     )
+    parse_stage = "json_parse"
     if bool(stats.get("used_fallback")) and (
         stats.get("fallback_reason") == "missing_json"
         or str(stats.get("fallback_reason") or "").startswith("json_decode_error:")
     ):
-        repaired_output = (
-            _route_intent_json_from_plain_dimension_text(raw_output)
-            or _route_intent_json_from_malformed_dimension_text(raw_output)
-        )
+        repaired_output = _route_intent_json_from_plain_dimension_text(raw_output)
+        if repaired_output is not None:
+            parse_stage = "plain_text_repair"
+        else:
+            repaired_output = _route_intent_json_from_malformed_dimension_text(raw_output)
+            if repaired_output is not None:
+                parse_stage = "malformed_text_repair"
         if repaired_output is not None:
             route_intent, stats = parse_dimension_route_intent_json(
                 repaired_output,
                 question=question,
             )
+    if bool(stats.get("used_fallback")):
+        parse_stage = "parse_failed"
     parse_ok = bool(stats.get("parse_ok") and not stats.get("used_fallback"))
     selected_dimensions = [
         str(item)
@@ -701,6 +881,12 @@ def _route_intent_from_llm_dimension_provider(
             "provider_router_fallback_reason": fallback_reason,
             "provider_router_selected_dimensions": selected_dimensions,
             "provider_router_error_code": fallback_reason,
+            "provider_router_last_error_code": output_error_code or fallback_reason,
+            "provider_router_attempt_count": output_attempt_count or 0,
+            "provider_router_elapsed_ms": output_elapsed_ms,
+            "provider_router_output_shape": output_shape,
+            "provider_router_retry_mode": output_retry_mode,
+            "provider_router_parse_stage": parse_stage,
         }
     route_intent = dict(route_intent)
     route_intent["provenance"] = {
@@ -720,6 +906,12 @@ def _route_intent_from_llm_dimension_provider(
         "provider_router_selected_dimensions": list(
             route_intent.get("selected_dimensions", []) or []
         ),
+        "provider_router_attempt_count": output_attempt_count or 0,
+        "provider_router_elapsed_ms": output_elapsed_ms,
+        "provider_router_output_shape": output_shape,
+        "provider_router_retry_mode": output_retry_mode,
+        "provider_router_parse_stage": parse_stage,
+        "provider_router_last_error_code": output_error_code,
     }
 
 
@@ -729,6 +921,7 @@ def _full_plan_with_selected_fallback_provenance(
     *,
     as_of: str | None = None,
     provider_router: dict[str, Any] | None = None,
+    route_planner_ms: int | None = None,
 ) -> dict[str, Any]:
     plan = build_default_fixed_dag_plan(question, as_of=as_of)
     plan["provenance"] = {
@@ -743,10 +936,13 @@ def _full_plan_with_selected_fallback_provenance(
         "external_invoked": False,
         **dict(provider_router or {}),
     }
+    if route_planner_ms is not None:
+        plan["provenance"]["route_planner_ms"] = max(0, int(route_planner_ms))
     return plan
 
 
 def _route_plan_for_context(question: str, context: Context | None) -> dict[str, Any]:
+    route_started = time.monotonic()
     as_of = _context_fixed_dag_as_of(context)
     if context is None or not context.enable_selected_routing:
         plan = build_default_fixed_dag_plan(question, as_of=as_of)
@@ -778,6 +974,10 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
                     ),
                     as_of=as_of,
                     provider_router=provider_router,
+                    route_planner_ms=max(
+                        0,
+                        int(round((time.monotonic() - route_started) * 1000)),
+                    ),
                 )
         else:
             route_intent = build_default_dimension_route_intent(question)
@@ -788,6 +988,10 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
             f"selected_routing_compile_failed:{type(exc).__name__}",
             as_of=as_of,
             provider_router=provider_router,
+            route_planner_ms=max(
+                0,
+                int(round((time.monotonic() - route_started) * 1000)),
+            ),
         )
     plan["provenance"] = {
         **plan["provenance"],
@@ -796,6 +1000,7 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
         "route_granularity": "dimension",
         "selected_dimensions": list(plan.get("selected_dimensions", []) or []),
         "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
+        "route_planner_ms": max(0, int(round((time.monotonic() - route_started) * 1000))),
         "provider_invoked": False,
         "external_invoked": False,
         **provider_router,

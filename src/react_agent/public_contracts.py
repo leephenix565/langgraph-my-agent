@@ -128,6 +128,12 @@ class WorkflowProvenanceModel(PublicBaseModel):
     providerRouterFallbackReason: str | None = None
     providerRouterErrorCode: str | None = None
     providerRouterSelectedDimensions: List[str] = Field(default_factory=list)
+    providerRouterAttemptCount: int | None = None
+    providerRouterLastErrorCode: str | None = None
+    providerRouterOutputShape: str | None = None
+    providerRouterElapsedMs: int | None = None
+    providerRouterRetryMode: str | None = None
+    providerRouterParseStage: str | None = None
     performanceTelemetry: PerformanceTelemetryModel | None = None
     summary: str
 

@@ -663,10 +663,23 @@ async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compa
     assert plan["provenance"]["provider_router_mode"] == "real"
     assert plan["provenance"]["provider_router_invoked"] is True
     assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert plan["provenance"]["provider_router_attempt_count"] == 1
+    assert plan["provenance"]["provider_router_elapsed_ms"] >= 0
+    assert plan["provenance"]["provider_router_output_shape"] == "json_object"
+    assert plan["provenance"]["provider_router_retry_mode"] == "json_then_dimension_text"
+    assert plan["provenance"]["provider_router_parse_stage"] == "json_parse"
+    assert plan["provenance"]["route_planner_ms"] >= 0
     assert res["workflow_snapshot"]["provenance"]["providerRouterMode"] == "real"
     assert res["workflow_snapshot"]["provenance"]["providerRouterSelectedDimensions"] == [
         "market"
     ]
+    assert res["workflow_snapshot"]["provenance"]["providerRouterAttemptCount"] == 1
+    assert res["workflow_snapshot"]["provenance"]["providerRouterOutputShape"] == "json_object"
+    assert res["workflow_snapshot"]["provenance"]["providerRouterParseStage"] == "json_parse"
+    assert (
+        res["workflow_snapshot"]["provenance"]["performanceTelemetry"]["routePlannerMs"]
+        >= 0
+    )
     assert "test-key" not in rendered
     assert "provider.example" not in rendered
     assert "raw_response" not in rendered.lower()
@@ -741,6 +754,9 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_missing_o
     assert plan["schema"] == "selected_fixed_dag_plan_v1"
     assert plan["selected_dimensions"] == ["risk"]
     assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert plan["provenance"]["provider_router_attempt_count"] == 2
+    assert plan["provenance"]["provider_router_retry_mode"] == "json_then_dimension_text"
+    assert plan["provenance"]["provider_router_output_shape"] == "json_object"
     assert "test-key" not in rendered
     assert "provider.example" not in rendered
     assert "raw_response" not in rendered.lower()
@@ -1085,7 +1101,72 @@ async def test_selected_routing_with_real_llm_dimension_router_records_safe_shap
         plan["provenance"]["provider_router_error_code"]
         == "router_provider_finish_length_no_content"
     )
+    assert plan["provenance"]["provider_router_attempt_count"] == 2
+    assert plan["provenance"]["provider_router_output_shape"] == "missing_content"
+    assert plan["provenance"]["provider_router_parse_stage"] == "provider_unavailable"
     assert "provider.example" not in rendered
+    assert "raw_response" not in rendered.lower()
+
+
+async def test_selected_routing_with_real_llm_dimension_router_records_transport_error_safely(
+    monkeypatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+
+    class FakeClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, *, headers, json):
+            requests.append({"url": url, "headers": headers, "json": json})
+            raise graph_module.httpx.ConnectError("secret transport detail")
+
+    monkeypatch.setattr(graph_module.httpx, "Client", FakeClient)
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "Analyze valuation and downside risk for 600519.SH.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            llm_dimension_router_mode="real",
+            router_model="deepseek/deepseek-chat",
+            router_openai_base_url="https://provider.example",
+            router_openai_api_key="test-key",
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert len(requests) == 2
+    assert plan["schema"] == "fixed_dag_plan_v1"
+    assert plan["provenance"]["selected_routing_fallback"] is True
+    assert plan["provenance"]["fallback_reason"] == "router_provider_connect_error"
+    assert plan["provenance"]["provider_router_error_code"] == "router_provider_connect_error"
+    assert plan["provenance"]["provider_router_attempt_count"] == 2
+    assert plan["provenance"]["provider_router_output_shape"] == "transport_error"
+    assert plan["provenance"]["provider_router_retry_mode"] == "json_then_dimension_text"
+    assert res["workflow_snapshot"]["provenance"]["providerRouterErrorCode"] == (
+        "router_provider_connect_error"
+    )
+    assert "secret transport detail" not in rendered
+    assert "test-key" not in rendered
+    assert "provider.example" not in rendered
+    assert "Traceback" not in rendered
     assert "raw_response" not in rendered.lower()
 
 
@@ -1318,7 +1399,7 @@ async def test_selected_routing_with_fake_llm_dimension_router_invalid_output_fa
 @pytest.mark.parametrize(
     ("provider", "expected_reason", "expected_invoked"),
     [
-        (lambda _question, _context: None, "router_provider_missing_output", False),
+        (lambda _question, _context: None, "router_provider_unavailable", False),
         (
             lambda _question, _context: (_ for _ in ()).throw(TimeoutError("slow")),
             "router_provider_timeout",

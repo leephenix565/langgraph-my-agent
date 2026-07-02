@@ -575,6 +575,18 @@ compatibility helpers, strict JSON response contract, and M1G2
 matrix produced 5 parseable dimension-only intents and 5 compiled selected
 plans with selected-agent output rejected.
 
+The production explicit selected-router hardening keeps this contract
+dimension-only and fail-closed. Real-router output may be accepted as strict
+`route_intent_v1` JSON, bounded JSON extracted from common wrappers, or concise
+safe dimension text that can be repaired into the same contract. Aliases such
+as `valuation` and `downside_risk` canonicalize to `value` and `risk`; unknown
+dimensions, selected agent ids, legacy route modes, low confidence,
+clarification requests, runtime controls, endpoint/env/secret markers, prompt
+material, raw provider payload markers, SQL, and tracebacks still fall back to
+the full DAG. Timeout and provider transport failures consume only the bounded
+explicit-router retry budget and then fail closed with public-safe reason
+codes.
+
 Fields:
 
 - `schema`
@@ -759,6 +771,11 @@ Failure policy:
   `providerRouterInvoked`, `providerRouterMode`, `providerRouterParseOk`,
   `providerRouterFallbackReason`, `providerRouterErrorCode`, and
   `providerRouterSelectedDimensions`.
+- Explicit real-router workflow provenance may additionally expose only
+  bounded diagnostics: `providerRouterAttemptCount`,
+  `providerRouterLastErrorCode`, `providerRouterOutputShape`,
+  `providerRouterElapsedMs`, `providerRouterRetryMode`, and
+  `providerRouterParseStage`.
 - Workflow metadata must not expose raw LLM/provider output, fake raw output,
   prompts, model messages, provider payloads, endpoint URLs, env values,
   secrets, tracebacks, or chain-of-thought.
@@ -859,6 +876,15 @@ These fields are intended to prevent a stale public API daemon from being
 accepted as current-ready solely because `/api/health` returns HTTP 200. They
 do not expose environment values, process argv, credentials, endpoint URLs, or
 raw service payloads.
+
+Public selected-routing provenance may additionally expose bounded real-router
+telemetry fields when the daemon runs an explicit selected request through
+`llm_real`: `providerRouterAttemptCount`, `providerRouterLastErrorCode`,
+`providerRouterOutputShape`, `providerRouterElapsedMs`,
+`providerRouterRetryMode`, and `providerRouterParseStage`. These fields are
+diagnostic classes/counts/durations only. They are not raw provider output, not
+provider prompts/messages, not model credentials, not endpoint URLs, and not
+agent JSON.
 
 The file-backed public thread store repairs stale legacy thread entries at read
 time. It validates stored threads one by one, preserves valid current-contract
@@ -1655,6 +1681,11 @@ the validated `report_input_bundle_v1`.
 `provenance` includes executor-oriented fields such as `executionStatus`,
 `fallbackUsed`, and `limitations` while keeping provider and external invocation
 flags false.
+It may also include selected-routing and provider-router diagnostics, including
+bounded attempt count, elapsed milliseconds, output shape, retry mode, parse
+stage, and safe error codes. These fields are diagnostic metadata only and must
+not contain raw provider output, prompts/messages, endpoint/base URL material,
+env values, SQL, secrets, tracebacks, or chain-of-thought.
 
 Seams: `build_workflow_snapshot_v2`, `validate_workflow_snapshot_v2`.
 Graph final emission also uses `build_final_emit_payload`,

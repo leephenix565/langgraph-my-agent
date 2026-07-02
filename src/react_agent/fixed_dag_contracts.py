@@ -3860,6 +3860,17 @@ def build_workflow_snapshot_v2(
         and isinstance(dag_execution.get("provenance"), Mapping)
         else {}
     )
+    performance_telemetry = (
+        dict(execution_provenance.get("performance_telemetry", {}))
+        if isinstance(execution_provenance.get("performance_telemetry"), Mapping)
+        and execution_provenance.get("performance_telemetry")
+        else {}
+    )
+    if isinstance(plan_provenance.get("route_planner_ms"), int):
+        performance_telemetry["routePlannerMs"] = max(
+            0,
+            int(plan_provenance.get("route_planner_ms")),
+        )
     return {
         "schema": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
         "schemaVersion": WORKFLOW_SNAPSHOT_SCHEMA_VERSION,
@@ -3979,10 +3990,33 @@ def build_workflow_snapshot_v2(
                 )
                 if isinstance(dimension, str) and dimension in DIMENSION_GROUPS
             ],
-            "performanceTelemetry": dict(execution_provenance.get("performance_telemetry", {}))
-            if isinstance(execution_provenance.get("performance_telemetry"), Mapping)
-            and execution_provenance.get("performance_telemetry")
-            else None,
+            "providerRouterAttemptCount": (
+                int(plan_provenance.get("provider_router_attempt_count"))
+                if isinstance(plan_provenance.get("provider_router_attempt_count"), int)
+                else None
+            ),
+            "providerRouterLastErrorCode": _safe_public_text(
+                plan_provenance.get("provider_router_last_error_code"),
+                limit=80,
+            ),
+            "providerRouterOutputShape": _safe_public_text(
+                plan_provenance.get("provider_router_output_shape"),
+                limit=60,
+            ),
+            "providerRouterElapsedMs": (
+                int(plan_provenance.get("provider_router_elapsed_ms"))
+                if isinstance(plan_provenance.get("provider_router_elapsed_ms"), int)
+                else None
+            ),
+            "providerRouterRetryMode": _safe_public_text(
+                plan_provenance.get("provider_router_retry_mode"),
+                limit=60,
+            ),
+            "providerRouterParseStage": _safe_public_text(
+                plan_provenance.get("provider_router_parse_stage"),
+                limit=60,
+            ),
+            "performanceTelemetry": performance_telemetry or None,
         },
         "finalSource": RESET_SOURCE,
     }

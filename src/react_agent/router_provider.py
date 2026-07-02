@@ -97,6 +97,12 @@ ROUTER_PROVIDER_ARTIFACT_ALLOWED_FIELDS: frozenset[str] = frozenset(
         "provider_router_invoked",
         "provider_router_mode",
         "provider_router_parse_ok",
+        "provider_router_attempt_count",
+        "provider_router_last_error_code",
+        "provider_router_output_shape",
+        "provider_router_elapsed_ms",
+        "provider_router_retry_mode",
+        "provider_router_parse_stage",
         "selected_dimensions",
         "route_confidence",
         "fallback_reason_code",
@@ -712,6 +718,10 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
         elif key in {
             "phase",
             "provider_router_mode",
+            "provider_router_last_error_code",
+            "provider_router_output_shape",
+            "provider_router_retry_mode",
+            "provider_router_parse_stage",
             "fallback_reason_code",
             "provider_error_code",
             "request_contract_version",
@@ -729,7 +739,15 @@ def sanitize_router_provider_artifact(metadata: Mapping[str, Any]) -> dict[str, 
                 continue
             if 0 <= numeric <= 1:
                 clean[key] = numeric
-        elif key in {"latency_ms", "call_count", "timeout_seconds", "max_tokens", "retry_count"}:
+        elif key in {
+            "latency_ms",
+            "call_count",
+            "timeout_seconds",
+            "max_tokens",
+            "retry_count",
+            "provider_router_attempt_count",
+            "provider_router_elapsed_ms",
+        }:
             try:
                 clean[key] = int(value) if key != "timeout_seconds" else float(value)
             except (TypeError, ValueError):

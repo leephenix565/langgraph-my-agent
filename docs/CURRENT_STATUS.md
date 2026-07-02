@@ -178,6 +178,17 @@ records.
   provider/model/key control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port
   authority.
+  The explicit selected-router reliability hardening keeps that rollback
+  posture intact: omitted/null public `routing` continues to use the full-DAG
+  server default unless an operator separately enables
+  `PUBLIC_SELECTED_ROUTING_DEFAULT=1`. The real-router provider path now
+  classifies timeout, connect, protocol, transport, HTTP status, response JSON,
+  choice/message/content, and parser failures into bounded public-safe codes,
+  exposes attempt count, elapsed milliseconds, retry mode, output shape, and
+  parse stage, and keeps raw provider output, prompt text, endpoint material,
+  env values, SQL, secrets, tracebacks, and chain-of-thought out of public
+  payloads. This improves explicit selected routing observability and
+  fail-closed behavior; it does not make selected routing the default.
 - The public API health contract now includes freshness/capability markers:
   `publicApiContractVersion`, `routingRequestSupported`,
   `selectedRoutingRequestSchema`, `selectedRoutingRouterMode`,
@@ -195,6 +206,10 @@ records.
   otherwise the telemetry records explicit instrumentation gaps. This remains
   `/v1/agent/compute` observability and does not expose `/invoke`, raw provider
   payloads, SQL, prompts, endpoint URLs, or secrets.
+- Production latency audits show L4 `report_generator` can dominate selected
+  and full-DAG wall time. That is a separate L4 performance limitation for a
+  future optimization goal, not a router correctness failure and not a reason
+  to re-enable default selected routing.
 
 ## Report Quality RQ2E Status
 

@@ -62,6 +62,12 @@ selected-routing request support, public-safe telemetry projection, external
 compute telemetry sanitization, and fixed-DAG executor provenance. They do not
 call `/v1/agent/invoke`, do not directly call providers, do not read env
 values, and do not retain raw service/provider responses.
+When router telemetry changes, the same gate must also prove that only bounded
+router diagnostics project publicly: attempt count, elapsed milliseconds,
+output shape, retry mode, parse stage, selected dimensions, and safe error
+codes. Raw provider output, prompt/messages, endpoint/base URL material, env
+values, SQL, tracebacks, and chain-of-thought must remain absent from public
+payloads and artifacts.
 
 ## Documentation Authority And History Policy
 
@@ -759,6 +765,14 @@ dimension text, unrepairable invalid JSON followed by compact text retry, and
 transient real-router timeout followed by retry success. It also pins that
 omitted public `routing` remains full DAG while explicit selected value/risk
 can compile the selected legal subgraph.
+The explicit selected-router reliability telemetry gate adds regressions for
+provider timeout, connect/transport/protocol errors, output-shape
+classification, attempt count, elapsed timing, retry mode, parse stage, and
+public-safe error-code projection. These regressions keep selected routing
+default-off, keep omitted public `routing` on the server default, and ensure
+router failures fail closed to full DAG without leaking raw provider output,
+prompt text, endpoint material, env values, SQL, tracebacks, or
+chain-of-thought.
 These tests must not retain raw provider responses,
 prompts, messages, endpoint URLs, env values, API keys, tracebacks, or
 chain-of-thought. Public API tests also cover file-store freshness repair so
@@ -783,6 +797,7 @@ selected routing, `routing: {"mode": "selected"}` maps only to
 `Context(enable_selected_routing=True)`, invalid routing values/extra keys are
 rejected, sync and stream routes stay aligned, the frontend toggle omits the
 field while off and serializes it while on, and public provenance remains
+bounded even when the explicit real-router path reports retry/error telemetry.
 sanitized. It does not authorize request-level provider controls,
 `/v1/agent/invoke`, public `/v1/agent/compute` controls, service actions,
 runtime binding changes, catalog changes, or non-L4 policy changes.

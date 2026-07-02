@@ -442,6 +442,24 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         providerRouterSelectedDimensions=_string_list(
             provenance_raw.get("providerRouterSelectedDimensions")
         ),
+        providerRouterAttemptCount=_optional_int(
+            provenance_raw.get("providerRouterAttemptCount")
+        ),
+        providerRouterLastErrorCode=_optional_str(
+            provenance_raw.get("providerRouterLastErrorCode")
+        ),
+        providerRouterOutputShape=_optional_str(
+            provenance_raw.get("providerRouterOutputShape")
+        ),
+        providerRouterElapsedMs=_optional_int(
+            provenance_raw.get("providerRouterElapsedMs")
+        ),
+        providerRouterRetryMode=_optional_str(
+            provenance_raw.get("providerRouterRetryMode")
+        ),
+        providerRouterParseStage=_optional_str(
+            provenance_raw.get("providerRouterParseStage")
+        ),
         performanceTelemetry=_performance_telemetry(provenance_raw.get("performanceTelemetry")),
         summary=(
             "本轮研判流程已完成，详细执行信息可在技术详情中查看。"

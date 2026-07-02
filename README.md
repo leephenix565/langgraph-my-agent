@@ -58,6 +58,16 @@ of that runtime boundary: the non-L4 production compute policy is
 `enabled_by_default=true`, and L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`. Compute evidence must not be
 recorded as invoke evidence; `/v1/agent/invoke` remains out of the default path.
+Explicit public selected routing can use the real LLM dimension router only
+when the request asks for `routing: {"mode": "selected"}` and the daemon is
+operator-configured for `llm_real`. Omitted or null public `routing` remains on
+the server default, which is full DAG unless an operator separately enables
+`PUBLIC_SELECTED_ROUTING_DEFAULT=1`. The explicit selected-router path now
+projects bounded public-safe diagnostics for attempt count, elapsed time,
+output shape, retry mode, parse stage, and safe error code; it still never
+exposes prompts, raw provider output, endpoint material, env values, or
+credentials. Long-tail L4 `report_generator` latency is a separate operational
+limitation and is not a selected-routing default or safety change.
 RQ3A expands the non-L4 policy with optional, fail-soft production coverage
 rows to improve report quality in production mode; this is not a runtime
 binding change and not sandbox demo acceptance.

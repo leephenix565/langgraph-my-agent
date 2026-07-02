@@ -155,6 +155,13 @@ def test_public_workflow_preserves_selected_routing_provenance_safely() -> None:
         "provider_router_mode": "fake",
         "provider_router_parse_ok": True,
         "provider_router_selected_dimensions": list(plan["selected_dimensions"]),
+        "provider_router_attempt_count": 1,
+        "provider_router_last_error_code": "",
+        "provider_router_output_shape": "json_object",
+        "provider_router_elapsed_ms": 42,
+        "provider_router_retry_mode": "json_then_dimension_text",
+        "provider_router_parse_stage": "json_parse",
+        "route_planner_ms": 43,
         "raw_marker": "NEVER_STORE_FAKE_ROUTER_RAW_MARKER",
     }
     execution = execute_fixed_dag_plan(
@@ -194,6 +201,12 @@ def test_public_workflow_preserves_selected_routing_provenance_safely() -> None:
     assert provenance["providerRouterMode"] == "fake"
     assert provenance["providerRouterParseOk"] is True
     assert provenance["providerRouterSelectedDimensions"] == ["value"]
+    assert provenance["providerRouterAttemptCount"] == 1
+    assert provenance["providerRouterOutputShape"] == "json_object"
+    assert provenance["providerRouterElapsedMs"] == 42
+    assert provenance["providerRouterRetryMode"] == "json_then_dimension_text"
+    assert provenance["providerRouterParseStage"] == "json_parse"
+    assert provenance["performanceTelemetry"]["routePlannerMs"] == 43
     assert "NEVER_STORE_FAKE_ROUTER_RAW_MARKER" not in serialized
     assert "raw_response" not in serialized.lower()
     assert "/v1/agent/invoke" not in serialized

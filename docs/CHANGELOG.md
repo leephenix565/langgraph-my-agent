@@ -3,6 +3,36 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - Explicit selected-router reliability telemetry hardening
+
+### Changed
+
+- Hardened the real LLM dimension-router path for explicit
+  `routing: {"mode": "selected"}` requests while keeping omitted/null routing
+  on the full-DAG server default unless an operator separately enables
+  `PUBLIC_SELECTED_ROUTING_DEFAULT=1`.
+- Reduced the explicit router provider budget to a bounded 8-second,
+  two-attempt path and classified timeout, connect, protocol, transport, HTTP
+  status, response JSON, choice/message/content, and parser failures into
+  public-safe error codes.
+- Added public-safe router diagnostics for attempt count, elapsed
+  milliseconds, output shape, retry mode, parse stage, and last error code.
+
+### Tests
+
+- Added graph/public mapping regressions for router success telemetry,
+  transport-error fallback telemetry, route-planner timing projection, and
+  public payload leakage checks.
+
+### Not Done
+
+- No default selected routing enablement, no external agent service change, no
+  runtime binding/catalog/non-L4 policy change, no `/v1/agent/invoke`, no
+  direct provider call by Codex, no env-value access, and no raw response
+  retention.
+- L4 `report_generator` latency remains a separate known production
+  performance limitation for a future optimization goal.
+
 ## 2026-07-02 - Explicit value/risk selected-router stability
 
 ### Changed
