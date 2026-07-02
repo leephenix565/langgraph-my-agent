@@ -259,8 +259,9 @@ def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]
     user_question = str(question or "").strip() or "not provided"
     system = (
         "You are a strict fixed-DAG dimension router. Return only one JSON object. "
-        "Do not include markdown, prose, selected agent ids, endpoints, prompts, "
-        "secrets, SQL, or provider payloads."
+        "The first non-whitespace character should be { and the last non-whitespace "
+        "character should be }. Do not include markdown, prose, selected agent ids, "
+        "endpoints, prompts, secrets, SQL, or provider payloads."
     )
     user = (
         "Classify the user request into fixed-DAG dimensions. "
@@ -273,8 +274,17 @@ def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]
         "Return JSON with exactly these public fields: schema, schema_version, task_type, "
         "targets, selected_dimensions, route_confidence, needs_clarification, "
         "clarification_question, fallback_reason, provenance. "
+        "Do not include selected_agents or any extra control fields. "
         "Use schema and schema_version route_intent_v1, task_type general, "
-        "route_confidence between 0.70 and 1.0, and provenance.source live_llm_dimension_router. "
+        "route_confidence between 0.70 and 1.0, fallback_reason as an empty string, "
+        "and provenance.source live_llm_dimension_router. "
+        "The JSON shape is: "
+        '{"schema":"route_intent_v1","schema_version":"route_intent_v1",'
+        '"task_type":"general","targets":["..."],'
+        '"selected_dimensions":["value"],"route_confidence":0.95,'
+        '"needs_clarification":false,"clarification_question":"",'
+        '"fallback_reason":"","provenance":{"source":"live_llm_dimension_router",'
+        '"route_granularity":"dimension","dimension_only":true}}. '
         f"User request: {user_question}"
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
@@ -312,17 +322,8 @@ def _route_intent_from_llm_dimension_provider(
             if raw_output is None
             else "router_provider_missing_output",
         }
-    stripped = raw_output.strip()
-    if not (stripped.startswith("{") and stripped.endswith("}")):
-        return None, {
-            **meta,
-            "provider_router_invoked": True,
-            "provider_router_fallback_reason": "router_provider_invalid_json",
-            "provider_router_error_code": "router_provider_invalid_json",
-        }
-
     route_intent, stats = parse_dimension_route_intent_json(
-        stripped,
+        raw_output,
         question=question,
     )
     parse_ok = bool(stats.get("parse_ok") and not stats.get("used_fallback"))

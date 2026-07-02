@@ -729,8 +729,13 @@ The public LLM router enablement gate additionally covers
 `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1` context mapping, the
 OpenAI-compatible JSON router seam, public-safe `providerRouter*` provenance,
 and the health fields that distinguish deterministic selected routing from
-`llm_real` mode. These tests must not retain raw provider responses, prompts,
-messages, endpoint URLs, env values, API keys, tracebacks, or chain-of-thought.
+`llm_real` mode. It also covers production JSON hardening: pure JSON and
+bounded JSON extracted from common provider wrappers can compile a selected
+legal subgraph, while missing JSON, malformed JSON, unknown dimensions,
+agent-level routing, forbidden control fields, low confidence, and
+needs-clarification responses fail closed to full DAG fallback. These tests
+must not retain raw provider responses, prompts, messages, endpoint URLs, env
+values, API keys, tracebacks, or chain-of-thought.
 
 ## Router M2 Public Selected-Routing API Gate
 

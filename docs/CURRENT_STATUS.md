@@ -146,6 +146,12 @@ records.
   default-off. When the daemon runs with
   `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, that selected request uses the
   real OpenAI-compatible LLM dimension router; otherwise it stays deterministic.
+  The real-router parser now hardens production provider output by extracting a
+  bounded JSON object from common wrappers before applying the strict
+  dimension-only `route_intent_v1` normalizer. This improves live selected-DAG
+  stability without accepting agent-level routing, unknown dimensions, low
+  confidence, runtime controls, raw provider material, endpoint material, SQL,
+  env values, secrets, prompts, or chain-of-thought.
   This does not add an explicit public `full_dag` force-off mode, public
   provider/model/key control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port

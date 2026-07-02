@@ -539,6 +539,54 @@ async def test_selected_routing_with_fake_llm_dimension_router_builds_selected_p
     assert "/v1/agent/invoke" not in rendered
 
 
+@pytest.mark.parametrize(
+    "raw_output",
+    [
+        "```json\n" + _dimension_router_payload(["value", "risk"]) + "\n```",
+        "Route intent:\n" + _dimension_router_payload(["market"]) + "\nDone.",
+    ],
+)
+async def test_selected_routing_with_fake_llm_dimension_router_extracts_wrapped_json(
+    monkeypatch,
+    raw_output: str,
+) -> None:
+    monkeypatch.setattr(
+        graph_module,
+        "_invoke_dimension_router_provider",
+        lambda _question, _context: raw_output,
+    )
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "Please route this fixed DAG question.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    rendered = json.dumps(
+        {
+            "plan": res["fixed_dag_plan"],
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    plan = res["fixed_dag_plan"]
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["provenance"]["selected_routing_requested"] is True
+    assert plan["provenance"]["selected_routing_fallback"] is False
+    assert plan["provenance"]["provider_router_enabled"] is True
+    assert plan["provenance"]["provider_router_invoked"] is True
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert res["workflow_snapshot"]["provenance"]["providerRouterParseOk"] is True
+    assert raw_output not in rendered
+    assert "raw_response" not in rendered.lower()
+    assert "/v1/agent/invoke" not in rendered
+
+
 async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compatible_json(
     monkeypatch,
 ) -> None:
@@ -639,7 +687,8 @@ async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compa
             ),
             "forbidden_route_intent_field_present",
         ),
-        ("```json\n{\"schema\":\"route_intent_v1\"}\n```", "router_provider_invalid_json"),
+        ("The route is value and risk.", "router_provider_missing_output"),
+        ("{\"schema\":\"route_intent_v1\",}", "router_provider_invalid_json"),
         (_dimension_router_payload(["value"], route_confidence=0.1), "low_route_confidence"),
         (
             _dimension_router_payload(

@@ -3,6 +3,30 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - LLM router JSON contract hardening
+
+### Changed
+
+- Hardened the live OpenAI-compatible dimension-router prompt so selected
+  public requests ask for a single dimension-level `route_intent_v1` JSON
+  object and explicitly avoid agent-level routing, runtime controls, endpoint
+  material, prompts, SQL, env values, secrets, and provider payloads.
+- Updated the real-router parser to tolerate common provider wrappers by
+  extracting the first bounded JSON object before applying the existing
+  fail-closed dimension normalizer.
+
+### Tests
+
+- Added focused coverage for markdown/prose-wrapped router JSON compiling a
+  selected DAG while unknown dimensions, agent-level selection, forbidden
+  fields, low confidence, and missing JSON still fall back safely.
+
+### Not Done
+
+- No selected-routing default-on behavior, no provider/model/key public
+  controls, no retry loop, no runtime binding/catalog/non-L4 policy changes,
+  no `/v1/agent/invoke`, no raw provider response retention, and no push.
+
 ## 2026-07-01 - Public LLM selected-router production enablement
 
 ### Changed

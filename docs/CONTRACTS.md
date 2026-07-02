@@ -797,6 +797,14 @@ Failure policy:
   adapter also enables `Context.enable_llm_dimension_router` and
   `llm_dimension_router_mode="real"`, causing the route planner to call the
   bounded OpenAI-compatible dimension router before compiling the selected DAG.
+  The real-router response contract remains a dimension-level `route_intent_v1`
+  JSON object. The graph may extract the first bounded JSON object from common
+  provider wrappers such as markdown code fences or surrounding prose, but the
+  extracted object is still passed through the same fail-closed dimension
+  normalizer. Unknown dimensions, `selected_agents`, runtime binding/catalog
+  controls, endpoint/env/secret/raw-provider fields, legacy route modes, low
+  confidence, or provider fallback reasons keep selected routing on the safe
+  full-DAG fallback path.
   If that server-side flag is absent, the same request stays on deterministic
   selected routing. The request itself does not expose an explicit `full_dag`
   force-off mode, provider router control, compute/invoke control,
