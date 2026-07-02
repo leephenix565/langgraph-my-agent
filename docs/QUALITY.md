@@ -239,6 +239,10 @@ optional enabled coverage rows for `value_research_synthesis`,
 `macro_composite`; they remain compute-only, fail-soft, and outside
 `runtime_bindings.json`. L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`; both are compute-only paths.
+If `report_generator` returns a mapped report with sanitized telemetry showing
+a provider/LLM call, quality validation treats that report as the primary L4
+artifact. The deterministic renderer may still repair weak non-provider reports,
+but it must not replace a provider-backed LLM report.
 
 RQ3A follows a production-mode acceptance rule: sandbox/demo artifacts may
 explain score deltas, but only a controlled production-mode live E2E from the

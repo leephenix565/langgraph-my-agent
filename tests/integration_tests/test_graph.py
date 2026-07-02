@@ -117,7 +117,12 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
 
     res = graph_module.graph.invoke(
         {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
-        context=Context(model="deepseek/deepseek-chat", system_prompt="inactive"),
+        context=Context(
+            model="deepseek/deepseek-chat",
+            system_prompt="inactive",
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
     )
 
     assert res["fixed_dag_plan"]["schema"] == "fixed_dag_plan_v1"

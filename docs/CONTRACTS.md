@@ -1447,6 +1447,10 @@ Boundary:
 - It does not make sandbox L4 services production-default.
 - When an external `report_generator` result is mapped, the internal LLM report
   synthesis seam must not overwrite it in the same execution.
+- When that mapped external `report_generator` result also reports a
+  provider/LLM call through sanitized telemetry, the deterministic
+  report-quality renderer must not overwrite it either. Renderer enrichment is
+  reserved for weak non-provider L4 report results.
 - Provider-backed `/v1/agent/compute` pass was not runtime enablement by
   itself. R8-13Q later completed the separate runtime/public-transcript review
   and config phase for the two L4 ids only.

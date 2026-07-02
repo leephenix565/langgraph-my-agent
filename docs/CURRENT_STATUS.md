@@ -239,6 +239,11 @@ records.
   are rendered as Chinese text with English contract terms in parentheses when
   needed. This is a report presentation guard, not a router, schema, runtime
   binding, catalog, non-L4 policy, or external service change.
+- The final L4 report precedence is provider-aware: if the external
+  `report_generator` returns a mapped `report_result_v1` and its sanitized
+  service telemetry reports a provider/LLM call, the executor preserves that
+  LLM-generated report as primary. The deterministic report-quality renderer is
+  used only as a fallback for weak non-provider report results.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

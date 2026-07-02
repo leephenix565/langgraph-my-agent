@@ -3,6 +3,29 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - Provider-backed L4 report preservation
+
+### Changed
+
+- Preserved external `report_generator` output when its sanitized telemetry
+  shows a provider/LLM call. The deterministic report-quality renderer now
+  remains a fallback for weak non-provider L4 reports instead of overwriting a
+  provider-backed LLM final report.
+- Projected provider-backed external L4 report generation into fixed-DAG
+  provenance through the existing public-safe `provider_invoked` boolean.
+
+### Tests
+
+- Added a focused executor regression proving provider-backed external L4
+  reports keep their title, body, and sections instead of being replaced by the
+  deterministic renderer.
+
+### Not Done
+
+- No selected-routing default change, no public schema change, no runtime
+  binding, catalog, non-L4 policy, external service, `/v1/agent/invoke`, direct
+  provider, env-value, raw-response, or push change.
+
 ## 2026-07-02 - Public report terminology localization
 
 ### Changed

@@ -690,6 +690,22 @@ def _maybe_enrich_weak_report_result(
     return dict(enriched)
 
 
+def _agent_provider_call_count(
+    summary: Mapping[str, Any],
+    agent_id: str,
+) -> int:
+    telemetry_by_agent = summary.get("agent_telemetry_by_agent")
+    if not isinstance(telemetry_by_agent, Mapping):
+        return 0
+    telemetry = telemetry_by_agent.get(agent_id)
+    if not isinstance(telemetry, Mapping):
+        return 0
+    try:
+        return max(int(telemetry.get("provider_call_count") or 0), 0)
+    except (TypeError, ValueError):
+        return 0
+
+
 def execute_fixed_dag_plan(
     plan: Mapping[str, Any],
     *,
@@ -1147,13 +1163,6 @@ def execute_fixed_dag_plan(
             external_l4_decision_run,
             external_l4_report_run,
         )
-    if valid_report_input_bundle:
-        report_result = _maybe_enrich_weak_report_result(
-            report_result,
-            question=question,
-            report_input_bundle=report_input_bundle,
-            decision_result=decision_result,
-        )
     llm_report_synthesis_used = False
     llm_report_synthesis_attempted = False
     llm_report_synthesis_provider_invoked = False
@@ -1163,6 +1172,16 @@ def execute_fixed_dag_plan(
         isinstance(external_l4_report_run, Mapping)
         and "report_generator" in set(external_l4_report_run.get("mapped_agents", []))
     )
+    external_l4_report_provider_invoked = (
+        _agent_provider_call_count(external_l4_report_run, "report_generator") > 0
+    )
+    if valid_report_input_bundle and not external_l4_report_provider_invoked:
+        report_result = _maybe_enrich_weak_report_result(
+            report_result,
+            question=question,
+            report_input_bundle=report_input_bundle,
+            decision_result=decision_result,
+        )
     if llm_report_synthesis_enabled and not external_l4_report_mapped:
         from react_agent.fixed_dag_report_synthesizer import (  # noqa: PLC0415
             synthesize_report_result_with_llm,
@@ -1288,6 +1307,7 @@ def execute_fixed_dag_plan(
             "provider_invoked": (
                 llm_report_synthesis_provider_invoked
                 or llm_l3_explanation_provider_invoked
+                or external_l4_report_provider_invoked
             ),
             "external_invoked": False,
             "production_external_compute_enabled": bool(

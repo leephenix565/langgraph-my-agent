@@ -88,6 +88,11 @@ The public report language pass keeps that runtime behavior unchanged but makes
 the final public report Chinese-first: route, DAG, L2/L3/L4, metric, enum, and
 runtime-boundary contract terms are rendered as Chinese labels with English
 terms in parentheses only when useful.
+When the external L4 `report_generator` reports a provider-backed LLM call via
+sanitized telemetry, its `report_result_v1` is the primary final report and the
+deterministic report-quality renderer must not overwrite it. The deterministic
+renderer remains a public-safe fallback for weak or non-provider L4 report
+results.
 The public API production-observability follow-up adds a freshness guard to
 `/api/health` and a bounded `performanceTelemetry` projection in workflow
 provenance. This lets operators distinguish stale daemons from current

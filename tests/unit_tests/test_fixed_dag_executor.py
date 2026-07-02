@@ -957,7 +957,12 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
     assert "external_compute_default_runtime_binding" in result["step_results"]["report_generator"]["warnings"]
 
 
-def _run_demo_report_generator(monkeypatch, report_tool_result: dict[str, object]) -> dict:
+def _run_demo_report_generator(
+    monkeypatch,
+    report_tool_result: dict[str, object],
+    *,
+    report_telemetry: dict[str, object] | None = None,
+) -> dict:
     import react_agent.fixed_dag_external_compute_bridge as bridge
 
     def fake_invoke(entry, **_kwargs):
@@ -970,13 +975,16 @@ def _run_demo_report_generator(monkeypatch, report_tool_result: dict[str, object
         mapped = map_external_response_to_fixed_dag_object(
             _compute_envelope(entry.agent_id, entry.external_agent_id, tool_result)
         )
-        return {
+        result = {
             "agent_id": entry.agent_id,
             "status": "pass",
             "mapped": mapped,
             "failure_code": "",
             "warning": "",
         }
+        if entry.agent_id == "report_generator" and report_telemetry is not None:
+            result["telemetry"] = dict(report_telemetry)
+        return result
 
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
     return execute_fixed_dag_plan(
@@ -1016,6 +1024,36 @@ def test_report_enrichment_gate_does_not_overwrite_rich_external_l4_report(monke
     assert result["report_result"]["title"] == rich_report["title"]
     assert result["report_result"]["answer"] == rich_report["answer"]
     assert result["report_result"]["status"] == "complete"
+
+
+def test_report_enrichment_gate_preserves_provider_backed_external_l4_report(monkeypatch) -> None:
+    llm_report = {
+        **_high_quality_report("请分析 600519.SH"),
+        "title": "LLM 润色后的最终研判报告",
+        "answer": (
+            "LLM 润色后的最终研判报告：本轮保留报告生成智能体的中文表达，"
+            "并基于外部 L4 report_generator 的 provider 调用结果输出。"
+        ),
+        "sections": [
+            {
+                "id": "core_decision",
+                "title": "核心结论",
+                "content": "LLM 润色后的核心结论，避免裸露英文 schema 字段。",
+            }
+        ],
+    }
+
+    result = _run_demo_report_generator(
+        monkeypatch,
+        llm_report,
+        report_telemetry={"provider_call_count": 1, "provider_total_ms": 1234},
+    )
+
+    assert result["report_result"]["title"] == "LLM 润色后的最终研判报告"
+    assert "LLM 润色后的最终研判报告" in result["report_result"]["answer"]
+    assert "价值维度：估值分歧与安全边际" not in result["report_result"]["answer"]
+    assert "LLM 润色后的核心结论" in result["report_result"]["sections"][0]["content"]
+    assert result["provenance"]["provider_invoked"] is True
 
 
 def test_report_enrichment_gate_keeps_original_when_enrichment_invalid(monkeypatch) -> None:
