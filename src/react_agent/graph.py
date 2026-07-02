@@ -9,7 +9,9 @@ execution seams.
 
 from __future__ import annotations
 
+import json
 import os
+import re
 import uuid
 from collections.abc import Mapping
 from dataclasses import dataclass
@@ -41,6 +43,7 @@ from react_agent.fixed_dag_executor import execute_fixed_dag_plan
 from react_agent.graph_entry import compile_graph_variants, select_graph_for_invoke
 from react_agent.router_parse import parse_dimension_route_intent_json
 from react_agent.router_provider import (
+    ROUTER_PROVIDER_DIMENSIONS,
     ROUTER_PROVIDER_JSON_RESPONSE_FORMAT,
     RouterProviderInvocationOptions,
     RouterProviderPolicy,
@@ -52,6 +55,26 @@ from react_agent.router_provider import (
 from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
+_ROUTER_TEXT_DIMENSION_RE = re.compile(r"\b(value|market|risk|macro)\b", re.IGNORECASE)
+_ROUTER_TEXT_SAFE_RE = re.compile(r"^[A-Za-z0-9\s,.;:()\[\]{}\"'`_/\-]+$")
+_ROUTER_TEXT_FORBIDDEN_MARKERS = (
+    "agent_id",
+    "selected_agents",
+    "endpoint",
+    "api_key",
+    "authorization",
+    "bearer",
+    "secret",
+    "password",
+    "raw_response",
+    "raw_provider_response",
+    "provider_payload",
+    "sql",
+    "prompt",
+    "traceback",
+    "chain-of-thought",
+    "chain_of_thought",
+)
 
 
 @dataclass(frozen=True)
@@ -350,6 +373,40 @@ def _classify_router_missing_content(
     return "router_provider_unsupported_content_type"
 
 
+def _route_intent_json_from_plain_dimension_text(raw_output: str) -> str | None:
+    text = str(raw_output or "").strip()
+    if not text or len(text) > 220 or "\n" in text:
+        return None
+    lowered = text.lower()
+    if any(marker in lowered for marker in _ROUTER_TEXT_FORBIDDEN_MARKERS):
+        return None
+    if not _ROUTER_TEXT_SAFE_RE.match(text):
+        return None
+    found = {match.group(1).lower() for match in _ROUTER_TEXT_DIMENSION_RE.finditer(text)}
+    selected_dimensions = [
+        dimension for dimension in ROUTER_PROVIDER_DIMENSIONS if dimension in found
+    ]
+    if not selected_dimensions:
+        return None
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": [],
+        "selected_dimensions": selected_dimensions,
+        "route_confidence": 0.72,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {
+            "source": "live_llm_dimension_router_text_repair",
+            "route_granularity": "dimension",
+            "dimension_only": True,
+        },
+    }
+    return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
 def _router_config_value(
     context: Context,
     attr_name: str,
@@ -455,6 +512,13 @@ def _route_intent_from_llm_dimension_provider(
         raw_output,
         question=question,
     )
+    if bool(stats.get("used_fallback")) and stats.get("fallback_reason") == "missing_json":
+        repaired_output = _route_intent_json_from_plain_dimension_text(raw_output)
+        if repaired_output is not None:
+            route_intent, stats = parse_dimension_route_intent_json(
+                repaired_output,
+                question=question,
+            )
     parse_ok = bool(stats.get("parse_ok") and not stats.get("used_fallback"))
     selected_dimensions = [
         str(item)

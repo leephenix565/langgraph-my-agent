@@ -17,6 +17,12 @@ Historical changelog entries before this reset branch are preserved by tag
   invalid JSON response bodies. These codes are projected through existing
   `providerRouterFallbackReason` / `providerRouterErrorCode` fields without
   retaining raw provider output.
+- Added a narrow LLM-output text repair path for short, single-line provider
+  responses that contain only allowed dimension names and safe connector text.
+  This lets concise responses such as `value and risk` still drive the selected
+  DAG while longer prose, forbidden markers, agent ids, endpoint/env/secret/raw
+  fields, SQL, prompts, tracebacks, and chain-of-thought continue to fail
+  closed.
 - Repaired the public JSON thread store freshness behavior so invalid legacy
   thread entries are isolated during read, valid threads are preserved, and the
   repaired envelope is written back. A stale thread entry can no longer make

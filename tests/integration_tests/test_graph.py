@@ -874,6 +874,41 @@ async def test_selected_routing_with_real_llm_dimension_router_records_safe_shap
     assert "raw_response" not in rendered.lower()
 
 
+async def test_selected_routing_with_fake_llm_dimension_router_accepts_plain_dimension_text(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        graph_module,
+        "_invoke_dimension_router_provider",
+        lambda _question, _context: "The selected dimensions are value and risk.",
+    )
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "Analyze valuation and downside risk for 600519.SH.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["selected_dimensions"] == ["value", "risk"]
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert "selected dimensions are value and risk" not in rendered.lower()
+    assert "raw_response" not in rendered.lower()
+
+
 @pytest.mark.parametrize(
     ("raw_output", "expected_reason"),
     [
@@ -893,7 +928,10 @@ async def test_selected_routing_with_real_llm_dimension_router_records_safe_shap
             ),
             "forbidden_route_intent_field_present",
         ),
-        ("The route is value and risk.", "router_provider_missing_output"),
+        (
+            "The selected dimensions are value and risk with raw_response attached.",
+            "router_provider_missing_output",
+        ),
         ("{\"schema\":\"route_intent_v1\",}", "router_provider_invalid_json"),
         (_dimension_router_payload(["value"], route_confidence=0.1), "low_route_confidence"),
         (

@@ -735,7 +735,10 @@ content-part responses, can compile a selected legal subgraph, while missing
 JSON, malformed JSON, empty/truncated provider content, unknown dimensions,
 agent-level routing, forbidden control fields, low confidence, and
 needs-clarification responses fail closed to full DAG fallback with only safe
-shape reason codes. These tests must not retain raw provider responses,
+shape reason codes. The gate also covers the narrow plain-text dimension repair
+path: concise LLM output like `value and risk` can compile a selected legal
+subgraph, but the same path rejects forbidden markers and non-routing prose.
+These tests must not retain raw provider responses,
 prompts, messages, endpoint URLs, env values, API keys, tracebacks, or
 chain-of-thought. Public API tests also cover file-store freshness repair so
 invalid legacy thread entries cannot make the whole thread store unavailable.
