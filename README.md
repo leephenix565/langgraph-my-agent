@@ -99,10 +99,16 @@ the public request still cannot provide provider, model, base URL, API key,
 compute, or invoke controls. The live router still asks the provider for a
 strict `route_intent_v1` JSON object, but the graph now tolerates common
 provider wrapping such as JSON code fences by extracting the first bounded JSON
-object and then applying the existing fail-closed route-intent normalizer.
+object and then applying the existing fail-closed route-intent normalizer. It
+also accepts OpenAI-compatible text content parts/lists and records only safe
+output-shape reason codes when a provider call has no usable route text.
 Unknown dimensions, agent-level selection, forbidden fields, low confidence,
-raw provider material, endpoint material, prompts, SQL, env values, and secrets
-still force full-DAG fallback instead of selected execution.
+empty/truncated provider content, raw provider material, endpoint material,
+prompts, SQL, env values, and secrets still force full-DAG fallback instead of
+selected execution.
+The public JSON thread store repairs stale legacy thread entries during reads,
+preserving valid current-contract sessions while preventing one historical bad
+thread from blocking new public API sessions.
 
 R8-1 keeps this full DAG path as the regression baseline and fallback. It adds
 `route_intent_v1` as a planner-output contract and
@@ -286,7 +292,8 @@ not expose provider router, compute, invoke, model, base URL, API key, or env
 controls, and it does not provide an explicit `full_dag` force-off mode. The
 real-router path accepts only a sanitized dimension-level `route_intent_v1`;
 JSON wrapped in markdown/prose may be extracted, but unsafe or unsupported
-fields still fail closed to the full DAG.
+fields, empty provider content, and truncated provider responses still fail
+closed to the full DAG with only public-safe reason codes.
 
 The reset target has 27 formal agent ids:
 

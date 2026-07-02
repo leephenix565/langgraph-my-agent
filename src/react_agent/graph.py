@@ -12,6 +12,7 @@ from __future__ import annotations
 import os
 import uuid
 from collections.abc import Mapping
+from dataclasses import dataclass
 from typing import Any
 
 import httpx
@@ -51,6 +52,13 @@ from react_agent.router_provider import (
 from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
+
+
+@dataclass(frozen=True)
+class _RouterProviderOutput:
+    content: str | None
+    invoked: bool
+    error_code: str = ""
 
 
 def _message_text(message: Any) -> str:
@@ -155,7 +163,7 @@ def _safe_provider_router_reason(stats_reason: str | None) -> str:
 def _invoke_dimension_router_provider(
     question: str,
     context: Context | None,
-) -> str | None:
+) -> str | _RouterProviderOutput | None:
     """Invoke the explicitly enabled router provider without retaining raw output."""
     if _llm_dimension_router_mode(context) != "real":
         return None
@@ -221,6 +229,7 @@ def _invoke_dimension_router_provider(
         pool=min(5.0, timeout_seconds),
     )
     attempts = max(1, min(int(options.call_cap), int(options.retry_count) + 1))
+    last_error_code = "router_provider_missing_output"
     with httpx.Client(timeout=timeout) as client:
         for attempt in range(attempts):
             request_body = dict(body)
@@ -235,31 +244,110 @@ def _invoke_dimension_router_provider(
                 json=request_body,
             )
             if response.status_code < 200 or response.status_code >= 300:
+                last_error_code = "router_provider_http_status"
                 if attempt + 1 < attempts:
                     continue
-                return None
-            payload = response.json()
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
+            try:
+                payload = response.json()
+            except ValueError:
+                last_error_code = "router_provider_invalid_response_json"
+                if attempt + 1 < attempts:
+                    continue
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
             choices = payload.get("choices") if isinstance(payload, dict) else None
             if not isinstance(choices, list) or not choices:
+                last_error_code = "router_provider_no_choices"
                 if attempt + 1 < attempts:
                     continue
-                return None
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
             first = choices[0]
             if not isinstance(first, Mapping):
+                last_error_code = "router_provider_invalid_choice"
                 if attempt + 1 < attempts:
                     continue
-                return None
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
             message = first.get("message")
             if not isinstance(message, Mapping):
+                last_error_code = "router_provider_missing_message"
                 if attempt + 1 < attempts:
                     continue
-                return None
-            content = message.get("content")
-            if isinstance(content, str) and content.strip():
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
+            content = _extract_router_message_content(message.get("content"))
+            if content:
                 return content
+            last_error_code = _classify_router_missing_content(first, message)
             if attempt + 1 >= attempts:
-                return None
-    return None
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
+    return _RouterProviderOutput(content=None, invoked=True, error_code=last_error_code)
+
+
+def _extract_router_message_content(content: Any) -> str | None:
+    if isinstance(content, str):
+        text = content.strip()
+        return text or None
+    if not isinstance(content, list):
+        return None
+    parts: list[str] = []
+    for item in content:
+        if isinstance(item, str):
+            if item.strip():
+                parts.append(item.strip())
+            continue
+        if not isinstance(item, Mapping):
+            continue
+        text = item.get("text")
+        if isinstance(text, str) and text.strip():
+            parts.append(text.strip())
+            continue
+        nested = item.get("content")
+        if isinstance(nested, str) and nested.strip():
+            parts.append(nested.strip())
+    joined = "\n".join(parts).strip()
+    return joined or None
+
+
+def _classify_router_missing_content(
+    choice: Mapping[str, Any],
+    message: Mapping[str, Any],
+) -> str:
+    finish_reason = str(choice.get("finish_reason") or "").strip().lower()
+    if finish_reason == "length":
+        return "router_provider_finish_length_no_content"
+    if isinstance(message.get("refusal"), str) and str(message.get("refusal") or "").strip():
+        return "router_provider_refusal"
+    if "content" not in message:
+        return "router_provider_missing_content"
+    content = message.get("content")
+    if isinstance(content, str) and not content.strip():
+        return "router_provider_empty_content"
+    if isinstance(content, list):
+        return "router_provider_empty_content_parts"
+    return "router_provider_unsupported_content_type"
 
 
 def _router_config_value(
@@ -321,7 +409,7 @@ def _route_intent_from_llm_dimension_provider(
     mode = _llm_dimension_router_mode(context)
     meta = _provider_router_provenance(enabled=True, mode=mode)
     try:
-        raw_output = _invoke_dimension_router_provider(question, context)
+        provider_output = _invoke_dimension_router_provider(question, context)
     except (TimeoutError, httpx.TimeoutException):
         return None, {
             **meta,
@@ -337,14 +425,31 @@ def _route_intent_from_llm_dimension_provider(
             "provider_router_error_code": "router_provider_exception",
         }
 
+    output_error_code = "router_provider_missing_output"
+    output_invoked = False
+    raw_output: str | None
+    if isinstance(provider_output, _RouterProviderOutput):
+        raw_output = provider_output.content
+        output_error_code = (
+            provider_output.error_code.strip()
+            if isinstance(provider_output.error_code, str)
+            else ""
+        ) or output_error_code
+        output_invoked = provider_output.invoked
+    elif isinstance(provider_output, str):
+        raw_output = provider_output
+        output_invoked = True
+    else:
+        raw_output = None
+
     if not isinstance(raw_output, str) or not raw_output.strip():
         return None, {
             **meta,
-            "provider_router_invoked": bool(raw_output is not None),
-            "provider_router_fallback_reason": "router_provider_missing_output",
+            "provider_router_invoked": output_invoked,
+            "provider_router_fallback_reason": output_error_code,
             "provider_router_error_code": "router_provider_unavailable"
-            if raw_output is None
-            else "router_provider_missing_output",
+            if not output_invoked
+            else output_error_code,
         }
     route_intent, stats = parse_dimension_route_intent_json(
         raw_output,

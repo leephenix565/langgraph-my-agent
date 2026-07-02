@@ -801,7 +801,12 @@ Failure policy:
   JSON object. The graph may extract the first bounded JSON object from common
   provider wrappers such as markdown code fences or surrounding prose, but the
   extracted object is still passed through the same fail-closed dimension
-  normalizer. Unknown dimensions, `selected_agents`, runtime binding/catalog
+  normalizer. The OpenAI-compatible response adapter accepts either a plain
+  string `message.content` or text content parts/lists, and records only
+  public-safe output-shape reason codes when a provider response has no usable
+  route text. It must not retain the raw response body, message payload, prompt,
+  endpoint, model credentials, provider payload, chain-of-thought, or SQL.
+  Unknown dimensions, `selected_agents`, runtime binding/catalog
   controls, endpoint/env/secret/raw-provider fields, legacy route modes, low
   confidence, or provider fallback reasons keep selected routing on the safe
   full-DAG fallback path.
@@ -831,6 +836,13 @@ These fields are intended to prevent a stale public API daemon from being
 accepted as current-ready solely because `/api/health` returns HTTP 200. They
 do not expose environment values, process argv, credentials, endpoint URLs, or
 raw service payloads.
+
+The file-backed public thread store repairs stale legacy thread entries at read
+time. It validates stored threads one by one, preserves valid current-contract
+threads, drops invalid legacy entries, and writes back the repaired envelope.
+An invalid historical thread must not make the whole `/api/threads` or
+`POST /api/threads` surface unavailable. This repair path does not expose raw
+thread JSON, provider output, secrets, env values, or endpoint material.
 
 `workflow_snapshot_v2.provenance.performanceTelemetry` is an optional
 public-safe observability contract. It may include request, graph,

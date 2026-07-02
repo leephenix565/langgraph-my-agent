@@ -3,6 +3,41 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - LLM router output-shape diagnostics and store freshness repair
+
+### Changed
+
+- Extended the live OpenAI-compatible dimension-router response handling to
+  accept text content parts/lists as well as plain `message.content` strings.
+  Extracted text still goes through the same bounded JSON extraction and
+  fail-closed `route_intent_v1` normalizer.
+- Added public-safe router output-shape reason codes for successful provider
+  calls that return no usable route text, including no choices, missing message,
+  empty content, content-part empties, finish-length truncation, refusal, and
+  invalid JSON response bodies. These codes are projected through existing
+  `providerRouterFallbackReason` / `providerRouterErrorCode` fields without
+  retaining raw provider output.
+- Repaired the public JSON thread store freshness behavior so invalid legacy
+  thread entries are isolated during read, valid threads are preserved, and the
+  repaired envelope is written back. A stale thread entry can no longer make
+  `/api/threads` or new-thread creation unavailable for the whole daemon.
+
+### Tests
+
+- Added focused selected-routing coverage for content-part provider responses
+  compiling `value/risk` selected DAGs.
+- Added focused coverage for safe output-shape error codes when a provider
+  returns empty/truncated content.
+- Added focused public-store coverage proving invalid legacy thread entries are
+  repaired without blocking valid threads.
+
+### Not Done
+
+- No selected-routing default-on behavior, no public provider/model/key
+  controls, no unbounded retry, no runtime binding/catalog/non-L4 policy
+  changes, no `/v1/agent/invoke`, no raw provider response retention, and no
+  push.
+
 ## 2026-07-02 - LLM router JSON contract hardening
 
 ### Changed

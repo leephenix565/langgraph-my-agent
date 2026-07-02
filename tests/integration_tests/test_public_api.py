@@ -33,7 +33,11 @@ from react_agent.public_guardrails import (
     release_stream_slot,
     reset_public_guardrail_state,
 )
-from react_agent.public_mapping import compose_structured_input_text, replay_messages
+from react_agent.public_mapping import (
+    build_new_thread,
+    compose_structured_input_text,
+    replay_messages,
+)
 from react_agent.public_runtime import (
     PreparedPublicTurnInvoke,
     PublicRuntimeUnavailable,
@@ -247,6 +251,39 @@ def _configure_test_app(tmp_path, monkeypatch, *, continuity_mode: str) -> _Asgi
 
     monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
     return _AsgiTestClient(public_api.app)
+
+
+def test_public_thread_store_repairs_invalid_legacy_thread_entries(tmp_path):
+    path = tmp_path / "threads.json"
+    valid = build_new_thread("thread-valid", "replay")
+    legacy_invalid = {
+        "thread": {
+            "id": "thread-invalid",
+            "title": "Legacy invalid thread",
+        },
+        "turns": [{"role": "assistant", "text": "legacy missing required fields"}],
+    }
+    path.write_text(
+        json.dumps(
+            {
+                "version": 1,
+                "threads": {
+                    "thread-valid": valid.model_dump(mode="json"),
+                    "thread-invalid": legacy_invalid,
+                },
+            },
+            ensure_ascii=False,
+        ),
+        encoding="utf-8",
+    )
+
+    store = PublicThreadStore(path)
+    details = store.list_threads()
+
+    assert [detail.thread.id for detail in details] == ["thread-valid"]
+    repaired = json.loads(path.read_text(encoding="utf-8"))
+    assert set(repaired["threads"]) == {"thread-valid"}
+    assert "thread-invalid" not in repaired["threads"]
 
 
 def _stream_lines(response) -> list[dict]:

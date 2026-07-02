@@ -5,9 +5,12 @@ from __future__ import annotations
 
 import json
 import threading
+from collections.abc import Mapping
 from datetime import datetime
 from pathlib import Path
-from typing import List
+from typing import Any, List
+
+from pydantic import ValidationError
 
 from react_agent.public_contracts import PublicThreadDetail, StoreEnvelope
 
@@ -46,7 +49,40 @@ class PublicThreadStore:
                 return envelope
             except json.JSONDecodeError as exc:
                 raise PublicStoreError(f"Invalid public store JSON at {self.path}: {exc}") from exc
+            return self._validate_or_repair_envelope(raw)
+
+    def _validate_or_repair_envelope(self, raw: Any) -> StoreEnvelope:
+        try:
             return StoreEnvelope.model_validate(raw)
+        except ValidationError as exc:
+            envelope = self._repair_legacy_envelope(raw)
+            if envelope is None:
+                raise PublicStoreError(
+                    f"Invalid public store envelope at {self.path}: {exc}"
+                ) from exc
+            self._write_envelope(envelope)
+            return envelope
+
+    def _repair_legacy_envelope(self, raw: Any) -> StoreEnvelope | None:
+        if not isinstance(raw, Mapping):
+            return None
+        raw_threads = raw.get("threads", {})
+        thread_items: list[tuple[str, Any]]
+        if isinstance(raw_threads, Mapping):
+            thread_items = [(str(key), value) for key, value in raw_threads.items()]
+        elif isinstance(raw_threads, list):
+            thread_items = [(str(index), value) for index, value in enumerate(raw_threads)]
+        else:
+            return None
+
+        repaired: dict[str, PublicThreadDetail] = {}
+        for _raw_key, item in thread_items:
+            try:
+                detail = PublicThreadDetail.model_validate(item)
+            except ValidationError:
+                continue
+            repaired[detail.thread.id] = detail
+        return StoreEnvelope(version=1, threads=repaired)
 
     def _write_envelope(self, envelope: StoreEnvelope) -> None:
         payload = json.dumps(envelope.model_dump(mode="json"), ensure_ascii=False, indent=2)

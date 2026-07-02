@@ -738,6 +738,142 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_missing_o
     assert "raw_response" not in rendered.lower()
 
 
+async def test_selected_routing_with_real_llm_dimension_router_accepts_content_parts(
+    monkeypatch,
+) -> None:
+    requests: list[dict[str, object]] = []
+
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "message": {
+                            "content": [
+                                {
+                                    "type": "text",
+                                    "text": _dimension_router_payload(["value", "risk"]),
+                                }
+                            ]
+                        }
+                    }
+                ]
+            }
+
+    class FakeClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, *, headers, json):
+            requests.append({"url": url, "headers": headers, "json": json})
+            return FakeResponse()
+
+    monkeypatch.setattr(graph_module.httpx, "Client", FakeClient)
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "只看 600519 的估值和下行风险。")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            llm_dimension_router_mode="real",
+            router_model="deepseek/deepseek-chat",
+            router_openai_base_url="https://provider.example",
+            router_openai_api_key="test-key",
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert requests
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["selected_dimensions"] == ["value", "risk"]
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert "test-key" not in rendered
+    assert "provider.example" not in rendered
+    assert "raw_response" not in rendered.lower()
+
+
+async def test_selected_routing_with_real_llm_dimension_router_records_safe_shape_error(
+    monkeypatch,
+) -> None:
+    class FakeResponse:
+        status_code = 200
+
+        def json(self):
+            return {
+                "choices": [
+                    {
+                        "finish_reason": "length",
+                        "message": {"content": ""},
+                    }
+                ]
+            }
+
+    class FakeClient:
+        def __init__(self, *, timeout):
+            self.timeout = timeout
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, exc_type, exc, tb):
+            return False
+
+        def post(self, url, *, headers, json):
+            return FakeResponse()
+
+    monkeypatch.setattr(graph_module.httpx, "Client", FakeClient)
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "只看 600519 的宏观影响。")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            llm_dimension_router_mode="real",
+            router_model="deepseek/deepseek-chat",
+            router_openai_base_url="https://provider.example",
+            router_openai_api_key="test-key",
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert plan["schema"] == "fixed_dag_plan_v1"
+    assert plan["provenance"]["provider_router_parse_ok"] is False
+    assert (
+        plan["provenance"]["provider_router_error_code"]
+        == "router_provider_finish_length_no_content"
+    )
+    assert "provider.example" not in rendered
+    assert "raw_response" not in rendered.lower()
+
+
 @pytest.mark.parametrize(
     ("raw_output", "expected_reason"),
     [

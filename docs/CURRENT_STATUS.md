@@ -148,10 +148,13 @@ records.
   real OpenAI-compatible LLM dimension router; otherwise it stays deterministic.
   The real-router parser now hardens production provider output by extracting a
   bounded JSON object from common wrappers before applying the strict
-  dimension-only `route_intent_v1` normalizer. This improves live selected-DAG
-  stability without accepting agent-level routing, unknown dimensions, low
-  confidence, runtime controls, raw provider material, endpoint material, SQL,
-  env values, secrets, prompts, or chain-of-thought.
+  dimension-only `route_intent_v1` normalizer. It also accepts
+  OpenAI-compatible text content parts/lists and projects only safe
+  output-shape error codes when a provider call returns no usable route text.
+  This improves live selected-DAG stability and diagnostics without accepting
+  agent-level routing, unknown dimensions, low confidence, runtime controls,
+  raw provider material, endpoint material, SQL, env values, secrets, prompts,
+  or chain-of-thought.
   This does not add an explicit public `full_dag` force-off mode, public
   provider/model/key control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port
@@ -163,6 +166,10 @@ records.
   `computeRegistryAgentCount`, `processStartTime`, `processUptimeSeconds`, and
   `sourceVersionMarker`. These fields make daemon drift and router-mode drift
   visible without exposing env values or raw endpoint material.
+- The file-backed public thread store now repairs stale legacy thread entries
+  during reads: valid current-contract threads are preserved, invalid legacy
+  entries are isolated, and the repaired envelope is written back. A historical
+  bad thread should not block new public API sessions.
 - Public workflow provenance may include `performanceTelemetry` with bounded
   request, graph, compute, and per-agent timing/status summaries. Provider and
   DB timings are populated only when a service reports safe counts/durations;
