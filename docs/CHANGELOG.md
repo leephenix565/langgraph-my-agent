@@ -12,6 +12,10 @@ Historical changelog entries before this reset branch are preserved by tag
   real router provider. Negated or unselected lines are ignored, JSON-like
   malformed payloads and unsafe markers still fail closed, and the repair uses
   only provider output text, not deterministic inference from the user request.
+- When the first real-router response has no parseable route shape, bounded
+  retries now switch from strict JSON mode to a compact dimension-id prompt
+  (`value`, `market`, `risk`, `macro`) so providers that intermittently ignore
+  or fail JSON mode can still return a safe LLM-selected dimension list.
 - Extended the live OpenAI-compatible dimension-router response handling to
   accept text content parts/lists as well as plain `message.content` strings.
   Extracted text still goes through the same bounded JSON extraction and
@@ -40,6 +44,8 @@ Historical changelog entries before this reset branch are preserved by tag
 - Added focused selected-routing coverage for Chinese provider dimension text
   and selected/unselected multi-line text so unselected dimensions do not become
   contributors.
+- Added focused coverage for retrying not-parseable provider text with the compact
+  dimension-id prompt and compiling the second safe LLM output.
 - Added focused coverage for safe output-shape error codes when a provider
   returns empty/truncated content.
 - Added focused public-store coverage proving invalid legacy thread entries are

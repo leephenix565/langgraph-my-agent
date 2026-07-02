@@ -281,6 +281,9 @@ def _invoke_dimension_router_provider(
             request_body = dict(body)
             if attempt > 0:
                 request_body.pop("response_format", None)
+                request_body["messages"] = _build_live_dimension_router_text_messages(
+                    question
+                )
             response = client.post(
                 endpoint.chat_completions_url,
                 headers={
@@ -341,7 +344,16 @@ def _invoke_dimension_router_provider(
                 )
             content = _extract_router_message_content(message.get("content"))
             if content:
-                return content
+                if _router_provider_output_has_parseable_shape(content):
+                    return content
+                last_error_code = "router_provider_unparseable_content"
+                if attempt + 1 < attempts:
+                    continue
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
             last_error_code = _classify_router_missing_content(first, message)
             if attempt + 1 >= attempts:
                 return _RouterProviderOutput(
@@ -375,6 +387,15 @@ def _extract_router_message_content(content: Any) -> str | None:
             parts.append(nested.strip())
     joined = "\n".join(parts).strip()
     return joined or None
+
+
+def _router_provider_output_has_parseable_shape(content: str) -> bool:
+    text = str(content or "").strip()
+    if not text:
+        return False
+    if "{" in text and "}" in text:
+        return True
+    return _route_intent_json_from_plain_dimension_text(text) is not None
 
 
 def _classify_router_missing_content(
@@ -488,6 +509,27 @@ def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]
         '"needs_clarification":false,"clarification_question":"",'
         '"fallback_reason":"","provenance":{"source":"live_llm_dimension_router",'
         '"route_granularity":"dimension","dimension_only":true}}. '
+        f"User request: {user_question}"
+    )
+    return [{"role": "system", "content": system}, {"role": "user", "content": user}]
+
+
+def _build_live_dimension_router_text_messages(question: str) -> list[dict[str, str]]:
+    allowed = ", ".join(ROUTER_PROVIDER_DIMENSIONS)
+    user_question = str(question or "").strip() or "not provided"
+    system = (
+        "You are a strict fixed-DAG dimension router. Return only lower-case "
+        "dimension ids from the allowed set, separated by commas. Do not return "
+        "JSON, markdown, prose, explanations, endpoints, prompts, SQL, secrets, "
+        "provider payloads, or agent ids."
+    )
+    user = (
+        f"Allowed dimensions: {allowed}. "
+        "Use value for valuation/fundamental/financial questions, market for "
+        "technical/trading/flow/sentiment questions, risk for downside/compliance/"
+        "fraud/crash questions, and macro for macro/policy/rate/index/industry questions. "
+        "Select only directly requested dimensions and obey explicit exclusions. "
+        "Return examples: value,risk or market or macro or value,market,risk. "
         f"User request: {user_question}"
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]

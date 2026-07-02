@@ -156,7 +156,9 @@ records.
   provider output into a `route_intent_v1` before normal validation. Multi-line
   selected/unselected summaries are filtered so unselected dimensions are not
   promoted. This path still does not infer dimensions directly from the user
-  question.
+  question. When the first real-router response has no parseable route shape,
+  bounded retries switch to a compact dimension-id prompt so the same real LLM
+  can return a safe selected dimension list without JSON-mode fragility.
   This improves live selected-DAG stability and diagnostics without accepting
   agent-level routing, unknown dimensions, low confidence, runtime controls,
   raw provider material, endpoint material, SQL, env values, secrets, prompts,

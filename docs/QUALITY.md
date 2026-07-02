@@ -739,7 +739,10 @@ shape reason codes. The gate also covers the narrow plain-text dimension repair
 path: concise LLM output like `value and risk` or `选择维度：估值、下行风险`
 can compile a selected legal subgraph, selected/unselected multi-line text does
 not promote unselected dimensions, and the same path rejects forbidden markers,
-malformed JSON-like text, and non-routing prose.
+malformed JSON-like text, and non-routing prose. Real-router retry coverage also
+asserts that not-parseable first responses can switch to the compact dimension-id
+prompt and compile the next safe LLM output without retaining raw provider
+material.
 These tests must not retain raw provider responses,
 prompts, messages, endpoint URLs, env values, API keys, tracebacks, or
 chain-of-thought. Public API tests also cover file-store freshness repair so

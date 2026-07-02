@@ -815,6 +815,10 @@ Failure policy:
   provider response, not the user question, and rejects long prose,
   malformed JSON-like text, raw/provider/env/secret markers, endpoint
   material, SQL, prompts, tracebacks, chain-of-thought, and agent ids.
+  Bounded retries may switch from strict JSON mode to a compact dimension-id
+  prompt so the provider can return only `value`, `market`, `risk`, and/or
+  `macro`; the returned text is still normalized into `route_intent_v1` and is
+  never retained as raw provider output.
   Unknown dimensions, `selected_agents`, runtime binding/catalog
   controls, endpoint/env/secret/raw-provider fields, legacy route modes, low
   confidence, or provider fallback reasons keep selected routing on the safe

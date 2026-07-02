@@ -105,7 +105,10 @@ output-shape reason codes when a provider call has no usable route text. A
 bounded safe LLM response such as `value and risk` or `选择维度：估值、下行风险`
 may be repaired into `route_intent_v1`; selected/unselected multi-line text is
 filtered so unselected dimensions are not promoted. The graph does not use this
-path to infer dimensions directly from the user question.
+path to infer dimensions directly from the user question. If the first provider
+response is not parseable, bounded retries switch to a compact dimension-id
+prompt so the real LLM can still return `value`, `market`, `risk`, and/or
+`macro` without JSON-mode fragility.
 Unknown dimensions, agent-level selection, forbidden fields, low confidence,
 empty/truncated provider content, raw provider material, endpoint material,
 prompts, SQL, env values, and secrets still force full-DAG fallback instead of
