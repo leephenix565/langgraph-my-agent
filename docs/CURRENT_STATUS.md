@@ -151,10 +151,12 @@ records.
   dimension-only `route_intent_v1` normalizer. It also accepts
   OpenAI-compatible text content parts/lists and projects only safe
   output-shape error codes when a provider call returns no usable route text.
-  If an LLM provider returns only a short safe dimension text such as
-  `value and risk`, the graph can repair that provider output into a
-  `route_intent_v1` before normal validation; it does not infer dimensions
-  directly from the user question in this path.
+  If an LLM provider returns bounded safe dimension text such as
+  `value and risk` or `选择维度：估值、下行风险`, the graph can repair that
+  provider output into a `route_intent_v1` before normal validation. Multi-line
+  selected/unselected summaries are filtered so unselected dimensions are not
+  promoted. This path still does not infer dimensions directly from the user
+  question.
   This improves live selected-DAG stability and diagnostics without accepting
   agent-level routing, unknown dimensions, low confidence, runtime controls,
   raw provider material, endpoint material, SQL, env values, secrets, prompts,

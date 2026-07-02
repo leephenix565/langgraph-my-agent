@@ -806,12 +806,14 @@ Failure policy:
   public-safe output-shape reason codes when a provider response has no usable
   route text. It must not retain the raw response body, message payload, prompt,
   endpoint, model credentials, provider payload, chain-of-thought, or SQL.
-  If the provider returns no JSON but does return a short single-line dimension
-  text containing only allowed dimension labels and safe connector text, the
-  graph may transform that LLM output into a `route_intent_v1` object before
-  running the same normalizer. This repair path is intentionally narrower than
-  deterministic keyword routing: it uses the provider response, not the user
-  question, and rejects long prose, raw/provider/env/secret markers, endpoint
+  If the provider returns no JSON but does return bounded Chinese or English
+  dimension text containing only allowed dimension cues and safe connector
+  text, the graph may transform that LLM output into a `route_intent_v1` object
+  before running the same normalizer. Multi-line selected/unselected summaries
+  are filtered so unselected dimensions are not promoted. This repair path is
+  intentionally narrower than deterministic keyword routing: it uses the
+  provider response, not the user question, and rejects long prose,
+  malformed JSON-like text, raw/provider/env/secret markers, endpoint
   material, SQL, prompts, tracebacks, chain-of-thought, and agent ids.
   Unknown dimensions, `selected_agents`, runtime binding/catalog
   controls, endpoint/env/secret/raw-provider fields, legacy route modes, low

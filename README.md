@@ -102,9 +102,10 @@ provider wrapping such as JSON code fences by extracting the first bounded JSON
 object and then applying the existing fail-closed route-intent normalizer. It
 also accepts OpenAI-compatible text content parts/lists and records only safe
 output-shape reason codes when a provider call has no usable route text. A
-short safe LLM response such as `value and risk` may be repaired into
-`route_intent_v1`; the graph does not use this path to infer dimensions
-directly from the user question.
+bounded safe LLM response such as `value and risk` or `选择维度：估值、下行风险`
+may be repaired into `route_intent_v1`; selected/unselected multi-line text is
+filtered so unselected dimensions are not promoted. The graph does not use this
+path to infer dimensions directly from the user question.
 Unknown dimensions, agent-level selection, forbidden fields, low confidence,
 empty/truncated provider content, raw provider material, endpoint material,
 prompts, SQL, env values, and secrets still force full-DAG fallback instead of

@@ -909,6 +909,79 @@ async def test_selected_routing_with_fake_llm_dimension_router_accepts_plain_dim
     assert "raw_response" not in rendered.lower()
 
 
+async def test_selected_routing_with_fake_llm_dimension_router_accepts_chinese_plain_dimension_text(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        graph_module,
+        "_invoke_dimension_router_provider",
+        lambda _question, _context: "选择维度：估值、下行风险。",
+    )
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "Analyze valuation and downside risk for 600519.SH.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["selected_dimensions"] == ["value", "risk"]
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert "选择维度" not in rendered
+    assert "raw_response" not in rendered.lower()
+
+
+async def test_selected_routing_with_fake_llm_dimension_router_ignores_unselected_plain_text(
+    monkeypatch,
+) -> None:
+    monkeypatch.setattr(
+        graph_module,
+        "_invoke_dimension_router_provider",
+        lambda _question, _context: (
+            "Selected dimensions: value, risk.\n"
+            "Unselected dimensions: market, macro."
+        ),
+    )
+
+    res = graph_module.graph.invoke(
+        {"messages": [("user", "Analyze valuation and downside risk for 600519.SH.")]},  # type: ignore[arg-type]
+        context=Context(
+            enable_selected_routing=True,
+            enable_llm_dimension_router=True,
+            disable_external_compute_default=True,
+            disable_non_l4_external_compute_default=True,
+        ),
+    )
+
+    plan = res["fixed_dag_plan"]
+    rendered = json.dumps(
+        {
+            "plan": plan,
+            "workflow": res["workflow_snapshot"],
+            "message": res["messages"][-1].content,
+        },
+        ensure_ascii=False,
+    )
+    assert plan["schema"] == "selected_fixed_dag_plan_v1"
+    assert plan["selected_dimensions"] == ["value", "risk"]
+    assert plan["provenance"]["provider_router_parse_ok"] is True
+    assert "unselected dimensions" not in rendered.lower()
+    assert "raw_response" not in rendered.lower()
+
+
 @pytest.mark.parametrize(
     ("raw_output", "expected_reason"),
     [

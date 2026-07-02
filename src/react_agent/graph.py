@@ -56,7 +56,30 @@ from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
 _ROUTER_TEXT_DIMENSION_RE = re.compile(r"\b(value|market|risk|macro)\b", re.IGNORECASE)
-_ROUTER_TEXT_SAFE_RE = re.compile(r"^[A-Za-z0-9\s,.;:()\[\]{}\"'`_/\-]+$")
+_ROUTER_TEXT_JSONISH_RE = re.compile(r"[{}]")
+_ROUTER_TEXT_URL_RE = re.compile(r"https?://", re.IGNORECASE)
+_ROUTER_TEXT_DIMENSION_CUES: dict[str, tuple[str, ...]] = {
+    "value": ("value", "valuation", "估值", "价值", "基本面", "财务"),
+    "market": ("market", "technical", "trading", "flow", "sentiment", "市场", "交易", "技术", "资金", "情绪"),
+    "risk": ("risk", "downside", "compliance", "fraud", "crash", "风险", "下行", "合规", "欺诈", "暴跌"),
+    "macro": ("macro", "policy", "rate", "industry", "index", "宏观", "政策", "利率", "行业", "指数"),
+}
+_ROUTER_TEXT_NEGATION_MARKERS = (
+    "unselected",
+    "not selected",
+    "not requested",
+    "excluded",
+    "exclude",
+    "without",
+    "no need",
+    "不要",
+    "不需要",
+    "无需",
+    "未选择",
+    "未覆盖",
+    "不包括",
+    "排除",
+)
 _ROUTER_TEXT_FORBIDDEN_MARKERS = (
     "agent_id",
     "selected_agents",
@@ -375,14 +398,25 @@ def _classify_router_missing_content(
 
 def _route_intent_json_from_plain_dimension_text(raw_output: str) -> str | None:
     text = str(raw_output or "").strip()
-    if not text or len(text) > 220 or "\n" in text:
+    if not text or len(text) > 600:
         return None
     lowered = text.lower()
     if any(marker in lowered for marker in _ROUTER_TEXT_FORBIDDEN_MARKERS):
         return None
-    if not _ROUTER_TEXT_SAFE_RE.match(text):
+    if _ROUTER_TEXT_URL_RE.search(text) or _ROUTER_TEXT_JSONISH_RE.search(text):
         return None
-    found = {match.group(1).lower() for match in _ROUTER_TEXT_DIMENSION_RE.finditer(text)}
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) > 8:
+        return None
+    found: set[str] = set()
+    for line in lines or [text]:
+        line_lower = line.lower()
+        if any(marker in line_lower for marker in _ROUTER_TEXT_NEGATION_MARKERS):
+            continue
+        found.update(match.group(1).lower() for match in _ROUTER_TEXT_DIMENSION_RE.finditer(line))
+        for dimension, cues in _ROUTER_TEXT_DIMENSION_CUES.items():
+            if any(cue.lower() in line_lower for cue in cues):
+                found.add(dimension)
     selected_dimensions = [
         dimension for dimension in ROUTER_PROVIDER_DIMENSIONS if dimension in found
     ]

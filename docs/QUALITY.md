@@ -736,8 +736,10 @@ JSON, malformed JSON, empty/truncated provider content, unknown dimensions,
 agent-level routing, forbidden control fields, low confidence, and
 needs-clarification responses fail closed to full DAG fallback with only safe
 shape reason codes. The gate also covers the narrow plain-text dimension repair
-path: concise LLM output like `value and risk` can compile a selected legal
-subgraph, but the same path rejects forbidden markers and non-routing prose.
+path: concise LLM output like `value and risk` or `选择维度：估值、下行风险`
+can compile a selected legal subgraph, selected/unselected multi-line text does
+not promote unselected dimensions, and the same path rejects forbidden markers,
+malformed JSON-like text, and non-routing prose.
 These tests must not retain raw provider responses,
 prompts, messages, endpoint URLs, env values, API keys, tracebacks, or
 chain-of-thought. Public API tests also cover file-store freshness repair so

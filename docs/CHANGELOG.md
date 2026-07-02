@@ -7,6 +7,11 @@ Historical changelog entries before this reset branch are preserved by tag
 
 ### Changed
 
+- Extended the narrow LLM-output text repair path to accept bounded Chinese or
+  English dimension text and selected/unselected multi-line summaries from the
+  real router provider. Negated or unselected lines are ignored, JSON-like
+  malformed payloads and unsafe markers still fail closed, and the repair uses
+  only provider output text, not deterministic inference from the user request.
 - Extended the live OpenAI-compatible dimension-router response handling to
   accept text content parts/lists as well as plain `message.content` strings.
   Extracted text still goes through the same bounded JSON extraction and
@@ -17,12 +22,12 @@ Historical changelog entries before this reset branch are preserved by tag
   invalid JSON response bodies. These codes are projected through existing
   `providerRouterFallbackReason` / `providerRouterErrorCode` fields without
   retaining raw provider output.
-- Added a narrow LLM-output text repair path for short, single-line provider
-  responses that contain only allowed dimension names and safe connector text.
-  This lets concise responses such as `value and risk` still drive the selected
-  DAG while longer prose, forbidden markers, agent ids, endpoint/env/secret/raw
-  fields, SQL, prompts, tracebacks, and chain-of-thought continue to fail
-  closed.
+- Added a narrow LLM-output text repair path for short provider responses that
+  contain only allowed dimension names/cues and safe connector text. This lets
+  concise responses such as `value and risk` or `选择维度：估值、下行风险`
+  still drive the selected DAG while longer prose, malformed JSON-like payloads,
+  forbidden markers, agent ids, endpoint/env/secret/raw fields, SQL, prompts,
+  tracebacks, and chain-of-thought continue to fail closed.
 - Repaired the public JSON thread store freshness behavior so invalid legacy
   thread entries are isolated during read, valid threads are preserved, and the
   repaired envelope is written back. A stale thread entry can no longer make
@@ -32,6 +37,9 @@ Historical changelog entries before this reset branch are preserved by tag
 
 - Added focused selected-routing coverage for content-part provider responses
   compiling `value/risk` selected DAGs.
+- Added focused selected-routing coverage for Chinese provider dimension text
+  and selected/unselected multi-line text so unselected dimensions do not become
+  contributors.
 - Added focused coverage for safe output-shape error codes when a provider
   returns empty/truncated content.
 - Added focused public-store coverage proving invalid legacy thread entries are
