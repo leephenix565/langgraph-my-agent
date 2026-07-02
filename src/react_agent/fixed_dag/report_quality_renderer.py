@@ -93,6 +93,7 @@ _DISPLAY_KEY_LABELS = {
     "eps": "每股收益（EPS）",
     "gate": "风险门（gate）",
     "margins": "安全边际（margins）",
+    "market_snapshot": "市场快照（market_snapshot）",
     "method": "方法（method）",
     "PE": "市盈率（PE）",
     "pe": "市盈率（PE）",
@@ -100,6 +101,7 @@ _DISPLAY_KEY_LABELS = {
     "provider_total_ms": "服务商耗时毫秒（provider_total_ms）",
     "regime": "宏观状态（regime）",
     "risk_level": "风险等级（risk_level）",
+    "risk_bridge": "风险桥接（risk_bridge）",
     "risk_score": "风险分（risk_score）",
     "ROE": "净资产收益率（ROE）",
     "roe": "净资产收益率（ROE）",
@@ -118,7 +120,10 @@ _DISPLAY_VALUE_LABELS = {
     "defensive_observe": "防御观察（defensive_observe）",
     "error": "错误（error）",
     "failed": "失败（failed）",
+    "high": "高（high）",
+    "low": "低（low）",
     "manual_review": "人工复核（manual_review）",
+    "medium": "中（medium）",
     "n/a": "未提供",
     "None": "未提供",
     "none": "未提供",
@@ -131,6 +136,8 @@ _DISPLAY_VALUE_LABELS = {
     "positive_watch": "积极关注（positive_watch）",
     "research_hold": "研究观察（research_hold）",
     "risk_blocked": "风险阻断（risk_blocked）",
+    "xgboost_model": "梯度提升模型（xgboost_model）",
+    "xgboost_pe_montecarlo": "梯度提升/蒙特卡洛估值（xgboost_pe_montecarlo）",
 }
 
 _TEXT_REPLACEMENTS = (

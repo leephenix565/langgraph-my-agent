@@ -256,9 +256,13 @@ def test_enriched_report_localizes_public_terminology_and_metrics() -> None:
     assert "完整分析图（full DAG）" in rendered
     assert "均衡观察（balanced_watch）" in rendered
     assert "风险分（risk_score）" in rendered
+    assert "风险桥接（risk_bridge）" in rendered
+    assert "市场快照（market_snapshot）" in rendered
+    assert "低（low）" in rendered
     assert "当前价格（current_price）" in rendered
     assert "交易日期（trade_date）" in rendered
     assert "估值方法（valuation_method）" in rendered
+    assert "梯度提升/蒙特卡洛估值（xgboost_pe_montecarlo）" in rendered
     assert "每股收益（EPS）" not in rendered
     assert "市盈率（PE）=未提供" in rendered
     assert "净资产收益率（ROE）=未提供" in rendered
