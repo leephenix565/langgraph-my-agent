@@ -212,7 +212,14 @@ def _invoke_dimension_router_provider(
         "max_tokens": int(options.max_tokens),
         "response_format": dict(ROUTER_PROVIDER_JSON_RESPONSE_FORMAT),
     }
-    timeout = httpx.Timeout(float(options.timeout_seconds))
+    timeout_seconds = float(options.timeout_seconds)
+    timeout = httpx.Timeout(
+        timeout_seconds,
+        connect=min(5.0, timeout_seconds),
+        read=timeout_seconds,
+        write=min(5.0, timeout_seconds),
+        pool=min(5.0, timeout_seconds),
+    )
     with httpx.Client(timeout=timeout) as client:
         response = client.post(
             endpoint.chat_completions_url,
@@ -298,7 +305,7 @@ def _route_intent_from_llm_dimension_provider(
     meta = _provider_router_provenance(enabled=True, mode=mode)
     try:
         raw_output = _invoke_dimension_router_provider(question, context)
-    except TimeoutError:
+    except (TimeoutError, httpx.TimeoutException):
         return None, {
             **meta,
             "provider_router_invoked": True,

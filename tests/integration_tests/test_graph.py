@@ -756,6 +756,13 @@ async def test_selected_routing_with_fake_llm_dimension_router_invalid_output_fa
             True,
         ),
         (
+            lambda _question, _context: (_ for _ in ()).throw(
+                graph_module.httpx.ReadTimeout("slow")
+            ),
+            "router_provider_timeout",
+            True,
+        ),
+        (
             lambda _question, _context: (_ for _ in ()).throw(RuntimeError("secret details")),
             "router_provider_exception",
             True,

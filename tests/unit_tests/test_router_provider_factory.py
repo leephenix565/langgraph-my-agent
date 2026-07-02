@@ -133,7 +133,7 @@ def test_router_provider_request_contract_uses_json_mode_without_sensitive_field
     assert contract["response_format_json_object"] is True
     assert contract["response_format"] == {"type": "json_object"}
     assert contract["max_tokens"] == 220
-    assert contract["timeout_seconds"] == 8.0
+    assert contract["timeout_seconds"] == 20.0
     assert contract["retry_count"] == 0
     assert contract["streaming"] is False
     assert contract["raw_response_retained"] is False
@@ -324,7 +324,7 @@ def test_router_provider_contract_metadata_is_artifact_safe() -> None:
             "fallback_reason_code": "",
             "provider_error_code": "",
             "call_count": 1,
-            "timeout_seconds": 8.0,
+            "timeout_seconds": 20.0,
             "max_tokens": 220,
             "retry_count": 0,
             "streaming": False,
@@ -422,7 +422,7 @@ def test_preflight_invocation_policy_fail_closed_cases() -> None:
             "max_tokens_exceeds_limit",
         ),
         (
-            RouterProviderInvocationOptions(timeout_seconds=8.1),
+            RouterProviderInvocationOptions(timeout_seconds=20.1),
             "timeout_exceeds_limit",
         ),
         (
@@ -463,7 +463,7 @@ def test_preflight_pass_ready_criteria_are_bounded() -> None:
     assert result.ready is True
     assert result.reason_code == "ready_for_single_call_dry_run"
     assert result.policy_summary["call_cap"] == 1
-    assert result.policy_summary["timeout_seconds"] == 8.0
+    assert result.policy_summary["timeout_seconds"] == 20.0
     assert result.policy_summary["max_tokens"] == 220
     assert result.policy_summary["retry_count"] == 0
     assert result.policy_summary["streaming"] is False
@@ -482,7 +482,7 @@ def test_sanitized_artifact_uses_exact_whitelist_and_forces_no_retention() -> No
         "provider_error_code": "",
         "latency_ms": 100,
         "call_count": 1,
-        "timeout_seconds": 8.0,
+        "timeout_seconds": 20.0,
         "max_tokens": 220,
         "retry_count": 0,
         "streaming": False,
@@ -565,7 +565,7 @@ def test_clean_router_provider_artifact_passes_unsafe_scan() -> None:
             "fallback_reason_code": "real_provider_not_authorized",
             "provider_error_code": "",
             "call_count": 0,
-            "timeout_seconds": 8.0,
+            "timeout_seconds": 20.0,
             "max_tokens": 220,
             "retry_count": 0,
             "streaming": False,

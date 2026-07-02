@@ -14,12 +14,17 @@ Historical changelog entries before this reset branch are preserved by tag
 - Updated the real-router parser to tolerate common provider wrappers by
   extracting the first bounded JSON object before applying the existing
   fail-closed dimension normalizer.
+- Increased the bounded single-call router-provider timeout from 8s to 20s for
+  production selected-routing stability and classified `httpx` timeout
+  exceptions as `router_provider_timeout`.
 
 ### Tests
 
 - Added focused coverage for markdown/prose-wrapped router JSON compiling a
   selected DAG while unknown dimensions, agent-level selection, forbidden
   fields, low confidence, and missing JSON still fall back safely.
+- Added focused coverage for `httpx` router-provider timeouts mapping to the
+  public-safe timeout reason code.
 
 ### Not Done
 
