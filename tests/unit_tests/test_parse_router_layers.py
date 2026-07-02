@@ -176,6 +176,29 @@ def test_parse_dimension_route_intent_json_accepts_risk_macro_dimensions() -> No
     assert intent["selected_agents"] == []
 
 
+def test_parse_dimension_route_intent_json_canonicalizes_value_risk_aliases() -> None:
+    payload = {
+        "schema": "route_intent_v1",
+        "schema_version": "route_intent_v1",
+        "task_type": "general",
+        "targets": ["600519.SH"],
+        "selected_dimensions": ["valuation", "downside_risk"],
+        "route_confidence": 0.88,
+        "needs_clarification": False,
+        "clarification_question": "",
+        "fallback_reason": "",
+        "provenance": {"source": "unit_fixture"},
+    }
+    intent, stats = parse_dimension_route_intent_json(json.dumps(payload))
+
+    assert stats["parse_ok"] is True
+    assert stats["used_fallback"] is False
+    assert stats["filtered_dimensions"] == []
+    assert stats["selected_dimensions"] == ["value", "risk"]
+    assert intent["selected_dimensions"] == ["value", "risk"]
+    assert intent["selected_agents"] == []
+
+
 def test_parse_dimension_route_intent_json_falls_back_for_invalid_dimension_shape() -> None:
     for dimensions, reason in (
         (["value", "unknown"], "unknown_selected_dimension"),

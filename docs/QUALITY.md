@@ -753,6 +753,12 @@ malformed JSON-like text, and non-routing prose. Real-router retry coverage also
 asserts that not-parseable first responses can switch to the compact dimension-id
 prompt and compile the next safe LLM output without retaining raw provider
 material.
+The explicit value/risk stability gate adds regressions for provider JSON
+aliases (`valuation`, `downside_risk`), malformed but bounded provider
+dimension text, unrepairable invalid JSON followed by compact text retry, and
+transient real-router timeout followed by retry success. It also pins that
+omitted public `routing` remains full DAG while explicit selected value/risk
+can compile the selected legal subgraph.
 These tests must not retain raw provider responses,
 prompts, messages, endpoint URLs, env values, API keys, tracebacks, or
 chain-of-thought. Public API tests also cover file-store freshness repair so

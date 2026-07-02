@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - Explicit value/risk selected-router stability
+
+### Changed
+
+- Hardened the real LLM dimension-router path for explicit
+  `routing: {"mode": "selected"}` value/risk requests while keeping selected
+  routing default-off unless the operator separately sets
+  `PUBLIC_SELECTED_ROUTING_DEFAULT=1`.
+- Added value/risk few-shot guidance for valuation/downside-risk prompts,
+  canonicalized bounded provider aliases such as `valuation` and
+  `downside_risk`, and allowed unrepairable invalid JSON or transient router
+  timeout exceptions to consume the existing bounded retry path before
+  fail-closed fallback.
+
+### Tests
+
+- Added parser/provider/graph regressions for value/risk alias JSON, malformed
+  bounded provider dimension text, invalid-JSON-to-text retry, timeout retry,
+  and bilingual value/risk router hints.
+
+### Not Done
+
+- No default selected routing enablement, no deterministic user-question rescue,
+  no runtime binding, catalog, non-L4 policy, external service,
+  `/v1/agent/invoke`, direct provider, env-value, raw-response, or push change.
+
 ## 2026-07-02 - Public selected-routing server default
 
 ### Changed

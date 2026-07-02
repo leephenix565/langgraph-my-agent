@@ -58,6 +58,30 @@ _ROUTE_INTENT_FORBIDDEN_KEYS = {
 _LEGACY_ROUTE_VALUES = {"Star", "Chain", "Debate", "Tree"}
 _REMOVED_AGENT_IDS = {"value_financial_analysis"}
 _DIMENSION_ROUTE_CONFIDENCE_FLOOR = 0.5
+_DIMENSION_ALIASES: dict[str, DimensionName] = {
+    "valuation": "value",
+    "valuations": "value",
+    "fundamental": "value",
+    "fundamentals": "value",
+    "financial": "value",
+    "finance": "value",
+    "估值": "value",
+    "价值": "value",
+    "基本面": "value",
+    "财务": "value",
+    "downside": "risk",
+    "downside_risk": "risk",
+    "downside-risk": "risk",
+    "compliance": "risk",
+    "fraud": "risk",
+    "crash": "risk",
+    "风险": "risk",
+    "下行": "risk",
+    "下行风险": "risk",
+    "合规": "risk",
+    "欺诈": "risk",
+    "暴跌": "risk",
+}
 
 
 def extract_json_str(raw: str) -> str | None:
@@ -198,12 +222,13 @@ def _normalize_route_dimensions(raw_dimensions: Any) -> tuple[list[DimensionName
     filtered: list[str] = []
     seen: set[str] = set()
     for value in raw_dimensions:
-        dimension = str(value or "").strip()
+        raw_dimension = str(value or "").strip()
+        dimension = _DIMENSION_ALIASES.get(raw_dimension.lower(), raw_dimension)
         if dimension in DIMENSION_GROUPS and dimension not in seen:
             selected.append(cast(DimensionName, dimension))
             seen.add(dimension)
-        elif dimension:
-            filtered.append(dimension)
+        elif raw_dimension:
+            filtered.append(raw_dimension)
     return selected, filtered
 
 

@@ -119,6 +119,13 @@ path to infer dimensions directly from the user question. If the first provider
 response is not parseable, bounded retries switch to a compact dimension-id
 prompt so the real LLM can still return `value`, `market`, `risk`, and/or
 `macro` without JSON-mode fragility.
+The explicit selected value/risk hardening keeps the server default on the
+full DAG unless `PUBLIC_SELECTED_ROUTING_DEFAULT=1` is set, but improves
+explicit `routing: {"mode": "selected"}` requests by teaching the live prompt
+that valuation/downside-risk language maps to `value,risk`, canonicalizing
+bounded provider aliases such as `valuation` and `downside_risk`, and letting
+transient router timeouts or unrepairable invalid JSON consume the bounded
+retry budget before failing closed.
 Unknown dimensions, agent-level selection, forbidden fields, low confidence,
 empty/truncated provider content, raw provider material, endpoint material,
 prompts, SQL, env values, and secrets still force full-DAG fallback instead of

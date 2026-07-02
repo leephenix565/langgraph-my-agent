@@ -8,6 +8,7 @@ router-provider dry run must satisfy before any real provider code is allowed.
 from __future__ import annotations
 
 import json
+import math
 import re
 from collections.abc import Mapping
 from dataclasses import dataclass, field
@@ -427,6 +428,20 @@ def suggest_router_provider_dimensions(question: str) -> tuple[str, ...]:
         return ROUTER_PROVIDER_DIMENSIONS
     selected: list[str] = []
     for dimension in ROUTER_PROVIDER_DIMENSIONS:
+        if dimension == "market" and any(
+            marker in text
+            for marker in (
+                "不要分析市场",
+                "不需要市场",
+                "无需市场",
+                "不看市场",
+                "do not analyze market",
+                "do not include market",
+                "exclude market",
+                "without market",
+            )
+        ):
+            continue
         keywords = _DIMENSION_CUE_KEYWORDS.get(dimension, ())
         if any(keyword in text for keyword in keywords):
             selected.append(dimension)
@@ -601,6 +616,8 @@ def router_provider_preflight(
         reason_code = "retry_count_invalid"
     elif options.max_tokens > ROUTER_PROVIDER_MAX_TOKENS_LIMIT:
         reason_code = "max_tokens_exceeds_limit"
+    elif not math.isfinite(float(options.timeout_seconds)) or options.timeout_seconds <= 0:
+        reason_code = "timeout_invalid"
     elif options.timeout_seconds > ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT:
         reason_code = "timeout_exceeds_limit"
     elif options.raw_response_retention:

@@ -167,6 +167,13 @@ records.
   agent-level routing, unknown dimensions, low confidence, runtime controls,
   raw provider material, endpoint material, SQL, env values, secrets, prompts,
   or chain-of-thought.
+  The explicit value/risk hardening keeps default selected routing disabled in
+  production rollback posture, but makes explicit selected requests more
+  tolerant of real provider variation: valuation/downside-risk prompts are
+  shown as first-class examples, provider JSON aliases such as `valuation` and
+  `downside_risk` canonicalize to `value` and `risk`, unrepairable invalid JSON
+  can retry with the compact dimension-id prompt, and transient router timeout
+  exceptions consume the bounded retry budget before fail-closed fallback.
   This does not add an explicit public `full_dag` force-off mode, public
   provider/model/key control, compute/invoke control, runtime binding change,
   catalog change, non-L4 policy change, or route-planner service/port

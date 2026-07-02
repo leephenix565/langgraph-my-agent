@@ -56,6 +56,7 @@ from react_agent.state import InputState, State
 
 _GRAPH_NAME = "Fixed DAG Reset Skeleton"
 _ROUTER_TEXT_DIMENSION_RE = re.compile(r"\b(value|market|risk|macro)\b", re.IGNORECASE)
+_ROUTER_TEXT_JSON_BLOCK_RE = re.compile(r"\{.*\}", re.DOTALL)
 _ROUTER_TEXT_JSONISH_RE = re.compile(r"[{}]")
 _ROUTER_TEXT_URL_RE = re.compile(r"https?://", re.IGNORECASE)
 _ROUTER_TEXT_DIMENSION_CUES: dict[str, tuple[str, ...]] = {
@@ -284,14 +285,24 @@ def _invoke_dimension_router_provider(
                 request_body["messages"] = _build_live_dimension_router_text_messages(
                     question
                 )
-            response = client.post(
-                endpoint.chat_completions_url,
-                headers={
-                    "Authorization": f"Bearer {api_key}",
-                    "Content-Type": "application/json",
-                },
-                json=request_body,
-            )
+            try:
+                response = client.post(
+                    endpoint.chat_completions_url,
+                    headers={
+                        "Authorization": f"Bearer {api_key}",
+                        "Content-Type": "application/json",
+                    },
+                    json=request_body,
+                )
+            except (TimeoutError, httpx.TimeoutException):
+                last_error_code = "router_provider_timeout"
+                if attempt + 1 < attempts:
+                    continue
+                return _RouterProviderOutput(
+                    content=None,
+                    invoked=True,
+                    error_code=last_error_code,
+                )
             if response.status_code < 200 or response.status_code >= 300:
                 last_error_code = "router_provider_http_status"
                 if attempt + 1 < attempts:
@@ -394,7 +405,13 @@ def _router_provider_output_has_parseable_shape(content: str) -> bool:
     if not text:
         return False
     if "{" in text and "}" in text:
-        return True
+        match = _ROUTER_TEXT_JSON_BLOCK_RE.search(text)
+        if match:
+            try:
+                parsed = json.loads(match.group(0))
+            except json.JSONDecodeError:
+                return _route_intent_json_from_malformed_dimension_text(text) is not None
+            return isinstance(parsed, Mapping)
     return _route_intent_json_from_plain_dimension_text(text) is not None
 
 
@@ -417,30 +434,31 @@ def _classify_router_missing_content(
     return "router_provider_unsupported_content_type"
 
 
-def _route_intent_json_from_plain_dimension_text(raw_output: str) -> str | None:
-    text = str(raw_output or "").strip()
-    if not text or len(text) > 600:
-        return None
-    lowered = text.lower()
-    if any(marker in lowered for marker in _ROUTER_TEXT_FORBIDDEN_MARKERS):
-        return None
-    if _ROUTER_TEXT_URL_RE.search(text) or _ROUTER_TEXT_JSONISH_RE.search(text):
-        return None
-    lines = [line.strip() for line in text.splitlines() if line.strip()]
-    if len(lines) > 8:
-        return None
+def _collect_dimension_mentions_from_text(raw_output: str) -> list[str]:
     found: set[str] = set()
-    for line in lines or [text]:
-        line_lower = line.lower()
-        if any(marker in line_lower for marker in _ROUTER_TEXT_NEGATION_MARKERS):
-            continue
-        found.update(match.group(1).lower() for match in _ROUTER_TEXT_DIMENSION_RE.finditer(line))
-        for dimension, cues in _ROUTER_TEXT_DIMENSION_CUES.items():
-            if any(cue.lower() in line_lower for cue in cues):
-                found.add(dimension)
-    selected_dimensions = [
-        dimension for dimension in ROUTER_PROVIDER_DIMENSIONS if dimension in found
-    ]
+    text = str(raw_output or "").strip()
+    for line in [line.strip() for line in text.splitlines() if line.strip()] or [text]:
+        # Process semicolon-delimited include/exclude fragments independently so
+        # provider text such as `include: value/risk; exclude: market` can be
+        # repaired without accidentally selecting excluded dimensions.
+        for segment in re.split(r"[;\n]+", line):
+            segment_lower = segment.strip().lower()
+            if not segment_lower:
+                continue
+            if any(marker in segment_lower for marker in _ROUTER_TEXT_NEGATION_MARKERS):
+                continue
+            found.update(
+                match.group(1).lower()
+                for match in _ROUTER_TEXT_DIMENSION_RE.finditer(segment)
+            )
+            for dimension, cues in _ROUTER_TEXT_DIMENSION_CUES.items():
+                if any(cue.lower() in segment_lower for cue in cues):
+                    found.add(dimension)
+    return [dimension for dimension in ROUTER_PROVIDER_DIMENSIONS if dimension in found]
+
+
+def _route_intent_json_from_dimension_mentions(raw_output: str) -> str | None:
+    selected_dimensions = _collect_dimension_mentions_from_text(raw_output)
     if not selected_dimensions:
         return None
     payload = {
@@ -460,6 +478,58 @@ def _route_intent_json_from_plain_dimension_text(raw_output: str) -> str | None:
         },
     }
     return json.dumps(payload, ensure_ascii=False, separators=(",", ":"))
+
+
+def _route_intent_json_from_plain_dimension_text(raw_output: str) -> str | None:
+    text = str(raw_output or "").strip()
+    if not text or len(text) > 600:
+        return None
+    lowered = text.lower()
+    if any(marker in lowered for marker in _ROUTER_TEXT_FORBIDDEN_MARKERS):
+        return None
+    if _ROUTER_TEXT_URL_RE.search(text) or _ROUTER_TEXT_JSONISH_RE.search(text):
+        return None
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    if len(lines) > 8:
+        return None
+    return _route_intent_json_from_dimension_mentions(text)
+
+
+def _route_intent_json_from_malformed_dimension_text(raw_output: str) -> str | None:
+    text = str(raw_output or "").strip()
+    if not text or len(text) > 1200:
+        return None
+    lowered = text.lower()
+    if any(marker in lowered for marker in _ROUTER_TEXT_FORBIDDEN_MARKERS):
+        return None
+    if _ROUTER_TEXT_URL_RE.search(text):
+        return None
+    # Avoid repairing schemas that include non-dimension control surfaces or
+    # merely list the allowed vocabulary instead of the selected dimensions.
+    if any(
+        marker in lowered
+        for marker in (
+            "selected_agents",
+            "target_agent",
+            "agent_id",
+            "allowed_dimensions",
+            "all_dimensions",
+        )
+    ):
+        return None
+    if not any(
+        marker in lowered
+        for marker in (
+            "selected_dimensions",
+            "dimensions",
+            "selected",
+            "include",
+            "选择维度",
+            "维度",
+        )
+    ):
+        return None
+    return _route_intent_json_from_dimension_mentions(text)
 
 
 def _router_config_value(
@@ -493,6 +563,9 @@ def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]
         "Use value for valuation/fundamental/financial questions, market for "
         "technical/trading/flow/sentiment questions, risk for downside/compliance/"
         "fraud/crash questions, and macro for macro/policy/rate/index/industry questions. "
+        "For valuation plus downside risk, select exactly value and risk. "
+        "For 估值 plus 下行风险, select exactly value and risk. "
+        "If the request says not to analyze market trading, do not select market. "
         "Select only directly requested dimensions. If unclear, choose the minimal "
         "safe set and keep needs_clarification false unless the request is impossible. "
         "Return JSON with exactly these public fields: schema, schema_version, task_type, "
@@ -502,6 +575,15 @@ def _build_live_dimension_router_messages(question: str) -> list[dict[str, str]]
         "Use schema and schema_version route_intent_v1, task_type general, "
         "route_confidence between 0.70 and 1.0, fallback_reason as an empty string, "
         "and provenance.source live_llm_dimension_router. "
+        "Examples: "
+        '"Analyze valuation and downside risk for 600519.SH." -> '
+        '"selected_dimensions":["value","risk"]. '
+        '"分析 600519.SH 的估值和下行风险，不要分析市场交易面。" -> '
+        '"selected_dimensions":["value","risk"]. '
+        '"分析 000001.SZ 的短期市场交易面、资金和技术趋势。" -> '
+        '"selected_dimensions":["market"]. '
+        '"分析 CSI300 指数当前受宏观环境影响的主要方向。" -> '
+        '"selected_dimensions":["macro"]. '
         "The JSON shape is: "
         '{"schema":"route_intent_v1","schema_version":"route_intent_v1",'
         '"task_type":"general","targets":["..."],'
@@ -528,8 +610,11 @@ def _build_live_dimension_router_text_messages(question: str) -> list[dict[str, 
         "Use value for valuation/fundamental/financial questions, market for "
         "technical/trading/flow/sentiment questions, risk for downside/compliance/"
         "fraud/crash questions, and macro for macro/policy/rate/index/industry questions. "
+        "valuation + downside risk => value,risk. 估值 + 下行风险 => value,risk. "
+        "If market/trading is explicitly excluded, do not include market. "
         "Select only directly requested dimensions and obey explicit exclusions. "
         "Return examples: value,risk or market or macro or value,market,risk. "
+        "Never return selected_agents, JSON, labels, or explanation text. "
         f"User request: {user_question}"
     )
     return [{"role": "system", "content": system}, {"role": "user", "content": user}]
@@ -588,8 +673,14 @@ def _route_intent_from_llm_dimension_provider(
         raw_output,
         question=question,
     )
-    if bool(stats.get("used_fallback")) and stats.get("fallback_reason") == "missing_json":
-        repaired_output = _route_intent_json_from_plain_dimension_text(raw_output)
+    if bool(stats.get("used_fallback")) and (
+        stats.get("fallback_reason") == "missing_json"
+        or str(stats.get("fallback_reason") or "").startswith("json_decode_error:")
+    ):
+        repaired_output = (
+            _route_intent_json_from_plain_dimension_text(raw_output)
+            or _route_intent_json_from_malformed_dimension_text(raw_output)
+        )
         if repaired_output is not None:
             route_intent, stats = parse_dimension_route_intent_json(
                 repaired_output,

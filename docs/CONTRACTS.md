@@ -823,6 +823,12 @@ Failure policy:
   prompt so the provider can return only `value`, `market`, `risk`, and/or
   `macro`; the returned text is still normalized into `route_intent_v1` and is
   never retained as raw provider output.
+  For explicit selected value/risk requests, the normalizer may canonicalize
+  bounded provider aliases such as `valuation` and `downside_risk` into
+  `value` and `risk`. Transient timeout exceptions and unrepairable invalid JSON
+  consume the same bounded retry budget before fail-closed fallback. This is
+  not deterministic user-question rescue: the repair operates only on provider
+  output after the LLM router has been invoked.
   Unknown dimensions, `selected_agents`, runtime binding/catalog
   controls, endpoint/env/secret/raw-provider fields, legacy route modes, low
   confidence, or provider fallback reasons keep selected routing on the safe

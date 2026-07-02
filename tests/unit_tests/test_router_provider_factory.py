@@ -235,6 +235,12 @@ def test_router_provider_dimension_hint_detects_explicit_dimensions() -> None:
     assert suggest_router_provider_dimensions(
         "请从估值、市场、风险和宏观角度分析贵州茅台。"
     ) == ("value", "market", "risk", "macro")
+    assert suggest_router_provider_dimensions(
+        "Analyze valuation and downside risk for 600519.SH."
+    ) == ("value", "risk")
+    assert suggest_router_provider_dimensions(
+        "分析 600519.SH 的估值和下行风险，不要分析市场交易面。"
+    ) == ("value", "risk")
     assert suggest_router_provider_dimensions("只看风险和宏观环境。") == (
         "risk",
         "macro",
@@ -424,6 +430,10 @@ def test_preflight_invocation_policy_fail_closed_cases() -> None:
         (
             RouterProviderInvocationOptions(timeout_seconds=20.1),
             "timeout_exceeds_limit",
+        ),
+        (
+            RouterProviderInvocationOptions(timeout_seconds=0),
+            "timeout_invalid",
         ),
         (
             RouterProviderInvocationOptions(raw_response_retention=True),
