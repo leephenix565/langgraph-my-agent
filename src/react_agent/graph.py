@@ -220,29 +220,43 @@ def _invoke_dimension_router_provider(
         write=min(5.0, timeout_seconds),
         pool=min(5.0, timeout_seconds),
     )
+    attempts = max(1, min(int(options.call_cap), int(options.retry_count) + 1))
     with httpx.Client(timeout=timeout) as client:
-        response = client.post(
-            endpoint.chat_completions_url,
-            headers={
-                "Authorization": f"Bearer {api_key}",
-                "Content-Type": "application/json",
-            },
-            json=body,
-        )
-    if response.status_code < 200 or response.status_code >= 300:
-        return None
-    payload = response.json()
-    choices = payload.get("choices") if isinstance(payload, dict) else None
-    if not isinstance(choices, list) or not choices:
-        return None
-    first = choices[0]
-    if not isinstance(first, Mapping):
-        return None
-    message = first.get("message")
-    if not isinstance(message, Mapping):
-        return None
-    content = message.get("content")
-    return content if isinstance(content, str) else None
+        for attempt in range(attempts):
+            response = client.post(
+                endpoint.chat_completions_url,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json",
+                },
+                json=body,
+            )
+            if response.status_code < 200 or response.status_code >= 300:
+                if attempt + 1 < attempts:
+                    continue
+                return None
+            payload = response.json()
+            choices = payload.get("choices") if isinstance(payload, dict) else None
+            if not isinstance(choices, list) or not choices:
+                if attempt + 1 < attempts:
+                    continue
+                return None
+            first = choices[0]
+            if not isinstance(first, Mapping):
+                if attempt + 1 < attempts:
+                    continue
+                return None
+            message = first.get("message")
+            if not isinstance(message, Mapping):
+                if attempt + 1 < attempts:
+                    continue
+                return None
+            content = message.get("content")
+            if isinstance(content, str) and content.strip():
+                return content
+            if attempt + 1 >= attempts:
+                return None
+    return None
 
 
 def _router_config_value(

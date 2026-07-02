@@ -29,7 +29,8 @@ ROUTER_PROVIDER_COMPAT_ENV_VAR_NAMES: tuple[str, ...] = (
 ROUTER_PROVIDER_DIMENSIONS: tuple[str, ...] = ("value", "market", "risk", "macro")
 ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT = 20.0
 ROUTER_PROVIDER_MAX_TOKENS_LIMIT = 220
-ROUTER_PROVIDER_CALL_CAP_LIMIT = 1
+ROUTER_PROVIDER_RETRY_COUNT_LIMIT = 1
+ROUTER_PROVIDER_CALL_CAP_LIMIT = 2
 ROUTER_PROVIDER_JSON_RESPONSE_FORMAT: Mapping[str, str] = {"type": "json_object"}
 ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION = "router_dimension_json_v1"
 ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION = (
@@ -201,7 +202,7 @@ class RouterProviderInvocationOptions:
 
     timeout_seconds: float = ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT
     max_tokens: int = ROUTER_PROVIDER_MAX_TOKENS_LIMIT
-    retry_count: int = 0
+    retry_count: int = ROUTER_PROVIDER_RETRY_COUNT_LIMIT
     streaming: bool = False
     call_cap: int = ROUTER_PROVIDER_CALL_CAP_LIMIT
     raw_response_retention: bool = False
@@ -594,8 +595,10 @@ def router_provider_preflight(
         reason_code = "call_cap_missing"
     elif options.streaming:
         reason_code = "streaming_not_allowed"
-    elif options.retry_count > 0:
-        reason_code = "retry_not_allowed"
+    elif options.retry_count > ROUTER_PROVIDER_RETRY_COUNT_LIMIT:
+        reason_code = "retry_count_exceeds_limit"
+    elif options.retry_count < 0:
+        reason_code = "retry_count_invalid"
     elif options.max_tokens > ROUTER_PROVIDER_MAX_TOKENS_LIMIT:
         reason_code = "max_tokens_exceeds_limit"
     elif options.timeout_seconds > ROUTER_PROVIDER_TIMEOUT_SECONDS_LIMIT:
@@ -773,6 +776,7 @@ __all__ = [
     "ROUTER_PROVIDER_JSON_RESPONSE_FORMAT",
     "ROUTER_PROVIDER_MAX_TOKENS_LIMIT",
     "ROUTER_PROVIDER_REQUEST_CONTRACT_VERSION",
+    "ROUTER_PROVIDER_RETRY_COUNT_LIMIT",
     "ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_CONTRACT_VERSION",
     "ROUTER_PROVIDER_ROUTE_INTENT_MESSAGE_LAYOUT",
     "ROUTER_PROVIDER_ROUTE_INTENT_SCHEMA_NAME",

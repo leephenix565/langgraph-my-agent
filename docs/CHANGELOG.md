@@ -17,6 +17,10 @@ Historical changelog entries before this reset branch are preserved by tag
 - Increased the bounded single-call router-provider timeout from 8s to 20s for
   production selected-routing stability and classified `httpx` timeout
   exceptions as `router_provider_timeout`.
+- Allowed one bounded router-provider retry when the first response has no
+  usable public content or returns a transient non-2xx response; the call cap is
+  still two and retry does not retain raw responses, prompts, messages, or
+  endpoint material.
 
 ### Tests
 
@@ -25,12 +29,15 @@ Historical changelog entries before this reset branch are preserved by tag
   fields, low confidence, and missing JSON still fall back safely.
 - Added focused coverage for `httpx` router-provider timeouts mapping to the
   public-safe timeout reason code.
+- Added focused coverage for a missing first router-provider response retrying
+  once and compiling the second valid response into a selected DAG.
 
 ### Not Done
 
 - No selected-routing default-on behavior, no provider/model/key public
-  controls, no retry loop, no runtime binding/catalog/non-L4 policy changes,
-  no `/v1/agent/invoke`, no raw provider response retention, and no push.
+  controls, no unbounded retry loop, no runtime binding/catalog/non-L4 policy
+  changes, no `/v1/agent/invoke`, no raw provider response retention, and no
+  push.
 
 ## 2026-07-01 - Public LLM selected-router production enablement
 
