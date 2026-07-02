@@ -357,6 +357,8 @@ class HealthResponse(PublicBaseModel):
     publicApiContractVersion: str = "public_api_contract_v5"
     routingRequestSupported: bool = True
     selectedRoutingRequestSchema: str = "routing.mode.selected"
+    selectedRoutingDefault: bool = False
+    defaultRoutingMode: Literal["full_dag", "selected"] = "full_dag"
     selectedRoutingRouterMode: str = "deterministic"
     llmDimensionRouterEnabled: bool = False
     computeRegistryVersion: str | None = None

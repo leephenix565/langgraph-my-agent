@@ -41,12 +41,14 @@ request shape:
 ```
 
 The sync and streaming message routes use the same request contract. The
-backend maps `routing: {"mode": "selected"}` only to
-`Context(enable_selected_routing=True)` for that request. It does not expose an
-explicit public `full_dag` force-off mode, provider-router controls,
-`/v1/agent/invoke` controls, `/v1/agent/compute` controls, model/base URL/API
-key controls, env controls, runtime binding changes, catalog changes, or non-L4
-policy changes.
+backend maps `routing: {"mode": "selected"}` to
+`Context(enable_selected_routing=True)` for that request. If the server runs
+with `PUBLIC_SELECTED_ROUTING_DEFAULT=1`, omitted/null `routing` also follows
+the selected-routing server default; otherwise omitted/null `routing` keeps the
+full-DAG default. It does not expose an explicit public `full_dag` force-off
+mode, provider-router controls, `/v1/agent/invoke` controls,
+`/v1/agent/compute` controls, model/base URL/API key controls, env controls,
+runtime binding changes, catalog changes, or non-L4 policy changes.
 
 The rendered answer card must not imply full four-dimension coverage for a
 selected request. Unselected dimensions are represented as not covered in this
@@ -322,12 +324,13 @@ composer text
 
 ## Router M2 Public Selected-Routing API Done
 
-- Composer adds a per-message, default-off selected-routing toggle.
+- Composer adds a per-message explicit selected-routing toggle.
 - The frontend omits `routing` while the toggle is off and sends
-  `routing: {"mode": "selected"}` while it is on.
+  `routing: {"mode": "selected"}` while it is on. When omitted, backend
+  behavior follows the server default advertised by `/api/health`.
 - Sync and streaming sends share the same typed request behavior.
-- Frontend smoke covers toggle visibility, off-by-default omission, and selected
-  request serialization.
+- Frontend smoke covers toggle visibility, omitted-routing serialization, and
+  selected request serialization.
 - The UI does not expose `full_dag`, provider-router, compute, invoke, model,
   base URL, API key, env, runtime-binding, catalog, or non-L4 policy controls.
 

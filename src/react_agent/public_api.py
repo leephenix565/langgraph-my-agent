@@ -153,6 +153,15 @@ def _public_selected_routing_llm_router_enabled() -> bool:
     )
 
 
+def _public_selected_routing_default_enabled() -> bool:
+    return (
+        str(os.environ.get("PUBLIC_SELECTED_ROUTING_DEFAULT", "") or "")
+        .strip()
+        .lower()
+        in _TRUTHY_ENV_VALUES
+    )
+
+
 def _selected_routing_router_mode() -> str:
     if _public_selected_routing_llm_router_enabled():
         return "llm_real"
@@ -179,6 +188,10 @@ async def health() -> HealthResponse:
         publicApiContractVersion=PUBLIC_API_CONTRACT_VERSION,
         routingRequestSupported=True,
         selectedRoutingRequestSchema=SELECTED_ROUTING_REQUEST_SCHEMA,
+        selectedRoutingDefault=_public_selected_routing_default_enabled(),
+        defaultRoutingMode=(
+            "selected" if _public_selected_routing_default_enabled() else "full_dag"
+        ),
         selectedRoutingRouterMode=_selected_routing_router_mode(),
         llmDimensionRouterEnabled=_public_selected_routing_llm_router_enabled(),
         computeRegistryVersion="fixed_dag_compute_registry_v1",
@@ -293,7 +306,10 @@ def _prepare_user_message(payload: SendMessageRequest) -> tuple[str, StructuredI
 
 
 def _context_for_public_routing(routing: PublicRoutingRequest | None) -> Context | None:
-    if routing is not None and routing.mode == "selected":
+    selected_requested = (
+        routing is not None and routing.mode == "selected"
+    ) or (routing is None and _public_selected_routing_default_enabled())
+    if selected_requested:
         context = Context(enable_selected_routing=True)
         context.enable_llm_dimension_router = _public_selected_routing_llm_router_enabled()
         context.llm_dimension_router_mode = "real" if context.enable_llm_dimension_router else ""

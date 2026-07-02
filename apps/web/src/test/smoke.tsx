@@ -860,8 +860,8 @@ async function runSelectedRoutingToggleScenario() {
   await waitFor(() => {
     assert.equal((view.container.querySelector("#chat-composer") as HTMLTextAreaElement).disabled, false);
   });
-  assert.ok(view.getByText("选择路由（默认关闭）"));
-  assert.ok(view.getByText("开启后，系统会尝试按问题选择更细粒度的路由；关闭时沿用固定研判流程。"));
+  assert.ok(view.getByText("显式选择路由"));
+  assert.ok(view.getByText("开启后，本条消息显式请求选择路由；关闭时不发送路由字段，按服务器默认执行。"));
 
   const taskInput = view.container.querySelector("#chat-composer") as HTMLTextAreaElement;
   await user.type(taskInput, "Analyze the valuation drivers.");

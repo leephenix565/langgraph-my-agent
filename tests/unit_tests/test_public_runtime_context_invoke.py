@@ -33,6 +33,18 @@ def test_public_routing_none_keeps_default_runtime_context() -> None:
     assert public_api._context_for_public_routing(None) is None
 
 
+def test_public_routing_none_can_use_server_default_llm_selected_context(monkeypatch) -> None:
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_DEFAULT", "1")
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", "1")
+
+    context = public_api._context_for_public_routing(None)
+
+    assert isinstance(context, Context)
+    assert context.enable_selected_routing is True
+    assert context.enable_llm_dimension_router is True
+    assert context.llm_dimension_router_mode == "real"
+
+
 def _probe(fake_module, *, continuity_mode: str = "replay") -> RuntimeReadinessProbe:
     return RuntimeReadinessProbe(
         continuity_mode=continuity_mode,  # type: ignore[arg-type]

@@ -140,12 +140,16 @@ records.
   selected-routing/provider-router provenance fields. Default `Context()`
   remains the full DAG; provider routing remains default-off/fake-only.
 - Router M2 also adds an internal public-runtime context override seam for
-  endpoint-free tests. The public HTTP/Web surface now adds a request-level
-  `routing: {"mode": "selected"}` opt-in for sync and stream sends. Omitted or
-  null `routing` keeps the existing server default and selected routing remains
-  default-off. When the daemon runs with
-  `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, that selected request uses the
-  real OpenAI-compatible LLM dimension router; otherwise it stays deterministic.
+  endpoint-free tests. The public HTTP/Web surface supports
+  `routing: {"mode": "selected"}` for sync and stream sends. Omitted or null
+  `routing` keeps the server default. With
+  `PUBLIC_SELECTED_ROUTING_DEFAULT=1`, the server default is selected routing;
+  otherwise it remains the full DAG. When the daemon runs with
+  `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, selected routing uses the real
+  OpenAI-compatible LLM dimension router; otherwise it stays deterministic.
+  Public health exposes `selectedRoutingDefault` and `defaultRoutingMode` so UI
+  and operations can distinguish server-default selected routing from full-DAG
+  default.
   The real-router parser now hardens production provider output by extracting a
   bounded JSON object from common wrappers before applying the strict
   dimension-only `route_intent_v1` normalizer. It also accepts

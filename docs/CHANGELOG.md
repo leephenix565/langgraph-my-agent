@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - Public selected-routing server default
+
+### Changed
+
+- Added the server-side `PUBLIC_SELECTED_ROUTING_DEFAULT=1` switch so omitted
+  or null public `routing` can default to selected routing. When combined with
+  `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, default public messages use
+  the real LLM dimension router before selected-DAG execution.
+- Extended `/api/health` with `selectedRoutingDefault` and
+  `defaultRoutingMode` so clients and operators can distinguish selected
+  server default from full-DAG server default.
+- Updated the Composer copy from "default off" to an explicit selected-routing
+  toggle: when the toggle is off, the frontend omits `routing` and follows the
+  server default advertised by health.
+
+### Tests
+
+- Added sync and stream public API coverage for omitted/null `routing` mapping
+  to real LLM selected routing when the server default switch is enabled.
+- Updated frontend smoke coverage for the explicit selected-routing copy.
+
+### Not Done
+
+- No request-level provider/model/key controls, no explicit public `full_dag`
+  force-off mode, no `/v1/agent/invoke`, no runtime binding, catalog, non-L4
+  policy, external service, direct provider, env-value, raw-response, or push
+  change.
+
 ## 2026-07-02 - Provider-backed L4 report preservation
 
 ### Changed

@@ -772,13 +772,14 @@ git diff --check
 ```
 
 This gate confirms that omitted or null public `routing` keeps the server
-default, `routing: {"mode": "selected"}` maps only to
+default, `PUBLIC_SELECTED_ROUTING_DEFAULT=1` can make that server default
+selected routing, `routing: {"mode": "selected"}` maps only to
 `Context(enable_selected_routing=True)`, invalid routing values/extra keys are
 rejected, sync and stream routes stay aligned, the frontend toggle omits the
 field while off and serializes it while on, and public provenance remains
-sanitized. It does not authorize provider routing, `/v1/agent/invoke`,
-`/v1/agent/compute`, endpoint calls, service actions, runtime binding changes,
-catalog changes, or non-L4 policy changes.
+sanitized. It does not authorize request-level provider controls,
+`/v1/agent/invoke`, public `/v1/agent/compute` controls, service actions,
+runtime binding changes, catalog changes, or non-L4 policy changes.
 
 ## R8-6B Internal LLM Placeholder Gate
 

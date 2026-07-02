@@ -791,12 +791,16 @@ Failure policy:
 
   `routing` may be omitted or null to preserve the server default. The only
   accepted public mode is `selected`; other values and extra routing keys are
-  rejected by the closed public model. The request toggle maps to
+  rejected by the closed public model. The server default is full DAG unless
+  the public API daemon is started with `PUBLIC_SELECTED_ROUTING_DEFAULT=1`, in
+  which case omitted/null `routing` maps to the selected-routing context. The
+  request toggle and selected server default both map to
   `Context(enable_selected_routing=True)` for that call. If the public API
   daemon is started with `PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER=1`, the
   adapter also enables `Context.enable_llm_dimension_router` and
   `llm_dimension_router_mode="real"`, causing the route planner to call the
   bounded OpenAI-compatible dimension router before compiling the selected DAG.
+  Public health reports `selectedRoutingDefault` and `defaultRoutingMode`.
   The real-router response contract remains a dimension-level `route_intent_v1`
   JSON object. The graph may extract the first bounded JSON object from common
   provider wrappers such as markdown code fences or surrounding prose, but the

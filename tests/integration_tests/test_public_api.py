@@ -299,6 +299,8 @@ def test_health_contract(tmp_path, monkeypatch):
     assert payload["publicApiContractVersion"] == "public_api_contract_v5"
     assert payload["routingRequestSupported"] is True
     assert payload["selectedRoutingRequestSchema"] == "routing.mode.selected"
+    assert payload["selectedRoutingDefault"] is False
+    assert payload["defaultRoutingMode"] == "full_dag"
     assert payload["selectedRoutingRouterMode"] == "deterministic"
     assert payload["llmDimensionRouterEnabled"] is False
     assert payload["computeRegistryVersion"] == "fixed_dag_compute_registry_v1"
@@ -582,6 +584,48 @@ def test_send_message_selected_routing_can_enable_real_llm_router_context(tmp_pa
     assert captured["context"].llm_dimension_router_mode == "real"
 
 
+def test_send_message_omitted_routing_can_default_to_real_llm_router_context(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_DEFAULT", "1")
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", "1")
+    captured_contexts: list[Context | None] = []
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    async def _fake_invoke_public_turn(*, thread_id, history_turns, user_text, context=None):
+        captured_contexts.append(context)
+        return _selected_assistant_turn("replay"), "replay"
+
+    monkeypatch.setattr(public_api, "invoke_public_turn", _fake_invoke_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    health_payload = client.get("/api/health").json()
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    omitted = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Default should use selected LLM routing."},
+    )
+    null_routing = client.post(
+        f"/api/threads/{thread_id}/messages",
+        json={"text": "Null should use selected LLM routing.", "routing": None},
+    )
+
+    assert omitted.status_code == 200
+    assert null_routing.status_code == 200
+    assert health_payload["selectedRoutingDefault"] is True
+    assert health_payload["defaultRoutingMode"] == "selected"
+    assert health_payload["selectedRoutingRouterMode"] == "llm_real"
+    assert len(captured_contexts) == 2
+    for context in captured_contexts:
+        assert isinstance(context, Context)
+        assert context.enable_selected_routing is True
+        assert context.enable_llm_dimension_router is True
+        assert context.llm_dimension_router_mode == "real"
+
+
 def test_send_message_selected_routing_endpoint_free_e2e_report(tmp_path, monkeypatch):
     monkeypatch.setenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", "1")
     monkeypatch.setenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", "1")
@@ -843,6 +887,59 @@ def test_send_message_stream_omitted_and_null_routing_keep_default_context(tmp_p
     assert omitted.status_code == 200
     assert null_routing.status_code == 200
     assert captured_contexts == [None, None]
+
+
+def test_send_message_stream_omitted_routing_can_default_to_real_llm_router_context(
+    tmp_path,
+    monkeypatch,
+):
+    monkeypatch.setenv("PUBLIC_API_RATE_LIMIT_PER_MINUTE", "0")
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_DEFAULT", "1")
+    monkeypatch.setenv("PUBLIC_SELECTED_ROUTING_ENABLE_LLM_ROUTER", "1")
+    captured_contexts: list[Context | None] = []
+    store = PublicThreadStore(tmp_path / "threads.json")
+    monkeypatch.setattr(public_api, "store", store)
+    monkeypatch.setattr(public_api, "_readiness_probe", lambda: _probe("replay"))
+
+    def _fake_prepare_public_turn_invoke(**kwargs):
+        captured_contexts.append(kwargs.get("context"))
+        return PreparedPublicTurnInvoke(
+            continuity_mode="replay",
+            graph_app=object(),
+            invoke_input={"messages": [("user", kwargs["user_text"])]},
+            invoke_kwargs={"context": kwargs.get("context")},
+        )
+
+    async def _fake_stream_public_turn(*, thread_id, user_text, prepared):
+        yield RunStartedEvent(
+            type="run.started",
+            data=RunStartedEventData(threadId=thread_id, continuityMode="replay"),
+        )
+        yield StreamPublicTurnCompleted(
+            assistant_turn=_selected_assistant_turn("replay"),
+            continuity_mode="replay",
+        )
+
+    monkeypatch.setattr(public_api, "prepare_public_turn_invoke", _fake_prepare_public_turn_invoke)
+    monkeypatch.setattr(public_api, "stream_public_turn", _fake_stream_public_turn)
+    client = _AsgiTestClient(public_api.app)
+    thread_id = client.post("/api/threads", json={}).json()["thread"]["id"]
+
+    with client.stream(
+        "POST",
+        f"/api/threads/{thread_id}/messages/stream",
+        json={"text": "Stream default should use selected LLM routing."},
+    ) as response:
+        events = _stream_lines(response)
+
+    assert response.status_code == 200
+    assert events[-1]["type"] == "answer.final"
+    assert len(captured_contexts) == 1
+    context = captured_contexts[0]
+    assert isinstance(context, Context)
+    assert context.enable_selected_routing is True
+    assert context.enable_llm_dimension_router is True
+    assert context.llm_dimension_router_mode == "real"
 
 
 def test_send_message_stream_emits_error_and_does_not_persist_failed_turn(tmp_path, monkeypatch):
