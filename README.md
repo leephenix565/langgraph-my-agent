@@ -84,6 +84,10 @@ runs render only selected dimensions as active analysis and place unselected
 dimensions in an explicit uncovered-scope section. The harness now also checks
 evidence-bundle completeness, selected-scope integrity, unselected-dimension
 overstatement count `0`, and risk-compliance zero-evidence wording.
+The public report language pass keeps that runtime behavior unchanged but makes
+the final public report Chinese-first: route, DAG, L2/L3/L4, metric, enum, and
+runtime-boundary contract terms are rendered as Chinese labels with English
+terms in parentheses only when useful.
 The public API production-observability follow-up adds a freshness guard to
 `/api/health` and a bounded `performanceTelemetry` projection in workflow
 provenance. This lets operators distinguish stale daemons from current

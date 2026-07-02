@@ -89,6 +89,11 @@ def test_build_llm_report_prompt_uses_public_safe_bundle_only() -> None:
     assert "domain_metrics" in prompt
     assert "drivers" in prompt
     assert "data_quality" in prompt
+    assert "输出语言必须以中文为主" in prompt
+    assert "选择路由（selected routing）" in prompt
+    assert "完整分析图（full DAG）" in prompt
+    assert "风险分（risk_score）" in prompt
+    assert "不得在公开报告里裸露 selected routing" in prompt
     assert "raw_response" not in prompt.lower()
     assert "/v1/agent/invoke" not in prompt
 
@@ -353,7 +358,7 @@ def test_rq2_renderer_builds_public_safe_complete_report() -> None:
     assert report["status"] == "complete"
     assert "核心结论与行动含义" in report["answer"]
     assert "价值维度：估值分歧与安全边际" in report["answer"]
-    assert "公告合规审查未被当前 production policy 调用" in rendered
+    assert "公告合规审查未被当前 生产策略（production policy） 调用" in rendered
     assert "模型把该标的归入 低风险" in rendered
     assert len(report["sections"]) >= 7
     assert len(report["limitations"]) >= 4

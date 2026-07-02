@@ -234,6 +234,11 @@ records.
   limitation-only, and the controlled full DAG compute report audit reaches
   `33/45` with renderer gate, selected-scope integrity, evidence-bundle
   completeness, L3 contributor integrity, and unsafe scan passing.
+- Public report terminology is now Chinese-first: selected-routing scope, DAG
+  mode, L2/L3/L4 labels, decision enums, metric keys, and runtime-boundary terms
+  are rendered as Chinese text with English contract terms in parentheses when
+  needed. This is a report presentation guard, not a router, schema, runtime
+  binding, catalog, non-L4 policy, or external service change.
 - RQ2E is allowed only after preflight shows dev/prod/sandbox at the same
   approved HEAD, clean worktrees, matching catalog/runtime/non-L4 policy
   digests, authority docs in sync, and checksum-verifiable input artifacts.

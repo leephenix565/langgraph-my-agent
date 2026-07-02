@@ -3,6 +3,32 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-02 - Public report terminology localization
+
+### Changed
+
+- Added a Chinese-first public terminology projection to the deterministic
+  report-quality renderer so route scope, DAG mode, L2/L3/L4 labels, decision
+  enums, metric keys, and runtime boundary terms render as Chinese text with
+  English contract terms in parentheses when needed.
+- Tightened the LLM report synthesis prompt to require Chinese-first output and
+  to avoid bare public-report exposure of internal terms such as selected
+  routing, selected scope, `balanced_watch`, `risk_score`, `current_price`,
+  deterministic enrichment, compute-only, no-invoke, no-provider, and
+  no-raw-response.
+
+### Tests
+
+- Added focused renderer and LLM-report-prompt regressions for Chinese-first
+  selected-routing scope wording, metric labels, enum labels, and runtime
+  boundary terms.
+
+### Not Done
+
+- No router behavior, selected-routing default, public schema, runtime binding,
+  catalog, non-L4 policy, external agent service, `/v1/agent/invoke`, direct
+  provider, env-value, raw-response, or push change.
+
 ## 2026-07-02 - LLM router output-shape diagnostics and store freshness repair
 
 ### Changed

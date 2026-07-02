@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import re
 import shutil
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
@@ -68,13 +69,119 @@ _STATUS_LABELS = {
 }
 
 _DECISION_LABELS = {
-    "pending_implementation": "尚未形成可执行建议",
-    "research_hold": "研究观察",
-    "positive_watch": "积极关注",
-    "defensive_observe": "防御观察",
-    "manual_review": "人工复核",
-    "risk_blocked": "风险阻断",
+    "pending_implementation": "尚未形成可执行建议（pending_implementation）",
+    "research_hold": "研究观察（research_hold）",
+    "positive_watch": "积极关注（positive_watch）",
+    "defensive_observe": "防御观察（defensive_observe）",
+    "balanced_watch": "均衡观察（balanced_watch）",
+    "manual_review": "人工复核（manual_review）",
+    "risk_blocked": "风险阻断（risk_blocked）",
+    "pass": "通过（pass）",
 }
+
+_DISPLAY_KEY_LABELS = {
+    "annual_volatility": "年化波动率（annual_volatility）",
+    "cache_hit": "缓存命中（cache_hit）",
+    "confidence": "置信度（confidence）",
+    "current_price": "当前价格（current_price）",
+    "data_as_of": "数据截至日（data_as_of）",
+    "db_query_count": "数据库查询次数（db_query_count）",
+    "db_total_ms": "数据库耗时毫秒（db_total_ms）",
+    "decision": "决策倾向（decision）",
+    "dimension_weights": "维度权重（dimension_weights）",
+    "EPS": "每股收益（EPS）",
+    "eps": "每股收益（EPS）",
+    "gate": "风险门（gate）",
+    "margins": "安全边际（margins）",
+    "method": "方法（method）",
+    "PE": "市盈率（PE）",
+    "pe": "市盈率（PE）",
+    "provider_call_count": "服务商调用次数（provider_call_count）",
+    "provider_total_ms": "服务商耗时毫秒（provider_total_ms）",
+    "regime": "宏观状态（regime）",
+    "risk_level": "风险等级（risk_level）",
+    "risk_score": "风险分（risk_score）",
+    "ROE": "净资产收益率（ROE）",
+    "roe": "净资产收益率（ROE）",
+    "status": "状态（status）",
+    "target_price": "目标价（target_price）",
+    "trade_date": "交易日期（trade_date）",
+    "valuation_method": "估值方法（valuation_method）",
+    "value": "价值权重（value）",
+    "market": "市场权重（market）",
+}
+
+_DISPLAY_VALUE_LABELS = {
+    "balanced_watch": "均衡观察（balanced_watch）",
+    "cautious": "谨慎（cautious）",
+    "complete": "完整返回（complete）",
+    "defensive_observe": "防御观察（defensive_observe）",
+    "error": "错误（error）",
+    "failed": "失败（failed）",
+    "manual_review": "人工复核（manual_review）",
+    "n/a": "未提供",
+    "None": "未提供",
+    "none": "未提供",
+    "not_available": "暂不可用（not_available）",
+    "not_evaluated": "未形成评价（not_evaluated）",
+    "null": "未提供",
+    "partial": "证据不完整（partial）",
+    "pass": "通过（pass）",
+    "pending_implementation": "尚未形成可执行建议（pending_implementation）",
+    "positive_watch": "积极关注（positive_watch）",
+    "research_hold": "研究观察（research_hold）",
+    "risk_blocked": "风险阻断（risk_blocked）",
+}
+
+_TEXT_REPLACEMENTS = (
+    (r"(?<!（)\bselected routing\b", "选择路由（selected routing）"),
+    (r"(?<!（)\bselected scope\b", "选择范围（selected scope）"),
+    (r"(?<!（)\bfull DAG\b", "完整分析图（full DAG）"),
+    (r"(?<!（)\bfixed DAG\b", "固定分析图（fixed DAG）"),
+    (r"(?<!（)\bpublic-safe bundle\b", "公开安全材料包（public-safe bundle）"),
+    (r"(?<!（)\bpublic-safe\b", "公开安全（public-safe）"),
+    (
+        r"(?<!（)\bdeterministic report enrichment\b",
+        "确定性报告增强（deterministic report enrichment）",
+    ),
+    (r"(?<!（)\bcompute-only\b", "仅计算路径（compute-only）"),
+    (r"(?<!（)\bno-invoke\b", "未调用 invoke（no-invoke）"),
+    (r"(?<!（)\bno-provider\b", "未直接调用服务商（no-provider）"),
+    (r"(?<!（)\bno-raw-response\b", "未保留原始响应（no-raw-response）"),
+    (r"(?<!（)\bproduction compute\b", "生产计算映射（production compute）"),
+    (r"(?<!（)\bproduction policy\b", "生产策略（production policy）"),
+    (r"(?<!（)\badapter\b", "适配器（adapter）"),
+    (r"(?<!（)(?<!-)\bprovider\b", "服务商（provider）"),
+    (r"(?<!（)\bruntime bindings\b", "运行绑定（runtime bindings）"),
+    (r"(?<!（)\bruntime\b", "运行时（runtime）"),
+    (r"(?<!（)\bcatalog\b", "目录配置（catalog）"),
+    (r"(?<!（)\bsections\b", "报告章节（sections）"),
+    (r"(?<!（)\blive\b", "线上验证（live）"),
+    (r"(?<!（)\bLLM\b", "大语言模型（LLM）"),
+    (r"(?<!（)\bL2\b", "二层分析（L2）"),
+    (r"(?<!（)\bL3\b", "三层综合（L3）"),
+    (r"(?<!（)\bL4\b", "四层报告（L4）"),
+    (r"(?<!（)\bvalue\b", "价值（value）"),
+    (r"(?<!（)\bmarket\b", "市场（market）"),
+    (r"(?<!（)\brisk\b", "风险（risk）"),
+    (r"(?<!（)\bmacro\b", "宏观（macro）"),
+    (r"(?<!（)\bbalanced_watch\b", "均衡观察（balanced_watch）"),
+    (r"(?<!（)\bresearch_hold\b", "研究观察（research_hold）"),
+    (r"(?<!（)\bmanual_review\b", "人工复核（manual_review）"),
+    (r"(?<!（)\bpartial\b", "证据不完整（partial）"),
+    (r"(?<!（)\bcomplete\b", "完整返回（complete）"),
+    (r"(?<!（)\brisk_score\b", "风险分（risk_score）"),
+    (r"(?<!（)\brisk_level\b", "风险等级（risk_level）"),
+    (r"(?<!（)\bcurrent_price\b", "当前价格（current_price）"),
+    (r"(?<!（)\btrade_date\b", "交易日期（trade_date）"),
+    (r"(?<!（)\bvaluation_method\b", "估值方法（valuation_method）"),
+    (r"(?<!（)\bannual_volatility\b", "年化波动率（annual_volatility）"),
+    (r"(?<!（)\bEPS\b", "每股收益（EPS）"),
+    (r"(?<!（)\bPE\b", "市盈率（PE）"),
+    (r"(?<!（)\bROE\b", "净资产收益率（ROE）"),
+    (r"\bNone\b", "未提供"),
+    (r"\bnull\b", "未提供"),
+)
 
 _TEMPLATE_PHRASES = (
     "固定流程",
@@ -128,6 +235,59 @@ def _safe_text(value: Any, *, limit: int = _MAX_TEXT) -> str:
     if len(text) <= limit:
         return text
     return f"{text[: max(limit - 3, 0)].rstrip()}..."
+
+
+def _display_key(value: Any) -> str:
+    text = _safe_text(value, limit=80)
+    return _DISPLAY_KEY_LABELS.get(text, text)
+
+
+def _localize_report_text(value: Any, *, limit: int = _MAX_TEXT) -> str:
+    text = _safe_text(value, limit=limit)
+    if not text:
+        return ""
+    for pattern, replacement in _TEXT_REPLACEMENTS:
+        text = re.sub(pattern, replacement, text, flags=re.IGNORECASE)
+    return text
+
+
+def _display_value(value: Any, *, limit: int = 120) -> str:
+    if value is None:
+        return "未提供"
+    text = _safe_text(value, limit=limit)
+    if not text:
+        return ""
+    return _DISPLAY_VALUE_LABELS.get(text, _localize_report_text(text, limit=limit))
+
+
+def _localize_report_result(report_result: ReportResult) -> ReportResult:
+    localized: ReportResult = dict(report_result)
+    localized["title"] = _localize_report_text(localized.get("title"), limit=120)
+    localized["answer"] = _localize_report_text(localized.get("answer"), limit=_MAX_TEXT)
+    localized["sections"] = [
+        {
+            **dict(_as_mapping(section)),
+            "title": _localize_report_text(_as_mapping(section).get("title"), limit=180),
+            "content": _localize_report_text(_as_mapping(section).get("content"), limit=_MAX_SECTION),
+        }
+        for section in _as_list(localized.get("sections"))
+        if isinstance(section, Mapping)
+    ]
+    localized["evidence_cards"] = [
+        {
+            **dict(_as_mapping(card)),
+            "title": _localize_report_text(_as_mapping(card).get("title"), limit=140),
+            "note": _localize_report_text(_as_mapping(card).get("note"), limit=_MAX_NOTE),
+        }
+        for card in _as_list(localized.get("evidence_cards"))
+        if isinstance(card, Mapping)
+    ]
+    localized["limitations"] = [
+        _localize_report_text(item, limit=420)
+        for item in _as_list(localized.get("limitations"))
+        if _localize_report_text(item, limit=420)
+    ]
+    return localized
 
 
 def _trim_sentence(text: str) -> str:
@@ -469,14 +629,14 @@ def _metrics_line(item: Mapping[str, Any], *, limit: int = 4) -> str:
         if isinstance(value, Mapping):
             fields = []
             for sub_key, sub_value in list(value.items())[:3]:
-                rendered = _trim_sentence(_safe_text(sub_value, limit=50))
+                rendered = _trim_sentence(_display_value(sub_value, limit=50))
                 if rendered:
-                    fields.append(f"{sub_key}={rendered}")
+                    fields.append(f"{_display_key(sub_key)}={rendered}")
             rendered_value = "，".join(fields)
         else:
-            rendered_value = _trim_sentence(_safe_text(value, limit=80))
+            rendered_value = _trim_sentence(_display_value(value, limit=80))
         if rendered_value:
-            parts.append(f"{key}: {rendered_value}")
+            parts.append(f"{_display_key(key)}: {rendered_value}")
     return "；".join(parts)
 
 
@@ -484,8 +644,8 @@ def _driver_line(item: Mapping[str, Any], *, limit: int = 3) -> str:
     parts: list[str] = []
     for raw in _as_list(item.get("drivers"))[:limit]:
         driver = _as_mapping(raw)
-        name = _safe_text(driver.get("name"), limit=50)
-        value = _trim_sentence(_safe_text(driver.get("value"), limit=120))
+        name = _display_key(driver.get("name"))
+        value = _trim_sentence(_display_value(driver.get("value"), limit=120))
         if name and value:
             parts.append(f"{name}={value}")
     return "；".join(parts)
@@ -562,7 +722,7 @@ def _dimension_section(
         metrics = _metrics_line(item, limit=2)
         if metrics:
             line += f" {name}业务指标：" + metrics + "。"
-        drivers = _driver_line(item, limit=1)
+        drivers = _driver_line(item, limit=2)
         if drivers:
             line += f" {name}驱动因素：" + drivers + "。"
         lines.append(_safe_text(line, limit=900))
@@ -1173,6 +1333,7 @@ def build_enriched_report_result_from_bundle(
             evidence_bundle=agent_evidence_bundle,
         ),
     }
+    result = _localize_report_result(result)
     valid, reason = validate_report_result(result)
     if not valid:
         raise ValueError(reason)

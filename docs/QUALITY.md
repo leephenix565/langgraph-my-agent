@@ -191,6 +191,12 @@ uncovered-scope or limitation wording. The audit now records and gates:
 - full-DAG score `>=32/45` for the RQ2 bundle/renderer improvement artifact, or
   an explicit cap analysis if upstream data coverage prevents that score.
 
+The public report language regression also checks that renderer-controlled
+surface text is Chinese-first. Internal route, DAG, L2/L3/L4, enum, metric, and
+runtime-boundary contract terms may appear only with Chinese labels first and
+English terms in parentheses, for example `选择路由（selected routing）`,
+`完整分析图（full DAG）`, and `风险分（risk_score）`.
+
 RQ3B keeps the `>=29/45` score floor unchanged. Its risk-branch fix is adapter
 coverage, not scoring relaxation: a `risk_composite` result can count as mapped
 only when real risk contributors remain in `contributing_agents`; unsupported

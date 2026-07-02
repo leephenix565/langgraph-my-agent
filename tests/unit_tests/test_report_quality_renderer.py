@@ -177,7 +177,10 @@ def test_enriched_report_has_business_first_core_and_no_core_source_labels() -> 
     assert "行动含义" in core
     assert "触发条件" in core
     assert "人工复核" in core
-    assert "公告合规审查未被当前 production policy 调用" in json.dumps(report, ensure_ascii=False)
+    assert "公告合规审查未被当前 生产策略（production policy） 调用" in json.dumps(
+        report,
+        ensure_ascii=False,
+    )
     assert "spts_database" not in core
     assert "xgboost_model" not in core
     assert "crash_risk_model" not in core
@@ -205,11 +208,65 @@ def test_enriched_report_respects_selected_scope_dimensions() -> None:
     assert {"value_dimension", "risk_dimension", "unselected_scope"} <= section_ids
     assert "market_dimension" not in section_ids
     assert "macro_dimension" not in section_ids
-    assert "本轮 selected routing 的真实分析范围为价值、风险" in report["answer"]
-    assert "市场、宏观未被本轮 selected routing 选中" in report["answer"]
+    assert "本轮 选择路由（selected routing） 的真实分析范围为价值、风险" in report["answer"]
+    assert "市场、宏观未被本轮 选择路由（selected routing） 选中" in report["answer"]
     assert "用户问题覆盖估值、市场、风险和宏观四个维度" not in rendered
     assert "市场维度：价格、资金与情绪确认度" not in rendered
     assert "宏观维度：宏观调节器与仓位约束" not in rendered
+
+
+def test_enriched_report_localizes_public_terminology_and_metrics() -> None:
+    evidence = json.loads(json.dumps(_evidence_bundle(), ensure_ascii=False))
+    evidence["routing_context"] = {
+        "schema": "report_routing_context_v1",
+        "routing_mode": "selected",
+        "route_granularity": "dimension",
+        "selected_dimensions": ["value", "risk"],
+        "unselected_dimensions": ["market", "macro"],
+        "selected_dimension_count": 2,
+        "unselected_dimension_count": 2,
+    }
+    evidence["selected_scope"] = evidence["routing_context"]
+    evidence["decision_output"] = {"decision": "balanced_watch"}
+    evidence["l2_agent_outputs"][2]["domain_metrics"] = {
+        "risk_bridge": {
+            "risk_score": 0.2523,
+            "risk_level": "low",
+            "trade_date": "2024-12-31",
+        },
+        "market_snapshot": {
+            "current_price": "None",
+            "PE": "None",
+            "ROE": "None",
+        },
+    }
+    evidence["l2_agent_outputs"][2]["drivers"] = [
+        {"name": "risk_score", "value": 0.2523},
+        {"name": "valuation_method", "value": "xgboost_pe_montecarlo"},
+    ]
+
+    report = build_enriched_report_result_from_bundle(
+        question="请分析 600519.SH。",
+        agent_evidence_bundle=evidence,
+    )
+    rendered = json.dumps(report, ensure_ascii=False)
+
+    assert "选择路由（selected routing）" in rendered
+    assert "选择范围（selected scope）" in rendered
+    assert "完整分析图（full DAG）" in rendered
+    assert "均衡观察（balanced_watch）" in rendered
+    assert "风险分（risk_score）" in rendered
+    assert "当前价格（current_price）" in rendered
+    assert "交易日期（trade_date）" in rendered
+    assert "估值方法（valuation_method）" in rendered
+    assert "每股收益（EPS）" not in rendered
+    assert "市盈率（PE）=未提供" in rendered
+    assert "净资产收益率（ROE）=未提供" in rendered
+    assert "确定性报告增强（deterministic report enrichment）" in rendered
+    assert "仅计算路径（compute-only）" in rendered
+    assert "未调用 invoke（no-invoke）" in rendered
+    assert "未直接调用服务商（no-provider）" in rendered
+    assert "未保留原始响应（no-raw-response）" in rendered
 
 
 def test_enriched_report_risk_compliance_zero_evidence_wording_is_honest() -> None:
