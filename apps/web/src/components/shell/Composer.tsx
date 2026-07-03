@@ -65,13 +65,13 @@ export function Composer({
           className="composer__input"
           value={draft.task}
           onChange={(event) => updateDraft("task", event.target.value)}
-          rows={2}
+          rows={Math.max(1, Math.min(8, draft.task.split('\n').length))}
           disabled={disabled || busy}
           placeholder={unavailable ? zhCN.composer.unavailablePlaceholder : zhCN.composer.taskPlaceholder}
           aria-label={zhCN.composer.taskLabel}
         />
-        <button className="composer__submit" type="submit" disabled={!canSubmit} aria-label={zhCN.composer.submit}>
-          {busy ? "…" : "↗"}
+        <button className={`composer__submit${busy ? " composer__submit--busy" : ""}`} type="submit" disabled={!canSubmit || busy} aria-label={zhCN.composer.submit}>
+          {busy ? <span className="spinner" /> : "↗"}
         </button>
       </div>
       <button

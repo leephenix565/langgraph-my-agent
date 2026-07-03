@@ -1,33 +1,57 @@
 :root {
   color-scheme: light;
-  --bg: #f4f5f8;
-  --bg-sidebar: #f2f3f6;
+  --bg: #f6f7fa;
+  --bg-sidebar: #f2f3f7;
   --bg-surface: #ffffff;
   --bg-subtle: #f8f9fc;
   --bg-soft: #f5f7fb;
   --bg-user: #f3f4f7;
   --ink: #162033;
   --ink-soft: #27344d;
-  --ink-muted: #67748c;
+  --ink-muted: #4a5568;
   --ink-faint: #8c97aa;
   --line: #e4e9f2;
   --line-soft: #edf1f7;
-  --accent: #656de3;
-  --accent-soft: rgba(101, 109, 227, 0.1);
+  --accent: #4f56d1;
+  --accent-soft: rgba(79, 86, 209, 0.1);
   --reset-skeleton: #5b6884;
-  --success-soft: rgba(48, 140, 91, 0.11);
+
+  /* 语义色板 */
+  --success: #2b7c54;
+  --success-soft: rgba(43, 124, 84, 0.11);
+  --warning: #b27a38;
   --warning-soft: rgba(178, 122, 56, 0.11);
-  --danger-soft: rgba(196, 86, 86, 0.1);
-  --shadow-sm: 0 8px 20px rgba(22, 32, 51, 0.035);
-  --shadow-md: 0 14px 28px rgba(22, 32, 51, 0.05);
+  --danger: #a14343;
+  --danger-soft: rgba(161, 67, 67, 0.1);
+
+  /* 间距系统 */
+  --space-xs: 4px;
+  --space-sm: 8px;
+  --space-md: 14px;
+  --space-lg: 24px;
+  --space-xl: 34px;
+
+  /* 字号 */
+  --text-xs: 10px;
+  --text-sm: 11px;
+  --text-base: 14px;
+  --text-lg: 17px;
+  --text-xl: 22px;
+
+  /* 圆角 */
   --radius-lg: 22px;
   --radius-md: 18px;
   --radius-sm: 12px;
+
+  --shadow-sm: 0 8px 20px rgba(22, 32, 51, 0.035);
+  --shadow-md: 0 14px 28px rgba(22, 32, 51, 0.05);
   --font-sans:
+    "Inter",
+    "SF Pro Text",
+    -apple-system,
     "PingFang SC",
     "Microsoft YaHei",
     "Noto Sans SC",
-    "Source Han Sans SC",
     "Helvetica Neue",
     Arial,
     sans-serif;

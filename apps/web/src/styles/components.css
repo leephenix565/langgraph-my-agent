@@ -124,7 +124,7 @@
 
 .sidebar__empty {
   padding: 14px;
-  border: 1px dashed var(--line);
+  border: 1px solid var(--line-soft);
   border-radius: 14px;
   color: var(--ink-muted);
   background: rgba(255, 255, 255, 0.58);
@@ -489,7 +489,7 @@
 }
 
 .assistant-card {
-  width: min(48rem, 100%);
+  width: min(42rem, 100%);
   max-width: 100%;
   box-sizing: border-box;
   margin: 0 auto;
@@ -1552,9 +1552,9 @@
   gap: 12px;
   width: 100%;
   padding: 10px 12px;
-  border: 1px dashed rgba(148, 163, 184, 0.45);
+  border: 1px solid var(--line-soft);
   border-radius: 12px;
-  background: rgba(248, 250, 252, 0.58);
+  background: var(--bg-subtle);
   color: var(--ink-muted);
   cursor: pointer;
 }
@@ -2382,6 +2382,24 @@
 .composer__submit:disabled {
   opacity: 0.46;
   cursor: not-allowed;
+}
+
+.composer__submit--busy {
+  cursor: wait;
+}
+
+.spinner {
+  display: inline-block;
+  width: 16px;
+  height: 16px;
+  border: 2px solid rgba(101, 109, 227, 0.22);
+  border-top-color: var(--accent);
+  border-radius: 999px;
+  animation: spinner-rotate 0.7s linear infinite;
+}
+
+@keyframes spinner-rotate {
+  to { transform: rotate(360deg); }
 }
 
 .composer__hint {
