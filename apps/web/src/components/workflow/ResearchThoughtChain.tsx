@@ -1,6 +1,7 @@
 import { useId, useMemo, useState } from "react";
 import type { CSSProperties } from "react";
 import type { DagStep, DimensionGroup, WorkflowModel, WorkflowStageKey } from "../../types/workflow";
+import { ALL_DIMENSION_KEYS } from "../../content/zh-CN";
 
 interface ResearchThoughtChainProps {
   workflow: WorkflowModel;
@@ -35,7 +36,7 @@ interface EvidenceItem {
   value: string;
 }
 
-type DimensionSignalStatus = "waiting" | "forming" | "synthesizing" | "summarized" | "included";
+type DimensionSignalStatus = "waiting" | "forming" | "synthesizing" | "summarized" | "included" | "unselected";
 
 interface DimensionSignalCopy {
   waiting: string;
@@ -326,6 +327,7 @@ function dimensionStatusLabel(status: DimensionSignalStatus) {
     synthesizing: "综合中",
     summarized: "已汇总",
     included: "已纳入",
+    unselected: "未覆盖",
   };
   return labels[status];
 }
@@ -346,13 +348,16 @@ function dimensionSummary(
   reportComplete: boolean,
   status: DimensionSignalStatus,
 ) {
+  if (status === "unselected") {
+    return "本轮未选择该维度";
+  }
   if (!group) {
     return "该维度属于固定研判流程，当前无可展示业务摘要。";
   }
   if (canUseDimensionSummary(group, reportComplete)) {
     return group.summary.trim();
   }
-  return copy[status];
+  return copy[status] ?? "等待分析结果";
 }
 
 function processEvidenceItems(phase: PhaseView, workflow: WorkflowModel): EvidenceItem[] {
@@ -382,15 +387,45 @@ function provenanceSummary(workflow: WorkflowModel) {
   return workflow.provenance?.summary || workflow.provenanceNote || "本轮按照固定研判流程生成回答。";
 }
 
-function progressView(phases: PhaseView[], selectedPhase: PhaseView, reportComplete: boolean): ProgressView {
-  const total = PHASES.length;
-  const count = reportComplete ? total : Math.min(total, Math.max(1, selectedPhase.index + 1));
+function progressView(
+  phases: PhaseView[],
+  selectedPhase: PhaseView,
+  reportComplete: boolean,
+  workflow: WorkflowModel,
+): ProgressView {
+  // Use step-based progress when dagSteps are available, fall back to phase-based
+  const totalSteps = workflow.dagSteps.length;
+  const useStepBased = totalSteps > 0;
+  const total = useStepBased ? totalSteps : PHASES.length;
+  const count = reportComplete
+    ? total
+    : useStepBased
+      ? Math.min(totalSteps, workflow.completedSteps.length || 1)
+      : Math.min(total, Math.max(1, selectedPhase.index + 1));
   const percent = Math.round((count / total) * 100);
+
+  if (useStepBased) {
+    const runningPhase = phases.find((p) => p.status === "active");
+    return {
+      count,
+      total,
+      percent,
+      label: reportComplete
+        ? `研判流程 · ${count}/${total} 个任务已完成`
+        : `研判流程 · ${count}/${total} 个任务处理中`,
+      helper: reportComplete
+        ? "报告已输出，过程摘要可用于追溯回答形成路径。"
+        : `${runningPhase?.title ?? selectedPhase.title}正在推进。`,
+    };
+  }
+
   return {
     count,
     total,
     percent,
-    label: reportComplete ? `研判流程 · ${count}/${total} 个阶段已纳入` : `研判流程 · ${count}/${total} 个阶段处理中`,
+    label: reportComplete
+      ? `研判流程 · ${count}/${total} 个阶段已纳入`
+      : `研判流程 · ${count}/${total} 个阶段处理中`,
     helper: reportComplete
       ? "报告已输出，过程摘要可用于追溯回答形成路径。"
       : `${phases[count - 1]?.title ?? selectedPhase.title}正在推进，本进度仅表示固定研判流程阶段。`,
@@ -400,6 +435,13 @@ function progressView(phases: PhaseView[], selectedPhase: PhaseView, reportCompl
 export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
   const [expanded, setExpanded] = useState(false);
   const contentId = useId();
+  const provenance = workflow.provenance as Record<string, any> | undefined;
+  const selectedDimensions: string[] = provenance?.selectedDimensions ?? [];
+  const isSelectedRouting = Boolean(provenance?.selectedRoutingRequested) && selectedDimensions.length > 0;
+  const unselectedDims = isSelectedRouting
+    ? (ALL_DIMENSION_KEYS as readonly string[]).filter((d) => !selectedDimensions.includes(d))
+    : [] as string[];
+
   const phases = useMemo(
     () =>
       PHASES.map((phase, index) => ({
@@ -421,7 +463,7 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
     group: workflow.dimensionGroups.find((group) => group.id === dimension.id),
   }));
   const overallStatus = reportComplete ? "报告已输出" : "流程进行中";
-  const progress = progressView(phases, selectedPhase, reportComplete);
+  const progress = progressView(phases, selectedPhase, reportComplete, workflow);
 
   return (
     <section className="thought-chain" aria-label="研判思维链">
@@ -512,30 +554,39 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
 
               <div className="thought-chain__dimension-area">
                 <div className="thought-chain__section-head">
-                  <strong>四维流程信号</strong>
+                  <strong>{isSelectedRouting ? "已选维度信号" : "四维流程信号"}</strong>
                   <span>
-                    {dimensionStatus === "waiting"
-                      ? "展示回答组织中的维度线索，不代表实时市场数据或投资建议"
-                      : "随研判阶段逐步纳入回答组织"}
+                    {isSelectedRouting
+                      ? "仅展示本轮选择的维度，未选择的维度标为「未覆盖」"
+                      : dimensionStatus === "waiting"
+                        ? "展示回答组织中的维度线索，不代表实时市场数据或投资建议"
+                        : "随研判阶段逐步纳入回答组织"}
                   </span>
                 </div>
                 <div className="thought-chain__dimensions">
-                  {dimensions.map((dimension) => (
-                    <article
-                      className={`thought-chain__dimension thought-chain__dimension--${dimension.id}${
-                        dimensionStatus === "waiting" ? " thought-chain__dimension--waiting" : ""
-                      }`}
-                      key={dimension.id}
-                    >
-                      <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
-                      <p>
-                        {dimensionStatus === "waiting"
-                          ? "等待分析结果"
-                          : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimensionStatus)}
-                      </p>
-                      <span className="thought-chain__dimension-status">{dimensionStatusLabel(dimensionStatus)}</span>
-                    </article>
-                  ))}
+                  {dimensions.map((dimension) => {
+                    const isUnselected = isSelectedRouting && unselectedDims.includes(dimension.id);
+                    const dimStatus = isUnselected ? "unselected" as DimensionSignalStatus : dimensionStatus;
+                    const waiting = dimStatus === "waiting";
+                    return (
+                      <article
+                        className={`thought-chain__dimension thought-chain__dimension--${dimension.id}${
+                          waiting ? " thought-chain__dimension--waiting" : ""
+                        }${isUnselected ? " thought-chain__dimension--unselected" : ""}`}
+                        key={dimension.id}
+                      >
+                        <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
+                        <p>
+                          {isUnselected
+                            ? "本轮未选择该维度"
+                            : waiting
+                              ? "等待分析结果"
+                              : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
+                        </p>
+                        <span className="thought-chain__dimension-status">{dimensionStatusLabel(dimStatus)}</span>
+                      </article>
+                    );
+                  })}
                 </div>
               </div>
             </div>

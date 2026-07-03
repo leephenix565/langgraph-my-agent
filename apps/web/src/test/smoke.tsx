@@ -411,8 +411,8 @@ async function runAssistantRenderChecks() {
   assert.ok(thoughtChainDetail.textContent?.includes("当前阶段摘要"));
   assert.ok(thoughtChainDetail.textContent?.includes("四维流程信号"));
   assert.ok(thoughtChainDetail.textContent?.includes("研判流程进度"));
-  assert.ok(thoughtChainDetail.textContent?.includes("6/6"));
   assert.ok(thoughtChainDetail.textContent?.includes("100%"));
+  assert.ok(thoughtChainDetail.textContent?.includes("个任务已完成"));
   assert.ok(thoughtChainDetail.textContent?.includes("报告已输出"));
   assert.ok(thoughtChainDetail.textContent?.includes("最终文字报告已显示在上方主回答区。"));
   assert.ok(thoughtChainDetail.textContent?.includes("以普通 AI 回答形式输出结论、依据和限制。"));
@@ -557,7 +557,7 @@ async function runThoughtChainDynamicStageChecks() {
   assert.ok(decisionStageNode);
   assert.ok(l2StageNode.textContent?.includes("当前阶段"));
   assert.ok(decisionStageNode.textContent?.includes("待处理"));
-  assert.ok(l2Detail.textContent?.includes("研判流程 · 3/6 个阶段处理中"));
+  assert.ok(l2Detail.textContent?.includes("个任务处理中"));
   assert.ok(l2Detail.textContent?.includes("四维流程信号"));
   assert.ok(l2Detail.textContent?.includes("形成中"));
   assert.ok(l2Detail.textContent?.includes("正在整理估值、研究观点与价值信号。"));
@@ -589,7 +589,8 @@ async function runThoughtChainDynamicStageChecks() {
   assert.ok(reportStageNode);
   assert.ok(dimensionStageNode.textContent?.includes("当前阶段"));
   assert.ok(reportStageNode.textContent?.includes("待生成"));
-  assert.ok(dimensionDetail.textContent?.includes("研判流程 · 4/6 个阶段处理中"));
+  assert.ok(dimensionDetail.textContent?.includes("个任务处理中"));
+  assert.ok(dimensionDetail.textContent?.includes("维度综合"));
   assert.ok(dimensionDetail.textContent?.includes("四维流程信号"));
   assert.ok(dimensionDetail.textContent?.includes("综合中"));
   assert.ok(dimensionDetail.textContent?.includes("正在汇总价值维度信号与分歧。"));
@@ -607,7 +608,8 @@ async function runThoughtChainDynamicStageChecks() {
   const evidenceToggle = evidenceView.getByRole("button", { name: /研判思维链/ });
   fireEvent.click(evidenceToggle);
   const evidenceDetail = evidenceView.getByLabelText("研判思维链详情");
-  assert.ok(evidenceDetail.textContent?.includes("研判流程 · 2/6 个阶段处理中"));
+  assert.ok(evidenceDetail.textContent?.includes("个任务处理中"));
+  assert.ok(evidenceDetail.textContent?.includes("证据接入"));
   assert.ok(evidenceDetail.textContent?.includes("不代表实时市场数据或投资建议"));
   assert.ok(evidenceDetail.textContent?.includes("等待分析结果"));
   assert.equal(evidenceDetail.textContent?.includes("已纳入"), false);
