@@ -10,7 +10,7 @@ export const zhCN = {
     deleteThread: "删除会话",
     deletingThread: "正在删除",
     confirmDeleteThread: "确定删除这个会话吗？此操作不可撤销。",
-    navAgents: "能力",
+    navAgents: "智能体",
     navSettings: "设置",
     serviceStatus: "服务状态",
     empty: "还没有会话。先输入一个问题。",
@@ -29,6 +29,22 @@ export const zhCN = {
     details: "技术详情",
     showDetails: "显示技术详情",
     hideDetails: "隐藏技术详情",
+    routingDefault: "全量分析",
+    routingSelected: "选择路由",
+    routingFallback: "选择路由未稳定完成，已回退到全量分析",
+    uncoveredScope: "未覆盖维度",
+    uncoveredScopeNote: "基于分析范围推断。",
+    dimensions: {
+      value: "价值",
+      market: "市场",
+      risk: "风险",
+      macro: "宏观",
+    },
+    loadingKicker: "正在组织研判答案",
+    loadingStatus: "研判中，最终结果将在流程完成后直接出现在这里。",
+    loadingStage: "当前阶段",
+    progress: "进度",
+    stepsComplete: "个步骤已完成",
     debug: {
       continuity: "连续性",
       runId: "runId",
@@ -126,18 +142,18 @@ export const zhCN = {
   composer: {
     label: "继续",
     taskLabel: "任务/问题",
-    helper: "输入公司、行业、事件或组合问题，系统会按固定流程组织分析。",
-    placeholder: "输入公司、行业、事件或组合问题",
-    taskPlaceholder: "例如：总结电动车公司的风险画像",
+    helper: "输入公司简称、股票代码、行业或事件，系统会自动组织多智能体联合分析。",
+    placeholder: "输入公司简称、股票代码、行业或事件",
+    taskPlaceholder: "例如：总结电动车公司的综合风险",
     unavailablePlaceholder: "系统不可用，请稍后再试。",
     submit: "发送",
     submitting: "正在发送",
-    expandStructured: "结构化输入",
-    collapseStructured: "隐藏结构化输入",
-    structuredLabel: "结构化输入",
-    structuredHelper: "补充上下文、材料、约束和输出偏好，便于重放与审计。",
-    selectedRoutingLabel: "显式选择路由",
-    selectedRoutingHelper: "开启后，本条消息显式请求选择路由；关闭时不发送路由字段，按服务器默认执行。",
+    expandStructured: "补充信息",
+    collapseStructured: "收起补充信息",
+    structuredLabel: "补充信息",
+    structuredHelper: "可补充上下文、参考材料、分析约束和输出偏好。",
+    selectedRoutingLabel: "选择路由",
+    selectedRoutingHelper: "开启后，本条消息使用选择路由；关闭时按服务器默认执行。",
     contextLabel: "上下文/材料",
     contextPlaceholder: "已知事实、来源笔记或需要考虑的背景",
     constraintsLabel: "约束",
@@ -155,8 +171,8 @@ export const zhCN = {
     errorBody: "请稍后重试，或调整问题。",
     loadingTitle: "正在加载会话",
     loadingBody: "正在同步当前会话。",
-    emptyTitle: "开始一次资本市场研判",
-    emptyBody: "输入公司、行业、事件或组合问题，系统会按固定流程组织分析。",
+    emptyTitle: "开始一次研判分析",
+    emptyBody: "输入公司简称、股票代码、行业或事件，系统会自动组织多智能体联合分析。",
     examplePrompts: [
       "总结电动车公司的风险画像",
       "给我一份半导体供应链更新",
@@ -527,6 +543,12 @@ export function agentDescriptionLabel(agentId: string, fallback: string) {
 
 export function citationLabel(label: string) {
   return citationLabels[label] ?? label;
+}
+
+export const ALL_DIMENSION_KEYS = ["value", "market", "risk", "macro"] as const;
+
+export function uncoveredDimensions(selected: string[]): string[] {
+  return ALL_DIMENSION_KEYS.filter((d) => !selected.includes(d));
 }
 
 export function dimensionLabel(dimension: string) {

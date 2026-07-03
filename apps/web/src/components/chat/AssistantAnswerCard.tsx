@@ -3,7 +3,7 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AnswerCardModel, PublicTurn } from "../../types/chat";
 import type { WorkflowModel, WorkflowStageKey } from "../../types/workflow";
-import { citationLabel, continuityLabel, sourceLabel, zhCN } from "../../content/zh-CN";
+import { citationLabel, continuityLabel, dimensionLabel, sourceLabel, uncoveredDimensions, zhCN } from "../../content/zh-CN";
 import { ResearchThoughtChain } from "../workflow/ResearchThoughtChain";
 import { TechnicalWorkflowDisclosure } from "../workflow/TechnicalWorkflowDisclosure";
 
@@ -13,30 +13,12 @@ interface AssistantAnswerCardProps {
 
 const STREAMING_PLACEHOLDER_ANSWERS = new Set(["正在协作…", "正在协作..."]);
 const PENDING_STAGE_COPY: Record<WorkflowStageKey, { title: string; summary: string }> = {
-  planning: {
-    title: "问题理解",
-    summary: "正在把用户问题整理成可执行的研判任务。",
-  },
-  evidence: {
-    title: "证据接入",
-    summary: "正在整理本轮回答所需的基础材料。",
-  },
-  l2_analysis: {
-    title: "并行分析",
-    summary: "正在从价值、市场、风险、宏观等方向形成线索。",
-  },
-  dimension_composite: {
-    title: "维度综合",
-    summary: "正在汇总四维流程信号并处理差异。",
-  },
-  decision: {
-    title: "决策生成",
-    summary: "正在把流程线索组织成回答框架。",
-  },
-  report: {
-    title: "文字报告输出",
-    summary: "正在把结论、依据和限制整理成自然语言报告。",
-  },
+  planning: { title: "问题理解", summary: "正在把用户问题整理成可执行的研判任务。" },
+  evidence: { title: "证据接入", summary: "正在整理本轮回答所需的基础材料。" },
+  l2_analysis: { title: "并行分析", summary: "正在从价值、市场、风险、宏观等方向形成线索。" },
+  dimension_composite: { title: "维度综合", summary: "正在汇总四维流程信号并处理差异。" },
+  decision: { title: "决策生成", summary: "正在把流程线索组织成回答框架。" },
+  report: { title: "文字报告输出", summary: "正在把结论、依据和限制整理成自然语言报告。" },
 };
 
 function isStreamingPlaceholderAnswer(answer: string) {
@@ -44,12 +26,8 @@ function isStreamingPlaceholderAnswer(answer: string) {
 }
 
 function isWorkflowReportComplete(workflow: WorkflowModel | undefined) {
-  if (!workflow) {
-    return false;
-  }
-  if (workflow.currentStage === "report") {
-    return true;
-  }
+  if (!workflow) return false;
+  if (workflow.currentStage === "report") return true;
   const reportStage = workflow.stages.find((stage) => stage.key === "report");
   return Boolean(reportStage?.stepIds.some((stepId) => workflow.completedSteps.includes(stepId)));
 }
@@ -60,10 +38,7 @@ function pendingStageCopy(workflow: WorkflowModel | undefined) {
 }
 
 function renderCitations(answerCard: AnswerCardModel) {
-  if (!answerCard.citations?.length) {
-    return null;
-  }
-
+  if (!answerCard.citations?.length) return null;
   return (
     <div className="assistant-card__references">
       <div className="assistant-card__references-head">
@@ -81,6 +56,84 @@ function renderCitations(answerCard: AnswerCardModel) {
   );
 }
 
+function renderRoutingBadge(provenance: Record<string, any> | undefined) {
+  if (!provenance) return null;
+  const selectedRoutingRequested = provenance.selectedRoutingRequested;
+  const selectedRoutingFallback = provenance.selectedRoutingFallback;
+  const selectedDimensions: string[] = provenance.selectedDimensions ?? [];
+
+  if (selectedRoutingFallback) {
+    return (
+      <div className="routing-badge routing-badge--fallback">
+        <span className="routing-badge__icon">⚠</span>
+        <span className="routing-badge__text">{zhCN.answer.routingFallback}</span>
+      </div>
+    );
+  }
+
+  if (selectedRoutingRequested && selectedDimensions.length > 0) {
+    return (
+      <div className="routing-badge routing-badge--selected">
+        <span className="routing-badge__label">{zhCN.answer.routingSelected}：</span>
+        {selectedDimensions.map((d) => (
+          <span key={d} className={`routing-badge__dim rbd-${d}`}>{zhCN.answer.dimensions[d as keyof typeof zhCN.answer.dimensions] ?? d}</span>
+        ))}
+      </div>
+    );
+  }
+
+  return (
+    <div className="routing-badge routing-badge--default">
+      <span className="routing-badge__label">{zhCN.answer.routingDefault}</span>
+    </div>
+  );
+}
+
+function renderUncoveredScope(provenance: Record<string, any> | undefined) {
+  if (!provenance) return null;
+  const selectedDimensions: string[] = provenance.selectedDimensions ?? [];
+  if (selectedDimensions.length === 0) return null;
+  const uncovered = uncoveredDimensions(selectedDimensions);
+  if (uncovered.length === 0) return null;
+
+  return (
+    <div className="uncovered-scope">
+      <span className="uncovered-scope__label">{zhCN.answer.uncoveredScope}：</span>
+      <span className="uncovered-scope__dims">{uncovered.map((d) => zhCN.answer.dimensions[d as keyof typeof zhCN.answer.dimensions] ?? d).join("、")}</span>
+      <span className="uncovered-scope__note">{zhCN.answer.uncoveredScopeNote}</span>
+    </div>
+  );
+}
+
+function renderProgress(workflow: WorkflowModel | undefined) {
+  if (!workflow) return null;
+  const stage = pendingStageCopy(workflow);
+  const completed = workflow.completedSteps.length;
+  const total = workflow.dagSteps.length;
+
+  return (
+    <div className="loading-progress">
+      <div className="loading-progress__pulse" aria-hidden="true">
+        <span className="loading-progress__dot" />
+        <span className="loading-progress__dot" />
+        <span className="loading-progress__dot" />
+      </div>
+      <div className="loading-progress__body">
+        <div className="loading-progress__stage">
+          <strong>{stage.title}</strong>
+          <span>{stage.summary}</span>
+        </div>
+        {total > 0 && (
+          <div className="loading-progress__count">
+            <span className="loading-progress__step-counter">{completed}/{total}</span>
+            <span className="loading-progress__step-label">{zhCN.answer.stepsComplete}</span>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 function renderDebugMeta(turn: PublicTurn, answerCard: AnswerCardModel, open: boolean, onToggle: () => void) {
   const provenance = turn.workflow?.provenance;
   const evidenceCount = answerCard.evidenceCount ?? answerCard.evidenceCards?.length ?? 0;
@@ -91,9 +144,7 @@ function renderDebugMeta(turn: PublicTurn, answerCard: AnswerCardModel, open: bo
     provenance ? { label: zhCN.answer.debug.emit, value: sourceLabel(provenance.source) } : null,
   ].filter(Boolean) as Array<{ label: string; value: string }>;
 
-  if (!items.length) {
-    return null;
-  }
+  if (!items.length) return null;
 
   return (
     <div className="assistant-card__details">
@@ -119,16 +170,12 @@ function renderAnswerBody(turn: PublicTurn, answerCard: AnswerCardModel) {
     Boolean(turn.workflow) && !isWorkflowReportComplete(turn.workflow) && isStreamingPlaceholderAnswer(answerCard.answer);
 
   if (showPendingAnswer) {
-    const stage = pendingStageCopy(turn.workflow);
     return (
-      <div className="assistant-card__body assistant-card__pending-answer" aria-label="正在组织研判答案">
-        <span className="assistant-card__pending-kicker">正在组织研判答案</span>
-        <h3>正在组织研判答案</h3>
-        <p>研判中，最终文字报告将在流程完成后直接出现在这里。</p>
-        <div className="assistant-card__pending-stage">
-          <strong>{stage.title}</strong>
-          <span>{stage.summary}</span>
-        </div>
+      <div className="assistant-card__body assistant-card__pending-answer" aria-label={zhCN.answer.loadingKicker}>
+        <span className="assistant-card__pending-kicker">{zhCN.answer.loadingKicker}</span>
+        <h3>{zhCN.answer.loadingKicker}</h3>
+        <p>{zhCN.answer.loadingStatus}</p>
+        {renderProgress(turn.workflow)}
       </div>
     );
   }
@@ -150,17 +197,16 @@ function renderAnswerBody(turn: PublicTurn, answerCard: AnswerCardModel) {
 export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
   const answerCard = turn.answerCard;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const provenance = turn.workflow?.provenance as Record<string, any> | undefined;
 
-  if (!answerCard) {
-    return null;
-  }
+  if (!answerCard) return null;
 
   return (
     <article className="assistant-card" aria-label="系统回答卡片">
-      <div className="assistant-card__avatar" aria-hidden="true">
-        智
-      </div>
+      <div className="assistant-card__avatar" aria-hidden="true">智</div>
       <div className="assistant-card__content">
+        {renderRoutingBadge(provenance)}
+        {renderUncoveredScope(provenance)}
         {renderAnswerBody(turn, answerCard)}
         {renderCitations(answerCard)}
         {turn.workflow ? <ResearchThoughtChain workflow={turn.workflow} /> : null}

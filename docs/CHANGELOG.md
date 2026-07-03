@@ -3,6 +3,43 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-03 - Polish frontend: loading UX, routing badges, and provenance display
+
+### Changed
+
+- **Loading UX**: Added animated pulse indicator and progress counter visible in
+  collapsed answer card view, without requiring thought chain expansion. Shows
+  current workflow stage name and step progress (e.g. "12/27 个步骤已完成").
+- **Routing badges**: Answer card header now shows a badge indicating the
+  routing mode: "全量分析" (default full DAG), "选择路由：value、risk"
+  (explicit selected routing with dimension chips), or a fallback warning.
+- **Fallback display**: When `selectedRoutingFallback=true`, answer card shows
+  a prominent "选择路由未稳定完成，已回退到全量分析" warning banner.
+- **Uncovered dimensions**: For selected routing reports, if any of the four
+  dimensions (value/market/risk/macro) are not covered, they are shown as
+  an "未覆盖维度" pill derived from `selectedDimensions`.
+- **Copy text polish**: Updated composer placeholder, helper text, structured
+  input label, sidebar navigation, empty states, and routing toggle copy to
+  be more natural and professional (e.g. "结构化输入" → "补充信息",
+  "显式选择路由" → "选择路由", "能力" → "智能体").
+- **CSS refinements**: Added loading animation keyframes, routing badge color
+  variants, dimension chip colors, uncovered scope styling, and progress
+  counter layout. No backend schema changes.
+
+### Tests
+
+- Updated smoke test assertions to match revised copy text.
+- Frontend typecheck (`tsc --noEmit`), build (`tsc && vite build`), and
+  smoke test all pass.
+
+### Not Done
+
+- No backend public API schema change, no Router change, no agent service
+  change, no runtime binding change, no catalog change.
+- History conversation sidebar badges are not implemented (ChatSessionSummary
+  has no `provenance` field; routing mode is only shown on message cards).
+- No commit/push unless explicitly authorized.
+
 ## 2026-07-03 - Align source default chat model to deepseek-v4-flash
 
 ### Changed

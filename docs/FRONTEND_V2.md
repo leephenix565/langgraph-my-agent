@@ -61,6 +61,48 @@ and provider-router status flags, but it must not display raw route intent,
 raw selected plans, raw provider responses, raw graph messages, endpoint URLs,
 env values, secrets, tracebacks, or chain-of-thought.
 
+## Current Loading UX and Routing Badge Display (2026-07-03)
+
+### Loading Progress
+
+While the graph executes (30-85s typical), the answer card shows:
+
+- An **animated pulse indicator** (three dots with staggered fade animation)
+- The **current workflow stage name** and description (规划、证据接入、并行分析等)
+- A **step progress counter** (e.g. "12/27 个步骤已完成") when `dagSteps` are available
+- These are visible in the default collapsed view; the thought chain progress
+  bar remains available on expansion.
+
+The answer text is "正在协作…" as a streaming placeholder until the final
+report is ready. The loading view does not show an estimated time remaining.
+
+### Routing Badge
+
+The answer card header (above the report body) displays a **routing badge**:
+
+- Default full DAG: `"全量分析"` in a neutral chip
+- Explicit selected routing: `"选择路由：value、risk"` with dimension-specific
+  colored chips (`value` blue, `market` amber, `risk` red, `macro` green)
+- Selected routing with fallback: `"⚠ 选择路由未稳定完成，已回退到全量分析"`
+  in an amber warning chip
+
+The badge reads from `workflow_snapshot_v2.provenance`:
+`selectedRoutingRequested`, `selectedRoutingFallback`, `selectedDimensions`.
+
+### Uncovered Dimensions
+
+When selected routing covers fewer than four dimensions, an "未覆盖维度" chip
+appears below the routing badge listing the excluded dimensions
+(e.g. "未覆盖维度：market、macro"). This is derived client-side from
+`selectedDimensions` and the static four-dimension set. The chip includes a
+note "基于分析范围推断。"
+
+### History Session Badge
+
+Routing mode is not displayed in the sidebar session list. The
+`ChatSessionSummary` model does not carry `provenance`. Routing mode is only
+visible on message cards within a session.
+
 ## Current R5-B2 Workflow Inspector Boundary
 
 The Python public adapter emits `workflow_snapshot_v2` with:

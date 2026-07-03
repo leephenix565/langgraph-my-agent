@@ -540,7 +540,7 @@ async function runThoughtChainDynamicStageChecks() {
   );
   const l2Article = l2View.getByLabelText("系统回答卡片");
   assert.ok(l2View.getByRole("heading", { level: 3, name: "正在组织研判答案" }));
-  assert.ok(l2Article.textContent?.includes("研判中，最终文字报告将在流程完成后直接出现在这里。"));
+  assert.ok(l2Article.textContent?.includes("研判中，最终结果将在流程完成后直接出现在这里。"));
   assert.ok(l2Article.textContent?.includes("并行分析"));
   assert.equal(l2Article.textContent?.includes("### 市场摘要"), false);
 
@@ -749,7 +749,7 @@ async function runStreamingSuccessScenario() {
   await waitFor(() => {
     assert.equal((view.container.querySelector("#chat-composer") as HTMLTextAreaElement).disabled, false);
   });
-  assert.ok(view.getByText("开始一次资本市场研判"));
+  assert.ok(view.getByText("开始一次研判分析"));
   assert.ok(view.getByRole("button", { name: "总结电动车公司的风险画像" }));
 
   const taskInput = view.container.querySelector("#chat-composer") as HTMLTextAreaElement;
@@ -860,8 +860,8 @@ async function runSelectedRoutingToggleScenario() {
   await waitFor(() => {
     assert.equal((view.container.querySelector("#chat-composer") as HTMLTextAreaElement).disabled, false);
   });
-  assert.ok(view.getByText("显式选择路由"));
-  assert.ok(view.getByText("开启后，本条消息显式请求选择路由；关闭时不发送路由字段，按服务器默认执行。"));
+  assert.ok(view.getByText("选择路由"));
+  assert.ok(view.getByText("开启后，本条消息使用选择路由；关闭时按服务器默认执行。"));
 
   const taskInput = view.container.querySelector("#chat-composer") as HTMLTextAreaElement;
   await user.type(taskInput, "Analyze the valuation drivers.");
