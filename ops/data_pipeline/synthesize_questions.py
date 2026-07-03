@@ -467,7 +467,7 @@ def main() -> int:
     if args.model:
         model = args.model
     elif using_deepseek:
-        model = "deepseek-chat"
+        model = "deepseek-v4-flash"
     else:
         model = os.environ.get("TEACHER_MODEL") or os.environ.get("MODEL")
     if not model:

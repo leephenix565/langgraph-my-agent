@@ -28,7 +28,7 @@ class Context:
     """Shared context injected into every node."""
 
     model: Annotated[str, {"__template_metadata__": {"kind": "llm"}}] = field(
-        default="deepseek/deepseek-chat",
+        default="deepseek/deepseek-v4-flash",
         metadata={"description": "Underlying chat model (provider/model)."},
     )
     router_model: str = field(

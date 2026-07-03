@@ -90,16 +90,16 @@ def test_factory_result_never_creates_client_even_when_preflight_ready() -> None
 
 def test_openai_compatible_model_normalization_strips_known_provider_prefix() -> None:
     result = normalize_router_provider_model_for_openai_compatible_api(
-        "deepseek/deepseek-chat"
+        "deepseek/deepseek-v4-flash"
     )
 
-    assert result.provider_api_model == "deepseek-chat"
+    assert result.provider_api_model == "deepseek-v4-flash"
     assert result.normalized is True
     assert result.reason_code == "deepseek_provider_prefix_removed"
 
 
 def test_model_normalization_keeps_api_model_ids_and_unknown_prefixes() -> None:
-    plain = normalize_router_provider_model_for_openai_compatible_api("deepseek-chat")
+    plain = normalize_router_provider_model_for_openai_compatible_api("deepseek-v4-flash")
     unknown = normalize_router_provider_model_for_openai_compatible_api(
         "vendor/custom-model"
     )
@@ -107,7 +107,7 @@ def test_model_normalization_keeps_api_model_ids_and_unknown_prefixes() -> None:
         "https://example.invalid/model"
     )
 
-    assert plain.provider_api_model == "deepseek-chat"
+    assert plain.provider_api_model == "deepseek-v4-flash"
     assert plain.normalized is False
     assert plain.reason_code == "model_passthrough"
     assert unknown.provider_api_model == "vendor/custom-model"

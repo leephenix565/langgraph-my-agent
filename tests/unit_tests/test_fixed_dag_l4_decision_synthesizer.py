@@ -85,7 +85,7 @@ def test_l4_decision_llm_output_is_guarded_by_risk_manual_review(monkeypatch) ->
         question="请分析 600519.SH",
         dimension_results=dimensions,
         fallback_decision_result=fallback,
-        context=SimpleNamespace(model="deepseek/deepseek-chat"),
+        context=SimpleNamespace(model="deepseek/deepseek-v4-flash"),
         as_of="2026-06-05",
     )
     decision = outcome["decision_result"]
@@ -115,7 +115,7 @@ def test_l4_decision_missing_credential_falls_back_without_provider_call(monkeyp
         question="请分析 600519.SH",
         dimension_results=dimensions,
         fallback_decision_result=fallback,
-        context=SimpleNamespace(model="deepseek/deepseek-chat"),
+        context=SimpleNamespace(model="deepseek/deepseek-v4-flash"),
         as_of="2026-06-05",
     )
 
@@ -150,7 +150,7 @@ def test_l4_decision_default_reasoning_uses_public_language(monkeypatch) -> None
         question="请分析 600519.SH",
         dimension_results=dimensions,
         fallback_decision_result=fallback,
-        context=SimpleNamespace(model="deepseek/deepseek-chat"),
+        context=SimpleNamespace(model="deepseek/deepseek-v4-flash"),
         as_of="2026-06-05",
     )
     decision = outcome["decision_result"]

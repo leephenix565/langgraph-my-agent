@@ -345,7 +345,7 @@ def build_l2_conclusions_with_internal_placeholders(
     deterministic = build_l2_conclusions(plan, as_of=as_of)
     agent_ids = _agent_ids_for_plan(plan)
     try:
-        model = load_chat_model(str(getattr(context, "model", "") or "deepseek/deepseek-chat"))
+        model = load_chat_model(str(getattr(context, "model", "") or "deepseek/deepseek-v4-flash"))
     except Exception as exc:
         reason = _safe_reason(exc)
         return {

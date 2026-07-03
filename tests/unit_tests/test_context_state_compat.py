@@ -48,7 +48,7 @@ def test_context_dataclass_surface_is_stable() -> None:
         )
         for field in fs
     ] == [
-        ("model", "deepseek/deepseek-chat", "Underlying chat model (provider/model)."),
+        ("model", "deepseek/deepseek-v4-flash", "Underlying chat model (provider/model)."),
         (
             "router_model",
             "",

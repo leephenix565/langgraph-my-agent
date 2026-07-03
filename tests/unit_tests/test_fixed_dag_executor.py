@@ -1890,7 +1890,7 @@ def test_llm_report_missing_credential_records_safe_provider_diagnostic(monkeypa
         as_of="2026-06-04",
         context=Context(
             enable_llm_report_synthesis=True,
-            llm_report_synthesis_model="deepseek/deepseek-chat",
+            llm_report_synthesis_model="deepseek/deepseek-v4-flash",
         ),
     )
     valid, reason = validate_dag_execution_result(result)

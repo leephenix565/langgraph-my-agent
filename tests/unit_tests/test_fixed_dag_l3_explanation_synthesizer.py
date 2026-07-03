@@ -170,7 +170,7 @@ def test_l3_explanation_missing_credential_short_circuits(monkeypatch) -> None:
         dimension_results=dimensions,
         context=Context(
             enable_llm_l3_explanation=True,
-            llm_l3_explanation_model="deepseek/deepseek-chat",
+            llm_l3_explanation_model="deepseek/deepseek-v4-flash",
         ),
     )
 

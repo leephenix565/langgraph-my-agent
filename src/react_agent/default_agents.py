@@ -48,7 +48,7 @@ def _effective_model_name() -> str:
     try:
         return Context().model
     except Exception:
-        return os.environ.get("MODEL", "deepseek/deepseek-chat")
+        return os.environ.get("MODEL", "deepseek/deepseek-v4-flash")
 
 
 def _is_placeholder_agent(agent_id: str, default_allow_search: bool) -> bool:

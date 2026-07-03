@@ -3,6 +3,40 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-03 - Align source default chat model to deepseek-v4-flash
+
+### Changed
+
+- Replaced the stale `deepseek/deepseek-chat` fallback model id with
+  `deepseek/deepseek-v4-flash` in the active runtime source defaults: the
+  `Context.model` default and the L2/L3/L4 LLM-seam fallbacks in
+  `default_agents.py`, `fixed_dag_llm_placeholders.py`,
+  `fixed_dag_l3_explanation_synthesizer.py`,
+  `fixed_dag_l4_decision_synthesizer.py`, and `fixed_dag_report_synthesizer.py`.
+- Runtime already resolved the chat model from the `MODEL` env var (which was
+  already `deepseek-v4-flash`); this only aligns the code-level fallback so
+  env-less checkouts, tests, and CI no longer silently fall back to the retired
+  model name.
+
+### Tests
+
+- Updated 7 test files to the new model id, including the router
+  provider-prefix normalization assertions
+  (`test_router_provider_factory.py`) and the graph
+  router-model → provider payload coupling (`test_graph.py`). Affected-test run:
+  123 passed. `--mode static` (ruff + mypy + codespell) passed.
+
+### Not Done
+
+- No `.env` change (env already set to `deepseek-v4-flash`), no runtime
+  binding, catalog, or non-L4 policy change, no public schema/topology change,
+  no provider call, no `/v1/agent/invoke`, no push.
+- Also aligned: `scripts/phase25_regress_10turn.py` and
+  `ops/data_pipeline/synthesize_questions.py` fallback model-ids.
+- Left unchanged (outside scope): the archived
+  `ops/regression/fusion/run_fusion_regression.py`, runbook/plan doc
+  examples, and historical CHANGELOG entries.
+
 ## 2026-07-02 - Explicit selected-router reliability telemetry hardening
 
 ### Changed

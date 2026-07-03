@@ -229,7 +229,7 @@ def test_synthesize_report_result_with_llm_missing_credential_preflight(monkeypa
         fallback_report_result=fallback,
         context=Context(
             enable_llm_report_synthesis=True,
-            llm_report_synthesis_model="deepseek/deepseek-chat",
+            llm_report_synthesis_model="deepseek/deepseek-v4-flash",
         ),
     )
     rendered = json.dumps(outcome, ensure_ascii=False).lower()
@@ -246,7 +246,7 @@ def test_synthesize_report_result_with_llm_missing_credential_preflight(monkeypa
 
 def test_provider_config_status_is_secret_free(monkeypatch) -> None:
     monkeypatch.setenv("DEEPSEEK_API_KEY", "not_printed")
-    status = provider_config_status("deepseek/deepseek-chat")
+    status = provider_config_status("deepseek/deepseek-v4-flash")
     rendered = json.dumps(status, ensure_ascii=False).lower()
 
     assert status["credential_status"] == "present"

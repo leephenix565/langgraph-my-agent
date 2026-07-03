@@ -47,7 +47,7 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--model",
         type=str,
-        default=os.environ.get("MODEL", "deepseek/deepseek-chat"),
+        default=os.environ.get("MODEL", "deepseek/deepseek-v4-flash"),
         help="Context.model passed to graph invocations.",
     )
     parser.add_argument(

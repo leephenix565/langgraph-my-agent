@@ -420,7 +420,7 @@ def synthesize_l3_explanations(
     model_name = str(
         getattr(context, "llm_l3_explanation_model", "")
         or getattr(context, "model", "")
-        or "deepseek/deepseek-chat"
+        or "deepseek/deepseek-v4-flash"
     )
     config_status = provider_config_status(model_name)
     if config_status.get("preflight_status") in {"invalid_model_name", "missing_credential"}:

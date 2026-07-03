@@ -118,7 +118,7 @@ async def test_react_agent_fixed_dag_skeleton_passthrough(monkeypatch) -> None:
     res = graph_module.graph.invoke(
         {"messages": [("user", "Demo question: give a quick market view")]},  # type: ignore[arg-type]
         context=Context(
-            model="deepseek/deepseek-chat",
+            model="deepseek/deepseek-v4-flash",
             system_prompt="inactive",
             disable_external_compute_default=True,
             disable_non_l4_external_compute_default=True,
@@ -176,7 +176,7 @@ async def test_fixed_dag_context_as_of_propagates_to_plan(monkeypatch) -> None:
     res = graph_module.graph.invoke(
         {"messages": [("user", "请分析 600519.SH")]},  # type: ignore[arg-type]
         context=Context(
-            model="deepseek/deepseek-chat",
+            model="deepseek/deepseek-v4-flash",
             system_prompt="inactive",
             fixed_dag_as_of="2026-06-05",
         ),
@@ -633,7 +633,7 @@ async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compa
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -654,7 +654,7 @@ async def test_selected_routing_with_real_llm_dimension_router_uses_openai_compa
     request = requests[0]
     assert request["url"] == "https://provider.example/v1/chat/completions"
     assert request["headers"]["Authorization"] == "Bearer test-key"
-    assert request["json"]["model"] == "deepseek-chat"
+    assert request["json"]["model"] == "deepseek-v4-flash"
     assert request["json"]["response_format"] == {"type": "json_object"}
     assert request["json"]["max_tokens"] == 220
     assert plan["schema"] == "selected_fixed_dag_plan_v1"
@@ -728,7 +728,7 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_missing_o
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -802,7 +802,7 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_unparseab
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -874,7 +874,7 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_unrepaira
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -940,7 +940,7 @@ async def test_selected_routing_with_real_llm_dimension_router_retries_timeout_b
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -1015,7 +1015,7 @@ async def test_selected_routing_with_real_llm_dimension_router_accepts_content_p
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -1078,7 +1078,7 @@ async def test_selected_routing_with_real_llm_dimension_router_records_safe_shap
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
@@ -1135,7 +1135,7 @@ async def test_selected_routing_with_real_llm_dimension_router_records_transport
             enable_selected_routing=True,
             enable_llm_dimension_router=True,
             llm_dimension_router_mode="real",
-            router_model="deepseek/deepseek-chat",
+            router_model="deepseek/deepseek-v4-flash",
             router_openai_base_url="https://provider.example",
             router_openai_api_key="test-key",
             disable_external_compute_default=True,
