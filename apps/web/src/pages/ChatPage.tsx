@@ -104,6 +104,7 @@ export function ChatPage({
               </button>
             ))}
           </div>
+          <p className="thread-empty__hint">点击示例问题自动填充，或自行输入分析内容</p>
         </section>
       ) : null}
 

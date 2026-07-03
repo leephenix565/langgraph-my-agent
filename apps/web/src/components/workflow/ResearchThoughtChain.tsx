@@ -190,7 +190,7 @@ const FALLBACK_EVIDENCE: Record<WorkflowStageKey, EvidenceItem[]> = {
   report: [
     { label: "输出形式", value: "普通 AI 主回答。" },
     { label: "内容结构", value: "结论、依据、限制与风险提示。" },
-    { label: "追溯位置", value: "思维链仅保留形成路径。" },
+    { label: "追溯位置", value: "分析路径仅保留形成路径。" },
   ],
 };
 
@@ -466,7 +466,7 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
   const progress = progressView(phases, selectedPhase, reportComplete, workflow);
 
   return (
-    <section className="thought-chain" aria-label="研判思维链">
+    <section className="thought-chain" aria-label="分析路径">
       <button
         type="button"
         className="thought-chain__toggle"
@@ -476,10 +476,10 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
       >
         <span className="thought-chain__toggle-copy">
           <span className="thought-chain__mark" aria-hidden="true">
-            链
+            流
           </span>
           <span>
-            <strong>研判思维链</strong>
+            <strong>分析路径</strong>
             <span>系统按固定研判流程组织本轮回答</span>
           </span>
         </span>
@@ -492,7 +492,7 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
       </button>
 
       {expanded ? (
-        <div className="thought-chain__content" id={contentId} aria-label="研判思维链详情">
+        <div className="thought-chain__content" id={contentId} aria-label="分析路径详情">
           <div
             className="thought-chain__progress-band"
             style={{ "--thought-chain-progress": `${progress.percent}%` } as CSSProperties}
@@ -538,7 +538,7 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
 
               <div className="thought-chain__thought-line">
                 <span className="thought-chain__thought-mark" aria-hidden="true">
-                  链
+                  流
                 </span>
                 <p>{selectedPhase.thought}</p>
               </div>

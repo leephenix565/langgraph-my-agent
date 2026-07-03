@@ -79,6 +79,7 @@ export function Sidebar({
                 <span className="sidebar__session-marker" aria-hidden="true" />
                 <div className="sidebar__session-copy">
                   <strong>{session.title}</strong>
+                  {session.preview && <span className="sidebar__session-preview">{session.preview.slice(0, 40)}</span>}
                   <small>{session.updatedAt}</small>
                 </div>
               </button>

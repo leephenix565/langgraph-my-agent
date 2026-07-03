@@ -131,7 +131,7 @@ function assistantTurn(id: string, answer: string): PublicTurn {
           note: "系统按照固定研判流程组织本轮分析，包括问题理解、信息整理、并行分析、维度综合与报告生成。",
         },
         { label: "User question", note: "围绕你提出的问题进行结构化梳理。" },
-        { label: "Workflow", note: "如需查看过程，可展开“研判思维链”。" },
+        { label: "Workflow", note: "如需查看过程，可展开“分析路径”。" },
       ],
       evidenceCards: [{ title: "分析框架", note: "系统按照固定研判流程组织本轮分析。" }],
       evidenceCount: 3,
@@ -383,7 +383,7 @@ async function runAssistantRenderChecks() {
   assert.ok(article.querySelector("strong"));
   assert.ok(article.querySelector("em"));
   assert.ok(article.textContent?.includes("研判流程"));
-  assert.ok(article.textContent?.includes("研判思维链"));
+  assert.ok(article.textContent?.includes("分析路径"));
   assert.ok(article.textContent?.includes("系统按固定研判流程组织本轮回答"));
   assert.ok(article.textContent?.includes("技术流程详情"));
   assert.ok(article.textContent?.includes("展开技术详情"));
@@ -399,12 +399,12 @@ async function runAssistantRenderChecks() {
   assert.equal(article.textContent?.includes("pending_implementation"), false);
   assert.equal(article.textContent?.includes("待实现"), false);
   assertNoForbiddenDefaultUserCopy(article.textContent);
-  const thoughtChainToggle = view.getByRole("button", { name: /研判思维链/ });
+  const thoughtChainToggle = view.getByRole("button", { name: /分析路径/ });
   assert.equal(thoughtChainToggle.getAttribute("aria-expanded"), "false");
-  assert.equal(view.queryByLabelText("研判思维链详情"), null);
+  assert.equal(view.queryByLabelText("分析路径详情"), null);
   fireEvent.click(thoughtChainToggle);
   assert.equal(thoughtChainToggle.getAttribute("aria-expanded"), "true");
-  const thoughtChainDetail = view.getByLabelText("研判思维链详情");
+  const thoughtChainDetail = view.getByLabelText("分析路径详情");
   for (const stageTitle of ["问题理解", "证据接入", "并行分析", "维度综合", "决策生成", "文字报告输出"]) {
     assert.ok(thoughtChainDetail.textContent?.includes(stageTitle), `Missing thought-chain stage: ${stageTitle}`);
   }
@@ -467,10 +467,10 @@ async function runAssistantRenderChecks() {
 
   const technicalToggle = view.getByRole("button", { name: /技术流程详情/ });
   assert.equal(technicalToggle.getAttribute("aria-expanded"), "false");
-  assert.equal(view.queryByLabelText("固定 DAG 研判流程详情"), null);
+  assert.equal(view.queryByLabelText("固定 DAG 执行详情"), null);
   fireEvent.click(technicalToggle);
   assert.equal(technicalToggle.getAttribute("aria-expanded"), "true");
-  assert.ok(view.getByLabelText("固定 DAG 研判流程详情"));
+  assert.ok(view.getByLabelText("固定 DAG 执行详情"));
   assert.ok(view.getByText("阶段时间线"));
   assert.ok(view.getAllByText("路径规划器").length >= 1);
   assert.ok(view.getByText("执行批次"));
@@ -540,13 +540,13 @@ async function runThoughtChainDynamicStageChecks() {
   );
   const l2Article = l2View.getByLabelText("系统回答卡片");
   assert.ok(l2View.getByRole("heading", { level: 3, name: "正在组织研判答案" }));
-  assert.ok(l2Article.textContent?.includes("研判中，最终结果将在流程完成后直接出现在这里。"));
+  assert.ok(l2Article.textContent?.includes("多智能体正在并行分析，结果将直接出现在这里。"));
   assert.ok(l2Article.textContent?.includes("并行分析"));
   assert.equal(l2Article.textContent?.includes("### 市场摘要"), false);
 
-  const l2Toggle = l2View.getByRole("button", { name: /研判思维链/ });
+  const l2Toggle = l2View.getByRole("button", { name: /分析路径/ });
   fireEvent.click(l2Toggle);
-  const l2Detail = l2View.getByLabelText("研判思维链详情");
+  const l2Detail = l2View.getByLabelText("分析路径详情");
   const l2StageNode = Array.from(l2Detail.querySelectorAll(".thought-chain__step")).find((node) =>
     node.textContent?.includes("并行分析"),
   );
@@ -576,9 +576,9 @@ async function runThoughtChainDynamicStageChecks() {
   assert.ok(dimensionView.getByRole("heading", { level: 3, name: "正在组织研判答案" }));
   assert.ok(dimensionArticle.textContent?.includes("维度综合"));
   assert.ok(dimensionArticle.textContent?.includes("正在汇总四维流程信号并处理差异。"));
-  const dimensionToggle = dimensionView.getByRole("button", { name: /研判思维链/ });
+  const dimensionToggle = dimensionView.getByRole("button", { name: /分析路径/ });
   fireEvent.click(dimensionToggle);
-  const dimensionDetail = dimensionView.getByLabelText("研判思维链详情");
+  const dimensionDetail = dimensionView.getByLabelText("分析路径详情");
   const dimensionStageNode = Array.from(dimensionDetail.querySelectorAll(".thought-chain__step")).find((node) =>
     node.textContent?.includes("维度综合"),
   );
@@ -605,9 +605,9 @@ async function runThoughtChainDynamicStageChecks() {
       turn={assistantTurnWithWorkflow("assistant-running-evidence", "正在协作…", runningWorkflow("evidence"))}
     />,
   );
-  const evidenceToggle = evidenceView.getByRole("button", { name: /研判思维链/ });
+  const evidenceToggle = evidenceView.getByRole("button", { name: /分析路径/ });
   fireEvent.click(evidenceToggle);
-  const evidenceDetail = evidenceView.getByLabelText("研判思维链详情");
+  const evidenceDetail = evidenceView.getByLabelText("分析路径详情");
   assert.ok(evidenceDetail.textContent?.includes("个任务处理中"));
   assert.ok(evidenceDetail.textContent?.includes("证据接入"));
   assert.ok(evidenceDetail.textContent?.includes("不代表实时市场数据或投资建议"));
@@ -762,15 +762,15 @@ async function runStreamingSuccessScenario() {
   await user.click(view.container.querySelector(".composer__submit") as HTMLButtonElement);
 
   await waitFor(() => {
-    assert.ok(view.getByText("简短实时摘要，先给结论。"));
+    assert.ok(view.container.textContent?.includes("简短实时摘要，先给结论。"));
   });
-  assert.ok(view.container.textContent?.includes("研判思维链"));
+  assert.ok(view.container.textContent?.includes("分析路径"));
   assert.ok(view.container.textContent?.includes("技术流程详情"));
   assert.ok(view.container.textContent?.includes("展开技术详情"));
   assert.equal(view.container.textContent?.includes("执行批次"), false);
   assert.equal(view.container.textContent?.includes("步骤结果详情"), false);
   assert.equal(view.container.textContent?.includes("运行方式"), false);
-  assert.equal(view.queryByLabelText("固定 DAG 研判流程详情"), null);
+  assert.equal(view.queryByLabelText("固定 DAG 执行详情"), null);
   assert.equal(view.container.textContent?.includes("external_candidate_disabled"), false);
   assert.equal(view.container.textContent?.includes("pending_implementation"), false);
   assert.equal(view.container.textContent?.includes("待实现"), false);
@@ -871,7 +871,7 @@ async function runSelectedRoutingToggleScenario() {
   await user.click(view.container.querySelector(".composer__submit") as HTMLButtonElement);
 
   await waitFor(() => {
-    assert.ok(view.getByText("已按选择路由生成摘要。"));
+    assert.ok(view.container.textContent?.includes("已按选择路由生成摘要。"));
   });
   assert.deepEqual(sentPayloads[0].routing, { mode: "selected" });
   assert.equal(sentPayloads[0].hasRouting, true);

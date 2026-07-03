@@ -70,7 +70,7 @@ export function Composer({
           placeholder={unavailable ? zhCN.composer.unavailablePlaceholder : zhCN.composer.taskPlaceholder}
           aria-label={zhCN.composer.taskLabel}
         />
-        <button className={`composer__submit${busy ? " composer__submit--busy" : ""}`} type="submit" disabled={!canSubmit || busy} aria-label={zhCN.composer.submit}>
+        <button className={`composer__submit${busy ? " composer__submit--busy" : ""}`} type="submit" disabled={!canSubmit} aria-label={zhCN.composer.submit}>
           {busy ? <span className="spinner" /> : "↗"}
         </button>
       </div>
@@ -161,6 +161,7 @@ export function Composer({
       ) : null}
       {inputTooLong ? <p className="composer__structured-warning">{zhCN.composer.inputTooLong}</p> : null}
       <p className="composer__hint">{zhCN.composer.helper}</p>
+      <p className="composer__keyboard-hint">{zhCN.composer.keyboardHint}</p>
     </form>
   );
 }

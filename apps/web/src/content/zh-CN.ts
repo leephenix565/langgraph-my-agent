@@ -41,7 +41,7 @@ export const zhCN = {
       macro: "宏观",
     },
     loadingKicker: "正在组织研判答案",
-    loadingStatus: "研判中，最终结果将在流程完成后直接出现在这里。",
+    loadingStatus: "多智能体正在并行分析，结果将直接出现在这里。",
     loadingStage: "当前阶段",
     progress: "进度",
     stepsComplete: "个步骤已完成",
@@ -54,7 +54,7 @@ export const zhCN = {
   },
   workflow: {
     title: "研判流程",
-    inspectorLabel: "固定 DAG 研判流程详情",
+    inspectorLabel: "固定 DAG 执行详情",
     expand: "查看流程详情",
     collapse: "收起流程详情",
     empty: "等待流程快照",
@@ -161,6 +161,7 @@ export const zhCN = {
     outputPreferenceLabel: "输出偏好",
     outputPreferencePlaceholder: "长度、结构、语气，或是否需要表格",
     inputTooLong: "输入过长，请缩短后再试。",
+    keyboardHint: "Enter 发送 · Shift+Enter 换行",
   },
   states: {
     unavailableTitle: "系统不可用",
