@@ -285,6 +285,11 @@ function detailSummary(phase: PhaseView, workflow: WorkflowModel) {
     return "最终文字报告已显示在上方主回答区。";
   }
   const unique = [...new Set(phase.steps.map((step) => step.summary).filter(Boolean))];
+  // When all step summaries are identical or only one unique value exists,
+  // prefer the phase detail text for more context.
+  if (unique.length <= 1) {
+    return phase.detail;
+  }
   return unique.slice(0, 2).join(" ") || phase.detail;
 }
 
@@ -625,13 +630,14 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                                 ? "等待分析结果"
                                 : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
                           </p>
-                          {showMembers && dd ? (
+                          {dd && dd.agents.length > 0 ? (
                             <div className="thought-chain__dimension-members">
-                              {dd.agents.slice(0, 3).map((ag) => (
+                              {dd.agents.map((ag) => (
                                 <span className="dim-member" key={ag.id}>
                                   <span className="dim-member__name">{ag.title || ag.id}</span>
                                   {ag.stance && <span className="dim-member__stance">{ag.stance}</span>}
                                   {typeof ag.confidence === "number" && <span className="dim-member__conf">{ag.confidence.toFixed(2)}</span>}
+                                  {!ag.stance && <span className="dim-member__stance">待分析</span>}
                                 </span>
                               ))}
                             </div>

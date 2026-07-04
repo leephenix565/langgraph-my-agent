@@ -3822,19 +3822,18 @@ def _dimension_group_summary(
     """
     if not isinstance(result, Mapping):
         return "维度综合尚未开始。"
-    status = str(result.get("status") or "").strip()
-    if status in ("pending_implementation", ""):
-        return "本维度综合处于确定性占位状态。"
-    stance = result.get("stance")
-    if isinstance(stance, str) and stance.strip():
-        stance_text = stance.strip()
-    else:
-        stance_text = "not_evaluated"
     contributing = result.get("contributing_agents")
     if isinstance(contributing, list):
         total = len(contributing)
     else:
         total = 0
+    stance = result.get("stance")
+    stance_text = str(stance).strip() if isinstance(stance, str) and stance.strip() else "not_evaluated"
+    status = str(result.get("status") or "").strip()
+    if status in ("pending_implementation", ""):
+        if total > 0:
+            return f"综合{stance_text}，基于 {total} 个成员分析线索。"
+        return f"当前{stance_text}，等待维度成员完成分析。"
     if total > 0:
         return f"综合{stance_text}，基于 {total} 个成员分析线索。"
     if dimension == "risk":
