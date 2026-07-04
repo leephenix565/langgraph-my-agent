@@ -284,11 +284,12 @@ function detailSummary(phase: PhaseView, workflow: WorkflowModel) {
   if (phase.key === "report" && isReportComplete(workflow)) {
     return "最终文字报告已显示在上方主回答区。";
   }
-  return phase.steps.map((step) => step.summary).filter(Boolean).slice(0, 2).join(" ") || phase.detail;
+  const unique = [...new Set(phase.steps.map((step) => step.summary).filter(Boolean))];
+  return unique.slice(0, 2).join(" ") || phase.detail;
 }
 
 function dimensionTitle(group: DimensionGroup | undefined, fallback: string) {
-  return group?.title ? `${fallback}` : fallback;
+  return group?.title ?? fallback;
 }
 
 function isPublicSafeCopy(value: string | undefined | null) {
