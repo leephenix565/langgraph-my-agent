@@ -107,7 +107,8 @@ function renderUncoveredScope(provenance: Record<string, any> | undefined) {
 function renderProgress(workflow: WorkflowModel | undefined) {
   if (!workflow) return null;
   const stage = pendingStageCopy(workflow);
-  const completed = workflow.completedSteps.length;
+  const dagIds = new Set(workflow.dagSteps.map((s) => s.id));
+  const completed = workflow.completedSteps.filter((id) => dagIds.has(id)).length;
   const total = workflow.dagSteps.length;
 
   return (

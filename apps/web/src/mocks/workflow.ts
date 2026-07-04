@@ -282,7 +282,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
       },
     },
     finalSource: "reset_skeleton",
-    provenanceNote: "本轮研判流程已完成，过程记录可在流程详情中查看。",
+    provenanceNote: "本轮研判流程已完成，过程记录可在分析路径中查看。",
     provenance: {
       source: "reset_skeleton",
       continuityMode: "replay",
@@ -304,7 +304,7 @@ export function createWorkflowVariant(theme: string): WorkflowModel {
       providerRouterFallbackReason: null,
       providerRouterErrorCode: null,
       providerRouterSelectedDimensions: [],
-      summary: "本轮研判流程已完成，过程记录可在流程详情中查看。",
+      summary: "本轮研判流程已完成，过程记录可在分析路径中查看。",
     },
   };
 }

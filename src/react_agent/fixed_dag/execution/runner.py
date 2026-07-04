@@ -1478,6 +1478,7 @@ def run_fixed_dag_l2_phase(
             stages=("l2_analysis",),
         )
         l2_conclusions = dict(ext_l2.get("l2_conclusions") or l2_conclusions)
+        _apply_external_compute_step_updates(step_results, ext_l1, ext_l2)
     else:
         from react_agent.fixed_dag_production_external_compute import (
             run_production_external_compute_for_plan,
@@ -1489,6 +1490,7 @@ def run_fixed_dag_l2_phase(
             stages=("l2_analysis",),
         )
         l2_conclusions = dict(prod_l2.get("l2_conclusions") or l2_conclusions)
+        _apply_external_compute_step_updates(step_results, prod_l2)
 
     return {
         "_execution_plan": execution_plan,
@@ -1510,9 +1512,11 @@ def run_fixed_dag_l3_phase(
     *,
     context = None,
     as_of = "",
+    step_results = None,
 ):
     """Execute L3 phase: build dimension composites + external compute overlay + explanation."""
     l2 = dict(l2_conclusions)
+    sr = dict(step_results) if step_results else {}
     execution_plan = plan
     as_of_val = as_of or str(plan.get("as_of") or "")
     dimension_results = build_dimension_results(l2, as_of=as_of_val)
@@ -1532,6 +1536,7 @@ def run_fixed_dag_l3_phase(
         )
         l2 = dict(ext_l3.get("l2_conclusions") or l2)
         dimension_results = dict(ext_l3.get("dimension_results") or dimension_results)
+        _apply_external_compute_step_updates(sr, ext_l3)
     else:
         from react_agent.fixed_dag_production_external_compute import (
             run_production_external_compute_for_plan,
@@ -1548,6 +1553,7 @@ def run_fixed_dag_l3_phase(
         )
         l2 = dict(prod_l3.get("l2_conclusions") or l2)
         dimension_results = dict(prod_l3.get("dimension_results") or dimension_results)
+        _apply_external_compute_step_updates(sr, prod_l3)
 
     if bool(getattr(context, "enable_llm_l3_explanation", False)):
         from react_agent.fixed_dag_l3_explanation_synthesizer import (
@@ -1561,7 +1567,7 @@ def run_fixed_dag_l3_phase(
         )
         dimension_results = dict(l3_outcome.get("dimension_results") or dimension_results)
 
-    return {"l2_conclusions": l2, "dimension_results": dimension_results}
+    return {"l2_conclusions": l2, "dimension_results": dimension_results, "_step_results": sr}
 
 
 def run_fixed_dag_l4_phase(
@@ -1572,10 +1578,12 @@ def run_fixed_dag_l4_phase(
     context = None,
     question = "",
     as_of = "",
+    step_results = None,
 ):
     """Execute L4 phase: decision + report_input_bundle + report + external compute + enrichment."""
     l2 = dict(l2_conclusions)
     dims = dict(dimension_results)
+    sr = dict(step_results) if step_results else {}
     execution_plan = plan
     as_of_val = as_of or str(plan.get("as_of") or "")
     q = question or str(plan.get("user_text") or "")
@@ -1614,6 +1622,7 @@ def run_fixed_dag_l4_phase(
             runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
         )
         decision_result = dict(ext_decision.get("decision_result") or decision_result)
+        _apply_external_compute_step_updates(sr, ext_decision)
         agent_tasks = build_agent_tasks_for_plan(
             execution_plan, question=q, as_of=as_of_val,
             l2_conclusions=l2, dimension_results=dims,
@@ -1642,6 +1651,7 @@ def run_fixed_dag_l4_phase(
             runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
         )
         report_result = dict(ext_report.get("report_result") or report_result)
+        _apply_external_compute_step_updates(sr, ext_report)
 
     try:
         from react_agent.fixed_dag.execution.validation import (
@@ -1662,4 +1672,5 @@ def run_fixed_dag_l4_phase(
         "decision_result": decision_result,
         "report_input_bundle": report_input_bundle,
         "report_result": report_result,
+        "_step_results": sr,
     }

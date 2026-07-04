@@ -3648,7 +3648,7 @@ def build_report_result(
 ) -> ReportResult:
     answer = (
         "已完成本轮研判流程。系统按照固定研判流程组织本轮分析，包括问题理解、"
-        "信息整理、并行分析、维度综合与报告生成；可展开流程详情查看过程记录。"
+        "信息整理、并行分析、维度综合与报告生成；可展开分析路径查看过程记录。"
     )
     if question:
         answer = f"{answer}\n\n收到的问题：{question}"
@@ -3661,7 +3661,7 @@ def build_report_result(
         {
             "id": "implementation_status",
             "title": "流程记录",
-            "content": "如需查看过程，可展开流程详情。",
+            "content": "如需查看过程，可展开分析路径。",
         },
     ]
     evidence_cards = [
@@ -3675,7 +3675,7 @@ def build_report_result(
         },
         {
             "title": "流程记录",
-            "note": "如需查看过程，可展开流程详情。",
+            "note": "如需查看过程，可展开分析路径。",
         },
     ]
     if isinstance(report_input_bundle, Mapping):

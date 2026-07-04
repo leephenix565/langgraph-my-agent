@@ -1092,6 +1092,7 @@ def run_l2_conclusions_node(
         plan=execution_plan,
         current_stage="l2_analysis",
         completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        step_results=result.get("_step_results") or result.get("dag_step_results"),
     )
     result["thread_summary"] = "L2 analysis completed with external compute overlay."
     return result
@@ -1105,9 +1106,10 @@ def run_dimension_composites_node(
 
     plan = state.get("_execution_plan") or state.get("fixed_dag_plan", {})
     l2_conclusions = state.get("l2_conclusions", {})
+    step_results = state.get("_step_results") or state.get("dag_step_results") or {}
     context = runtime.context if runtime is not None else None
 
-    result = run_fixed_dag_l3_phase(plan, l2_conclusions, context=context, as_of=str(plan.get("as_of") or ""))
+    result = run_fixed_dag_l3_phase(plan, l2_conclusions, context=context, as_of=str(plan.get("as_of") or ""), step_results=step_results)
 
     completed: list[str] = []
     for s in plan.get("dag_steps", []):
@@ -1119,6 +1121,7 @@ def run_dimension_composites_node(
         current_stage="dimension_composite",
         completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
         dimension_results=result.get("dimension_results", {}),
+        step_results=result.get("_step_results") or step_results,
     )
     result["thread_summary"] = "L3 dimension composites completed."
     return result
@@ -1133,12 +1136,14 @@ def decision_synthesizer_node(
     plan = state.get("_execution_plan") or state.get("fixed_dag_plan", {})
     l2_conclusions = state.get("l2_conclusions", {})
     dimension_results = state.get("dimension_results", {})
+    step_results = state.get("_step_results") or state.get("dag_step_results") or {}
     question = str(state.get("current_question", "") or "")
     context = runtime.context if runtime is not None else None
 
     result = run_fixed_dag_l4_phase(
         plan, l2_conclusions, dimension_results,
         context=context, question=question, as_of=str(plan.get("as_of") or ""),
+        step_results=step_results,
     )
 
     completed: list[str] = []
@@ -1152,6 +1157,7 @@ def decision_synthesizer_node(
         completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
         dimension_results=result.get("dimension_results", {}),
         report_result=result.get("report_result", {}),
+        step_results=result.get("_step_results") or step_results,
     )
     result["thread_summary"] = "L4 decision and report completed."
     return result

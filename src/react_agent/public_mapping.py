@@ -462,7 +462,7 @@ def build_workflow_snapshot(state: dict[str, Any], continuity_mode: ContinuityMo
         ),
         performanceTelemetry=_performance_telemetry(provenance_raw.get("performanceTelemetry")),
         summary=(
-            "本轮研判流程已完成，详细执行信息可在技术详情中查看。"
+            "本轮研判流程已完成，过程记录可在分析路径中查看。"
         ),
     )
     return WorkflowModel(
