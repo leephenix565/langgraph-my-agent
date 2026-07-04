@@ -36,6 +36,11 @@ class State(InputState, total=False):
     data_bundle: Dict[str, Any]
     entity_relation_bundle: Dict[str, Any]
     dag_execution: Dict[str, Any]
+    _execution_plan: Dict[str, Any]
+    _batches: List[List[str]]
+    _step_results: Dict[str, Any]
+    _fallback_used: bool
+    _fallback_reason: str
     dag_step_results: Dict[str, Any]
     execution_batches: List[List[str]]
     l2_conclusions: Dict[str, Any]

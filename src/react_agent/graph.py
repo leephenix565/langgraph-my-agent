@@ -26,16 +26,11 @@ from langgraph.runtime import Runtime
 from react_agent.context import Context
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
-    build_decision_result,
     build_default_dimension_route_intent,
     build_default_fixed_dag_plan,
-    build_dimension_results,
     build_emitted_bundle,
     build_entity_relation_bundle,
     build_final_emit_payload,
-    build_l2_conclusions,
-    build_report_input_bundle,
-    build_report_result,
     build_reset_multi_agent_bundle,
     build_workflow_snapshot_v2,
     compile_selected_fixed_dag_plan,
@@ -1072,106 +1067,100 @@ def execute_fixed_dag_node(
     }
 
 
-def run_l2_conclusions_node(state: State) -> dict[str, Any]:
+def run_l2_conclusions_node(
+    state: State,
+    runtime: Runtime[Context] | None = None,
+) -> dict[str, Any]:
+    from react_agent.fixed_dag.execution.runner import run_fixed_dag_l2_phase
+
     plan = state["fixed_dag_plan"]
-    completed = [
-        *_completed_from_stage(plan, "planning"),
-        *_completed_from_stage(plan, "evidence"),
-        *_completed_from_stage(plan, "l2_analysis"),
-    ]
-    conclusions = build_l2_conclusions(plan)
-    return {
-        "l2_conclusions": conclusions,
-        "workflow_snapshot": build_workflow_snapshot_v2(
-            plan=plan,
-            current_stage="l2_analysis",
-            completed_steps=completed,
-        ),
-        "thread_summary": "L2 conclusion placeholders completed.",
-    }
+    question = str(state.get("current_question", "") or "")
+    as_of = str(plan.get("as_of") or "not_available")
+    context = runtime.context if runtime is not None else None
+
+    result = run_fixed_dag_l2_phase(plan, question=question, as_of=as_of, context=context)
+    execution_plan = result.pop("_execution_plan", plan)
+    result["_execution_plan"] = execution_plan
+    result["fixed_dag_plan"] = execution_plan
+
+    completed: list[str] = []
+    for s in execution_plan.get("dag_steps", []):
+        sid = str(s.get("id") or "")
+        if s.get("stage") in ("planning", "evidence", "l2_analysis"):
+            completed.append(sid)
+    result["workflow_snapshot"] = build_workflow_snapshot_v2(
+        plan=execution_plan,
+        current_stage="l2_analysis",
+        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+    )
+    result["thread_summary"] = "L2 analysis completed with external compute overlay."
+    return result
 
 
-def run_dimension_composites_node(state: State) -> dict[str, Any]:
-    plan = state["fixed_dag_plan"]
-    conclusions = state.get("l2_conclusions", {})
-    dimension_results = build_dimension_results(conclusions, as_of=plan.get("as_of"))
-    completed = [
-        *_completed_from_stage(plan, "planning"),
-        *_completed_from_stage(plan, "evidence"),
-        *_completed_from_stage(plan, "l2_analysis"),
-        *_completed_from_stage(plan, "dimension_composite"),
-    ]
-    return {
-        "dimension_results": dimension_results,
-        "workflow_snapshot": build_workflow_snapshot_v2(
-            plan=plan,
-            current_stage="dimension_composite",
-            completed_steps=completed,
-            dimension_results=dimension_results,
-        ),
-        "thread_summary": "L3 dimension composites completed as deterministic placeholders.",
-    }
+def run_dimension_composites_node(
+    state: State,
+    runtime: Runtime[Context] | None = None,
+) -> dict[str, Any]:
+    from react_agent.fixed_dag.execution.runner import run_fixed_dag_l3_phase
+
+    plan = state.get("_execution_plan") or state.get("fixed_dag_plan", {})
+    l2_conclusions = state.get("l2_conclusions", {})
+    context = runtime.context if runtime is not None else None
+
+    result = run_fixed_dag_l3_phase(plan, l2_conclusions, context=context, as_of=str(plan.get("as_of") or ""))
+
+    completed: list[str] = []
+    for s in plan.get("dag_steps", []):
+        sid = str(s.get("id") or "")
+        if s.get("stage") in ("planning", "evidence", "l2_analysis", "dimension_composite"):
+            completed.append(sid)
+    result["workflow_snapshot"] = build_workflow_snapshot_v2(
+        plan=plan,
+        current_stage="dimension_composite",
+        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        dimension_results=result.get("dimension_results", {}),
+    )
+    result["thread_summary"] = "L3 dimension composites completed."
+    return result
 
 
-def decision_synthesizer_node(state: State) -> dict[str, Any]:
-    plan = state["fixed_dag_plan"]
+def decision_synthesizer_node(
+    state: State,
+    runtime: Runtime[Context] | None = None,
+) -> dict[str, Any]:
+    from react_agent.fixed_dag.execution.runner import run_fixed_dag_l4_phase
+
+    plan = state.get("_execution_plan") or state.get("fixed_dag_plan", {})
+    l2_conclusions = state.get("l2_conclusions", {})
     dimension_results = state.get("dimension_results", {})
-    completed = [
-        *_completed_from_stage(plan, "planning"),
-        *_completed_from_stage(plan, "evidence"),
-        *_completed_from_stage(plan, "l2_analysis"),
-        *_completed_from_stage(plan, "dimension_composite"),
-        *_completed_from_stage(plan, "decision"),
-    ]
-    decision = build_decision_result(dimension_results, as_of=plan.get("as_of"))
-    return {
-        "decision_result": decision,
-        "workflow_snapshot": build_workflow_snapshot_v2(
-            plan=plan,
-            current_stage="decision",
-            completed_steps=completed,
-            dimension_results=dimension_results,
-        ),
-        "thread_summary": "Decision synthesizer placeholder completed.",
-    }
+    question = str(state.get("current_question", "") or "")
+    context = runtime.context if runtime is not None else None
+
+    result = run_fixed_dag_l4_phase(
+        plan, l2_conclusions, dimension_results,
+        context=context, question=question, as_of=str(plan.get("as_of") or ""),
+    )
+
+    completed: list[str] = []
+    for s in plan.get("dag_steps", []):
+        sid = str(s.get("id") or "")
+        if s.get("stage") in ("planning", "evidence", "l2_analysis", "dimension_composite", "decision", "report"):
+            completed.append(sid)
+    result["workflow_snapshot"] = build_workflow_snapshot_v2(
+        plan=plan,
+        current_stage="report",
+        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        dimension_results=result.get("dimension_results", {}),
+        report_result=result.get("report_result", {}),
+    )
+    result["thread_summary"] = "L4 decision and report completed."
+    return result
 
 
 def report_generator_node(state: State) -> dict[str, Any]:
-    plan = state["fixed_dag_plan"]
-    l2_conclusions = state.get("l2_conclusions", {})
-    dimension_results = state.get("dimension_results", {})
-    decision = state.get("decision_result", build_decision_result(dimension_results))
-    report_input_bundle = build_report_input_bundle(
-        question=str(state.get("current_question", "") or ""),
-        l2_conclusions=l2_conclusions,
-        dimension_results=dimension_results,
-        decision_result=decision,
-    )
-    completed = [
-        *_completed_from_stage(plan, "planning"),
-        *_completed_from_stage(plan, "evidence"),
-        *_completed_from_stage(plan, "l2_analysis"),
-        *_completed_from_stage(plan, "dimension_composite"),
-        *_completed_from_stage(plan, "decision"),
-        *_completed_from_stage(plan, "report"),
-    ]
-    report = build_report_result(
-        decision,
-        question=str(state.get("current_question", "") or ""),
-        report_input_bundle=report_input_bundle,
-    )
-    return {
-        "report_input_bundle": report_input_bundle,
-        "report_result": report,
-        "workflow_snapshot": build_workflow_snapshot_v2(
-            plan=plan,
-            current_stage="report",
-            completed_steps=completed,
-            dimension_results=dimension_results,
-            report_result=report,
-        ),
-        "thread_summary": "Report generator placeholder completed.",
-    }
+    """No-op: L4 phase is handled by decision_synthesizer_node in the split graph."""
+    del state
+    return {"thread_summary": "Report already generated by decision_synthesizer."}
 
 
 def final_emit_node(state: State) -> dict[str, Any]:
@@ -1211,14 +1200,20 @@ def memory_update_node(state: State) -> dict[str, Any]:
 builder = StateGraph(State, input_schema=InputState, context_schema=Context)
 builder.add_node("route_planner", route_planner_node)
 builder.add_node("prepare_l1_context", prepare_l1_context_node)
-builder.add_node("execute_fixed_dag", execute_fixed_dag_node)
+builder.add_node("execute_fixed_dag", execute_fixed_dag_node)  # compat: legacy full-exec node
+builder.add_node("run_l2_conclusions", run_l2_conclusions_node)
+builder.add_node("run_dimension_composites", run_dimension_composites_node)
+builder.add_node("decision_synthesizer", decision_synthesizer_node)
+builder.add_node("report_generator", report_generator_node)
 builder.add_node("final_emit", final_emit_node)
 builder.add_node("memory_update", memory_update_node)
 
 builder.add_edge(START, "route_planner")
 builder.add_edge("route_planner", "prepare_l1_context")
-builder.add_edge("prepare_l1_context", "execute_fixed_dag")
-builder.add_edge("execute_fixed_dag", "final_emit")
+builder.add_edge("prepare_l1_context", "run_l2_conclusions")
+builder.add_edge("run_l2_conclusions", "run_dimension_composites")
+builder.add_edge("run_dimension_composites", "decision_synthesizer")
+builder.add_edge("decision_synthesizer", "final_emit")
 builder.add_edge("final_emit", "memory_update")
 builder.add_edge("memory_update", END)
 

@@ -1400,3 +1400,266 @@ def execute_fixed_dag_plan(
         current_stage="report",
     )
     return {**execution_core, "workflow_snapshot": workflow_snapshot}
+def _build_fixed_dag_setup(plan, question, as_of):
+    """Shared setup: validate plan, build batches, step_results, data + entity bundles."""
+    execution_plan, fallback_used, fallback_reason = _execution_plan_or_fallback(
+        plan, question=question, as_of=as_of,
+    )
+    valid, reason = _execution_plan_valid(execution_plan)
+    if not valid:
+        execution_plan = build_default_fixed_dag_plan(question, as_of=as_of)
+        fallback_used, fallback_reason = True, reason
+    batches = _execution_batches(execution_plan)
+    step_index = build_dag_step_index(execution_plan)
+    step_results: dict[str, dict] = {}
+    for batch in batches:
+        for step_id in batch:
+            step = step_index[step_id]
+            step_results[step_id] = build_step_result(
+                step,
+                status=_status_for_step(step),
+                output_ref=_output_ref_for_step(step),
+                summary=_summary_for_step(step),
+            )
+    data_bundle = build_data_bundle(execution_plan)
+    entity_relation_bundle = build_entity_relation_bundle(execution_plan)
+    return execution_plan, batches, step_results, data_bundle, entity_relation_bundle, fallback_used, fallback_reason
+
+
+def run_fixed_dag_l2_phase(
+    plan,
+    *,
+    question,
+    as_of,
+    context = None,
+):
+    """Execute L2 phase: plan validation + build conclusions + external compute overlay."""
+    execution_plan, batches, step_results, data_bundle, entity_relation_bundle, fallback_used, fallback_reason = (
+        _build_fixed_dag_setup(plan, question, as_of)
+    )
+    l2_agent_tasks = build_agent_tasks_for_plan(
+        execution_plan, question=question, as_of=as_of,
+        data_bundle=data_bundle, entity_relation_bundle=entity_relation_bundle,
+    )
+    internal_placeholders_enabled = bool(
+        getattr(context, "enable_internal_llm_placeholders", False)
+    )
+    if internal_placeholders_enabled:
+        l2_conclusions = build_l2_conclusions_with_internal_placeholders(
+            execution_plan, question=question, as_of=as_of,
+            context=context, agent_tasks=l2_agent_tasks,
+        )
+    else:
+        l2_conclusions = build_l2_conclusions(execution_plan, as_of=as_of)
+
+    if bool(getattr(context, "enable_external_compute_demo", False)):
+        from react_agent.fixed_dag_external_compute_bridge import (
+            run_external_compute_for_plan,
+        )
+        l1_tasks = build_agent_tasks_for_plan(
+            execution_plan, question=question, as_of=as_of,
+            data_bundle=data_bundle, entity_relation_bundle=entity_relation_bundle,
+        )
+        ext_l1 = run_external_compute_for_plan(
+            execution_plan, question=question, as_of=as_of, context=context,
+            l2_conclusions={}, data_bundle=data_bundle,
+            entity_relation_bundle=entity_relation_bundle, agent_tasks=l1_tasks,
+            stages=("evidence",),
+        )
+        data_bundle = dict(ext_l1.get("data_bundle") or data_bundle)
+        entity_relation_bundle = dict(ext_l1.get("entity_relation_bundle") or entity_relation_bundle)
+        l2_tasks = build_agent_tasks_for_plan(
+            execution_plan, question=question, as_of=as_of,
+            data_bundle=data_bundle, entity_relation_bundle=entity_relation_bundle,
+        )
+        ext_l2 = run_external_compute_for_plan(
+            execution_plan, question=question, as_of=as_of, context=context,
+            l2_conclusions=l2_conclusions, agent_tasks=l2_tasks,
+            stages=("l2_analysis",),
+        )
+        l2_conclusions = dict(ext_l2.get("l2_conclusions") or l2_conclusions)
+    else:
+        from react_agent.fixed_dag_production_external_compute import (
+            run_production_external_compute_for_plan,
+        )
+        prod_l2 = run_production_external_compute_for_plan(
+            execution_plan, question=question, as_of=as_of, context=context,
+            data_bundle=data_bundle, entity_relation_bundle=entity_relation_bundle,
+            l2_conclusions=l2_conclusions, agent_tasks=l2_agent_tasks,
+            stages=("l2_analysis",),
+        )
+        l2_conclusions = dict(prod_l2.get("l2_conclusions") or l2_conclusions)
+
+    return {
+        "_execution_plan": execution_plan,
+        "_batches": batches,
+        "_step_results": step_results,
+        "_fallback_used": fallback_used,
+        "_fallback_reason": fallback_reason,
+        "dag_step_results": step_results,
+        "execution_batches": batches,
+        "data_bundle": data_bundle,
+        "entity_relation_bundle": entity_relation_bundle,
+        "l2_conclusions": l2_conclusions,
+    }
+
+
+def run_fixed_dag_l3_phase(
+    plan,
+    l2_conclusions,
+    *,
+    context = None,
+    as_of = "",
+):
+    """Execute L3 phase: build dimension composites + external compute overlay + explanation."""
+    l2 = dict(l2_conclusions)
+    execution_plan = plan
+    as_of_val = as_of or str(plan.get("as_of") or "")
+    dimension_results = build_dimension_results(l2, as_of=as_of_val)
+    if bool(getattr(context, "enable_external_compute_demo", False)):
+        from react_agent.fixed_dag_external_compute_bridge import (
+            run_external_compute_for_plan,
+        )
+        l3_tasks = build_agent_tasks_for_plan(
+            execution_plan, question=str(plan.get("user_text") or ""), as_of=as_of_val,
+            l2_conclusions=l2, dimension_results=dimension_results,
+        )
+        ext_l3 = run_external_compute_for_plan(
+            execution_plan, question=str(plan.get("user_text") or ""), as_of=as_of_val,
+            context=context, l2_conclusions=l2,
+            dimension_results=dimension_results, agent_tasks=l3_tasks,
+            stages=("dimension_composite",),
+        )
+        l2 = dict(ext_l3.get("l2_conclusions") or l2)
+        dimension_results = dict(ext_l3.get("dimension_results") or dimension_results)
+    else:
+        from react_agent.fixed_dag_production_external_compute import (
+            run_production_external_compute_for_plan,
+        )
+        l3_tasks = build_agent_tasks_for_plan(
+            execution_plan, question=str(plan.get("user_text") or ""), as_of=as_of_val,
+            l2_conclusions=l2, dimension_results=dimension_results,
+        )
+        prod_l3 = run_production_external_compute_for_plan(
+            execution_plan, question=str(plan.get("user_text") or ""), as_of=as_of_val,
+            context=context, l2_conclusions=l2,
+            dimension_results=dimension_results, agent_tasks=l3_tasks,
+            stages=("dimension_composite",),
+        )
+        l2 = dict(prod_l3.get("l2_conclusions") or l2)
+        dimension_results = dict(prod_l3.get("dimension_results") or dimension_results)
+
+    if bool(getattr(context, "enable_llm_l3_explanation", False)):
+        from react_agent.fixed_dag_l3_explanation_synthesizer import (
+            synthesize_l3_explanations,
+        )
+        l3_outcome = synthesize_l3_explanations(
+            question=str(plan.get("user_text") or ""),
+            l2_conclusions=l2,
+            dimension_results=dimension_results,
+            context=context,
+        )
+        dimension_results = dict(l3_outcome.get("dimension_results") or dimension_results)
+
+    return {"l2_conclusions": l2, "dimension_results": dimension_results}
+
+
+def run_fixed_dag_l4_phase(
+    plan,
+    l2_conclusions,
+    dimension_results,
+    *,
+    context = None,
+    question = "",
+    as_of = "",
+):
+    """Execute L4 phase: decision + report_input_bundle + report + external compute + enrichment."""
+    l2 = dict(l2_conclusions)
+    dims = dict(dimension_results)
+    execution_plan = plan
+    as_of_val = as_of or str(plan.get("as_of") or "")
+    q = question or str(plan.get("user_text") or "")
+
+    from react_agent.fixed_dag_runtime_registry import (
+        external_compute_default_agent_ids,
+    )
+    external_compute_default_disabled = context is None or bool(
+        getattr(context, "disable_external_compute_default", False)
+    )
+    external_compute_default_ids = (
+        set()
+        if external_compute_default_disabled
+        else set(external_compute_default_agent_ids())
+    )
+    l4_ids = external_compute_default_ids & {"decision_synthesizer", "report_generator"}
+
+    decision_result = build_decision_result(dims, as_of=as_of_val)
+    agent_tasks = build_agent_tasks_for_plan(
+        execution_plan, question=q, as_of=as_of_val,
+        l2_conclusions=l2, dimension_results=dims,
+        decision_result=decision_result,
+    )
+    if "decision_synthesizer" in l4_ids:
+        from react_agent.fixed_dag_external_compute_bridge import (
+            EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+            run_external_compute_for_plan,
+            runtime_compute_entries_from_bindings,
+        )
+        ext_decision = run_external_compute_for_plan(
+            execution_plan, question=q, as_of=as_of_val, context=context,
+            l2_conclusions=l2, dimension_results=dims,
+            decision_result=decision_result, agent_tasks=agent_tasks,
+            stages=("decision",), allowlist_override=("decision_synthesizer",),
+            entry_registry=runtime_compute_entries_from_bindings(),
+            runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        )
+        decision_result = dict(ext_decision.get("decision_result") or decision_result)
+        agent_tasks = build_agent_tasks_for_plan(
+            execution_plan, question=q, as_of=as_of_val,
+            l2_conclusions=l2, dimension_results=dims,
+            decision_result=decision_result,
+        )
+
+    report_input_bundle = build_report_input_bundle(
+        question=q, l2_conclusions=l2, dimension_results=dims,
+        decision_result=decision_result, agent_tasks=agent_tasks,
+    )
+    report_result = build_report_result(decision_result, question=q, report_input_bundle=report_input_bundle)
+
+    if "report_generator" in l4_ids:
+        from react_agent.fixed_dag_external_compute_bridge import (
+            EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+            run_external_compute_for_plan,
+            runtime_compute_entries_from_bindings,
+        )
+        ext_report = run_external_compute_for_plan(
+            execution_plan, question=q, as_of=as_of_val, context=context,
+            l2_conclusions=l2, dimension_results=dims,
+            decision_result=decision_result, report_result=report_result,
+            report_input_bundle=report_input_bundle, agent_tasks=agent_tasks,
+            stages=("report",), allowlist_override=("report_generator",),
+            entry_registry=runtime_compute_entries_from_bindings(),
+            runtime_source=EXTERNAL_COMPUTE_DEFAULT_SOURCE,
+        )
+        report_result = dict(ext_report.get("report_result") or report_result)
+
+    try:
+        from react_agent.fixed_dag.execution.validation import (
+            validate_report_input_bundle,
+        )
+        valid_rb, _ = validate_report_input_bundle(report_input_bundle)
+        if valid_rb:
+            report_result = _maybe_enrich_weak_report_result(
+                report_result, question=q, report_input_bundle=report_input_bundle,
+                decision_result=decision_result,
+            )
+    except Exception:
+        pass
+
+    return {
+        "l2_conclusions": l2,
+        "dimension_results": dims,
+        "decision_result": decision_result,
+        "report_input_bundle": report_input_bundle,
+        "report_result": report_result,
+    }
