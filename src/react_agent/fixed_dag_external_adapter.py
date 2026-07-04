@@ -2379,6 +2379,37 @@ def _safe_l4_report_limitations(value: Any) -> list[str]:
     return limitations
 
 
+def _convert_bold_headers_to_markdown_headings(text: str) -> str:
+    """Convert **bold** section titles at paragraph starts to ## Markdown headings.
+
+    External compute services often use **Section Title**: content format, but
+    frontend ReactMarkdown renders ** as <strong>, not as a heading. This
+    converts paragraph-initial **text** (optionally followed by colon or
+    Chinese colon) into ## heading, giving the report proper visual hierarchy.
+    """
+    import re
+    lines = text.split("\n")
+    result: list[str] = []
+    for line in lines:
+        stripped = line.strip()
+        # Match: optional whitespace, **text** optionally followed by : or ：,
+        # and then optionally more text on the same line
+        match = re.match(
+            r"(\s*)\*\*(.+?)\*\*\s*[：:]?\s*(.*)",
+            stripped,
+        )
+        if match:
+            indent = match.group(1)
+            heading = match.group(2).strip()
+            rest = match.group(3).strip()
+            result.append(f"{indent}## {heading}")
+            if rest:
+                result.append(f"{indent}{rest}")
+        else:
+            result.append(line)
+    return "\n".join(result)
+
+
 def map_external_report_result_to_report_result(
     payload: Mapping[str, Any],
     *,
@@ -2410,6 +2441,8 @@ def map_external_report_result_to_report_result(
             schema_version=REPORT_RESULT_SCHEMA_VERSION,
         )
     answer = _safe_l4_text(payload.get("answer"), limit=7000)
+    if answer:
+        answer = _convert_bold_headers_to_markdown_headings(answer)
     if answer and "研判流程" not in answer:
         answer = f"研判流程报告：\n{answer}"
     report: ReportResult = {
