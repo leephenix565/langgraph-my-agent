@@ -365,7 +365,7 @@ function processEvidenceItems(phase: PhaseView, workflow: WorkflowModel): Eviden
   const stepItems = phase.steps
     .slice(0, 3)
     .map((step) => {
-      const stepResult = workflow.stepResults[step.agentId ?? step.id] as Record<string, any> | undefined;
+      const stepResult = workflow.stepResults[step.id] as Record<string, any> | undefined;
       const agentEvidence = stepResult?.agent_evidence as Record<string, any> | undefined;
       const realValue = agentEvidence?.summary as string | undefined;
       return {
@@ -480,7 +480,7 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
       const agents = workflow.dagSteps.filter((s) => s.dimension === dimKey && s.stage === "l2_analysis");
       const done = agents.filter((a) => workflow.completedSteps.includes(a.id) || a.status === "complete");
       const entries = agents.map((a) => {
-        const sr = workflow.stepResults[a.agentId ?? a.id] as Record<string, any> | undefined;
+        const sr = workflow.stepResults[a.id] as Record<string, any> | undefined;
         const ae = sr?.agent_evidence as Record<string, any> | undefined;
         return {
           id: a.agentId ?? a.id,

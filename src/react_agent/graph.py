@@ -1091,7 +1091,7 @@ def run_l2_conclusions_node(
     result["workflow_snapshot"] = build_workflow_snapshot_v2(
         plan=execution_plan,
         current_stage="l2_analysis",
-        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        completed_steps=completed,
         step_results=result.get("_step_results") or result.get("dag_step_results"),
     )
     result["thread_summary"] = "L2 analysis completed with external compute overlay."
@@ -1119,7 +1119,7 @@ def run_dimension_composites_node(
     result["workflow_snapshot"] = build_workflow_snapshot_v2(
         plan=plan,
         current_stage="dimension_composite",
-        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        completed_steps=completed,
         dimension_results=result.get("dimension_results", {}),
         step_results=result.get("_step_results") or step_results,
     )
@@ -1154,7 +1154,7 @@ def decision_synthesizer_node(
     result["workflow_snapshot"] = build_workflow_snapshot_v2(
         plan=plan,
         current_stage="report",
-        completed_steps=[*completed, *result.get("l2_conclusions", {}).keys()],
+        completed_steps=completed,
         dimension_results=result.get("dimension_results", {}),
         report_result=result.get("report_result", {}),
         step_results=result.get("_step_results") or step_results,

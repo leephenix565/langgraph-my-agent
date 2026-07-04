@@ -3809,6 +3809,36 @@ def _step_status_from_results(
     return str(step.get("status") or "pending_implementation")
 
 
+def _dimension_group_summary(
+    dimension: str,
+    result: Mapping[str, Any] | None,
+) -> str:
+    """Build a public-safe dimension group summary from dimension result data."""
+    if not isinstance(result, Mapping):
+        return "维度综合尚未开始。"
+    status = str(result.get("status") or "").strip()
+    if status in ("pending_implementation", ""):
+        return "本维度综合处于确定性占位状态。"
+    stance = result.get("stance")
+    if isinstance(stance, str) and stance.strip():
+        stance_text = stance.strip()
+    else:
+        stance_text = "not_evaluated"
+    confidence = result.get("confidence", 0.0)
+    try:
+        confidence_text = f"{float(confidence):.2f}"
+    except (TypeError, ValueError):
+        confidence_text = "n/a"
+    contributing = result.get("contributing_agents")
+    if isinstance(contributing, list):
+        total = len(contributing)
+    else:
+        total = 0
+    if total > 0:
+        return f"综合{stance_text}，置信度 {confidence_text}，基于 {total} 个成员分析线索。"
+    return f"综合{stance_text}，置信度 {confidence_text}。"
+
+
 def build_workflow_snapshot_v2(
     *,
     plan: Mapping[str, Any],
@@ -3905,7 +3935,10 @@ def build_workflow_snapshot_v2(
                 )
                 if isinstance(dimension_results.get(dimension), Mapping)
                 else "pending_implementation",
-        "summary": "维度综合结果。",
+        "summary": _dimension_group_summary(
+            dimension,
+            dimension_results.get(dimension) if isinstance(dimension_results, Mapping) else None,
+        ),
             }
             for dimension in dimension_group_ids
         ],
