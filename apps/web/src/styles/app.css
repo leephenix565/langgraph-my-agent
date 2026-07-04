@@ -41,7 +41,7 @@ body {
 
 .message-list {
   flex: 1;
-  padding: 8px 24px 24px;
+  padding: 20px 32px 32px;
   box-sizing: border-box;
   min-width: 0;
   display: grid;

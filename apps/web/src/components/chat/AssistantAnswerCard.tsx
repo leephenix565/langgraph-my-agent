@@ -55,6 +55,25 @@ function renderCitations(answerCard: AnswerCardModel) {
   );
 }
 
+function renderEvidenceCards(answerCard: AnswerCardModel) {
+  if (!answerCard.evidenceCards?.length) return null;
+  return (
+    <div className="assistant-card__evidence">
+      <div className="assistant-card__references-head">
+        <span className="assistant-card__meta-label">智能体证据摘要</span>
+      </div>
+      <div className="evidence-grid" aria-label="智能体证据摘要">
+        {answerCard.evidenceCards.map((ev) => (
+          <div className="evidence-card" key={ev.title}>
+            <strong>{ev.title}</strong>
+            {ev.note ? <p>{ev.note}</p> : null}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
 function renderRoutingBadge(provenance: Record<string, any> | undefined) {
   if (!provenance) return null;
   const selectedRoutingRequested = provenance.selectedRoutingRequested;
@@ -228,6 +247,7 @@ export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
           </button>
         )}
         {renderCitations(answerCard)}
+        {renderEvidenceCards(answerCard)}
         {turn.workflow ? <ResearchThoughtChain workflow={turn.workflow} /> : null}
         {renderDebugMeta(turn, answerCard, detailsOpen, () => setDetailsOpen((current) => !current))}
       </div>
