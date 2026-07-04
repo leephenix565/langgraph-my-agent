@@ -31,6 +31,13 @@ interface ProgressView {
   helper: string;
 }
 
+const LAYERS: Array<{ key: string; phaseKeys: WorkflowStageKey[]; title: string }> = [
+  { key: "L1", phaseKeys: ["planning", "evidence"], title: "L1 解析与证据" },
+  { key: "L2", phaseKeys: ["l2_analysis"], title: "L2 分析" },
+  { key: "L3", phaseKeys: ["dimension_composite"], title: "L3 维度综合" },
+  { key: "L4", phaseKeys: ["decision", "report"], title: "L4 决策与报告" },
+];
+
 interface EvidenceItem {
   label: string;
   value: string;
@@ -405,44 +412,27 @@ function progressView(
   reportComplete: boolean,
   workflow: WorkflowModel,
 ): ProgressView {
-  // Use dagStep IDs as canonical set; only count completedSteps that match a dagStep
-  const dagStepIds = new Set(workflow.dagSteps.map((s) => s.id));
-  const completedInDag = workflow.completedSteps.filter((id) => dagStepIds.has(id));
-  const totalSteps = workflow.dagSteps.length;
-  const useStepBased = totalSteps > 0;
-  const total = useStepBased ? totalSteps : PHASES.length;
-  const count = reportComplete
-    ? total
-    : useStepBased
-      ? Math.max(1, completedInDag.length)
-      : Math.min(total, Math.max(1, selectedPhase.index + 1));
+  // Layer-based progress: count how many of L1/L2/L3/L4 are fully done
+  const layerCounts = LAYERS.map((layer) => {
+    const layerPhases = phases.filter((p) => layer.phaseKeys.includes(p.key));
+    return { key: layer.key, title: layer.title, allDone: layerPhases.every((p) => p.status === "done") };
+  });
+  const doneCount = layerCounts.filter((l) => l.allDone).length;
+  const total = LAYERS.length;
+  const runningLayer = layerCounts.find((l) => !l.allDone);
+  const count = reportComplete ? total : Math.max(1, doneCount);
   const percent = Math.min(100, Math.round((count / Math.max(1, total)) * 100));
-
-  if (useStepBased) {
-    const runningPhase = phases.find((p) => p.status === "active");
-    return {
-      count,
-      total,
-      percent,
-      label: reportComplete
-        ? `研判流程 · ${count}/${total} 个任务已完成`
-        : `研判流程 · ${count}/${total} 个任务处理中`,
-      helper: reportComplete
-        ? "报告已输出，过程摘要可用于追溯回答形成路径。"
-        : `${runningPhase?.title ?? selectedPhase.title}正在推进。`,
-    };
-  }
 
   return {
     count,
     total,
     percent,
     label: reportComplete
-      ? `研判流程 · ${count}/${total} 个阶段已纳入`
-      : `研判流程 · ${count}/${total} 个阶段处理中`,
+      ? `研判流程 · ${count}/${total} 层已完成`
+      : `研判流程 · ${count}/${total} 层处理中`,
     helper: reportComplete
       ? "报告已输出，过程摘要可用于追溯回答形成路径。"
-      : `${phases[count - 1]?.title ?? selectedPhase.title}正在推进，本进度仅表示固定研判流程阶段。`,
+      : `${runningLayer?.title ?? selectedPhase.title}正在推进。`,
   };
 }
 
@@ -630,14 +620,13 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                                 ? "等待分析结果"
                                 : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
                           </p>
-                          {dd && dd.agents.length > 0 ? (
+                          {dd && dd.agents.some((ag) => ag.stance || typeof ag.confidence === "number") ? (
                             <div className="thought-chain__dimension-members">
                               {dd.agents.map((ag) => (
                                 <span className="dim-member" key={ag.id}>
                                   <span className="dim-member__name">{ag.title || ag.id}</span>
                                   {ag.stance && <span className="dim-member__stance">{ag.stance}</span>}
                                   {typeof ag.confidence === "number" && <span className="dim-member__conf">{ag.confidence.toFixed(2)}</span>}
-                                  {!ag.stance && <span className="dim-member__stance">待分析</span>}
                                 </span>
                               ))}
                             </div>
