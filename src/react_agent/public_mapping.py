@@ -8,6 +8,9 @@ from datetime import datetime
 from typing import Any, Iterable, List, Sequence
 from urllib.parse import urlparse
 
+import re
+
+from react_agent.fixed_dag.labels import AGENT_TITLE_LABELS
 from react_agent.fixed_dag_catalog import fixed_dag_agent_by_id
 from react_agent.fixed_dag_contracts import (
     build_default_fixed_dag_plan,
@@ -347,6 +350,160 @@ def _normalize_limitations(raw: Any) -> List[str]:
     return [_coerce_str(item) for item in raw if _coerce_str(item)]
 
 
+# --- Report paragraph formatting ---
+# Semantic markers that signal a new paragraph topic in agent-generated reports.
+# These are detected at sentence boundaries and converted to **bold** headings.
+
+_REPORT_MARKERS: list[str] = [
+    # Semantic markers (business-layer)
+    "业务判断",
+    "综合层补充结论",
+    "证据覆盖",
+    "成员权重与覆盖情况",
+    "覆盖限制",
+    "风险提示",
+    "行动含义",
+    # Dimension headers
+    "价值维度",
+    "市场维度",
+    "风险维度",
+    "宏观维度",
+]
+
+# Agent sub-markers appended after agent display names
+_AGENT_SUB_MARKERS: tuple[str, ...] = (
+    "研究判断引用",
+    "研究判断",
+    "关键证据",
+    "业务指标",
+    "驱动因素",
+)
+
+
+def _build_report_marker_patterns() -> list[str]:
+    """Build a deduplicated, length-sorted list of marker patterns.
+
+    Includes:
+    - Agent display name + sub-marker (e.g. 股票指数估值研究判断引用)
+    - Agent display name as standalone prefix (e.g. 个股技术分析)
+    - Top-level semantic markers (e.g. 覆盖限制)
+    - Dimension markers (e.g. 价值维度)
+
+    The list is sorted longest-first so regex alternation matches
+    the most specific pattern first.
+    """
+    agent_titles = sorted(
+        set(v for v in AGENT_TITLE_LABELS.values() if v),
+        key=len,
+        reverse=True,
+    )
+    seen: set[str] = set()
+    patterns: list[str] = []
+
+    # Agent + sub-marker (most specific: 机器学习企业估值关键证据)
+    for title in agent_titles:
+        for sub in _AGENT_SUB_MARKERS:
+            candidate = f"{title}{sub}"
+            if candidate not in seen:
+                seen.add(candidate)
+                patterns.append(candidate)
+
+    # Agent name as standalone (个股技术分析)
+    for title in agent_titles:
+        if title not in seen:
+            seen.add(title)
+            patterns.append(title)
+
+    # Semantic markers
+    for m in _REPORT_MARKERS:
+        if m not in seen:
+            seen.add(m)
+            patterns.append(m)
+
+    patterns.sort(key=len, reverse=True)
+    return patterns
+
+
+_MARKER_PATTERNS: list[str] = _build_report_marker_patterns()
+# Regex finds markers at text start or after `。` (consuming the period).
+# Python re does not support variable-length lookbehinds, so we consume
+# the period and use m.start(1) as the logical split boundary instead.
+_MARKER_RE: re.Pattern = re.compile(
+    r"(?:^|。)\s*("
+    + "|".join(re.escape(p) for p in _MARKER_PATTERNS)
+    + r")："
+)
+
+
+def _group_sentences(text: str, max_sentences: int = 3) -> str:
+    """Group Chinese sentences into paragraphs of ``max_sentences`` each.
+
+    Used as fallback when no semantic markers are found.
+    """
+    # Split on 。 preserving the delimiter, also handle ？ and ！
+    parts = re.split(r"(。)", text)
+    sentences: list[str] = []
+    for i in range(0, len(parts) - 1, 2):
+        s = (parts[i] + parts[i + 1]).strip()
+        if s:
+            sentences.append(s)
+    if len(parts) % 2 == 1:
+        tail = parts[-1].strip()
+        if tail:
+            sentences.append(tail)
+
+    if len(sentences) <= max_sentences:
+        return "".join(sentences)
+
+    groups: list[str] = []
+    for i in range(0, len(sentences), max_sentences):
+        groups.append("".join(sentences[i : i + max_sentences]))
+    return "\n\n".join(groups)
+
+
+def _format_report_paragraphs(text: str) -> str:
+    """Format a report text blob into Markdown paragraphs.
+
+    Scans ``text`` for known semantic markers at sentence boundaries,
+    splits at each boundary, and converts the marker into a **bold** heading.
+    Text segments without markers are sentence-grouped (3 sentences/paragraph).
+
+    Returns the formatted text with ``\\n\\n`` paragraph separators.
+    """
+    if not text or len(text) < 30:
+        return text
+
+    # finditer with (?:^|。)\s*(marker)： — the full match includes the
+    # period + whitespace prefix. We use m.start(1) as the logical split
+    # boundary (right where the marker name starts) so the period stays
+    # with the preceding segment.
+    matches = list(_MARKER_RE.finditer(text))
+    if not matches:
+        return _group_sentences(text)
+
+    segments: list[str] = []
+    pos = 0
+    for m in matches:
+        # Text before this marker (ends at marker name, period stays with prev)
+        split_at = m.start(1)
+        if split_at > pos:
+            before = text[pos:split_at].strip()
+            if before:
+                segments.append(before)
+        # Emit the marker as bold heading
+        marker_name = m.group(1)
+        segments.append(f"**{marker_name}**：")
+        pos = m.end()
+
+    # Trailing text after last marker
+    if pos < len(text):
+        trailing = text[pos:].strip()
+        if trailing:
+            segments.append(trailing)
+
+    return "\n\n".join(segments)
+
+
 def build_user_turn(text: str, structured_input: StructuredInputModel | None = None) -> PublicTurn:
     normalized_text = text.strip()
     normalized_structured = None
@@ -531,6 +688,18 @@ def build_assistant_turn(state: dict[str, Any], continuity_mode: ContinuityMode)
     evidence_cards = _normalize_evidence_cards(bundle.get("evidence_cards", []))
     sections = _normalize_report_sections(bundle.get("sections", []))
     limitations = _normalize_limitations(bundle.get("limitations", []))
+
+    # Format answer and section content into readable Markdown paragraphs
+    answer = _format_report_paragraphs(answer)
+    sections = [
+        ReportSectionModel(
+            id=section.id,
+            title=section.title,
+            content=_format_report_paragraphs(section.content),
+        )
+        for section in sections
+    ]
+
     answer_card = AnswerCardModel(
         answer=answer,
         finalSource=_normalize_final_source(state.get("final_answer_source")),
