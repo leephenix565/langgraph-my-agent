@@ -563,31 +563,35 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                         : "随研判阶段逐步纳入回答组织"}
                   </span>
                 </div>
-                <div className="thought-chain__dimensions">
-                  {dimensions.map((dimension) => {
-                    const isUnselected = isSelectedRouting && unselectedDims.includes(dimension.id);
-                    const dimStatus = isUnselected ? "unselected" as DimensionSignalStatus : dimensionStatus;
-                    const waiting = dimStatus === "waiting";
-                    return (
-                      <article
-                        className={`thought-chain__dimension thought-chain__dimension--${dimension.id}${
-                          waiting ? " thought-chain__dimension--waiting" : ""
-                        }${isUnselected ? " thought-chain__dimension--unselected" : ""}`}
-                        key={dimension.id}
-                      >
-                        <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
-                        <p>
-                          {isUnselected
-                            ? "本轮未选择该维度"
-                            : waiting
-                              ? "等待分析结果"
-                              : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
-                        </p>
-                        <span className="thought-chain__dimension-status">{dimensionStatusLabel(dimStatus)}</span>
-                      </article>
-                    );
-                  })}
-                </div>
+                {dimensionStatus === "waiting" && !isSelectedRouting ? (
+                  <p className="thought-chain__dimensions-waiting">维度分析尚未开始，将随流程推进逐步更新。</p>
+                ) : (
+                  <div className="thought-chain__dimensions">
+                    {dimensions.map((dimension) => {
+                      const isUnselected = isSelectedRouting && unselectedDims.includes(dimension.id);
+                      const dimStatus = isUnselected ? "unselected" as DimensionSignalStatus : dimensionStatus;
+                      const waiting = dimStatus === "waiting";
+                      return (
+                        <article
+                          className={`thought-chain__dimension thought-chain__dimension--${dimension.id}${
+                            waiting ? " thought-chain__dimension--waiting" : ""
+                          }${isUnselected ? " thought-chain__dimension--unselected" : ""}`}
+                          key={dimension.id}
+                        >
+                          <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
+                          <p>
+                            {isUnselected
+                              ? "本轮未选择该维度"
+                              : waiting
+                                ? "等待分析结果"
+                                : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
+                          </p>
+                          <span className="thought-chain__dimension-status">{dimensionStatusLabel(dimStatus)}</span>
+                        </article>
+                      );
+                    })}
+                  </div>
+                )}
               </div>
             </div>
           </div>

@@ -55,6 +55,7 @@ export interface PublicTurn {
   workflow?: WorkflowModel;
   runId?: string;
   continuityMode?: ContinuityMode;
+  routingLabel?: string;
 }
 
 export interface ChatSessionSummary {

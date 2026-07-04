@@ -54,6 +54,9 @@ interface WorkspaceFrameProps {
   errorMessage: string | null;
   errorMeta: ApiError | null;
   health: HealthResponse | null;
+  sidebarOpen: boolean;
+  onToggleSidebar: () => void;
+  onCloseSidebar: () => void;
 }
 
 function nowLabel() {
@@ -86,14 +89,18 @@ function createStreamingWorkflow(base?: WorkflowModel, liveProgress?: WorkflowSt
   };
 }
 
-function buildOptimisticUserTurn(text: string, structuredInput?: StructuredInputModel): PublicTurn {
-  return {
+function buildOptimisticUserTurn(text: string, structuredInput?: StructuredInputModel, routingLabel?: string): PublicTurn {
+  const turn: PublicTurn = {
     id: makeClientId("user-optimistic"),
     role: "user",
     text,
     createdAt: nowLabel(),
     structuredInput,
   };
+  if (routingLabel) {
+    turn.routingLabel = routingLabel;
+  }
+  return turn;
 }
 
 function buildOptimisticAssistantTurn(): PublicTurn {
@@ -163,6 +170,9 @@ function WorkspaceFrame({
   errorMessage,
   errorMeta,
   health,
+  sidebarOpen,
+  onToggleSidebar,
+  onCloseSidebar,
 }: WorkspaceFrameProps) {
   const location = useLocation();
   const activeSession = sessions.find((session) => session.id === activeSessionId) ?? sessions[0] ?? null;
@@ -181,7 +191,11 @@ function WorkspaceFrame({
         deleteDisabled={unavailable || isLoading || isSending || Boolean(deletingThreadId)}
         deletingThreadId={deletingThreadId}
         connectionState={connectionState}
+        isOpen={sidebarOpen}
+        onToggle={onToggleSidebar}
+        onClose={onCloseSidebar}
       />
+      <div className={`sidebar-backdrop${sidebarOpen ? " sidebar-backdrop--visible" : ""}`} onClick={onCloseSidebar} />
       <main className="app-main">
         <AppRoutes
           activeSession={activeSession}
@@ -218,6 +232,7 @@ export default function App() {
   const [health, setHealth] = useState<HealthResponse | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [errorMeta, setErrorMeta] = useState<ApiError | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const bootstrappedRef = useRef(false);
 
   const activeTurns = activeSessionId ? turnsBySession[activeSessionId] ?? [] : [];
@@ -335,7 +350,8 @@ export default function App() {
     setErrorMessage(null);
     setErrorMeta(null);
 
-    const optimisticUserTurn = buildOptimisticUserTurn(value, structuredInput);
+    const routingLabel = routing?.mode === "selected" ? "选择路由" : undefined;
+    const optimisticUserTurn = buildOptimisticUserTurn(value, structuredInput, routingLabel);
     const optimisticAssistantTurn = buildOptimisticAssistantTurn();
     startTransition(() => {
       setTurnsBySession((current) => ({
@@ -582,6 +598,9 @@ export default function App() {
         errorMessage={errorMessage}
         errorMeta={errorMeta}
         health={health}
+        sidebarOpen={sidebarOpen}
+        onToggleSidebar={() => setSidebarOpen((c) => !c)}
+        onCloseSidebar={() => setSidebarOpen(false)}
       />
     </BrowserRouter>
   );

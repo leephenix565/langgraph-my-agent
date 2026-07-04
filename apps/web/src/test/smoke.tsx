@@ -611,7 +611,7 @@ async function runThoughtChainDynamicStageChecks() {
   assert.ok(evidenceDetail.textContent?.includes("个任务处理中"));
   assert.ok(evidenceDetail.textContent?.includes("证据接入"));
   assert.ok(evidenceDetail.textContent?.includes("不代表实时市场数据或投资建议"));
-  assert.ok(evidenceDetail.textContent?.includes("等待分析结果"));
+  assert.ok(evidenceDetail.textContent?.includes("维度分析尚未开始"));
   assert.equal(evidenceDetail.textContent?.includes("已纳入"), false);
   cleanup();
 }

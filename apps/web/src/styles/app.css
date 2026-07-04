@@ -93,6 +93,11 @@ body {
 
   .app-main {
     min-height: auto;
+    margin-left: 0;
+  }
+
+  .sidebar {
+    display: flex;
   }
 }
 

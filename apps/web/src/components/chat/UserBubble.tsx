@@ -16,6 +16,7 @@ export function UserBubble({ turn }: UserBubbleProps) {
       aria-label="用户消息"
     >
       <div className="turn__meta">{turn.createdAt}</div>
+      {turn.routingLabel ? <span className="turn__routing-badge">{turn.routingLabel}</span> : null}
       {structuredSections.length ? (
         <div className="turn__structured" aria-label="结构化输入">
           {structuredSections.map((section) => (
