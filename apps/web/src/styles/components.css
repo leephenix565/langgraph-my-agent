@@ -878,6 +878,23 @@
   line-height: 1.5;
 }
 
+.assistant-card__copy {
+  width: fit-content;
+  padding: 2px 10px;
+  border: 1px solid var(--line-soft);
+  border-radius: 999px;
+  background: transparent;
+  color: var(--ink-faint);
+  font-size: 10px;
+  cursor: pointer;
+  transition: color 140ms ease, border-color 140ms ease;
+}
+
+.assistant-card__copy:hover {
+  color: var(--accent);
+  border-color: rgba(101, 109, 227, 0.2);
+}
+
 .assistant-card__details {
   display: grid;
   gap: 3px;

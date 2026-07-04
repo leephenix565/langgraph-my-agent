@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import type { AnswerCardModel, PublicTurn } from "../../types/chat";
@@ -197,7 +197,21 @@ function renderAnswerBody(turn: PublicTurn, answerCard: AnswerCardModel) {
 export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
   const answerCard = turn.answerCard;
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [copyLabel, setCopyLabel] = useState("复制回答");
   const provenance = turn.workflow?.provenance as Record<string, any> | undefined;
+  const showPendingAnswer =
+    Boolean(turn.workflow) && !isWorkflowReportComplete(turn.workflow) && isStreamingPlaceholderAnswer(answerCard?.answer ?? "");
+
+  const handleCopy = useCallback(() => {
+    if (!answerCard?.answer) return;
+    navigator.clipboard.writeText(answerCard.answer).then(() => {
+      setCopyLabel("已复制");
+      setTimeout(() => setCopyLabel("复制回答"), 2000);
+    }).catch(() => {
+      setCopyLabel("复制失败");
+      setTimeout(() => setCopyLabel("复制回答"), 2000);
+    });
+  }, [answerCard]);
 
   if (!answerCard) return null;
 
@@ -208,6 +222,11 @@ export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
         {renderRoutingBadge(provenance)}
         {renderUncoveredScope(provenance)}
         {renderAnswerBody(turn, answerCard)}
+        {showPendingAnswer ? null : (
+          <button className="assistant-card__copy" type="button" onClick={handleCopy} aria-label={copyLabel}>
+            {copyLabel}
+          </button>
+        )}
         {renderCitations(answerCard)}
         {turn.workflow ? <ResearchThoughtChain workflow={turn.workflow} /> : null}
         {turn.workflow ? <TechnicalWorkflowDisclosure workflow={turn.workflow} /> : null}

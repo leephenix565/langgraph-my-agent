@@ -106,7 +106,7 @@ export function Sidebar({
                   aria-label={`${zhCN.sidebar.deleteThread}: ${session.title}`}
                   title={zhCN.sidebar.deleteThread}
                 >
-                  {deletingThreadId === session.id ? "…" : "×"}
+                  {deletingThreadId === session.id ? "…" : "—"}
                 </button>
               </div>
             ))}
