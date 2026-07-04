@@ -184,6 +184,32 @@ function renderDebugMeta(turn: PublicTurn, answerCard: AnswerCardModel, open: bo
   );
 }
 
+function renderSections(answerCard: AnswerCardModel) {
+  if (!answerCard.sections?.length) return null;
+  return (
+    <div className="assistant-card__sections" aria-label="报告章节">
+      <span className="assistant-card__meta-label" style={{ fontSize: 11 }}>研判章节详情</span>
+      {answerCard.sections.map((section) => (
+        <div className="report-section" key={section.id}>
+          <div className="report-section__head">
+            <strong className="report-section__title">{section.title}</strong>
+          </div>
+          <div className="report-section__body">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                a: ({ node: _node, ...props }) => <a {...props} target="_blank" rel="noreferrer" />,
+              }}
+            >
+              {section.content}
+            </ReactMarkdown>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
 function renderAnswerBody(turn: PublicTurn, answerCard: AnswerCardModel) {
   const showPendingAnswer =
     Boolean(turn.workflow) && !isWorkflowReportComplete(turn.workflow) && isStreamingPlaceholderAnswer(answerCard.answer);
@@ -246,6 +272,7 @@ export function AssistantAnswerCard({ turn }: AssistantAnswerCardProps) {
             {copyLabel}
           </button>
         )}
+        {renderSections(answerCard)}
         {renderCitations(answerCard)}
         {renderEvidenceCards(answerCard)}
         {turn.workflow ? <ResearchThoughtChain workflow={turn.workflow} /> : null}
