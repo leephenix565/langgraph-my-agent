@@ -385,8 +385,6 @@ async function runAssistantRenderChecks() {
   assert.ok(article.textContent?.includes("研判流程"));
   assert.ok(article.textContent?.includes("分析路径"));
   assert.ok(article.textContent?.includes("系统按固定研判流程组织本轮回答"));
-  assert.ok(article.textContent?.includes("技术流程详情"));
-  assert.ok(article.textContent?.includes("展开技术详情"));
   assert.ok(article.textContent?.includes("研判依据"));
   assert.ok(article.textContent?.includes("分析框架"));
   assert.ok(article.textContent?.includes("用户问题"));
@@ -465,70 +463,11 @@ async function runAssistantRenderChecks() {
   assert.equal(thoughtChainDetail.textContent?.includes("endpoint"), false);
   assertNoForbiddenUiTokens(thoughtChainDetail.textContent);
 
-  const technicalToggle = view.getByRole("button", { name: /技术流程详情/ });
-  assert.equal(technicalToggle.getAttribute("aria-expanded"), "false");
-  assert.equal(view.queryByLabelText("固定 DAG 执行详情"), null);
-  fireEvent.click(technicalToggle);
-  assert.equal(technicalToggle.getAttribute("aria-expanded"), "true");
-  assert.ok(view.getByLabelText("固定 DAG 执行详情"));
-  assert.ok(view.getByText("阶段时间线"));
-  assert.ok(view.getAllByText("路径规划器").length >= 1);
-  assert.ok(view.getByText("执行批次"));
-  assert.ok(view.getByText("维度分组"));
-  assert.ok(view.getByText("流程步骤列表"));
-  assert.ok(view.getByText("步骤结果详情"));
-  assert.ok(view.getByText("最终来源与溯源"));
-  assert.ok(view.getAllByText("固定研判流程").length >= 1);
+  assert.ok(view.container.textContent?.includes("研判流程"));
   assert.ok(view.getAllByText((content) => content.includes("价值维度已纳入上方回答组织")).length >= 1);
   assert.ok(view.getAllByText((content) => content.includes("市场维度已纳入上方回答组织")).length >= 1);
   assert.ok(view.getAllByText((content) => content.includes("风险维度已纳入上方回答组织")).length >= 1);
   assert.ok(view.getAllByText((content) => content.includes("宏观维度已纳入上方回答组织")).length >= 1);
-
-  assert.ok(view.getByText("当前步骤"));
-  assert.ok(view.getByText("运行方式"));
-  assert.ok(view.getAllByText("固定流程").length >= 1);
-  assert.ok(view.getAllByText("deterministic_system").length >= 1);
-  assert.ok(article.textContent?.includes("deterministic_system"));
-  assert.ok(article.textContent?.includes("deterministic_skeleton"));
-  assert.ok(view.getByText("接入状态"));
-  assert.ok(view.getAllByText("否").length >= 2);
-
-  fireEvent.click(view.getByRole("button", { name: /金融数据服务/ }));
-  assert.equal(view.getByRole("button", { name: /金融数据服务/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(article.textContent?.includes("financial_data_service"));
-  assert.ok(view.getByText("可接入连接"));
-  assert.ok(view.getByText("external_http_candidate"));
-  assert.ok(article.textContent?.includes("external_http_candidate"));
-  assert.ok(view.getByText("高级连接未启用"));
-  assert.ok(view.getByText("external_candidate_disabled"));
-  assert.ok(article.textContent?.includes("external_candidate_disabled"));
-  assert.ok(view.getByText("高级连接处于关闭状态，本轮使用本地流程。"));
-
-  fireEvent.click(view.getByRole("button", { name: /传统企业估值/ }));
-  assert.equal(view.getByRole("button", { name: /传统企业估值/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(view.getByText("单体智能体输入"));
-  assert.ok(article.textContent?.includes("cautious_positive"));
-  assert.ok(article.textContent?.includes("估值维度给出偏积极但需复核的结构化信号。"));
-
-  fireEvent.click(view.getByRole("button", { name: /价值综合/ }));
-  assert.equal(view.getByRole("button", { name: /价值综合/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(view.getByText("综合智能体输入"));
-  assert.ok(view.getByText("成员"));
-  assert.ok(article.textContent?.includes("价值综合智能体汇总了估值维度成员信号。"));
-
-  fireEvent.click(view.getByRole("button", { name: /企业舆情雷达/ }));
-  assert.equal(view.getByRole("button", { name: /企业舆情雷达/ }).getAttribute("aria-pressed"), "true");
-  assert.ok(article.textContent?.includes("pending_placeholder"));
-  assert.ok(view.getAllByText("待接入").length >= 1);
-  assert.ok(view.getAllByText("pending_implementation").length >= 1);
-  assert.ok(article.textContent?.includes("pending_implementation"));
-  assert.ok(view.getByText("企业舆情雷达仍是待接入流程节点，默认用户面仅展示流程线索。"));
-
-  for (const oldCopy of ["Stage timeline", "Execution batches", "Dimension groups", "Step result metadata"]) {
-    assert.equal(article.textContent?.includes(oldCopy), false, `Unexpected old workflow copy: ${oldCopy}`);
-  }
-
-  assertNoForbiddenUiTokens(article.textContent);
   cleanup();
 }
 
@@ -765,8 +704,6 @@ async function runStreamingSuccessScenario() {
     assert.ok(view.container.textContent?.includes("简短实时摘要，先给结论。"));
   });
   assert.ok(view.container.textContent?.includes("分析路径"));
-  assert.ok(view.container.textContent?.includes("技术流程详情"));
-  assert.ok(view.container.textContent?.includes("展开技术详情"));
   assert.equal(view.container.textContent?.includes("执行批次"), false);
   assert.equal(view.container.textContent?.includes("步骤结果详情"), false);
   assert.equal(view.container.textContent?.includes("运行方式"), false);
