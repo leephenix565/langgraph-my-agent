@@ -361,12 +361,18 @@ function dimensionSummary(
 }
 
 function processEvidenceItems(phase: PhaseView, workflow: WorkflowModel): EvidenceItem[] {
+  // Prefer real step results when available
   const stepItems = phase.steps
     .slice(0, 3)
-    .map((step) => ({
-      label: step.title,
-      value: publicSafeOrFallback(step.summary, phase.detail),
-    }))
+    .map((step) => {
+      const stepResult = workflow.stepResults[step.agentId ?? step.id] as Record<string, any> | undefined;
+      const agentEvidence = stepResult?.agent_evidence as Record<string, any> | undefined;
+      const realValue = agentEvidence?.summary as string | undefined;
+      return {
+        label: step.title,
+        value: publicSafeOrFallback(realValue || step.summary, phase.detail),
+      };
+    })
     .filter((item) => item.label && item.value);
 
   if (stepItems.length) {
@@ -464,6 +470,28 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
   }));
   const overallStatus = reportComplete ? "报告已输出" : "流程进行中";
   const progress = progressView(phases, selectedPhase, reportComplete, workflow);
+
+  // Per-dimension agent data from real stepResults
+  const dimAgentData = useMemo(() => {
+    const map: Record<string, { total: number; done: number; agents: Array<{ id: string; title: string; stance?: string; confidence?: number; summary?: string }> }> = {};
+    for (const dimKey of ["value", "market", "risk", "macro"]) {
+      const agents = workflow.dagSteps.filter((s) => s.dimension === dimKey && s.stage === "l2_analysis");
+      const done = agents.filter((a) => workflow.completedSteps.includes(a.id) || a.status === "complete");
+      const entries = agents.map((a) => {
+        const sr = workflow.stepResults[a.agentId ?? a.id] as Record<string, any> | undefined;
+        const ae = sr?.agent_evidence as Record<string, any> | undefined;
+        return {
+          id: a.agentId ?? a.id,
+          title: a.title,
+          stance: ae?.stance ?? sr?.stance ?? (typeof sr?.normalized === "object" ? (sr.normalized as Record<string, any>)?.stance : undefined),
+          confidence: ae?.confidence ?? sr?.confidence ?? (typeof sr?.normalized === "object" ? (sr.normalized as Record<string, any>)?.confidence : undefined),
+          summary: ae?.summary ?? a.summary,
+        };
+      });
+      map[dimKey] = { total: agents.length, done: done.length, agents: entries };
+    }
+    return map;
+  }, [workflow]);
 
   return (
     <section className="thought-chain" aria-label="分析路径">
@@ -571,6 +599,9 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                       const isUnselected = isSelectedRouting && unselectedDims.includes(dimension.id);
                       const dimStatus = isUnselected ? "unselected" as DimensionSignalStatus : dimensionStatus;
                       const waiting = dimStatus === "waiting";
+                      const dd = dimAgentData[dimension.id];
+                      const hasRealData = dd && dd.total > 0 && dd.done > 0;
+                      const showMembers = hasRealData && dd && dd.agents.length > 0;
                       return (
                         <article
                           className={`thought-chain__dimension thought-chain__dimension--${dimension.id}${
@@ -578,7 +609,12 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                           }${isUnselected ? " thought-chain__dimension--unselected" : ""}`}
                           key={dimension.id}
                         >
-                          <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
+                          <div className="thought-chain__dimension-head">
+                            <strong>{dimensionTitle(dimension.group, dimension.title)}</strong>
+                            {hasRealData && dd ? (
+                              <span className="thought-chain__dimension-count">{dd.done}/{dd.total}</span>
+                            ) : null}
+                          </div>
                           <p>
                             {isUnselected
                               ? "本轮未选择该维度"
@@ -586,6 +622,17 @@ export function ResearchThoughtChain({ workflow }: ResearchThoughtChainProps) {
                                 ? "等待分析结果"
                                 : dimensionSummary(dimension.group, dimension.copy, reportComplete, dimStatus)}
                           </p>
+                          {showMembers && dd ? (
+                            <div className="thought-chain__dimension-members">
+                              {dd.agents.slice(0, 3).map((ag) => (
+                                <span className="dim-member" key={ag.id}>
+                                  <span className="dim-member__name">{ag.title || ag.id}</span>
+                                  {ag.stance && <span className="dim-member__stance">{ag.stance}</span>}
+                                  {typeof ag.confidence === "number" && <span className="dim-member__conf">{ag.confidence.toFixed(2)}</span>}
+                                </span>
+                              ))}
+                            </div>
+                          ) : null}
                           <span className="thought-chain__dimension-status">{dimensionStatusLabel(dimStatus)}</span>
                         </article>
                       );
