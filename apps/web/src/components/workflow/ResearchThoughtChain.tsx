@@ -399,16 +399,18 @@ function progressView(
   reportComplete: boolean,
   workflow: WorkflowModel,
 ): ProgressView {
-  // Use step-based progress when dagSteps are available, fall back to phase-based
+  // Use dagStep IDs as canonical set; only count completedSteps that match a dagStep
+  const dagStepIds = new Set(workflow.dagSteps.map((s) => s.id));
+  const completedInDag = workflow.completedSteps.filter((id) => dagStepIds.has(id));
   const totalSteps = workflow.dagSteps.length;
   const useStepBased = totalSteps > 0;
   const total = useStepBased ? totalSteps : PHASES.length;
   const count = reportComplete
     ? total
     : useStepBased
-      ? Math.min(totalSteps, workflow.completedSteps.length || 1)
+      ? Math.max(1, completedInDag.length)
       : Math.min(total, Math.max(1, selectedPhase.index + 1));
-  const percent = Math.round((count / total) * 100);
+  const percent = Math.min(100, Math.round((count / Math.max(1, total)) * 100));
 
   if (useStepBased) {
     const runningPhase = phases.find((p) => p.status === "active");
