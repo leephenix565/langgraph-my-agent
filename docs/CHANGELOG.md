@@ -3,7 +3,100 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
-## 2026-07-03 - Polish frontend: loading UX, routing badges, and provenance display
+## 2026-07-04 — Fix frontend thought-chain progress bugs and backend adapter compatibility
+
+### Changed
+
+- **Progress counter (43/27 fix)**: `graph.py` L2/L3/L4 nodes were appending
+  `l2_conclusions` agent IDs (e.g. `value_traditional_valuation`) to
+  `completed_steps`, but dagSteps use `l2:`-prefixed IDs. Removed the spurious
+  concatenation.
+- **Dimension summaries**: `_dimension_group_summary()` replaces hardcoded
+  "维度综合结果。" with dynamic text derived from stance, confidence, and
+  contributing_agents count. Summary is frontend-safe (no "置信度" token that
+  `isPublicSafeCopy` would block).
+- **StepResults key lookup**: Frontend `ResearchThoughtChain.tsx` was looking
+  up `stepResults` by `agentId` (value_traditional_valuation) but keys are
+  step IDs (`l2:value_traditional_valuation`). Fixed to use `step.id`.
+- **Dimension title**: `dimensionTitle()` had `group?.title ? "${fallback}" : fallback`
+  which always returned fallback. Fixed to `group?.title ?? fallback`.
+- **Detail summary dedup**: `detailSummary()` now deduplicates identical step
+  summaries with `[...new Set(...)]` before joining, and falls back to phase
+  detail text when all summaries are identical.
+- **Dimension member limit removed**: All dimension agents shown (was
+  `slice(0, 3)` limiting display to first 3).
+- **Layer-based progress**: Progress bar changed from 27-step granularity to
+  L1/L2/L3/L4 layer counting. Labels now read "研判流程 · 3/4 层处理中".
+- **Dimension cards grid**: Single-column changed to `repeat(auto-fit,
+  minmax(280px, 1fr))` — 4 cards display in 2 columns on wider screens.
+
+### Report Layout And Rendering
+
+- **Card width**: `42rem` → `48rem` for better Chinese text line length.
+- **Typography**: Body text 15px, line-height 1.9, paragraph gap 12px.
+- **`renderSections()`**: `AnswerCardModel.sections` (7 structured cards)
+  now rendered below answer body. Previously data was sent but never used.
+- **`renderEvidenceCards()`**: `evidenceCards` field rendered as blue-tinted
+  card grid below citations (previously data was never shown).
+- **Citations card grid**: Left-border list → multi-column card grid
+  (`auto-fit, minmax(200px, 1fr)`).
+- **Message padding**: `8px 24px 24px` → `20px 32px 32px` for breathing room.
+- **Bold heading conversion**: Added `_convert_bold_headers_to_markdown_headings()`
+  in external adapter to convert `**Section Title**:` at paragraph starts to
+  `## heading` + new paragraph.
+
+### Report Paragraph Formatting
+
+- Added `_format_report_paragraphs()` in `public_mapping.py` that splits
+  agent-generated report text at semantic markers (业务判断, 覆盖限制,
+  风险提示, 关键证据, 业务指标, 驱动因素, 研究判断引用), converting them
+  to `**bold**` headings separated by `\n\n`.
+- Marker patterns auto-derived from `AGENT_TITLE_LABELS` for all 27 agent
+  names plus sub-markers.
+- Fallback: sentence-grouping into 3-sentence paragraphs when no markers found.
+- Applied to both `answer` body and every `section.content` in
+  `build_assistant_turn()`.
+
+### Adapter And Policy Changes
+
+- **`validate_external_compute_envelope`**: now accepts both
+  `external_agent_compute_v0` and `external_agent_response_v0` schemas.
+  Previously rejected `response_v0` from 3 risk agents, causing unnecessary
+  adapter failures.
+- **Non-L4 policy**: L2 concurrency 4→20, agent timeouts 20→30s.
+- **Quality summary text**: Changed from "L2 完成 7/18" to "L2 已获取 14/18
+  个 agent 数据（9 完全完成 + 5 降级参考）".
+- **Report section wording**: "二层分析（L2） 完成 7/18" updated to reflect
+  combined complete + partial counts consistently.
+
+### Production Agent Service Repairs (outside git)
+
+- `risk_identification` (port 10010): `AGENT_ID` from `risk_rule_reasoning`
+  → `risk_identification` to match policy. Restarted.
+- `market_ipo_investor_behavior` (port 10008): Added `/v1/agent/compute`
+  endpoint. Agent identity fields aligned. Restarted.
+- `market_capital_flow_chip` (port 10022): Service had stopped. Restarted.
+- `market_composite` (port 10023): L3 service had stopped. Restarted.
+
+### Tests
+
+- 470 unit tests passed (0 new failures).
+- TypeScript typecheck (`tsc --noEmit`) zero errors.
+- Adapter unit tests: 53 passed.
+- Contracts unit tests: 46 passed.
+- Diff reduced to 4 files changed, 40 insertions(+), 7 deletions(-).
+- All pre-existing failures (6 unit, 7 integration, 4 legacy) unchanged —
+  not caused by this change.
+
+### Not Done
+
+- `market_ipo_investor_behavior` can only serve IPO-stage companies (data
+  scope constraint — not a bug).
+- 3 L2 agents remain undeployed: `market_fund_manager_behavior`,
+  `macro_sentiment`, `macro_industry_hotspot`.
+- No API contract version bump, no graph topology change, no catalog change,
+  no runtime binding change.
+- No provider or external `/v1/agent/invoke` path was modified.
 
 ### Changed
 

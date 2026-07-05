@@ -10,7 +10,10 @@ below; historical phase records live under `docs/history/` and are indexed by
 2. [`AGENTS.md`](../AGENTS.md) - operator and Codex workflow policy.
 3. [`docs/INDEX.md`](INDEX.md) - this navigation map.
 4. [`docs/CURRENT_STATUS.md`](CURRENT_STATUS.md) - current status and next theme.
-5. [`docs/ARCHITECTURE_FIXED_DAG.md`](ARCHITECTURE_FIXED_DAG.md) - fixed DAG architecture.
+5. [`docs/FRONTEND_V2.md`](FRONTEND_V2.md) - frontend contract and UI rendering.
+6. [`docs/ARCHITECTURE_FIXED_DAG.md`](ARCHITECTURE_FIXED_DAG.md) - fixed DAG architecture.
+7. [`docs/CONTRACTS.md`](CONTRACTS.md) - runtime and public contracts.
+8. [`docs/QUALITY.md`](QUALITY.md) - quality gates and validation boundaries.
 6. [`docs/CONTRACTS.md`](CONTRACTS.md) - runtime and public contracts.
 7. [`docs/QUALITY.md`](QUALITY.md) - quality gates and validation boundaries.
 8. [`docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`](AGENT_SYNC_ONE_COMMAND_WORKFLOW.md) - sync operations runbook.

@@ -15,7 +15,7 @@ This repository follows an audit-first workflow. User goals, constraints, and Do
 
 ## Reset Branch Rules
 
-The `reset/fixed-dag-v1` branch is a phase-based rewrite branch.
+The `frontend-ui-refinements` branch is a phase-based rewrite branch.
 
 - Make large changes in named phase commits.
 - Keep each phase scoped to its DoD.

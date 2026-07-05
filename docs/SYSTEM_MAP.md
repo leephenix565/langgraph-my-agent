@@ -8,7 +8,7 @@ lower sections are provenance notes only; current status lives in
 
 ## Current Operating Status
 
-- Branch: `reset/fixed-dag-v1`.
+- Branch: `frontend-ui-refinements`.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Active backend catalog source: `config/fixed_dag/agent_catalog.json`.
 - Active backend runtime binding source: `config/fixed_dag/runtime_bindings.json`.
@@ -18,7 +18,8 @@ lower sections are provenance notes only; current status lives in
 - Non-L4 production compute policy:
   `config/fixed_dag/non_l4_external_compute_policy.json` is
   `enabled_by_default=true` and separate from runtime bindings. It is
-  `/v1/agent/compute` only. Required enabled ids are
+  `/v1/agent/compute` only. L2 concurrency raised to 20 (from 4) and
+  timeouts raised to 30s (from 20s). Required enabled ids are
   `value_traditional_valuation`, `value_ml_valuation`,
   `value_meta_valuation`, `market_ipo_investor_behavior`,
   `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
@@ -136,8 +137,10 @@ not a public workflow contract.
 flowchart TD
     U["User input"] --> P["route_planner"]
     P --> E["prepare_l1_context"]
-    E --> X["execute_fixed_dag"]
-    X --> F["final_emit"]
+    E --> L2["run_l2_conclusions\n(incremental L2 + production compute)"]
+    L2 --> L3["run_dimension_composites\n(incremental L3 phase)"]
+    L3 --> L4["decision_synthesizer\n(incremental L4 phase)"]
+    L4 --> F["final_emit"]
     F --> M["memory_update"]
 ```
 

@@ -1,12 +1,12 @@
 # Current Status
 
-This is the current operational status entry for the Fixed DAG reset branch.
+This is the current operational status entry for the Frontend UI Refinements branch.
 Use it for status and roadmap orientation before reading historical phase
 records.
 
 ## Source Authority
 
-- Branch: `reset/fixed-dag-v1`.
+- Branch: `frontend-ui-refinements`.
 - Source authority: the current Git HEAD in `/sdb/dlut/dev/langgraph-my-agent`.
 - Reset lineage anchor: `pre-fixed-dag-reset-20260604-1457`.
 - This document intentionally avoids short-lived process identifiers and raw
@@ -27,8 +27,9 @@ records.
 - Non-L4 production external compute is governed by
   `config/fixed_dag/non_l4_external_compute_policy.json`, not by
   `runtime_bindings.json`. The policy is currently `enabled_by_default=true`
-  and compute-only. Required enabled ids remain
-  `value_traditional_valuation`, `value_ml_valuation`,
+  and compute-only. L2 stage concurrency raised to 20 (from 4) and all agent
+  timeouts raised to 30s (from 20s) to improve parallel coverage. Required
+  enabled ids remain `value_traditional_valuation`, `value_ml_valuation`,
   `value_meta_valuation`, `market_ipo_investor_behavior`,
   `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
   `macro_index_valuation`, and `value_composite`. RQ3A adds optional enabled
@@ -304,20 +305,29 @@ records.
 
 ## Current Engineering Theme
 
-Repository Authority & Active-Core Consolidation is complete. The final
-closeout is `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. The report-quality
-theme is also closed by RQ3C. Router L1 M1 is closed by M1H, and Router L1 M2
-now closes default-off selected-routing graph E2E report behavior with
-public-safe provenance. External route-planner service, route-planner port
-authority, real provider routing, live endpoint E2E, and production enablement
-remain later phases.
+Frontend UI Refinements and Agent Service Repair. The `frontend-ui-refinements`
+branch addresses multiple presentation-layer and production agent integration
+issues discovered during live verification:
 
-M4A found P4 count `0`, so M4B deletion implementation is skipped. Current
-mode returns to normal maintenance and product engineering on top of the fixed
-DAG, strict sync workflow, consolidated docs authority, active-core package
-boundaries, and Context/State compatibility metadata. No field deletion, public
-contract change, graph topology change, catalog change, or runtime binding
-change is part of this closeout.
+- **Thought-chain progress bugs**: fixed 43/27 progress inflation (agent IDs
+  wrongly appended as step IDs), switched progress from 27-step to L1/L2/L3/L4
+  layer-based counting, fixed dimensionTitle never using backend group title,
+  fixed detailSummary duplicate text, fixed stepResults key lookup mismatch
+  (agentId vs step id), removed 3-agent slice limit on dimension members.
+- **Report readability**: `_format_report_paragraphs()` in public_mapping.py
+  splits agent-generated report text at semantic markers into **bold** Markdown
+  headings with `\n\n` paragraph breaks; `AnswerCardModel.sections` now rendered
+  as structured cards; `evidenceCards` now rendered as a card grid; citations
+  redesigned from left-border list to multi-column card grid; assistant card
+  widened from 42rem to 48rem.
+- **External adapter fix**: `validate_external_compute_envelope` now accepts
+  both `external_agent_compute_v0` and `external_agent_response_v0` envelopes,
+  fixing 3 risk agents that were rejected at the envelope level.
+- **Production agent service repair**: fixed `risk_identification` agent_id
+  mismatch (`risk_rule_reasoning` → `risk_identification`), added
+  `/v1/agent/compute` endpoint to `market_ipo_investor_behavior`, restarted
+  `market_capital_flow_chip` and `market_composite` services.
+- **Non-L4 policy tuning**: L2 concurrency raised 4→20, timeouts raised 20→30s.
 
 ## Current Non-Claims
 

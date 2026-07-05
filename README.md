@@ -16,14 +16,14 @@ they are evidence, not current authority.
 2. `AGENTS.md`
 3. `docs/INDEX.md`
 4. `docs/CURRENT_STATUS.md`
-5. `docs/ARCHITECTURE_FIXED_DAG.md`
-6. `docs/CONTRACTS.md`
-7. `docs/QUALITY.md`
-8. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
+5. `docs/FRONTEND_V2.md`
+6. `docs/ARCHITECTURE_FIXED_DAG.md`
+7. `docs/CONTRACTS.md`
+8. `docs/QUALITY.md`
 
 ## Current Branch Scope
 
-- Branch: `reset/fixed-dag-v1`.
+- Branch: `frontend-ui-refinements`.
 - Runtime entry: `langgraph.json -> src/react_agent/graph.py:graph`.
 - Public Python workflow contract: `workflow_snapshot_v2`.
 - Public agent catalog: fixed DAG 27-agent `snake_case` projection from
@@ -46,7 +46,9 @@ The active graph is provider-free and has no external `/v1/agent/invoke` path:
 user input
   -> route_planner
   -> prepare_l1_context
-  -> execute_fixed_dag
+  -> run_l2_conclusions (incremental L2 phase with production compute overlay)
+  -> run_dimension_composites (incremental L3 phase)
+  -> decision_synthesizer (incremental L4 decision + report phase)
   -> final_emit
   -> memory_update
 ```

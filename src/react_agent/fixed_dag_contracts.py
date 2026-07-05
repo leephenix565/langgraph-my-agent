@@ -3571,18 +3571,20 @@ def _report_bundle_sections(report_input_bundle: Mapping[str, Any]) -> list[dict
     l3_lines = [_format_l3_summary_line(item) for item in l3_items]
     quality_lines: list[str] = []
     if isinstance(quality_summary, Mapping):
+        l2_complete = int(quality_summary.get("l2_complete") or 0)
+        l2_partial = int(quality_summary.get("l2_partial") or 0)
+        l2_total = int(quality_summary.get("l2_total") or 0)
+        l2_with_data = l2_complete + l2_partial
         quality_lines.append(
-            "L2 完成 {complete}/{total}，partial {partial}，error {error}，无可读证据 {thin}；"
-            "L3 输出 {l3_available}/{l3_total}，complete {l3_complete}，partial {l3_partial}，error {l3_error}。".format(
-                complete=int(quality_summary.get("l2_complete") or 0),
-                total=int(quality_summary.get("l2_total") or 0),
-                partial=int(quality_summary.get("l2_partial") or 0),
-                error=int(quality_summary.get("l2_error") or 0),
+            "L2 已获取 {with_data}/{total} 个 agent 数据（{complete} 完全完成 + {partial} 降级参考），"
+            "无可读证据 {thin}；"
+            "L3 输出 {l3_available}/{l3_total}。".format(
+                with_data=l2_with_data,
+                total=l2_total,
+                complete=l2_complete,
+                partial=l2_partial,
                 thin=int(quality_summary.get("l2_without_readable_evidence") or 0),
                 l3_available=int(quality_summary.get("l3_available") or 0),
-                l3_complete=int(quality_summary.get("l3_complete") or 0),
-                l3_partial=int(quality_summary.get("l3_partial") or 0),
-                l3_error=int(quality_summary.get("l3_error") or 0),
                 l3_total=int(quality_summary.get("l3_total") or 0),
             )
         )

@@ -78,6 +78,40 @@ roster.
 R8-8J extends the same provider-free adapter boundary so
 `external_agent_compute_v0` envelopes with concrete `data_bundle_v1` tool
 results can map to the internal `data_bundle_v1` contract. This is adapter input
+
+R8-12 adds demo and production compute bridge paths. The demo bridge calls
+allowlisted `/v1/agent/compute` endpoints and maps responses through the same
+adapter. The production non-L4 path uses a source-controlled policy
+(`config/fixed_dag/non_l4_external_compute_policy.json`) separate from
+`runtime_bindings.json`.
+
+R8-13Q relaxes `validate_external_compute_envelope` to accept both
+`external_agent_compute_v0` and `external_agent_response_v0` envelope versions.
+Some risk agents return the older `response_v0` schema. The validation now
+accepts either and dispatches through the same adapter pipeline.
+
+### Changed (2026-07-04)
+
+- **`validate_external_compute_envelope`**: now accepts envelope schema_version
+  `external_agent_response_v0` in addition to `external_agent_compute_v0`.
+  Previously only `compute_v0` was accepted, causing 3 deployment agents to be
+  rejected at the envelope validation stage.
+- **Quality summary wording**: `_report_bundle_sections` output changed from
+  "L2 完成 X/Y" to "L2 已获取 X/Y 个 agent 数据（complete + partial）" for
+  clearer reporting of actual coverage.
+- **Non-L4 policy**: L2 concurrency 4→20, timeouts 20→30s.
+- **Report formatting**: `public_mapping.py` adds `_format_report_paragraphs()`
+  contract for post-processing report text into structured Markdown paragraphs
+  with `**bold**` headings. Applied to both `answer` and `section.content`.
+- **`answerCard.sections`**: frontend now renders the structured `sections`
+  array as bordered cards with Markdown body. Previously data was sent but
+  never rendered. This is a frontend rendering change only, no schema change.
+
+### Not Changed
+
+- `extra="forbid"` remains on all public Pydantic models.
+- Public API contract version is unchanged (`public_api_contract_v5`).
+- No graph topology, catalog, or runtime binding changes.
 only. It does not make compute envelopes graph state, does not call services,
 and does not wire L1 data services into active graph execution.
 

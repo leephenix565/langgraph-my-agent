@@ -376,6 +376,103 @@ composer text
 - The UI does not expose `full_dag`, provider-router, compute, invoke, model,
   base URL, API key, env, runtime-binding, catalog, or non-L4 policy controls.
 
+## R7-I.7 Done — Layer-Based Thought-Chain Progress
+
+- Progress bar switched from 27-step granularity to L1/L2/L3/L4 layer counting.
+  Label reads "研判流程 · 3/4 层处理中" instead of "研判流程 · 25/27 个任务处理中".
+- Dimension agent members without stance/confidence data are hidden entirely
+  instead of showing "待分析" badges.
+- Dimension cards grid changed from single-column to responsive auto-fit with
+  `minmax(280px, 1fr)`, displaying 4 dimension cards in 2 columns on wider
+  screens.
+- `dimensionTitle` now correctly uses backend `group.title` when available.
+- `detailSummary` deduplicates identical step descriptions before joining.
+- Backend `_dimension_group_summary` produces dynamic dimension summaries
+  (e.g. "综合positive_watch，基于 3 个成员分析线索。") instead of hardcoded
+  "维度综合结果。" or "汇总单一维度的分析结论，形成维度判断。".
+- All dimension agents shown (removed `slice(0, 3)` limit on member list).
+- No `7-I.7` impacts on backend graph, catalog, runtime bindings, or agent
+  services.
+
+### Tests
+
+- Frontend smoke, TypeScript typecheck (`tsc --noEmit`), and full unit test
+  suite pass (470 passed, 0 new failures).
+
+## R7-I.8 Done — Report Content Formatting
+
+- Added `_format_report_paragraphs()` in `public_mapping.py` that splits
+  agent-generated report text at semantic markers (业务判断, 覆盖限制,
+  风险提示, 关键证据, etc.), converting them to `**bold**` Markdown headings
+  separated by `\n\n` paragraph breaks. Used for both `answer` and each
+  `section.content`.
+- Marker patterns auto-derived from `AGENT_TITLE_LABELS` for all 27 agent
+  names plus sub-markers (关键证据, 业务指标, 驱动因素, 研究判断引用).
+- When no markers are found, sentences are grouped into paragraphs of 3 per
+  group as a fallback.
+- Text shorter than 30 chars is not processed.
+- No frontend changes required — ReactMarkdown renders the added `**bold**`
+  and `\n\n` naturally.
+
+### Tests
+
+- `test_public_mapping_fixed_dag.py` 6 passed; `test_fixed_dag_external_adapter.py`
+  53 passed; `test_fixed_dag_contracts.py` 46 passed.
+- Frontend smoke assertions updated for new paragraph layout.
+
+## R7-I.9 Done — Report Layout and Section Rendering
+
+- Assistant card widened from `42rem` (672px) to `48rem` (768px) for better
+  Chinese text line length.
+- Body text increased to 15px, line-height 1.9, paragraph gap 12px for dense
+  financial report readability.
+- `AnswerCardModel.sections` (up to 7 structured sections with titles and
+  content) now rendered as distinct bordered cards below the answer body,
+  each with a bold title and Markdown-rendered content.
+- `AnswerCardModel.evidenceCards` now rendered as blue-tinted card grid below
+  citations (previously the data was sent but never rendered).
+- Citations redesigned from cramped left-border list to multi-column
+  (`auto-fit, minmax(200px,1fr)`), rounded border, card-style display.
+- Message list padding increased from 16px to 24px for more breathing room.
+- Backend `_convert_bold_headers_to_markdown_headings()` converts
+  `**Section Title**: content` pattern at paragraph starts to `## heading`
+  plus new paragraph, giving reports proper visual hierarchy via CSS heading
+  styles.
+
+## R8-13Q Done — External Adapter Envelope Compatibility
+
+- `validate_external_compute_envelope` now accepts both
+  `external_agent_compute_v0` and `external_agent_response_v0` envelope
+  schema versions. Previously only `compute_v0` was accepted, causing 3 risk
+  agents that return `response_v0` to be rejected at the envelope level.
+- Non-L4 production compute policy L2 concurrency raised from 4 to 20,
+  allowing all 15 deployed L2 agents to run in parallel without queuing.
+  All agent timeouts raised from 20s to 30s for completion headroom.
+- Quality summary text revised from "L2 完成 7/18" to "L2 已获取 14/18 个
+  agent 数据（9 完全完成 + 5 降级参考）" for more accurate reporting.
+- These changes do not modify the public API schema, runtime bindings,
+  agent catalog, graph topology, or selected-routing behavior.
+- Expected max L2 coverage: 14/18 agents with data (9 complete + 5 partial),
+  limited by 3 undeployed agents and 1 with IPO-only data scope.
+
+### Production Agent Service Repairs (outside git)
+
+- `risk_identification` (port 10010): agent_id changed from `risk_rule_reasoning`
+  to `risk_identification` to match policy. Restarted.
+- `market_ipo_investor_behavior` (port 10008): added `/v1/agent/compute` compute
+  endpoint. Agent_id aligned to `market_ipo_investor_behavior`. Restarted.
+- `market_capital_flow_chip` (port 10022): service had stopped. Restarted.
+- `market_composite` (port 10023): service had stopped. Restarted.
+
+### Not Done
+
+- 3 L2 agents remain undeployed: `market_fund_manager_behavior`,
+  `macro_sentiment`, `macro_industry_hotspot`.
+- `market_ipo_investor_behavior` can only serve IPO-stage companies, not
+  fully traded stocks.
+- No API contract version bump, no graph topology change, no catalog change,
+  no runtime binding change.
+
 ## Deferred Work
 
 - visual dependency graph beyond ordered execution batches
