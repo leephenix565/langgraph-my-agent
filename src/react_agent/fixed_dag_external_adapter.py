@@ -1201,10 +1201,18 @@ def validate_external_response_envelope(payload: Mapping[str, Any]) -> tuple[boo
 
 
 def validate_external_compute_envelope(payload: Mapping[str, Any]) -> tuple[bool, str]:
-    """Validate a compute endpoint envelope without validating tool_result."""
+    """Validate a compute endpoint envelope without validating tool_result.
+
+    Accepts both ``external_agent_compute_v0`` (standard) and
+    ``external_agent_response_v0`` (returned by some risk agents).
+    """
     if not isinstance(payload, Mapping):
         return False, "payload_not_mapping"
-    if payload.get("schema_version") != EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION:
+    env_schema = str(payload.get("schema_version") or "")
+    if env_schema not in (
+        EXTERNAL_AGENT_COMPUTE_SCHEMA_VERSION,
+        EXTERNAL_AGENT_RESPONSE_SCHEMA_VERSION,
+    ):
         return False, "invalid_schema_version"
     if _status_from_external(payload.get("status")) is None:
         return False, "invalid_status"
