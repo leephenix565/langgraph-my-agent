@@ -118,7 +118,7 @@ def test_l3_explanation_adds_research_points_without_overriding_fusion(monkeypat
         )
     )
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l3_explanation_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l3_synthesizer.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -160,7 +160,7 @@ def test_l3_explanation_missing_credential_short_circuits(monkeypatch) -> None:
         raise AssertionError("provider should not load when credentials are missing")
 
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l3_explanation_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l3_synthesizer.load_chat_model",
         fail_load,
     )
 

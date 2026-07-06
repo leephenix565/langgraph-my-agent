@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from react_agent.fixed_dag.types import FixedDagStage, RouteTaskType
-from react_agent.fixed_dag_catalog import (
+from react_agent.fixed_dag.catalog import (
     fixed_dag_agent_ids,
     fixed_dag_agents_by_dimension,
     fixed_dag_agents_by_layer,

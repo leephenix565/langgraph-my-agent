@@ -81,7 +81,7 @@ def test_cli_s2p_apply_requires_execute_and_approval() -> None:
 def test_cli_json_output_path_is_explicit(tmp_path: Path) -> None:
     output = tmp_path / "status.json"
     result = subprocess.run(
-        [".venv/bin/python", "-m", "react_agent.ops.agent_syncctl", "status", "--json-output", str(output)],
+        [".venv/bin/python", "-m", "react_agent.ops_sync.agent_syncctl", "status", "--json-output", str(output)],
         cwd="/sdb/dlut/dev/langgraph-my-agent",
         text=True,
         capture_output=True,
@@ -101,7 +101,7 @@ def test_cli_p2s_coverage_uses_explicit_plan_file(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "p2s",
             "coverage",
             "--plan",
@@ -126,7 +126,7 @@ def test_cli_artifact_store_preflight_and_execution_explain(tmp_path: Path) -> N
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "artifact-store",
             "preflight",
             "--root",
@@ -151,7 +151,7 @@ def test_cli_artifact_store_preflight_and_execution_explain(tmp_path: Path) -> N
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "plan",
             "explain-execution",
             "--plan",

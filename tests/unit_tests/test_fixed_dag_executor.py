@@ -702,8 +702,8 @@ def test_execute_fixed_dag_plan_default_context_does_not_load_internal_llm(monke
     def fail_load(_model: str):
         raise AssertionError("internal placeholder provider should stay default-off")
 
-    monkeypatch.setattr("react_agent.fixed_dag_llm_placeholders.load_chat_model", fail_load)
-    monkeypatch.setattr("react_agent.fixed_dag_report_synthesizer.load_chat_model", fail_load)
+    monkeypatch.setattr("react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model", fail_load)
+    monkeypatch.setattr("react_agent.fixed_dag.report_synthesizer.load_chat_model", fail_load)
 
     result = execute_fixed_dag_plan(
         _plan(),
@@ -856,7 +856,7 @@ def test_report_input_bundle_carries_first_batch_report_material() -> None:
 
 
 def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     def fail_invoke(*_args, **_kwargs):
         raise AssertionError("external compute bridge should stay default-off")
@@ -877,7 +877,7 @@ def test_external_compute_demo_default_off_makes_no_bridge_calls(monkeypatch) ->
 
 
 def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     monkeypatch.delenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", raising=False)
     called = []
@@ -917,7 +917,7 @@ def test_external_compute_default_overlays_l4_without_demo_flag(monkeypatch) -> 
 
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         lambda _model: (_ for _ in ()).throw(
             AssertionError("mapped L4 report must suppress internal LLM report synthesis")
         ),
@@ -963,7 +963,7 @@ def _run_demo_report_generator(
     *,
     report_telemetry: dict[str, object] | None = None,
 ) -> dict:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     def fake_invoke(entry, **_kwargs):
         if entry.agent_id == "value_ml_valuation":
@@ -1098,7 +1098,7 @@ def test_report_enrichment_gate_keeps_original_when_enrichment_unsafe(monkeypatc
 
 
 def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
-    import react_agent.fixed_dag_production_external_compute as production
+    import react_agent.fixed_dag.external.prod_compute as production
 
     monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
     called = []
@@ -1192,8 +1192,8 @@ def test_production_non_l4_default_overlays_required_set(monkeypatch) -> None:
 
 
 def test_production_non_l4_is_suppressed_by_demo(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
-    import react_agent.fixed_dag_production_external_compute as production
+    import react_agent.fixed_dag.external.compute_bridge as bridge
+    import react_agent.fixed_dag.external.prod_compute as production
 
     monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
 
@@ -1237,8 +1237,8 @@ def test_production_non_l4_is_suppressed_by_demo(monkeypatch) -> None:
 
 
 def test_production_non_l4_rollback_disables_only_non_l4(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
-    import react_agent.fixed_dag_production_external_compute as production
+    import react_agent.fixed_dag.external.compute_bridge as bridge
+    import react_agent.fixed_dag.external.prod_compute as production
 
     monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
     monkeypatch.delenv("DISABLE_EXTERNAL_COMPUTE_DEFAULT", raising=False)
@@ -1297,7 +1297,7 @@ def test_production_non_l4_rollback_disables_only_non_l4(monkeypatch) -> None:
 
 
 def test_production_non_l4_selected_plan_calls_only_selected_agents(monkeypatch) -> None:
-    import react_agent.fixed_dag_production_external_compute as production
+    import react_agent.fixed_dag.external.prod_compute as production
 
     monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
     intent = build_route_intent(
@@ -1359,7 +1359,7 @@ def test_production_non_l4_selected_plan_calls_only_selected_agents(monkeypatch)
 
 
 def test_production_non_l4_required_failure_falls_back(monkeypatch) -> None:
-    import react_agent.fixed_dag_production_external_compute as production
+    import react_agent.fixed_dag.external.prod_compute as production
 
     monkeypatch.delenv("DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT", raising=False)
 
@@ -1413,7 +1413,7 @@ def test_production_non_l4_required_failure_falls_back(monkeypatch) -> None:
 
 
 def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     def fake_invoke(entry, **_kwargs):
         if entry.agent_id == "value_ml_valuation":
@@ -1490,7 +1490,7 @@ def test_external_compute_demo_overlays_l2_and_l3_results(monkeypatch) -> None:
 
 
 def test_external_compute_demo_overlays_l1_before_l2_tasks(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     called = []
 
@@ -1599,11 +1599,11 @@ def test_external_compute_demo_overlays_l1_before_l2_tasks(monkeypatch) -> None:
 
 
 def test_external_compute_overlays_task_aware_llm_placeholders(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     fake_model = _FakePlaceholderModel()
     monkeypatch.setattr(
-        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        "react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -1663,7 +1663,7 @@ def test_external_compute_overlays_task_aware_llm_placeholders(monkeypatch) -> N
 
 
 def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     class FakeReportModel:
         def __init__(self) -> None:
@@ -1727,7 +1727,7 @@ def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None
 
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -1759,7 +1759,7 @@ def test_llm_report_synthesis_reads_external_agent_evidence(monkeypatch) -> None
 
 
 def test_llm_l3_explanation_enriches_l3_without_overriding_fusion(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     class FakeL3ExplanationModel:
         def __init__(self) -> None:
@@ -1810,7 +1810,7 @@ def test_llm_l3_explanation_enriches_l3_without_overriding_fusion(monkeypatch) -
 
     monkeypatch.setattr(bridge, "invoke_external_compute", fake_invoke)
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l3_explanation_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l3_synthesizer.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -1851,7 +1851,7 @@ def test_llm_report_synthesis_failure_keeps_template_report(monkeypatch) -> None
             return "not json raw_response secret traceback"
 
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         lambda _model: BadReportModel(),
     )
 
@@ -1882,7 +1882,7 @@ def test_llm_report_missing_credential_records_safe_provider_diagnostic(monkeypa
     def fail_load(_model: str):
         raise AssertionError("provider should not load without known credentials")
 
-    monkeypatch.setattr("react_agent.fixed_dag_report_synthesizer.load_chat_model", fail_load)
+    monkeypatch.setattr("react_agent.fixed_dag.report_synthesizer.load_chat_model", fail_load)
 
     result = execute_fixed_dag_plan(
         _plan(),
@@ -1913,7 +1913,7 @@ def test_llm_report_missing_credential_records_safe_provider_diagnostic(monkeypa
 
 
 def test_external_compute_demo_failure_falls_back_to_placeholder(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     def fake_invoke(entry, **_kwargs):
         return {
@@ -1987,7 +1987,7 @@ def test_execute_selected_fixed_dag_plan_emits_selected_execution_subset() -> No
 
 
 def test_external_compute_demo_with_selected_plan_calls_only_selected_agents(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as bridge
 
     intent = build_route_intent(
         task_type="general",

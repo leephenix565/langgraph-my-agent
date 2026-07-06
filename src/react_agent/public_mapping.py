@@ -3,12 +3,11 @@
 
 from __future__ import annotations
 
+import re
 import uuid
 from datetime import datetime
 from typing import Any, Iterable, List, Sequence
 from urllib.parse import urlparse
-
-import re
 
 from react_agent.fixed_dag.labels import AGENT_TITLE_LABELS
 from react_agent.fixed_dag_catalog import fixed_dag_agent_by_id
@@ -462,7 +461,7 @@ def _group_sentences(text: str, max_sentences: int = 3) -> str:
 
 
 def _format_report_paragraphs(text: str) -> str:
-    """Format a report text blob into Markdown paragraphs.
+    r"""Format a report text blob into Markdown paragraphs.
 
     Scans ``text`` for known semantic markers at sentence boundaries,
     splits at each boundary, and converts the marker into a **bold** heading.

@@ -3,6 +3,50 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-06 — Codex subagent model policy refresh
+
+### Changed
+
+- Updated all tracked local Codex read-only subagent role configs in
+  `.codex/agents/*.toml` from the previous `gpt-5.4` / `gpt-5.4-mini`
+  assignments to the `gpt-5.5` series.
+- Documented the subagent model-policy location in `AGENTS.md` and aligned the
+  current authority reading order in `README.md` and `docs/INDEX.md` with the
+  sync workflow runbook.
+
+### Boundary
+
+- Documentation/configuration-only workflow change. No runtime graph, public
+  API, frontend behavior, runtime binding, provider call, external
+  `/v1/agent/invoke`, or demo-stack behavior changed.
+
+## 2026-07-05 — Module structure consolidation (Phases 1, 3, 4)
+
+### Changed
+
+- **Phase 1 — Move `fixed_dag_*` modules into `fixed_dag/` sub-package**:
+  11 top-level modules relocated into the `fixed_dag/` package with
+  backward-compatible shims at their old import paths. Real code now lives under
+  `fixed_dag/catalog.py`, `fixed_dag/report_synthesizer.py`,
+  `fixed_dag/external/` (4 modules), `fixed_dag/runtime/` (4 modules), and
+  `fixed_dag/_deprecated/` (1 module). Old paths continue to work via
+  `from react_agent.fixed_dag_catalog import *` shims.
+- **Phase 3 — Dead code removal**: Deleted 6 unreferenced source files
+  (`contract_utils.py`, `route_eval.py`, `baseline_sidecar.py`,
+  `graph_runtime_features.py`, `graph_observability.py`, `compat/context_state.py`)
+  and 5 orphaned test files. Updated `scripts/quality/run_quality.py` static
+  target lists. ~2700 lines removed.
+- **Phase 4 — Ops subsystem extraction**: Real ops code moved from
+  `src/react_agent/ops/` (28 shims) to `src/react_agent/ops_sync/` (28 real
+  files, 17,901 lines). Backward-compatible shims at old paths. 17,899 lines of
+  sync-ops CLI code no longer mixed with mainline module tree.
+- **Documentation sync**: Moved `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` to
+  `docs/history/` (completed theme). Updated old `reset/fixed-dag-v1` branch
+  references across 3 docs. Fixed `INDEX.md` duplicate entries and added
+  `DEPLOYED_AGENT_INVENTORY_DEFERRED.md`. Unified reading order across
+  `README.md`, `AGENTS.md`, and `INDEX.md` (added `FRONTEND_V2.md` at position 5
+  in `AGENTS.md`).
+
 ## 2026-07-04 — Fix frontend thought-chain progress bugs and backend adapter compatibility
 
 ### Changed

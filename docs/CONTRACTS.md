@@ -6,7 +6,13 @@ This document names the Phase R3 Fixed DAG contracts exposed through
 `react_agent.fixed_dag_contracts` as the public compatibility facade while
 moving foundational constants, typed shapes, labels, and safety helpers into
 the internal `src/react_agent/fixed_dag/` package. Contract semantics and old
-imports are unchanged. M2C keeps `react_agent.fixed_dag_executor` as the public
+imports are unchanged.
+
+**Note (2026-07-05)**: `fixed_dag_contracts.py` was further split in Phase 2
+into a 5-module sub-package at `src/react_agent/fixed_dag/contracts/`
+(`helpers.py`, `plan.py`, `composite.py`, `report.py`, `workflow.py`). The
+old path is preserved as a backward-compatible shim. See
+`docs/ARCHITECTURE_FIXED_DAG.md` for the module restructuring summary. M2C keeps `react_agent.fixed_dag_executor` as the public
 compatibility facade while moving execution constants, topology helpers,
 validation helpers, and step-result helpers into the internal
 `src/react_agent/fixed_dag/execution/` package. Deterministic execution,
@@ -24,10 +30,11 @@ while moving `execute_fixed_dag_plan` into
 `src/react_agent/fixed_dag/execution/runner.py`. The fixed-DAG execution
 contract, selected routing behavior, report precedence, workflow snapshot, and
 old import path are unchanged.
-M3B adds `react_agent.compat.context_state` as metadata/test support for
-Context and State active-vs-compat classification. It is not public transcript
-material, does not change Context or State runtime shape, and does not alter
-public contracts, graph topology, workflow snapshots, catalog, or runtime
+M3B added `react_agent.compat.context_state` as metadata/test support for
+Context and State active-vs-compat classification. This module was later removed
+in Phase 3 dead code cleanup. It is not public transcript material, does not
+change Context or State runtime shape, and does not alter public contracts,
+graph topology, workflow snapshots, catalog, or runtime
 bindings.
 REPO-CONSOLIDATION-FINAL closes the consolidation theme with these compatibility
 facades retained. M4A found no P4 deletion candidates, so no M4B deletion is
@@ -191,7 +198,7 @@ boundary. The executor records actual non-L4 compute activity in private
 SYNC-OPS-1 adds the read-only external Agent sync planning contract family. The
 source-controlled registry and policy live in `config/ops/`, schemas live in
 `config/ops/schemas/`, examples live in `config/ops/examples/`, and the planner
-logic lives under `src/react_agent/ops/`. These contracts are separate from
+logic lives under `src/react_agent/ops_sync/`. These contracts are separate from
 fixed-DAG runtime plans and never enter LangGraph `State`.
 
 The planner validates artifacts with real JSON Schema Draft 2020-12 through
@@ -723,10 +730,13 @@ R8-3 prompt/parser boundary:
 Purpose: evaluate `route_intent_v1` selection quality before selected routing
 is enabled in the active graph.
 
-R8-4 adds `src/react_agent/route_eval.py` and
-`tests/fixtures/route_eval_gold.jsonl`. The evaluator is provider-free and
-deterministic. It accepts a planner function that returns a route-intent-shaped
-mapping, so it can score `build_default_route_intent`, parser-normalizer
+R8-4 added `src/react_agent/route_eval.py` and
+`tests/fixtures/route_eval_gold.jsonl`. The evaluator was removed in Phase 3
+dead code cleanup. The `route_eval_gold.jsonl` fixture remains as test data for
+the router-parse and route-intent validator tests. The evaluator was
+provider-free and deterministic. It accepted a planner function that returns a
+route-intent-shaped mapping, so it could score `build_default_route_intent`,
+parser-normalizer
 fixtures, or later provider-free planner stubs without executing a DAG.
 
 Metrics:

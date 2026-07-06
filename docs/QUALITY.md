@@ -88,7 +88,7 @@ repositories.
 
 The final Repository Authority & Active-Core Consolidation closeout does not
 add live checks. Static and mainline remain provider-free and endpoint-free.
-`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` records the no-P4 deletion decision;
+`docs/history/REPOSITORY_CONSOLIDATION_CLOSEOUT.md` records the no-P4 deletion decision;
 history docs remain evidence and are not promoted to current authority.
 
 ## Report Quality Artifact Harness
@@ -675,7 +675,6 @@ without changing active graph behavior. Its narrow validation gate is:
 
 ```powershell
 conda run --no-capture-output -n cline_env python -m ruff check src/react_agent tests scripts/quality
-conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_route_eval.py -q
 conda run --no-capture-output -n cline_env python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_parse_router_layers.py -q
 conda run --no-capture-output -n cline_env python scripts/quality/run_quality.py --mode static
 git diff --check
@@ -723,7 +722,7 @@ public-safe provenance. Its focused validation gate is:
 
 ```powershell
 DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_fixed_dag_contracts.py tests/unit_tests/test_fixed_dag_executor.py tests/unit_tests/test_parse_router_layers.py tests/integration_tests/test_graph.py -q
-DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_router_provider_factory.py tests/unit_tests/test_router_prompt_format.py tests/unit_tests/test_router_parse_stats.py tests/unit_tests/test_route_eval.py -q
+DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_router_provider_factory.py tests/unit_tests/test_router_prompt_format.py tests/unit_tests/test_router_parse_stats.py -q
 DISABLE_EXTERNAL_COMPUTE_DEFAULT=1 DISABLE_NON_L4_EXTERNAL_COMPUTE_DEFAULT=1 ENABLE_EXTERNAL_COMPUTE_DEMO=0 python -m pytest tests/unit_tests/test_public_mapping_fixed_dag.py tests/unit_tests/test_public_runtime_context_invoke.py tests/unit_tests/test_public_runtime_streaming.py tests/integration_tests/test_public_api.py -q
 git diff --check
 python scripts/quality/run_quality.py --mode mainline

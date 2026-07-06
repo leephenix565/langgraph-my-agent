@@ -2,7 +2,7 @@
   "generated_by_goal": "REPO-CONSOLIDATION-M1",
   "moved_in_commit": "docs(repo): consolidate current authority and archive phase records",
   "repo_head_at_generation": "38aa1ba4c09757f1c58e8cf6a6bfbc32051a5519",
-  "row_count": 45,
+  "row_count": 46,
   "rows": [
     {
       "artifact_references": [
@@ -1188,6 +1188,24 @@
       "superseded_by": [
         "docs/CURRENT_STATUS.md",
         "docs/INDEX.md"
+      ]
+    }
+  },
+    {
+      "artifact_references": [],
+      "backup_references": [],
+      "classification": "historical_evidence",
+      "date_range": "2026-06-07 consolidation closeout",
+      "historical_path": "docs/history/REPOSITORY_CONSOLIDATION_CLOSEOUT.md",
+      "moved_in_commit": "docs: sync all doc files with frontend-ui-refinements changes (14aabf7) + later move to history/",
+      "original_path": "docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md",
+      "owner_handoff_references": [],
+      "phase": "phase-history",
+      "retained_references": [],
+      "retention_reason": "completed theme closeout reference",
+      "superseded_by": [
+        "docs/CURRENT_STATUS.md",
+        "docs/SYSTEM_MAP.md"
       ]
     }
   ],

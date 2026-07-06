@@ -431,7 +431,7 @@ def test_p2s_write_commands_require_execute(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "p2s",
             "stage",
             "--plan",

@@ -7,7 +7,6 @@ import subprocess
 import sys
 from pathlib import Path
 
-from react_agent.ops import sync_5a_r5x
 from react_agent.ops.sync_5a_r2x import reselect_first_candidate
 from react_agent.ops.sync_5a_r5x import (
     R4X_CANARY_PATH,
@@ -36,6 +35,7 @@ from react_agent.ops.sync_contracts import (
     validate_by_schema_version,
     write_json,
 )
+from react_agent.ops_sync import sync_5a_r5x
 
 
 def _runtime() -> dict[str, object]:

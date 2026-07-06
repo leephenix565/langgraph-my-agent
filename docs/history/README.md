@@ -9,10 +9,10 @@ Current authority starts at:
 2. `../../AGENTS.md`
 3. `../INDEX.md`
 4. `../CURRENT_STATUS.md`
-5. `../ARCHITECTURE_FIXED_DAG.md`
-6. `../CONTRACTS.md`
-7. `../QUALITY.md`
-8. `../AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
+5. `../FRONTEND_V2.md`
+6. `../ARCHITECTURE_FIXED_DAG.md`
+7. `../CONTRACTS.md`
+8. `../QUALITY.md`
 
 Historical documents are retained for audit, rollback, artifact, backup, and
 owner handoff traceability. Do not treat a historical phase record as current

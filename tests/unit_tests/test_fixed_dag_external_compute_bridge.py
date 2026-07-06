@@ -45,8 +45,6 @@ def test_external_bridge_facade_preserves_new_module_symbols() -> None:
     assert bridge.normalize_demo_allowlist is request.normalize_demo_allowlist
     assert bridge.build_external_compute_request is request.build_external_compute_request
     assert bridge.validate_demo_entry is safety.validate_demo_entry
-    assert bridge._post_json_loopback is transport._post_json_loopback
-    assert bridge._timeout_from_context is default_runtime._timeout_from_context
 
 
 def test_runtime_compute_entries_from_bindings_are_compute_only_l4_entries() -> None:
@@ -307,7 +305,8 @@ def test_l4_report_generator_uses_provider_sized_default_timeout() -> None:
     context = Context(enable_external_compute_demo=True)
 
     assert entry.timeout_seconds == 120.0
-    assert bridge._timeout_from_context(context, entry) == 120.0
+    import react_agent.fixed_dag.external.default_runtime as default_runtime
+    assert default_runtime._timeout_from_context(context, entry) == 120.0
 
 
 def test_demo_registry_covers_all_external_fixed_dag_compute_services() -> None:
@@ -365,7 +364,7 @@ def test_repaired_service_entries_use_formal_loopback_identity() -> None:
 
 
 def test_demo_base_url_env_override_is_loopback_only_for_l2_and_l3(monkeypatch) -> None:
-    import react_agent.fixed_dag_external_compute_bridge as bridge
+    import react_agent.fixed_dag.external.compute_bridge as real_bridge
 
     monkeypatch.setenv(
         "EXTERNAL_COMPUTE_DEMO_URL_VALUE_ML_VALUATION",
@@ -375,7 +374,7 @@ def test_demo_base_url_env_override_is_loopback_only_for_l2_and_l3(monkeypatch) 
         "EXTERNAL_COMPUTE_DEMO_URL_VALUE_COMPOSITE",
         "http://127.0.0.1:19015",
     )
-    reloaded = importlib.reload(bridge)
+    reloaded = importlib.reload(real_bridge)
     l2_entry = reloaded.DEMO_COMPUTE_SERVICE_REGISTRY["value_ml_valuation"]
     l3_entry = reloaded.DEMO_COMPUTE_SERVICE_REGISTRY["value_composite"]
 

@@ -6,9 +6,13 @@ material with the current fixed-DAG runtime and strict sync workflow.
 
 For current status, read `docs/CURRENT_STATUS.md`. The Repository Authority &
 Active-Core Consolidation theme is complete and recorded in
-`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. Historical phase ledgers and
+`docs/history/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`. Historical phase ledgers and
 closeouts are retained under `docs/history/` with a machine-readable manifest;
 they are evidence, not current authority.
+
+> **Vibe Coding Culture**: This repo is AI-assisted development (`AGENTS.md` §Vibe Coding Culture).
+> The docs *are* the shared context — change code and docs in the same pass.
+> No doc debt. Leave docs better than you found them.
 
 ## Current Authority Reading Order
 
@@ -20,6 +24,7 @@ they are evidence, not current authority.
 6. `docs/ARCHITECTURE_FIXED_DAG.md`
 7. `docs/CONTRACTS.md`
 8. `docs/QUALITY.md`
+9. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
 
 ## Current Branch Scope
 

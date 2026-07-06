@@ -75,7 +75,7 @@ def test_l4_decision_llm_output_is_guarded_by_risk_manual_review(monkeypatch) ->
         "as_of": "2026-06-05",
     }
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l4_decision_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l4_synthesizer.load_chat_model",
         lambda _model: FakeModel(fake_output),
     )
     dimensions = _dimension_results()
@@ -105,7 +105,7 @@ def test_l4_decision_missing_credential_falls_back_without_provider_call(monkeyp
     monkeypatch.delenv("DEEPSEEK_API_KEY", raising=False)
     monkeypatch.delenv("OPENAI_API_KEY", raising=False)
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l4_decision_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l4_synthesizer.load_chat_model",
         lambda _model: (_ for _ in ()).throw(AssertionError("provider should not load")),
     )
     dimensions = _dimension_results()
@@ -139,7 +139,7 @@ def test_l4_decision_default_reasoning_uses_public_language(monkeypatch) -> None
         "as_of": "2026-06-05",
     }
     monkeypatch.setattr(
-        "react_agent.fixed_dag_l4_decision_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.runtime.l4_synthesizer.load_chat_model",
         lambda _model: FakeModel(fake_output),
     )
     dimensions = _dimension_results()

@@ -6,7 +6,6 @@ import json
 import subprocess
 from pathlib import Path
 
-from react_agent.ops.agent_syncctl import _plan_source_audit
 from react_agent.ops.sync_contracts import file_sha256, stable_id, write_json
 from react_agent.ops.sync_inventory import inventory_root
 from react_agent.ops.sync_p2s import run_full_scale_p2s_rehearsal
@@ -21,6 +20,7 @@ from react_agent.ops.sync_plan import (
 from react_agent.ops.sync_registry import load_static_registry
 from react_agent.ops.sync_security import should_include_source_file
 from react_agent.ops.sync_summary import p2s_summary_from_plan
+from react_agent.ops_sync.agent_syncctl import _plan_source_audit
 
 OLD_PLAN_2A = Path("/tmp/lma-sync-ops-2a-p2s-writer-20260623T125001Z/new_current_p2s_plan.json")
 
@@ -287,7 +287,7 @@ def test_cli_source_audit_and_rehearse_use_temp_roots(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "p2s",
             "source-audit",
             "--plan",
@@ -306,7 +306,7 @@ def test_cli_source_audit_and_rehearse_use_temp_roots(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "p2s",
             "rehearse",
             "--plan",

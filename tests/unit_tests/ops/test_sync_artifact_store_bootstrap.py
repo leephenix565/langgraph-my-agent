@@ -288,7 +288,7 @@ def test_cli_bootstrap_commands_and_stage_guard(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "artifact-store",
             "bootstrap-plan",
             "--root",
@@ -311,7 +311,7 @@ def test_cli_bootstrap_commands_and_stage_guard(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "artifact-store",
             "bootstrap-validate",
             "--plan",
@@ -330,7 +330,7 @@ def test_cli_bootstrap_commands_and_stage_guard(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "environment",
             "explain-binding",
             "--plan",
@@ -356,7 +356,7 @@ def test_cli_bootstrap_commands_and_stage_guard(tmp_path: Path) -> None:
         [
             ".venv/bin/python",
             "-m",
-            "react_agent.ops.agent_syncctl",
+            "react_agent.ops_sync.agent_syncctl",
             "artifact-store",
             "bootstrap",
             "--plan",

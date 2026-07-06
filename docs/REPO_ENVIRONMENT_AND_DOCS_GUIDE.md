@@ -97,7 +97,7 @@ experiment review.
 
 SYNC-OPS-1 adds a read-only control-plane layer for future external-agent
 synchronization. The main-system repo now owns stable sync metadata under
-`config/ops/` and read-only planner code under `src/react_agent/ops/`. That
+`config/ops/` and read-only planner code under `src/react_agent/ops_sync/`. That
 metadata records candidate prod, sandbox, owner-dev, service-unit, and contract
 facts; it does not make prod an owner source authority and does not imply
 owner-dev acceptance. Future write phases must use immutable plans, hash-bound
@@ -202,7 +202,7 @@ git status --short --branch
 .venv/bin/python scripts/quality/run_quality.py --mode mainline
 git add -A
 git commit -m "<phase scoped message>"
-git push origin reset/fixed-dag-v1
+git push origin frontend-ui-refinements
 ```
 
 ### sandbox
@@ -224,8 +224,8 @@ git diff --binary > /tmp/lma-sandbox-before-sync.patch
 ```bash
 cd /sdb/dlut/prod/langgraph-my-agent
 git fetch origin
-git checkout reset/fixed-dag-v1
-git pull --ff-only origin reset/fixed-dag-v1
+git checkout frontend-ui-refinements
+git pull --ff-only origin frontend-ui-refinements
 ```
 
 如果生产进程正在运行，代码同步和服务重启应分开执行，并记录旧 PID、启动命令、

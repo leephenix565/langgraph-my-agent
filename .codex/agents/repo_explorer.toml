@@ -1,6 +1,6 @@
 name = "repo_explorer"
 description = "Read-only codebase explorer for tracing real execution paths and config entry points."
-model = "gpt-5.4-mini"
+model = "gpt-5.5"
 model_reasoning_effort = "medium"
 sandbox_mode = "read-only"
 

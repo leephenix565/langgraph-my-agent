@@ -4,7 +4,21 @@ This file is the current operational map for the fixed-DAG reset branch after
 the Repository Authority & Active-Core Consolidation closeout. Phase names in
 lower sections are provenance notes only; current status lives in
 `docs/CURRENT_STATUS.md`, and the consolidation closeout is recorded in
-`docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+`docs/history/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+
+**Module structure note (2026-07-05)**: The module namespace under
+`src/react_agent/` has been consolidated in four phases:
+
+- Phase 1: 11 `fixed_dag_*.py` modules moved into `fixed_dag/` sub-package
+  (backward-compatible shims at old paths). See `fixed_dag/`, `fixed_dag/external/`,
+  `fixed_dag/runtime/` for real code.
+- Phase 2: `fixed_dag_contracts.py` (4178 lines) split into
+  `fixed_dag/contracts/` sub-package (5 modules: `helpers.py`, `plan.py`,
+  `composite.py`, `report.py`, `workflow.py`). The old path remains a shim.
+- Phase 3: 7 dead source files deleted (~1500 lines).
+- Phase 4: Full ops subsystem extracted from `ops/` (28 shim files) into
+  `ops_sync/` (28 real files). The `ops_sync/` package holds all sync-ops code
+  (~17.9k lines) completely decoupled from the mainline runtime.
 
 ## Current Operating Status
 
@@ -34,7 +48,7 @@ lower sections are provenance notes only; current status lives in
 - Current repository phase: post-consolidation normal maintenance / product
   engineering.
 - Repository consolidation status: complete; see
-  `docs/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
+  `docs/history/REPOSITORY_CONSOLIDATION_CLOSEOUT.md`.
 - Current status entry point: `docs/CURRENT_STATUS.md`.
 - Pre-reset history tag: `pre-fixed-dag-reset-20260604-1457`.
 
@@ -278,7 +292,6 @@ Active skeleton properties:
 R3/R4-C keeps these files and some old helper functions for later phases or
 compatibility, but they are not active graph invocation authority:
 
-- `src/react_agent/baseline_sidecar.py`
 - `src/react_agent/legacy_agent_registry.py`
 - `src/react_agent/graph_bootstrap.py`
 - `src/react_agent/external_http_config.py`
@@ -339,15 +352,14 @@ or a safe clarification/fallback intent. R8-3 did not change `graph.py`, public
 workflow mapping, frontend rendering, runtime bindings, or external adapter
 readiness.
 
-In R8-4, RouteEval evaluates `route_intent_v1` selection quality before active
-selected routing is enabled. `load_route_eval_cases`,
-`evaluate_route_intents`, and `route_eval_report_to_dict` load local JSONL gold
-cases and report task type, target, dimension, agent, clarification, fallback,
-over-selection, and under-selection metrics. The first fixture is small and
-deterministic, not the future formal >=80% Route F1 acceptance set. R8-4 does
-not evaluate Star/Chain/Debate/Tree modes, does not call providers/search or
-external `/v1/agent/invoke`, and does not change `graph.py`, public workflow
-mapping, frontend rendering, runtime bindings, or external adapter readiness.
+In R8-4, RouteEval evaluated `route_intent_v1` selection quality. The
+`load_route_eval_cases`, `evaluate_route_intents`, and `route_eval_report_to_dict`
+helpers were removed during Phase 3 dead code cleanup; the selected routing
+validation now relies on the static RouteEval test fixtures and the
+deterministic plan compiler. R8-4 does not evaluate Star/Chain/Debate/Tree
+modes, does not call providers/search or external `/v1/agent/invoke`, and does
+not change `graph.py`, public workflow mapping, frontend rendering, runtime
+bindings, or external adapter readiness.
 
 In R8-5, selected routing is connected to `route_planner_node` behind an
 explicit default-off graph boundary. The selected path uses
@@ -380,20 +392,6 @@ calling HTTP, providers, or server agents. The first implementation slice covers
 controlled adapter failures or remain future work. This does not wire external
 payloads into `execute_fixed_dag_plan`, does not modify runtime bindings, and
 does not imply live readiness for deployed services.
-
-## Deployed But Deferred Inventory
-
-R8-6B records server-deployed-but-deferred agent evidence in
-`docs/DEPLOYED_AGENT_INVENTORY_DEFERRED.md`. This inventory is documentation
-evidence only. Directory presence and listening processes do not equal health
-verification; health verification does not equal compute/invoke verification;
-compute/invoke verification does not equal `live_verified=true`; and
-`live_verified=true` does not equal `invoke_enabled_by_default=true`.
-
-Runtime authority remains in `config/fixed_dag/agent_catalog.json`,
-`config/fixed_dag/runtime_bindings.json`, and the fixed-DAG validators. R8-7B
-does not modify runtime bindings, set `live_verified=true`, set
-`invoke_enabled_by_default=true`, or enable external service invocation.
 
 ## Target Fixed DAG IDs
 
@@ -436,12 +434,38 @@ R3.6 did not delete or migrate:
 - external HTTP wrapper production code
 - `apps/web` workflow implementation, except explicit legacy local-reference
   fixtures
-- `src/react_agent/baseline_sidecar.py`
+- (was `src/react_agent/baseline_sidecar.py` — deleted in Phase 3)
 - `ops/regression/fusion/**`
 - `ops/regression/provider/out/**`
 - `assets/reference/**`
 - generated `log/**`, `tmp/**`, or `outputs/benchmarks/**` artifacts; these
   have been removed from the reset branch and should stay untracked
+
+## Deployed Agent Inventory
+
+This table records server-deployed-but-deferred evidence for Phase R8-6B.
+It is documentation evidence, not runtime authority.
+
+| fixed DAG id | server-deployed evidence | R8-6B status |
+| --- | --- | --- |
+| `sentiment_company_radar` | 企业舆情雷达智能体 | `deployed_but_deferred` |
+| `macro_commodity_pricing` | 商品定价分析智能体 | `deployed_but_deferred` |
+| `macro_sentiment` | 宏观情绪感知智能体 | `deployed_but_deferred` |
+| `macro_industry_hotspot` | 行业热点洞悉智能体 | `deployed_but_deferred` |
+| `financial_data_service` | 金融数据服务智能体 | `deployed_but_deferred` |
+| `value_research_synthesis` | 分析师研报与观点集成智能体 | `deployed_but_deferred` |
+| `risk_crash` | 股价崩盘风险智能体 | `deployed_but_deferred` |
+| `value_meta_valuation` | 元学习企业估值智能体 | `deployed_but_deferred` |
+| `macro_index_valuation` | 股票指数估值智能体 | `deployed_but_deferred` |
+| `risk_financial_fraud` | 财务造假风险智能体 | `deployed_but_deferred` |
+| `entity_relation_extractor` | 实体关系抽取智能体 | `deployed_but_deferred` |
+| `value_traditional_valuation` | 传统企业估值智能体 | `deployed_but_deferred` |
+| `value_ml_valuation` | 机器学习企业估值智能体 | `deployed_but_deferred` |
+| `market_stock_technical` | 个股技术分析智能体 | `deployed_but_deferred` |
+| `risk_compliance_review` | 公告合规审查智能体 | `deployed_but_deferred` |
+| `macro_analysis` | 宏观分析智能体 | `deployed_but_deferred` |
+| `market_ipo_investor_behavior` | IPO投资者行为智能体 | `deployed_but_deferred` |
+| `market_capital_flow_chip` | 资金流智能体 | `deployed_but_deferred` |
 
 ## Historical Deferred Items
 

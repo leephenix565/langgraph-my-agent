@@ -1,6 +1,6 @@
 name = "test_impact_analyst"
 description = "Read-only test impact analyst for unit, integration, e2e, fixtures, mocks, snapshots, and coverage."
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 

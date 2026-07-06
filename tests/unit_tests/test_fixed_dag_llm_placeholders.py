@@ -50,7 +50,7 @@ def test_context_internal_llm_placeholder_flag_defaults_off_and_env_can_enable(m
 def test_internal_llm_placeholder_success_builds_safe_partial_conclusion(monkeypatch) -> None:
     fake_model = FakeModel(_json_response(confidence=0.99))
     monkeypatch.setattr(
-        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        "react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -108,7 +108,7 @@ def test_provider_missing_falls_back_to_deterministic_pending_without_raw_leakag
     def fail_load(_model: str):
         raise ValueError("api key missing: SECRET traceback endpoint raw_response")
 
-    monkeypatch.setattr("react_agent.fixed_dag_llm_placeholders.load_chat_model", fail_load)
+    monkeypatch.setattr("react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model", fail_load)
 
     conclusions = build_l2_conclusions_with_internal_placeholders(
         build_default_fixed_dag_plan("q", as_of="2026-06-09"),
@@ -133,7 +133,7 @@ def test_provider_missing_falls_back_to_deterministic_pending_without_raw_leakag
 def test_parse_failure_falls_back_without_storing_raw_model_text(monkeypatch) -> None:
     fake_model = FakeModel("not json raw_response secret traceback endpoint")
     monkeypatch.setattr(
-        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        "react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -154,7 +154,7 @@ def test_parse_failure_falls_back_without_storing_raw_model_text(monkeypatch) ->
 def test_selected_plan_only_generates_selected_l2_placeholder(monkeypatch) -> None:
     fake_model = FakeModel(_json_response())
     monkeypatch.setattr(
-        "react_agent.fixed_dag_llm_placeholders.load_chat_model",
+        "react_agent.fixed_dag._deprecated.llm_placeholders.load_chat_model",
         lambda _model: fake_model,
     )
     plan = compile_selected_fixed_dag_plan(

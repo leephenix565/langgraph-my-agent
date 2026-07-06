@@ -1,6 +1,6 @@
 name = "protocol_auditor"
 description = "Read-only auditor for prompts, schemas, parsers, reducers, and registration sources."
-model = "gpt-5.4"
+model = "gpt-5.5"
 model_reasoning_effort = "high"
 sandbox_mode = "read-only"
 

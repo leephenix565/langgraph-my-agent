@@ -34,6 +34,10 @@ Use subagents only when work can be split into clear, mostly read-only tasks. Ty
 
 The final repository edits must be integrated by a single writer. Do not let multiple writers modify overlapping files in the same phase.
 
+Local Codex role configs live in `.codex/agents/*.toml`. The configured
+read-only subagent roles use the `gpt-5.5` series; any future model change must
+be an explicit documented workflow change.
+
 ## Repository Documentation Authority
 
 For new sessions, use the current authority reading order:
@@ -42,10 +46,11 @@ For new sessions, use the current authority reading order:
 2. `AGENTS.md`
 3. `docs/INDEX.md`
 4. `docs/CURRENT_STATUS.md`
-5. `docs/ARCHITECTURE_FIXED_DAG.md`
-6. `docs/CONTRACTS.md`
-7. `docs/QUALITY.md`
-8. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
+5. `docs/FRONTEND_V2.md`
+6. `docs/ARCHITECTURE_FIXED_DAG.md`
+7. `docs/CONTRACTS.md`
+8. `docs/QUALITY.md`
+9. `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md`
 
 Historical phase records under `docs/history/` are evidence and rollback
 context, not current runtime/config authority. Do not promote a historical
@@ -60,6 +65,28 @@ Implementation changes must update the relevant reset docs:
 - public API or transcript boundary: `docs/CONTRACTS.md`, `docs/FRONTEND_V2.md`, `docs/CHANGELOG.md`
 - quality gates: `docs/QUALITY.md`, `docs/CHANGELOG.md`
 - durable architecture decision: `docs/DECISIONS.md`, `docs/CHANGELOG.md`
+
+## Vibe Coding Culture
+
+This repository is maintained through AI-assisted development ("vibe coding").
+The docs *are* the shared context — they are what makes the next AI session productive from minute one, not from hour two.
+
+Three principles:
+
+**1. Doc-during, not doc-after.**
+When you change a function, module, or contract, update the matching `.md` in the same pass.
+A change without a doc update is not done. CHANGELOG entries are mandatory for any functional change.
+
+**2. No doc debt.**
+"Let me fix this now and document later" means the doc will never be written.
+If the code says X but the doc says Y, one of them is wrong — and the AI will pick the wrong one on the next session, wasting an hour of context recovery.
+
+**3. The doc is the contract.**
+For a new reader (whether human or AI), the authoritative reading order at the top of this file *is* the onboarding.
+Every removal, rename, or structural change must update both the index and the affected doc's own description.
+If a file gets deleted, remove it from `docs/INDEX.md` too.
+
+In short: **leave the docs better than you found them.** This is what makes AI-assisted development sustainable at scale.
 
 ## Bidirectional Agent Sync Workflow
 

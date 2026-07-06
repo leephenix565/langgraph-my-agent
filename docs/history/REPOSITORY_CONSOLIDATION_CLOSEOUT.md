@@ -1,7 +1,7 @@
 # Repository Consolidation Closeout
 
 This document is the final closeout record for the Repository Authority &
-Active-Core Consolidation theme on the `reset/fixed-dag-v1` branch.
+Active-Core Consolidation theme on the `frontend-ui-refinements` branch.
 
 ## Scope
 
@@ -38,7 +38,7 @@ This theme did not cover:
 
 ## Final Repository State
 
-- Branch: `reset/fixed-dag-v1`.
+- Branch: `frontend-ui-refinements`.
 - Pre-FINAL closeout HEAD: `64754de8d52977b4b62c50116bf8d623aac861fb`.
 - Final closeout commit: the commit containing this document,
   `docs(repo): close repository consolidation theme`.

@@ -128,7 +128,7 @@ def test_synthesize_report_result_with_llm_success(monkeypatch) -> None:
         )
     )
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -157,7 +157,7 @@ def test_synthesize_report_result_with_llm_invalid_output_falls_back(monkeypatch
     question, bundle, fallback = _bundle_and_fallback()
     fake_model = FakeReportModel("not json raw_response secret traceback")
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         lambda _model: fake_model,
     )
 
@@ -188,7 +188,7 @@ def test_synthesize_report_result_with_llm_provider_missing_notice(monkeypatch) 
         raise RuntimeError("missing provider config")
 
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         fail_load,
     )
 
@@ -219,7 +219,7 @@ def test_synthesize_report_result_with_llm_missing_credential_preflight(monkeypa
         raise AssertionError("provider should not be loaded when known credential is missing")
 
     monkeypatch.setattr(
-        "react_agent.fixed_dag_report_synthesizer.load_chat_model",
+        "react_agent.fixed_dag.report_synthesizer.load_chat_model",
         fail_load,
     )
 

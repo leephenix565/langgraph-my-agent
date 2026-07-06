@@ -42,11 +42,13 @@ current executor import authority. Execution order, report precedence,
 external compute demo/default semantics, graph topology, and public API
 semantics are unchanged.
 
-M3B adds `src/react_agent/compat/context_state.py` as metadata-only support for
-the retained Context/State compatibility boundary. The active graph still reads
-and writes the same State fields, compatibility pools remain available, and no
-Context dataclass field, State TypedDict field, reducer, runtime shape, graph
-topology, or public API contract changes.
+M3B added `src/react_agent/compat/context_state.py` as metadata-only support for
+the retained Context/State compatibility boundary. This module was later removed
+in Phase 3 dead code cleanup — the Context/State boundary is now enforced
+directly by the active runtime without a separate metadata helper.
+The active graph still reads and writes the same State fields, no Context
+dataclass field, State TypedDict field, reducer, runtime shape, graph topology,
+or public API contract has changed.
 
 REPO-CONSOLIDATION-FINAL records this package organization as complete for the
 theme. The old fixed-DAG facades remain supported import surfaces, M4A found no
@@ -488,3 +490,17 @@ selected-routing/provider-router metadata, safety contracts, and closeout
 evidence; they do not create an external router service, assign ports, copy
 scaffold material, move `report_generator` from port `10026`, or promote the
 `10028/8028` planning reservation to runtime authority.
+
+### Module Restructuring (2026-07-05)
+
+After the initial M2B/M2C/M2D/M2E facade extraction, two further consolidation
+phases were completed:
+
+- **Phase 2**: `src/react_agent/fixed_dag_contracts.py` (4178 lines, 125
+  functions) was split into a 5-module sub-package at
+  `src/react_agent/fixed_dag/contracts/`. The old path is preserved as a
+  backward-compatible shim.
+- **Phase 4**: The ops subsystem was extracted from `src/react_agent/ops/`
+  (28 shim files) to `src/react_agent/ops_sync/` (28 real files, ~17.9k lines).
+  This completely decouples the sync-ops CLI code from the mainline runtime
+  module tree. The old `ops/` paths remain as shims.

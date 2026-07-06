@@ -353,5 +353,4 @@ issues discovered during live verification:
 - Historical phase ledgers live under `docs/history/` and are indexed by
   `docs/history/MANIFEST.json`.
 - Sync operator procedures live in
-  `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md` and
-  `docs/CODEX_AGENT_SYNC_OPERATOR_WORKFLOW.md`.
+  `docs/AGENT_SYNC_ONE_COMMAND_WORKFLOW.md` (includes Codex operator prompt).

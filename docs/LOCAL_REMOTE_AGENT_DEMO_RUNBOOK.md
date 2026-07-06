@@ -21,7 +21,7 @@ tunnel 安全访问服务器上的 production agent。它只服务 demo/dev，�
   `10000`, `10001`, `10002`, `10006`, `10009`, `10022`, `10020`,
   `10010`, `10011`, `10013`, `10012`, `10014`, `10015`, `10023`,
   `10016`, `10024`。
-- 你已经 clone 或 pull 最新 `reset/fixed-dag-v1` 代码。
+- 你已经 clone 或 pull 最新 `frontend-ui-refinements` 代码。
 - 本地已安装 `ssh`、Python 环境和 Web 前端依赖。
 
 ## 启动 SSH Tunnel
