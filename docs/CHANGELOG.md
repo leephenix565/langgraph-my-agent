@@ -3,6 +3,26 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-06 - Non-L4 production concurrency contract repair
+
+### Changed
+
+- Repaired the production non-L4 compute concurrency contract so
+  `src/react_agent/fixed_dag/external/prod_compute.py` honors the
+  source-controlled `max_concurrency_by_stage.l2=20` policy value instead of
+  applying an extra hard cap of 8.
+- Preserved `_run_stage` worker bounding by selected row count, so actual
+  `ThreadPoolExecutor(max_workers=...)` still cannot exceed the rows selected
+  for that stage.
+- Added focused unit coverage for L2 policy concurrency, L3 concurrency,
+  missing/invalid fallback behavior, and row-count worker bounding.
+
+### Boundary
+
+- No catalog, runtime binding, non-L4 policy JSON, graph topology, public API
+  schema, frontend, endpoint/provider, process-action, or `.env` change.
+- `/v1/agent/invoke` and `/v1/agent/compute` were not called by this repair.
+
 ## 2026-07-06 — Codex subagent model policy refresh
 
 ### Changed

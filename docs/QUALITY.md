@@ -245,6 +245,13 @@ optional enabled coverage rows for `value_research_synthesis`,
 `macro_composite`; they remain compute-only, fail-soft, and outside
 `runtime_bindings.json`. L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`; both are compute-only paths.
+The production non-L4 worker pool now treats
+`max_concurrency_by_stage.l2=20` as the effective source-controlled L2 stage
+concurrency, with `_run_stage` still limiting actual workers to the selected
+row count. This repairs runtime contract fidelity for report-quality and
+online E2E reproducibility; it does not change report scoring criteria,
+catalog entries, runtime bindings, graph topology, public schemas, or compute
+endpoint contracts.
 If `report_generator` returns a mapped report with sanitized telemetry showing
 a provider/LLM call, quality validation treats that report as the primary L4
 artifact. The deterministic renderer may still repair weak non-provider reports,

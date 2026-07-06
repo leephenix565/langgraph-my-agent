@@ -28,8 +28,10 @@ records.
   `config/fixed_dag/non_l4_external_compute_policy.json`, not by
   `runtime_bindings.json`. The policy is currently `enabled_by_default=true`
   and compute-only. L2 stage concurrency raised to 20 (from 4) and all agent
-  timeouts raised to 30s (from 20s) to improve parallel coverage. Required
-  enabled ids remain `value_traditional_valuation`, `value_ml_valuation`,
+  timeouts raised to 30s (from 20s) to improve parallel coverage. The runtime
+  now honors that source-controlled L2 concurrency policy directly; `_run_stage`
+  still caps actual worker count by the selected row count. Required enabled
+  ids remain `value_traditional_valuation`, `value_ml_valuation`,
   `value_meta_valuation`, `market_ipo_investor_behavior`,
   `market_capital_flow_chip`, `risk_crash`, `macro_analysis`,
   `macro_index_valuation`, and `value_composite`. RQ3A adds optional enabled

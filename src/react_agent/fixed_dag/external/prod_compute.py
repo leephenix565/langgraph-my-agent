@@ -83,7 +83,7 @@ def _stage_concurrency(policy: Mapping[str, Any], stage: str) -> int:
         value = int(mapping.get(key, 1))
     except (TypeError, ValueError):
         value = 1
-    return max(1, min(value, 8))
+    return max(1, value)
 
 
 def _stage_deadline_seconds(
