@@ -64,6 +64,11 @@ The profile selected L2 set is:
 composites, `decision_synthesizer`, and `report_generator` as the deterministic
 dependency closure. `value_research_synthesis` remains in the value catalog
 group; it is not remapped to market or force-wired into `market_composite`.
+If this deployment profile is enabled and its selected-agent plan cannot be
+compiled, the graph must fail closed with a public-safe
+`deployment_profile_compile_failed:*` error. It must not fall back to the full
+`fixed_dag_plan_v1`, must not return a 27-agent plan, and must not silently run
+deferred agents excluded from the RC1 profile.
 
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from

@@ -29,6 +29,7 @@ from react_agent.fixed_dag.deploy_profiles import (
     MIDTERM_SUBSET_PROFILE,
     MIDTERM_SUBSET_SELECTED_DIMENSIONS,
     MIDTERM_SUBSET_SELECTED_L2_AGENT_IDS,
+    MidtermSubsetProfileError,
     is_midterm_subset_profile,
 )
 from react_agent.fixed_dag_contracts import (
@@ -1005,15 +1006,9 @@ def _route_plan_for_context(question: str, context: Context | None) -> dict[str,
                 route_started=route_started,
             )
         except Exception as exc:
-            return _full_plan_with_selected_fallback_provenance(
-                question,
-                f"midterm_subset_profile_compile_failed:{type(exc).__name__}",
-                as_of=as_of,
-                route_planner_ms=max(
-                    0,
-                    int(round((time.monotonic() - route_started) * 1000)),
-                ),
-            )
+            raise MidtermSubsetProfileError(
+                f"deployment_profile_compile_failed:{type(exc).__name__}"
+            ) from None
     if context is None or not context.enable_selected_routing:
         plan = build_default_fixed_dag_plan(question, as_of=as_of)
         if _is_llm_dimension_router_enabled(context):

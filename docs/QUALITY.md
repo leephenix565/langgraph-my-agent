@@ -96,6 +96,8 @@ The profile gate must prove:
 - deferred first-batch agents are omitted from the selected plan and public
   workflow projection;
 - public requests cannot submit arbitrary agent ids;
+- profile compile failure must fail closed and must not return a full
+  `fixed_dag_plan_v1` or any compute-triggering 27-agent plan;
 - catalog, runtime bindings, non-L4 policy JSON, graph entry, public schema,
   and frontend schema remain unchanged.
 

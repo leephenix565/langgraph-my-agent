@@ -3,6 +3,27 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-07 - Topic2 Midterm RC1 fail-closed profile repair
+
+### Changed
+
+- Fixed the Topic2 Midterm RC1 deployment profile failure mode so
+  `FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset` compile failures raise a
+  controlled `MidtermSubsetProfileError` instead of falling back to the full
+  27-agent DAG.
+- Added focused regression coverage proving profile compile failures do not
+  return `fixed_dag_plan_v1` and that ordinary selected-routing fallback remains
+  unchanged outside the deployment-profile path.
+
+### Boundary
+
+- Full-DAG default behavior is unchanged when the profile is unset.
+- Normal midterm profile compilation still emits `selected_fixed_dag_plan_v1`
+  with `route_granularity=agent_profile`.
+- No catalog, runtime binding, non-L4 policy JSON, `langgraph.json`, public
+  request schema, frontend, endpoint/provider, process-action, or `.env`
+  change.
+
 ## 2026-07-07 - Topic2 Midterm RC1 deployment profile
 
 ### Added

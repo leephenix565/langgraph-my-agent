@@ -5,6 +5,11 @@ from __future__ import annotations
 MIDTERM_SUBSET_PROFILE = "midterm_subset"
 DEPLOYMENT_PROFILE_ENV_VAR = "FIXED_DAG_DEPLOYMENT_PROFILE"
 
+
+class MidtermSubsetProfileError(RuntimeError):
+    """Public-safe fail-closed error for the Topic2 midterm subset profile."""
+
+
 MIDTERM_SUBSET_SELECTED_DIMENSIONS: tuple[str, ...] = (
     "value",
     "market",
@@ -60,4 +65,3 @@ def normalize_deployment_profile(value: object) -> str:
 def is_midterm_subset_profile(value: object) -> bool:
     """Whether the opt-in Topic2 midterm subset deployment profile is active."""
     return normalize_deployment_profile(value) == MIDTERM_SUBSET_PROFILE
-

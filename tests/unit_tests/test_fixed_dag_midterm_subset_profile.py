@@ -13,6 +13,7 @@ from react_agent.fixed_dag.deploy_profiles import (
     MIDTERM_SUBSET_REQUIRED_DEPENDENCY_AGENT_IDS,
     MIDTERM_SUBSET_SELECTED_DIMENSIONS,
     MIDTERM_SUBSET_SELECTED_L2_AGENT_IDS,
+    MidtermSubsetProfileError,
 )
 from react_agent.fixed_dag_contracts import (
     FIXED_DAG_SCHEMA_VERSION,
@@ -153,6 +154,53 @@ def test_midterm_subset_profile_graph_runtime_uses_selected_plan(monkeypatch) ->
     assert set(MIDTERM_SUBSET_DEFERRED_AGENT_IDS).isdisjoint(result["dag_step_results"])
     assert result["report_result"]["schema"] == "report_result_v1"
     assert result["final_answer_source"] == "reset_skeleton"
+
+
+def test_midterm_subset_profile_compile_failure_fails_closed(monkeypatch) -> None:
+    def fail_selected_compiler(*args, **kwargs):
+        raise ValueError("synthetic_midterm_profile_compile_failure")
+
+    monkeypatch.setattr(
+        graph_module,
+        "compile_selected_fixed_dag_plan",
+        fail_selected_compiler,
+    )
+
+    with pytest.raises(
+        MidtermSubsetProfileError,
+        match="deployment_profile_compile_failed:ValueError",
+    ) as exc_info:
+        graph_module._route_plan_for_context(  # noqa: SLF001
+            "q",
+            Context(fixed_dag_deployment_profile=MIDTERM_SUBSET_PROFILE),
+        )
+
+    message = str(exc_info.value)
+    assert "fixed_dag_plan_v1" not in message
+    assert "market_ipo_investor_behavior" not in message
+
+
+def test_selected_routing_compile_failure_still_falls_back_full_dag(monkeypatch) -> None:
+    def fail_selected_compiler(*args, **kwargs):
+        raise ValueError("synthetic_selected_routing_compile_failure")
+
+    monkeypatch.setattr(
+        graph_module,
+        "compile_selected_fixed_dag_plan",
+        fail_selected_compiler,
+    )
+
+    plan = graph_module._route_plan_for_context(  # noqa: SLF001
+        "q",
+        Context(enable_selected_routing=True),
+    )
+
+    assert plan["schema"] == FIXED_DAG_SCHEMA_VERSION
+    assert plan["target_agent_ids"] == list(RESET_RUNTIME_AGENT_IDS)
+    assert plan["provenance"]["selected_routing_fallback"] is True
+    assert plan["provenance"]["fallback_reason"] == (
+        "selected_routing_compile_failed:ValueError"
+    )
 
 
 def test_public_routing_request_does_not_accept_arbitrary_agent_ids() -> None:

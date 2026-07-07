@@ -69,6 +69,10 @@ records.
 - `value_research_synthesis` is not remapped in the catalog or wired into
   `market_composite`. RC1 may describe its market-behavior interpretation value
   in delivery docs while preserving the current fixed-DAG topology.
+- The profile fail-closed repair makes profile compile failures raise a
+  controlled `deployment_profile_compile_failed:*` error instead of returning a
+  full `fixed_dag_plan_v1`. This prevents a broken or misconfigured midterm
+  profile from silently running excluded agents.
 - This profile is ready for RC sync validation after offline tests; it still
   requires a separate controlled online E2E before being described as live
   deployment verified.
