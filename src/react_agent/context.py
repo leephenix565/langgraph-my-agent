@@ -98,6 +98,16 @@ class Context:
             "Defaults off so the active graph keeps the full DAG path."
         },
     )
+    fixed_dag_deployment_profile: str = field(
+        default="",
+        metadata={
+            "description": (
+                "Optional server-side fixed-DAG deployment profile. "
+                "`midterm_subset` compiles the Topic2 Midterm RC1 selected-agent plan; "
+                "empty keeps the full DAG default."
+            )
+        },
+    )
     enable_llm_dimension_router: bool = field(
         default=False,
         metadata={

@@ -69,6 +69,39 @@ codes. Raw provider output, prompt/messages, endpoint/base URL material, env
 values, SQL, tracebacks, and chain-of-thought must remain absent from public
 payloads and artifacts.
 
+## Topic2 Midterm RC1 Profile Quality Boundary
+
+The `midterm_subset` deployment profile is an offline-testable runtime
+selection contract, not a replacement for the existing full-DAG RQ2E baseline.
+The full-DAG production-mode RQ2E pass at `b01016b` remains the current live
+quality evidence until the RC profile receives its own controlled online E2E.
+
+Minimum RC1 profile regression set:
+
+```powershell
+python -m pytest tests/unit_tests/test_fixed_dag_midterm_subset_profile.py -q
+python -m pytest tests/unit_tests/test_fixed_dag_executor.py -q
+python -m pytest tests/unit_tests/test_fixed_dag_graph_skeleton.py -q
+python -m pytest tests/unit_tests/test_public_mapping_fixed_dag.py -q
+python scripts/quality/run_quality.py --mode static
+git diff --check
+```
+
+The profile gate must prove:
+
+- default `Context()` remains full DAG unless
+  `FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset` is set;
+- the profile plan includes the Topic2 midterm agents and the required
+  `entity_relation_extractor` dependency seam;
+- deferred first-batch agents are omitted from the selected plan and public
+  workflow projection;
+- public requests cannot submit arbitrary agent ids;
+- catalog, runtime bindings, non-L4 policy JSON, graph entry, public schema,
+  and frontend schema remain unchanged.
+
+RC1 profile validation must not call endpoints, providers, `/v1/agent/invoke`,
+or process managers, and it must not read or output `.env` values.
+
 ## Documentation Authority And History Policy
 
 Current maintained docs remain in the static quality surface. Historical phase

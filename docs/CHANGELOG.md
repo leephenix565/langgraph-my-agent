@@ -3,6 +3,34 @@
 Historical changelog entries before this reset branch are preserved by tag
 `pre-fixed-dag-reset-20260604-1457`.
 
+## 2026-07-07 - Topic2 Midterm RC1 deployment profile
+
+### Added
+
+- Added an opt-in `MIDTERM_SUBSET_PROFILE` selected-agent deployment profile,
+  enabled only by server-side `FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset`.
+- The profile compiles a dependency-closed `selected_fixed_dag_plan_v1` from
+  the existing selected-agent compiler. It includes the Topic2 midterm value,
+  market, macro, and risk agent subset plus the required L1/L3/L4 closure and
+  `entity_relation_extractor` seam.
+- Added focused unit coverage for default-off behavior, env opt-in, profile
+  include/exclude boundaries, public workflow projection, public request
+  closure against arbitrary agent ids, and unchanged source-controlled runtime
+  configs.
+
+### Boundary
+
+- The full 27-agent DAG remains the default when the profile is unset.
+- `value_research_synthesis` remains in its current catalog dimension and is
+  not remapped into `market_composite`; RC1 docs describe only its market
+  behavior interpretation role.
+- Deferred agents, including `market_ipo_investor_behavior`, are excluded from
+  the profile plan and therefore should not be selected for compute by that
+  plan.
+- No catalog, runtime binding, non-L4 policy JSON, `langgraph.json`, public
+  request schema, frontend, endpoint/provider, process-action, or `.env`
+  change.
+
 ## 2026-07-06 - Non-L4 production concurrency contract repair
 
 ### Changed

@@ -41,6 +41,38 @@ records.
   `macro_commodity_pricing`, `market_composite`, `risk_composite`, and
   `macro_composite`.
 
+## Topic2 Midterm RC1 Profile
+
+- The Topic2 Midterm RC1 branch adds an opt-in server-side deployment profile:
+  `FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset`.
+- When unset, the graph keeps the full 27-agent `fixed_dag_plan_v1` default.
+  The profile does not change `langgraph.json`, catalog entries, runtime
+  bindings, the non-L4 policy JSON, public request schema, or frontend request
+  types.
+- When enabled, `route_planner_node` compiles a deterministic
+  `selected_fixed_dag_plan_v1` using the existing selected-agent compiler. The
+  profile selects Topic2 midterm L2 agents:
+  `value_traditional_valuation`, `value_ml_valuation`, `value_meta_valuation`,
+  `value_research_synthesis`, `market_stock_technical`,
+  `market_capital_flow_chip`, `macro_analysis`, `macro_index_valuation`,
+  `risk_crash`, and `risk_identification`.
+- The compiler closes the required seam around those L2 agents:
+  `route_planner`, `financial_data_service`, `entity_relation_extractor`, the
+  four dimension composites, `decision_synthesizer`, and `report_generator`.
+  `entity_relation_extractor` is retained as an L1 dependency seam, not as an
+  additional business analysis agent.
+- Deferred first-batch exclusions are not in the profile plan:
+  `market_ipo_investor_behavior`, `market_fund_manager_behavior`,
+  `risk_financial_fraud`, `risk_compliance_review`,
+  `sentiment_company_radar`, `macro_commodity_pricing`, `macro_sentiment`, and
+  `macro_industry_hotspot`.
+- `value_research_synthesis` is not remapped in the catalog or wired into
+  `market_composite`. RC1 may describe its market-behavior interpretation value
+  in delivery docs while preserving the current fixed-DAG topology.
+- This profile is ready for RC sync validation after offline tests; it still
+  requires a separate controlled online E2E before being described as live
+  deployment verified.
+
 ## Router L1 Status
 
 - Current Router theme: `ROUTER-L1-M2-SELECTED-ROUTING-IMPLEMENTATION`.

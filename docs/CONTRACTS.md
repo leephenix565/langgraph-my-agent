@@ -46,6 +46,25 @@ report remains primary. Enrichment must not use raw external output, provider
 output, endpoint URLs, credentials, graph messages, or hidden reasoning drafts,
 and it does not add required public fields or change the public schema.
 
+Topic2 Midterm RC1 adds a deployment-profile contract, not a new public request
+contract. `FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset` is a server-side
+operator switch that compiles an explicit `selected_fixed_dag_plan_v1` through
+the existing selected-agent compiler. The default remains the full
+`fixed_dag_plan_v1`. Public users still cannot submit arbitrary agent ids, and
+the profile does not change `workflow_snapshot_v2`, `report_result_v1`,
+`runtime_bindings.json`, `agent_catalog.json`, the non-L4 policy JSON, or
+`langgraph.json`.
+
+The profile selected L2 set is:
+`value_traditional_valuation`, `value_ml_valuation`, `value_meta_valuation`,
+`value_research_synthesis`, `market_stock_technical`,
+`market_capital_flow_chip`, `macro_analysis`, `macro_index_valuation`,
+`risk_crash`, and `risk_identification`. The compiler adds `route_planner`,
+`financial_data_service`, `entity_relation_extractor`, the four dimension
+composites, `decision_synthesizer`, and `report_generator` as the deterministic
+dependency closure. `value_research_synthesis` remains in the value catalog
+group; it is not remapped to market or force-wired into `market_composite`.
+
 Phase R4-A adds the fixed DAG agent catalog contract implemented by
 `src/react_agent/fixed_dag_catalog.py` and sourced from
 `config/fixed_dag/agent_catalog.json`.

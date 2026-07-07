@@ -65,6 +65,11 @@ of that runtime boundary: the non-L4 production compute policy is
 `enabled_by_default=true`, and L4 `external_compute_default` remains limited to
 `decision_synthesizer` and `report_generator`. Compute evidence must not be
 recorded as invoke evidence; `/v1/agent/invoke` remains out of the default path.
+Topic2 Midterm RC1 adds an opt-in server-side deployment profile:
+`FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset`. When enabled, the route planner
+uses the existing selected-agent compiler to run only the Topic2 midterm subset
+plus required L1/L3/L4 dependency closure. When unset, the full 27-agent DAG
+default is unchanged. Public users still cannot submit arbitrary agent ids.
 Explicit public selected routing can use the real LLM dimension router only
 when the request asks for `routing: {"mode": "selected"}` and the daemon is
 operator-configured for `llm_real`. Omitted or null public `routing` remains on

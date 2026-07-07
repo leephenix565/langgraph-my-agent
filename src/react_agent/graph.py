@@ -24,6 +24,13 @@ from langgraph.graph import END, START, StateGraph
 from langgraph.runtime import Runtime
 
 from react_agent.context import Context
+from react_agent.fixed_dag.deploy_profiles import (
+    DEPLOYMENT_PROFILE_ENV_VAR,
+    MIDTERM_SUBSET_PROFILE,
+    MIDTERM_SUBSET_SELECTED_DIMENSIONS,
+    MIDTERM_SUBSET_SELECTED_L2_AGENT_IDS,
+    is_midterm_subset_profile,
+)
 from react_agent.fixed_dag_contracts import (
     build_data_bundle,
     build_default_dimension_route_intent,
@@ -32,6 +39,7 @@ from react_agent.fixed_dag_contracts import (
     build_entity_relation_bundle,
     build_final_emit_payload,
     build_reset_multi_agent_bundle,
+    build_route_intent,
     build_workflow_snapshot_v2,
     compile_selected_fixed_dag_plan,
 )
@@ -160,6 +168,12 @@ def _context_fixed_dag_as_of(context: Context | None) -> str | None:
         return None
     text = str(getattr(context, "fixed_dag_as_of", "") or "").strip()
     return text or None
+
+
+def _is_midterm_subset_profile_enabled(context: Context | None) -> bool:
+    return context is not None and is_midterm_subset_profile(
+        getattr(context, "fixed_dag_deployment_profile", "")
+    )
 
 
 def _is_llm_dimension_router_enabled(context: Context | None) -> bool:
@@ -936,9 +950,70 @@ def _full_plan_with_selected_fallback_provenance(
     return plan
 
 
+def _compile_midterm_subset_profile_plan(
+    question: str,
+    *,
+    as_of: str | None,
+    route_started: float,
+) -> dict[str, Any]:
+    route_intent = build_route_intent(
+        task_type="single",
+        targets=[],
+        selected_dimensions=list(MIDTERM_SUBSET_SELECTED_DIMENSIONS),
+        selected_agents=list(MIDTERM_SUBSET_SELECTED_L2_AGENT_IDS),
+        route_confidence=1.0,
+        fallback_reason="fallback to full DAG",
+        provenance={
+            "source": "midterm_subset_deployment_profile",
+            "planner": "topic2_midterm_subset_rc1",
+            "route_granularity": "agent_profile",
+            "deployment_profile": MIDTERM_SUBSET_PROFILE,
+            "deployment_profile_source": DEPLOYMENT_PROFILE_ENV_VAR,
+            "provider_invoked": False,
+            "external_invoked": False,
+        },
+    )
+    plan = compile_selected_fixed_dag_plan(
+        route_intent,
+        user_text=question,
+        as_of=as_of,
+    )
+    plan["provenance"] = {
+        **plan["provenance"],
+        "selected_routing_requested": True,
+        "selected_routing_fallback": False,
+        "route_granularity": "agent_profile",
+        "deployment_profile": MIDTERM_SUBSET_PROFILE,
+        "deployment_profile_source": DEPLOYMENT_PROFILE_ENV_VAR,
+        "selected_dimensions": list(plan.get("selected_dimensions", []) or []),
+        "expanded_agent_count": len(plan.get("target_agent_ids", []) or []),
+        "route_planner_ms": max(0, int(round((time.monotonic() - route_started) * 1000))),
+        "provider_invoked": False,
+        "external_invoked": False,
+    }
+    return plan
+
+
 def _route_plan_for_context(question: str, context: Context | None) -> dict[str, Any]:
     route_started = time.monotonic()
     as_of = _context_fixed_dag_as_of(context)
+    if _is_midterm_subset_profile_enabled(context):
+        try:
+            return _compile_midterm_subset_profile_plan(
+                question,
+                as_of=as_of,
+                route_started=route_started,
+            )
+        except Exception as exc:
+            return _full_plan_with_selected_fallback_provenance(
+                question,
+                f"midterm_subset_profile_compile_failed:{type(exc).__name__}",
+                as_of=as_of,
+                route_planner_ms=max(
+                    0,
+                    int(round((time.monotonic() - route_started) * 1000)),
+                ),
+            )
     if context is None or not context.enable_selected_routing:
         plan = build_default_fixed_dag_plan(question, as_of=as_of)
         if _is_llm_dimension_router_enabled(context):

@@ -61,6 +61,26 @@ and provider-router status flags, but it must not display raw route intent,
 raw selected plans, raw provider responses, raw graph messages, endpoint URLs,
 env values, secrets, tracebacks, or chain-of-thought.
 
+## Topic2 Midterm RC1 Profile Display Boundary
+
+`MIDTERM_SUBSET_PROFILE` is server-side only for RC1. The public request shape
+does not gain a `profile`, `selectedAgents`, or arbitrary agent-id field, and
+the frontend does not need to change its send-message contract to enable the
+profile.
+
+When the backend runs with
+`FIXED_DAG_DEPLOYMENT_PROFILE=midterm_subset`, normal public sends can return a
+selected workflow whose provenance has `selectedRoutingRequested=true`,
+`selectedRoutingFallback=false`, `routeGranularity="agent_profile"`, and
+`selectedDimensions=["value","market","risk","macro"]`. Existing routing badges
+and workflow panels may display that as selected/profile-scoped analysis, but
+they must not show deferred agents as active analysis steps if those agents are
+not present in `dagSteps`.
+
+The profile is a deployment/runtime selection boundary. It does not expose
+compute endpoints, invoke controls, provider settings, env values, raw route
+plans, raw graph state, or internal agent JSON to the browser.
+
 ## Current Loading UX and Routing Badge Display (2026-07-03)
 
 ### Loading Progress
